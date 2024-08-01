@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.32821.20
 MinimumVisualStudioVersion = 15.0
@@ -80,6 +80,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MemoryGraph", "src\MemoryGraph\MemoryGraph.csproj", "{7DEBBF5E-1C12-4350-889A-27A48C23FEF0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EtwHeapDump", "src\EtwHeapDump\EtwHeapDump.csproj", "{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1CAEF854-2923-45FA-ACB8-6523A7E45896}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerfView.Tutorial", "src\PerfView.Tutorial\PerfView.Tutorial.csproj", "{DE35BED9-0E03-4DAC-A003-1ACBBF816973}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -387,6 +391,18 @@ Global
 		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Release|x64.Build.0 = Release|Any CPU
 		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Release|x86.ActiveCfg = Release|Any CPU
 		{F266BD46-34EE-4EEB-8B21-6059F4DFC51F}.Release|x86.Build.0 = Release|Any CPU
+		{DE35BED9-0E03-4DAC-A003-1ACBBF816973}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE35BED9-0E03-4DAC-A003-1ACBBF816973}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE35BED9-0E03-4DAC-A003-1ACBBF816973}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DE35BED9-0E03-4DAC-A003-1ACBBF816973}.Debug|x64.Build.0 = Debug|Any CPU
+		{DE35BED9-0E03-4DAC-A003-1ACBBF816973}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DE35BED9-0E03-4DAC-A003-1ACBBF816973}.Debug|x86.Build.0 = Debug|Any CPU
+		{DE35BED9-0E03-4DAC-A003-1ACBBF816973}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE35BED9-0E03-4DAC-A003-1ACBBF816973}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE35BED9-0E03-4DAC-A003-1ACBBF816973}.Release|x64.ActiveCfg = Release|Any CPU
+		{DE35BED9-0E03-4DAC-A003-1ACBBF816973}.Release|x64.Build.0 = Release|Any CPU
+		{DE35BED9-0E03-4DAC-A003-1ACBBF816973}.Release|x86.ActiveCfg = Release|Any CPU
+		{DE35BED9-0E03-4DAC-A003-1ACBBF816973}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -396,5 +412,8 @@ Global
 	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = PerfView2.vsmdi
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DE35BED9-0E03-4DAC-A003-1ACBBF816973} = {1CAEF854-2923-45FA-ACB8-6523A7E45896}
 	EndGlobalSection
 EndGlobal
