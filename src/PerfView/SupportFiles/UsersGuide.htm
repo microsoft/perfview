@@ -729,13 +729,13 @@
             The <strong>Collect-&gt;Run</strong> (Alt-R) menu item, which prompts for a data file
             name to create and a command to run.&nbsp;&nbsp; The command turns on profiling,
             runs the command, and then turns profiling off.&nbsp; The resulting file is then
-            display in the stack viewer.&nbsp;&nbsp; This is the preferred mechanism when it
+            displayed in the stack viewer.&nbsp;&nbsp; This is the preferred mechanism when it
             is easy to launch the application of interest.&nbsp;&nbsp; If the command produces
             output, it will be captured in the log (click the &#39;Log&#39; button in the lower
             right corner of the main view).&nbsp;
         </li>
         <li>
-            The <strong>Collect-&gt;Collect </strong>(Alt-C) menu item which only prompt for a
+            The <strong>Collect-&gt;Collect </strong>(Alt-C) menu item which only prompts for a
             data file name to create. After clicking the 'Start Collection' button you are then
             free to interact with machine in any way necessary to capture the activity of interest.&nbsp;&nbsp;
             Since profiling is machine wide you are guaranteed to capture it.&nbsp;&nbsp; Once
@@ -753,7 +753,7 @@
     </p>
     <p>
         By default PerfView chooses a set of events that does not generate too much data
-        but it useful for a variety of investigations.   However
+        but is useful for a variety of investigations.   However
         <a href="#BlockedTimeInvestigation">wall clock investigations</a>
         require events that are too voluminous to collect by default.  Thus if you wish to
         do a wall clock investigation, you need to set the 'Thread Time' checkbox in the
@@ -765,10 +765,10 @@
     <p>
         By default to save time PerfView does NOT prepare the ETL file so that it can be
         analyzed on a different machine (see <a href="#merging">merging</a>). Moreover,
-        there is symbolic information (PDBS for NGEN images), that also need to be included
+        there is symbolic information (PDBS for NGEN images), that also needs to be included
         if the data is to work well on any machine). If you are intending to do this you
         need to merge and include the NGEN pdbs by using the 'ZIP' command. You can do this
-        either
+        either by
     </p>
     <ul>
         <li>
@@ -776,7 +776,7 @@
             created.
         </li>
         <li>
-            By specifying the /Zip qualifier on the command line of PerfView when the data is
+            Specifying the /Zip qualifier on the command line of PerfView when the data is
             being created.
         </li>
         <li>Right clicking on existing ETL file in the main viewer and selecting the ZIP option.</li>
@@ -799,13 +799,13 @@
     <p>
         The result of collecting data is an ETL file (and possibly a .kernel.ETL file as
         discussed in <a href="#merging">merging</a>).&nbsp;&nbsp;&nbsp; When you double
-        click on the file in the main viewer it opens up &#39;children views&#39;&nbsp;
+        click on the file in the main viewer it opens up &#39;children views&#39;
         of the data that was collected.&nbsp;&nbsp; One of these items will be the &#39;CPU
         Stacks&#39; view.&nbsp;&nbsp;&nbsp; Double clicking on that will bring up a stack
         viewer to view the samples collected.&nbsp;&nbsp;&nbsp; The data in the ETL file
         contains CPU information for ALL processes in the system,&nbsp; however most analyses
         concentrate on a single process.&nbsp;&nbsp; Because of this before the stack viewer
-        is displayed a dialog box to select a process of interests is displayed first.&nbsp;
+        is displayed a dialog box to select a process of interest is displayed first.&nbsp;
     </p>
     <p>
         By default, this dialog box contains a list of all processes that were active at
@@ -815,7 +815,7 @@
         will bring up the stack viewer filtered to the process you chose.
     </p>
     <p>
-        The process view can be sorted by any of the columns by clicking on column header.&nbsp;
+        The process view can be sorted by any of the columns by clicking on the column header.&nbsp;
         Thus if you wish to find the process that was started most recently you can sort
         by start time to find it quickly.&nbsp;&nbsp; If the view is sorted by name, if
         you type the first character of the process name it will navigate to the first process
@@ -823,7 +823,7 @@
     </p>
     <p>
         <a id="ProcessFilterTextBox"><strong>Process Filter Textbox</strong></a> The box just
-        above the list of process.&nbsp;&nbsp; If you type text in this box, then only
+        above the list of processes.&nbsp;&nbsp; If you type text in this box, then only
         processes that match this string (PID, process name or command line, case insensitive) will
         be displayed. &nbsp;&nbsp; The * character is a wild card.&nbsp;&nbsp; This is a quick
         way of finding a particular process.
@@ -833,7 +833,7 @@
         &#39;All Procs&#39; button.&nbsp;&nbsp;&nbsp;&nbsp;
     </p>
     <p>
-        Note that the ONLY effect of the process selection dialog box is to add an &#39;<a href="#IncPatsTextBox">Inc Pats</a>&#39; filter that matches the process your
+        Note that the ONLY effect of the process selection dialog box is to add an &#39;<a href="#IncPatsTextBox">Inc Pats</a>&#39; filter that matches the process you
         chose.&nbsp;&nbsp; Thus the dialog box is really just a &#39;friendly interface&#39;
         to the more powerful <a href="#FilteringGroupingStackData">filtering options</a>
         of the stack viewer.&nbsp;&nbsp; In particular, the stack viewer still has access
