@@ -2032,7 +2032,7 @@ namespace PerfView
         private void DoPrivacyPolicy(object sender, RoutedEventArgs e)
         {
             StatusBar.Log("Displaying the privacy policy.");
-            Process.Start("https://privacy.microsoft.com/en-us/privacystatement");
+            Process.Start("https://go.microsoft.com/fwlink/?LinkId=521839");
         }
 
         private void UpdateFileFilter()
