@@ -54,6 +54,25 @@ namespace PerfView
                     (string.Compare(args[0], "/noGui", StringComparison.OrdinalIgnoreCase) == 0 ||
                      string.Compare(args[0], 0, "/logFile", 0, 8, StringComparison.OrdinalIgnoreCase) == 0));
 
+                // Users will need to check the return code for failure because there is no console setup yet and we can't log any status.
+                var buildLayout = args.Length > 1 && string.Compare(args[0], "/buildLayout", StringComparison.OrdinalIgnoreCase) == 0;
+                if (buildLayout)
+                {
+                    string destDirectory = args[1];
+                    if (Directory.Exists(destDirectory))
+                    {
+                        return retCode;
+                    }
+
+                    SupportFiles.SetSupportFilesDir(destDirectory);
+                    App.Unpack();
+                    App.WriteDefaultAppConfigDataFile(destDirectory);
+
+                    retCode = 0;
+                    return retCode;
+                }
+
+
                 // If we need to install, display the splash screen early, otherwise wait
                 if (!Directory.Exists(SupportFiles.SupportFileDir) && !noGui)
                 {
@@ -394,6 +413,11 @@ namespace PerfView
             }
         }
 
+        public static void WriteDefaultAppConfigDataFile(string directoryPath)
+        {
+            string defaultConfig = "<ConfigData>\r\n  <SupportFilesDir>.\\</SupportFilesDir>\r\n</ConfigData>";
+            File.WriteAllText(Path.Combine(directoryPath, "AppConfig.xml"), defaultConfig);
+        }
 
         // Logfile
         /// <summary>

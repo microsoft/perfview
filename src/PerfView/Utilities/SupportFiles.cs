@@ -338,6 +338,11 @@ namespace Utilities
             }
         }
 
+        internal static void SetSupportFilesDir(string supportFilesDir)
+        {
+            s_supportFileDir = supportFilesDir;
+        }
+
         private static void Cleanup()
         {
             string cleanupMarkerFile = Path.Combine(SupportFileDirBase, "CleanupNeeded");
