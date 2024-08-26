@@ -120,7 +120,11 @@ namespace Utilities
             // may not be in the EXE itself.  
             if (unpacked || File.Exists(Path.Combine(SupportFileDirBase, "CleanupNeeded")))
             {
-                Cleanup();
+                try
+                {
+                    Cleanup();
+                }
+                catch { } // Clean-up may fail if SupportFilesBaseDir doesn't exist.  This is especially true if we're running in a custom location or running /buildLayout.
             }
 
             return unpacked;
