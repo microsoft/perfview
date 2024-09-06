@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -3671,6 +3672,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         private static char[] s_directorySeparators = { '\\', '/' };
+        private static string[] s_validExtensions = { ".dll", ".exe" };
 
         // Path  GetFileNameWithoutExtension will throw on illegal chars, which is too strong, so avoid that here.
         internal static string GetFileNameWithoutExtensionNoIllegalChars(string filePath)
@@ -3686,12 +3688,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             int dotIdx = filePath.LastIndexOf('.');
-            if (dotIdx < lastDirectorySep)
+            if (dotIdx > lastDirectorySep)
             {
-                dotIdx = filePath.Length;
+                string extension = filePath.Substring(dotIdx);
+                if (s_validExtensions.Contains(extension))
+                {
+                    return filePath.Substring(lastDirectorySep, dotIdx - lastDirectorySep);
+                }
             }
 
-            return filePath.Substring(lastDirectorySep, dotIdx - lastDirectorySep);
+            return filePath.Substring(lastDirectorySep);
         }
 
 #if DEBUG
