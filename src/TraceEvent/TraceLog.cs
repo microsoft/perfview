@@ -3670,9 +3670,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             Debug.Assert(0 < numberOfProcessors && numberOfProcessors < 1024, "Bad number of processors");
             Debug.Assert(0 < MaxEventIndex);
         }
-
         private static char[] s_directorySeparators = { '\\', '/' };
-        private static string[] s_validExtensions = { ".dll", ".exe" };
+        private static HashSet<string> s_validExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".dll", ".exe" };
 
         // Path  GetFileNameWithoutExtension will throw on illegal chars, which is too strong, so avoid that here.
         internal static string GetFileNameWithoutExtensionNoIllegalChars(string filePath)
