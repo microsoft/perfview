@@ -54,20 +54,25 @@ you can do that by following the rest of these instructions.
 
 ### Tools Needed to Build PerfView
 
-The only tools you need to build PerfView are Visual Studio 2022 and the .NET Core SDK.   The
-[Visual Studio 2022 Community Edition](https://www.visualstudio.com/vs/community/) can be downloaded *for free* and,
-along with the .NET Core SDK, has everything you need to fetch PerfView from GitHub, build and test it. We expect you
+The only tool you need to build PerfView is Visual Studio 2022.  The [Visual Studio 2022 Community Edition](https://www.visualstudio.com/vs/community/) 
+can be downloaded *for free* and has everything you need to fetch PerfView from GitHub, build and test it. We expect you 
 to download Visual Studio 2022 Community Edition if you don't already have Visual Studio 2022.
 
-PerfView is mostly C# code, however there is a small amount of C++ code to implement some advanced features of PerfView 
-(The ETWCLrProfiler dlls that allow PerfView to intercept the .NET Method calls; see .NET Call in the Collect dialog).  
-If you downloaded the Visual Studio 2022 Community Edition, it does not install the C++ compilation tools by default and
-it also does not include the Windows 10 SDK by default.  Thus
-when you install Visual Studio 2022 check the 'Desktop Development with C++' option and then look in the right pane to see
-the optional sub-components, and make sure the Windows 10 SDK is also checked (it typically is not).  Installing the latest version should be OK.   If you have
-already installed Visual Studio 2022, you can add these options by launching the Visual Studio Installer and modifying the installation.   This will get you to the place where you can select the 'Desktop Development with C++' and the 'Windows 10 SDK' options. 
-If you get any errors compiling the ETWClrProfiler* dlls, it is likely associated with getting this Win 10.0 SDK.  See 
-the troubleshooting sections below for more if you need it.  
+In your installation of Visual Studio, you need to ensure you have the following workloads and components installed:
+
+  * **.NET desktop development** workload with all default components.
+  * **Desktop development with C++** workload with all default components plus the latest Windows 10 SDK.
+    * The Windows 10 SDK is not enabled by default in this workload, so you will need to check the box for it to be installed.
+  * **MSVC v143 - VS 2022 C++ x64/x86 Spectre-mitigated libs (Latest)** component.
+    * This can be found under the 'Individual Components' tab.
+
+A `.vsconfig` file is included in the root of the repository that can be used to install the necessary components. When 
+opening the solution in Visual Studio, it will prompt you to install any components that it thinks are missing from your 
+installation.  Alternatively, you can [import the `.vsconfig` in the Visual Studio Installer](https://learn.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration).
+
+If you get any errors compiling the ETWClrCompiler projects, it is likely because you either don't have the Windows 10 SDK 
+installed, or you don't have the spectre-mitigated libs installed. Please refer to the [troubleshooting section](#information-for-build-troubleshooting) for more information.
+
 
 ### Cloning the PerfView GitHub Repository. 
 
@@ -78,7 +83,7 @@ will lead you through the basics of doing this. All it assumes is that you have 
 
 ### How to Build and Debug PerfView 
 
-PerfView is developed in Visual Studio 2022 using features through C# 6.
+PerfView is developed in Visual Studio 2022 using features through C# 7.3.
 
   * The solution file is PerfView.sln.  Opening this file in Visual Studio (or double clicking on it in 
   the Windows Explorer) and selecting Build -> Build Solution, will build it. You can also build the 
@@ -127,9 +132,12 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
     4. Build perfView by typing the command 'msbuild'
   
   * If you get an error "MSB8036: The Windows SDK version 10.0.17763.0 was not found",  Or you get a 'assert.h' not found error, or 
-  frankly any error associated with building the ETWClrProfiler dlls, you should make sure that you have the Windows 10.0.17763.0 
-  SDK installed.  Unfortunately this library tends not to be 
+  frankly any error associated with building the ETWClrProfiler dlls, you should make sure that you have the Windows 10 SDK installed.  Unfortunately this library tends not to be 
   installed with Visual Studio anymore unless you ask for it explicitly.   To fix it launch the Visual Studio Installer, modify the installation, and then look under the C++ Desktop Development and check that the Windows SDK 10.0.17763.0 option is selected.  If not, select it and continue.  Then try building PerfView again.
+
+  * If you get an error "MSB8040: Spectre-mitigated libraries are required for this project",  modify your Visual Studio 
+    installation to ensure that you have the 'MSVC v143 - VS 2022 C++ x64/x86 Spectre-mitigated libs (Latest)' component installed. 
+
   
 ### Running Tests
 
