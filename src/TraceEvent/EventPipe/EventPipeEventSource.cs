@@ -1111,9 +1111,9 @@ namespace Microsoft.Diagnostics.Tracing
         {
             if (_eventRecord != null)
             {
-                if (_eventRecord->ExtendedData != null)
+                if (_extendedDataBuffer != IntPtr.Zero)
                 {
-                    Marshal.FreeHGlobal((IntPtr)_eventRecord->ExtendedData);
+                    Marshal.FreeHGlobal(_extendedDataBuffer);
                 }
 
                 Marshal.FreeHGlobal((IntPtr)_eventRecord);
@@ -1168,10 +1168,12 @@ namespace Microsoft.Diagnostics.Tracing
             if (0 < stackBytesSize)
             {
                 // Lazy allocation (destructor frees it).
-                if (_eventRecord->ExtendedData == null)
+                if (_extendedDataBuffer == IntPtr.Zero)
                 {
-                    _eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM));
+                    _extendedDataBuffer = Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM));
                 }
+
+                _eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)_extendedDataBuffer;
 
                 if ((_eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER) != 0)
                 {
@@ -1350,6 +1352,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         private TraceEventNativeMethods.EVENT_RECORD* _eventRecord;
+        private IntPtr _extendedDataBuffer;
     }
 
     /// <summary>
