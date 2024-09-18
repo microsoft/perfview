@@ -25,7 +25,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -3670,6 +3669,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             Debug.Assert(0 < numberOfProcessors && numberOfProcessors < 1024, "Bad number of processors");
             Debug.Assert(0 < MaxEventIndex);
         }
+
         private static char[] s_directorySeparators = { '\\', '/' };
         private static HashSet<string> s_validExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".dll", ".exe" };
 
