@@ -1821,7 +1821,7 @@ namespace PerfView
                 qualifiers += " /DumpData";
             }
 
-            if (parsedArgs.MaxDumpCountK > 0)
+            if (parsedArgs.MaxDumpCountK != -1)
             {
                 qualifiers += " /MaxDumpCountK=" + parsedArgs.MaxDumpCountK;
             }
@@ -1954,7 +1954,7 @@ namespace PerfView
         }
         public void CreateExtensionProject(CommandLineArgs parsedArgs)
         {
-#if !PERFVIEW_COLLECT 
+#if !PERFVIEW_COLLECT
             // We do this to avoid a common mistake where people will create extensions on shared copies of perfView.  
             if (PerfViewExtensibility.Extensions.ExtensionsDirectory.StartsWith(@"\\") ||
                 PerfViewExtensibility.Extensions.ExtensionsDirectory.StartsWith(SupportFiles.SupportFileDir, StringComparison.OrdinalIgnoreCase))
@@ -3171,12 +3171,12 @@ namespace PerfView
                 cmdLineArgs += " /DumpData";
             }
 
-            if (parsedArgs.MaxDumpCountK != 250)
+            if (parsedArgs.MaxDumpCountK != -1)
             {
                 cmdLineArgs += " /MaxDumpCountK=" + parsedArgs.MaxDumpCountK;
             }
 
-            if (parsedArgs.MaxNodeCountK != 0)
+            if (parsedArgs.MaxNodeCountK != -1)
             {
                 cmdLineArgs += " /MaxNodeCountK=" + parsedArgs.MaxNodeCountK;
             }
