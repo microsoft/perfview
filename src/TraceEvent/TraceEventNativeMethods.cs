@@ -63,11 +63,11 @@ namespace Microsoft.Diagnostics.Tracing
         private static bool IsValidTraceHandle(TRACEHANDLE handle) => handle != INVALID_HANDLE_VALUE;
 
         internal const uint EVENT_TRACE_REAL_TIME_MODE = 0x00000100;
-        // private sessions or private logger information.   Sadly, these are not very useful because they don't work for real time.  
-        // TODO USE or remove.   See http://msdn.microsoft.com/en-us/library/windows/desktop/aa363689(v=vs.85).aspx
-        // Unfortunately they only work for file based logging (not real time) so they are of limited value.  
-        // internal const uint EVENT_TRACE_PRIVATE_LOGGER_MODE = 0x00000800;
-        // internal const uint EVENT_TRACE_PRIVATE_IN_PROC = 0x00020000;
+
+        // PRIVATE logger flags only work with file based logging and not real time.
+        internal const uint EVENT_TRACE_PRIVATE_LOGGER_MODE = 0x00000800;
+        internal const uint EVENT_TRACE_PRIVATE_IN_PROC = 0x00020000;
+
 
         //  EVENT_TRACE_LOGFILE.LogFileMode should be set to PROCESS_TRACE_MODE_EVENT_RECORD 
         //  to consume events using EventRecordCallback
