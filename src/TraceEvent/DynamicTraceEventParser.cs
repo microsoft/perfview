@@ -603,7 +603,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
             if (classInfo != null)
             {
-                var ret = new StructValue();
+                var ret = new StructValue(classInfo.FieldFetches.Length);
 
                 for (int i = 0; i < classInfo.FieldFetches.Length; i++)
                 {
@@ -797,6 +797,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         internal class StructValue : IDictionary<string, object>
         {
+            internal StructValue(int capacity = 0)
+            {
+                m_values = new List<KeyValuePair<string, object>>(capacity);
+            }
             public IEnumerator<KeyValuePair<string, object>> GetEnumerator() { return m_values.GetEnumerator(); }
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return m_values.GetEnumerator(); }
             public bool IsReadOnly { get { return true; } }
@@ -937,7 +941,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex) { throw new NotImplementedException(); }
             public bool Remove(KeyValuePair<string, object> item) { throw new NotImplementedException(); }
 
-            private List<KeyValuePair<string, object>> m_values = new List<KeyValuePair<string, object>>();
+            private List<KeyValuePair<string, object>> m_values;
             #endregion
         }
 

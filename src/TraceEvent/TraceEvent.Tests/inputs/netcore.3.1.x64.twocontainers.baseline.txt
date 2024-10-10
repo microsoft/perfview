@@ -99,8 +99,8 @@ EVENT 168.953: Windows Kernel/UdpIp/Recv PID=1136; TID=-1; PName=svchost; ProceN
 EVENT 168.960: Windows Kernel/UdpIp/Recv PID=1136; TID=-1; PName=svchost; ProceNum=0; DataLen=28; context=0x4500000470; saddr=167.220.2.117; sport=4,999; size=69; daddr=10.0.0.4; dport=3,389; dsize=0; 
 EVENT 172.235: KernelTraceControl/ImageID/None PID=2792; TID=-1; PName=spoolsv; ProceNum=1; DataLen=12; 
 EVENT 187.578: KernelTraceControl/ImageID/None PID=2112; TID=-1; PName=WindowsAzureGuestAgent; ProceNum=1; DataLen=12; 
-EVENT 196.607: KernelTraceControl/ImageID/None PID=3420; TID=-1; PName=com.docker; ProceNum=1; DataLen=12; 
-EVENT 196.653: KernelTraceControl/ImageID/None PID=3420; TID=-1; PName=com.docker; ProceNum=1; DataLen=12; 
+EVENT 196.607: KernelTraceControl/ImageID/None PID=3420; TID=-1; PName=com.docker.service; ProceNum=1; DataLen=12; 
+EVENT 196.653: KernelTraceControl/ImageID/None PID=3420; TID=-1; PName=com.docker.service; ProceNum=1; DataLen=12; 
 EVENT 214.719: Windows Kernel/TcpIp/Send PID=1136; TID=-1; PName=svchost; ProceNum=0; DataLen=36; size=37; daddr=167.220.2.117; saddr=10.0.0.4; dport=22,251; sport=3,389; startime=9,120,598; endtime=9,120,605; seqnum=0; connid=0x3400000000; 
 EVENT 214.720: Windows Kernel/TcpIp/Send PID=1136; TID=-1; PName=svchost; ProceNum=0; DataLen=36; size=37; daddr=167.220.2.117; saddr=10.0.0.4; dport=22,251; sport=3,389; startime=9,120,602; endtime=9,120,605; seqnum=0; connid=0x5c00000000; 
 EVENT 222.747: Windows Kernel/Thread/Start PID=956; TID=9004; PName=svchost; ProceNum=1; DataLen=74; StackBase=0xffffd78f0c7f4000; StackLimit=0xffffd78f0c7ed000; UserStackBase=0x169b110000; UserStackLimit=0x169b108000; StartAddr=0x00000003; Win32StartAddr=0x7ffc48d2ff90; TebBase=0x169b2f0000; SubProcessTag=16; BasePriority=8; PagePriority=5; IoPriority=2; ThreadFlags=0; ThreadName=; ParentThreadID=896; ParentProcessID=956; 
