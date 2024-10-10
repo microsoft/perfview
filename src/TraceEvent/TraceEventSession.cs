@@ -2850,7 +2850,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         PrivateLogger = 16,
         /// <summary>
-        /// Use in conjunction with the EVENT_TRACE_PRIVATE_LOGGER_MODE mode to start a private session.
+        /// Use in conjunction with the PrivateLogger mode to start a private session.
         /// This mode enforces that only the process that registered the provider GUID can start the logger session with that GUID.
         /// </summary>
         PrivateInProcLogger = 32,
