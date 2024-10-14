@@ -23,8 +23,8 @@ namespace FastSerialization
                 throw new ArgumentNullException(nameof(settings));
             }
 
-            SerializationSettings = settings;
-            if (SerializationSettings.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            Settings = settings;
+            if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
             {
                 readLabel = () =>
                 {
@@ -161,7 +161,7 @@ namespace FastSerialization
         {
             Debug.Assert(label != StreamLabel.Invalid);
 
-            if (SerializationSettings.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
             {
                 Debug.Assert((long)label <= int.MaxValue);
                 position = (uint)label;
@@ -178,7 +178,7 @@ namespace FastSerialization
         {
             get
             {
-                if (SerializationSettings.StreamLabelWidth == StreamLabelWidth.FourBytes)
+                if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
                 {
                     return (StreamLabel)(uint)position;
                 }
@@ -212,7 +212,7 @@ namespace FastSerialization
         /// <summary>
         /// Returns the <code>SerializationSettings</code> for this stream reader.
         /// </summary>
-        internal SerializationSettings SerializationSettings { get; private set; }
+        internal SerializationSettings Settings { get; private set; }
         #endregion
 
         #region private 

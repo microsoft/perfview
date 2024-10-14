@@ -186,6 +186,11 @@ namespace FastSerialization
         /// IStreamReader.GotoSuffixLabel for more)
         /// </summary>
         void WriteSuffixLabel(StreamLabel value);
+
+        /// <summary>
+        /// The settings associated with this writer.
+        /// </summary>
+        SerializationSettings Settings { get; }
     }
 
 
@@ -255,6 +260,11 @@ namespace FastSerialization
         /// and then seeking to that position.  
         /// </summary>
         void GotoSuffixLabel();
+
+        /// <summary>
+        /// The settings associated with this reader.
+        /// </summary>
+        SerializationSettings Settings { get; }
     }
 
 #if !DOTNET_V35
@@ -1057,9 +1067,9 @@ namespace FastSerialization
         /// <paramref name="leaveOpen"/> parameter determines whether the deserializer will close the stream when it
         /// closes.
         /// </summary>
-        public Deserializer(Stream inputStream, string streamName, bool leaveOpen, SerializationSettings config = null)
+        public Deserializer(Stream inputStream, string streamName, bool leaveOpen, SerializationSettings settings)
         {
-            IOStreamStreamReader reader = new IOStreamStreamReader(inputStream, leaveOpen: leaveOpen, settings: config);
+            IOStreamStreamReader reader = new IOStreamStreamReader(inputStream, leaveOpen: leaveOpen, settings: settings);
             Initialize(reader, streamName);
         }
 

@@ -22,7 +22,7 @@ namespace FastSerialization
         /// <summary>
         /// Create a IStreamReader (reads binary data) from a given byte buffer
         /// </summary>
-        public MemoryStreamReader(byte[] data) : this(data, 0, data.Length, new SerializationSettings()) { }
+        public MemoryStreamReader(byte[] data, SerializationSettings settings) : this(data, 0, data.Length, settings) { }
         /// <summary>
         /// Create a IStreamReader (reads binary data) from a given subregion of a byte buffer.
         /// </summary>
@@ -37,8 +37,8 @@ namespace FastSerialization
                 throw new ArgumentNullException(nameof(settings));
             }
 
-            SerializationSettings = settings;
-            if(SerializationSettings.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            Settings = settings;
+            if(Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
             {
                 readLabel = () =>
                 {
@@ -61,9 +61,14 @@ namespace FastSerialization
         /// </summary>
         public virtual long Length { get { return endPosition; } }
         public virtual bool HasLength { get { return true; } }
-        public SerializationSettings SerializationSettings { get; private set; }
 
         #region implemenation of IStreamReader
+
+        /// <summary>
+        /// The settings associated with this reader.
+        /// </summary>
+        public SerializationSettings Settings { get; private set; }
+
         public virtual void Read(byte[] data, int offset, int length)
         {
             if (length > endPosition - position)
@@ -256,8 +261,8 @@ namespace FastSerialization
                 throw new ArgumentNullException(nameof(settings));
             }
 
-            SerializationSettings = settings;
-            if (SerializationSettings.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            Settings = settings;
+            if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
             {
                 writeLabel = (value) =>
                 {
@@ -277,7 +282,10 @@ namespace FastSerialization
             bytes = new byte[initialSize];
         }
 
-        public SerializationSettings SerializationSettings { get; set; }
+        /// <summary>
+        /// The settings associated with this writer.
+        /// </summary>
+        public SerializationSettings Settings { get; private set; }
 
         /// <summary>
         /// Returns a IStreamReader that will read the written bytes. You cannot write additional bytes to the stream after making this call.
@@ -291,7 +299,7 @@ namespace FastSerialization
                 readerBytes = new byte[endPosition];
                 Array.Copy(bytes, readerBytes, endPosition);
             }
-            return new MemoryStreamReader(readerBytes, 0, endPosition, new SerializationSettings());
+            return new MemoryStreamReader(readerBytes, 0, endPosition, Settings);
         }
 
         /// <summary>
@@ -944,7 +952,7 @@ namespace FastSerialization
         /// <returns></returns>
         public PinnedStreamReader Clone()
         {
-            PinnedStreamReader ret = new PinnedStreamReader(inputStream, SerializationSettings, bytes.Length - align);
+            PinnedStreamReader ret = new PinnedStreamReader(inputStream, Settings, bytes.Length - align);
             return ret;
         }
 
@@ -1069,7 +1077,7 @@ namespace FastSerialization
         public override StreamLabel GetLabel()
         {
             long len = Length;
-            if (SerializationSettings.StreamLabelWidth == StreamLabelWidth.FourBytes && len != (uint)len)
+            if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes && len != (uint)len)
             {
                 throw new NotSupportedException("Streams larger than 4 GB.  You need to use /MaxEventCount to limit the size.");
             }
