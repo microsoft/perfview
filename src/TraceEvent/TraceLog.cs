@@ -3603,7 +3603,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             Debug.Assert(sizeof(TraceEventNativeMethods.EVENT_HEADER) == 0x50 && sizeof(TraceEventNativeMethods.ETW_BUFFER_CONTEXT) == 4);
 
             // As of TraceLog version 74, all StreamLabels are 64-bit.  See IFastSerializableVersion for details.
-            Deserializer deserializer = new Deserializer(new PinnedStreamReader(etlxFilePath, 0x10000), etlxFilePath);
+            Deserializer deserializer = new Deserializer(new PinnedStreamReader(etlxFilePath, new SerializationSettings(), 0x10000), etlxFilePath);
             deserializer.TypeResolver = typeName => System.Type.GetType(typeName);  // resolve types in this assembly (and mscorlib)
 
             // when the deserializer needs a TraceLog we return the current instance.  We also assert that

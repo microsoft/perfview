@@ -98,14 +98,16 @@ namespace FastSerialization
     };
 
     /// <summary>
-    /// These settings apply to use of Serializer and Deserializer specifically.
+    /// Settings used by <code>Serializer</code> and <code>Deserializer</code>.
     /// </summary>
 #if FASTSERIALIZATION_PUBLIC
     public
 #endif
-    sealed class SerializationConfiguration
+    sealed class SerializationSettings
     {
         public StreamLabelWidth StreamLabelWidth { get; set; } = StreamLabelWidth.EightBytes;
+
+        public string[] AllowedTypeNames { get; set; } = Array.Empty<string>();
     }
 
     /// <summary>
@@ -516,7 +518,7 @@ namespace FastSerialization
         /// <param name="filePath">The destination file.</param>
         /// <param name="entryObject">The object to serialize.</param>
         /// <param name="share">Optional sharing mode for the destination file. Defaults to <see cref="FileShare.Read"/>.</param>
-        public Serializer(string filePath, IFastSerializable entryObject, FileShare share = FileShare.Read) : this(new IOStreamStreamWriter(filePath, share: share), entryObject) { }
+        public Serializer(string filePath, IFastSerializable entryObject, FileShare share = FileShare.Read) : this(new IOStreamStreamWriter(filePath, settings: new SerializationSettings(), share: share), entryObject) { }
 
         /// <summary>
         /// Create a serializer that writes <paramref name="entryObject"/> to a <see cref="Stream"/>. The serializer
@@ -533,7 +535,7 @@ namespace FastSerialization
         /// closes.
         /// </summary>
         public Serializer(Stream outputStream, IFastSerializable entryObject, bool leaveOpen)
-            : this(new IOStreamStreamWriter(outputStream, leaveOpen: leaveOpen), entryObject)
+            : this(new IOStreamStreamWriter(outputStream, new SerializationSettings(), leaveOpen: leaveOpen), entryObject)
         {
         }
 
@@ -1035,18 +1037,18 @@ namespace FastSerialization
         /// <summary>
         /// Create a Deserializer that reads its data from a given file
         /// </summary>
-        public Deserializer(string filePath, SerializationConfiguration config = null)
+        public Deserializer(string filePath, SerializationSettings settings)
         {
-            IOStreamStreamReader reader = new IOStreamStreamReader(filePath, config);
+            IOStreamStreamReader reader = new IOStreamStreamReader(filePath, settings);
             Initialize(reader, filePath);
         }
 
         /// <summary>
         /// Create a Deserializer that reads its data from a given System.IO.Stream.   The stream will be closed when the Deserializer is done with it.  
         /// </summary>
-        public Deserializer(Stream inputStream, string streamName, SerializationConfiguration config = null)
+        public Deserializer(Stream inputStream, string streamName, SerializationSettings settings)
         {
-            IOStreamStreamReader reader = new IOStreamStreamReader(inputStream, config: config);
+            IOStreamStreamReader reader = new IOStreamStreamReader(inputStream, settings: settings);
             Initialize(reader, streamName);
         }
 
@@ -1055,9 +1057,9 @@ namespace FastSerialization
         /// <paramref name="leaveOpen"/> parameter determines whether the deserializer will close the stream when it
         /// closes.
         /// </summary>
-        public Deserializer(Stream inputStream, string streamName, bool leaveOpen, SerializationConfiguration config = null)
+        public Deserializer(Stream inputStream, string streamName, bool leaveOpen, SerializationSettings config = null)
         {
-            IOStreamStreamReader reader = new IOStreamStreamReader(inputStream, leaveOpen: leaveOpen, config: config);
+            IOStreamStreamReader reader = new IOStreamStreamReader(inputStream, leaveOpen: leaveOpen, settings: config);
             Initialize(reader, streamName);
         }
 
