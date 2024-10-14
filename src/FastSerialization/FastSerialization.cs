@@ -105,9 +105,48 @@ namespace FastSerialization
 #endif
     sealed class SerializationSettings
     {
-        public StreamLabelWidth StreamLabelWidth { get; set; } = StreamLabelWidth.EightBytes;
+        private static readonly string[] DefaultAllowedTypeNames =
+        {
+            "FastSerialization.SerializationType"
+        };
 
-        public string[] AllowedTypeNames { get; set; } = Array.Empty<string>();
+        internal StreamLabelWidth StreamLabelWidth { get; }
+
+        internal HashSet<string> AllowedTypeNames { get; }
+
+        public static SerializationSettings Default { get; } = new SerializationSettings(
+            StreamLabelWidth.EightBytes, new HashSet<string>(DefaultAllowedTypeNames));
+
+        public SerializationSettings SetStreamLabelWith(StreamLabelWidth width)
+        {
+            return new SerializationSettings(
+                width,
+                AllowedTypeNames);
+        }
+
+        public SerializationSettings SetAllowedTypeNames(string[] allowedTypeNames)
+        {
+            HashSet<string> allowedTypesHash = new HashSet<string>(DefaultAllowedTypeNames);
+            allowedTypesHash.UnionWith(allowedTypeNames);
+
+            return new SerializationSettings(
+                StreamLabelWidth,
+                allowedTypesHash);
+
+        }
+
+        private SerializationSettings(
+            StreamLabelWidth streamLabelWidth,
+            HashSet<string> allowedTypeNames)
+        {
+            StreamLabelWidth = streamLabelWidth;
+            AllowedTypeNames = allowedTypeNames;
+        }
+
+        internal bool AllowedTypesContains(string fullName)
+        {
+            return AllowedTypeNames.Contains(fullName);
+        }
     }
 
     /// <summary>
@@ -528,7 +567,7 @@ namespace FastSerialization
         /// <param name="filePath">The destination file.</param>
         /// <param name="entryObject">The object to serialize.</param>
         /// <param name="share">Optional sharing mode for the destination file. Defaults to <see cref="FileShare.Read"/>.</param>
-        public Serializer(string filePath, IFastSerializable entryObject, FileShare share = FileShare.Read) : this(new IOStreamStreamWriter(filePath, settings: new SerializationSettings(), share: share), entryObject) { }
+        public Serializer(string filePath, IFastSerializable entryObject, FileShare share = FileShare.Read) : this(new IOStreamStreamWriter(filePath, settings: SerializationSettings.Default, share: share), entryObject) { }
 
         /// <summary>
         /// Create a serializer that writes <paramref name="entryObject"/> to a <see cref="Stream"/>. The serializer
@@ -545,7 +584,7 @@ namespace FastSerialization
         /// closes.
         /// </summary>
         public Serializer(Stream outputStream, IFastSerializable entryObject, bool leaveOpen)
-            : this(new IOStreamStreamWriter(outputStream, new SerializationSettings(), leaveOpen: leaveOpen), entryObject)
+            : this(new IOStreamStreamWriter(outputStream, SerializationSettings.Default, leaveOpen: leaveOpen), entryObject)
         {
         }
 

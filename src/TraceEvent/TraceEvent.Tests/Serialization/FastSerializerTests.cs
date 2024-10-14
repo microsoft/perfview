@@ -23,7 +23,7 @@ namespace TraceEventTests
             writer.Write((long)0xf1234567);
 
             ms.Position = 0;
-            Deserializer d = new Deserializer(new PinnedStreamReader(ms, settings: new SerializationSettings() { StreamLabelWidth = StreamLabelWidth.EightBytes }), "name");
+            Deserializer d = new Deserializer(new PinnedStreamReader(ms, settings: SerializationSettings.Default.SetStreamLabelWith(StreamLabelWidth.EightBytes)), "name");
             Assert.Equal((StreamLabel)0, d.ReadLabel());
             Assert.Equal((StreamLabel)19, d.ReadLabel());
             Assert.Equal((StreamLabel)1_000_000, d.ReadLabel());
@@ -42,7 +42,7 @@ namespace TraceEventTests
             writer.Write(0xf1234567);
 
             ms.Position = 0;
-            Deserializer d = new Deserializer(new PinnedStreamReader(ms, settings: new SerializationSettings() { StreamLabelWidth = StreamLabelWidth.FourBytes }), "name");
+            Deserializer d = new Deserializer(new PinnedStreamReader(ms, settings: SerializationSettings.Default.SetStreamLabelWith(StreamLabelWidth.FourBytes)), "name");
             Assert.Equal((StreamLabel)0, d.ReadLabel());
             Assert.Equal((StreamLabel)19, d.ReadLabel());
             Assert.Equal((StreamLabel)1_000_000, d.ReadLabel());
@@ -60,10 +60,10 @@ namespace TraceEventTests
         {
             SampleSerializableType sample = new SampleSerializableType(SampleSerializableType.ConstantValue);
             MemoryStream ms = new MemoryStream();
-            Serializer s = new Serializer(new IOStreamStreamWriter(ms, leaveOpen:true, settings: new SerializationSettings() { StreamLabelWidth = StreamLabelWidth.FourBytes }), sample);
+            Serializer s = new Serializer(new IOStreamStreamWriter(ms, leaveOpen:true, settings: SerializationSettings.Default.SetStreamLabelWith(StreamLabelWidth.FourBytes)), sample);
             s.Dispose();
 
-            Deserializer d = new Deserializer(new PinnedStreamReader(ms, settings: new SerializationSettings() { StreamLabelWidth = StreamLabelWidth.FourBytes }), "name");
+            Deserializer d = new Deserializer(new PinnedStreamReader(ms, settings: SerializationSettings.Default.SetStreamLabelWith(StreamLabelWidth.FourBytes)), "name");
             d.RegisterFactory(typeof(SampleSerializableType), () => new SampleSerializableType(0));
             SampleSerializableType serializable = (SampleSerializableType)d.ReadObject();
             Assert.Equal(SampleSerializableType.ConstantValue, serializable.BeforeValue);
@@ -75,10 +75,10 @@ namespace TraceEventTests
         {
             SampleSerializableType sample = new SampleSerializableType(SampleSerializableType.ConstantValue);
             MemoryStream ms = new MemoryStream();
-            Serializer s = new Serializer(new IOStreamStreamWriter(ms, leaveOpen: true, settings: new SerializationSettings() { StreamLabelWidth = StreamLabelWidth.EightBytes }), sample);
+            Serializer s = new Serializer(new IOStreamStreamWriter(ms, leaveOpen: true, settings: SerializationSettings.Default.SetStreamLabelWith(StreamLabelWidth.EightBytes)), sample);
             s.Dispose();
 
-            Deserializer d = new Deserializer(new PinnedStreamReader(ms, settings: new SerializationSettings() { StreamLabelWidth = StreamLabelWidth.EightBytes }), "name");
+            Deserializer d = new Deserializer(new PinnedStreamReader(ms, settings: SerializationSettings.Default.SetStreamLabelWith(StreamLabelWidth.EightBytes)), "name");
             d.RegisterFactory(typeof(SampleSerializableType), () => new SampleSerializableType(0));
             SampleSerializableType serializable = (SampleSerializableType)d.ReadObject();
             Assert.Equal(SampleSerializableType.ConstantValue, serializable.BeforeValue);

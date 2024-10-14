@@ -28,12 +28,12 @@ namespace Microsoft.Diagnostics.Tracing
     /// </summary>
     public unsafe class EventPipeEventSource : TraceEventDispatcher, IFastSerializable, IFastSerializableVersion
     {
-        public EventPipeEventSource(string fileName) : this(new PinnedStreamReader(fileName, new SerializationSettings() { StreamLabelWidth = StreamLabelWidth.FourBytes }, 0x20000), fileName, false)
+        public EventPipeEventSource(string fileName) : this(new PinnedStreamReader(fileName, SerializationSettings.Default.SetStreamLabelWith(StreamLabelWidth.FourBytes), 0x20000), fileName, false)
         {
         }
 
         public EventPipeEventSource(Stream stream)
-            : this(new PinnedStreamReader(stream, alignment: StreamReaderAlignment.OneByte, settings: new SerializationSettings() { StreamLabelWidth = StreamLabelWidth.FourBytes }), "stream", true)
+            : this(new PinnedStreamReader(stream, alignment: StreamReaderAlignment.OneByte, settings: SerializationSettings.Default.SetStreamLabelWith(StreamLabelWidth.FourBytes)), "stream", true)
         {
         }
 
