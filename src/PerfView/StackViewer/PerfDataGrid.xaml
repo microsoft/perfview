@@ -31,7 +31,8 @@
         AlternatingRowBackground="{DynamicResource AlternateRowBackground}"
         CanUserSortColumns="False"
         ClipboardCopyMode="IncludeHeader"
-        Margin="0,0,-23,0" PreparingCellForEdit="Grid_PreparingCellForEdit" >
+        Margin="0,0,-23,0" PreparingCellForEdit="Grid_PreparingCellForEdit"
+        AutomationProperties.Name="Data Grid">
         <WPFToolKit:DataGrid.Columns>
             <WPFToolKit:DataGridTemplateColumn
                 x:Name="DisplayNameColumn"
