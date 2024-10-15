@@ -76,7 +76,7 @@
                 <ColumnDefinition/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <Menu DockPanel.Dock="Top" Background="{DynamicResource ControlDefaultBackground}">
+            <Menu DockPanel.Dock="Top" Background="{DynamicResource ControlDefaultBackground}" AutomationProperties.Name="Navigation">
                 <MenuItem Header="_File">
                     <MenuItem Header="_Parent Window" Click="DoOpenParent"/>
                     <MenuItem Header="_Close" Click="DoClose"/>
@@ -111,7 +111,7 @@
                 <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
                     <Hyperlink Command="Help" CommandParameter="StartTextBox" KeyboardNavigation.IsTabStop="False">Start:</Hyperlink>
                 </TextBlock>
-                <controls:HistoryComboBox  x:Name="StartTextBox" Width="90" Enter="DoUpdate">
+                <controls:HistoryComboBox  x:Name="StartTextBox" Width="90" Enter="DoUpdate" AutomationProperties.Name="Start Time">
                     <controls:HistoryComboBox.ToolTip>
                         <TextBlock>Exclude any samples that happened before this time (MSec from start).\r\nCan paste ranges into this box.</TextBlock>
                     </controls:HistoryComboBox.ToolTip>
@@ -119,7 +119,7 @@
                 <TextBlock VerticalAlignment="Center" Margin="10,0,1,0">
                     <Hyperlink Command="Help" CommandParameter="EndTextBox" KeyboardNavigation.IsTabStop="False">End:</Hyperlink>
                 </TextBlock>
-                <controls:HistoryComboBox x:Name="EndTextBox" Width="90" Enter="DoUpdate">
+                <controls:HistoryComboBox x:Name="EndTextBox" Width="90" Enter="DoUpdate" AutomationProperties.Name="End Time">
                     <controls:HistoryComboBox.ToolTip>
                         <TextBlock>Exclude any samples that happened after this time (MSec from start).</TextBlock>
                     </controls:HistoryComboBox.ToolTip>
@@ -127,7 +127,7 @@
                 <TextBlock VerticalAlignment="Center" Margin="10,0,1,0">
                     <Hyperlink Command="Help" CommandParameter="MaxRetTextBox" KeyboardNavigation.IsTabStop="False">MaxRet:</Hyperlink>
                 </TextBlock>
-                <controls:HistoryComboBox x:Name="MaxRetTextBox" Width="80" Enter="DoUpdate">
+                <controls:HistoryComboBox x:Name="MaxRetTextBox" Width="80" Enter="DoUpdate"  AutomationProperties.Name="Max Records Returned">
                     <controls:HistoryComboBox.ToolTip>
                         <TextBlock>At most this number of records are returned (speeds things up).</TextBlock>
                     </controls:HistoryComboBox.ToolTip>
@@ -136,7 +136,7 @@
             <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="20,0,1,0">
                     <Hyperlink Command="Help" CommandParameter="FindTextBox" KeyboardNavigation.IsTabStop="False">Find:</Hyperlink>
             </TextBlock>
-            <controls:HistoryComboBox x:Name="FindTextBox" Grid.Column="2" MinWidth="100" Enter="DoFindEnter">
+            <controls:HistoryComboBox x:Name="FindTextBox" Grid.Column="2" MinWidth="100" Enter="DoFindEnter" AutomationProperties.Name="Find">
                 <controls:HistoryComboBox.ToolTip>
                     <TextBlock>Find a name in the display below (Standard .NET Regular Explressions apply, case insensitive).</TextBlock>
                 </controls:HistoryComboBox.ToolTip>
@@ -155,7 +155,7 @@
             <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="20,0,1,0">
                     <Hyperlink Command="Help" CommandParameter="ProcessFilterTextBox" KeyboardNavigation.IsTabStop="False">Process Filter:</Hyperlink>
             </TextBlock>
-            <controls:HistoryComboBox Grid.Column="1" Margin="0,3,0,3" x:Name="ProcessFilterTextBox" Enter="DoUpdate" >
+            <controls:HistoryComboBox Grid.Column="1" Margin="0,3,0,3" x:Name="ProcessFilterTextBox" Enter="DoUpdate" AutomationProperties.Name="Process Filter" >
                 <controls:HistoryComboBox.ToolTip>
                     <TextBlock>A .NET Regular expression that must match the process name field.</TextBlock>
                 </controls:HistoryComboBox.ToolTip>
@@ -163,7 +163,7 @@
             <TextBlock Grid.Column="2"  VerticalAlignment="Center" Margin="10,0,1,0">
                     <Hyperlink Command="Help" CommandParameter="TextFilterTextBox" KeyboardNavigation.IsTabStop="False">Text Filter:</Hyperlink>
             </TextBlock>
-            <controls:HistoryComboBox Grid.Column="3" Margin="0,3,0,3" x:Name="TextFilterTextBox" Enter="DoUpdate">
+            <controls:HistoryComboBox Grid.Column="3" Margin="0,3,0,3" x:Name="TextFilterTextBox" Enter="DoUpdate" AutomationProperties.Name="Text Filter">
                 <controls:HistoryComboBox.ToolTip>
                     <TextBlock>A .NET Regular expression that must match the data field.</TextBlock>
                 </controls:HistoryComboBox.ToolTip>
@@ -176,7 +176,7 @@
             <Popup Name="ColumnsToDisplayPopup" StaysOpen="false" PopupAnimation="Fade" PlacementTarget="{Binding ElementName=ListButton}" Placement="Bottom" >
                 <ListBox Name="ColumnsToDisplayListBox" SelectionMode="Extended" KeyDown="DoColumnsToDisplayListBoxKey" MouseDoubleClick="DoColumnsToDisplayListBoxDoubleClick" MaxHeight="300"/>
             </Popup>
-            <controls:HistoryComboBox Grid.Column="6" Margin="0,3,0,3" x:Name="ColumnsToDisplayTextBox" Enter="DoUpdate">
+            <controls:HistoryComboBox Grid.Column="6" Margin="0,3,0,3" x:Name="ColumnsToDisplayTextBox" Enter="DoUpdate" AutomationProperties.Name="Columns to Display">
                 <controls:HistoryComboBox.ToolTip>
                     <TextBlock>A space separated list of column names to show in the 'data' field.</TextBlock>
                 </controls:HistoryComboBox.ToolTip>
@@ -207,10 +207,12 @@
                     </TextBlock>
 
                     <TextBox Name="EventTypeFilterTextBox" Grid.Column="2" TextChanged="DoEventTypeFilterTextBoxChanged"
-                             ToolTip="Restrict the event types shown to those containing text typed here."/>
+                             ToolTip="Restrict the event types shown to those containing text typed here."
+                             AutomationProperties.Name="Event Type Filter"/>
                 </Grid>
                 <ListBox Name="EventTypes" SelectionMode="Extended" KeyDown="DoEventTypesKey" MouseDoubleClick="DoUpdate"
-                         ToolTip="Double click, ctrl-Click and shift-Click to select the events you wish to see."/>
+                         ToolTip="Double click, ctrl-Click and shift-Click to select the events you wish to see."
+                         AutomationProperties.Name="Event Types"/>
             </DockPanel>
             <GridSplitter Grid.Column="0" Width="3" />
             <Grid Grid.Column="1">
@@ -229,14 +231,16 @@
                     <TextBox Grid.Column="1" Name="Histogram" Height="20" Margin="3,0,0,0"  Background="Transparent"
                              SelectionChanged="DoHistogramSelectionChanged"  Grid.Row="0" IsReadOnly="True"
                              FontFamily="Courier New" FontSize="10"
-                             ToolTip="Shows how the frequency of the selected events vary over time."/>
+                             ToolTip="Shows how the frequency of the selected events vary over time."
+                             AutomationProperties.Name="Histogram"/>
                 </Grid>
                 <WPFToolKit:DataGrid Grid.Row="1" Name="Grid"
                     AutoGenerateColumns="False"
                     ToolTip="Click on Update button to update."
                     SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
                     SelectedCellsChanged="SelectedCellsChanged"
-                    AlternatingRowBackground="{DynamicResource AlternateRowBackground}" >
+                    AlternatingRowBackground="{DynamicResource AlternateRowBackground}" 
+                    AutomationProperties.Name="Events Table">
                     <WPFToolKit:DataGrid.Columns>
                         <WPFToolKit:DataGridTextColumn
                         x:Name="EventNameColumn"

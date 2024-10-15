@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
@@ -347,7 +348,8 @@ namespace PerfView
             StackPanel reason = new StackPanel();
             {
                 reason.AddTextBlock("GC Reason ", "GCReason", OnHelp, 3, 2);
-                reason.AddButton("Select All", 60, ReasonSelectAll, 3, 2);
+                var selectAllReasonButton = reason.AddButton("Select All", 60, ReasonSelectAll, 3, 2);
+                AutomationProperties.SetName(selectAllReasonButton, "Select all GC reasons");
 
                 m_inducedBlocking = reason.AddCheckBox(true, "Induced Blocking", 3, 2, UpdateEvents);
                 m_inducedNonblocking = reason.AddCheckBox(true, "Induced Nonblocking", 3, 0, UpdateEvents);
@@ -359,7 +361,8 @@ namespace PerfView
             StackPanel gen = new StackPanel();
             {
                 gen.AddTextBlock("Generation ", "Generation", OnHelp, 3, 2);
-                gen.AddButton("Select All", 60, GenerationSelectAll, 3, 2);
+                var selectAllGenerationsButton = gen.AddButton("Select All", 60, GenerationSelectAll, 3, 2);
+                AutomationProperties.SetName(selectAllGenerationsButton, "Select all generations");
 
                 m_g0 = gen.AddCheckBox(true, "0", 3, 0, UpdateEvents);
                 m_g1 = gen.AddCheckBox(true, "1", 3, 0, UpdateEvents);

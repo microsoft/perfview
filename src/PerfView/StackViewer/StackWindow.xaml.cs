@@ -690,28 +690,20 @@ namespace PerfView
                 name = node.Name;
             }
 
-            CallerCalleeView.SetFocus(name, m_callTree);
-
-            m_calleesView.SetRoot(AggregateCallTreeNode.CalleeTree(node));
             if (IsMemoryWindow)
             {
                 CalleesTitle.Text = "Objects that are referred to by " + node.Name;
-            }
-            else
-            {
-                CalleesTitle.Text = "Methods that are called by " + node.Name;
-            }
-
-            m_callersView.SetRoot(AggregateCallTreeNode.CallerTree(node));
-
-            if (IsMemoryWindow)
-            {
                 CallersTitle.Text = "Objects that refer to " + node.Name;
             }
             else
             {
+                CalleesTitle.Text = "Methods that are called by " + node.Name;
                 CallersTitle.Text = "Methods that call " + node.Name;
             }
+
+            CallerCalleeView.SetFocus(name, m_callTree);
+            m_calleesView.SetRoot(AggregateCallTreeNode.CalleeTree(node));
+            m_callersView.SetRoot(AggregateCallTreeNode.CallerTree(node));
 
             DataContext = node;
             return true;

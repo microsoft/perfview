@@ -98,8 +98,7 @@ SOFTWARE.
         <Setter Property="Control.Template">
             <Setter.Value>
                 <ControlTemplate>
-                    <Rectangle StrokeDashArray="1 2"
-                               StrokeThickness="1"
+                    <Rectangle StrokeThickness="1"
                                Stroke="{StaticResource ControlBrightPrimaryColourBorderBrush}"
                                SnapsToDevicePixels="true"
                                Margin="2" />
