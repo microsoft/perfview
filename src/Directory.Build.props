@@ -109,4 +109,9 @@
     <AddSyntheticProjectReferencesForSolutionDependencies>false</AddSyntheticProjectReferencesForSolutionDependencies>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PublishRepositoryUrl>false</PublishRepositoryUrl>
+    <EmbedAllSources>true</EmbedAllSources>
+  </PropertyGroup>
+
 </Project>
