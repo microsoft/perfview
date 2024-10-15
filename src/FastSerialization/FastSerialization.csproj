@@ -18,7 +18,6 @@
 
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);GROWABLEARRAY_PUBLIC;STREAMREADER_PUBLIC;FASTSERIALIZATION_PUBLIC</DefineConstants>
-    <DebugType>portable</DebugType>
   </PropertyGroup>
 
   <PropertyGroup>

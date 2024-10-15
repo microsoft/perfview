@@ -40,10 +40,6 @@
     </PropertyGroup>
   </Target>
 
-  <PropertyGroup>
-    <DebugType>portable</DebugType>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="$(AzureIdentityVersion)" />
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="$(MicrosoftIdentityModelJsonWebTokensVersion)" />
