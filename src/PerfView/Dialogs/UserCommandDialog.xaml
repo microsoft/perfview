@@ -4,7 +4,7 @@
         xmlns:src="clr-namespace:PerfView"
         xmlns:controls="clr-namespace:Controls"
         Style="{DynamicResource CustomWindowStyle}"
-        Background="{StaticResource ControlDefaultBackground}"
+        Background="{StaticResource ControlDarkerBackground}"
         Title="Executing User Defined Command" Height="116" Width="669">
     <Window.CommandBindings>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp" />
