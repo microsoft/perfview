@@ -114,7 +114,7 @@
             <TextBlock Grid.Column="8" VerticalAlignment="Center" Margin="5,0,2,0" KeyboardNavigation.IsTabStop="False" ToolTip="This text is attached to the Mark event when the 'Mark' button is pressed." >
                 <Hyperlink Command="Help" CommandParameter="MarkTextBox">Mark Text:</Hyperlink>
             </TextBlock>
-            <TextBox Grid.Column="9" Name="MarkTextBox" VerticalAlignment="Center" Width="auto" Margin="5,0" KeyDown="MarkTextKeyDown" AutomationProperties.Name="Mark Text" />
+            <TextBox Grid.Column="9" Name="MarkTextBox" VerticalAlignment="Center" Width="150" Margin="5,0" KeyDown="MarkTextKeyDown" AutomationProperties.Name="Mark Text" />
             <Button Name="MarkButton" Grid.Column="10" Margin="5,0" Padding="5,1" Width="auto" VerticalAlignment="Center"
                     ToolTip="Click this button to enter a mark event into the data collected."
                     Click="MarkButtonClick">Mark</Button>
