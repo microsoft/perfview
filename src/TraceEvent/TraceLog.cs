@@ -3604,7 +3604,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // As of TraceLog version 74, all StreamLabels are 64-bit.  See IFastSerializableVersion for details.
             Deserializer deserializer = new Deserializer(new PinnedStreamReader(etlxFilePath, SerializationSettings.Default, 0x10000), etlxFilePath);
-            deserializer.TypeResolver = typeName => System.Type.GetType(typeName);  // resolve types in this assembly (and mscorlib)
 
             // when the deserializer needs a TraceLog we return the current instance.  We also assert that
             // we only do this once.
@@ -3639,18 +3638,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 return new DynamicTraceEventData(null, 0, 0, null, Guid.Empty, 0, null, Guid.Empty, null);
             });
 
-            // when the serializer needs any TraceEventParser class, we assume that its constructor
-            // takes an argument of type TraceEventSource and that you can pass null to make an
-            // 'empty' parser to fill in with FromStream.
-            deserializer.RegisterDefaultFactory(delegate (Type typeToMake)
-            {
-                if (typeToMake.GetTypeInfo().IsSubclassOf(typeof(TraceEventParser)))
-                {
-                    return (IFastSerializable)Activator.CreateInstance(typeToMake, new object[] { null });
-                }
-
-                return null;
-            });
+            deserializer.RegisterType(typeof(KernelTraceEventParserState));
+            deserializer.RegisterType(typeof(KernelToUserDriveMapping));
+            deserializer.RegisterType(typeof(DynamicTraceEventParserState));
+            deserializer.RegisterType(typeof(ExternalTraceEventParserState));
+            deserializer.RegisterType(typeof(ClrTraceEventParserState));
+            deserializer.RegisterType(typeof(TraceCodeAddresses.ILToNativeMap));
 
             IFastSerializable entry = deserializer.GetEntryObject();
 

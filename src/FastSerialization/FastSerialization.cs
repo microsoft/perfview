@@ -105,47 +105,21 @@ namespace FastSerialization
 #endif
     sealed class SerializationSettings
     {
-        private static readonly string[] DefaultAllowedTypeNames =
-        {
-            "FastSerialization.SerializationType"
-        };
-
         internal StreamLabelWidth StreamLabelWidth { get; }
 
-        internal HashSet<string> AllowedTypeNames { get; }
-
         public static SerializationSettings Default { get; } = new SerializationSettings(
-            StreamLabelWidth.EightBytes, new HashSet<string>(DefaultAllowedTypeNames));
+            StreamLabelWidth.EightBytes);
 
-        public SerializationSettings SetStreamLabelWith(StreamLabelWidth width)
+        public SerializationSettings SetStreamLabelWidth(StreamLabelWidth width)
         {
             return new SerializationSettings(
-                width,
-                AllowedTypeNames);
-        }
-
-        public SerializationSettings SetAllowedTypeNames(string[] allowedTypeNames)
-        {
-            HashSet<string> allowedTypesHash = new HashSet<string>(DefaultAllowedTypeNames);
-            allowedTypesHash.UnionWith(allowedTypeNames);
-
-            return new SerializationSettings(
-                StreamLabelWidth,
-                allowedTypesHash);
-
+                width);
         }
 
         private SerializationSettings(
-            StreamLabelWidth streamLabelWidth,
-            HashSet<string> allowedTypeNames)
+            StreamLabelWidth streamLabelWidth)
         {
             StreamLabelWidth = streamLabelWidth;
-            AllowedTypeNames = allowedTypeNames;
-        }
-
-        internal bool AllowedTypesContains(string fullName)
-        {
-            return AllowedTypeNames.Contains(fullName);
         }
     }
 
@@ -1676,38 +1650,82 @@ namespace FastSerialization
         public String Name { get; private set; }
 
         /// <summary>
-        /// If set this function is set, then it is called whenever a type name from the serialization
-        /// data is encountered.  It is your you then need to look that up.  If it is not present 
-        /// it uses Type.GetType(string) which only checks the current assembly and mscorlib. 
+        /// Called when <code>Deserializer</code> encounters a type that is not registered, allowing the implementation
+        /// to return a factory delegate to be cached and used for subsequent encounters.
         /// </summary>
-        public Func<string, Type> TypeResolver { get; set; }
+        public Func<string, Func<IFastSerializable>> OnUnregisteredType { get; set; }
 
         /// <summary>
-        /// For every IFastSerializable object being deserialized, the Deserializer needs to create 'empty' objects 
-        /// that 'FromStream' is invoked on.  The Deserializer gets these 'empty' objects by calling a 'factory'
-        /// delegate for that type.   Thus all types being deserialized must have a factory.   
+        /// Registers a creation factory for a type.
         /// 
-        /// RegisterFactory registers such a factory for particular 'type'.  
+        /// When the <code>Deserializer</code>encounters a serialized type, it will look for a registered factory or type registration
+        /// so that it knows how to construct an empty instance of the type that can be filled.  All non-primitive types
+        /// must either be registered by calling RegisterFactory or RegisterType.
         /// </summary>
         public void RegisterFactory(Type type, Func<IFastSerializable> factory)
         {
             factories[type.FullName] = factory;
         }
+
+        /// <summary>
+        /// Registers a creation factory for a type name.
+        /// 
+        /// When the <code>Deserializer</code>encounters a serialized type, it will look for a registered factory or type registration
+        /// so that it knows how to construct an empty instance of the type that can be filled.  All non-primitive types
+        /// must either be registered by calling RegisterFactory or RegisterType.
+        /// </summary>
         public void RegisterFactory(string typeName, Func<IFastSerializable> factory)
         {
             factories[typeName] = factory;
         }
 
         /// <summary>
-        /// For every IFastSerializable object being deserialized, the Deserializer needs to create 'empty' objects 
-        /// that 'FromStream' is invoked on.  The Deserializer gets these 'empty' objects by calling a 'factory'
-        /// delegate for that type.   Thus all types being deserialized must have a factory.   
+        /// Registers a type that can be created by instantiating the parameterless constructor.
         /// 
-        /// RegisterDefaultFactory registers a factory that is passed a type parameter and returns a new IFastSerialable object. 
+        /// When the <code>Deserializer</code>encounters a serialized type, it will look for a registered factory or type registration
+        /// so that it knows how to construct an empty instance of the type that can be filled.  All non-primitive types
+        /// must either be registered by calling RegisterFactory or RegisterType.
         /// </summary>
-        public void RegisterDefaultFactory(Func<Type, IFastSerializable> defaultFactory)
+        public void RegisterType(Type type)
         {
-            this.defaultFactory = defaultFactory;
+            RegisterFactory(type, () =>
+            {
+                return CreateDefault(type);
+            });
+        }
+
+        /// <summary>
+        /// Registers a type name that can be created by instantiating the parameterless constructor.
+        /// 
+        /// When the <code>Deserializer</code>encounters a serialized type, it will look for a registered factory or type registration
+        /// so that it knows how to construct an empty instance of the type that can be filled.  All non-primitive types
+        /// must either be registered by calling RegisterFactory or RegisterType.
+        /// </summary>
+        public void RegisterType(string typeName)
+        {
+            RegisterFactory(typeName, () =>
+            {
+                IFastSerializable instance = null;
+                Type type = Type.GetType(typeName);
+                if (type != null)
+                {
+                    instance = CreateDefault(type);
+                }
+                return instance;
+            });
+        }
+
+        private static IFastSerializable CreateDefault(Type type)
+        {
+            try
+            {
+                return (IFastSerializable)Activator.CreateInstance(type);
+            }
+            catch (MissingMethodException)
+            {
+                throw new SerializationException(
+                    $"Unable to create an object of type {type.FullName}. It must either have a parameterless constructor or have been registered with the deserializer via RegisterFactory.");
+            }
         }
 
         // For FromStream method bodies, reading tagged values (for post V1 field additions)
@@ -2030,49 +2048,31 @@ namespace FastSerialization
 
         internal Func<IFastSerializable> GetFactory(string fullName)
         {
-            Func<IFastSerializable> ret;
-            if (factories.TryGetValue(fullName, out ret))
+            // Check for a registered factory.
+            Func<IFastSerializable> factory = null;
+            if (factories.TryGetValue(fullName, out factory))
             {
-                return ret;
+                return factory;
             }
 
-            Type type;
-            if (TypeResolver != null)
+            // If there is not a registered factory, give the implementation of IFastSerializable an opportunity to create a factory.
+            if (OnUnregisteredType != null)
             {
-                type = TypeResolver(fullName);
-            }
-            else
-            {
-                type = Type.GetType(fullName);
-            }
-
-            if (type == null)
-            {
-                throw new TypeLoadException("Could not find type " + fullName);
+                factory = OnUnregisteredType(fullName);
+                if (factory != null)
+                {
+                    // Save the factory for future encounters of this type name.
+                    RegisterFactory(fullName, factory);
+                }
             }
 
-            return delegate
+            if (factory == null)
             {
-                // If we have a default factory, use it.  
-                if (defaultFactory != null)
-                {
-                    IFastSerializable instance = defaultFactory(type);
-                    if (instance != null)
-                    {
-                        return instance;
-                    }
-                }
-                // Factory of last resort.  
-                try
-                {
-                    return (IFastSerializable)Activator.CreateInstance(type);
-                }
-                catch (MissingMethodException)
-                {
-                    throw new SerializationException("Failure deserializing " + type.FullName +
-                        ".\r\nIt must either have a parameterless constructor or been registered with the serializer.");
-                }
-            };
+                throw new TypeLoadException(
+                    $"Could not create an instance of type {fullName}.  The type must be registered with the deserializer via a call to RegisterFactory or RegisterType.");
+            }
+
+            return factory;
         }
 
         private void FindEndTag(SerializationType type, IFastSerializable objectBeingDeserialized)
@@ -2210,7 +2210,6 @@ namespace FastSerialization
         /// </summary>
         internal bool deferForwardReferences;
         private Dictionary<string, Func<IFastSerializable>> factories;
-        private Func<Type, IFastSerializable> defaultFactory;
         #endregion
     };
 
