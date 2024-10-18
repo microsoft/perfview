@@ -310,6 +310,7 @@ namespace PerfView
                 Title = "Collecting data over a user specified interval";
                 CommandToRunTextBox.IsEnabled = false;
                 CommandToRunTextBox.Visibility = Visibility.Hidden;
+                CommandToRunLabel.IsEnabled = false;
                 CommandToRunLabel.Visibility = Visibility.Hidden;
                 FocusProcessCheckBox.Visibility = Visibility.Visible;
                 FocusProcessTextBox.Visibility = Visibility.Visible;
@@ -345,6 +346,7 @@ namespace PerfView
                 FocusProcessCheckBox.Visibility = Visibility.Hidden;
                 FocusProcessTextBox.Visibility = Visibility.Hidden;
                 FocusProcessLabel.Visibility = Visibility.Hidden;
+                FocusProcessLabel.IsEnabled = false;
 
                 CommandToRunTextBox.Focus();
             }

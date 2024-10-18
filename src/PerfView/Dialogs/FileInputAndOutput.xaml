@@ -27,7 +27,7 @@
                 <Hyperlink Command="Help" CommandParameter="ProcessDumpTextBox">Help</Hyperlink>
         </TextBlock>
 
-        <RichTextBox Grid.Row="0" Grid.Column="1" Margin="0,5,5,0" IsReadOnly="True" IsDocumentEnabled="True">
+        <RichTextBox Grid.Row="0" Grid.Column="1" Margin="0,5,5,0" IsReadOnly="True" IsDocumentEnabled="True" AutomationProperties.Name="Disk Size Analysis Help">
             <RichTextBox.Document>
                 <FlowDocument>
                     <Paragraph Name="InstructionParagraph">
@@ -43,15 +43,16 @@
 
         <TextBlock Grid.Row="2" Grid.Column="0"  VerticalAlignment="Center" KeyboardNavigation.IsTabStop="False"
                    Text="Input File:" ToolTip="The file/directory to open for analysis"/>
-        <TextBox  Grid.Row="2" Grid.Column="1" Margin="0,0,5,0" Name="InputFileName" VerticalAlignment="Center" PreviewKeyDown="InputFileKeyDown" TextChanged="InputFileTextChanged" />
+        <TextBox  Grid.Row="2" Grid.Column="1" Margin="0,0,5,0" Name="InputFileName" VerticalAlignment="Center" PreviewKeyDown="InputFileKeyDown" TextChanged="InputFileTextChanged" AutomationProperties.Name="Input File" />
 
         <ListBox Grid.Row="3" Grid.Column="2" KeyboardNavigation.TabIndex="1" Margin="0,5,5,15" MinHeight="80" Name="Files"
                  PreviewKeyDown="ListBoxKeyDown" MouseDoubleClick="FilesDoubleClick" FontFamily="Courier New"
-                 ToolTip="This shows all the files/directories that match the prefix in the InputFile text box."/>
+                 ToolTip="This shows all the files/directories that match the prefix in the InputFile text box."
+                 AutomationProperties.Name="Files"/>
 
         <TextBlock Grid.Row="4" Grid.Column="0"  VerticalAlignment="Center" KeyboardNavigation.IsTabStop="False"
             Text="Output File:" ToolTip="The file name to put the resulting analysis."/>
-        <TextBox  Grid.Row="4"  Grid.Column="1" Margin="0,0,5,0" Name="OutputFileName" VerticalAlignment="Center"  />
+        <TextBox  Grid.Row="4"  Grid.Column="1" Margin="0,0,5,0" Name="OutputFileName" VerticalAlignment="Center" AutomationProperties.Name="Output File"  />
 
         <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" FlowDirection="RightToLeft">
             <Button Margin="10,5,10,5" Width="80" Content="OK" Click="OKClicked"/>

@@ -7302,9 +7302,7 @@
         and the other is JSON based, and neither of them will be surprising, they are simply the 'obvious' encoding of the
         data that the stack viewer needs in those formats.   For example here is a sample of the .perfView.xml format
     </p>
-    <dl>
-        <dd>
-            <pre>
+    <pre>
         &lt;StackSource&gt;
           &lt;Samples&gt;
            &lt;Sample Time="10" Metric="10"&gt; 
@@ -7316,6 +7314,7 @@
            &lt;/Sample&gt;
            &lt;Sample Time="20" Metric="10"&gt; 
                 Func3 
+
                 Func 
                 Main 
            &lt;/Sample&gt;
@@ -7332,9 +7331,7 @@
            &lt;/Sample&gt;
           &lt;/Samples&gt;
          &lt;/StackSource&gt;
-            </pre>
-        </dd>
-    </dl>
+    </pre>
     <p>
         You can see that the format can be very straightforward.   There is a 'StackSource' element that has a member 'Samples'
         which in turn contains a list of Samples, each of which has a time and a metric (both of these are optional, time defaults
@@ -7349,9 +7346,7 @@
         the stack.   Here is an example.   Like the previous example you can cut and paste into a *.perfView.json file and
         open it in PerfView, to see the data in the stack viewer.
     </p>
-    <dl>
-        <dd>
-            <pre>
+    <pre>
     {
       "StackSource" :  {
         "Samples" : [
@@ -7388,9 +7383,7 @@
         ]
       }
     }
-</pre>
-        </dd>
-    </dl>
+    </pre>
     <h3>Advanced .perfView.xml Format</h3>
     <p>
         The simple format is nice because it is so easy to explain, but it is very inefficient.  You can see the each stack

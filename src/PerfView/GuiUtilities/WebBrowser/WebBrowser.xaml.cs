@@ -1,8 +1,11 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Security.Policy;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Web.WebView2.Wpf;
 
 
 namespace PerfView.GuiUtilities
@@ -23,9 +26,10 @@ namespace PerfView.GuiUtilities
 
         public bool CanGoForward { get { return Browser.CanGoForward; } }
         public bool CanGoBack { get { return Browser.CanGoBack; } }
-        public WebBrowser Browser { get { return _Browser; } }
+        public WebView2 Browser { get { return _Browser; } }
+
         /// <summary>
-        /// LIke Broswer.Navigate, but you don't have to be on the GUI thread to use it.  
+        /// LIke Browser.Navigate, but you don't have to be on the GUI thread to use it.  
         /// </summary>
         public void Navigate(string uri)
         {
@@ -39,17 +43,9 @@ namespace PerfView.GuiUtilities
         /// <summary>
         /// A simple helper wrapper that translates some exceptions nicely.  
         /// </summary>
-        public static void Navigate(WebBrowser browser, string url)
+        public static void Navigate(WebView2 browser, string url)
         {
-            try
-            {
-                browser.Navigate(url);
-            }
-            catch (COMException)
-            {
-                // This can happen on Win10 systems without IE installed.  
-                throw new ApplicationException("Error Trying to open a Web Browser.   Is Internet Explorer Installed?");
-            }
+            browser.Source = new Uri(url);
         }
 
         #region private
@@ -60,6 +56,7 @@ namespace PerfView.GuiUtilities
                 Browser.GoBack();
             }
         }
+
         private void ForwardClick(object sender, RoutedEventArgs e)
         {
             if (Browser.CanGoForward)
@@ -67,6 +64,7 @@ namespace PerfView.GuiUtilities
                 Browser.GoForward();
             }
         }
+
         /// <summary>
         /// We hide rather than close the editor.  
         /// </summary>
@@ -78,21 +76,6 @@ namespace PerfView.GuiUtilities
                 e.Cancel = true;
             }
         }
-        /// <summary>
-        /// The browser looses where it is when it resizes, which is very confusing to people
-        /// Thus force a resync when the window resizes.  
-        /// </summary>
-        private void Browser_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (m_notFirst)
-            {
-                Browser.Navigate(Browser.Source);
-            }
-
-            m_notFirst = true;
-        }
-
-        private bool m_notFirst;
         #endregion 
     }
 }

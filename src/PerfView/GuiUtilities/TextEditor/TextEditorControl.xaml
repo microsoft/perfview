@@ -27,7 +27,7 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
-            <Menu Grid.Column="0" Background="Transparent" VerticalAlignment="Center">
+            <Menu Grid.Column="0" Background="Transparent" VerticalAlignment="Center" AutomationProperties.Name="Navigation">
                 <MenuItem Header="_File" >
                     <MenuItem Command="Open" Header="_Open"/>
                     <MenuItem Command="Save" Header="_Save"/>
@@ -39,7 +39,7 @@
             <Button Grid.Column="2" Margin="0,2,5,2" FontSize="8" FontWeight="Bold" Content="A" Click="DecreaseFont_Click"  ToolTip="Decrease the default Font size."/>
             <TextBlock Grid.Column="3" Text="Find:" VerticalAlignment="Center"/>
             <src:HistoryComboBox Grid.Column="4" x:Name="FindTextBox" Width="200" KeyDown="FindTextBoxKeyDown" Margin="5,2,0,2"
-                     ToolTip="A .NET regular expression to find. (Ctrl-F)" IsEditable="True" />
+                     ToolTip="A .NET regular expression to find. (Ctrl-F)" IsEditable="True" AutomationProperties.Name="Find"/>
             <Button Grid.Column="5" Content="Next" Margin="3,2,5,2"
                     Command="{x:Static src:TextEditorControl.FindNextCommand}"
                     CommandTarget="{Binding ElementName=Body}"
@@ -47,7 +47,8 @@
                     />
         </Grid>
         <RichTextBox Name="Body" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                     AcceptsReturn="True" IsDocumentEnabled="True" FontFamily="Courier New">
+                     AcceptsReturn="True" IsDocumentEnabled="True" FontFamily="Courier New"
+                     AutomationProperties.Name="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=(AutomationProperties.Name)}">
             <RichTextBox.ContextMenu>
                 <ContextMenu>
                     <MenuItem Command="Find" />

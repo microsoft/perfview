@@ -13,7 +13,7 @@
             <ColumnDefinition Width="auto"/>
             <ColumnDefinition Width="auto"/>
         </Grid.ColumnDefinitions>
-        <TextBox Grid.Column="0" Name="m_StatusMessage" ContextMenu="{x:Null}" IsReadOnly="True" VerticalScrollBarVisibility="Auto">
+        <TextBox Grid.Column="0" Name="m_StatusMessage" ContextMenu="{x:Null}" IsReadOnly="True" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Status Message">
             <TextBox.Triggers>
                 <EventTrigger RoutedEvent="perfview:StatusBar.HighlightMessage">
                     <EventTrigger.Actions>
