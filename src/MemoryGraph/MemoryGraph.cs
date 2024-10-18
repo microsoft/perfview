@@ -31,8 +31,7 @@ namespace Graphs
         }
         public static MemoryGraph ReadFromBinaryFile(string inputFileName)
         {
-            Deserializer deserializer = new Deserializer(inputFileName);
-            deserializer.TypeResolver = typeName => System.Type.GetType(typeName);  // resolve types in this assembly (and mscorlib)
+            Deserializer deserializer = new Deserializer(inputFileName, SerializationSettings.Default);
             deserializer.RegisterFactory(typeof(MemoryGraph), delegate () { return new MemoryGraph(1); });
             deserializer.RegisterFactory(typeof(Graphs.Module), delegate () { return new Graphs.Module(0); });
             return (MemoryGraph)deserializer.GetEntryObject();
