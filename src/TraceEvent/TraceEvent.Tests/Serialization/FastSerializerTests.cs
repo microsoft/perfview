@@ -90,11 +90,48 @@ namespace TraceEventTests
             Assert.Equal(SampleSerializableType.ConstantValue, serializable.BeforeValue);
             Assert.Equal(SampleSerializableType.ConstantValue, serializable.AfterValue);
         }
+
+        [Fact]
+        public void FailToDeserializeUnregisteredType()
+        {
+            SerializationSettings settings = SerializationSettings.Default;
+
+            SampleSerializableType sample = new SampleSerializableType(SampleSerializableType.ConstantValue);
+            MemoryStream ms = new MemoryStream();
+            Serializer s = new Serializer(new IOStreamStreamWriter(ms, settings, leaveOpen: true), sample);
+            s.Dispose();
+
+            Deserializer d = new Deserializer(new PinnedStreamReader(ms, settings), "name");
+            Assert.Throws<TypeLoadException>(() => d.ReadObject());
+        }
+
+        [Fact]
+        public void SuccessfullyDeserializeRegisteredType()
+        {
+            SerializationSettings settings = SerializationSettings.Default
+                .SetStreamLabelWidth(StreamLabelWidth.EightBytes);
+
+            SampleSerializableType sample = new SampleSerializableType(SampleSerializableType.ConstantValue);
+            MemoryStream ms = new MemoryStream();
+            Serializer s = new Serializer(new IOStreamStreamWriter(ms, settings, leaveOpen: true), sample);
+            s.Dispose();
+
+            Deserializer d = new Deserializer(new PinnedStreamReader(ms, settings), "name");
+            d.RegisterType(typeof(SampleSerializableType));
+            SampleSerializableType serializable = (SampleSerializableType)d.ReadObject();
+            Assert.Equal(SampleSerializableType.ConstantValue, serializable.BeforeValue);
+            Assert.Equal(SampleSerializableType.ConstantValue, serializable.AfterValue);
+        }
     }
 
     public sealed class SampleSerializableType : IFastSerializable
     {
         public const int ConstantValue = 42;
+
+        public SampleSerializableType()
+            : this(0)
+        {
+        }
 
         public SampleSerializableType(int value)
         {

@@ -1694,27 +1694,6 @@ namespace FastSerialization
             });
         }
 
-        /// <summary>
-        /// Registers a type name that can be created by instantiating the parameterless constructor.
-        /// 
-        /// When the <code>Deserializer</code>encounters a serialized type, it will look for a registered factory or type registration
-        /// so that it knows how to construct an empty instance of the type that can be filled.  All non-primitive types
-        /// must either be registered by calling RegisterFactory or RegisterType.
-        /// </summary>
-        public void RegisterType(string typeName)
-        {
-            RegisterFactory(typeName, () =>
-            {
-                IFastSerializable instance = null;
-                Type type = Type.GetType(typeName);
-                if (type != null)
-                {
-                    instance = CreateDefault(type);
-                }
-                return instance;
-            });
-        }
-
         private static IFastSerializable CreateDefault(Type type)
         {
             try
