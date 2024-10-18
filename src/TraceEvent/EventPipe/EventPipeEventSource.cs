@@ -33,7 +33,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         public EventPipeEventSource(Stream stream)
-            : this(new PinnedStreamReader(stream, alignment: StreamReaderAlignment.OneByte, settings: SerializationSettings.Default.SetStreamLabelWidth(StreamLabelWidth.FourBytes)), "stream", true)
+            : this(new PinnedStreamReader(stream, settings: SerializationSettings.Default.SetStreamLabelWidth(StreamLabelWidth.FourBytes).SetStreamReaderAlignment(StreamReaderAlignment.OneByte)), "stream", true)
         {
         }
 

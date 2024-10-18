@@ -672,10 +672,10 @@ namespace FastSerialization
         /// Create a new IOStreamStreamReader from the given System.IO.Stream.   Optionally you can specify the size of the read buffer
         /// The stream will be closed by the IOStreamStreamReader when it is closed.  
         /// </summary>
-        public IOStreamStreamReader(Stream inputStream, SerializationSettings settings, int bufferSize = defaultBufferSize, bool leaveOpen = false, StreamReaderAlignment alignment = StreamReaderAlignment.EightBytes)
-            : base(new byte[bufferSize + (int)alignment], 0, 0, settings)
+        public IOStreamStreamReader(Stream inputStream, SerializationSettings settings, int bufferSize = defaultBufferSize, bool leaveOpen = false)
+            : base(new byte[bufferSize + (int)settings.StreamReaderAlignment], 0, 0, settings)
         {
-            align = (int)alignment;
+            align = (int)settings.StreamReaderAlignment;
             Debug.Assert(bufferSize % align == 0);
             this.inputStream = inputStream;
             this.leaveOpen = leaveOpen;
@@ -934,8 +934,8 @@ namespace FastSerialization
         /// Create a new PinnedStreamReader that gets its data from a given System.IO.Stream.  You can optionally set the size of the read buffer.  
         /// The stream will be closed by the PinnedStreamReader when it is closed.  
         /// </summary>
-        public PinnedStreamReader(Stream inputStream, SerializationSettings settings, int bufferSize = defaultBufferSize, StreamReaderAlignment alignment = StreamReaderAlignment.EightBytes)
-            : base(inputStream, settings, bufferSize, alignment: alignment)
+        public PinnedStreamReader(Stream inputStream, SerializationSettings settings, int bufferSize = defaultBufferSize)
+            : base(inputStream, settings, bufferSize)
         {
             // Pin the array
             pinningHandle = System.Runtime.InteropServices.GCHandle.Alloc(bytes, System.Runtime.InteropServices.GCHandleType.Pinned);

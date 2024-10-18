@@ -107,19 +107,31 @@ namespace FastSerialization
     {
         internal StreamLabelWidth StreamLabelWidth { get; }
 
+        internal StreamReaderAlignment StreamReaderAlignment { get; }
+
         public static SerializationSettings Default { get; } = new SerializationSettings(
-            StreamLabelWidth.EightBytes);
+            StreamLabelWidth.EightBytes,
+            StreamReaderAlignment.EightBytes);
 
         public SerializationSettings SetStreamLabelWidth(StreamLabelWidth width)
         {
             return new SerializationSettings(
-                width);
+                width,
+                StreamReaderAlignment);
+        }
+
+        public SerializationSettings SetStreamReaderAlignment(StreamReaderAlignment alignment)
+        {
+            return new SerializationSettings(
+                StreamLabelWidth,
+                alignment);
         }
 
         private SerializationSettings(
-            StreamLabelWidth streamLabelWidth)
+            StreamLabelWidth streamLabelWidth, StreamReaderAlignment streamReaderAlignment)
         {
             StreamLabelWidth = streamLabelWidth;
+            StreamReaderAlignment = streamReaderAlignment;
         }
     }
 
