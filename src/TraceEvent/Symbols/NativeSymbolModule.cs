@@ -1388,6 +1388,10 @@ tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/V
                                         break;
                                 }
                                 return sb.ToString();
+                            case BasicType.btChar16:
+                                return "char16_t";
+                            case BasicType.btChar32:
+                                return "char32_t";
                             case BasicType.btFloat:
                                 return symbol.length == 4 ? "float" : "double";
                             default:
