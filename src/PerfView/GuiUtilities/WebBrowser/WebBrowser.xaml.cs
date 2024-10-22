@@ -1,11 +1,11 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
-using System.Security.Policy;
-using System.Threading.Tasks;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
+using Utilities;
 
 
 namespace PerfView.GuiUtilities
@@ -19,6 +19,7 @@ namespace PerfView.GuiUtilities
         {
             InitializeComponent();
         }
+
         /// <summary>
         /// If set simply hide the window rather than closing it when the user requests closing. 
         /// </summary>
@@ -28,24 +29,33 @@ namespace PerfView.GuiUtilities
         public bool CanGoBack { get { return Browser.CanGoBack; } }
         public WebView2 Browser { get { return _Browser; } }
 
-        /// <summary>
-        /// LIke Browser.Navigate, but you don't have to be on the GUI thread to use it.  
-        /// </summary>
-        public void Navigate(string uri)
+        public static readonly DependencyProperty SourceProperty = DependencyProperty.Register(
+            nameof(Source),
+            typeof(Uri),
+            typeof(WebBrowser),
+            new PropertyMetadata(OnSourceChanged));
+
+        public Uri Source
         {
-            // Make sure we do it on the GUI thread.
-            Dispatcher.BeginInvoke((Action)delegate
-            {
-                WebBrowserWindow.Navigate(Browser, uri);
-            });
+            get { return (Uri)GetValue(SourceProperty); }
+            set { SetValue(SourceProperty, value); }
+        }
+
+        private static void OnSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            (d as WebBrowserWindow)?.Navigate();
         }
 
         /// <summary>
-        /// A simple helper wrapper that translates some exceptions nicely.  
+        /// If WebView2 has been initialized, navigate to current source. If WebView2 is not initialized yet, it will 
+        /// be navigated to once initialization has completed.
         /// </summary>
-        public static void Navigate(WebView2 browser, string url)
+        private void Navigate()
         {
-            browser.Source = new Uri(url);
+            if (Source != null && _Browser.CoreWebView2 != null)
+            {
+                _Browser.CoreWebView2.Navigate(Source.ToString());
+            }
         }
 
         #region private
@@ -76,6 +86,28 @@ namespace PerfView.GuiUtilities
                 e.Cancel = true;
             }
         }
-        #endregion 
+
+        /// <summary>
+        /// Ensure that we configure the WebView2 environment to specify where the user data is stored.
+        /// </summary>
+        private void Browser_Loaded(object sender, RoutedEventArgs e)
+        {
+            var userDataFolder = Path.Combine(SupportFiles.SupportFileDir, "WebView2");
+            Directory.CreateDirectory(userDataFolder);
+            var environmentAwaiter = CoreWebView2Environment
+                .CreateAsync(userDataFolder: userDataFolder)
+                .ConfigureAwait(true)
+                .GetAwaiter();
+
+            environmentAwaiter.OnCompleted(async () =>
+            {
+                var environment = environmentAwaiter.GetResult();
+                await _Browser.EnsureCoreWebView2Async(environment).ConfigureAwait(true);
+
+                // Navigate to the current specified source
+                Navigate();
+            });
+        }
+        #endregion
     }
 }

@@ -332,7 +332,7 @@ namespace PerfViewExtensibility
                 viewer.Width = 1000;
                 viewer.Height = 600;
                 viewer.Title = title;
-                WebBrowserWindow.Navigate(viewer.Browser, Path.GetFullPath(htmlFilePath));
+                viewer.Source = new Uri(Path.GetFullPath(htmlFilePath));
                 viewer.Show();
                 if (OnOpened != null)
                     viewer.Loaded += delegate { OnOpened(viewer); };

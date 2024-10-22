@@ -1142,7 +1142,7 @@ namespace PerfView
                         Viewer.Width = 1000;
                         Viewer.Height = 600;
                         Viewer.Title = Title;
-                        WebBrowserWindow.Navigate(Viewer.Browser, reportFileName);
+                        Viewer.Source = new Uri(reportFileName);
                         Viewer.Show();
 
                         doAfter?.Invoke();

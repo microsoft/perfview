@@ -524,6 +524,48 @@
       <Link>Microsoft.IdentityModel.JsonWebTokens.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\lib\net462\Microsoft.Web.WebView2.Core.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Web.WebView2.Core.dll</LogicalName>
+      <Link>Microsoft.Web.WebView2.Core.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\lib\net462\Microsoft.Web.WebView2.WinForms.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Web.WebView2.WinForms.dll</LogicalName>
+      <Link>Microsoft.Web.WebView2.WinForms.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\lib\net462\Microsoft.Web.WebView2.Wpf.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Web.WebView2.Wpf.dll</LogicalName>
+      <Link>Microsoft.Web.WebView2.Wpf.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x86\native\WebView2Loader.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\runtimes\win-x86\native\WebView2Loader.dll</LogicalName>
+      <Link>runtimes\win-x86\native\WebView2Loader.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x64\native\WebView2Loader.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\runtimes\win-x64\native\WebView2Loader.dll</LogicalName>
+      <Link>runtimes\win-x64\native\WebView2Loader.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-arm64\native\WebView2Loader.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\runtimes\win-arm64\native\WebView2Loader.dll</LogicalName>
+      <Link>runtimes\win-arm64\native\WebView2Loader.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_Tokens)\lib\net461\Microsoft.IdentityModel.Tokens.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>

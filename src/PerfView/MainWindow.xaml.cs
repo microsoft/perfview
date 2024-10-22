@@ -2303,7 +2303,7 @@ namespace PerfView
                 url = url + "#" + anchor;
             }
 
-            WebBrowserWindow.Navigate(s_Browser.Browser, url);
+            s_Browser.Source = new Uri(url);
             if (s_Browser.WindowState == WindowState.Minimized)
             {
                 s_Browser.WindowState = WindowState.Normal;

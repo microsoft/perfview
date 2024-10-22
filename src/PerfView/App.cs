@@ -41,6 +41,7 @@ namespace PerfView
         public static int Main(string[] args)
         {
             CommandProcessor = new CommandProcessor();
+            App.SetAccessibilitySwitchOverrides();
 
             StreamWriter writerToCleanup = null;   // If we create a log file, we need to clean it up.  
             int retCode = -1;
@@ -1078,6 +1079,20 @@ namespace PerfView
         }
         private static string m_SymbolPath;
         private static string m_SourcePath;
+
+        /// <summary>
+        /// This enables using new accessibility features that were implemented on .NET Framework 4.7.1 or later 
+        /// despite the application targeting an earlier framework version. This resolves a few accessibility issues
+        /// that were fixed in later versions of .NET Framework. For more information, see below: 
+        ///   https://learn.microsoft.com/en-us/dotnet/framework/whats-new/whats-new-in-accessibility#accessibility-switches
+        /// </summary>
+        private static void SetAccessibilitySwitchOverrides()
+        {
+            AppContext.SetSwitch("Switch.UseLegacyAccessibilityFeatures", false);
+            AppContext.SetSwitch("Switch.UseLegacyAccessibilityFeatures.2", false);
+            AppContext.SetSwitch("Switch.UseLegacyAccessibilityFeatures.3", false);
+            AppContext.SetSwitch("Switch.UseLegacyAccessibilityFeatures.4", false);
+        }
 
 #region CreateConsole
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]

@@ -21,6 +21,6 @@
              <TextBlock Grid.Column="3" Margin="5,2,40,3" VerticalAlignment="Center">Click in Window, Ctrl-F for find</TextBlock>
         </Grid>
         <src:StatusBar x:Name="StatusBar" DockPanel.Dock="Bottom" Visibility="Collapsed"/>
-        <wv2:WebView2 Name="_Browser" />
+        <wv2:WebView2 Name="_Browser" Loaded="Browser_Loaded"/>
     </DockPanel>
 </src:WindowBase>
