@@ -18,7 +18,7 @@
 
   <PropertyGroup>
     <!-- NuGet won't know to restore the x64 build unless we add it explicitly -->
-    <RuntimeIdentifiers>win7-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x64;win7-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
