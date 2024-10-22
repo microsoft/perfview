@@ -1863,15 +1863,15 @@ namespace PerfView
         {
             foreach (var i in Grid.Columns)
             {
-                    if (i == OriginTimeStampColumn)
-                    {
-                        i.Visibility = Visibility.Visible;
-                    }
-                    else if (i == LocalTimeStampColumn)
-                    {
-                        i.Visibility = Visibility.Hidden;
-                    }
+                if (i == OriginTimeStampColumn)
+                {
+                    i.Visibility = Visibility.Visible;
+                }
+                else if (i == LocalTimeStampColumn)
+                {
+                    i.Visibility = Visibility.Hidden;
                 }
             }
         }
+    }
 }

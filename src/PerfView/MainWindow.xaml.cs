@@ -16,6 +16,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -2276,9 +2277,9 @@ namespace PerfView
                     s_Browser = null;
                 };
 
-                s_Browser.Browser.Navigating += delegate (object sender, NavigatingCancelEventArgs e)
+                s_Browser.Browser.NavigationStarting += delegate (object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
                 {
-                    if (e.Uri != null && !string.IsNullOrEmpty(e.Uri.Host))
+                    if (e.Uri != null && Uri.TryCreate(e.Uri, UriKind.Absolute, out Uri uri) && !string.IsNullOrEmpty(uri.Host))
                     {
                         if (!GuiApp.MainWindow.AllowNavigateToWeb)
                         {
@@ -2287,7 +2288,7 @@ namespace PerfView
                         }
                         else
                         {
-                            OpenExternalBrowser(e.Uri);
+                            OpenExternalBrowser(uri);
                             e.Cancel = true;
                         }
                     }
@@ -2302,7 +2303,7 @@ namespace PerfView
                 url = url + "#" + anchor;
             }
 
-            WebBrowserWindow.Navigate(s_Browser.Browser, url);
+            s_Browser.Source = new Uri(url);
             if (s_Browser.WindowState == WindowState.Minimized)
             {
                 s_Browser.WindowState = WindowState.Normal;

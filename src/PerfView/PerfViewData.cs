@@ -1117,15 +1117,15 @@ namespace PerfView
                         {
                             Viewer = null;
                         };
-                        Viewer.Browser.Navigating += delegate (object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
+                        Viewer.Browser.NavigationStarting += delegate (object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
                         {
-                            if (e.Uri.Scheme == "command")
+                            if (Uri.TryCreate(e.Uri, UriKind.Absolute, out Uri uri) && uri.Scheme == "command")
                             {
                                 e.Cancel = true;
                                 Viewer.StatusBar.StartWork("Following Hyperlink", delegate ()
                                 {
                                     Action continuation;
-                                    var message = DoCommand(e.Uri, Viewer.StatusBar, out continuation);
+                                    var message = DoCommand(uri.LocalPath, Viewer.StatusBar, out continuation);
                                     Viewer.StatusBar.EndWork(delegate ()
                                     {
                                         if (message != null)
@@ -1142,7 +1142,7 @@ namespace PerfView
                         Viewer.Width = 1000;
                         Viewer.Height = 600;
                         Viewer.Title = Title;
-                        WebBrowserWindow.Navigate(Viewer.Browser, reportFileName);
+                        Viewer.Source = new Uri(reportFileName);
                         Viewer.Show();
 
                         doAfter?.Invoke();

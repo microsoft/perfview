@@ -309,11 +309,11 @@ namespace PerfViewExtensibility
             GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
                 var viewer = new WebBrowserWindow(GuiApp.MainWindow);
-                viewer.Browser.Navigating += delegate (object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
+                viewer.Browser.NavigationStarting += delegate (object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
                 {
-                    if (e.Uri != null)
+                    if (e.Uri != null && Uri.TryCreate(e.Uri, UriKind.Absolute, out Uri uri))
                     {
-                        if (e.Uri.Scheme == "command")
+                        if (uri.Scheme == "command")
                         {
                             e.Cancel = true;
                             if (viewer.StatusBar.Visibility != System.Windows.Visibility.Visible)
@@ -321,7 +321,7 @@ namespace PerfViewExtensibility
                             viewer.StatusBar.StartWork("Following Hyperlink", delegate ()
                             {
                                 if (DoCommand != null)
-                                    DoCommand(e.Uri.LocalPath, viewer.StatusBar.LogWriter, viewer);
+                                    DoCommand(uri.LocalPath, viewer.StatusBar.LogWriter, viewer);
                                 else
                                     viewer.StatusBar.Log("This view does not support command URLs.");
                                 viewer.StatusBar.EndWork(null);
@@ -332,7 +332,7 @@ namespace PerfViewExtensibility
                 viewer.Width = 1000;
                 viewer.Height = 600;
                 viewer.Title = title;
-                WebBrowserWindow.Navigate(viewer.Browser, Path.GetFullPath(htmlFilePath));
+                viewer.Source = new Uri(Path.GetFullPath(htmlFilePath));
                 viewer.Show();
                 if (OnOpened != null)
                     viewer.Loaded += delegate { OnOpened(viewer); };

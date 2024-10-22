@@ -18,16 +18,17 @@
 
         <TextBlock Grid.Row="0" Grid.Column="0" HorizontalAlignment="center" Margin="8,2,5,2" >
             <Hyperlink Name="TitleHyperLink" Command="Help" CommandParameter="InvokingUserCommands">
-                <TextBlock Name="TitleHyperLinkText" Text="Help on Invoking User Defined Commands"/>
+                <Run Name="TitleHyperLinkText" Text="Help on Invoking User Defined Commands"/>
             </Hyperlink>
         </TextBlock>
         <controls:HistoryComboBox x:Name="CommandTextBox" Grid.Row="1"  Margin="10,2,10,2"
-                         ToolTip="Enter User define command. Tab will commit completion." Enter="OKClicked" />
+                         ToolTip="Enter user-defined command. Tab will commit completion." AutomationProperties.HelpText="{Binding Path=ToolTip, RelativeSource={RelativeSource Self}}" Enter="OKClicked" 
+                         AutomationProperties.Name="Command"/>
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" FlowDirection="RightToLeft">
-            <Button Margin="10,5,10,5" Width="80" Content="OK" Click="OKClicked"/>
-            <Button Margin="10,5,10,5" KeyboardNavigation.IsTabStop="False" Width="80" Content="Cancel" Click="CancelClicked"/>
-            <Button Margin="10,5,10,5" KeyboardNavigation.IsTabStop="False" Width="120" Content="Command Help" Click="HelpClicked"/>
+            <Button Margin="10,5,10,5" Width="80" Content="OK" Click="OKClicked" TabIndex="2"/>
+            <Button Margin="10,5,10,5" Width="80" Content="Cancel" Click="CancelClicked" TabIndex="1"/>
+            <Button Margin="10,5,10,5" Width="120" Content="Command Help" Click="HelpClicked" TabIndex="0"/>
         </StackPanel>
     </Grid>
 </src:WindowBase>

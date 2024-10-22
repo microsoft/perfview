@@ -13,7 +13,7 @@
         <DataTemplate x:Key="TreeControlCell">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{Binding IndentString}" FontFamily="Courier New"/>
-                <CheckBox IsChecked="{Binding IsExpanded, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding HasChildren}"/>
+                <CheckBox IsChecked="{Binding IsExpanded, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding HasChildren}" AutomationProperties.Name="Expand"/>
                 <TextBlock Name="Name" Text="{Binding Name}" FontWeight="{Binding FontWeight}"/>
                 <TextBlock Margin="5,0,0,0" Visibility="{Binding VisibleIfDisplayingSecondary}">
                     <Hyperlink Command="Help" CommandParameter="PrimaryAndSecondaryNodes">?</Hyperlink>
@@ -194,7 +194,7 @@
                 <ColumnDefinition/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <Menu Grid.Column="0" Background="{DynamicResource ControlDefaultBackground}">
+            <Menu Grid.Column="0" Background="{DynamicResource ControlDefaultBackground}" AutomationProperties.Name="Navigation">
                 <MenuItem Header="_File">
                     <MenuItem Header="Parent _Window" Click="DoOpenParent"/>
                     <MenuItem Header="Set Symbol _Path" Click="DoSetSymbolPath" ToolTip="Sets the locations to look for symbolic information (PDB files)."/>
@@ -250,7 +250,7 @@
                     ToolTipService.ShowOnDisabled="True"
                     ToolTip="Set to forward filter parameters (Alt-right arrow)">
                 Forward</Button>
-            <TextBox Name="TopStats" Grid.Column="3" Background="Transparent" Margin="0,1" />
+            <TextBox Name="TopStats" Grid.Column="3" Background="Transparent" Margin="0,1" AutomationProperties.Name="Top Stats"/>
         </Grid>
         <!-- This is the Start, End, Find line-->
         <Grid DockPanel.Dock="Top" Margin="0,1">
@@ -263,7 +263,7 @@
                 <TextBlock VerticalAlignment="Center" Margin="5,0,1,0">
                     <Hyperlink Command="Help" CommandParameter="StartTextBox">Start:</Hyperlink>
                 </TextBlock>
-                <controls:HistoryComboBox  x:Name="StartTextBox" Width="90" Enter="DoUpdate" >
+                <controls:HistoryComboBox  x:Name="StartTextBox" Width="90" Enter="DoUpdate" AutomationProperties.Name="Start Time">
                     <controls:HistoryComboBox.ToolTip>
                         <TextBlock>Exclude any samples that happened before this time (MSec from start).</TextBlock>
                     </controls:HistoryComboBox.ToolTip>
@@ -271,7 +271,7 @@
                 <TextBlock VerticalAlignment="Center" Margin="10,0,1,0">
                     <Hyperlink Command="Help" CommandParameter="EndTextBox" KeyboardNavigation.IsTabStop="False">End:</Hyperlink>
                 </TextBlock>
-                <controls:HistoryComboBox x:Name="EndTextBox" Width="90" Enter="DoUpdate">
+                <controls:HistoryComboBox x:Name="EndTextBox" Width="90" Enter="DoUpdate" AutomationProperties.Name="End Time">
                     <controls:HistoryComboBox.ToolTip>
                         <TextBlock>Exclude any samples that happened after this time (MSec from start).</TextBlock>
                     </controls:HistoryComboBox.ToolTip>
@@ -314,7 +314,7 @@
             <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="20,0,1,0">
                         <Hyperlink Command="Help" CommandParameter="FindTextBox" KeyboardNavigation.IsTabStop="False">Find:</Hyperlink>
             </TextBlock>
-            <controls:HistoryComboBox x:Name="FindTextBox" Grid.Column="2" MinWidth="100" Enter="DoFindEnter">
+            <controls:HistoryComboBox x:Name="FindTextBox" Grid.Column="2" MinWidth="100" Enter="DoFindEnter" AutomationProperties.Name="Find">
                 <controls:HistoryComboBox.ToolTip>
                     <TextBlock>Find a name in the display below (Standard .NET Regular Expressions apply, case insensitive).</TextBlock>
                 </controls:HistoryComboBox.ToolTip>
@@ -338,7 +338,7 @@
             <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
                     <Hyperlink Command="Help" CommandParameter="GroupPatsTextBox" KeyboardNavigation.IsTabStop="False">GroupPats:</Hyperlink>
             </TextBlock>
-            <controls:HistoryComboBox x:Name="GroupRegExTextBox" Grid.Column="1" MinWidth="80" Enter="DoUpdate">
+            <controls:HistoryComboBox x:Name="GroupRegExTextBox" Grid.Column="1" MinWidth="80" Enter="DoUpdate" AutomationProperties.Name="Group Patterns">
                 <controls:HistoryComboBox.ToolTip>
                     <ToolTip StaysOpen="True">
                         <TextBlock>
@@ -355,7 +355,7 @@
             <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="5,0,1,0">
                 <Hyperlink Command="Help" CommandParameter="FoldPercentTextBox" KeyboardNavigation.IsTabStop="False">Fold%:</Hyperlink>
             </TextBlock>
-            <controls:HistoryComboBox x:Name="FoldPercentTextBox" Grid.Column="3" MinWidth="42" Enter="DoUpdate" Margin="0,0,5,0">
+            <controls:HistoryComboBox x:Name="FoldPercentTextBox" Grid.Column="3" MinWidth="42" Enter="DoUpdate" Margin="0,0,5,0" AutomationProperties.Name="Fold Percent">
                 <controls:HistoryComboBox.ToolTip>
                     <ToolTip StaysOpen="True">
                         <TextBlock> Nodes that have less than this % Inclusive metric will be removed and their
@@ -366,7 +366,7 @@
             <TextBlock Grid.Column="4" VerticalAlignment="Center" Margin="5,0,1,0">
                 <Hyperlink Command="Help" CommandParameter="FoldPatsTextBox" KeyboardNavigation.IsTabStop="False">FoldPats:</Hyperlink>
             </TextBlock>
-            <controls:HistoryComboBox x:Name="FoldRegExTextBox" Grid.Column="5" MinWidth="80" Enter="DoUpdate">
+            <controls:HistoryComboBox x:Name="FoldRegExTextBox" Grid.Column="5" MinWidth="80" Enter="DoUpdate" AutomationProperties.Name="Fold Patterns">
                 <controls:HistoryComboBox.ToolTip>
                     <ToolTip StaysOpen="True">
                         <TextBlock>
@@ -379,7 +379,7 @@
             <TextBlock Grid.Column="6" VerticalAlignment="Center" Margin="10,0,1,0">
                 <Hyperlink Command="Help" CommandParameter="IncPatsTextBox" KeyboardNavigation.IsTabStop="False">IncPats:</Hyperlink>
             </TextBlock>
-            <controls:HistoryComboBox x:Name="IncludeRegExTextBox" Grid.Column="7"  MinWidth="80" Margin="0,0,5,0" Enter="DoUpdate">
+            <controls:HistoryComboBox x:Name="IncludeRegExTextBox" Grid.Column="7"  MinWidth="80" Margin="0,0,5,0" Enter="DoUpdate" AutomationProperties.Name="Include Patterns">
                 <controls:HistoryComboBox.ToolTip>
                     <ToolTip StaysOpen="True">
                         <TextBlock>
@@ -393,7 +393,7 @@
             <TextBlock Grid.Column="8" VerticalAlignment="Center" Margin="10,0,1,0">
                 <Hyperlink Command="Help" CommandParameter="ExcPatsTextBox" KeyboardNavigation.IsTabStop="False">ExcPats:</Hyperlink>
             </TextBlock>
-            <controls:HistoryComboBox x:Name="ExcludeRegExTextBox" Grid.Column="9" MinWidth="80" Enter="DoUpdate">
+            <controls:HistoryComboBox x:Name="ExcludeRegExTextBox" Grid.Column="9" MinWidth="80" Enter="DoUpdate" AutomationProperties.Name="Exclude Patterns">
                 <controls:HistoryComboBox.ToolTip>
                     <ToolTip StaysOpen="True">
                         <TextBlock>
@@ -431,7 +431,7 @@
                         </TextBlock>
                     </TabItem.Header>
                     <!-- TODO FIX NOW The margin is a hack.  I don't know why I need it... -->
-                    <src:CallerCalleeView x:Name="CallerCalleeView" Margin="0,0,20,0" />
+                    <src:CallerCalleeView x:Name="CallerCalleeView" Margin="0,0,20,0"/>
                 </TabItem>
                 <!-- CallerTreeTab -->
                 <TabItem Name="CallTreeTab">
@@ -496,14 +496,15 @@
                         Notes <Hyperlink Command="Help" CommandParameter="NotesView">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
-                    <TextBox Name="NotesTabBody" AcceptsReturn="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" FontFamily="Courier New" FontSize="11" TextChanged="Notes_TextChanged"/>
+                    <TextBox Name="NotesTabBody" AcceptsReturn="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" FontFamily="Courier New" FontSize="11" TextChanged="Notes_TextChanged" AutomationProperties.Name="Notes"/>
                 </TabItem>
             </TabControl>
             <GridSplitter Grid.Row="1" Height="3" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
             <ContentControl Name="NodePane"/>
             <TextBox Name="Notes" Grid.Row="2"  GotFocus="Notes_GotFocus"
                      ContextMenu="{Binding ContextMenu, ElementName=DockPanel}"
-                     AcceptsReturn="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" FontFamily="Courier New" FontSize="11" TextChanged="Notes_TextChanged" VerticalAlignment="Stretch">
+                     AcceptsReturn="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" FontFamily="Courier New" FontSize="11" TextChanged="Notes_TextChanged" VerticalAlignment="Stretch"
+                     AutomationProperties.Name="Notes">
                 Notes typed here will be saved when the view is saved.  F2 will hide/unhide.
             </TextBox>
             <TextBlock Name="HelpMessage" Grid.Row="2" TextAlignment="Center" VerticalAlignment="Center" FontSize="35" Opacity="0.5">

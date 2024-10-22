@@ -75,6 +75,21 @@ namespace PerfView
                 return creationDate;
             }
         }
+
+        public string ShortDescription
+        {
+            get
+            {
+                var shortName = Name;
+                if (shortName.Length > 24)
+                {
+                    shortName = shortName.Substring(0, 24);
+                }
+
+                return $"{shortName} ({ProcessID})";
+            }
+        }
+
         public long CpuTime100ns
         {
             get

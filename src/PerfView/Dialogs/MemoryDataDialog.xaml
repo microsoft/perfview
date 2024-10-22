@@ -21,7 +21,7 @@
         </Grid.RowDefinitions>
 
         <!-- Help message at top -->
-        <RichTextBox Grid.Row="0" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True">
+        <RichTextBox Grid.Row="0" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True" AutomationProperties.Name="Memory data collection help">
             <RichTextBox.Document>
                 <FlowDocument>
                     <Paragraph>
@@ -44,7 +44,7 @@
             <TextBlock  Grid.Column="0"  Margin="5,0" Width="100" VerticalAlignment="Center" ToolTip="The file name of the process dump file from which to extract the GC heap.">
                 <Hyperlink Command="Help" CommandParameter="ProcessDumpTextBox">Process Dump File:</Hyperlink>
             </TextBlock>
-            <TextBox  Margin="0,5,5,0" Grid.Column="1" Name="ProcessDumpTextBox" VerticalAlignment="Center" KeyDown="ProcessDumpKeyDown"  />
+            <TextBox  Margin="0,5,5,0" Grid.Column="1" Name="ProcessDumpTextBox" VerticalAlignment="Center" KeyDown="ProcessDumpKeyDown" AutomationProperties.Name="Process Dump File"  />
         </Grid>
 
         <!-- Option 2 capturing memory from active processes -->
@@ -65,20 +65,24 @@
                 <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,0,0" ToolTip="Only processes that match this RegEx filter pattern are displayed.">
                     <Hyperlink Command="Help" CommandParameter="ProcessFilterTextBox">Filter:</Hyperlink>
                 </TextBlock>
-                <TextBox KeyboardNavigation.TabIndex="0" VerticalAlignment="Center" Grid.Column="1" Width="100" Margin="5,0,0,0"  Name="FilterTextBox" TextChanged="FilterTextChanged" PreviewKeyDown="FilterTextKeyDown"/>
+                <TextBox KeyboardNavigation.TabIndex="0" VerticalAlignment="Center" Grid.Column="1" Width="100" Margin="5,0,0,0"  Name="FilterTextBox" TextChanged="FilterTextChanged" PreviewKeyDown="FilterTextKeyDown" AutomationProperties.Name="Process Filter"/>
 
                 <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="5,0,0,0" ToolTip="Normally only processed with GC heaps are displayed.  Checking this shows all processes.">
                     <Hyperlink Command="Help" CommandParameter="AllProcsCheckBox">All Procs:</Hyperlink>
                 </TextBlock>
-                <CheckBox Grid.Column="3" Name="AllProcsCheckBox" VerticalAlignment="Center"  IsChecked="true" Click="AllProcsClick" />
+                <CheckBox Grid.Column="3" Name="AllProcsCheckBox" VerticalAlignment="Center"  IsChecked="true" Click="AllProcsClick" AutomationProperties.Name="All Processes" />
 
                 <TextBlock Grid.Column="4" Margin="15,0,0,0" VerticalAlignment="Center" Name="ElevateWarning">
                     Only Processes you have perission to inspect to are shown.
                     <Hyperlink Click="ElevateToAdminClick">Elevate to Admin</Hyperlink> to see all processes.
                 </TextBlock>
             </Grid>
-            <ListBox KeyboardNavigation.TabIndex="1" Margin="5,28,5,12" MinHeight="80" Name="Processes" MouseDoubleClick="ProcessesMouseDoubleClick" SelectionChanged="Processes_SelectionChanged" FontFamily="Courier New" Grid.RowSpan="2">
-
+            <ListBox KeyboardNavigation.TabIndex="1" Margin="5,28,5,12" MinHeight="80" Name="Processes" MouseDoubleClick="ProcessesMouseDoubleClick" SelectionChanged="Processes_SelectionChanged" FontFamily="Courier New" Grid.RowSpan="2" AutomationProperties.Name="Processes">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="AutomationProperties.Name" Value="{Binding ShortDescription}" />
+                    </Style>
+                </ListBox.ItemContainerStyle>
             </ListBox>
         </Grid>
 
@@ -93,7 +97,7 @@
             <TextBlock  Grid.Column="0" Width="100" Margin="5,0" VerticalAlignment="Center" ToolTip="The name of the data file to create." >
                 <Hyperlink Command="Help" CommandParameter="GCHeapDataFileNameTextBox">Output Data File:</Hyperlink>
             </TextBlock>
-            <TextBox Grid.Column="1"  Name="DataFileNameTextBox" VerticalAlignment="Center" KeyDown="DataFileKeyDown" />
+            <TextBox Grid.Column="1"  Name="DataFileNameTextBox" VerticalAlignment="Center" KeyDown="DataFileKeyDown" AutomationProperties.Name="Output Data Filename" />
             <Button Grid.Column="2" Content="..."  Width="25" Margin="5,5"
                 VerticalAlignment="Center" Click="DataFileButtonClick" ToolTip="Click to select the file name in a file chooser dialog." />
         </Grid>
@@ -123,12 +127,12 @@
             <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="5,0,5,0" ToolTip="If the heap has more object than this (in Kilo objects) than this, only a sample is taken." >
                         <Hyperlink Command="Help" CommandParameter="MaxDumpTextBox">Max Dump<LineBreak/>K Objs:</Hyperlink>
             </TextBlock>
-            <TextBox Grid.Column="2" Name="MaxDumpTextBox" VerticalAlignment="Center" Width="50" Margin="5,0"/>
+            <TextBox Grid.Column="2" Name="MaxDumpTextBox" VerticalAlignment="Center" Width="50" Margin="5,0" AutomationProperties.Name="Maximum dump size in kilo objects"/>
 
             <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="5,0,2,0" ToolTip="If checked the process will be frozen during the dump.">
                     <Hyperlink Command="Help" CommandParameter="FreezeCheckBox">Freeze:</Hyperlink>
             </TextBlock>
-            <CheckBox Grid.Column="4" Name="FreezeCheckBox" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <CheckBox Grid.Column="4" Name="FreezeCheckBox" VerticalAlignment="Center" Margin="0,0,10,0" AutomationProperties.Name="Freeze"/>
 
             <!-- TODO FIX NOW Add DumpData back in.
             <TextBlock Grid.Column="5" VerticalAlignment="Center" Margin="5,0,2,0" ToolTip="If checked the data in objects as well as the connectivity information is dumped.">
@@ -140,7 +144,7 @@
             <TextBlock Grid.Column="7" VerticalAlignment="Center" Margin="5,0,2,0" ToolTip="If checked Dump will be in Clr Profiler format.">
                 <Hyperlink Command="Help" CommandParameter="SaveETLCheckBox">Save<LineBreak/>ETL:</Hyperlink>
             </TextBlock>
-            <CheckBox Grid.Column="8" Name="SaveETLCheckBox" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <CheckBox Grid.Column="8" Name="SaveETLCheckBox" VerticalAlignment="Center" Margin="0,0,10,0" AutomationProperties.Name="Save ETL"/>
 
             <Button Name="GCButton" Grid.Column="12" Margin="5,0,20,5" Width="60" VerticalAlignment="Center"  Click="GCButtonClick"
                     ToolTip="Causes a GC to happen in the selected process">Force GC</Button>
