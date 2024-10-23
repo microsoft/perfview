@@ -243,7 +243,7 @@ namespace Graphs
                 var node = GetNode(nodeIndex, nodeStorage);
                 Debug.Assert(node.Index != NodeIndex.Invalid);
                 Debug.Assert(node.TypeIndex < NodeTypeIndexLimit);
-                for (var childIndex = node.GetFirstChildIndex(); childIndex != null; childIndex = node.GetNextChildIndex())
+                for (var childIndex = node.GetFirstChildIndex(); childIndex != NodeIndex.Invalid; childIndex = node.GetNextChildIndex())
                     Debug.Assert(0 <= childIndex && childIndex < NodeIndexLimit);
                 if (!node.Defined)
                     Debug.WriteLine("Warning: undefined object " + nodeIndex);
