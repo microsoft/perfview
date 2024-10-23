@@ -1,6 +1,4 @@
-﻿// This is still work in progress - the code is not consolidated as part of the changes came from another dev.
-// I left them in since I would like to keep the functionality they provide. It will be consolidated with my next checkin. 
-using Graphs;
+﻿using Graphs;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using System;
 using System.Collections.Generic;
@@ -330,37 +328,8 @@ namespace PerfView
 
             if (decode)
             {
-                if ((addr != 0) && FindModule(addr))
-                {
-                    m_writer.Write(",{0}+{1}", m_lastModule.moduleName, addr - m_lastModule.baseAddress);
-                }
-                else
-                {
-                    m_writer.Write(',');
-                }
+                m_writer.Write(',');
             }
-        }
-
-        private void ModuleTable()
-        {
-            string report = m_mainOutput + "_module.csv";
-
-            m_writer = new StreamWriter(report, false, new System.Text.UTF8Encoding(true, false));
-
-            m_writer.WriteLine("BaseAddress,LoadOrder,FileSize,TimeStamp,ModuleName,FileName");
-
-            long totalSize = 0;
-
-            foreach (InteropInfo.InteropModuleInfo mod in m_interop.m_listModules)
-            {
-                m_writer.WriteLine("0x{0:x8},{1},{2},0x{3:x8},{4},{5}", mod.baseAddress, mod.loadOrder, mod.fileSize, mod.timeStamp, mod.moduleName, mod.fileName);
-
-                totalSize += mod.fileSize;
-            }
-
-            m_writer.Close();
-
-            m_htmlRaw.WriteLine("<li><a href=\"{0}\">{1} Modules, {2:N0} bytes</a></li>", report, m_interop.currentModuleCount, totalSize);
         }
 
         private void ComInterfaceTable(bool bRcw, string kind, string action)
@@ -507,53 +476,6 @@ namespace PerfView
             m_htmlRaw.WriteLine("<li><a href=\"{0}\">{1} CCWs</a></li>", report, m_interop.m_countRCWs);
         }
 
-        private InteropInfo.InteropModuleInfo m_lastModule;
-
-        private int CheckModule(InteropInfo.InteropModuleInfo mod, ulong addr)
-        {
-            if (addr < (mod.baseAddress + mod.fileSize))
-            {
-                if (addr >= mod.baseAddress)
-                {
-                    m_lastModule = mod;
-
-                    // m_log.WriteLine("Addr: {0:x} => {1} + {2}", addr, mod.FileName, addr - mod.BaseAddress);
-
-                    return 1; // match
-                }
-
-                return 0; // end search, no match
-            }
-
-            return -1; // continue search
-        }
-
-        private bool FindModule(ulong addr)
-        {
-#if false 
-            if (m_moduleList != null)
-            {
-                if ((m_lastModule != null) && (CheckModule(m_lastModule, addr) > 0))
-                {
-                    return true;
-                }
-
-                foreach (InteropInfo.ModuleInfo mod in m_moduleList)
-                {
-                    int result = CheckModule(mod, addr);
-
-                    if (result >= 0)
-                    {
-                        return result > 0;
-                    }
-                }
-            }
-#endif
-            return false;
-        }
-
-        private static char[] s_SpecialChara = new char[] { '<', '>' };
-
         private string GetPrintableString(string s)
         {
             string sPrint = s.Replace("<", "&lt;");
@@ -572,12 +494,6 @@ namespace PerfView
             WriteCCWInfo();
             ComInterfaceTable(true, "RCW", "referenced by CLR");
 
-#if false 
-            if (m_moduleList != null)
-            {
-                ModuleTable();
-            }
-#endif
             m_htmlRaw.WriteLine("</ul>");
 
             GraphWalker walker = new GraphWalker();
