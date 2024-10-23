@@ -245,68 +245,6 @@ namespace Graphs
         private MemoryNodeBuilder m_rootNodeForUnknownRoot;
         private List<DeferedRoot> m_deferedRoots;
 
-        // TODO decide if this is worth it 
-#if false
-    /// <summary>
-    /// AddressDictionary is a optimized Dictionary<Address, NodeIndex>.   It expect its caller
-    /// to be able to reload all the key-value pairs at any time.  AddressDictionary indicates
-    /// it wants this by calling the reload() delegate.   It uses this whenever it needs to rehash
-    /// 
-    /// By forcing the caller to be ablet to do this, AddressDictionary does not need to store the
-    /// key of the key-value pairs, which saves memory.   As a result AddressDictionary is very lean
-    /// (roughly 4 bytes per entry * 1/HashLoadFactor).  
-    /// </summary>
-    class AddressDictionary
-    {
-        public AddressDictionary(int size, MemoryGraph graph)
-        {
-            m_hashArray = new NodeIndex[size];
-            m_collisions = new Dictionary<Address, NodeIndex>(size / 20 + 1);
-            m_graph = graph;
-        }
-        public bool TryGetValue(Address key, out NodeIndex value)
-        {
-            int hash = ((int)((ulong)key / 16)) % m_hashArray.Length;
-            value = m_hashArray[hash];
-            if ((uint) value < (uint) m_graph.m_nodeAddresses.Count && m_graph.m_nodeAddresses[(int) value] == key)
-                return true;
-            return m_collisions.TryGetValue(key, out value);
-        }
-        public void Add(Address key, NodeIndex value)
-        {
-            // We go until 60 % fill factor
-            if (m_count / 10 > m_hashArray.Length / 8)
-            {
-                // Clear the Address to NodeIndex table.
-                m_collisions.Clear();
-
-                var newLen = m_hashArray.Length * 2;
-                if (m_hashArray.Length > 10000000)
-                    newLen = m_hashArray.Length * 3 / 2;
-                m_hashArray = new NodeIndex[newLen];
-                m_count = 0;
-
-                // Reload all the values.  
-                for (int i = 0; i < m_graph.m_nodeAddresses.Count-1; i++) // -1 is because we have already increased the count
-                    m_graph.m_addressToNodeIndex.Add(m_graph.m_nodeAddresses[i], (NodeIndex)i);
-            }
-            m_count++;
-            int hash = ((int)((ulong)key / 16)) % m_hashArray.Length;
-            var hashVal = m_hashArray[hash];
-            if (hashVal == 0 && value != 0)
-                m_hashArray[hash] = value;
-            else
-                m_collisions.Add(key, value);
-        }
-
-        #region private
-        MemoryGraph m_graph;
-        NodeIndex[] m_hashArray;
-        Dictionary<Address, NodeIndex> m_collisions;
-        int m_count;
-        #endregion
-    }
-#endif
         void IFastSerializable.ToStream(Serializer serializer)
         {
             base.ToStream(serializer);

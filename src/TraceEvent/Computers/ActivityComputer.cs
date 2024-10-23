@@ -79,21 +79,10 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 TraceActivity activity;
                 m_rawIDToActivity.TryGetValue(GetTPLRawID(data, data.TaskID, IDType.TplScheduledTask), out activity);
-#if false 
-                if (!m_rawIDToActivity.TryGetValue(GetTPLRawID(data, data.TaskID, IDType.TplScheduledTask), out activity))
-                {
-                    // Sadly, TaskCompleted events might happen before the TaskWaitEnd if something is awaiting a real task and these
-                    // happen on the same thread.    Detect this and simply ignore the TaskCompleted since it was already stopped. 
-                    TraceActivity taskEndActivity;
-                    if (m_rawIDToActivity.TryGetValue(GetTPLRawID(data, data.TaskID, IDType.TplContinuation), out taskEndActivity) && taskEndActivity.Thread != null &&
-                        taskEndActivity.Thread.ThreadID == data.ThreadID)
-                        return;     // We have an active TaskWaitEnd (thus it came first), ignore the TaskCompleted event.  
-                }
-#endif
                 OnStop(data, activity);
             };
 
-            // Async support.    ContinueationScheduled are not like beginWait and endWait pairs, so they use the IsScheduled ID.  
+            // Async support.    ContinuationScheduled are not like beginWait and endWait pairs, so they use the IsScheduled ID.  
             tplParser.AwaitTaskContinuationScheduledSend += delegate (AwaitTaskContinuationScheduledArgs data)
             {
                 OnCreated(data, GetTPLRawID(data, data.ContinuationId, IDType.TplScheduledTask), TraceActivity.ActivityKind.AwaitTaskScheduled);
@@ -973,41 +962,6 @@ namespace Microsoft.Diagnostics.Tracing
         {
             return (IDType)(0xF & (rawID >> (60)));
         }
-
-#if false 
-        /// <summary>
-        /// Bit of a hack.  Currently CLR thread pool does not have complete events to indicate a thread 
-        /// pool item is complete.  Because of this they may be extended too far.   We use the fact that 
-        /// we have a call stack that is ONLY in the thread pool as a way of heuristically finding the end.  
-        /// </summary>
-        static bool ThreadOnlyInThreadPool(CallStackIndex callStack, TraceCallStacks callStacks)
-        {
-            var codeAddresses = callStacks.CodeAddresses;
-            bool brokenStack = true;
-            while (callStack != CallStackIndex.Invalid)
-            {
-                var codeAddrIdx = callStacks.CodeAddressIndex(callStack);
-                var module = codeAddresses.ModuleFile(codeAddrIdx);
-                if (module == null)
-                    break;
-                var moduleName = module.Name;
-                if (!moduleName.StartsWith("wow", StringComparison.OrdinalIgnoreCase) &&
-                    !moduleName.StartsWith("kernel", StringComparison.OrdinalIgnoreCase) &&
-                    string.Compare(moduleName, "ntdll", StringComparison.OrdinalIgnoreCase) != 0 &&
-                    string.Compare(moduleName, "w3tp", StringComparison.OrdinalIgnoreCase) != 0 &&
-                    string.Compare(moduleName, "clr", StringComparison.OrdinalIgnoreCase) != 0 &&
-                    string.Compare(moduleName, "mscorwks", StringComparison.OrdinalIgnoreCase) != 0)
-                {
-                    if (string.Compare(moduleName, "ntoskrnl", StringComparison.OrdinalIgnoreCase) != 0)
-                        return false;
-                }
-                else
-                    brokenStack = false;
-                callStack = callStacks.Caller(callStack);
-            }
-            return !brokenStack;
-        }
-#endif
 
         /// <summary>
         /// if 'activity' has not creator (it is top-level), then return baseStack (near execution) followed by 'top' representing the thread-process frames.

@@ -313,13 +313,6 @@ namespace CSVReader
 
                             if (moduleName.Length > 4 && moduleName[moduleName.Length - 4] == '.')
                             {
-#if false // TODO decide if we want to ignore the .NI.DLL and if so do it uniformly.  
-                                if (moduleName.Length > 7 && moduleName[moduleName.Length - 7] == '.' && 
-                                    moduleName[moduleName.Length - 6] == 'n' &&
-                                    moduleName[moduleName.Length - 5] == 'i')
-                                    moduleName = moduleName.Substring(0, moduleName.Length - 7);
-                                else 
-#endif
                                 moduleName = moduleName.Substring(0, moduleName.Length - 4);
                             }
 

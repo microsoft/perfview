@@ -706,8 +706,6 @@ namespace PerfView
                                     ClrPrivateTraceEventParser.Keywords.Binding |
                                     ClrPrivateTraceEventParser.Keywords.Fusion |
                                     ClrPrivateTraceEventParser.Keywords.MulticoreJit |   /* only works on verbose */
-                                    // ClrPrivateTraceEventParser.Keywords.LoaderHeap |     /* only verbose */
-                                    //  ClrPrivateTraceEventParser.Keywords.Startup 
                                     ClrPrivateTraceEventParser.Keywords.Stack
                                 ), options);
 
@@ -828,11 +826,6 @@ namespace PerfView
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-WebIO",
                                     new Guid("50B3E73C-9370-461D-BB9F-26F32D68887D"), TraceEventLevel.Informational, ulong.MaxValue, options);
 
-                                // This provider is verbose in high volume networking scnearios and its value is dubious.  
-                                //EnableUserProvider(userModeSession, "Microsoft-Windows-Winsock-AFD",
-                                //    new Guid("E53C6823-7BB8-44BB-90DC-3F86090D48A6"),
-                                //    parsedArgs.ClrEventLevel, ulong.MaxValue);
-
                                 // This is probably too verbose, but we will see 
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-WinINet",
                                     new Guid("43D1A55C-76D6-4F7E-995C-64C711E5CAFE"), TraceEventLevel.Verbose, ulong.MaxValue, options);
@@ -841,47 +834,8 @@ namespace PerfView
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-WinHttp",
                                     new Guid("7D44233D-3055-4B9C-BA64-0D47CA40A232"), TraceEventLevel.Verbose, ulong.MaxValue, options);
 
-                                // This has proven to be too expensive.  Wait until we need it.  
-                                // EnableUserProvider(userModeSession, "Microsoft-Windows-Networking-Correlation",
-                                //     new Guid("83ED54F0-4D48-4E45-B16E-726FFD1FA4AF"), (TraceEventLevel)255, 0);
-
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-RPC",
                                     new Guid("6AD52B32-D609-4BE9-AE07-CE8DAE937E39"), TraceEventLevel.Informational, 0, options);
-
-                                // This is what WPA turns on in its 'GENERAL' setting  
-                                //Microsoft-Windows-Immersive-Shell: 0x0000000000100000: 0x04
-                                //Microsoft-Windows-Kernel-Power: 0x0000000000000004: 0xff
-                                //Microsoft-Windows-Win32k: 0x0000000000402000: 0xff
-                                //Microsoft-Windows-WLAN-AutoConfig: 0x0000000000000200: 0xff
-                                //.NET Common Language Runtime: 0x0000000000000098: 0x05
-                                //Microsoft-JScript: 0x0000000000000001: 0xff e7ef96be-969f-414f-97d7-3ddb7b558ccc: 0x0000000000002000: 0xff
-                                //MUI Resource Trace: : 0xff
-                                //Microsoft-Windows-COMRuntime: 0x0000000000000003: 0xff
-                                //Microsoft-Windows-Networking-Correlation: : 0xff
-                                //Microsoft-Windows-RPCSS: : 0x04
-                                //Microsoft-Windows-RPC: : 0x04 a669021c-c450-4609-a035-5af59af4df18: : 0x00
-                                //Microsoft-Windows-Kernel-Processor-Power: : 0xff
-                                //Microsoft-Windows-Kernel-StoreMgr: : 0xff e7ef96be-969f-414f-97d7-3ddb7b558ccc: : 0xff
-                                //Microsoft-Windows-UserModePowerService: : 0xff
-                                //Microsoft-Windows-Win32k: : 0xff
-                                //Microsoft-Windows-ReadyBoostDriver: : 0xff
-
-#if false            // TODO FIX NOW remove 
-                    var networkProviders = new List<string>();
-                    networkProviders.Add("Microsoft-Windows-WebIO:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-WinINet:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-TCPIP:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-NCSI:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-WFP:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-Iphlpsvc-Trace:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-WinHttp:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-NDIS-PacketCapture");
-                    networkProviders.Add("Microsoft-Windows-NWiFi:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-NlaSvc:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-NDIS:*:5:stack");
-
-                    EnableAdditionalProviders(userModeSession, networkProviders.ToArray());
-#endif
                             }
                         }
                         else if ((parsedArgs.ClrEvents & ClrTraceEventParser.Keywords.GC) != 0)

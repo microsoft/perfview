@@ -5199,22 +5199,6 @@ table {
                 clrPrivate.GCDestroyGCHandle += onDestroyHandle;
                 eventSource.Clr.GCDestoryGCHandle += onDestroyHandle;
 
-#if false 
-                var cacheAllocated = new Dictionary<Address, bool>();
-                Action<TraceEvent> onPinnableCacheAllocate = delegate(TraceEvent data) 
-                {
-                    var objectId = (Address) data.PayloadByName("objectId");
-                    cacheAllocated[objectId] = true;
-                };
-                eventSource.Dynamic.AddCallbackForProviderEvent("AllocateBuffer", "Microsoft-DotNETRuntime-PinnableBufferCache", onPinnableCacheAllocate);
-                eventSource.Dynamic.AddCallbackForProviderEvent("AllocateBuffer", "Microsoft-DotNETRuntime-PinnableBufferCache-Mscorlib", onPinnableCacheAllocate); 
-
-                Action<PinPlugAtGCTimeTraceData> plugAtGCTime = delegate(PinPlugAtGCTimeTraceData data)
-                {
-                };
-                clrPrivate.GCPinPlugAtGCTime += plugAtGCTime;
-                eventSource.Clr.GCPinObjectAtGCTime += plugAtGCTime;
-#endif
                 // ThreadStacks maps locations in memory of the thread stack to and maps it to a thread.  
                 var threadStacks = new Dictionary<Address, TraceThread>[eventLog.Processes.Count];
 
@@ -5927,12 +5911,6 @@ table {
                         goto ADD_SAMPLE;
                     }
 
-                    // TODO FIX NOW remove for debugging activity stuff.  
-#if false
-                    var activityId = data.ActivityID;
-                    if (activityId != Guid.Empty && ActivityComputer.IsActivityPath(activityId))
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ActivityPath " + ActivityComputer.ActivityPathString(activityId)), stackIndex);
-#endif
                     var asObjectAllocated = data as ObjectAllocatedArgs;
                     if (asObjectAllocated != null)
                     {
@@ -8855,12 +8833,6 @@ table {
             log.WriteLine("Type Histogram > 1% of heap size");
             log.Write(graph.HistogramByTypeXml(graph.TotalSize / 100));
 
-#if false // TODO FIX NOW remove
-            using (StreamWriter writer = File.CreateText(Path.ChangeExtension(this.FilePath, ".Clrprof.xml")))
-            {
-                ((MemoryGraph)graph).DumpNormalized(writer);
-            }
-#endif
             var ret = new MemoryGraphStackSource(graph, log);
             return ret;
         }
@@ -8897,12 +8869,6 @@ table {
             log.WriteLine("Type Histogram > 1% of heap size");
             log.Write(graph.HistogramByTypeXml(graph.TotalSize / 100));
 
-#if false // TODO FIX NOW remove
-            using (StreamWriter writer = File.CreateText(Path.ChangeExtension(this.FilePath, ".Clrprof.xml")))
-            {
-                ((MemoryGraph)graph).DumpNormalized(writer);
-            }
-#endif
             var ret = new MemoryGraphStackSource(graph, log);
             return ret;
         }
@@ -8933,12 +8899,6 @@ table {
             Graph graph = m_gcDump.MemoryGraph;
             GCHeapDump gcDump = m_gcDump;
 
-#if false  // TODO FIX NOW remove
-            using (StreamWriter writer = File.CreateText(Path.ChangeExtension(this.FilePath, ".heapDump.xml")))
-            {
-                ((MemoryGraph)graph).DumpNormalized(writer);
-            }
-#endif
             int gen = -1;
             if (streamName == Gen0WalkableObjectsViewName)
             {
@@ -8953,16 +8913,6 @@ table {
 
             var ret = GenerationAwareMemoryGraphBuilder.CreateStackSource(m_gcDump, log, gen);
 
-#if false // TODO FIX NOW: support post collection filtering?   
-            // Set the sampling ratio so that the number of objects does not get too far out of control.  
-            if (2000000 <= (int)graph.NodeIndexLimit)
-            {
-                ret.SamplingRate = ((int)graph.NodeIndexLimit / 1000000);
-                log.WriteLine("Setting the sampling rate to {0}.", ret.SamplingRate);
-                MessageBox.Show("The graph has more than 2M Objects.  " +
-                    "The sampling rate has been set " + ret.SamplingRate.ToString() + " to keep the GUI responsive.");
-            }
-#endif
             m_extraTopStats = "";
 
             double unreachableMemory;
@@ -9114,13 +9064,6 @@ table {
                     log.Write(m_gcDump.CollectionLog);
                     log.WriteLine("********************  END OF LOG FILE FROM TIME OF COLLECTION  **********************");
                 }
-
-#if false // TODO FIX NOW REMOVE
-                using (StreamWriter writer = File.CreateText(Path.ChangeExtension(FilePath, ".rawGraph.xml")))
-                {
-                    m_gcDump.MemoryGraph.WriteXml(writer);
-                }
-#endif
             }
 
             MemoryGraph graph = m_gcDump.MemoryGraph;

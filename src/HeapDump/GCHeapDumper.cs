@@ -1270,16 +1270,6 @@ public class GCHeapDumper
         }
 
         m_copyOfLog.GetStringBuilder().Length = 0;
-#if false // TODO FIX NOW remove
-        using (StreamWriter writer = File.CreateText(Path.ChangeExtension(m_outputFileName, ".heapGraph.xml")))
-        {
-            m_gcHeapDump.MemoryGraph.DumpNormalized(writer);
-        }
-        using (StreamWriter writer = File.CreateText(Path.ChangeExtension(m_outputFileName, ".rawGraph.xml")))
-        {
-            m_gcHeapDump.MemoryGraph.WriteXml(writer);
-        }
-#endif
     }
 
     private int DumpRCW(IDataReader reader, NodeIndex node, Address addr, RuntimeCallableWrapper rcw)
@@ -1598,23 +1588,6 @@ public class GCHeapDumper
     private GrowableArray<int> m_typeIdxToGraphIdx;
 
     private Dictionary<string, NodeTypeIndex> m_graphTypeIdxForArrayType;
-
-    [Conditional("DEBUG")]
-    public static void DebugWriteLine(string format, params object[] args)
-    {
-        //#if DEBUG
-#if false
-        if (m_debugLog == null)
-            m_debugLog = File.CreateText("HeapDumpDebugLog.txt");
-
-        m_debugLog.WriteLine(format, args);
-        m_debugLog.Flush();
-#endif
-    }
-
-#if false
-    private static TextWriter m_debugLog;
-#endif
     #endregion
 }
 

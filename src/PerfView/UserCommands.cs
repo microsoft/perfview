@@ -70,113 +70,7 @@ namespace PerfViewExtensibility
                 LogFile.WriteLine("[Converted {0} to {1}  Use https://www.speedscope.app/ to view.]", netPerfFileName, outputName);
             }
         }
-#if false // TODO Ideally you don't need Linux Specific versions, and it should be based
-          // on eventPipe.   You can delete after 1/2018
-        public void LinuxGCStats(string traceFileName)
-        {
-            var options = new TraceLogOptions();
-            options.ConversionLog = LogFile;
-            if (App.CommandLineArgs.KeepAllEvents)
-            {
-                options.KeepAllEvents = true;
-            }
 
-            options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
-            options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
-            options.SkipMSec = App.CommandLineArgs.SkipMSec;
-            options.LocalSymbolsOnly = false;
-            options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
-
-            string etlxFilePath = traceFileName + ".etlx";
-            etlxFilePath = TraceLog.CreateFromLttngTextDataFile(traceFileName, etlxFilePath, options);
-
-            TraceLog traceLog = new TraceLog(etlxFilePath);
-
-            List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> processes = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
-            using (var source = traceLog.Events.GetSource())
-            {
-                Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
-                source.Process();
-                foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                {
-                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null)
-                    {
-                        processes.Add(proc);
-                    }
-                }
-            }
-
-            string outputFileName = traceFileName + ".gcStats.html";
-            using (StreamWriter output = File.CreateText(outputFileName))
-            {
-                Stats.ClrStats.ToHtml(output, processes, outputFileName, "GCStats", Stats.ClrStats.ReportType.GC);
-            }
-        }
-
-        public void LinuxJITStats(string traceFileName)
-        {
-            var options = new TraceLogOptions();
-            options.ConversionLog = LogFile;
-            if (App.CommandLineArgs.KeepAllEvents)
-            {
-                options.KeepAllEvents = true;
-            }
-
-            options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
-            options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
-            options.SkipMSec = App.CommandLineArgs.SkipMSec;
-            options.LocalSymbolsOnly = false;
-            options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
-
-            string outputFileName = traceFileName + ".jitStats.html";
-            string etlxFilePath = traceFileName + ".etlx";
-            etlxFilePath = TraceLog.CreateFromLttngTextDataFile(traceFileName, etlxFilePath, options);
-
-            TraceLog traceLog = new TraceLog(etlxFilePath);
-            var source = traceLog.Events.GetSource();
-
-            Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> jitStats = new Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
-            Dictionary<int, List<object>> bgJitEvents = new Dictionary<int, List<object>>();
-
-            // attach callbacks to grab background JIT events
-            var clrPrivate = new ClrPrivateTraceEventParser(source);
-            clrPrivate.ClrMulticoreJitCommon += delegate (Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate.MulticoreJitPrivateTraceData data)
-            {
-                if (!bgJitEvents.ContainsKey(data.ProcessID))
-                {
-                    bgJitEvents.Add(data.ProcessID, new List<object>());
-                }
-
-                bgJitEvents[data.ProcessID].Add(data.Clone());
-            };
-            source.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
-            {
-                if (!bgJitEvents.ContainsKey(data.ProcessID))
-                {
-                    bgJitEvents.Add(data.ProcessID, new List<object>());
-                }
-
-                bgJitEvents[data.ProcessID].Add(data.Clone());
-            };
-
-            // process the model
-            Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
-            source.Process();
-            foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-            {
-                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !jitStats.ContainsKey(proc.ProcessID))
-                {
-                    jitStats.Add(proc.ProcessID, proc);
-                }
-            }
-
-            using (TextWriter output = File.CreateText(outputFileName))
-            {
-                Stats.ClrStats.ToHtml(output, jitStats.Values.ToList(), outputFileName, "JITStats", Stats.ClrStats.ReportType.JIT, true);
-            }
-        }
-
-#endif
 #if !PERFVIEW_COLLECT
         /// <summary>
         /// Dump every event in 'etlFileName' (which can be a ETL file or an ETL.ZIP file), as an XML file 'xmlOutputFileName'
@@ -1082,7 +976,6 @@ namespace PerfViewExtensibility
             OpenLog();
         }
 
-#if false
         /// <summary>
         /// Mainly here for testing
         /// </summary>
@@ -1097,7 +990,6 @@ namespace PerfViewExtensibility
             else
                 LogFile.WriteLine("[Could not find PDB for {0}]", dllName);
         }
-#endif
 
         public void LookupSymbols(string pdbFileName, string pdbGuid, string pdbAge)
         {
@@ -1516,32 +1408,6 @@ namespace PerfViewExtensibility
             }
         }
 
-#if false
-        public void Test()
-        {
-            Cache<string, string> myCache = new Cache<string, string>(8);
-
-            string prev = null;
-            for(int i = 0; ;  i++)
-            {
-                var str = i.ToString() + (i*i).ToString(); 
-
-                Trace.WriteLine(string.Format("**** BEFORE ITERATION {0} CACHE\r\n{1}********", i,  myCache.ToString()));
-                if (i == 48)
-                    break;
-
-                Trace.WriteLine(string.Format("ADD {0}", str));
-                myCache.Add(str, "Out" + str);
-
-                if (i % 2 == 0) myCache.Get("00");
-
-                Trace.WriteLine(string.Format("FETCH {0} = {1}", str, myCache.Get(str)));
-                if (prev != null)
-                    Trace.WriteLine(string.Format("FETCH {0} = {1}", prev, myCache.Get(prev)));
-                prev = str;
-            }
-        }
-#endif
         #region private
         /// <summary>
         /// Strips the file extension for files and if extension is .etl.zip removes both.

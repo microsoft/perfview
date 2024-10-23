@@ -158,21 +158,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public event Action<ProviderManifest> DynamicProviderAdded;
 
-#if false 
-        public event Action<EventCounterTraceData> EventCounter
-        {
-            add
-            {
-                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                // RegisterTemplate(new EventCounterTraceData(value, 0xFFFD, 0xFFFE, "EventSource", Guid.Empty, 253, "EventCounter", ProviderGuid, ProviderName));
-            }
-            remove
-            {
-                // source.UnregisterEventTemplate(value, 15, ProviderGuid);
-            }
-        }
-#endif
-
         #region private
         /// <summary>
         /// override
@@ -416,108 +401,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         #endregion
     }
-
-#if false 
-    public sealed class EventCounterTraceData : TraceEvent
-    {
-        public int DataCount { get { return GetInt32At(0); } }
-        public double Data(int index) { return GetDoubleAt(4 + index * 8); }
-        public int NamesCount { get { return GetInt32At(4 + 8 * DataCount); } }
-        public string Names(int index) { return GetUnicodeStringAt(OffsetForIndexInNamesArray(index)); }
-
-    #region Private
-        internal EventCounterTraceData(Action<EventCounterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.Action = action;
-            m_lastIdx = 0xFFFF; // Invalidate the cache
-        }
-        protected internal override void Dispatch()
-        {
-            m_lastIdx = 0xFFFF; // Invalidate the cache
-            Action(this);
-        }
-        protected internal override Delegate Target
-        {
-            get { return Action; }
-            set { Action = (Action<EventCounterTraceData>)value; }
-        }
-        protected internal override void Validate()
-        {
-            m_lastIdx = 0xFFFF; // Invalidate the cache     
-            Debug.Assert(!(Version == 0 && EventDataLength != OffsetForIndexInNamesArray(NamesCount)));
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "DataCount", DataCount);
-            XmlAttrib(sb, "NamesCount", NamesCount);
-            sb.AppendLine(">");
-            for (int i = 0; i < DataCount; i++)
-            {
-                string name = "";
-                if (i < NamesCount)
-                    name = Names(i);
-                sb.Append("  ").AppendLine(name).Append("=").Append(Data(i)).AppendLine();
-            }
-            sb.Append("</Event>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "DataCount", "NamesCount" };
-                return payloadNames;
-            }
-        }
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return DataCount;
-                case 1:
-                    return NamesCount;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private int OffsetForIndexInNamesArray(int targetIdx)
-        {
-            Debug.Assert(targetIdx <= NamesCount);
-            int idx = m_lastIdx;
-            int offset = m_lastOffset;
-            if (targetIdx < idx)
-            {
-                idx = 0;
-                offset = 8 + 8 * DataCount;
-            }
-
-            while (idx < targetIdx)
-            {
-                offset = SkipUnicodeString(offset);
-                idx++;
-            }
-            Debug.Assert(offset <= EventDataLength);
-            m_lastIdx = (ushort)idx;
-            m_lastOffset = (ushort)offset;
-            Debug.Assert(idx == targetIdx);
-            Debug.Assert(m_lastIdx == targetIdx && m_lastOffset == offset);     // No truncation
-            return offset;
-        }
-        private ushort m_lastIdx;
-        private ushort m_lastOffset;
-
-        private event Action<EventCounterTraceData> Action;
-
-    #endregion
-    }
-#endif
 
     #region internal classes
     /// <summary>

@@ -301,15 +301,6 @@ namespace PerfView
                 asMemoryGraphSource.PriorityRegExs = filterParams.TypePriority;
             }
 
-#if false    // TODO decide if we want this. 
-            if (m_computingStacks)
-            {
-                Debug.WriteLine("Already computing stacks, aborting that work");
-                Debug.Assert(false, "Understand why we are trying to compute stacks again");
-                // TODO there is a race here.  In theory you could be aborting the wrong work.  
-                StatusBar.AbortWork(true);
-            }
-#endif
             StatusBar.StartWork("Computing Stack Traces", delegate ()
             {
                 CallTree newCallTree = new CallTree(ScalingPolicy);
@@ -3421,13 +3412,6 @@ namespace PerfView
                 e.Handled = StatusBar.ExpandSelectionByANumber(TopStats);
                 return;
             };
-
-#if false // TODO FIX NOW remove 
-            Loaded += delegate(object sender, RoutedEventArgs e)
-            {
-                FindTextBox.GetTextBox().Focus(); // Put the focus on the find box to begin with
-            };
-#endif
 
             // The act of even setting the default text looks like a user action, ignore it.  
             if (m_ViewsShouldBeSaved)

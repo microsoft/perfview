@@ -536,16 +536,6 @@ namespace Stats
                 foreach (var perHeapHistory in gc.PerHeapHistories)
                 {
                     writer.Write("      <PerHeapHistory");
-#if false // TODO FIX NOW
-                    writer.Write(" MemoryPressure=\"{0:n0}\"", gc.perHeapHistory.MemoryPressure);
-                    writer.Write(" MechanismHeapExpand=\"{0}\"", gc.perHeapHistory.MechanismHeapExpand);
-                    writer.Write(" MechanismHeapCompact=\"{0}\"", gc.perHeapHistory.MechanismHeapCompact);
-                    writer.Write(" InitialGenCondemned=\"{0}\"", gc.perHeapHistory.InitialGenCondemned);
-                    writer.Write(" FinalGenCondemned=\"{0}\"", gc.perHeapHistory.FinalGenCondemned);
-                    writer.Write(" GenWithExceededBudget=\"{0}\"", gc.perHeapHistory.GenWithExceededBudget);
-                    writer.Write(" GenWithTimeTuning=\"{0}\"", gc.perHeapHistory.GenWithTimeTuning);
-                    writer.Write(" GenCondemnedReasons=\"{0}\"", gc.perHeapHistory.GenCondemnedReasons);
-#endif
                     if ((gc.PerHeapMarkTimes != null) && (gc.PerHeapMarkTimes.ContainsKey(HeapNum)))
                     {
                         MarkInfo mt = gc.PerHeapMarkTimes[HeapNum];
