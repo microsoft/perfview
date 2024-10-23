@@ -515,19 +515,6 @@ namespace PerfView
             }
         }
 
-        // TODO FIX NOW use or remove 
-#if false 
-        public InlineCollection NameContent
-        {
-            get
-            {
-                var textBlock = new TextBlock();
-                var hyperlink = new Hyperlink(new Run("testing"));
-                hyperlink.Tag = "hello";
-                hyperlink.Click = null;
-            }
-        }
-#endif
         /// <summary>
         /// Returns the list of code:CallTreeViewNode (rather than just code:CallTreeNode) associated
         /// with the children of this node (thus invible nodes are not present).   

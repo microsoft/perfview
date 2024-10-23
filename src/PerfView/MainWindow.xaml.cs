@@ -1831,17 +1831,7 @@ namespace PerfView
                 throw new ApplicationException("No item selected.");
             }
 
-            selectedItem.Open(this, StatusBar, delegate ()
-            {
-#if false // TODO FIX NOW this causes undesirable side effects of closing any opened tree nodes.    Remove permanently.
-                // The item was expanded after it was opened, refresh the current directory
-                if (selectedItem.IsExpanded)
-                {
-                    // refresh the directory.
-                    RefreshCurrentDirectory();
-                }
-#endif
-            });
+            selectedItem.Open(this, StatusBar);
         }
         private void DoClose(object sender, ExecutedRoutedEventArgs e)
         {
