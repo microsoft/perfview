@@ -113,14 +113,14 @@ namespace FastSerialization
             StreamLabelWidth.EightBytes,
             StreamReaderAlignment.EightBytes);
 
-        public SerializationSettings SetStreamLabelWidth(StreamLabelWidth width)
+        public SerializationSettings WithStreamLabelWidth(StreamLabelWidth width)
         {
             return new SerializationSettings(
                 width,
                 StreamReaderAlignment);
         }
 
-        public SerializationSettings SetStreamReaderAlignment(StreamReaderAlignment alignment)
+        public SerializationSettings WithStreamReaderAlignment(StreamReaderAlignment alignment)
         {
             return new SerializationSettings(
                 StreamLabelWidth,
