@@ -18,12 +18,8 @@ namespace FastSerialization
         /// </summary>
         public SegmentedMemoryStreamReader(SegmentedList<byte> data, long start, long length, SerializationSettings settings)
         {
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
-            Settings = settings;
             if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
             {
                 readLabel = () =>

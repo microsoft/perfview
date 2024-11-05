@@ -40,11 +40,7 @@ namespace FastSerialization
             _fileLength = length;
             _leaveOpen = leaveOpen;
 
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
-            Settings = settings;
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
             if (IntPtr.Size == 4)
             {

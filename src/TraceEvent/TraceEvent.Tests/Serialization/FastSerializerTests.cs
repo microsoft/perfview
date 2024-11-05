@@ -63,7 +63,7 @@ namespace TraceEventTests
 
             SampleSerializableType sample = new SampleSerializableType(SampleSerializableType.ConstantValue);
             MemoryStream ms = new MemoryStream();
-            Serializer s = new Serializer(new IOStreamStreamWriter(ms, settings, leaveOpen:true), sample);
+            Serializer s = new Serializer(new IOStreamStreamWriter(ms, settings, leaveOpen: true), sample);
             s.Dispose();
 
             Deserializer d = new Deserializer(new PinnedStreamReader(ms, settings), "name");

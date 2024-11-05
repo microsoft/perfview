@@ -10,12 +10,8 @@ namespace FastSerialization
         public SegmentedMemoryStreamWriter(SerializationSettings settings) : this(64, settings) { }
         public SegmentedMemoryStreamWriter(long initialSize, SerializationSettings settings)
         {
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
-            Settings = settings;
             if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
             {
                 writeLabel = (value) =>

@@ -32,13 +32,9 @@ namespace FastSerialization
             position = start;
             endPosition = length;
 
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
-            Settings = settings;
-            if(Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
             {
                 readLabel = () =>
                 {
@@ -256,12 +252,8 @@ namespace FastSerialization
         /// </summary>
         public MemoryStreamWriter(SerializationSettings settings, int initialSize = 64)
         {
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
-            Settings = settings;
             if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
             {
                 writeLabel = (value) =>
