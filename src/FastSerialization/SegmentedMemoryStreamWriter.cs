@@ -7,12 +7,12 @@ namespace FastSerialization
 {
     public class SegmentedMemoryStreamWriter
     {
-        public SegmentedMemoryStreamWriter(SerializationConfiguration config = null) : this(64, config) { }
-        public SegmentedMemoryStreamWriter(long initialSize, SerializationConfiguration config = null)
+        public SegmentedMemoryStreamWriter(SerializationSettings settings) : this(64, settings) { }
+        public SegmentedMemoryStreamWriter(long initialSize, SerializationSettings settings)
         {
-            SerializationConfiguration = config ?? new SerializationConfiguration();
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
-            if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
             {
                 writeLabel = (value) =>
                 {
@@ -100,14 +100,14 @@ namespace FastSerialization
         public SegmentedMemoryStreamReader GetReader()
         {
             var readerBytes = bytes;
-            return new SegmentedMemoryStreamReader(readerBytes, 0, readerBytes.Count, SerializationConfiguration);
+            return new SegmentedMemoryStreamReader(readerBytes, 0, readerBytes.Count, Settings);
         }
         public void Dispose() { }
 
         /// <summary>
-        /// Returns the SerializationConfiguration for this stream writer.
+        /// Returns the SerializerSettings for this stream writer.
         /// </summary>
-        internal SerializationConfiguration SerializationConfiguration { get; private set; }
+        internal SerializationSettings Settings { get; private set; }
 
         #region private
         protected virtual void MakeSpace()
