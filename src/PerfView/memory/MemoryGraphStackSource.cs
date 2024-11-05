@@ -80,26 +80,6 @@ namespace Graphs
         }
         public NodeIndex GetNodeIndexForSample(StackSourceSampleIndex sampleIdx) { return (NodeIndex)sampleIdx; }
 
-#if false // TODO FIX NOW REMOVE 
-        // We support sampling rate.  
-        public override float? SamplingRate
-        {
-            get { return m_samplingRate; }
-            set
-            {
-                var newRate = 1.0F;
-                if (value.HasValue && 1 <= value.Value)
-                    newRate = value.Value;
-                else
-                    m_samplingRate = 1;
-
-                // Also update the count multiplier.  
-                CountMultiplier = CountMultiplier / m_samplingRate * newRate;
-                m_samplingRate = newRate;
-            }
-        }
-#endif
-
         /// <summary>
         /// Every type is given a priority of 0 unless the type name matches one of 
         /// the patterns in PriorityRegExs.  If it does that type is assigned that priority.

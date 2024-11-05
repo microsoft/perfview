@@ -531,14 +531,6 @@ namespace Microsoft.Diagnostics.Utilities
                 outputStream = File.CreateText(options.outputFile);
             }
 
-#if false
-            if (options.showCommand && outputStream != null)
-            {
-                // TODO why only for output streams?
-                outputStream.WriteLine("RUN CMD: " + commandLine);
-            }
-#endif
-
             try
             {
                 process.Start();

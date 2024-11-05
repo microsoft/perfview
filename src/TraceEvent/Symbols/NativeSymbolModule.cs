@@ -114,19 +114,11 @@ namespace Microsoft.Diagnostics.Symbols
                     ret = ret.Substring(1);
                 }
 
-#if false // TODO FIX NOW remove  
-                var m = Regex.Match(ret, @"(.*)@\d+$");
-                if (m.Success)
-                    ret = m.Groups[1].Value;
-                else
-                    Debug.WriteLine(string.Format("Warning: address 0x{0:x} symbol {1} has a mangled name.", rva, ret));
-#else
                 var atIdx = ret.IndexOf('@');
                 if (0 < atIdx)
                 {
                     ret = ret.Substring(0, atIdx);
                 }
-#endif
             }
 
             // See if this is a NGEN mangled name, which is $#Assembly#Token suffix.  If so strip it off. 
@@ -1639,18 +1631,6 @@ tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/V
             return ((int)RVA - (int)other.RVA);
         }
         #region private
-#if false
-        // TODO FIX NOW use or remove
-        internal enum NameSearchOptions
-        {
-            nsNone,
-            nsfCaseSensitive = 0x1,
-            nsfCaseInsensitive = 0x2,
-            nsfFNameExt = 0x4,                  // treat as a file path
-            nsfRegularExpression = 0x8,         // * and ? wildcards
-            nsfUndecoratedName = 0x10,          // A undecorated name is the name you see in the source code.  
-        };
-#endif
 
         /// <summary>
         /// override

@@ -277,41 +277,6 @@ namespace Microsoft.Diagnostics.Utilities
             #endregion 
         }
 
-#if false
-        public override string ToString()
-        {
-            System.IO.StringWriter writer = new System.IO.StringWriter();
-
-            writer.WriteLine("Cache {");
-            writer.WriteLine(" MaxEntries: {0}", MaxEntries);
-            writer.WriteLine(" CurAge: {0}", m_curAge);
-            writer.WriteLine(" EntriesInCurrentAge: {0}", m_entriesInCurAge);
-            writer.WriteLine(" FreeScan: {0}", m_freeScan);
-            writer.WriteLine(" FreeEntries: {0}", m_freeEntries);
-            writer.WriteLine(" values: [");
-            for (int i = 0; i < m_hashTable.Length; i++)
-            {
-                var entryIdx = m_hashTable[i];
-                while (entryIdx != End)
-                {
-                    writer.WriteLine("   Entry {");
-                    writer.WriteLine("      HashIdx: {0}", i);
-                    writer.WriteLine("      EntryIdx: {0}", entryIdx);
-                    writer.WriteLine("      Age: {0}", m_entries[entryIdx].Age);
-                    writer.WriteLine("      Hash: {0}", m_entries[entryIdx].Hash);
-                    writer.WriteLine("      Key: {0}", m_entries[entryIdx].Key.ToString());
-                    writer.WriteLine("      Value: {0}", m_entries[entryIdx].Value.ToString());
-                    writer.WriteLine("   },");
-                    entryIdx = m_entries[entryIdx].Next;
-                }
-            }
-
-            writer.WriteLine(" ],");
-            writer.WriteLine("}");
-            return writer.ToString();
-        }
-#endif
-
         /// <summary>
         /// Represents a null pointer (end of a linked list)
         /// </summary>

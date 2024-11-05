@@ -62,25 +62,6 @@ namespace PerfView
         }
         private void DoExpand(object sender, ExecutedRoutedEventArgs e)
         {
-#if false // TODO FIX NOW 
-            var selectedNode = TreeViewGrid.SelectedNode;
-            if (selectedNode != null)
-            {
-                for (; ; )
-                {
-                    if (!selectedNode.IsExpanded)
-                    {
-                        selectedNode.IsExpanded = true;
-                        break;
-                    }
-
-                    var children = selectedNode.VisibleChildren;
-                    if (children.Count < 1)
-                        break;
-                    selectedNode = children[0];
-                }
-            }
-#endif 
         }
 
         /// <summary>

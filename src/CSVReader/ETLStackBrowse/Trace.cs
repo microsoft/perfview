@@ -1253,59 +1253,6 @@ namespace ETLStackBrowse
 
         public const int standardPlotRows = 25;
         public const int standardPlotColumns = 50;
-#if false 
-        public string ComputeDistribution()
-        {
-            IRollupParameters rollupParameters = itparms.RollupParameters;
-
-            string savedCommand = rollupParameters.RollupCommand;
-            int savedIntervals = rollupParameters.RollupTimeIntervals;
-
-            rollupParameters.RollupTimeIntervals = standardPlotColumns;
-            rollupParameters.RollupCommand = ">/$R */$T";
-
-            RollupResults r = ComputeRollupRaw();
-
-            rollupParameters.RollupTimeIntervals = savedIntervals;
-            rollupParameters.RollupCommand = savedCommand;
-
-            return PlotRollup(standardPlotRows, standardPlotColumns, r);
-        }
-
-        public string PlotRollup(int rows, int cols, RollupResults r)
-        {
-            if (r.rollupRoot == null || r.rollupRoot.children == null || r.rollupRoot.children.Count == 0)
-                return "No Results";
-
-            StringWriter sw = new StringWriter();
-
-            sw.WriteLine("Time: {0:n0} to {1:n0} ({2:n0} usec)", itparms.T0, itparms.T1, itparms.T1 - itparms.T0);
-            sw.WriteLine("Total Matching Events: {0:n0}", r.rollupRoot.count);
-
-            string yLabel = "Event Number";
-
-            long[] counts = new long[cols]; 
-
-            foreach (RollupNode child in r.rollupRoot.children)
-            {
-                sw.WriteLine();
-                sw.WriteLine();
-
-                string xLabel = String.Format("{0} Event Counts", r.atoms.MakeString(child.id));
-
-                for (int i = 0; i < counts.Length; i++)
-                    counts[i] = 0;
-
-                for (int i = 0; i < child.children.Count && i < cols; i++)
-                    counts[i] = child.children[i].count;
-
-                sw.WriteLine(FormatOnePlot(rows, cols, xLabel, yLabel, counts));
-            }
-
-            return sw.ToString();
-        }
-#endif
-
         public static string FormatOnePlot(int rows, int cols, string xLabel, string yLabel, long[] counts)
         {
             StringWriter sw = new StringWriter();

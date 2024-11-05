@@ -751,17 +751,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public StackSourceInterner Interner { get; private set; }
 
         #region overrides
-        // TODO this should be added to the stack source interface and overriden here 
-#if false 
-        /// <summary>
-        /// Implementation of the StackSource interface
-        /// </summary>
-        public StackSourceModuleIndex GetModuleIndex(StackSourceFrameIndex frameIndex)
-        {
-            return Interner.GetModuleIndex(frameIndex);
-        }
-#endif
-
         /// <summary>
         /// Implementation of the StackSource interface
         /// </summary>

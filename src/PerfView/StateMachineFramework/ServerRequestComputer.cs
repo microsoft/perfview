@@ -551,24 +551,6 @@ namespace PerfView
             WCFServerRequest request;
             if (m_wcfServerRequests.TryGetValue(requestKey, out request))
             {
-#if false // TODO FIX NOW remove 
-                // WCF Server request reuse the IDs for nested calls.  This is unfortunate.   We detect this situation because WCF requests 
-                // should always be inside ASP.NET requests an those requests DO create distict IDs.   Thus if two WCF request have the
-                // same ASP.NET parent, then they are not nested (we reuse the current WCF request), but otherwise we assume that they
-                // are nested and 'push' this WCF request on a stack of WCF requests with the same ID.  
-                var threadAspNetThreadRequest = GetAspNetServerRequestForThread(thread);
-
-                // We really should have set an ASP.NET request before processing a WCF request, in this case give up on detecting nesting
-                if (threadAspNetThreadRequest == null)
-                    return request;
-
-                // The requests are the same we don't have nested 
-                if (request.ASPNetRequest == threadAspNetThreadRequest)
-                {
-                    Debug.Assert(aspNetRequestId == request.ASPNetRequest.RequestID || aspNetRequestId == Guid.Empty);
-                       return request;
-                }
-#endif
                 // If we are in the right context, return the request.   If  return if we are the right context.  
                 if (request.ASPNetRequest.RequestID == aspNetRequestId)
                 {
