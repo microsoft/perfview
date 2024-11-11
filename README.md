@@ -152,7 +152,7 @@ the debugger to figure out what went wrong.
 This repository uses Azure DevOps to automatically build and test pull requests, which allows
 the community to easily view build results. The build and status reflected here is the Azure DevOps build status of the **main** branch.
 
-[![Build Status](https://dev.azure.com/ms/perfview/_apis/build/status%2FCI?branchName=main)](https://dev.azure.com/ms/perfview/_build/latest?definitionId=332&branchName=main)
+[![Build Status](https://dev.azure.com/dnceng-public/public/_apis/build/status%2Fmicrosoft.perfview?branchName=main)](https://dev.azure.com/dnceng-public/public/_build/latest?definitionId=294&branchName=main)
 
 > :warning: Builds produced by Azure DevOps CI are not considered official builds of PerfView, and are not signed or otherwise
 > validated for safety or security in any way. This build integration is provided as a convenience for community
