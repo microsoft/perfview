@@ -948,7 +948,7 @@ IsMariner()
     if [ -f /etc/lsb-release ]
     then
         local flavor=`cat /etc/lsb-release | grep DISTRIB_ID`
-        if [ "$flavor" == "DISTRIB_ID=\"Mariner\"" ]
+        if [ "$flavor" == "DISTRIB_ID=\"Mariner\"" ] || [ "$flavor" == "DISTRIB_ID=\"azurelinux\"" ]
         then
             mariner=1
         fi
