@@ -6884,6 +6884,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsDotNETRuntime
         Generic = 0x2,
         HasSharedGenericCode = 0x4,
         Jitted = 0x8,
+        JitHelperMethod = 0x10,
     }
     [Flags]
     public enum ModuleFlags

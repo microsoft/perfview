@@ -1270,6 +1270,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // FIX NOW HACK, because Method and Module unload methods are missing.
             jittedMethods = new List<MethodLoadUnloadVerboseTraceData>();
+            jitHelpers = new List<MethodLoadUnloadVerboseTraceData>();
             jsJittedMethods = new List<MethodLoadUnloadJSTraceData>();
             sourceFilesByID = new Dictionary<JavaScriptSourceKey, string>();
 
@@ -1572,7 +1573,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             Action<MethodLoadUnloadVerboseTraceData> onMethodStart = delegate (MethodLoadUnloadVerboseTraceData data)
                 {
                     // We only capture data on unload, because we collect the addresses first.
-                    if (!data.IsDynamic && !data.IsJitted)
+                    if (!data.IsDynamic && !data.IsJitted && !data.IsJitHelper)
                     {
                         bookKeepingEvent = true;
                     }
@@ -1593,6 +1594,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         });
 
                         jittedMethods.Add((MethodLoadUnloadVerboseTraceData)data.Clone());
+                    }
+
+                    if (data.IsJitHelper)
+                    {
+                        jitHelpers.Add((MethodLoadUnloadVerboseTraceData)data.Clone());
                     }
                 };
             rawEvents.Clr.MethodLoadVerbose += onMethodStart;
@@ -2327,6 +2333,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             foreach (var jittedMethod in jittedMethods)
             {
                 codeAddresses.AddMethod(jittedMethod);
+            }
+
+            foreach (var jitHelper in jitHelpers)
+            {
+                codeAddresses.AddMethod(jitHelper);
             }
 
             foreach (var jsJittedMethod in jsJittedMethods)
@@ -4080,6 +4091,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         // TODO FIX NOW remove the jittedMethods ones.
         private List<MethodLoadUnloadVerboseTraceData> jittedMethods;
+        private List<MethodLoadUnloadVerboseTraceData> jitHelpers;
         private List<MethodLoadUnloadJSTraceData> jsJittedMethods;
         private Dictionary<JavaScriptSourceKey, string> sourceFilesByID;
 
