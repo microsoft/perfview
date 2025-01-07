@@ -181,7 +181,6 @@ namespace Microsoft.Diagnostics.Tracing
                     else if (data.Opcode == TraceEventOpcode.Info && data.providerGuid == OpenTelemetrySdkProvider)
                     {
                         FixAndProcessAzureMonitorOpenTelemetryEvents(data);
-                        return;
                     }
 
                     return;
