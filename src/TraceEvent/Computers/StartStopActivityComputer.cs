@@ -149,12 +149,6 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                 }
 #endif
-                // Special case - OpenTelemetry-Sdk
-                else if (data.Opcode == TraceEventOpcode.Info && data.providerGuid == OpenTelemetrySdkProvider)
-                {
-                    FixAndProcessAzureMonitorOpenTelemetryEvents(data);
-                    return;
-                }
 
                 // TODO decide what the correct heuristic for deciding what start-stop events are interesting.  
                 // Currently I only do this for things that might be an EventSource 
@@ -182,6 +176,12 @@ namespace Microsoft.Diagnostics.Tracing
                     else if (data.Opcode == TraceEventOpcode.Info && data.ProviderGuid == AdoNetProvider)
                     {
                         FixAndProcessAdoNetEvents(data);
+                    }
+                    // Special case - OpenTelemetry-Sdk
+                    else if (data.Opcode == TraceEventOpcode.Info && data.providerGuid == OpenTelemetrySdkProvider)
+                    {
+                        FixAndProcessAzureMonitorOpenTelemetryEvents(data);
+                        return;
                     }
 
                     return;
@@ -717,7 +717,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 uint nibble = (uint)(*bytePtr >> 4);
                 bool secondNibble = false;              // are we reading the second nibble (low order bits) of the byte.
-                NextNibble:
+            NextNibble:
                 if (nibble == (uint)NumberListCodes.End)
                 {
                     break;
