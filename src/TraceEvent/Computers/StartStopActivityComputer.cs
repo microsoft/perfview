@@ -180,7 +180,7 @@ namespace Microsoft.Diagnostics.Tracing
                     // Special case - OpenTelemetry-Sdk
                     else if (data.Opcode == TraceEventOpcode.Info && data.providerGuid == OpenTelemetrySdkProvider)
                     {
-                        FixAndProcessAzureMonitorOpenTelemetryEvents(data);
+                        FixAndProcessOpenTelemetrySdkEvents(data);
                     }
 
                     return;
@@ -1138,7 +1138,7 @@ namespace Microsoft.Diagnostics.Tracing
             return false;
         }
 
-        private void FixAndProcessAzureMonitorOpenTelemetryEvents(TraceEvent data)
+        private void FixAndProcessOpenTelemetrySdkEvents(TraceEvent data)
         {
             Debug.Assert(data.ProviderGuid == OpenTelemetrySdkProvider);
             if (data.EventName == "ActivityStarted")
