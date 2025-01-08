@@ -879,6 +879,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     GCStats.ProcessCommittedUsage(stats, committedUsage);
                 };
 
+                source.Clr.GCDynamicEvent.GCOOMDetails += delegate (OOMDetailsTraceEvent oomDetails)
+                {
+                    var stats = currentManagedProcess(oomDetails.UnderlyingEvent);
+                    GCStats.ProcessOOMEvent(stats, oomDetails);
+                };
+
                 source.Clr.GCDynamicEvent.GCDynamicTraceEvent += delegate (GCDynamicTraceEvent gcDynamic)
                 {
                     var stats = currentManagedProcess(gcDynamic.UnderlyingEvent);
@@ -2146,6 +2152,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         public CommittedUsage CommittedUsageBefore { get; internal set; }
         public CommittedUsage CommittedUsageAfter { get; internal set; }
+        public List<OOMDetails> OOMDetails { get; internal set; } = new List<OOMDetails>();
 
         /// <summary>
         /// Memory survival percentage by generation
@@ -4992,6 +4999,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     _event.CommittedUsageAfter = traceData;
                 }
             }
+        }
+
+        internal static void ProcessOOMEvent(TraceLoadedDotNetRuntime proc, OOMDetailsTraceEvent oomDetailsTrace)
+        {
+            TraceGC _event = GetLastGC(proc);
+            _event.OOMDetails.Add(new OOMDetails
+            {
+                GCIndex = oomDetailsTrace.GCIndex,
+                Allocated = oomDetailsTrace.Allocated,
+                Size = oomDetailsTrace.Size,
+            });
         }
 
         internal static void ProcessGCDynamicEvent(TraceLoadedDotNetRuntime proc, GCDynamicTraceEvent gcDynamic)

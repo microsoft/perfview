@@ -32,6 +32,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // They ensure that Dispatch is called so that the specific event handlers are called for each event.
             ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEventBase.GCDynamicTemplate));
             ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEventBase.CommittedUsageTemplate));
+            ((ITraceParserServices)source).RegisterEventTemplate(GCDynamicTemplate(Dispatch, GCDynamicEventBase.OOMDetailsTemplate));
         }
 
         protected override string GetProviderName()
@@ -43,7 +44,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[2];
+                var templates = new TraceEvent[3];
 
                 // This template ensures that all GC dynamic events are parsed properly.
                 templates[0] = GCDynamicTemplate(null, GCDynamicEventBase.GCDynamicTemplate);
@@ -51,6 +52,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 // A template must be registered for each dynamic event type.  This ensures that after the event is converted
                 // to its final form and saved in a TraceLog, that it can still be properly parsed and dispatched.
                 templates[1] = GCDynamicTemplate(null, GCDynamicEventBase.CommittedUsageTemplate);
+                templates[2] = GCDynamicTemplate(null, GCDynamicEventBase.OOMDetailsTemplate);
 
                 s_templates = templates;
             }
@@ -86,6 +88,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
+        private event Action<OOMDetailsTraceEvent> _OOMDetails;
+        public event Action<OOMDetailsTraceEvent> GCOOMDetails
+        {
+            add
+            {
+                _OOMDetails += value;
+            }
+            remove
+            {
+                _OOMDetails -= value;
+            }
+        }
+
         /// <summary>
         /// Responsible for dispatching the event after we determine its type
         /// and parse it.
@@ -96,6 +111,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 data.eventID == GCDynamicEventBase.CommittedUsageTemplate.ID)
             {
                 _gcCommittedUsage(data.EventPayload as CommittedUsageTraceEvent);
+            }
+
+            else if (_OOMDetails != null &&
+                data.eventID == GCDynamicEventBase.OOMDetailsTemplate.ID)
+            {
+                _OOMDetails(data.EventPayload as OOMDetailsTraceEvent);
             }
 
             else if (_gcDynamicTraceEvent != null &&
@@ -160,6 +181,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
 
         private readonly CommittedUsageTraceEvent _committedUsageTemplate = new CommittedUsageTraceEvent();
         private readonly GCDynamicTraceEvent _gcDynamicTemplate = new GCDynamicTraceEvent();
+        private readonly OOMDetailsTraceEvent _oomDetailsTemplate = new OOMDetailsTraceEvent();
 
         /// <summary>
         /// Contains the fully parsed payload of the dynamic event.
@@ -171,6 +193,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
                 if (eventID == GCDynamicEventBase.CommittedUsageTemplate.ID)
                 {
                     return _committedUsageTemplate.Bind(this);
+                }
+
+                else if (eventID == GCDynamicEventBase.OOMDetailsTemplate.ID)
+                {
+                    return _oomDetailsTemplate.Bind(this);
                 }
 
                 return _gcDynamicTemplate.Bind(this);
@@ -214,6 +241,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
                 eventTemplate = GCDynamicEventBase.CommittedUsageTemplate;
             }
 
+            else if (Name.Equals(GCDynamicEventBase.OOMDetailsTemplate.OpcodeName, StringComparison.InvariantCultureIgnoreCase))
+            {
+                eventTemplate = GCDynamicEventBase.OOMDetailsTemplate;
+            }
+
             SetMetadataFromTemplate(eventTemplate);
         }
 
@@ -237,6 +269,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         /// </summary>
         internal static readonly GCDynamicTraceEvent GCDynamicTemplate = new GCDynamicTraceEvent();
         internal static readonly CommittedUsageTraceEvent CommittedUsageTemplate = new CommittedUsageTraceEvent();
+        internal static readonly OOMDetailsTraceEvent OOMDetailsTemplate = new OOMDetailsTraceEvent();
 
         /// <summary>
         /// Metadata that must be specified for each specific type of dynamic event.
@@ -327,6 +360,103 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
                 yield return new KeyValuePair<string, object>("ClrInstanceID", UnderlyingEvent.ClrInstanceID);
             }
         }
+    }
+
+    public sealed class OOMDetailsTraceEvent : GCDynamicEventBase
+    {
+        public short Version { get { return BitConverter.ToInt16(DataField, 0); } }
+        public ulong GCIndex { get { return BitConverter.ToUInt64(DataField, 2); } }
+        public ushort Allocated { get { return BitConverter.ToUInt16(DataField, 10); } }
+        public ushort Reserved { get { return BitConverter.ToUInt16(DataField, 12); } }
+        public ulong AllocSize { get { return BitConverter.ToUInt64(DataField, 14); } }
+        public ushort Reason { get { return BitConverter.ToUInt16(DataField, 22); } }
+        public ushort FailToGetMemory { get { return BitConverter.ToUInt16(DataField, 24); } }
+        public ulong Size { get { return BitConverter.ToUInt16(DataField, 26); } }
+        public ushort IsLOH { get { return BitConverter.ToUInt16(DataField, 34); } }
+        public uint MemoryLoad { get { return BitConverter.ToUInt16(DataField, 36); } }
+
+        internal override TraceEventID ID => TraceEventID.Illegal - 12;
+
+        internal override string TaskName => "GC";
+
+        internal override string OpcodeName => "OOMDetails";
+
+        internal override string EventName => "GC/OOMDetails";
+
+        private string[] _payloadNames;
+        internal override string[] PayloadNames
+        {
+            get
+            {
+                if (_payloadNames == null)
+                {
+                    _payloadNames = new string[] { "Version", "GCIndex", "Allocated", "Reserved", "AllocSize", "Reason", "FailToGetMemory", "Size", "IsLOH", "MemoryLoad", "AvailablePageFileMB" };
+                }
+
+                return _payloadNames;
+            }
+        }
+
+        internal override IEnumerable<KeyValuePair<string, object>> PayloadValues
+        {
+            get
+            {
+                yield return new KeyValuePair<string, object>("Version", Version);
+                yield return new KeyValuePair<string, object>("GCIndex", GCIndex);
+                yield return new KeyValuePair<string, object>("Allocated", Allocated);
+                yield return new KeyValuePair<string, object>("Reserved", Reserved);
+                yield return new KeyValuePair<string, object>("AllocSize", AllocSize);
+                yield return new KeyValuePair<string, object>("Reason", Reason);
+                yield return new KeyValuePair<string, object>("FailToGetMemory", FailToGetMemory);
+                yield return new KeyValuePair<string, object>("Size", Size);
+                yield return new KeyValuePair<string, object>("IsLOH", IsLOH);
+                yield return new KeyValuePair<string, object>("MemoryLoad", MemoryLoad);
+                yield return new KeyValuePair<string, object>("AvailablePageFileMB", MemoryLoad);
+            }
+        }
+
+        internal override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return Version;
+                case 1:
+                    return GCIndex;
+                case 2:
+                    return Allocated;
+                case 3:
+                    return Reserved;
+                case 4:
+                    return AllocSize;
+                case 5:
+                    return Reason;
+                case 6:
+                    return FailToGetMemory;
+                case 7:
+                    return Size;
+                case 8:
+                    return IsLOH;
+                case 9:
+                    return MemoryLoad;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+    }
+
+    public sealed class OOMDetails
+    {
+        public ulong GCIndex { get; internal set; }
+        public ushort Allocated { get; internal set; }
+        public ushort Reserved { get; internal set; }
+        public ulong AllocSize { get; internal set; }
+        public ushort Reason { get; internal set; }
+        public ushort FailToGetMemory { get; internal set; }
+        public ulong Size { get; internal set; }
+        public ushort IsLOH { get; internal set; }
+        public uint MemoryLoad { get; internal set; }
     }
 
     public sealed class CommittedUsageTraceEvent : GCDynamicEventBase
