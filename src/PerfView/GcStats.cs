@@ -561,37 +561,37 @@ namespace Stats
                                 writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkHandles]);
                             }
 
-                            writer.Write(" MarkSizedRef =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkSizedRef]);
+                            writer.Write("\" MarkSizedRef =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkSizedRef]);
                             if (mt.MarkPromoted != null)
                             {
                                 writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkSizedRef]);
                             }
 
-                            writer.Write(" MarkOverflow =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOverflow]);
+                            writer.Write("\" MarkOverflow =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOverflow]);
                             if (mt.MarkPromoted != null)
                             {
                                 writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOverflow]);
                             }
 
-                            writer.Write(" MarkDependentHandles =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkDependentHandles]);
+                            writer.Write("\" MarkDependentHandles =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkDependentHandles]);
                             if (mt.MarkPromoted != null)
                             {
                                 writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkDependentHandles]);
                             }
 
-                            writer.Write(" MarkNewFQ =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkNewFQ]);
+                            writer.Write("\" MarkNewFQ =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkNewFQ]);
                             if (mt.MarkPromoted != null)
                             {
                                 writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkNewFQ]);
                             }
 
-                            writer.Write(" MarkSteal =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkSteal]);
+                            writer.Write("\" MarkSteal =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkSteal]);
                             if (mt.MarkPromoted != null)
                             {
                                 writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkSteal]);
                             }
 
-                            writer.Write(" MarkBGCRoots =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkBGCRoots]);
+                            writer.Write("\" MarkBGCRoots =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkBGCRoots]);
                             if (mt.MarkPromoted != null)
                             {
                                 writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkBGCRoots]);
@@ -607,14 +607,6 @@ namespace Stats
                                 }
 
                                 writer.Write("\"");
-                            }
-                            if (mt.MarkTimes[(int)MarkRootType.MarkOverflow] != 0.0)
-                            {
-                                writer.Write(" MarkOverflow =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOverflow]);
-                                if (mt.MarkPromoted != null)
-                                {
-                                    writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOverflow]);
-                                }
                             }
                         }
                         if (gc.LOHCompactInfos.Count > 0)
