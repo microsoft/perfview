@@ -515,6 +515,7 @@ namespace Stats
                 {
                     if (gc.TimingInfo[(int)TraceGC.TimingType.MarkRoot].HasValue) { writer.Write(" MarkRoot=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkRoot].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization].HasValue) { writer.Write(" MarkScanFinalization=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.MarkShortWeak].HasValue) { writer.Write(" MarkShortWeak=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkShortWeak].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak].HasValue) { writer.Write(" MarkLongWeak=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.Plan].HasValue) { writer.Write(" Plan=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Plan].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.Relocate].HasValue) { writer.Write(" Relocate=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Relocate].Value); }
@@ -558,6 +559,42 @@ namespace Stats
                             if (mt.MarkPromoted != null)
                             {
                                 writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkHandles]);
+                            }
+
+                            writer.Write(" MarkSizedRef =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkSizedRef]);
+                            if (mt.MarkPromoted != null)
+                            {
+                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkSizedRef]);
+                            }
+
+                            writer.Write(" MarkOverflow =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOverflow]);
+                            if (mt.MarkPromoted != null)
+                            {
+                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOverflow]);
+                            }
+
+                            writer.Write(" MarkDependentHandles =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkDependentHandles]);
+                            if (mt.MarkPromoted != null)
+                            {
+                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkDependentHandles]);
+                            }
+
+                            writer.Write(" MarkNewFQ =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkNewFQ]);
+                            if (mt.MarkPromoted != null)
+                            {
+                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkNewFQ]);
+                            }
+
+                            writer.Write(" MarkSteal =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkSteal]);
+                            if (mt.MarkPromoted != null)
+                            {
+                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkSteal]);
+                            }
+
+                            writer.Write(" MarkBGCRoots =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkBGCRoots]);
+                            if (mt.MarkPromoted != null)
+                            {
+                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkBGCRoots]);
                             }
 
                             writer.Write("\"");
