@@ -543,69 +543,48 @@ namespace Stats
 
                         if (mt != null)
                         {
-                            writer.Write(" MarkStack =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkStack]);
-                            if (mt.MarkPromoted != null)
+                            void WriteDetailsAboutMarkRootType(MarkRootType type)
                             {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkStack]);
-                            }
-
-                            writer.Write("\" MarkFQ =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkFQ]);
-                            if (mt.MarkPromoted != null)
-                            {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkFQ]);
-                            }
-
-                            writer.Write("\" MarkHandles =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkHandles]);
-                            if (mt.MarkPromoted != null)
-                            {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkHandles]);
-                            }
-
-                            writer.Write("\" MarkSizedRef =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkSizedRef]);
-                            if (mt.MarkPromoted != null)
-                            {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkSizedRef]);
-                            }
-
-                            writer.Write("\" MarkOverflow =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOverflow]);
-                            if (mt.MarkPromoted != null)
-                            {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOverflow]);
-                            }
-
-                            writer.Write("\" MarkDependentHandles =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkDependentHandles]);
-                            if (mt.MarkPromoted != null)
-                            {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkDependentHandles]);
-                            }
-
-                            writer.Write("\" MarkNewFQ =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkNewFQ]);
-                            if (mt.MarkPromoted != null)
-                            {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkNewFQ]);
-                            }
-
-                            writer.Write("\" MarkSteal =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkSteal]);
-                            if (mt.MarkPromoted != null)
-                            {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkSteal]);
-                            }
-
-                            writer.Write("\" MarkBGCRoots =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkBGCRoots]);
-                            if (mt.MarkPromoted != null)
-                            {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkBGCRoots]);
-                            }
-
-                            writer.Write("\"");
-                            if (gc.Generation != 2)
-                            {
-                                writer.Write(" MarkOldGen =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOlder]);
+                                writer.Write(" {0}=\"{1:n3}", type, mt.MarkTimes[(int)type]);
                                 if (mt.MarkPromoted != null)
                                 {
-                                    writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOlder]);
+                                    writer.Write("({0})", mt.MarkPromoted[(int)type]);
                                 }
+                                writer.Write("\"");
+                            }
 
+                            WriteDetailsAboutMarkRootType(MarkRootType.MarkStack);
+                            WriteDetailsAboutMarkRootType(MarkRootType.MarkFQ);
+                            WriteDetailsAboutMarkRootType(MarkRootType.MarkHandles);
+
+                            // Condition:  if ((condemned_gen_number == max_generation) && (num_sizedrefs > 0))
+                            if (gc.Generation == 2)
+                            {
+                                WriteDetailsAboutMarkRootType(MarkRootType.MarkSizedRef);
+                            }
+
+                            WriteDetailsAboutMarkRootType(MarkRootType.MarkOverflow);
+                            WriteDetailsAboutMarkRootType(MarkRootType.MarkDependentHandles);
+                            WriteDetailsAboutMarkRootType(MarkRootType.MarkNewFQ);
+
+                            // Condition: if (do_mark_steal_p)
+                            // if (full_p && total_heap_size > (100 * 1024 * 1024))
+                            if (gc.Generation == 2)
+                            {
+                                WriteDetailsAboutMarkRootType(MarkRootType.MarkSteal);
+                            }
+
+                            // Condition: if (gc_heap::background_running_p())
+                            if (gc.Type == GCType.BackgroundGC || gc.Type == GCType.ForegroundGC)
+                            {
+                                WriteDetailsAboutMarkRootType(MarkRootType.MarkBGCRoots);
+                            }
+
+                            // Condition: if !Gen2
+                            if (gc.Generation != 2)
+                            {
+                                writer.Write("\"");
+                                WriteDetailsAboutMarkRootType(MarkRootType.MarkOlder);
                                 writer.Write("\"");
                             }
                         }
