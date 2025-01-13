@@ -2284,7 +2284,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Memory promoted by generation (mb)
         /// Note that in 4.0 TotalPromotedSize is not entirely accurate (since it doesn't
-        /// count the pins that got demoted. We could consider using the PerHeap event data 
+        /// count the pins that got demoted. We could consider using the PerHeap event data
         /// to compute the accurate promoted size.
         /// In 4.5 this is accurate.
         /// </summary>
@@ -2633,7 +2633,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         public double HeapSizePeakMB;
         /// <summary>
-        /// Per generation view of user allocated data 
+        /// Per generation view of user allocated data
         /// </summary>
         public double[] UserAllocated = new double[(int)Gens.MaxGenCount];
         /// <summary>
@@ -2815,7 +2815,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 GenSizeBefore += gc.PerHeapHistories[HeapIndex].GenData[(int)gen].SizeBefore;
                 GenSizeAfter += gc.PerHeapHistories[HeapIndex].GenData[(int)gen].SizeAfter;
                 // Occasionally I've seen a GC in the middle that simply missed some events,
-                // some of which are PerHeap hist events so we don't have  data.
+                // some of which are PerHeap hist events so we don't have data.
                 if (GCs[gc.Index - 1].PerHeapHistories == null || GCs[gc.Index - 1].PerHeapHistories.Count == 0)
                 {
                     return freeList;
@@ -3869,7 +3869,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             GcWorkSpan lastSpan = SwitchSpans.Count > 0 ? SwitchSpans[SwitchSpans.Count - 1] : null;
             if (switchData.ThreadId == GcWorkingThreadId && switchData.ProcessId == ProcessId)
             {
-                //update gc thread priority since we have new data 
+                //update gc thread priority since we have new data
                 GcWorkingThreadPriority = switchData.Priority;
             }
 
