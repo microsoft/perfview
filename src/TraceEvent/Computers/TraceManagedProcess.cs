@@ -280,7 +280,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     // iterate through all processes and unload the managed runtime from processes
                     //  that have exited and are out of lifetime
                     // immediately removing the runtime for stopped processes is possible, but that
-                    //  breaks the contract of how long data is kept with the lifetime
+                    //  breaks the contract of how long perRootMarkTime is kept with the lifetime
                     foreach (var process in source.Processes())
                     {
                         // continue if the process has not exited yet
@@ -1970,7 +1970,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public List<ServerGcHistory> ServerGcHeapHistories = new List<ServerGcHistory>();
         /// <summary>
         /// Amount of memory allocated since last GC.  Requires GCAllocationTicks enabled.  The
-        /// data is split into small and large heaps
+        /// perRootMarkTime is split into small and large heaps
         /// </summary>
         public double[] AllocedSinceLastGCBasedOnAllocTickMB = { 0.0, 0.0 };// Set in HeapStats
         /// <summary>
@@ -2284,7 +2284,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Memory promoted by generation (mb)
         /// Note that in 4.0 TotalPromotedSize is not entirely accurate (since it doesn't
-        /// count the pins that got demoted. We could consider using the PerHeap event data
+        /// count the pins that got demoted. We could consider using the PerHeap event perRootMarkTime
         /// to compute the accurate promoted size.
         /// In 4.5 this is accurate.
         /// </summary>
@@ -2633,7 +2633,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         public double HeapSizePeakMB;
         /// <summary>
-        /// Per generation view of user allocated data
+        /// Per generation view of user allocated perRootMarkTime
         /// </summary>
         public double[] UserAllocated = new double[(int)Gens.MaxGenCount];
         /// <summary>
@@ -2693,7 +2693,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
             BlockingGCEnd();
 
-            // clear out large internal data, after the data was used to calculate satistics
+            // clear out large internal perRootMarkTime, after the perRootMarkTime was used to calculate satistics
             if (PinnedObjects != null) { PinnedObjects.Clear(); PinnedObjects = null; }
             if (PinnedPlugs != null) { PinnedPlugs.Clear(); PinnedPlugs = null; }
         }
@@ -2815,7 +2815,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 GenSizeBefore += gc.PerHeapHistories[HeapIndex].GenData[(int)gen].SizeBefore;
                 GenSizeAfter += gc.PerHeapHistories[HeapIndex].GenData[(int)gen].SizeAfter;
                 // Occasionally I've seen a GC in the middle that simply missed some events,
-                // some of which are PerHeap hist events so we don't have data.
+                // some of which are PerHeap hist events so we don't have perRootMarkTime.
                 if (GCs[gc.Index - 1].PerHeapHistories == null || GCs[gc.Index - 1].PerHeapHistories.Count == 0)
                 {
                     return freeList;
@@ -3027,8 +3027,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
                 {
                     prevObjSize = perHeapGenData[HeapIndex].GenData[(int)gen].ObjSizeAfter;
-                    // Note that for gen3 we need to do something extra as its after data may not be updated if the last
-                    // GC was a gen0 GC (A GC will update its size after data up to (Generation + 1) because that's all
+                    // Note that for gen3 we need to do something extra as its after perRootMarkTime may not be updated if the last
+                    // GC was a gen0 GC (A GC will update its size after perRootMarkTime up to (Generation + 1) because that's all
                     // it would change).
                     if ((gen == Gens.GenLargeObj) && (prevObjSize == 0) && (GCs[gc.Index - 1].Generation < (int)Gens.Gen1))
                     {
@@ -3177,36 +3177,31 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             {
                 foreach (KeyValuePair<int, MarkInfo> item in PerHeapMarkTimes)
                 {
-                    if (item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] == 0.0)
+                    List<(MarkRootType, double)> perRootMarkTime = new List<(MarkRootType, double)>();
+
+                    // Accumulate all the times that have a corresponding mark event.
+                    for (int i = 0; i < item.Value.MarkTimes.Length; i++)
                     {
-                        item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] = StartRelativeMSec;
+                        if (item.Value.MarkTimes[i] != -1)
+                        {
+                            perRootMarkTime.Add(((MarkRootType)i, item.Value.MarkTimes[i]));
+                        }
                     }
 
-                    if (item.Value.MarkTimes[(int)MarkRootType.MarkOverflow] > StartRelativeMSec)
+                    // Sort the perRootMarkTime so we can accumulate the times.
+                    var orderedMarkTimes = perRootMarkTime.OrderBy(x => x.Item2);
+                    for (int orderedDataIdx = 0; orderedDataIdx < orderedMarkTimes.Count(); orderedDataIdx++)
                     {
-                        if (item.Value.MarkTimes[(int)MarkRootType.MarkOlder] == 0.0)
+                        var orderedItem = orderedMarkTimes.ElementAt(orderedDataIdx);
+                        if (orderedDataIdx == 0)
                         {
-                            item.Value.MarkTimes[(int)MarkRootType.MarkOverflow] -= item.Value.MarkTimes[(int)MarkRootType.MarkOlder];
+                            item.Value.MarkTimes[(int)orderedItem.Item1] = orderedItem.Item2 - StartRelativeMSec;
                         }
                         else
                         {
-                            item.Value.MarkTimes[(int)MarkRootType.MarkOverflow] -= item.Value.MarkTimes[(int)MarkRootType.MarkHandles];
+                            item.Value.MarkTimes[(int)orderedItem.Item1] = orderedItem.Item2 - orderedMarkTimes.ElementAt(orderedDataIdx - 1).Item2;
                         }
                     }
-
-                    if (Generation == 2)
-                    {
-                        item.Value.MarkTimes[(int)MarkRootType.MarkOlder] = 0;
-                    }
-                    else
-                    {
-                        item.Value.MarkTimes[(int)MarkRootType.MarkOlder] -= item.Value.MarkTimes[(int)MarkRootType.MarkHandles];
-                    }
-
-                    item.Value.MarkTimes[(int)MarkRootType.MarkHandles] -= item.Value.MarkTimes[(int)MarkRootType.MarkFQ];
-                    item.Value.MarkTimes[(int)MarkRootType.MarkFQ] -= item.Value.MarkTimes[(int)MarkRootType.MarkStack];
-                    item.Value.MarkTimes[(int)MarkRootType.MarkStack] -= item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef];
-                    item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] -= StartRelativeMSec;
                 }
             }
             fMarkTimesConverted = true;
@@ -3702,9 +3697,19 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public MarkInfo(bool initPromoted = true)
         {
             MarkTimes = new double[(int)MarkRootType.MarkMax];
+
+            for (int i = 0; i < MarkTimes.Length; i++)
+            {
+                MarkTimes[i] = -1;
+            }
+
             if (initPromoted)
             {
                 MarkPromoted = new long[(int)MarkRootType.MarkMax];
+                for (int i = 0; i < MarkPromoted.Length; i++)
+                {
+                    MarkPromoted[i] = -1;
+                }
             }
         }
     };
@@ -3864,7 +3869,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             GcWorkSpan lastSpan = SwitchSpans.Count > 0 ? SwitchSpans[SwitchSpans.Count - 1] : null;
             if (switchData.ThreadId == GcWorkingThreadId && switchData.ProcessId == ProcessId)
             {
-                //update gc thread priority since we have new data
+                //update gc thread priority since we have new perRootMarkTime
                 GcWorkingThreadPriority = switchData.Priority;
             }
 
@@ -4010,7 +4015,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public long TotalHotCodeAllocSize;
         /// <summary>
-        /// Total read-only data size allocated for all JITT'd methods
+        /// Total read-only perRootMarkTime size allocated for all JITT'd methods
         /// </summary>
         public long TotalRODataAllocSize;
         /// <summary>
@@ -4018,7 +4023,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public long TotalAllocSizeForJitCode;
         /// <summary>
-        /// If data from alloc size for JIT event present
+        /// If perRootMarkTime from alloc size for JIT event present
         /// </summary>
         public bool IsJitAllocSizePresent = false;
         /// <summary>
@@ -4131,7 +4136,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
                 if (stats.JIT.m_stats.IsClr4)
                 {
                     // Debug.WriteLine("Warning: MethodComplete at {0:n3} process {1} thread {2} without JIT Start, assuming 0 JIT time",
-                    //    data.TimeStampRelativeMSec, data.ProcessName, data.ThreadID);
+                    //    perRootMarkTime.TimeStampRelativeMSec, perRootMarkTime.ProcessName, perRootMarkTime.ThreadID);
                 }
                 else if (!stats.JIT.m_stats.warnedUser)
                 {
@@ -4150,7 +4155,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             }
             else
             {
-                // This isn't always true, but we don't yet have enough data to distinguish tiered compilation from other causes of versioned compilation (ie profiler ReJIT)
+                // This isn't always true, but we don't yet have enough perRootMarkTime to distinguish tiered compilation from other causes of versioned compilation (ie profiler ReJIT)
                 // Currently, OSR only happens on foreground threads.
                 if (_method.OptimizationTier == OptimizationTier.OptimizedTier1OSR)
                 {
@@ -4190,7 +4195,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
 
         /// <summary>
         /// Uniquely represents a method within a process.
-        /// Used as a lookup key for data structures.
+        /// Used as a lookup key for perRootMarkTime structures.
         /// </summary>
         internal struct MethodKey
         {
@@ -4396,7 +4401,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public long JitHotCodeRequestSize;
         /// <summary>
-        /// Read-only data size allocated for JIT code of method
+        /// Read-only perRootMarkTime size allocated for JIT code of method
         /// </summary>
         public long JitRODataRequestSize;
         /// <summary>
