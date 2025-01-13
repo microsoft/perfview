@@ -2151,7 +2151,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
             long SurvRate = 0;
 
-            if (gen == Gens.GenLargeObj)
+            if (gen == Gens.GenLargeObj || gen == Gens.GenPinObj)
             {
                 if (Generation < 2)
                 {
@@ -2680,8 +2680,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             HeapSizePeakMB = GetHeapSizePeakMB(details.GCs, this);
             UserAllocated[(int)Gens.Gen0] = GetUserAllocated(details.GCs, this, Gens.Gen0);
             UserAllocated[(int)Gens.GenLargeObj] = GetUserAllocated(details.GCs, this, Gens.GenLargeObj);
+            UserAllocated[(int)Gens.GenPinObj] = GetUserAllocated(details.GCs, this, Gens.GenPinObj);
             HeapSizeBeforeMB = GetHeapSizeBeforeMB(details.GCs, this);
-            for (int gen = (int)Gens.Gen0; gen <= (int)Gens.GenLargeObj; gen++)
+            for (int gen = (int)Gens.Gen0; gen <= (int)Gens.GenPinObj; gen++)
             {
                 GenSizeBeforeMB[gen] = GetGenSizeBeforeMB(details.GCs, this, (Gens)gen);
             }
@@ -2769,12 +2770,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Gens gen = Gens.Gen2;
             FreeListEfficiency freeList = new FreeListEfficiency();
 
-            // I am not worried about gen0 or LOH's free list efficiency right now - it's
+            // I am not worried about gen0 or LOH's or POH's free list efficiency right now - it's
             // calculated differently.
             if ((gc.PerHeapHistories == null) ||
                 (gc.PerHeapHistories.Count == 0) ||
                 (gen == Gens.Gen0) ||
                 (gen == Gens.GenLargeObj) ||
+                (gen == Gens.GenPinObj) ||
                 (gc.Index <= 0) ||
                 !(gc.PerHeapHistories[0].VersionRecognized))
             {
@@ -2854,7 +2856,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         internal static double GetAllocedSinceLastGCMB(List<TraceGC> GCs, TraceGC gc)
         {
-            return GetUserAllocated(GCs, gc, Gens.Gen0) + GetUserAllocated(GCs, gc, Gens.GenLargeObj);
+            return GetUserAllocated(GCs, gc, Gens.Gen0) + GetUserAllocated(GCs, gc, Gens.GenLargeObj) + GetUserAllocated(GCs, gc, Gens.GenPinObj);
         }
 
         internal static double GetRatioPeakAfter(List<TraceGC> GCs, TraceGC gc) { if (gc.HeapSizeAfterMB == 0) { return 0; } return GetHeapSizePeakMB(GCs, gc) / gc.HeapSizeAfterMB; }
@@ -2886,7 +2888,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         internal static double GetUserAllocated(List<TraceGC> GCs, TraceGC gc, Gens gen)
         {
-            Debug.Assert((gen == Gens.Gen0) || (gen == Gens.GenLargeObj));
+            Debug.Assert((gen == Gens.Gen0) || (gen == Gens.GenLargeObj) || (gen == Gens.GenPinObj));
 
             if ((gc.Type == GCType.BackgroundGC) && (gen == Gens.Gen0))
             {
@@ -2919,7 +2921,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         internal static double GetHeapSizeBeforeMB(List<TraceGC> GCs, TraceGC gc)
         {
             double ret = 0;
-            for (Gens gen = Gens.Gen0; gen <= Gens.GenLargeObj; gen++)
+            for (Gens gen = Gens.Gen0; gen <= Gens.GenPinObj; gen++)
             {
                 ret += GetGenSizeBeforeMB(GCs, gc, gen);
             }
@@ -3022,7 +3024,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             long prevObjSize = 0;
             if (gc.Index > 0)
             {
-                // If the prevous GC has that heap get its size.
+                // If the previous GC has that heap get its size.
                 var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
                 if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
                 {
@@ -4851,7 +4853,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     hist.GenData[(int)GenIndex] = data.GenData(GenIndex);
                 }
 
-                if (_event.PerHeapHistories == null) { _event.PerHeapHistories = new List<GCPerHeapHistory>(); }
+                Debug.Assert(_event.PerHeapHistories != null);
                 _event.PerHeapHistories.Add(hist);
             }
         }
