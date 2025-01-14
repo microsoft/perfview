@@ -125,7 +125,7 @@ namespace Microsoft.Diagnostics.Symbols
                                 else
                                 {
                                     m_log.WriteLine("FindSymbolFilePathForModule: Could not find PDB for NGEN image, Trying to generate it.");
-                                    ret = GenerateNGenSymbolsForModule(Path.GetFullPath(dllFilePath));
+                                    ret = GenerateNGenSymbolsForModule(Path.GetFullPath(dllFilePath), m_log, SymbolPath, SymbolCacheDirectory);
                                 }
                             }
                             m_log.WriteLine("FindSymbolFilePathForModule returns {0} for {1} {2} {3} {4}", ret ?? "NULL", pdbName, pdbGuid, pdbAge, fileVersionString ?? "NULL");
@@ -543,16 +543,11 @@ namespace Microsoft.Diagnostics.Symbols
         /// 
         /// <returns>The full path name of the PDB generated for the NGEN image.</returns>
         /// </summary>
-        public string GenerateNGenSymbolsForModule(string ngenImageFullPath, string outputDirectory = null)
+        public static string GenerateNGenSymbolsForModule(string ngenImageFullPath, TextWriter log, string symbolPath, string outputDirectory)
         {
-            if (outputDirectory == null)
-            {
-                outputDirectory = SymbolCacheDirectory;
-            }
-
             if (!File.Exists(ngenImageFullPath))
             {
-                m_log.WriteLine("Warning, NGEN image does not exist: {0}", ngenImageFullPath);
+                log.WriteLine("Warning, NGEN image does not exist: {0}", ngenImageFullPath);
                 return null;
             }
 
@@ -563,7 +558,7 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 if (!peFile.GetPdbSignature(out pdbFileName, out pdbGuid, out pdbAge, true))
                 {
-                    m_log.WriteLine("Could not get PDB signature for {0}", ngenImageFullPath);
+                    log.WriteLine("Could not get PDB signature for {0}", ngenImageFullPath);
                     return null;
                 }
             }
@@ -581,22 +576,22 @@ namespace Microsoft.Diagnostics.Symbols
             // We only handle cases where we generate NGEN pdbs.  
             if (!pdbPath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
             {
-                m_log.WriteLine("Pdb does not have .ni.pdb suffix");
+                log.WriteLine("Pdb does not have .ni.pdb suffix");
                 return null;
             }
 
             string privateRuntimeVerString;
-            var clrDir = GetClrDirectoryForNGenImage(ngenImageFullPath, m_log, out privateRuntimeVerString);
+            var clrDir = GetClrDirectoryForNGenImage(ngenImageFullPath, log, out privateRuntimeVerString);
             if (clrDir == null)
             {
-                m_log.WriteLine("Could not find CLR directory for NGEN image {0}, Trying .NET Core", ngenImageFullPath);
-                return HandleNetCorePdbs(ngenImageFullPath, pdbPath);
+                log.WriteLine("Could not find CLR directory for NGEN image {0}, Trying .NET Core", ngenImageFullPath);
+                return HandleNetCorePdbs(ngenImageFullPath, pdbPath, log);
             }
 
             // See if this is a V4.5 CLR, if so we can do line numbers too.l  
             var lineNumberArg = "";
             var ngenexe = Path.Combine(clrDir, "ngen.exe");
-            m_log.WriteLine("Checking for V4.5 for NGEN image {0}", ngenexe);
+            log.WriteLine("Checking for V4.5 for NGEN image {0}", ngenexe);
             if (!File.Exists(ngenexe))
             {
                 return null;
@@ -611,7 +606,7 @@ namespace Microsoft.Diagnostics.Symbols
                 if (fileVersionInfo != null)
                 {
                     var clrFileVersion = fileVersionInfo.FileVersion;
-                    m_log.WriteLine("Got NGEN image file version number: {0}", clrFileVersion);
+                    log.WriteLine("Got NGEN image file version number: {0}", clrFileVersion);
 
                     m = Regex.Match(clrFileVersion, @"(\d+).(\d+)((\d|\.)*)");
                     if (m.Success)
@@ -621,7 +616,7 @@ namespace Microsoft.Diagnostics.Symbols
                         var majorMinor = majorVersion * 10 + minorVersion;
                         if (majorMinor >= 46)
                         {
-                            m_log.WriteLine("Is a V4.6 or beyond");
+                            log.WriteLine("Is a V4.6 or beyond");
                             isV4_5Runtime = true;
                         }
                         else if (majorMinor == 40)
@@ -638,8 +633,8 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             var options = new CommandOptions();
-            options.AddEnvironmentVariable("_NT_SYMBOL_PATH", SymbolPath);
-            options.AddOutputStream(m_log);
+            options.AddEnvironmentVariable("_NT_SYMBOL_PATH", symbolPath);
+            options.AddOutputStream(log);
             options.AddNoThrow();
 
             options.AddEnvironmentVariable("COMPLUS_NGenEnableCreatePdb", "1");
@@ -662,12 +657,12 @@ namespace Microsoft.Diagnostics.Symbols
             m = Regex.Match(ngenImageFullPath, @"(.*)\\Microsoft\\CLR_v(\d+)\.\d+(_(\d\d))?\\NativeImages", RegexOptions.IgnoreCase);
             if (m.Success)
             {
-                tempDir = Path.Combine(m.Groups[1].Value, @"Temp\NGenPdb");
+                tempDir = Path.Combine(Path.GetTempPath(), "NGenPdb", Path.GetRandomFileName());
                 DirectoryUtilities.Clean(tempDir);
                 Directory.CreateDirectory(tempDir);
                 ngenOutputDirectory = tempDir;
                 outputPdbPath = Path.Combine(tempDir, relDirPath, pdbFileName);
-                m_log.WriteLine("Updating NGEN createPdb output file to {0}", outputPdbPath); // TODO FIX NOW REMOVE (for debugging)
+                log.WriteLine("Updating NGEN createPdb output file to {0}", outputPdbPath); // TODO FIX NOW REMOVE (for debugging)
             }
 
             // TODO: Hack.   V4.6.1 has both these characteristics, which leads to the issue
@@ -676,7 +671,7 @@ namespace Microsoft.Diagnostics.Symbols
             // Should be fixed by 12/2015
             if (isV4_5Runtime)
             {
-                InsurePathIsInNIC(m_log, ref ngenImageFullPath);
+                InsurePathIsInNIC(log, ref ngenImageFullPath);
             }
 
             try
@@ -685,8 +680,8 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     if (!string.IsNullOrEmpty(privateRuntimeVerString))
                     {
-                        m_log.WriteLine("Ngen will run for private runtime ", privateRuntimeVerString);
-                        m_log.WriteLine("set COMPLUS_Version=" + privateRuntimeVerString);
+                        log.WriteLine("Ngen will run for private runtime ", privateRuntimeVerString);
+                        log.WriteLine("set COMPLUS_Version=" + privateRuntimeVerString);
                         options.AddEnvironmentVariable("COMPLUS_Version", privateRuntimeVerString);
                     }
                     // TODO FIX NOW: there is a and ugly problem with persistence of suboptimal PDB files
@@ -697,17 +692,17 @@ namespace Microsoft.Diagnostics.Symbols
                     var cmdLine = string.Format(@"{0}\ngen.exe createpdb {1} {2} {3}",
                         clrDir, Command.Quote(ngenImageFullPath), Command.Quote(ngenOutputDirectory), lineNumberArg);
                     // TODO FIX NOW REMOVE after V4.5 is out a while
-                    m_log.WriteLine("set COMPLUS_NGenEnableCreatePdb=1");
+                    log.WriteLine("set COMPLUS_NGenEnableCreatePdb=1");
                     if (!isV4_5Runtime)
                     {
-                        m_log.WriteLine("set COMPLUS_NGenLocalWorker=1");
+                        log.WriteLine("set COMPLUS_NGenLocalWorker=1");
                     }
 
-                    m_log.WriteLine("set PATH=" + newPath);
-                    m_log.WriteLine("set _NT_SYMBOL_PATH={0}", SymbolPath);
-                    m_log.WriteLine("*** NGEN  CREATEPDB cmdline: {0}\r\n", cmdLine);
+                    log.WriteLine("set PATH=" + newPath);
+                    log.WriteLine("set _NT_SYMBOL_PATH={0}", symbolPath);
+                    log.WriteLine("*** NGEN  CREATEPDB cmdline: {0}\r\n", cmdLine);
                     var cmd = Command.Run(cmdLine, options);
-                    m_log.WriteLine("*** NGEN CREATEPDB returns: {0}", cmd.ExitCode);
+                    log.WriteLine("*** NGEN CREATEPDB returns: {0}", cmd.ExitCode);
 
                     if (cmd.ExitCode != 0)
                     {
@@ -720,7 +715,7 @@ namespace Microsoft.Diagnostics.Symbols
                         // We may have failed because we could not get the PDB.  
                         if (lineNumberArg.Length != 0)
                         {
-                            m_log.WriteLine("Ngen failed to generate pdb for {0}, trying again without /lines", ngenImageFullPath);
+                            log.WriteLine("Ngen failed to generate pdb for {0}, trying again without /lines", ngenImageFullPath);
                             lineNumberArg = "";
                             continue;
                         }
@@ -728,7 +723,7 @@ namespace Microsoft.Diagnostics.Symbols
 
                     if (cmd.ExitCode != 0 || !File.Exists(outputPdbPath))
                     {
-                        m_log.WriteLine("ngen failed to generate pdb for {0} at expected location {1}", ngenImageFullPath, outputPdbPath);
+                        log.WriteLine("ngen failed to generate pdb for {0} at expected location {1}", ngenImageFullPath, outputPdbPath);
                         return null;
                     }
 
@@ -758,12 +753,12 @@ namespace Microsoft.Diagnostics.Symbols
         /// 
         /// TODO can be removed when we properly publish the NGEN pdbs as part of build.  
         /// </summary>
-        private string HandleNetCorePdbs(string ngenImageFullPath, string pdbPath)
+        private static string HandleNetCorePdbs(string ngenImageFullPath, string pdbPath, TextWriter log)
         {
             // We only handle NGEN PDB. 
             if (!pdbPath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
             {
-                m_log.WriteLine("Not a crossGen PDB {0}", pdbPath);
+                log.WriteLine("Not a crossGen PDB {0}", pdbPath);
                 return null;
             }
 
@@ -771,10 +766,10 @@ namespace Microsoft.Diagnostics.Symbols
             var pdbDir = Path.GetDirectoryName(pdbPath);
 
             // We need Crossgen, and there are several options, see what we can do. 
-            string crossGen = GetCrossGenExePath(ngenImageFullPath);
+            string crossGen = GetCrossGenExePath(ngenImageFullPath, log);
             if (crossGen == null)
             {
-                m_log.WriteLine("Could not find Crossgen.exe to generate PDBs, giving up.");
+                log.WriteLine("Could not find Crossgen.exe to generate PDBs, giving up.");
                 return null;
             }
 
@@ -804,7 +799,7 @@ namespace Microsoft.Diagnostics.Symbols
                 " " + Command.Quote(crossGenInputName);
 
             var options = new CommandOptions();
-            options.AddOutputStream(m_log);
+            options.AddOutputStream(log);
             options.AddNoThrow();
 
             // Needs diasymreader.dll to be on the path.  
@@ -812,9 +807,9 @@ namespace Microsoft.Diagnostics.Symbols
                 winDir + @"\Microsoft.NET\Framework64\v4.0.30319" + ";%PATH%";
             options.AddEnvironmentVariable("PATH", newPath);
             options.AddCurrentDirectory(ngenImageDir);
-            m_log.WriteLine("**** Running CrossGen");
-            m_log.WriteLine("set PATH=" + newPath);
-            m_log.WriteLine("{0}\r\n", cmdLine);
+            log.WriteLine("**** Running CrossGen");
+            log.WriteLine("set PATH=" + newPath);
+            log.WriteLine("{0}\r\n", cmdLine);
             var cmd = Command.Run(cmdLine, options);
 
             // Delete the temporary file if necessary
@@ -825,7 +820,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             if (cmd.ExitCode != 0 || !File.Exists(pdbPath))
             {
-                m_log.WriteLine("CrossGen failed to generate {0} exit code {0}", pdbPath, cmd.ExitCode);
+                log.WriteLine("CrossGen failed to generate {0} exit code {0}", pdbPath, cmd.ExitCode);
                 return null;
             }
 
@@ -855,12 +850,12 @@ namespace Microsoft.Diagnostics.Symbols
             return nugetPackageDir;
         }
 
-        private string GetCrossGenExePath(string ngenImageFullPath)
+        private static string GetCrossGenExePath(string ngenImageFullPath, TextWriter log)
         {
             var imageDir = Path.GetDirectoryName(ngenImageFullPath);
             string crossGen = Path.Combine(imageDir, "crossGen.exe");
 
-            m_log.WriteLine("Checking for CoreCLR case, looking for CrossGen at {0}", crossGen);
+            log.WriteLine("Checking for CoreCLR case, looking for CrossGen at {0}", crossGen);
             if (File.Exists(crossGen))
             {
                 return crossGen;
@@ -870,11 +865,11 @@ namespace Microsoft.Diagnostics.Symbols
             if (File.Exists(coreclr))
             {
                 DateTime coreClrTimeStamp = File.GetLastWriteTimeUtc(coreclr);
-                m_log.WriteLine("Found coreclr: at  {0}, timestamp {1}", coreclr, coreClrTimeStamp);
+                log.WriteLine("Found coreclr: at  {0}, timestamp {1}", coreclr, coreClrTimeStamp);
                 string nugetDir = getNugetPackageDir();
                 if (nugetDir != null)
                 {
-                    m_log.WriteLine("Found nuget package dir: at  {0}", nugetDir);
+                    log.WriteLine("Found nuget package dir: at  {0}", nugetDir);
                     foreach (var runtimeDir in Directory.GetDirectories(nugetDir, "runtime.win*.microsoft.netcore.runtime.coreclr"))
                     {
                         foreach (var runtimeVersionDir in Directory.GetDirectories(runtimeDir))
@@ -883,11 +878,11 @@ namespace Microsoft.Diagnostics.Symbols
                             {
                                 string packageCoreCLR = Path.Combine(osarchDir, @"native\coreclr.dll");
                                 DateTime packageCoreClrTimeStamp = File.GetLastWriteTimeUtc(packageCoreCLR);
-                                m_log.WriteLine("Checking timestamp of file {0} = {1}", packageCoreCLR, packageCoreClrTimeStamp);
+                                log.WriteLine("Checking timestamp of file {0} = {1}", packageCoreCLR, packageCoreClrTimeStamp);
                                 if (File.Exists(packageCoreCLR) && packageCoreClrTimeStamp == coreClrTimeStamp)
                                 {
                                     crossGen = Path.Combine(runtimeVersionDir, @"tools\crossgen.exe");
-                                    m_log.WriteLine("Found matching CoreCLR, probing for crossgen at {0}", crossGen);
+                                    log.WriteLine("Found matching CoreCLR, probing for crossgen at {0}", crossGen);
                                     if (File.Exists(crossGen))
                                     {
                                         return crossGen;
@@ -910,12 +905,12 @@ namespace Microsoft.Diagnostics.Symbols
                 }
             }
 
-            m_log.WriteLine("Could not find crossgen, giving up");
+            log.WriteLine("Could not find crossgen, giving up");
             return null;
         }
 
         // TODO remove after 12/2015
-        private void InsurePathIsInNIC(TextWriter log, ref string ngenImageFullPath)
+        private static void InsurePathIsInNIC(TextWriter log, ref string ngenImageFullPath)
         {
             // We only get called if we are 4.5. or beyond, so we should have AUX files if we are in the nic.  
             string auxFilePath = ngenImageFullPath + ".aux";
