@@ -692,9 +692,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         // is an int???
                         stats.GC.m_stats.allocTickCurrentMB[0] += valueMB;
                     }
-                    else
+                    else if (data.AllocationKind == GCAllocationKind.Large)
                     {
                         stats.GC.m_stats.allocTickCurrentMB[1] += valueMB;
+                    }
+
+                    else // POH
+                    {
+                        stats.GC.m_stats.allocTickCurrentMB[2] += valueMB;
                     }
                 };
 
@@ -1172,6 +1177,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             _gc.HasAllocTickEvents = true;
                             _gc.AllocedSinceLastGCBasedOnAllocTickMB[0] = stats.GC.m_stats.allocTickCurrentMB[0] - stats.GC.m_stats.allocTickAtLastGC[0];
                             _gc.AllocedSinceLastGCBasedOnAllocTickMB[1] = stats.GC.m_stats.allocTickCurrentMB[1] - stats.GC.m_stats.allocTickAtLastGC[1];
+                            _gc.AllocedSinceLastGCBasedOnAllocTickMB[2] = stats.GC.m_stats.allocTickCurrentMB[2] - stats.GC.m_stats.allocTickAtLastGC[2];
                         }
 
                         // This is where a background GC ends.
@@ -1205,6 +1211,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     stats.GC.m_stats.ProcessCpuAtLastGC = process.CPUMSec;
                     stats.GC.m_stats.allocTickAtLastGC[0] = stats.GC.m_stats.allocTickCurrentMB[0];
                     stats.GC.m_stats.allocTickAtLastGC[1] = stats.GC.m_stats.allocTickCurrentMB[1];
+                    stats.GC.m_stats.allocTickAtLastGC[2] = stats.GC.m_stats.allocTickCurrentMB[2];
                     stats.GC.m_stats.lastRestartEndTimeRelativeMSec = data.TimeStampRelativeMSec;
                 };
 
@@ -3029,10 +3036,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
                 {
                     prevObjSize = perHeapGenData[HeapIndex].GenData[(int)gen].ObjSizeAfter;
-                    // Note that for gen3 we need to do something extra as its after data may not be updated if the last
+                    // Note that for gen3 or gen4 we need to do something extra as its after data may not be updated if the last
                     // GC was a gen0 GC (A GC will update its size after data up to (Generation + 1) because that's all
                     // it would change).
-                    if ((gen == Gens.GenLargeObj) && (prevObjSize == 0) && (GCs[gc.Index - 1].Generation < (int)Gens.Gen1))
+                    if ((gen == Gens.GenLargeObj || gen == Gens.GenPinObj) && (prevObjSize == 0) && (GCs[gc.Index - 1].Generation < (int)Gens.Gen1))
                     {
                         prevObjSize = perHeapGenData[HeapIndex].GenData[(int)gen].ObjSpaceBefore;
                     }
@@ -4674,8 +4681,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         // candidate to be made private/ex
         //
         // The amount of memory allocated by the user threads. So they are divided up into gen0 and LOH allocations.
-        internal double[] allocTickCurrentMB = { 0.0, 0.0 };
-        internal double[] allocTickAtLastGC = { 0.0, 0.0 };
+        internal double[] allocTickCurrentMB = { 0.0, 0.0, 0.0 };
+        internal double[] allocTickAtLastGC = { 0.0, 0.0, 0.0 };
         internal bool HasAllocTickEvents = false;
         internal bool SeenBadAllocTick = false;
 
