@@ -545,11 +545,6 @@ namespace Stats
                         {
                             void WriteDetailsAboutMarkRootType(MarkRootType type)
                             {
-                                if (mt.MarkTimes[(int)type] == -1)
-                                {
-                                    return;
-                                }
-
                                 writer.Write(" {0}=\"{1:n3}", type, mt.MarkTimes[(int)type]);
                                 if (mt.MarkPromoted != null)
                                 {
@@ -561,12 +556,29 @@ namespace Stats
                             WriteDetailsAboutMarkRootType(MarkRootType.MarkStack);
                             WriteDetailsAboutMarkRootType(MarkRootType.MarkFQ);
                             WriteDetailsAboutMarkRootType(MarkRootType.MarkHandles);
-                            WriteDetailsAboutMarkRootType(MarkRootType.MarkSizedRef);
+
+                            // Condition:  if ((condemned_gen_number == max_generation) && (num_sizedrefs > 0))
+                            if (gc.Generation == 2)
+                            {
+                                WriteDetailsAboutMarkRootType(MarkRootType.MarkSizedRef);
+                            }
+
                             WriteDetailsAboutMarkRootType(MarkRootType.MarkOverflow);
                             WriteDetailsAboutMarkRootType(MarkRootType.MarkDependentHandles);
                             WriteDetailsAboutMarkRootType(MarkRootType.MarkNewFQ);
-                            WriteDetailsAboutMarkRootType(MarkRootType.MarkSteal);
-                            WriteDetailsAboutMarkRootType(MarkRootType.MarkBGCRoots);
+
+                            // Condition: if (do_mark_steal_p)
+                            // if (full_p && total_heap_size > (100 * 1024 * 1024))
+                            if (gc.Generation == 2)
+                            {
+                                WriteDetailsAboutMarkRootType(MarkRootType.MarkSteal);
+                            }
+
+                            // Condition: if (gc_heap::background_running_p())
+                            if (gc.Type == GCType.BackgroundGC || gc.Type == GCType.ForegroundGC)
+                            {
+                                WriteDetailsAboutMarkRootType(MarkRootType.MarkBGCRoots);
+                            }
 
                             // Condition: if !Gen2
                             if (gc.Generation != 2)

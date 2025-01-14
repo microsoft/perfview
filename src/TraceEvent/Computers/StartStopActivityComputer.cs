@@ -149,6 +149,7 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                 }
 #endif
+
                 // TODO decide what the correct heuristic for deciding what start-stop events are interesting.  
                 // Currently I only do this for things that might be an EventSource 
                 if (!TraceEventProviders.MaybeAnEventSource(data.ProviderGuid))
@@ -175,6 +176,11 @@ namespace Microsoft.Diagnostics.Tracing
                     else if (data.Opcode == TraceEventOpcode.Info && data.ProviderGuid == AdoNetProvider)
                     {
                         FixAndProcessAdoNetEvents(data);
+                    }
+                    // Special case - OpenTelemetry-Sdk
+                    else if (data.Opcode == TraceEventOpcode.Info && data.providerGuid == OpenTelemetrySdkProvider)
+                    {
+                        FixAndProcessOpenTelemetrySdkEvents(data);
                     }
 
                     return;
@@ -710,7 +716,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 uint nibble = (uint)(*bytePtr >> 4);
                 bool secondNibble = false;              // are we reading the second nibble (low order bits) of the byte.
-                NextNibble:
+            NextNibble:
                 if (nibble == (uint)NumberListCodes.End)
                 {
                     break;
@@ -802,6 +808,7 @@ namespace Microsoft.Diagnostics.Tracing
         private static readonly Guid AdoNetProvider = new Guid("6a4dfe53-eb50-5332-8473-7b7e10a94fd1");
         private static readonly Guid MicrosoftWindowsHttpService = new Guid("dd5ef90a-6398-47a4-ad34-4dcecdef795f");
         private static readonly Guid MicrosoftDiagnosticsDiagnosticSourceProvider = new Guid("ADB401E1-5296-51F8-C125-5FDA75826144");
+        private static readonly Guid OpenTelemetrySdkProvider = new Guid("af2d5796-946b-50cb-5f76-166a609afcbb");
 
         // EventSourceName: Microsoft-ApplicationInsights-Data
         // Reference for definition: https://raw.githubusercontent.com/Microsoft/ApplicationInsights-dotnet/e8f047f6e48abae0e88a9c77bf65df858c442940/src/Microsoft.ApplicationInsights/Extensibility/Implementation/RichPayloadEventSource.cs
@@ -1129,6 +1136,20 @@ namespace Microsoft.Diagnostics.Tracing
                 Trace.WriteLine("Threw exception while processing DiagnosticSource start events: " + ex.Message);
             }
             return false;
+        }
+
+        private void FixAndProcessOpenTelemetrySdkEvents(TraceEvent data)
+        {
+            Debug.Assert(data.ProviderGuid == OpenTelemetrySdkProvider);
+            if (data.EventName == "ActivityStarted")
+            {
+                string extraInfo = (string)data.PayloadByName("id");
+                OnStart(data, extraInfo);
+            }
+            else if (data.EventName == "ActivityStopped")
+            {
+                OnStop(data);
+            }
         }
 
         private void FixAndProcessAppInsightsEvents(TraceEvent data)
