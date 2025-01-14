@@ -156,9 +156,16 @@ namespace Microsoft.Diagnostics.Tracing
 
                 newEvent.SetEventDescriptor(ref *ptrDescr);
                 newEvent.SetProviderId(ref providerId);
-                _LARGE_INTEGER fileTimeStamp = new _LARGE_INTEGER();
-                fileTimeStamp.QuadPart = timeStamp.ToFileTimeUtc();
-                newEvent.SetTimeStamp(ref fileTimeStamp);
+                _LARGE_INTEGER qpcTimeStamp = new _LARGE_INTEGER();
+                if (DateTimeKind.Utc != timeStamp.Kind)
+                {
+                    qpcTimeStamp.QuadPart = UTCDateTimeToQPC(timeStamp.ToUniversalTime());
+                }
+                else
+                {
+                    qpcTimeStamp.QuadPart = UTCDateTimeToQPC(timeStamp);
+                }
+                newEvent.SetTimeStamp(ref qpcTimeStamp);
                 newEvent.SetProcessId((uint)processId);
                 newEvent.SetProcessorIndex((uint)processorIndex);
                 newEvent.SetThreadId((uint)threadID);
