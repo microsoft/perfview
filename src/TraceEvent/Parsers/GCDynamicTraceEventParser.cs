@@ -365,15 +365,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
     public sealed class OOMDetailsTraceEvent : GCDynamicEventBase
     {
         public short Version { get { return BitConverter.ToInt16(DataField, 0); } }
-        public ulong GCIndex { get { return BitConverter.ToUInt64(DataField, 2); } }
-        public ushort Allocated { get { return BitConverter.ToUInt16(DataField, 10); } }
-        public ushort Reserved { get { return BitConverter.ToUInt16(DataField, 12); } }
-        public ulong AllocSize { get { return BitConverter.ToUInt64(DataField, 14); } }
-        public ushort Reason { get { return BitConverter.ToUInt16(DataField, 22); } }
-        public ushort FailToGetMemory { get { return BitConverter.ToUInt16(DataField, 24); } }
-        public ulong Size { get { return BitConverter.ToUInt16(DataField, 26); } }
-        public ushort IsLOH { get { return BitConverter.ToUInt16(DataField, 34); } }
-        public uint MemoryLoad { get { return BitConverter.ToUInt16(DataField, 36); } }
+        public long GCIndex { get { return BitConverter.ToInt64(DataField, 2); } }
+        public long AllocSize { get { return BitConverter.ToInt64(DataField, 10); } }
+        public short Reason { get { return BitConverter.ToInt16(DataField, 18); } }
+        public short FailToGetMemory { get { return BitConverter.ToInt16(DataField, 20); } }
+        public long Size { get { return BitConverter.ToInt64(DataField, 22); } }
+        public short IsLOH { get { return BitConverter.ToInt16(DataField, 30); } }
+        public int MemoryLoad { get { return BitConverter.ToInt32(DataField, 32); } }
+        public long AvailablePageFileMB { get { return BitConverter.ToInt64(DataField, 36); } }
 
         internal override TraceEventID ID => TraceEventID.Illegal - 12;
 
@@ -390,7 +389,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
             {
                 if (_payloadNames == null)
                 {
-                    _payloadNames = new string[] { "Version", "GCIndex", "Allocated", "Reserved", "AllocSize", "Reason", "FailToGetMemory", "Size", "IsLOH", "MemoryLoad", "AvailablePageFileMB" };
+                    _payloadNames = new string[] { "Version", "GCIndex", "AllocSize", "Reason", "FailToGetMemory", "Size", "IsLOH", "MemoryLoad", "AvailablePageFileMB" };
                 }
 
                 return _payloadNames;
@@ -403,15 +402,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
             {
                 yield return new KeyValuePair<string, object>("Version", Version);
                 yield return new KeyValuePair<string, object>("GCIndex", GCIndex);
-                yield return new KeyValuePair<string, object>("Allocated", Allocated);
-                yield return new KeyValuePair<string, object>("Reserved", Reserved);
                 yield return new KeyValuePair<string, object>("AllocSize", AllocSize);
                 yield return new KeyValuePair<string, object>("Reason", Reason);
                 yield return new KeyValuePair<string, object>("FailToGetMemory", FailToGetMemory);
                 yield return new KeyValuePair<string, object>("Size", Size);
                 yield return new KeyValuePair<string, object>("IsLOH", IsLOH);
                 yield return new KeyValuePair<string, object>("MemoryLoad", MemoryLoad);
-                yield return new KeyValuePair<string, object>("AvailablePageFileMB", MemoryLoad);
+                yield return new KeyValuePair<string, object>("AvailablePageFileMB", AvailablePageFileMB);
             }
         }
 
@@ -424,21 +421,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
                 case 1:
                     return GCIndex;
                 case 2:
-                    return Allocated;
-                case 3:
-                    return Reserved;
-                case 4:
                     return AllocSize;
-                case 5:
+                case 3:
                     return Reason;
-                case 6:
+                case 4:
                     return FailToGetMemory;
-                case 7:
+                case 5:
                     return Size;
-                case 8:
+                case 6:
                     return IsLOH;
-                case 9:
+                case 7:
                     return MemoryLoad;
+                case 8:
+                    return AvailablePageFileMB;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -448,15 +443,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
 
     public sealed class OOMDetails
     {
-        public ulong GCIndex { get; internal set; }
-        public ushort Allocated { get; internal set; }
-        public ushort Reserved { get; internal set; }
-        public ulong AllocSize { get; internal set; }
-        public ushort Reason { get; internal set; }
-        public ushort FailToGetMemory { get; internal set; }
-        public ulong Size { get; internal set; }
-        public ushort IsLOH { get; internal set; }
-        public uint MemoryLoad { get; internal set; }
+        public long GCIndex { get; internal set; }
+        public long AllocSize { get; internal set; }
+        public short Reason { get; internal set; }
+        public short FailToGetMemory { get; internal set; }
+        public long Size { get; internal set; }
+        public short IsLOH { get; internal set; }
+        public int MemoryLoad { get; internal set; }
+        public long AvailablePageFileMB { get; internal set; }
     }
 
     public sealed class CommittedUsageTraceEvent : GCDynamicEventBase

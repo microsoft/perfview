@@ -5007,7 +5007,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             _event.OOMDetails.Add(new OOMDetails
             {
                 GCIndex = oomDetailsTrace.GCIndex,
-                Allocated = oomDetailsTrace.Allocated,
+                //Allocated = oomDetailsTrace.Allocated,
                 Size = oomDetailsTrace.Size,
             });
         }
