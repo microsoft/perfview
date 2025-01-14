@@ -2944,7 +2944,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 double ret = 0.0;
                 for (int HeapIndex = 0; HeapIndex < gc.PerHeapHistories.Count; HeapIndex++)
                 {
-                    ret += gc.PerHeapHistories[HeapIndex].GenData[(int)gen].SizeBefore / 1000000.0;
+                    if (gc.PerHeapHistories[HeapIndex].GenData.Length > (int)gen)
+                    {
+                        ret += gc.PerHeapHistories[HeapIndex].GenData[(int)gen].SizeBefore / 1000000.0;
+                    }
                 }
 
                 return ret;
