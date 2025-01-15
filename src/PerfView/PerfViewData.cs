@@ -1088,15 +1088,10 @@ namespace PerfView
             return "Unimplemented command: " + command;
         }
 
-        protected virtual string DoCommand(string command, StatusBar worker, out Action continuation)
-        {
-            continuation = null;
-            return DoCommand(command, worker);
-        }
-
         protected virtual string DoCommand(Uri commandUri, StatusBar worker, out Action continuation)
         {
-            return DoCommand(commandUri.LocalPath, worker, out continuation);
+            continuation = null;
+            return DoCommand(commandUri.LocalPath, worker);
         }
 
         public override void Open(Window parentWindow, StatusBar worker, Action doAfter)
@@ -1125,7 +1120,7 @@ namespace PerfView
                                 Viewer.StatusBar.StartWork("Following Hyperlink", delegate ()
                                 {
                                     Action continuation;
-                                    var message = DoCommand(uri.LocalPath, Viewer.StatusBar, out continuation);
+                                    var message = DoCommand(uri, Viewer.StatusBar, out continuation);
                                     Viewer.StatusBar.EndWork(delegate ()
                                     {
                                         if (message != null)
