@@ -5,6 +5,7 @@
     xmlns:src="clr-namespace:PerfView"
     xmlns:src1="clr-namespace:PerfView"
     xmlns:controls="clr-namespace:Controls"
+    xmlns:s="clr-namespace:System;assembly=mscorlib"
     Title="PerfView Stacks"
     Width="919" Height="605"
     Style="{DynamicResource CustomWindowStyle}" >
@@ -26,6 +27,8 @@
             <Setter Property="TextBlock.Background" Value="Transparent" />
             <Setter Property="TextBlock.Margin" Value="0,10,0,0" />
         </Style>
+        <s:Boolean x:Key="True">True</s:Boolean>
+        <s:Boolean x:Key="False">False</s:Boolean>
     </Window.Resources>
 
     <!-- DataContext for this window is the StackWindow itself -->
@@ -37,36 +40,37 @@
             <CommandBinding Command="BrowseForward" Executed="DoForward" CanExecute="CanDoForward" />
 
             <CommandBinding Command="{x:Static src:StackWindow.NewWindowCommand}" Executed="DoNewWindow" />
-            <CommandBinding Command="{x:Static src:StackWindow.DrillIntoCommand}" Executed="DoDrillInto" />
-            <CommandBinding Command="{x:Static src:StackWindow.FlattenCommand}" Executed="DoFlatten" />
+            <CommandBinding Command="{x:Static src:StackWindow.DrillIntoInclusiveCommand}" CanExecute="CanExecuteSamplesBasedOperation" Executed="DoDrillInto" />
+            <CommandBinding Command="{x:Static src:StackWindow.DrillIntoExclusiveCommand}" CanExecute="CanExecuteSamplesBasedOperation" Executed="DoDrillInto" />
+            <CommandBinding Command="{x:Static src:StackWindow.FlattenCommand}" CanExecute="CanExecuteSamplesBasedOperation" Executed="DoFlatten" />
             <CommandBinding Command="{x:Static src:StackWindow.FindCommand}" Executed="DoFind"/>
             <CommandBinding Command="{x:Static src:StackWindow.FindNextCommand}" Executed="DoFindNext"/>
 
-            <CommandBinding Command="{x:Static src:StackWindow.FindInByNameCommand}" Executed="DoFindInByName"/>
-            <CommandBinding Command="{x:Static src:StackWindow.ViewInCallerCalleeCommand}" Executed="DoViewInCallerCallee"/>
-            <CommandBinding Command="{x:Static src:StackWindow.ViewInCallersCommand}" Executed="DoViewInCallers"/>
-            <CommandBinding Command="{x:Static src:StackWindow.ViewInCalleesCommand}" Executed="DoViewInCallees"/>
-            <CommandBinding Command="{x:Static src:StackWindow.FindInCallTreeCommand}" Executed="DoFindInCallTreeName"/>
+            <CommandBinding Command="{x:Static src:StackWindow.FindInByNameCommand}" Executed="DoFindInByName" CanExecute="SingleNodeIsSelected" />
+            <CommandBinding Command="{x:Static src:StackWindow.ViewInCallerCalleeCommand}" Executed="DoViewInCallerCallee" CanExecute="SingleNodeIsSelected" />
+            <CommandBinding Command="{x:Static src:StackWindow.ViewInCallersCommand}" Executed="DoViewInCallers" CanExecute="SingleNodeIsSelected" />
+            <CommandBinding Command="{x:Static src:StackWindow.ViewInCalleesCommand}" Executed="DoViewInCallees" CanExecute="SingleNodeIsSelected" />
+            <CommandBinding Command="{x:Static src:StackWindow.FindInCallTreeCommand}" Executed="DoFindInCallTreeName" CanExecute="SingleNodeIsSelected" />
 
-            <CommandBinding Command="{x:Static src:StackWindow.GroupModuleCommand}" Executed="DoGroupModule" />
-            <CommandBinding Command="{x:Static src:StackWindow.EntryGroupModuleCommand}" Executed="DoEntryGroupModule" />
-            <CommandBinding Command="{x:Static src:StackWindow.UngroupCommand}" Executed="DoUngroup" />
-            <CommandBinding Command="{x:Static src:StackWindow.UngroupModuleCommand}" Executed="DoUngroupModule" />
-            <CommandBinding Command="{x:Static src:StackWindow.FoldModuleCommand}" Executed="DoFoldModule" />
-            <CommandBinding Command="{x:Static src:StackWindow.FoldItemCommand}" Executed="DoFoldItem" />
+            <CommandBinding Command="{x:Static src:StackWindow.GroupModuleCommand}" Executed="DoGroupModule" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.EntryGroupModuleCommand}" Executed="DoEntryGroupModule" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.UngroupCommand}" Executed="DoUngroup" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.UngroupModuleCommand}" Executed="DoUngroupModule" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.FoldModuleCommand}" Executed="DoFoldModule" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.FoldItemCommand}" Executed="DoFoldItem" CanExecute="HasNonEmptySelection" />
             <CommandBinding Command="{x:Static src:StackWindow.RemoveAllFoldingCommand}" Executed="DoRemoveAllFolding" />
 
-            <CommandBinding Command="{x:Static src:StackWindow.RaiseItemPriorityCommand}" Executed="DoRaiseItemPriority" />
-            <CommandBinding Command="{x:Static src:StackWindow.LowerItemPriorityCommand}" Executed="DoLowerItemPriority" />
-            <CommandBinding Command="{x:Static src:StackWindow.RaiseModulePriorityCommand}" Executed="DoRaiseModulePriority" />
-            <CommandBinding Command="{x:Static src:StackWindow.LowerModulePriorityCommand}" Executed="DoLowerModulePriority" />
+            <CommandBinding Command="{x:Static src:StackWindow.RaiseItemPriorityCommand}" Executed="DoRaiseItemPriority" CanExecute="CanChangePriority" />
+            <CommandBinding Command="{x:Static src:StackWindow.LowerItemPriorityCommand}" Executed="DoLowerItemPriority" CanExecute="CanChangePriority" />
+            <CommandBinding Command="{x:Static src:StackWindow.RaiseModulePriorityCommand}" Executed="DoRaiseModulePriority" CanExecute="CanChangePriority" />
+            <CommandBinding Command="{x:Static src:StackWindow.LowerModulePriorityCommand}" Executed="DoLowerModulePriority" CanExecute="CanChangePriority" />
 
-            <CommandBinding Command="{x:Static src:StackWindow.LookupSymbolsCommand}" Executed="DoLookupSymbols" />
-            <CommandBinding Command="{x:Static src:StackWindow.LookupWarmSymbolsCommand}" Executed="DoLookupWarmSymbols" />
-            <CommandBinding Command="{x:Static src:StackWindow.GotoSourceCommand}" Executed="DoGotoSource"/>
+            <CommandBinding Command="{x:Static src:StackWindow.LookupSymbolsCommand}" Executed="DoLookupSymbols" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.LookupWarmSymbolsCommand}" Executed="DoLookupWarmSymbols" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.GotoSourceCommand}" Executed="DoGotoSource" CanExecute="SingleNodeIsSelected" />
             <CommandBinding Command="{x:Static src:StackWindow.OpenEventsCommand}" Executed="DoOpenEvents" CanExecute="CanDoOpenEvents"/>
 
-            <CommandBinding Command="{x:Static src:StackWindow.SetTimeRangeCommand}" Executed="DoSetTimeRange"/>
+            <CommandBinding Command="{x:Static src:StackWindow.SetTimeRangeCommand}" Executed="DoSetTimeRange" CanExecute="CanSetTimeRange" />
             <CommandBinding Command="{x:Static src:StackWindow.CopyTimeRangeCommand}" Executed="DoCopyTimeRange" />
 
             <CommandBinding Command="{x:Static src:StackWindow.SetScenarioListCommand}" Executed="DoSetScenarioList" CanExecute="CanSetScenarioList" />
@@ -76,19 +80,18 @@
             <CommandBinding Command="{x:Static src:StackWindow.SortScenariosByRootNodeCommand}" Executed="DoSortScenariosByRootNode" CanExecute="CanDoScenario" />
             <CommandBinding Command="{x:Static src:StackWindow.SortScenariosByThisNodeCommand}" Executed="DoSortScenariosByThisNode" CanExecute="CanSortScenariosByNode" />
 
-            <CommandBinding Command="{x:Static src:StackWindow.IncludeItemCommand}" Executed="DoIncludeItem" />
-            <CommandBinding Command="{x:Static src:StackWindow.ExcludeItemCommand}" Executed="DoExcludeItem" />
+            <CommandBinding Command="{x:Static src:StackWindow.IncludeItemCommand}" Executed="DoIncludeItem" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.ExcludeItemCommand}" Executed="DoExcludeItem" CanExecute="HasNonEmptySelection" />
 
             <CommandBinding Command="{x:Static src:StackWindow.ToggleNotesPaneCommand}" Executed="DoToggleNotesPane" />
-            <CommandBinding Command="{x:Static src:StackWindow.ViewObjectsCommand}" Executed="DoViewObjects" />
-            <CommandBinding Command="{x:Static src:StackWindow.DumpObjectCommand}" Executed="DoDumpObject" />
+            <CommandBinding Command="{x:Static src:StackWindow.ViewObjectsInclusiveCommand}" Executed="DoViewObjects" CanExecute="CanExecuteMemoryOperation" />
+            <CommandBinding Command="{x:Static src:StackWindow.ViewObjectsExclusiveCommand}" Executed="DoViewObjects" CanExecute="CanExecuteMemoryOperation" />
+            <CommandBinding Command="{x:Static src:StackWindow.DumpObjectCommand}" Executed="DoDumpObject" CanExecute="CanExecuteMemoryOperation" />
 
-            <CommandBinding Command="{x:Static src:StackWindow.ExpandCommand}" Executed="DoExpand" CanExecute="CanExpand"/>
-            <CommandBinding Command="{x:Static src:StackWindow.CollapseCommand}" Executed="DoCollapse" CanExecute="CanExpand"/>
-            <CommandBinding Command="{x:Static src:StackWindow.ExpandAllCommand}" Executed="DoExpandAll" CanExecute="CanExpand"/>
-            <CommandBinding Command="{x:Static src:StackWindow.SetBrownBackgroundColorCommand}" Executed="DoSetBrownBackgroundColor" CanExecute="CanSetBackgroundColor"/>
-            <CommandBinding Command="{x:Static src:StackWindow.SetBlueBackgroundColorCommand}" Executed="DoSetBlueBackgroundColor" CanExecute="CanSetBackgroundColor"/>
-            <CommandBinding Command="{x:Static src:StackWindow.SetRedBackgroundColorCommand}" Executed="DoSetRedBackgroundColor" CanExecute="CanSetBackgroundColor"/>
+            <CommandBinding Command="{x:Static src:StackWindow.ExpandCommand}" Executed="DoExpand" CanExecute="CallTreeNodeIsSelected" />
+            <CommandBinding Command="{x:Static src:StackWindow.CollapseCommand}" Executed="DoCollapse" CanExecute="CallTreeNodeIsSelected" />
+            <CommandBinding Command="{x:Static src:StackWindow.ExpandAllCommand}" Executed="DoExpandAll" CanExecute="CallTreeNodeIsSelected" />
+            <CommandBinding Command="{x:Static src:StackWindow.SetBackgroundColorCommand}" Executed="DoSetBackgroundColor" CanExecute="CallTreeNodeIsSelected" />
             <CommandBinding Command="{x:Static src:StackWindow.FoldPercentCommand}" Executed="DoFoldPercent" />
             <CommandBinding Command="{x:Static src:StackWindow.IncreaseFoldPercentCommand}" Executed="DoIncreaseFoldPercent" />
             <CommandBinding Command="{x:Static src:StackWindow.DecreaseFoldPercentCommand}" Executed="DoDecreaseFoldPercent" />
@@ -104,11 +107,17 @@
         </DockPanel.CommandBindings>
         <DockPanel.ContextMenu>
             <ContextMenu>
-                <MenuItem Command="{x:Static src:StackWindow.DrillIntoCommand}" />
-                <MenuItem Command="{x:Static src:StackWindow.FlattenCommand}" />
+                <MenuItem Header="Drill Into">
+                    <MenuItem Command="{x:Static src:StackWindow.DrillIntoInclusiveCommand}" CommandParameter="{StaticResource False}" />
+                    <MenuItem Command="{x:Static src:StackWindow.DrillIntoExclusiveCommand}" CommandParameter="{StaticResource True}" />
+                </MenuItem>
+                <MenuItem Header="Flatten">
+                    <MenuItem Header="Flatten Inclusive Samples" Command="{x:Static src:StackWindow.FlattenCommand}" CommandParameter="{StaticResource False}" />
+                    <MenuItem Header="Flatten Exclusive Samples" Command="{x:Static src:StackWindow.FlattenCommand}" CommandParameter="{StaticResource True}" />
+                </MenuItem>
                 <MenuItem Command="{x:Static src:StackWindow.NewWindowCommand}" />
                 <MenuItem Header="Goto">
-                    <MenuItem Command="{x:Static src:StackWindow.FindInByNameCommand}" />
+                    <MenuItem Command="{x:Static src:StackWindow.FindInByNameCommand}"/>
                     <MenuItem Command="{x:Static src:StackWindow.ViewInCallerCalleeCommand}" />
                     <MenuItem Command="{x:Static src:StackWindow.ViewInCallersCommand}" />
                     <MenuItem Command="{x:Static src:StackWindow.ViewInCalleesCommand}" />
@@ -124,7 +133,7 @@
                     <MenuItem Command="{x:Static src:StackWindow.UngroupCommand}" />
                     <MenuItem Command="{x:Static src:StackWindow.UngroupModuleCommand}" />
                 </MenuItem>
-                <MenuItem Header="Priority">
+                <MenuItem Header="Priority" ToolTip="Specifies the priority of types when converting a graph to a tree" >
                     <MenuItem Command="{x:Static src:StackWindow.RaiseItemPriorityCommand}" />
                     <MenuItem Command="{x:Static src:StackWindow.LowerItemPriorityCommand}" />
                     <MenuItem Command="{x:Static src:StackWindow.RaiseModulePriorityCommand}" />
@@ -163,9 +172,9 @@
                 <MenuItem Command="{x:Static src:StackWindow.ExpandCommand}" />
                 <MenuItem Command="{x:Static src:StackWindow.CollapseCommand}" />
                 <MenuItem Header="Set Background Color">
-                    <MenuItem Command="{x:Static src:StackWindow.SetBrownBackgroundColorCommand}" />
-                    <MenuItem Command="{x:Static src:StackWindow.SetBlueBackgroundColorCommand}" />
-                    <MenuItem Command="{x:Static src:StackWindow.SetRedBackgroundColorCommand}" />
+                    <MenuItem Header="Set Brown Background Color" Background="BurlyWood" CommandParameter="BurlyWood" Command="{x:Static src:StackWindow.SetBackgroundColorCommand}"  />
+                    <MenuItem Header="Set Blue Background Color" Background="LightSkyBlue" CommandParameter="LightSkyBlue" Command="{x:Static src:StackWindow.SetBackgroundColorCommand}" />
+                    <MenuItem Header="Set Red Background Color" Background="Coral" CommandParameter="Coral" Command="{x:Static src:StackWindow.SetBackgroundColorCommand}" />
                 </MenuItem>
                 <Separator/>
                 <MenuItem Header="FilterParams">
@@ -178,10 +187,13 @@
                     <MenuItem Command="{x:Static src:StackWindow.ToggleNoPadOnCopyCommand}" />
                 </MenuItem>
                 <MenuItem Header="Memory">
-                    <MenuItem Command="{x:Static src:StackWindow.ViewObjectsCommand}" />
-                    <MenuItem Command="{x:Static src:StackWindow.DumpObjectCommand}" />
+                    <MenuItem Command="{x:Static src:StackWindow.ViewObjectsInclusiveCommand}" />
+                    <MenuItem Command="{x:Static src:StackWindow.ViewObjectsExclusiveCommand}" />
+                    <MenuItem Header="Dump Object Inclusive Samples" Command="{x:Static src:StackWindow.DumpObjectCommand}" CommandParameter="{StaticResource False}" />
+                    <MenuItem Header="Dump Object Exclusive Samples" Command="{x:Static src:StackWindow.DumpObjectCommand}" CommandParameter="{StaticResource True}" />
                 </MenuItem>
                 <MenuItem Command="{x:Static src:StackWindow.ToggleNotesPaneCommand}" />
+                <MenuItem Header="Save Flame Graph" Command="{x:Static src:StackWindow.SaveFlameGraphCommand}" />
             </ContextMenu>
         </DockPanel.ContextMenu>
         <!-- This is the menu bar -->
@@ -481,13 +493,7 @@
                             Flame Graph <Hyperlink Command="Help" CommandParameter="FlameGraphView">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
-                    <src:FlameGraphDrawingCanvas x:Name="FlameGraphCanvas" Background="{DynamicResource BackgroundColour}" ClipToBounds="True" SizeChanged="FlameGraphCanvas_SizeChanged" CurrentFlameBoxChanged="FlameGraphCanvas_CurrentFlameBoxChanged">
-                        <Canvas.ContextMenu>
-                            <ContextMenu Name="noContextMenu" Visibility="Visible">
-                                <MenuItem Header="Save Flame Graph" Command="{x:Static src:StackWindow.SaveFlameGraphCommand}" />
-                            </ContextMenu>
-                        </Canvas.ContextMenu>
-                    </src:FlameGraphDrawingCanvas>
+                    <src:FlameGraphDrawingCanvas x:Name="FlameGraphCanvas" Background="White" ClipToBounds="True" SizeChanged="FlameGraphCanvas_SizeChanged" CurrentFlameBoxChanged="FlameGraphCanvas_CurrentFlameBoxChanged" />
                 </TabItem>
                 <!-- NotesTab -->
                 <TabItem Name="NotesTab" GotFocus="NotesTab_GotFocus" LostFocus="NotesTab_LostFocus">
