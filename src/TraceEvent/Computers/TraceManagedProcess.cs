@@ -2,25 +2,22 @@
 // This file is best viewed using outline mode (Ctrl-M Ctrl-O)
 //
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
-// It is available from http://www.codeplex.com/hyperAddin 
-// using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Symbols;
+// It is available from http://www.codeplex.com/hyperAddin
+
+using Microsoft.Diagnostics.Tracing.Analysis.GC;
+using Microsoft.Diagnostics.Tracing.Analysis.JIT;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
-using Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource;
+using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
-using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Utilities;
-using Microsoft.Diagnostics.Tracing.Analysis.GC;
-using Microsoft.Diagnostics.Tracing.Analysis.JIT;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
 using Address = System.UInt64;
@@ -37,46 +34,70 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             // ensure there are base processes
             source.NeedProcesses();
 
-            if (m_currentSource != source) TraceLoadedDotNetRuntime.SetupCallbacks(source);
+            if (m_weakCurrentSource.Target != source)
+            {
+                TraceLoadedDotNetRuntime.SetupCallbacks(source);
+            }
+
             source.UserData["Computers/LoadedDotNetRuntimes"] = new Dictionary<ProcessIndex, DotNetRuntime>();
 
-            m_currentSource = source;
+            m_weakCurrentSource.Target = source;
         }
 
         public static TraceLoadedDotNetRuntime LoadedDotNetRuntime(this TraceProcess process)
         {
             Debug.Assert(process.Source != null);
-            Debug.Assert(m_currentSource == process.Source);
+            Debug.Assert(m_weakCurrentSource.Target == process.Source);
             Dictionary<ProcessIndex, DotNetRuntime> map = process.Source.UserData["Computers/LoadedDotNetRuntimes"] as Dictionary<ProcessIndex, DotNetRuntime>;
-            if (map.ContainsKey(process.ProcessIndex)) return map[process.ProcessIndex].Runtime;
-            else return null;
+            if (map.ContainsKey(process.ProcessIndex))
+            {
+                return map[process.ProcessIndex].Runtime;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public static void AddCallbackOnDotNetRuntimeLoad(this TraceProcess process, Action<TraceLoadedDotNetRuntime> OnDotNetRuntimeLoaded)
         {
             Debug.Assert(process.Source != null);
-            Debug.Assert(m_currentSource == process.Source);
+            Debug.Assert(m_weakCurrentSource.Target == process.Source);
             Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
-            if (!map.ContainsKey(process.ProcessIndex)) map.Add(process.ProcessIndex, new DotNetRuntime());
+            if (!map.ContainsKey(process.ProcessIndex))
+            {
+                map.Add(process.ProcessIndex, new DotNetRuntime());
+            }
+
             map[process.ProcessIndex].OnLoaded += OnDotNetRuntimeLoaded;
         }
 
         public static void SetMutableTraceEventStackSource(this TraceProcess process, MutableTraceEventStackSource stackSource)
         {
             Debug.Assert(process.Source != null);
-            Debug.Assert(m_currentSource == process.Source);
+            Debug.Assert(m_weakCurrentSource.Target == process.Source);
             Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
-            if (!map.ContainsKey(process.ProcessIndex)) map.Add(process.ProcessIndex, new DotNetRuntime());
+            if (!map.ContainsKey(process.ProcessIndex))
+            {
+                map.Add(process.ProcessIndex, new DotNetRuntime());
+            }
+
             map[process.ProcessIndex].StackSource = stackSource;
         }
 
         public static MutableTraceEventStackSource MutableTraceEventStackSource(this TraceProcess process)
         {
             Debug.Assert(process.Source != null);
-            Debug.Assert(m_currentSource == process.Source);
+            Debug.Assert(m_weakCurrentSource.Target == process.Source);
             Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
-            if (map.ContainsKey(process.ProcessIndex)) return map[process.ProcessIndex].StackSource;
-            else return null;
+            if (map.ContainsKey(process.ProcessIndex))
+            {
+                return map[process.ProcessIndex].StackSource;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public static bool HasMutableTraceEventStackSource(this TraceEventDispatcher source)
@@ -97,9 +118,16 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         {
             Debug.Assert(process.Source != null);
             Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
-            if (!map.ContainsKey(process.ProcessIndex)) map.Add(process.ProcessIndex, new DotNetRuntime());
+            if (!map.ContainsKey(process.ProcessIndex))
+            {
+                map.Add(process.ProcessIndex, new DotNetRuntime());
+            }
+
             map[process.ProcessIndex].Runtime = runtime;
-            if (map[process.ProcessIndex].OnLoaded != null) map[process.ProcessIndex].OnLoaded(runtime);
+            if (map[process.ProcessIndex].OnLoaded != null)
+            {
+                map[process.ProcessIndex].OnLoaded(runtime);
+            }
         }
 
         internal static void OnDotNetRuntimeUnloaded(this TraceProcess process)
@@ -113,13 +141,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             }
         }
 
-        private static TraceEventDispatcher m_currentSource; // used to ensure non-concurrent usage
+        private static WeakReference m_weakCurrentSource = new WeakReference(null); // used to ensure non-concurrent usage
         #endregion
     }
 
     /// <summary>
     /// Extension properties for TraceProcess that include necessary .NET values
-    /// 
+    ///
     /// TODO This implementation is poor at idenitfying the ParentPID, 64bitness, and Start/End times
     /// </summary>
     public class TraceLoadedDotNetRuntime
@@ -147,7 +175,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// </summary>
         public event Action<TraceProcess, TraceGC> GCStart = null;
         /// <summary>
-        /// Fired at the end of tha GC.  Given the nature of the GC, it is possible that multiple GCs will be inflight at the same time.
+        /// Fired at the end of the GC.  Given the nature of the GC, it is possible that multiple GCs will be inflight at the same time.
         /// </summary>
         public event Action<TraceProcess, TraceGC> GCEnd = null;
 
@@ -164,6 +192,16 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// Fired when a managed method is done compiling (jitting).  Given the nature of the JIT, it is possible that multiple methods will be compiled at the same time.
         /// </summary>
         public event Action<TraceProcess, TraceJittedMethod> JITMethodEnd = null;
+
+        /// <summary>
+        /// Indicates whether any of the jitted method code versions have a known optimization tier
+        /// </summary>
+        public bool HasAnyKnownOptimizationTier;
+
+        /// <summary>
+        /// Indicates whether tiered compilation is enabled
+        /// </summary>
+        public bool IsTieredCompilationEnabled;
 
         /// <summary>
         /// An XML representation of the TraceEventProcess (for debugging)
@@ -202,9 +240,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             // Set additional TraceManageProcess properties
             //
 
-            // These parsers create state and we want to collect that so we put it on our 'parsers' list that we serialize.  
+            // These parsers create state and we want to collect that so we put it on our 'parsers' list that we serialize.
             var clrRundownParser = new ClrRundownTraceEventParser(source);
-            // See if the source knows about the CLR Private provider, if it does, then 
+            // See if the source knows about the CLR Private provider, if it does, then
             var clrPrivate = new ClrPrivateTraceEventParser(source);
 
             Dictionary<TraceProcess, TraceLoadedDotNetRuntime> processRuntimes = new Dictionary<TraceProcess, TraceLoadedDotNetRuntime>();
@@ -223,7 +261,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     // Set process name directly if not set
                     // This is needed for linux traces or traces on Windows which do not have backProcessing enabled (very rare)
                     if (string.IsNullOrWhiteSpace(proc.Name))
+                    {
                         proc.name = data.ProcessName;
+                    }
 
                     // fire callback and associate this DotNetRuntime with this process
                     proc.OnDotNetRuntimeLoaded(mang);
@@ -244,14 +284,20 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     foreach (var process in source.Processes())
                     {
                         // continue if the process has not exited yet
-                        if (!process.ExitStatus.HasValue) continue;
+                        if (!process.ExitStatus.HasValue)
+                        {
+                            continue;
+                        }
 
                         if (process.EndTimeRelativeMsec < (p.EndTimeRelativeMsec - source.DataLifetimeMsec))
                         {
                             // remove this managed runtime instance
                             process.OnDotNetRuntimeUnloaded();
                             // remove from the local cache
-                            if (processRuntimes.ContainsKey(process)) processRuntimes.Remove(process);
+                            if (processRuntimes.ContainsKey(process))
+                            {
+                                processRuntimes.Remove(process);
+                            }
                         }
                     }
                 }
@@ -281,13 +327,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                // replace the current runtimeversion if it is currently not set, or this version has information including revision (eg. qfe number)
                if (mang.runtimeVersion.Major == 0 || data.VMQfeNumber > 0)
+               {
                    mang.runtimeVersion = new Version(data.VMMajorVersion, data.VMMinorVersion, data.VMBuildNumber, data.VMQfeNumber);
+               }
+
                mang.StartupFlags = data.StartupFlags;
                // proxy for bitness, given we don't have a traceevent to pass through
                process.Is64Bit = (data.RuntimeDllPath.ToLower().Contains("framework64"));
 
                if (process.CommandLine.Length == 0)
+               {
                    process.CommandLine = data.CommandLine;
+               }
            };
             clrRundownParser.RuntimeStart += doAtRuntimeStart;
             source.Clr.RuntimeStart += doAtRuntimeStart;
@@ -304,8 +355,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     Version version;
                     // replace the current runtimeVersion if there is not good revision information
                     if ((mang.runtimeVersion.Major == 0 || mang.runtimeVersion.Revision == 0) && Version.TryParse(data.ProductVersion, out version))
+                    {
                         mang.runtimeVersion = new Version(version.Major, version.Minor, version.Build, version.Revision);
-                    if (mang.RuntimeBuiltTime == default(DateTime)) mang.RuntimeBuiltTime = data.BuildTime;
+                    }
+
+                    if (mang.RuntimeBuiltTime == default(DateTime))
+                    {
+                        mang.RuntimeBuiltTime = data.BuildTime;
+                    }
                 }
             };
             symbolParser.ImageID += delegate (ImageIDTraceData data)
@@ -317,7 +374,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     // this will create a mang instance for this process
                     TraceLoadedDotNetRuntime mang = currentManagedProcess(data);
                     // capture the CLR build stamp to provide deeper version information (when version information is not present)
-                    if (mang.RuntimeBuiltTime == default(DateTime)) mang.RuntimeBuiltTime = data.BuildTime;
+                    if (mang.RuntimeBuiltTime == default(DateTime))
+                    {
+                        mang.RuntimeBuiltTime = data.BuildTime;
+                    }
                 }
             };
 
@@ -444,7 +504,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             {
                                 Debug.Assert(mang.GC.m_stats.currentBGC != null);
                                 if (mang.GC.m_stats.currentBGC != null)
+                                {
                                     mang.GC.m_stats.currentBGC.GCCpuMSec += cpuIncrement;
+                                }
+
                                 isThreadDoingGC = true;
                             }
 
@@ -460,7 +523,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 {
                     var process = data.Process();
                     var mang = currentManagedProcess(data);
-                    mang.GC.m_stats.lastSuspendReason = data.Reason;
                     switch (data.Reason)
                     {
                         case GCSuspendEEReason.SuspendForGC:
@@ -471,8 +533,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             break;
                         default:
                             mang.GC.m_stats.suspendThreadIDOther = data.ThreadID;
-                            break;
+                            // There are several other reasons for a suspend but we
+                            // don't care about them
+                            return;
                     }
+                    mang.GC.m_stats.lastSuspendReason = data.Reason;
 
                     mang.GC.m_stats.suspendTimeRelativeMSec = data.TimeStampRelativeMSec;
 
@@ -484,7 +549,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         {
                             foreach (var procThread in traceProc.Threads)
                             {
-                                if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.Contains(".NET Server GC Thread")))
+                                if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.StartsWith(".NET Server GC")))
                                 {
                                     mang.GC.m_stats.IsServerGCUsed = 1;
                                     break;
@@ -493,21 +558,29 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                             if (mang.GC.m_stats.IsServerGCUsed == 1)
                             {
-                                mang.GC.m_stats.HeapCount = 0;
                                 mang.GC.m_stats.serverGCThreads = new Dictionary<int, int>(2);
 
                                 foreach (var procThread in traceProc.Threads)
                                 {
-                                    if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.StartsWith(".NET Server GC Thread")))
+                                    if (procThread.ThreadInfo == null)
                                     {
-                                        mang.GC.m_stats.HeapCount++;
+                                        continue;
+                                    }
 
-                                        int startIndex = procThread.ThreadInfo.IndexOf('(');
-                                        int endIndex = procThread.ThreadInfo.IndexOf(')');
-                                        string heapNumString = procThread.ThreadInfo.Substring(startIndex + 1, (endIndex - startIndex - 1));
-                                        int heapNum = int.Parse(heapNumString);
-                                        mang.GC.m_stats.serverGCThreads[procThread.ThreadID] = heapNum;
-                                        mang.GC.m_stats.ServerGcHeap2ThreadId[heapNum] = procThread.ThreadID;
+                                    // .NET Server Threads' ThreadInfo can be either ".NET Server GC Thread (#)" or ".NET Server GC".
+                                    // Both should be accumulated to correctly compute the heap count.
+                                    if (procThread.ThreadInfo.StartsWith(".NET Server GC"))
+                                    {
+                                        // When the heap # is available, use it.
+                                        if (procThread.ThreadInfo.StartsWith(".NET Server GC Thread"))
+                                        {
+                                            int startIndex = procThread.ThreadInfo.IndexOf('(');
+                                            int endIndex = procThread.ThreadInfo.IndexOf(')');
+                                            string heapNumString = procThread.ThreadInfo.Substring(startIndex + 1, (endIndex - startIndex - 1));
+                                            int heapNum = int.Parse(heapNumString);
+                                            mang.GC.m_stats.serverGCThreads[procThread.ThreadID] = heapNum;
+                                            mang.GC.m_stats.ServerGcHeap2ThreadId[heapNum] = procThread.ThreadID;
+                                        }
                                     }
                                 }
                             }
@@ -519,6 +592,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 source.Clr.GCSuspendEEStop += delegate (GCNoUserDataTraceData data)
                 {
                     var mang = currentManagedProcess(data);
+
+                    if (!(data.ThreadID == mang.GC.m_stats.suspendThreadIDBGC || data.ThreadID == mang.GC.m_stats.suspendThreadIDGC))
+                    {
+                        // We only care about SuspendStop events that correspond to GC or PrepForGC reasons
+                        // If we had initiated one of those then we set the corresponding threadid field in
+                        // SuspendStart and we are guaranteed that the matching stop will occur on the same
+                        // thread. Any other SuspendStop must be part of a suspension we aren't tracking.
+                        return;
+                    }
 
                     if ((mang.GC.m_stats.suspendThreadIDBGC > 0) && (mang.GC.m_stats.currentBGC != null))
                     {
@@ -532,6 +614,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 {
                     var process = data.Process();
                     var stats = currentManagedProcess(data);
+
+                    if (data.ThreadID == stats.GC.m_stats.suspendThreadIDOther)
+                    {
+                        stats.GC.m_stats.suspendThreadIDOther = -1;
+                    }
+
+                    if (!(data.ThreadID == stats.GC.m_stats.suspendThreadIDBGC || data.ThreadID == stats.GC.m_stats.suspendThreadIDGC))
+                    {
+                        // We only care about RestartEE events that correspond to GC or PrepForGC suspensions
+                        // If we had initiated one of those then we set the corresponding threadid field in
+                        // SuspendStart and we are guaranteed that the matching RestartEE will occur on the
+                        // same thread. Any other RestartEE must be part of a suspension we aren't tracking.
+                        return;
+                    }
+
                     TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
                     if (_gc != null)
                     {
@@ -546,9 +643,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                                 Debug.Assert(_gc.PauseDurationMSec == 0);
                             }
                             Debug.Assert(_gc.PauseStartRelativeMSec != 0);
-                            // In 2.0 Concurrent GC, since we don't know the GC's type we can't tell if it's concurrent 
+                            // In 2.0 Concurrent GC, since we don't know the GC's type we can't tell if it's concurrent
                             // or not. But we know we don't have nested GCs there so simply check if we have received the
-                            // GCStop event; if we have it means it's a blocking GC; otherwise it's a concurrent GC so 
+                            // GCStop event; if we have it means it's a blocking GC; otherwise it's a concurrent GC so
                             // simply add the pause time to the GC without making the GC complete.
                             if (_gc.DurationMSec == 0)
                             {
@@ -565,17 +662,19 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                                     stats.GC.m_stats.lastCompletedGC = _gc;
 
                                     // fire event
-                                    if (stats.GCEnd != null) stats.GCEnd(process, _gc);
+                                    if (stats.GCEnd != null)
+                                    {
+                                        stats.GCEnd(process, _gc);
+                                    }
                                 }
                             }
                         }
                     }
 
-                    // We don't change between a GC end and the pause resume.   
+                    // We don't change between a GC end and the pause resume.
                     //Debug.Assert(stats.allocTickAtLastGC == stats.allocTickCurrentMB);
-                    // Mark that we are not in suspension anymore.  
+                    // Mark that we are not in suspension anymore.
                     stats.GC.m_stats.suspendTimeRelativeMSec = -1;
-                    stats.GC.m_stats.suspendThreadIDOther = -1;
                     stats.GC.m_stats.suspendThreadIDBGC = -1;
                     stats.GC.m_stats.suspendThreadIDGC = -1;
                 };
@@ -583,18 +682,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 source.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData data)
                 {
                     var stats = currentManagedProcess(data);
-
-                    if (stats.GC.m_stats.HasAllocTickEvents == false)
-                    {
-                        stats.GC.m_stats.HasAllocTickEvents = true;
-                    }
+                    stats.GC.m_stats.HasAllocTickEvents = true;
 
                     double valueMB = data.GetAllocAmount(ref stats.GC.m_stats.SeenBadAllocTick) / 1000000.0;
 
                     if (data.AllocationKind == GCAllocationKind.Small)
                     {
-                        // Would this do the right thing or is it always 0 for SOH since AllocationAmount 
-                        // is an int??? 
+                        // Would this do the right thing or is it always 0 for SOH since AllocationAmount
+                        // is an int???
                         stats.GC.m_stats.allocTickCurrentMB[0] += valueMB;
                     }
                     else
@@ -614,7 +709,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     {
                         TraceGC _gc = new TraceGC(stats.GC.m_stats.HeapCount);
                         Debug.Assert(0 <= data.Depth && data.Depth <= 2);
-                        // _event.GCGeneration = data.Depth;   Old style events only have this in the GCStop event.  
+                        _gc.Generation = data.Depth;
                         _gc.Reason = data.Reason;
                         _gc.Number = data.Count;
                         _gc.Type = data.Type;
@@ -637,6 +732,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         if (isEphemeralGCAtBGCStart || _gc.Reason == GCReason.PMFullGC)
                         {
                             _gc.PauseStartRelativeMSec = data.TimeStampRelativeMSec;
+
                             if (_gc.Reason == GCReason.PMFullGC)
                             {
                                 TraceGC lastGC = TraceGarbageCollector.GetCurrentGC(stats);
@@ -662,6 +758,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         if (_gc.Type == GCType.BackgroundGC)
                         {
                             stats.GC.m_stats.currentBGC = _gc;
+                            // For BGC, we need to add the suspension time so far to its pause so we don't miss including it.
+                            // If there's an ephemeral GC happening before the BGC starts, AddConcurrentPauseTime will not
+                            // add this suspension time to GC pause as that GC would be seen the ephemeral GC, not the BGC.
+                            _gc.PauseDurationMSec = _gc.SuspendDurationMSec;
                             _gc.ProcessCpuAtLastGC = stats.GC.m_stats.ProcessCpuAtLastGC;
                         }
 
@@ -669,19 +769,27 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         {
                             stats.GC.m_stats.SetUpServerGcHistory(process.ProcessID, _gc);
                             foreach (var s in RecentCpuSamples)
+                            {
                                 _gc.AddServerGcSample(s);
+                            }
+
                             foreach (var s in RecentThreadSwitches)
+                            {
                                 _gc.AddServerGcThreadSwitch(s);
+                            }
                         }
 
                         // fire event
-                        if (stats.GCStart != null) stats.GCStart(process, _gc);
+                        if (stats.GCStart != null)
+                        {
+                            stats.GCStart(process, _gc);
+                        }
 
                         // check if we should apply a lifetime limit to the GC cache
                         if (source.DataLifetimeEnabled() && data.TimeStampRelativeMSec >= stats.GC.NextRelativeTimeStampMsec)
                         {
                             // note the next time that lifetime should be applied, to avoid cleaningup too frequently
-                            stats.GC.NextRelativeTimeStampMsec = data.TimeStampRelativeMSec + (source.DataLifetimeMsec/2.0);
+                            stats.GC.NextRelativeTimeStampMsec = data.TimeStampRelativeMSec + (source.DataLifetimeMsec / 2.0);
                             // trim the GCs to only include those either incomplete or completed after lifetime
                             stats.GC.m_gcs = stats.GC.m_gcs.Where(gc => !gc.IsComplete || gc.StartRelativeMSec >= (data.TimeStampRelativeMSec - source.DataLifetimeMsec)).ToList();
                             // rewrite the index for fast lookup
@@ -700,7 +808,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
                     if (_gc != null)
                     {
-                        if (_gc.PinnedObjects == null) _gc.PinnedObjects = new Dictionary<Address, long>();
+                        if (_gc.PinnedObjects == null)
+                        {
+                            _gc.PinnedObjects = new Dictionary<Address, long>();
+                        }
+
                         if (!_gc.PinnedObjects.ContainsKey(data.ObjectID))
                         {
                             _gc.PinnedObjects.Add(data.ObjectID, data.ObjectSize);
@@ -721,9 +833,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     TraceGC _event = TraceGarbageCollector.GetCurrentGC(stats);
                     if (_event != null)
                     {
-                        // ObjectID is supposed to be an IntPtr. But "Address" is defined as UInt64 in 
+                        // ObjectID is supposed to be an IntPtr. But "Address" is defined as UInt64 in
                         // TraceEvent.
-                        if (_event.PinnedPlugs == null) _event.PinnedPlugs = new List<TraceGC.PinnedPlug>();
+                        if (_event.PinnedPlugs == null)
+                        {
+                            _event.PinnedPlugs = new List<TraceGC.PinnedPlug>();
+                        }
+
                         _event.PinnedPlugs.Add(new TraceGC.PinnedPlug(data.PlugStart, data.PlugEnd));
                     }
                 };
@@ -752,6 +868,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     }
                 };
 
+                source.Clr.GCDynamicEvent.GCCommittedUsage += delegate (CommittedUsageTraceEvent committedUsage)
+                {
+                    var stats = currentManagedProcess(committedUsage.UnderlyingEvent);
+                    GCStats.ProcessCommittedUsage(stats, committedUsage);
+                };
+
+                source.Clr.GCDynamicEvent.GCDynamicTraceEvent += delegate (GCDynamicTraceEvent gcDynamic)
+                {
+                    var stats = currentManagedProcess(gcDynamic.UnderlyingEvent);
+                    GCStats.ProcessGCDynamicEvent(stats, gcDynamic);
+                };
+
                 source.Clr.GCGlobalHeapHistory += delegate (GCGlobalHeapHistoryTraceData data)
                 {
                     var stats = currentManagedProcess(data);
@@ -774,15 +902,57 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     }
                 };
 
+                source.Clr.GCLOHCompact += delegate (GCLOHCompactTraceData data)
+                {
+                    var stats = currentManagedProcess(data);
+                    TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
+                    if (_gc != null)
+                    {
+                        for (int i = 0; i < data.Count; i++)
+                        {
+                            _gc.LOHCompactInfos.Add(data.Info(i));
+                        }
+                    }
+                };
+
+                source.Clr.GCFitBucketInfo += delegate (GCFitBucketInfoTraceData data)
+                {
+                    BucketKind bucketKind = data.BucketKind;
+                    var stats = currentManagedProcess(data);
+                    TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
+                    if (_gc != null)
+                    {
+                        for (int i = 0; i < data.Count; i++)
+                        {
+                            if (bucketKind == BucketKind.LargestFreeListItems)
+                            {
+                                _gc.LargestFreeListItemsBuckets.Add(data.Buckets(i));
+                            }
+                            else if (bucketKind == BucketKind.PlugsInCondemned)
+                            {
+                                _gc.PlugsInCondemnedBuckets.Add(data.Buckets(i));
+                            }
+                            else
+                            {
+                                Debug.Assert(false);
+                            }
+                        }
+                    }
+                };
+
                 clrPrivate.GCPinPlugAtGCTime += delegate (PinPlugAtGCTimeTraceData data)
                 {
                     var stats = currentManagedProcess(data);
                     TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
                     if (_gc != null)
                     {
-                        // ObjectID is supposed to be an IntPtr. But "Address" is defined as UInt64 in 
+                        // ObjectID is supposed to be an IntPtr. But "Address" is defined as UInt64 in
                         // TraceEvent.
-                        if (_gc.PinnedPlugs == null) _gc.PinnedPlugs = new List<TraceGC.PinnedPlug>();
+                        if (_gc.PinnedPlugs == null)
+                        {
+                            _gc.PinnedPlugs = new List<TraceGC.PinnedPlug>();
+                        }
+
                         _gc.PinnedPlugs.Add(new TraceGC.PinnedPlug(data.PlugStart, data.PlugEnd));
                     }
                 };
@@ -934,7 +1104,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     if (_gc != null)
                     {
                         _gc.DurationMSec = data.TimeStampRelativeMSec - _gc.StartRelativeMSec;
-                        _gc.Generation = data.Depth;
                         Debug.Assert(_gc.Number == data.Count);
                     }
                 };
@@ -945,7 +1114,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     var stats = currentManagedProcess(data);
                     TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
 
-                    var sizeAfterMB = (data.GenerationSize1 + data.GenerationSize2 + data.GenerationSize3) / 1000000.0;
+                    var sizeAfterMB = (data.GenerationSize1 + data.GenerationSize2 + data.GenerationSize3 + data.GenerationSize4) / 1000000.0;
                     if (_gc != null)
                     {
                         _gc.HeapStats = new GCHeapStats()
@@ -966,6 +1135,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             ,
                             GenerationSize3 = data.GenerationSize3
                             ,
+                            GenerationSize4 = data.GenerationSize4
+                            ,
                             PinnedObjectCount = data.PinnedObjectCount
                             ,
                             SinkBlockCount = data.SinkBlockCount
@@ -981,6 +1152,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             TotalPromotedSize2 = data.TotalPromotedSize2
                             ,
                             TotalPromotedSize3 = data.TotalPromotedSize3
+                            ,
+                            TotalPromotedSize4 = data.TotalPromotedSize4
                         };
 
                         if (_gc.Type == GCType.BackgroundGC)
@@ -1009,7 +1182,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             stats.GC.m_stats.currentBGC = null;
 
                             // fire event
-                            if (stats.GCEnd != null) stats.GCEnd(process, stats.GC.m_stats.lastCompletedGC);
+                            if (stats.GCEnd != null)
+                            {
+                                stats.GCEnd(process, stats.GC.m_stats.lastCompletedGC);
+                            }
                         }
 
                         if (_gc.IsConcurrentGC)
@@ -1019,7 +1195,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             stats.GC.m_stats.lastCompletedGC = _gc;
 
                             // fire event
-                            if (stats.GCEnd != null) stats.GCEnd(process, _gc);
+                            if (stats.GCEnd != null)
+                            {
+                                stats.GCEnd(process, _gc);
+                            }
                         }
                     }
 
@@ -1081,6 +1260,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             1;
                 };
 
+                clrRundownParser.GCSettingsRundown += delegate (GCSettingsRundownTraceData data)
+                {
+                    var stats = currentManagedProcess(data);
+                    stats.GC.m_gcSettings = new GCSettings(data.HardLimit, data.LOHThreshold, data.PhysicalMemoryConfig, data.Gen0MinBudgetConfig, data.Gen0MaxBudgetConfig, data.HighMemPercentConfig, data.BitSettings);
+                };
             }
 
             //
@@ -1096,13 +1280,16 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     var _method = stats.JIT.m_stats.LogJitStart(stats, data, JITStats.GetMethodName(data), data.MethodILSize, data.ModuleID, data.MethodID);
 
                     // fire event
-                    if (stats.JITMethodStart != null) stats.JITMethodStart(process, _method);
+                    if (stats.JITMethodStart != null)
+                    {
+                        stats.JITMethodStart(process, _method);
+                    }
 
                     // check if we should apply a lifetime limit to the method cache
                     if (source.DataLifetimeEnabled() && data.TimeStampRelativeMSec >= stats.JIT.NextRelativeTimeStampMsec)
                     {
                         // note the next time that lifetime should be applied, to avoid cleaningup too frequently
-                        stats.JIT.NextRelativeTimeStampMsec = data.TimeStampRelativeMSec + (source.DataLifetimeMsec/2.0);
+                        stats.JIT.NextRelativeTimeStampMsec = data.TimeStampRelativeMSec + (source.DataLifetimeMsec / 2.0);
                         // trim the methods to only include those that were JITT'd after the lifetime timestamp
                         stats.JIT.m_methods = stats.JIT.m_methods.Where(meth => meth.StartTimeMSec >= (data.TimeStampRelativeMSec - source.DataLifetimeMsec)).ToList();
                     }
@@ -1116,7 +1303,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     // fix-up methods that have been previously marked with incomplete module information
                     foreach (var _method in stats.JIT.Methods.Where(m => m.ModuleID == data.ModuleID))
                     {
-                        if (string.IsNullOrWhiteSpace(_method.ModuleILPath)) _method.ModuleILPath = data.ModuleILPath;
+                        if (string.IsNullOrWhiteSpace(_method.ModuleILPath))
+                        {
+                            _method.ModuleILPath = data.ModuleILPath;
+                        }
                     }
                 };
                 source.Clr.LoaderModuleLoad += moduleLoadAction;
@@ -1131,11 +1321,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         var stats = currentManagedProcess(data);
 
                         bool createdNewMethod;
-                        var _method = JITStats.MethodComplete(stats, data, data.MethodSize, data.ModuleID, JITStats.GetMethodName(data), data.MethodID, out createdNewMethod);
+                        var _method = JITStats.MethodComplete(stats, data, JITStats.GetMethodName(data), (int)data.ReJITID, out createdNewMethod);
 
                         // fire event - but only once
-                        if (createdNewMethod && stats.JITMethodStart != null) stats.JITMethodStart(process, _method);
-                        if (stats.JITMethodEnd != null && _method.Completed == 1) stats.JITMethodEnd(process, _method);
+                        if (createdNewMethod && stats.JITMethodStart != null)
+                        {
+                            stats.JITMethodStart(process, _method);
+                        }
+
+                        if (stats.JITMethodEnd != null && _method.Completed == 1)
+                        {
+                            stats.JITMethodEnd(process, _method);
+                        }
                     }
                 };
 
@@ -1147,11 +1344,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         var stats = currentManagedProcess(data);
 
                         bool createdNewMethod;
-                        var _method = JITStats.MethodComplete(stats, data, data.MethodSize, data.ModuleID, "", data.MethodID, out createdNewMethod);
+                        var _method = JITStats.MethodComplete(stats, data, "", 0, out createdNewMethod);
 
                         // fire event - but only once
-                        if (createdNewMethod && stats.JITMethodStart != null) stats.JITMethodStart(process, _method);
-                        if (stats.JITMethodEnd != null && _method.Completed == 1) stats.JITMethodEnd(process, _method);
+                        if (createdNewMethod && stats.JITMethodStart != null)
+                        {
+                            stats.JITMethodStart(process, _method);
+                        }
+
+                        if (stats.JITMethodEnd != null && _method.Completed == 1)
+                        {
+                            stats.JITMethodEnd(process, _method);
+                        }
                     }
                 };
                 source.Clr.RuntimeStart += delegate (RuntimeInformationTraceData data)
@@ -1160,7 +1364,16 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     var stats = currentManagedProcess(data);
                     stats.JIT.m_stats.IsClr4 = true;
                     if (process.CommandLine == null)
+                    {
                         process.CommandLine = data.CommandLine;
+                    }
+                };
+
+                source.Clr.MethodMemoryAllocatedForJitCode += delegate (MethodJitMemoryAllocatedForCodeTraceData data)
+                {
+                    var process = data.Process();
+                    var stats = currentManagedProcess(data);
+                    JITStats.LogJitMethodAllocation(stats, data);
                 };
 
                 clrPrivate.ClrMulticoreJitCommon += delegate (MulticoreJitPrivateTraceData data)
@@ -1247,7 +1460,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                 clrPrivate.BindingLoaderPhaseStart += delegate (BindingTraceData data)
                 {
-                    // Keep track if the last assembly loaded before Background JIT aborts.  
+                    // Keep track if the last assembly loaded before Background JIT aborts.
                     var stats = currentManagedProcess(data);
                     if (stats.JIT.m_stats.BackgroundJitAbortedAtMSec == 0)
                     {
@@ -1258,22 +1471,24 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                 clrPrivate.BindingLoaderDeliverEventsPhaseStop += delegate (BindingTraceData data)
                 {
-                    // If we hit this events, we assume assembly load is successful. 
+                    // If we hit this events, we assume assembly load is successful.
 
                     var stats = currentManagedProcess(data);
                     if (stats.JIT.m_stats.BackgroundJitAbortedAtMSec != 0)
                     {
                         if (stats.JIT.m_stats.LastAssemblyLoadNameBeforeAbort == data.AssemblyName)
+                        {
                             stats.JIT.m_stats.LastAssemblyLoadBeforeAbortSuccessful = true;
+                        }
                     }
                 };
 
                 clrPrivate.StartupPrestubWorkerStart += delegate (StartupTraceData data)
                 {
                     // TODO, we want to know if we have background JIT events.   Today we don't have an event
-                    // that says 'events are enabled, its just no one used the events'  We want this.  
+                    // that says 'events are enabled, its just no one used the events'  We want this.
                     // Today we turn on all CLRPrivate events to turn on listening to Backgroung JITTing and
-                    // we use the fact that the PrestubWorker evnets are on as a proxy.  
+                    // we use the fact that the PrestubWorker evnets are on as a proxy.
                     backgroundJITEventsOn = true;
                 };
                 source.Clr.AppDomainResourceManagementThreadTerminated += delegate (ThreadTerminatedOrTransitionTraceData data)
@@ -1293,7 +1508,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     {
                         MethodBeingCompiled = data.MethodBeingCompiledNamespace + "." + data.MethodBeingCompiledName,
                         Inliner = data.InlinerNamespace + "." + data.InlinerName,
-                        Inlinee = data.InlinerNamespace + "." + data.InlineeName
+                        Inlinee = data.InlineeNamespace + "." + data.InlineeName
+                    });
+                };
+                source.Clr.MethodInliningFailedAnsi += delegate (MethodJitInliningFailedAnsiTraceData data)
+                {
+                    var stats = currentManagedProcess(data);
+                    stats.JIT.m_stats.InliningFailures.Add(new InliningFailureResult
+                    {
+                        MethodBeingCompiled = data.MethodBeingCompiledNamespace + "." + data.MethodBeingCompiledName,
+                        Inliner = data.InlinerNamespace + "." + data.InlinerName,
+                        Inlinee = data.InlineeNamespace + "." + data.InlineeName,
+                        Reason = data.FailReason
                     });
                 };
                 source.Clr.MethodInliningFailed += delegate (MethodJitInliningFailedTraceData data)
@@ -1308,6 +1534,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     });
                 };
             }
+
+            Action<TieredCompilationSettingsTraceData> onTieredCompilationSettings = data =>
+            {
+                var stats = currentManagedProcess(data);
+                stats.IsTieredCompilationEnabled = true;
+            };
+            source.Clr.TieredCompilationSettings += onTieredCompilationSettings;
+            clrRundownParser.TieredCompilationRundownSettingsDCStart += onTieredCompilationSettings;
         }
 
         private Version runtimeVersion;
@@ -1324,6 +1558,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// Process view of GC statistics
         /// </summary>
         public GCStats Stats() { Calculate(); return m_stats; }
+
         /// <summary>
         /// Process view of GC generational statistics
         /// </summary>
@@ -1333,6 +1568,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// Process view of all GCs
         /// </summary>
         public List<TraceGC> GCs { get { return m_gcs; } }
+
+        /// <summary>
+        /// Settings for the GC
+        /// </summary>
+        public GCSettings GCSettings { get { return m_gcSettings; } }
 
         #region private
         internal static TraceGC GetCurrentGC(TraceLoadedDotNetRuntime proc)
@@ -1358,19 +1598,31 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         private int m_prvcount = 0;
         private int m_prvCompleted = 0;
         internal double NextRelativeTimeStampMsec;
+        internal GCSettings m_gcSettings;
 
         private void Calculate()
         {
             bool recalc = false;
 
             // determine if the stats need to be recalculated
-            if (m_gcs.Count != m_prvcount) recalc = true;
+            if (m_gcs.Count != m_prvcount)
+            {
+                recalc = true;
+            }
             else
             {
                 int complete = m_gcs.Sum(gc => (gc.IsComplete) ? 1 : 0);
-                if (m_prvCompleted < complete) recalc = true;
+                if (m_prvCompleted < complete)
+                {
+                    recalc = true;
+                }
+
                 int gencount = m_generations.Sum(gen => (gen != null) ? gen.Count : 0);
-                if (gencount < m_prvCompleted) recalc = true;
+                if (gencount < m_prvCompleted)
+                {
+                    recalc = true;
+                }
+
                 m_prvCompleted = complete;
             }
 
@@ -1395,8 +1647,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 m_stats.MaxSuspendDurationMSec = 0;
 
                 // clear out the generation information
-                for(int gen=0; gen<=(int)Gens.Gen2; gen++)
+                for (int gen = 0; gen <= (int)Gens.Gen2; gen++)
+                {
                     m_generations[gen] = new GCStats();
+                }
 
                 // calculate the stats
                 for (int i = 0; i < m_gcs.Count; i++)
@@ -1412,13 +1666,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                     _gc.Index = i;
                     if (_gc.PerHeapHistories != null && _gc.PerHeapHistories.Count > 0)  //per heap histories is not null
+                    {
                         m_stats.HasDetailedGCInfo = true;
+                    }
 
-                    // Update the per-generation information 
+                    // Update the per-generation information
                     m_generations[_gc.Generation].Count++;
                     bool isInduced = ((_gc.Reason == GCReason.Induced) || (_gc.Reason == GCReason.InducedNotForced));
                     if (isInduced)
+                    {
                         (m_generations[_gc.Generation].NumInduced)++;
+                    }
 
                     long PinnedObjectSizes = _gc.GetPinnedObjectSizes();
                     if (PinnedObjectSizes != 0)
@@ -1447,10 +1705,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     m_generations[_gc.Generation].MaxPauseDurationMSec = Math.Max(m_generations[_gc.Generation].MaxPauseDurationMSec, _gc.PauseDurationMSec);
                     m_generations[_gc.Generation].MaxSuspendDurationMSec = Math.Max(m_generations[_gc.Generation].MaxSuspendDurationMSec, _gc.SuspendDurationMSec);
 
-                    // And the totals 
+                    // And the totals
                     m_stats.Count++;
                     if (isInduced)
+                    {
                         m_stats.NumInduced++;
+                    }
+
                     if (PinnedObjectSizes != 0)
                     {
                         m_stats.PinnedObjectSizes += PinnedObjectSizes;
@@ -1499,7 +1760,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         #endregion
     }
 
-    #region internal classes 
+    #region internal classes
     internal class CircularBuffer<T> : IEnumerable<T>
         where T : class
     {
@@ -1508,7 +1769,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         public CircularBuffer(int size)
         {
             if (size < 1)
+            {
                 throw new ArgumentException("size");
+            }
 
             StartIndex = 0;
             AfterEndIndex = 0;
@@ -1550,8 +1813,38 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
 namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 {
+    public class GCSettings
+    {
+        public long HardLimit { get { return m_HardLimit; } }
+        public long LOHThreshold { get { return m_LOHThreshold; } }
+        public long PhysicalMemoryConfig { get { return m_PhysicalMemoryConfig; } }
+        public long Gen0MinBudgetConfig { get { return m_Gen0MinBudgetConfig; } }
+        public long Gen0MaxBudgetConfig { get { return m_Gen0MaxBudgetConfig; } }
+        public int HighMemPercentConfig { get { return m_HighMemPercentConfig; } }
+        public GCSettingsFlags BitSettings { get { return m_BitSettings; } }
+
+        public GCSettings(long HardLimit, long LOHThreshold, long PhysicalMemoryConfig, long Gen0MinBudgetConfig, long Gen0MaxBudgetConfig, int HighMemPercentConfig, GCSettingsFlags BitSettings)
+        {
+            m_HardLimit = HardLimit;
+            m_LOHThreshold = LOHThreshold;
+            m_PhysicalMemoryConfig = PhysicalMemoryConfig;
+            m_Gen0MinBudgetConfig = Gen0MinBudgetConfig;
+            m_Gen0MaxBudgetConfig = Gen0MaxBudgetConfig;
+            m_HighMemPercentConfig = HighMemPercentConfig;
+            m_BitSettings = BitSettings;
+        }
+
+        private long m_HardLimit;
+        private long m_LOHThreshold;
+        private long m_PhysicalMemoryConfig;
+        private long m_Gen0MinBudgetConfig;
+        private long m_Gen0MaxBudgetConfig;
+        private int m_HighMemPercentConfig;
+        private GCSettingsFlags m_BitSettings;
+    }
+
     /// <summary>
-    /// 
+    ///
     /// </summary>
     public class TraceGC
     {
@@ -1609,11 +1902,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Time relative to the start of the trace.  Useful for ordering
         /// </summary>
-        public double StartRelativeMSec;           //  Set in Start, does not include suspension.  
+        public double StartRelativeMSec;           //  Set in Start, does not include suspension.
         /// <summary>
         /// Duration of the GC, excluding the suspension time
         /// </summary>
-        public double DurationMSec;             // Set in Stop This is JUST the GC time (not including suspension) That is Stop-Start.  
+        public double DurationMSec;             // Set in Stop This is JUST the GC time (not including suspension) That is Stop-Start.
         /// <summary>
         /// Duration the EE suspended the process
         /// </summary>
@@ -1651,9 +1944,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Marks if the GC is in a completed state
         /// </summary>
         public bool IsComplete;
-        // 
+        //
         // The 2 fields below would only make sense if the type is BackgroundGC.
-        // 
+        //
         public BGCPhase BGCCurrentPhase;
         public BGCRevisitInfo[][] BGCRevisitInfoArr;
         public double BGCFinalPauseMSec;
@@ -1674,10 +1967,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Server GC histories
         /// </summary>
         //list of workload histories per server GC heap
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public List<ServerGcHistory> ServerGcHeapHistories = new List<ServerGcHistory>();
         /// <summary>
-        /// Amount of memory allocated since last GC.  Requires GCAllocationTicks enabled.  The 
+        /// Amount of memory allocated since last GC.  Requires GCAllocationTicks enabled.  The
         /// data is split into small and large heaps
         /// </summary>
         public double[] AllocedSinceLastGCBasedOnAllocTickMB = { 0.0, 0.0 };// Set in HeapStats
@@ -1686,10 +1978,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         public int HeapCount { get; private set; } = -1;
         /// <summary>
+        /// Number of Generations (0,1,2,LOH,[POH]), which is either 4 or 5 depending on version
+        /// </summary>
+        public int GenerationCount { get { return this.PerHeapHistories?.FirstOrDefault()?.GenData?.Length ?? 0; } }
+        /// <summary>
         /// Calculate the size of all pinned objects
         /// </summary>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public long GetPinnedObjectSizes()
         {
             if (pinnedObjectSizes == -1)
@@ -1709,7 +2004,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Percentage of the pinned objects created by the user
         /// </summary>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public int GetPinnedObjectPercentage()
         {
             if (TotalPinnedPlugSize == -1)
@@ -1781,30 +2075,42 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             {
                 string typeSuffix = "";
                 if (Type == GCType.NonConcurrentGC)
+                {
                     typeSuffix = "N";
+                }
                 else if (Type == GCType.BackgroundGC)
+                {
                     typeSuffix = "B";
+                }
                 else if (Type == GCType.ForegroundGC)
+                {
                     typeSuffix = "F";
+                }
+
                 string inducedSuffix = "";
                 if (Reason == GCReason.Induced)
+                {
                     inducedSuffix = "I";
+                }
+
                 if (Reason == GCReason.InducedNotForced)
+                {
                     inducedSuffix = "i";
+                }
+
                 return Generation.ToString() + typeSuffix + inducedSuffix;
             }
         }
         /// <summary>
         /// Heap size after GC (mb)
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double HeapSizeAfterMB
         {
             get
             {
                 if (null != HeapStats)
                 {
-                    return (HeapStats.GenerationSize0 + HeapStats.GenerationSize1 + HeapStats.GenerationSize2 + HeapStats.GenerationSize3) / 1000000.0;
+                    return (HeapStats.GenerationSize0 + HeapStats.GenerationSize1 + HeapStats.GenerationSize2 + HeapStats.GenerationSize3 + HeapStats.GenerationSize4) / 1000000.0;
                 }
                 else
                 {
@@ -1815,7 +2121,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Amount of memory promoted with GC (mb)
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double PromotedMB
         {
             get
@@ -1823,7 +2128,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 if (null != HeapStats)
                 {
                     return (HeapStats.TotalPromotedSize0 + HeapStats.TotalPromotedSize1 +
-                       HeapStats.TotalPromotedSize2 + HeapStats.TotalPromotedSize3) / 1000000.0;
+                       HeapStats.TotalPromotedSize2 + HeapStats.TotalPromotedSize3 + HeapStats.TotalPromotedSize4) / 1000000.0;
                 }
                 else
                 {
@@ -1831,12 +2136,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 }
             }
         }
+
+        public CommittedUsage CommittedUsageBefore { get; internal set; }
+        public CommittedUsage CommittedUsageAfter { get; internal set; }
+
         /// <summary>
         /// Memory survival percentage by generation
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double SurvivalPercent(Gens gen)
         {
             double retSurvRate = double.NaN;
@@ -1874,17 +2182,33 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenSizeAfterMB(Gens gen)
         {
+            if (gen == Gens.GenPinObj)
+            {
+                return HeapStats.GenerationSize4 / 1000000.0;
+            }
+
             if (gen == Gens.GenLargeObj)
+            {
                 return HeapStats.GenerationSize3 / 1000000.0;
+            }
+
             if (gen == Gens.Gen2)
+            {
                 return HeapStats.GenerationSize2 / 1000000.0;
+            }
+
             if (gen == Gens.Gen1)
+            {
                 return HeapStats.GenerationSize1 / 1000000.0;
+            }
+
             if (gen == Gens.Gen0)
+            {
                 return HeapStats.GenerationSize0 / 1000000.0;
+            }
+
             Debug.Assert(false);
             return double.NaN;
         }
@@ -1893,23 +2217,26 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenFragmentationMB(Gens gen)
         {
             if (PerHeapHistories == null)
+            {
                 return double.NaN;
+            }
 
             double ret = 0.0;
             for (int HeapIndex = 0; HeapIndex < PerHeapHistories.Count; HeapIndex++)
+            {
                 ret += PerHeapHistories[HeapIndex].GenData[(int)gen].Fragmentation / 1000000.0;
+            }
+
             return ret;
         }
         /// <summary>
-        /// Percentage of heap fragmented by generation 
+        /// Percentage of heap fragmented by generation
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenFragmentationPercent(Gens gen)
         {
             return (GenFragmentationMB(gen) * 100.0 / GenSizeAfterMB(gen));
@@ -1919,14 +2246,19 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenInMB(Gens gen)
         {
             if (PerHeapHistories == null)
+            {
                 return double.NaN;
+            }
+
             double ret = 0.0;
             for (int HeapIndex = 0; HeapIndex < PerHeapHistories.Count; HeapIndex++)
+            {
                 ret += PerHeapHistories[HeapIndex].GenData[(int)gen].In / 1000000.0;
+            }
+
             return ret;
         }
         /// <summary>
@@ -1934,36 +2266,57 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenOutMB(Gens gen)
         {
             if (PerHeapHistories == null)
+            {
                 return double.NaN;
+            }
+
             double ret = 0.0;
             for (int HeapIndex = 0; HeapIndex < PerHeapHistories.Count; HeapIndex++)
+            {
                 ret += PerHeapHistories[HeapIndex].GenData[(int)gen].Out / 1000000.0;
+            }
+
             return ret;
         }
         /// <summary>
         /// Memory promoted by generation (mb)
         /// Note that in 4.0 TotalPromotedSize is not entirely accurate (since it doesn't
         /// count the pins that got demoted. We could consider using the PerHeap event data
-        /// to compute the accurate promoted size. 
+        /// to compute the accurate promoted size.
         /// In 4.5 this is accurate.
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenPromotedMB(Gens gen)
         {
+            if (gen == Gens.GenPinObj)
+            {
+                return HeapStats.TotalPromotedSize4 / 1000000.0;
+            }
+
             if (gen == Gens.GenLargeObj)
+            {
                 return HeapStats.TotalPromotedSize3 / 1000000.0;
+            }
+
             if (gen == Gens.Gen2)
+            {
                 return HeapStats.TotalPromotedSize2 / 1000000.0;
+            }
+
             if (gen == Gens.Gen1)
+            {
                 return HeapStats.TotalPromotedSize1 / 1000000.0;
+            }
+
             if (gen == Gens.Gen0)
+            {
                 return HeapStats.TotalPromotedSize0 / 1000000.0;
+            }
+
             Debug.Assert(false);
             return double.NaN;
         }
@@ -1972,14 +2325,19 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenBudgetMB(Gens gen)
         {
             if (PerHeapHistories == null)
+            {
                 return double.NaN;
+            }
+
             double budget = 0.0;
             for (int HeapIndex = 0; HeapIndex < PerHeapHistories.Count; HeapIndex++)
+            {
                 budget += PerHeapHistories[HeapIndex].GenData[(int)gen].Budget / 1000000.0;
+            }
+
             return budget;
         }
         /// <summary>
@@ -1987,25 +2345,47 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         /// <param name="gen"></param>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double GenObjSizeAfterMB(Gens gen)
         {
             if (PerHeapHistories == null)
+            {
                 return double.NaN;
+            }
+
             double objSizeAfter = 0.0;
             for (int HeapIndex = 0; HeapIndex < PerHeapHistories.Count; HeapIndex++)
+            {
                 objSizeAfter += PerHeapHistories[HeapIndex].GenData[(int)gen].ObjSizeAfter / 1000000.0;
+            }
+
             return objSizeAfter;
+        }
+        /// <summary>
+        /// Global condemned reasons by GC
+        /// </summary>
+        public GCCondemnedReasons GlobalCondemnedReasons
+        {
+            get
+            {
+                if ((GlobalHeapHistory != null) && (GlobalHeapHistory.HasCondemnReasons0) && (_GlobalCondemnedReasons == null))
+                {
+                    _GlobalCondemnedReasons = new GCCondemnedReasons();
+                    _GlobalCondemnedReasons.EncodedReasons.Reasons = GlobalHeapHistory.CondemnReasons0;
+                    _GlobalCondemnedReasons.EncodedReasons.ReasonsEx = GlobalHeapHistory.CondemnReasons1;
+                    _GlobalCondemnedReasons.CondemnedReasonGroups = new byte[(int)CondemnedReasonGroup.Max];
+                    _GlobalCondemnedReasons.Decode(/* Version = */ 3);
+                }
+                return _GlobalCondemnedReasons;
+            }
         }
         /// <summary>
         /// Heap condemned reasons by GC
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public GCCondemnedReasons[] PerHeapCondemnedReasons
         {
             get
             {
-                if ((PerHeapHistories != null) && (_PerHeapCondemnedReasons == null))
+                if ((PerHeapHistories?.Count > 0) && (_PerHeapCondemnedReasons == null))
                 {
                     int NumHeaps = PerHeapHistories.Count;
                     _PerHeapCondemnedReasons = new GCCondemnedReasons[NumHeaps];
@@ -2026,11 +2406,105 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return _PerHeapCondemnedReasons;
             }
         }
+
+        public enum TimingType
+        {
+            /// <summary>
+            /// This field records the time spent for marking roots (except objects pointed by sizedref handle and their descendents)
+            ///
+            /// This happen for any type of GC, and it should not be zero for any GCs
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            MarkRoot,
+
+            /// <summary>
+            /// This field records the time spent for nulling out short weak references.
+            /// GC traced through strong references and any object found dead at this point, if they are targets of a short weak ref, that ref's target will be null-ed.
+            /// This happens for any type of GC, and it should not be zero for any GCs.
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            MarkShortWeak,
+
+            /// <summary>
+            /// This field records the time spent for promoting finalizable objects that were found dead (so their finalizers can run). 
+            ///
+            /// This happens for any type of GC, and it should not be zero for any GCs.
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            MarkScanFinalization,
+
+            /// <summary>
+            /// This field records the time spent for scanning the long weak references.
+            ///
+            /// GC already promoted all the finalizable object, for any object found dead at this point, if they are targets of a long weak ref, that ref's target will be null-ed.
+            ///
+            /// This include the work for scanning the sync blocks, so this value could indicate sync block usage issues.
+            ///
+            /// This happens for any type of GC, and it should not be zero for any GCs.
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            MarkLongWeak,
+
+            /// <summary>
+            /// This field records the time spent for planning.
+            /// Planning refers to the activity of calculating new addresses for objects if this was going to be a compacting GC.
+            ///
+            /// This happen only for blocking GCs, and it should not be zero for any blocking GCs.
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            Plan,
+
+            /// <summary>
+            /// This fields records the time spent for relocating.
+            /// Relocation refers to the activity of changing all the pointers to objects to their new location.
+            ///
+            /// This happen only for blocking compacting GCs, and it should not be zero for any blocking compacting GCs.
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            Relocate,
+
+            /// <summary>
+            /// This fields records the time spent for compacting.
+            /// Compacting refers to the activity of copying the objects from their old location to the new location.
+            ///
+            /// This happen only for blocking compacting GCs, and it should not be zero for any blocking compacting GCs.
+            ///
+            /// Note: Due to a bug in the runtime, its value can be 0 for .NET 6 to .NET 8
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            Compact,
+
+            /// <summary>
+            /// This field records the time spent for sweeping.
+            /// Sweeping refers to the activity of making the dead spaces inbetween live objects into a free list
+            ///
+            /// This happen only for blocking sweeping GCs, and it should not be zero for any blocking sweeping GCs.
+            ///
+            /// Available in .NET 6+
+            /// </summary>
+            Sweep,
+        };
+
+        /// <summary>
+        /// We have a poor man's profiler that capture the timing information
+        /// for various phases in GC. This provides a lightweight way to know how much time
+        /// is spent on each phase of the GC.
+        ///
+        /// Available in .NET 6+
+        /// </summary>
+        public Nullable<int>[] TimingInfo { get; set; }
+
         /// <summary>
         /// Identify the first and greatest condemned heap
         /// </summary>
         /// <returns></returns>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public int FindFirstHighestCondemnedHeap()
         {
             int GenNumberHighest = (int)Generation;
@@ -2059,20 +2533,25 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public bool IsNotCompacting()
         {
-            if (GlobalHeapHistory == null) return true;
+            if (GlobalHeapHistory == null)
+            {
+                return true;
+            }
+
             return ((GlobalHeapHistory.GlobalMechanisms & (GCGlobalMechanisms.Compaction)) != 0);
         }
         /// <summary>
         /// Returns the condemned reason for this heap
         /// </summary>
         /// <param name="ReasonsInfo"></param>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public void GetCondemnedReasons(Dictionary<CondemnedReasonGroup, int> ReasonsInfo)
         {
             // Older versions of the runtime does not have this event. So even for a complete GC, we may not have this
             // info.
             if (PerHeapCondemnedReasons == null || PerHeapCondemnedReasons.Length == 0)
+            {
                 return;
+            }
 
             int HeapIndexHighestGen = 0;
             if (PerHeapCondemnedReasons.Length > 1)
@@ -2082,12 +2561,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
             byte[] ReasonGroups = PerHeapCondemnedReasons[HeapIndexHighestGen].CondemnedReasonGroups;
 
-            // These 2 reasons indicate a gen number. If the number is the same as the condemned gen, we 
+            // These 2 reasons indicate a gen number. If the number is the same as the condemned gen, we
             // include this reason.
             for (int i = (int)CondemnedReasonGroup.Alloc_Exceeded; i <= (int)CondemnedReasonGroup.Time_Tuning; i++)
             {
                 if (ReasonGroups[i] == Generation)
+                {
                     AddCondemnedReason(ReasonsInfo, (CondemnedReasonGroup)i);
+                }
             }
 
             if (ReasonGroups[(int)CondemnedReasonGroup.Induced] != 0)
@@ -2102,7 +2583,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             for (int i = (int)CondemnedReasonGroup.Low_Ephemeral; i < (int)CondemnedReasonGroup.Max; i++)
             {
                 if (ReasonGroups[i] != 0)
+                {
                     AddCondemnedReason(ReasonsInfo, (CondemnedReasonGroup)i);
+                }
             }
         }
         /// <summary>
@@ -2112,12 +2595,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Sum of the pinned plug sizes
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public long TotalPinnedPlugSize;
         /// <summary>
         /// Sum of the user created pinned plug sizes
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public long TotalUserPinnedPlugSize;
         /// <summary>
         /// Per heap statstics
@@ -2126,7 +2607,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Large object heap wait threads
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public Dictionary<int, BGCAllocWaitInfo> LOHWaitThreads;
         /// <summary>
         /// Process heap statistics
@@ -2135,48 +2615,53 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Free list efficiency statistics
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public FreeListEfficiency FreeList;
         /// <summary>
         /// Memory allocated since last GC (mb)
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double AllocedSinceLastGCMB;
         /// <summary>
         /// Ratio of heap size before and after
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double RatioPeakAfter;
         /// <summary>
         /// Ratio of allocations since last GC over time executed
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double AllocRateMBSec;
         /// <summary>
         /// Peak heap size before GCs (mb)
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double HeapSizePeakMB;
         /// <summary>
         /// Per generation view of user allocated data
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
-        public double[] UserAllocated = new double[(int)Gens.Gen0After];
+        public double[] UserAllocated = new double[(int)Gens.MaxGenCount];
         /// <summary>
         /// Heap size before gc (mb)
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double HeapSizeBeforeMB;
         /// <summary>
         /// Per generation view of heap sizes before GC (mb)
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
-        public double[] GenSizeBeforeMB = new double[(int)Gens.Gen0After];
+        public double[] GenSizeBeforeMB = new double[(int)Gens.MaxGenCount];
         /// <summary>
-        /// This represents the percentage time spent paused for this GC since the last GC completed. 
+        /// This represents the percentage time spent paused for this GC since the last GC completed.
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double PauseTimePercentageSinceLastGC;
+        /// <summary>
+        /// LOH Compaction Data
+        /// </summary>
+        public List<GCLOHCompactInfo> LOHCompactInfos = new List<GCLOHCompactInfo>();
+        /// <summary>
+        /// The buckets associated with the GCFitBucketInfoTraceData with BucketType == LargestFreeListItem
+        /// See the document of BucketKind for more details
+        /// </summary>
+        public List<GCFitBucket> LargestFreeListItemsBuckets = new List<GCFitBucket>();
+        /// <summary>
+        /// The buckets associated with the GCFitBucketInfoTraceData with BucketType == PlugsInCondemned
+        /// See the document of BucketKind for more details
+        /// </summary>
+        public List<GCFitBucket> PlugsInCondemnedBuckets = new List<GCFitBucket>();
 
         #region private
         internal void OnEnd(TraceGarbageCollector details)
@@ -2196,7 +2681,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             UserAllocated[(int)Gens.Gen0] = GetUserAllocated(details.GCs, this, Gens.Gen0);
             UserAllocated[(int)Gens.GenLargeObj] = GetUserAllocated(details.GCs, this, Gens.GenLargeObj);
             HeapSizeBeforeMB = GetHeapSizeBeforeMB(details.GCs, this);
-            for (int gen = (int)Gens.Gen0; gen <= (int)Gens.GenLargeObj; gen++) GenSizeBeforeMB[gen] = GetGenSizeBeforeMB(details.GCs, this, (Gens)gen);
+            for (int gen = (int)Gens.Gen0; gen <= (int)Gens.GenLargeObj; gen++)
+            {
+                GenSizeBeforeMB[gen] = GetGenSizeBeforeMB(details.GCs, this, (Gens)gen);
+            }
+
             PauseTimePercentageSinceLastGC = GetPauseTimePercentageSinceLastGC(details.GCs, this);
 
             // calculate core gc process values
@@ -2223,7 +2712,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
 
             if (startRelativeMSec == 0.0)
+            {
                 return 0;
+            }
 
             // Get the end time of the last GC.
             double endRelativeMSec = stats.lastRestartEndTimeRelativeMSec;
@@ -2236,34 +2727,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
             if (gc.Type == GCType.BackgroundGC)
             {
-                // Find all GCs that occurred during the current background GC.
-                double startTimeRelativeMSec = gc.StartRelativeMSec;
-                double endTimeRelativeMSec = gc.StartRelativeMSec + gc.DurationMSec;
-
-                // Calculate the pause time for this BGC.
-                // Pause time is defined as pause time for the BGC + pause time for all FGCs that ran during the BGC.
+                // Get the pause time for this BGC.
                 double totalPauseTime = gc.PauseDurationMSec;
 
-                if (gc.Index + 1 < GCs.Count)
+                // Iterate backwards from the last GC recorded to find the index of the current BGC.
+                int indexOfPreviousGC = GCs.Count - 1;
+                while (GCs[indexOfPreviousGC] != gc && indexOfPreviousGC >= 0)
                 {
-                    TraceGC gcEvent;
-                    for (int i = gc.Index + 1; i < GCs.Count; ++i)
-                    {
-                        gcEvent = GCs[i];
-                        if ((gcEvent.StartRelativeMSec >= startTimeRelativeMSec) && (gcEvent.StartRelativeMSec < endTimeRelativeMSec))
-                        {
-                            totalPauseTime += gcEvent.PauseDurationMSec;
-                        }
-                        else
-                        {
-                            // We've finished processing all FGCs that occurred during this BGC.
-                            break;
-                        }
-                    }
+                    --indexOfPreviousGC;
                 }
 
                 // Get the elapsed time since the previous GC finished.
-                int previousGCIndex = gc.Index - 1;
+                int previousGCIndex = indexOfPreviousGC - 1;
                 double previousGCStopTimeRelativeMSec;
                 if (previousGCIndex >= 0)
                 {
@@ -2294,7 +2769,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Gens gen = Gens.Gen2;
             FreeListEfficiency freeList = new FreeListEfficiency();
 
-            // I am not worried about gen0 or LOH's free list efficiency right now - it's 
+            // I am not worried about gen0 or LOH's free list efficiency right now - it's
             // calculated differently.
             if ((gc.PerHeapHistories == null) ||
                 (gc.PerHeapHistories.Count == 0) ||
@@ -2309,9 +2784,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             int YoungerGen = (int)gen - 1;
 
             if (gc.Generation != YoungerGen)
+            {
                 return freeList;
+            }
 
-            if (gc.PerHeapHistories[0].HasFreeListAllocated && gc.PerHeapHistories[0].HasFreeListRejected)
+            if (gc.PerHeapHistories[0].HasAllocatedInfo)
             {
                 freeList.Allocated = 0;
                 freeList.FreeListConsumed = 0;
@@ -2340,7 +2817,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 // Occasionally I've seen a GC in the middle that simply missed some events,
                 // some of which are PerHeap hist events so we don't have data.
                 if (GCs[gc.Index - 1].PerHeapHistories == null || GCs[gc.Index - 1].PerHeapHistories.Count == 0)
+                {
                     return freeList;
+                }
+
                 if (gc.PerHeapHistories[HeapIndex].GenData[(int)gen].HasFreeListSpaceAfter && gc.PerHeapHistories[HeapIndex].GenData[(int)gen].HasFreeListSpaceBefore)
                 {
                     FreeListBefore += gc.PerHeapHistories[HeapIndex].GenData[(int)gen].FreeListSpaceBefore;
@@ -2377,7 +2857,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             return GetUserAllocated(GCs, gc, Gens.Gen0) + GetUserAllocated(GCs, gc, Gens.GenLargeObj);
         }
 
-        internal static double GetRatioPeakAfter(List<TraceGC> GCs, TraceGC gc) { if (gc.HeapSizeAfterMB == 0) return 0; return GetHeapSizePeakMB(GCs, gc) / gc.HeapSizeAfterMB; }
+        internal static double GetRatioPeakAfter(List<TraceGC> GCs, TraceGC gc) { if (gc.HeapSizeAfterMB == 0) { return 0; } return GetHeapSizePeakMB(GCs, gc) / gc.HeapSizeAfterMB; }
         internal static double GetAllocRateMBSec(List<TraceGC> GCs, TraceGC gc) { return GetAllocedSinceLastGCMB(GCs, gc) * 1000.0 / gc.DurationSinceLastRestartMSec; }
 
         internal static double GetHeapSizePeakMB(List<TraceGC> GCs, TraceGC gc)
@@ -2386,11 +2866,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             if (gc.Type == GCType.BackgroundGC)
             {
                 var BgGcEndedRelativeMSec = gc.PauseStartRelativeMSec + gc.DurationMSec;
-                for (int i = gc.Index + 1; i <GCs.Count; i++)
+                for (int i = gc.Index + 1; i < GCs.Count; i++)
                 {
-                    var _event =GCs[i];
+                    var _event = GCs[i];
                     if (BgGcEndedRelativeMSec < _event.PauseStartRelativeMSec)
+                    {
                         break;
+                    }
+
                     ret = Math.Max(ret, GetHeapSizeBeforeMB(GCs, _event));
                 }
             }
@@ -2398,7 +2881,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         }
 
         /// <summary>
-        /// Get what's allocated into gen0 or gen3. For server GC this gets the total for 
+        /// Get what's allocated into gen0 or gen3. For server GC this gets the total for
         /// all heaps.
         /// </summary>
         internal static double GetUserAllocated(List<TraceGC> GCs, TraceGC gc, Gens gen)
@@ -2410,7 +2893,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return gc.AllocedSinceLastGCBasedOnAllocTickMB[(int)gen];
             }
 
-            if (gc.PerHeapHistories != null && gc.Index > 0 && GCs[gc.Index - 1].PerHeapHistories != null)
+            if (gc.PerHeapHistories?.Count > 0 && gc.Index > 0 && GCs[gc.Index - 1].PerHeapHistories?.Count > 0)
             {
                 double TotalAllocated = 0;
                 if (gc.Index > 0)
@@ -2437,53 +2920,92 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             double ret = 0;
             for (Gens gen = Gens.Gen0; gen <= Gens.GenLargeObj; gen++)
+            {
                 ret += GetGenSizeBeforeMB(GCs, gc, gen);
+            }
+
             return ret;
         }
 
-        // Per generation stats.  
+        // Per generation stats.
         internal static double GetGenSizeBeforeMB(List<TraceGC> GCs, TraceGC gc, Gens gen)
         {
             if (gc.PerHeapHistories != null && gc.PerHeapHistories.Count > 0)
             {
                 double ret = 0.0;
                 for (int HeapIndex = 0; HeapIndex < gc.PerHeapHistories.Count; HeapIndex++)
+                {
                     ret += gc.PerHeapHistories[HeapIndex].GenData[(int)gen].SizeBefore / 1000000.0;
+                }
+
                 return ret;
             }
 
             // When we don't have perheap history we can only estimate for gen0 and gen3.
             double Gen0SizeBeforeMB = 0;
             if (gen == Gens.Gen0)
+            {
                 Gen0SizeBeforeMB = gc.AllocedSinceLastGCBasedOnAllocTickMB[0];
+            }
+
             if (gc.Index == 0)
             {
                 return ((gen == Gens.Gen0) ? Gen0SizeBeforeMB : 0);
             }
 
-            // Find a previous HeapStats.  
+            // Find a previous HeapStats.
             GCHeapStats heapStats = null;
             for (int j = gc.Index - 1; ; --j)
             {
                 if (j == 0)
+                {
                     return 0;
+                }
+
                 heapStats = GCs[j].HeapStats;
                 if (heapStats != null)
+                {
                     break;
+                }
             }
             if (gen == Gens.Gen0)
+            {
                 return Math.Max((heapStats.GenerationSize0 / 1000000.0), Gen0SizeBeforeMB);
-            if (gen == Gens.Gen1)
-                return heapStats.GenerationSize1 / 1000000.0;
-            if (gen == Gens.Gen2)
-                return heapStats.GenerationSize2 / 1000000.0;
+            }
 
-            Debug.Assert(gen == Gens.GenLargeObj);
+            if (gen == Gens.Gen1)
+            {
+                return heapStats.GenerationSize1 / 1000000.0;
+            }
+
+            if (gen == Gens.Gen2)
+            {
+                return heapStats.GenerationSize2 / 1000000.0;
+            }
+
+            if (gen == Gens.GenLargeObj)
+            {
+                if (gc.HeapStats != null)
+                {
+                    return Math.Max(heapStats.GenerationSize3, gc.HeapStats.GenerationSize3) / 1000000.0;
+                }
+                else
+                {
+                    return heapStats.GenerationSize3 / 1000000.0;
+                }
+            }
+
+            Debug.Assert(gen == Gens.GenPinObj);
 
             if (gc.HeapStats != null)
-                return Math.Max(heapStats.GenerationSize3, gc.HeapStats.GenerationSize3) / 1000000.0;
+            {
+                return Math.Max(heapStats.GenerationSize4, gc.HeapStats.GenerationSize4) / 1000000.0;
+            }
             else
-                return heapStats.GenerationSize3 / 1000000.0;
+            {
+                return heapStats.GenerationSize4 / 1000000.0;
+            }
+
         }
 
         /// <summary>
@@ -2495,16 +3017,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         private static double GetUserAllocatedPerHeap(List<TraceGC> GCs, TraceGC gc, int HeapIndex, Gens gen)
         {
+            Debug.Assert(HeapIndex < gc.PerHeapHistories.Count);
+
             long prevObjSize = 0;
             if (gc.Index > 0)
             {
-                // If the prevous GC has that heap get its size.  
+                // If the prevous GC has that heap get its size.
                 var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
-                if (HeapIndex < perHeapGenData.Count)
+                if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
                 {
                     prevObjSize = perHeapGenData[HeapIndex].GenData[(int)gen].ObjSizeAfter;
                     // Note that for gen3 we need to do something extra as its after data may not be updated if the last
-                    // GC was a gen0 GC (A GC will update its size after data up to (Generation + 1) because that's all 
+                    // GC was a gen0 GC (A GC will update its size after data up to (Generation + 1) because that's all
                     // it would change).
                     if ((gen == Gens.GenLargeObj) && (prevObjSize == 0) && (GCs[gc.Index - 1].Generation < (int)Gens.Gen1))
                     {
@@ -2524,7 +3048,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 long survRate = currentGenData.SurvRate;
 
                 if (survRate == 0)
+                {
                     Allocated = EstimateAllocSurv0(GCs, gc, HeapIndex, gen);
+                }
                 else
                 {
                     long currentObjSize = currentGenData.ObjSizeAfter;
@@ -2547,10 +3073,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             {
                 if (gc.Index > 0)
                 {
-                    // If the prevous GC has that heap get its size.  
+                    // If the prevous GC has that heap get its size.
                     var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
-                    if (HeapIndex < perHeapGenData.Count)
+                    if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
+                    {
                         return perHeapGenData[HeapIndex].GenData[(int)gen].Budget;
+                    }
                 }
                 return 0;
             }
@@ -2599,23 +3127,31 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         internal void AddServerGcThreadSwitch(ThreadWorkSpan cswitch)
         {
             if (cswitch.ProcessorNumber >= 0 && cswitch.ProcessorNumber < ServerGcHeapHistories.Count)
-                ServerGcHeapHistories[cswitch.ProcessorNumber].AddSwitchEvent(cswitch, this.PauseStartRelativeMSec);
+            {
+                ServerGcHeapHistories[cswitch.ProcessorNumber].AddSwitchEvent(cswitch, PauseStartRelativeMSec);
+            }
         }
 
         internal void AddServerGcSample(ThreadWorkSpan sample)
         {
             if (sample.ProcessorNumber >= 0 && sample.ProcessorNumber < ServerGcHeapHistories.Count)
-                ServerGcHeapHistories[sample.ProcessorNumber].AddSampleEvent(sample, this.PauseStartRelativeMSec);
+            {
+                ServerGcHeapHistories[sample.ProcessorNumber].AddSampleEvent(sample, PauseStartRelativeMSec);
+            }
         }
 
         internal void AddGcJoin(GCJoinTraceData data)
         {
             if (data.Heap >= 0 && data.Heap < ServerGcHeapHistories.Count)
-                ServerGcHeapHistories[data.Heap].AddJoin(data, this.PauseStartRelativeMSec);
+            {
+                ServerGcHeapHistories[data.Heap].AddJoin(data, PauseStartRelativeMSec);
+            }
             else
             {
                 foreach (var heap in ServerGcHeapHistories)
-                    heap.AddJoin(data, this.PauseStartRelativeMSec);
+                {
+                    heap.AddJoin(data, PauseStartRelativeMSec);
+                }
             }
         }
 
@@ -2624,11 +3160,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             ConvertMarkTimes();
             foreach (var serverHeap in ServerGcHeapHistories)
             {
-                serverHeap.GCEnd(this.PauseDurationMSec);
+                serverHeap.GCEnd(PauseDurationMSec);
             }
         }
 
-        // We recorded these as the timestamps when we saw the mark events, now convert them 
+        // We recorded these as the timestamps when we saw the mark events, now convert them
         // to the actual time that it took for each mark.
         private void ConvertMarkTimes()
         {
@@ -2642,7 +3178,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 foreach (KeyValuePair<int, MarkInfo> item in PerHeapMarkTimes)
                 {
                     if (item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] == 0.0)
+                    {
                         item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] = StartRelativeMSec;
+                    }
 
                     if (item.Value.MarkTimes[(int)MarkRootType.MarkOverflow] > StartRelativeMSec)
                     {
@@ -2657,9 +3195,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     }
 
                     if (Generation == 2)
+                    {
                         item.Value.MarkTimes[(int)MarkRootType.MarkOlder] = 0;
+                    }
                     else
+                    {
                         item.Value.MarkTimes[(int)MarkRootType.MarkOlder] -= item.Value.MarkTimes[(int)MarkRootType.MarkHandles];
+                    }
 
                     item.Value.MarkTimes[(int)MarkRootType.MarkHandles] -= item.Value.MarkTimes[(int)MarkRootType.MarkFQ];
                     item.Value.MarkTimes[(int)MarkRootType.MarkFQ] -= item.Value.MarkTimes[(int)MarkRootType.MarkStack];
@@ -2690,9 +3232,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         private void AddCondemnedReason(Dictionary<CondemnedReasonGroup, int> ReasonsInfo, CondemnedReasonGroup Reason)
         {
             if (!ReasonsInfo.ContainsKey(Reason))
+            {
                 ReasonsInfo.Add(Reason, 1);
+            }
             else
+            {
                 (ReasonsInfo[Reason])++;
+            }
         }
 
 
@@ -2735,7 +3281,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     }
                     else
                     {
-                        // We are currently not displaying this because it's incomplete but I am still adding 
+                        // We are currently not displaying this because it's incomplete but I am still adding
                         // it so we could display if we want to.
                         info.WaitStopRelativeMSec = time;
                     }
@@ -2766,6 +3312,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         // The dictionary of heap number and info on time it takes to mark various roots.
         private GCCondemnedReasons[] _PerHeapCondemnedReasons;
 
+        private GCCondemnedReasons _GlobalCondemnedReasons;
+
         private double _TotalGCTimeMSec = -1;
         // When we are using Server GC we store the CPU spent on each thread
         // so we can see if there's an imbalance. We concurrently don't do this
@@ -2773,15 +3321,26 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         private float[] GCCpuServerGCThreads = null;
 
+        private List<GCDynamicEvent> dynamicEvents = new List<GCDynamicEvent>();
+
+        public List<GCDynamicEvent> DynamicEvents
+        {
+            get { return this.dynamicEvents; }
+        }
+
+        internal void AddDynamicEvent(GCDynamicEvent dynamicEvent)
+        {
+            dynamicEvents.Add(dynamicEvent);
+        }
+
         #endregion
     }
 
     /// <summary>
     /// Condemned reasons are organized into the following groups.
-    /// Each group corresponds to one or more reasons. 
-    /// Groups are organized in the way that they mean something to users. 
+    /// Each group corresponds to one or more reasons.
+    /// Groups are organized in the way that they mean something to users.
     /// </summary>
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public enum CondemnedReasonGroup
     {
         // The first 4 will have values of a number which is the generation.
@@ -2792,8 +3351,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         Alloc_Exceeded = 2,
         Time_Tuning = 3,
 
-        // The following are either true(1) or false(0). They are not 
-        // a 1:1 mapping from 
+        // The following are either true(1) or false(0). They are not
+        // a 1:1 mapping from
         Induced = 4,
         Low_Ephemeral = 5,
         Expand_Heap = 6,
@@ -2805,13 +3364,27 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         Too_Small_For_BGC = 12,
         Ephemeral_Before_BGC = 13,
         Internal_Tuning = 14,
-        Max = 15,
+        Almost_Max_Alloc = 15,
+        Avoid_Unproductive = 16,
+        Pm_Induced_Fullgc_p = 17,
+        Pm_Alloc_LOH = 18,
+        Gen1_In_Pm = 19,
+        Limit_Before_OOM = 20,
+        Limit_LOH_Frag = 21,
+        Limit_LOH_Reclaim = 22,
+        Servo_Initial = 23,
+        Servo_NGC = 24,
+        Servo_BGC = 25,
+        Servo_Postpone = 26,
+        Stress_Mix = 27,
+        Stress = 28,
+        Aggressive = 29,
+        Max = 30
     }
 
     /// <summary>
     /// Background GC allocation information
     /// </summary>
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class BGCAllocWaitInfo
     {
         public double WaitStartRelativeMSec;
@@ -2857,7 +3430,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     /// <summary>
     /// Span of thread work recorded by CSwitch or CPU Sample Profile events
     /// </summary>
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class ThreadWorkSpan
     {
         public int ThreadId;
@@ -2914,7 +3486,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     /// <summary>
     /// CondemnedReason
     /// </summary>
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public struct EncodedCondemnedReasons
     {
         public int Reasons;
@@ -2924,7 +3495,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     /// <summary>
     /// Heap condemned reason
     /// </summary>
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class GCCondemnedReasons
     {
         public EncodedCondemnedReasons EncodedReasons;
@@ -2935,7 +3505,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public byte[] CondemnedReasonGroups;
         public void Decode(int Version)
         {
-            // First decode the reasons that return us a generation number. 
+            // First decode the reasons that return us a generation number.
             // It's the same in 4.0 and 4.5.
             for (Condemned_Reason_Generation i = 0; i < Condemned_Reason_Generation.Max; i++)
             {
@@ -2989,6 +3559,51 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                         case Condemned_Reason_Condition.Before_bgc:
                             CondemnedReasonGroups[(int)CondemnedReasonGroup.Ephemeral_Before_BGC] = 1;
                             break;
+                        case Condemned_Reason_Condition.Almost_max_alloc:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Almost_Max_Alloc] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Avoid_unproductive:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Avoid_Unproductive] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Pm_induced_fullgc_p:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Pm_Induced_Fullgc_p] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Pm_alloc_loh:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Pm_Alloc_LOH] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Gen1_in_pm:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Gen1_In_Pm] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Limit_before_oom:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Limit_Before_OOM] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Limit_loh_frag:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Limit_LOH_Frag] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Limit_loh_reclaim:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Limit_LOH_Reclaim] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Servo_initial:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_Initial] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Servo_ngc:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_NGC] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Servo_bgc:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_BGC] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Servo_postpone:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Servo_Postpone] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Stress_mix:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Stress_Mix] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Stress:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Stress] = 1;
+                            break;
+                        case Condemned_Reason_Condition.Aggressive:
+                            CondemnedReasonGroups[(int)CondemnedReasonGroup.Aggressive] = 1;
+                            break;
                         default:
                             Debug.Assert(false, "Unexpected reason");
                             break;
@@ -2999,7 +3614,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         #region private
         // These values right now are the same as the first 4 in CondemnedReasonGroup.
-        enum Condemned_Reason_Generation
+        private enum Condemned_Reason_Generation
         {
             Initial = 0,
             Final_per_heap = 1,
@@ -3008,7 +3623,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Max = 4,
         };
 
-        enum Condemned_Reason_Condition
+        private enum Condemned_Reason_Condition
         {
             Induced_fullgc_p = 0,
             Expand_fullgc_p = 1,
@@ -3026,7 +3641,22 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Gen2_too_small = 13,
             Induced_noforce_p = 14,
             Before_bgc = 15,
-            Max = 16,
+            Almost_max_alloc = 16,
+            Avoid_unproductive = 17,
+            Pm_induced_fullgc_p = 18,
+            Pm_alloc_loh = 19,
+            Gen1_in_pm = 20,
+            Limit_before_oom = 21,
+            Limit_loh_frag = 22,
+            Limit_loh_reclaim = 23,
+            Servo_initial = 24,
+            Servo_ngc = 25,
+            Servo_bgc = 26,
+            Servo_postpone = 27,
+            Stress_mix = 28,
+            Stress = 29,
+            Aggressive = 30,
+            Max = 31
         };
 
         private int GetReasonWithGenNumber(Condemned_Reason_Generation Reason_GenNumber)
@@ -3047,12 +3677,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             {
                 ConditionIsSet = ((EncodedReasons.ReasonsEx & (1 << (int)Reason_Condition)) != 0);
             }
-            else Debug.Assert(false, "GetReasonWithCondition invalid version : " + Version);
+            else
+            {
+                Debug.Assert(false, "GetReasonWithCondition invalid version : " + Version);
+            }
 
             return ConditionIsSet;
         }
 
-        #endregion 
+        #endregion
     }
 
     /// <summary>
@@ -3060,8 +3693,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     /// </summary>
     public class MarkInfo
     {
-        // Note that in 4.5 and prior (ie, from GCMark events, not GCMarkWithType), the first stage of the time 
-        // includes scanning sizedref handles(which can be very significant). We could distinguish that by interpreting 
+        // Note that in 4.5 and prior (ie, from GCMark events, not GCMarkWithType), the first stage of the time
+        // includes scanning sizedref handles(which can be very significant). We could distinguish that by interpreting
         // the Join events which I haven't done yet.
         public double[] MarkTimes;
         public long[] MarkPromoted;
@@ -3070,25 +3703,43 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             MarkTimes = new double[(int)MarkRootType.MarkMax];
             if (initPromoted)
+            {
                 MarkPromoted = new long[(int)MarkRootType.MarkMax];
+            }
         }
     };
 
     /// <summary>
     /// Per heap statistics
     /// </summary>
+    /// HasAllocatedInfo indicates the following fields will not be -1
+    /// FreeListAllocated
+    /// FreeListRejected
+    /// EndOfSegAllocated
+    /// CondemnedAllocated
+    /// PinnedAllocated
+    /// PinnedAllocatedAdvance
+    /// RunningFreeListEfficiency
     public class GCPerHeapHistory
     {
         public int MemoryPressure;
         public bool HasMemoryPressure;
         public bool VersionRecognized;
         public long FreeListAllocated;
-        public bool HasFreeListAllocated;
+        public bool HasAllocatedInfo;
         public long FreeListRejected;
-        public bool HasFreeListRejected;
+        public long EndOfSegAllocated;
+        public long CondemnedAllocated;
+        public long PinnedAllocated;
+        public long PinnedAllocatedAdvance;
+        public int RunningFreeListEfficiency;
         public int CondemnReasons0;
         public int CondemnReasons1;
         public bool HasCondemnReasons1;
+        public int CompactMechanisms;
+        public int ExpandMechanisms;
+        public long ExtraGen0Commit;
+        public bool HasExtraGen0Commit;
         public int Version;
         public GCPerHeapHistoryGenData[] GenData;
     }
@@ -3104,8 +3755,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public int Gen0ReductionCount;
         public GCReason Reason;
         public GCGlobalMechanisms GlobalMechanisms;
+        public GCPauseMode PauseMode;
         public int MemoryPressure;
         public bool HasMemoryPressure;
+        public int CondemnReasons0;
+        public bool HasCondemnReasons0;
+        public int CondemnReasons1;
+        public bool HasCondemnReasons1;
+        public int[] Times;
     }
 
     /// <summary>
@@ -3124,6 +3781,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public long TotalPromotedSize2;
         public long GenerationSize3;
         public long TotalPromotedSize3;
+        public long GenerationSize4;
+        public long TotalPromotedSize4;
         public long FinalizationPromotedSize;
         public long FinalizationPromotedCount;
         public int PinnedObjectCount;
@@ -3133,18 +3792,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
     /// <summary>
     /// Approximations we do in this function for V4_5 and prior:
-    /// On 4.0 we didn't seperate free list from free obj, so we just use fragmentation (which is the sum)
+    /// On 4.0 we didn't separate free list from free obj, so we just use fragmentation (which is the sum)
     /// as an approximation. This makes the efficiency value a bit larger than it actually is.
-    /// We don't actually update in for the older gen - this means we only know the out for the younger 
-    /// gen which isn't necessarily all allocated into the older gen. So we could see cases where the 
-    /// out is > 0, yet the older gen's free list doesn't change. Using the younger gen's out as an 
+    /// We don't actually update in for the older gen - this means we only know the out for the younger
+    /// gen which isn't necessarily all allocated into the older gen. So we could see cases where the
+    /// out is > 0, yet the older gen's free list doesn't change. Using the younger gen's out as an
     /// approximation makes the efficiency value larger than it actually is.
     ///
     /// For V4_6 this requires no approximation.
     ///
-    /// 
+    ///
     /// </summary>
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class FreeListEfficiency
     {
         public bool Valid = false;
@@ -3152,7 +3810,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public double FreeListConsumed;
     }
 
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class GcJoin
     {
         public int Heap;
@@ -3170,7 +3827,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     // 3) restarts
     // 4) goes back to 1).
     // We call 1 through 3 an activity. There are as many activities as there are joins.
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class ServerGcHistory
     {
         public int HeapId;
@@ -3181,7 +3837,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public List<GcWorkSpan> SampleSpans = new List<GcWorkSpan>();
         public List<GcJoin> GcJoins = new List<GcJoin>();
 
-        #region private 
+        #region private
         //list of times in msc starting from GC start when GCJoin events were fired for this heap
 
         internal void AddSampleEvent(ThreadWorkSpan sample, double pauseStartRelativeMSec)
@@ -3241,18 +3897,27 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         private WorkSpanType GetSpanType(ThreadWorkSpan span)
         {
             if (span.ThreadId == GcWorkingThreadId && span.ProcessId == ProcessId)
+            {
                 return WorkSpanType.GcThread;
+            }
+
             if (span.ProcessId == 0)
+            {
                 return WorkSpanType.Idle;
+            }
 
             if (span.Priority >= GcWorkingThreadPriority || span.Priority == -1)
+            {
                 return WorkSpanType.RivalThread;
+            }
             else
+            {
                 return WorkSpanType.LowPriThread;
+            }
         }
 
-        // A note about the join events - the restart events have no heap number associated so 
-        // we add them to every heap with the ProcessorNumber so we know which heap/processor it was 
+        // A note about the join events - the restart events have no heap number associated so
+        // we add them to every heap with the ProcessorNumber so we know which heap/processor it was
         // fired on.
         // Also for these restart events, the id field is always -1.
         internal void AddJoin(GCJoinTraceData data, double pauseStartRelativeMSec)
@@ -3270,7 +3935,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         #endregion
     }
 
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public enum WorkSpanType
     {
         GcThread,
@@ -3279,7 +3943,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         Idle
     }
 
-    [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
     public class GcWorkSpan : ThreadWorkSpan
     {
         public WorkSpanType Type;
@@ -3292,7 +3955,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     }
 }
 
-// Agregate analysis.  
+// Aggregate analysis.
 
 namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
 {
@@ -3311,6 +3974,30 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public double TotalCpuTimeMSec;
         /// <summary>
+        /// Number of methods JITT'd by foreground threads just prior to execution
+        /// </summary>
+        public long CountForeground;
+        /// <summary>
+        /// Total time spent compiling methods on foreground threads
+        /// </summary>
+        public double TotalForegroundCpuTimeMSec;
+        /// <summary>
+        /// Number of methods JITT'd by the multicore JIT background threads
+        /// </summary>
+        public long CountBackgroundMultiCoreJit;
+        /// <summary>
+        /// Total time spent compiling methods on background threads for multicore JIT
+        /// </summary>
+        public double TotalBackgroundMultiCoreJitCpuTimeMSec;
+        /// <summary>
+        /// Number of methods JITT'd by the tiered compilation background threads
+        /// </summary>
+        public long CountBackgroundTieredCompilation;
+        /// <summary>
+        /// Total time spent compiling methods on background threads for tiered compilation
+        /// </summary>
+        public double TotalBackgroundTieredCompilationCpuTimeMSec;
+        /// <summary>
         /// Total IL size for all JITT'd methods
         /// </summary>
         public long TotalILSize;
@@ -3319,9 +4006,24 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public long TotalNativeSize;
         /// <summary>
+        /// Total hot code size allocated for all JITT'd methods
+        /// </summary>
+        public long TotalHotCodeAllocSize;
+        /// <summary>
+        /// Total read-only data size allocated for all JITT'd methods
+        /// </summary>
+        public long TotalRODataAllocSize;
+        /// <summary>
+        /// Total size allocated for all JITT'd methods
+        /// </summary>
+        public long TotalAllocSizeForJitCode;
+        /// <summary>
+        /// If data from alloc size for JIT event present
+        /// </summary>
+        public bool IsJitAllocSizePresent = false;
+        /// <summary>
         /// Indication if this is running on .NET 4.x+
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public bool IsClr4;
         /// <summary>
         /// Indicates if this process has sufficient JIT activity to be interesting
@@ -3334,7 +4036,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double BackgroundJitAbortedAtMSec;
         /// <summary>
-        /// Background JIT: Assembly name of last assemlby loaded before JIT aborted
+        /// Background JIT: Assembly name of last assembly loaded before JIT aborted
         /// </summary>
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public string LastAssemblyLoadNameBeforeAbort;
@@ -3358,6 +4060,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         public bool BackgroundJITEventsOn;
 
         /// <summary>
+        /// Indicates whether any of the jitted method code versions in this process have a known optimization tier
+        /// </summary>
+        public bool HasAtLeastOneKnownOptimizationTier;
+
+        /// <summary>
         /// List of successfully inlinded methods
         /// </summary>
         public List<InliningSuccessResult> InliningSuccesses = new List<InliningSuccessResult>();
@@ -3377,22 +4084,41 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         public HashSet<string> SymbolsMissing = new HashSet<string>();
 
         /// <summary>
-        /// Update method statistics
+        /// Aggregate a method to be included in the statistics
         /// </summary>
-        /// <param name="_method"></param>
-        internal void Update(TraceJittedMethod _method)
+        /// <param name="method"></param>
+        public void AddMethodToStatistics(TraceJittedMethod method)
         {
             Count++;
-            TotalCpuTimeMSec += _method.CompileCpuTimeMSec;
-            TotalILSize += _method.ILSize;
-            TotalNativeSize += _method.NativeSize;
+            TotalCpuTimeMSec += method.CompileCpuTimeMSec;
+            TotalILSize += method.ILSize;
+            TotalNativeSize += method.NativeSize;
+            TotalHotCodeAllocSize += method.JitHotCodeRequestSize;
+            TotalRODataAllocSize += method.JitRODataRequestSize;
+            IsJitAllocSizePresent |= method.IsJitAllocSizePresent;
+            TotalAllocSizeForJitCode += method.AllocatedSizeForJitCode;
+            if (method.CompilationThreadKind == CompilationThreadKind.MulticoreJitBackground)
+            {
+                CountBackgroundMultiCoreJit++;
+                TotalBackgroundMultiCoreJitCpuTimeMSec += method.CompileCpuTimeMSec;
+            }
+            else if (method.CompilationThreadKind == CompilationThreadKind.TieredCompilationBackground)
+            {
+                CountBackgroundTieredCompilation++;
+                TotalBackgroundTieredCompilationCpuTimeMSec += method.CompileCpuTimeMSec;
+            }
+            else if (method.CompilationThreadKind == CompilationThreadKind.Foreground)
+            {
+                CountForeground++;
+                TotalForegroundCpuTimeMSec += method.CompileCpuTimeMSec;
+            }
         }
 
         #region private
         /// <summary>
-        /// Legacgy
+        /// Legacy
         /// </summary>
-        internal static TraceJittedMethod MethodComplete(TraceLoadedDotNetRuntime stats, TraceEvent data, int methodNativeSize, long moduleID, string methodName, long methodID, out bool createdNewMethod)
+        internal static TraceJittedMethod MethodComplete(TraceLoadedDotNetRuntime stats, MethodLoadUnloadTraceDataBase data, string methodName, int rejitID, out bool createdNewMethod)
         {
             TraceJittedMethod _method = stats.JIT.m_stats.FindIncompleteJitEventOnThread(stats, data.ThreadID);
             createdNewMethod = false;
@@ -3400,8 +4126,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             {
                 createdNewMethod = true;
 
-                // We don't have JIT start, do the best we can.  
-                _method = stats.JIT.m_stats.LogJitStart(stats, data, methodName, 0, moduleID, methodID);
+                // We don't have JIT start, do the best we can.
+                _method = stats.JIT.m_stats.LogJitStart(stats, data, methodName, 0, data.ModuleID, data.MethodID);
                 if (stats.JIT.m_stats.IsClr4)
                 {
                     // Debug.WriteLine("Warning: MethodComplete at {0:n3} process {1} thread {2} without JIT Start, assuming 0 JIT time",
@@ -3413,12 +4139,53 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
                     stats.JIT.m_stats.warnedUser = true;
                 }
             }
-            _method.NativeSize = methodNativeSize;
+            _method.NativeSize = data.MethodSize;
             _method.CompileCpuTimeMSec = data.TimeStampRelativeMSec - _method.StartTimeMSec;
+            _method.SetOptimizationTier(data.OptimizationTier, stats);
+            _method.VersionID = rejitID;
+
+            if (stats.JIT.Stats().BackgroundJitThread != 0 && _method.ThreadID == stats.JIT.Stats().BackgroundJitThread)
+            {
+                _method.CompilationThreadKind = CompilationThreadKind.MulticoreJitBackground;
+            }
+            else
+            {
+                // This isn't always true, but we don't yet have enough data to distinguish tiered compilation from other causes of versioned compilation (ie profiler ReJIT)
+                // Currently, OSR only happens on foreground threads.
+                if (_method.OptimizationTier == OptimizationTier.OptimizedTier1OSR)
+                {
+                    _method.CompilationThreadKind = CompilationThreadKind.Foreground;
+                }
+                else
+                {
+                    _method.CompilationThreadKind = _method.IsDefaultVersion ? CompilationThreadKind.Foreground : CompilationThreadKind.TieredCompilationBackground;
+                }
+            }
+
             _method.Completed++;
-            stats.JIT.m_stats.Update(_method);
+            stats.JIT.m_stats.AddMethodToStatistics(_method);
 
             return _method;
+        }
+
+        /// <summary>
+        /// Handles AllocRequest event for JIT
+        /// </summary>
+        internal static void LogJitMethodAllocation(TraceLoadedDotNetRuntime stats, MethodJitMemoryAllocatedForCodeTraceData data)
+        {
+            TraceJittedMethod _method = stats.JIT.m_stats.FindIncompleteJitEventOnThread(stats, data.ThreadID);
+            if (_method != null)
+            {
+                // If we already counted alloc size for a method, don't count it again.
+                if (_method.JitHotCodeRequestSize == 0)
+                {
+                    _method.IsJitAllocSizePresent = true;
+                    _method.JitHotCodeRequestSize = data.JitHotCodeRequestSize;
+                    _method.JitRODataRequestSize = data.JitRODataRequestSize;
+                    _method.AllocatedSizeForJitCode = data.AllocatedSizeForJitCode;
+                    _method.JitAllocFlag = data.JitAllocFlag;
+                }
+            }
         }
 
         /// <summary>
@@ -3465,8 +4232,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             string modname = "";
             _method.ModuleID = moduleID;
             moduleNamesFromID.TryGetValue(moduleID, out modname);
-            if (!string.IsNullOrWhiteSpace(modname)) _method.ModuleILPath = modname;
-            else _method.ModuleILPath = "";
+            if (!string.IsNullOrWhiteSpace(modname))
+            {
+                _method.ModuleILPath = modname;
+            }
+            else
+            {
+                _method.ModuleILPath = "";
+            }
 
             proc.JIT.Methods.Add(_method);
 
@@ -3514,15 +4287,31 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         {
             int parenIdx = data.MethodSignature.IndexOf('(');
             if (parenIdx < 0)
+            {
                 parenIdx = data.MethodSignature.Length;
+            }
 
             return data.MethodNamespace + "." + data.MethodName + data.MethodSignature.Substring(parenIdx);
         }
+
+        internal static string GetMethodName(R2RGetEntryPointTraceData data)
+        {
+            int parenIdx = data.MethodSignature.IndexOf('(');
+            if (parenIdx < 0)
+            {
+                parenIdx = data.MethodSignature.Length;
+            }
+
+            return data.MethodNamespace + "." + data.MethodName + data.MethodSignature.Substring(parenIdx);
+        }
+
         internal static string GetMethodName(MethodLoadUnloadVerboseTraceData data)
         {
             int parenIdx = data.MethodSignature.IndexOf('(');
             if (parenIdx < 0)
+            {
                 parenIdx = data.MethodSignature.Length;
+            }
 
             return data.MethodNamespace + "." + data.MethodName + data.MethodSignature.Substring(parenIdx);
         }
@@ -3534,9 +4323,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
                 TraceJittedMethod ret = proc.JIT.Methods[i];
                 if (ret.ThreadID == threadID)
                 {
-                    // This is a completed JIT event, not what we are looking for. 
+                    // This is a completed JIT event, not what we are looking for.
                     if (ret.NativeSize > 0 || ret.CompileCpuTimeMSec > 0)
+                    {
                         continue;
+                    }
+
                     return ret;
                 }
             }
@@ -3575,6 +4367,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         public string Reason;
     }
 
+    public enum CompilationThreadKind
+    {
+        Foreground,
+        MulticoreJitBackground,
+        TieredCompilationBackground
+    }
+
     /// <summary>
     /// Per method information
     /// </summary>
@@ -3592,6 +4391,22 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// Native code size of method
         /// </summary>
         public int NativeSize;
+        /// <summary>
+        /// Hot code size allocated for JIT code of method
+        /// </summary>
+        public long JitHotCodeRequestSize;
+        /// <summary>
+        /// Read-only data size allocated for JIT code of method
+        /// </summary>
+        public long JitRODataRequestSize;
+        /// <summary>
+        /// Total size allocated for JIT code of method
+        /// </summary>
+        public long AllocatedSizeForJitCode;
+        /// <summary>
+        /// Jit allocation flag
+        /// </summary>
+        public int JitAllocFlag;
         /// <summary>
         /// Relative start time of JIT'd method
         /// </summary>
@@ -3611,7 +4426,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// <summary>
         /// Indication of if it was JIT'd in the background
         /// </summary>
-        public bool IsBackGround;
+        [Obsolete("Use CompilationThreadKind")]
+        public bool IsBackground
+        {
+            get
+            {
+                return CompilationThreadKind != CompilationThreadKind.Foreground;
+            }
+        }
+        /// <summary>
+        /// Indication of if it was JIT'd in the background and why
+        /// </summary>
+        public CompilationThreadKind CompilationThreadKind;
         /// <summary>
         /// Amount of time the method was forcasted to JIT
         /// </summary>
@@ -3654,7 +4480,35 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public double RunCpuTimeMSec;
 
+        /// <summary>
+        /// The optimization tier at which the method was jitted
+        /// </summary>
+        public OptimizationTier OptimizationTier { get; private set; }
+
+        /// <summary>
+        /// The version id that is created by the runtime code versioning feature. This is an incrementing counter that starts at 0 for each method.
+        /// The ETW events historically name this as the ReJITID event parameter in the payload, but we have now co-opted its usage.
+        /// </summary>
+        public int VersionID;
+
+        public bool IsDefaultVersion { get { return VersionID == 0; } }
+
+        public bool IsJitAllocSizePresent
+        {
+            get;
+            set;
+        }
+
         #region private
+        internal void SetOptimizationTier(OptimizationTier optimizationTier, TraceLoadedDotNetRuntime stats)
+        {
+            if (optimizationTier != OptimizationTier.Unknown)
+            {
+                OptimizationTier = optimizationTier;
+                stats.HasAnyKnownOptimizationTier = true;
+            }
+        }
+
         /// <summary>
         /// Legacy
         /// </summary>
@@ -3776,13 +4630,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <summary>
         /// Means it detected that the ETW information is in a format it does not understand.
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public bool GCVersionInfoMismatch { get; private set; }
         /// <summary>
         /// Indicator of if ServerGC is enabled (1).  -1 indicates that not enough events have been processed to know for sure.
         /// We don't necessarily have the GCSettings event (only fired at the beginning if we attach)
         /// So we have to detect whether we are running server GC or not.
-        /// Till we get our first GlobalHeapHistory event which indicates whether we use server GC 
+        /// Till we get our first GlobalHeapHistory event which indicates whether we use server GC
         /// or not this remains -1.
         /// </summary>
         public int IsServerGCUsed = -1;
@@ -3816,7 +4669,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         }
 
         //
-        // candiate to be made private/ex
+        // candidate to be made private/ex
         //
         // The amount of memory allocated by the user threads. So they are divided up into gen0 and LOH allocations.
         internal double[] allocTickCurrentMB = { 0.0, 0.0 };
@@ -3826,7 +4679,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         internal double lastRestartEndTimeRelativeMSec;
 
-        // This is the BGC that's in progress as we are parsing. We need to remember this 
+        // This is the BGC that's in progress as we are parsing. We need to remember this
         // so we can correctly attribute the suspension time.
         internal TraceGC currentBGC = null;
 
@@ -3854,6 +4707,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             return null;
         }
 
+        internal static TraceGC GetGC(TraceLoadedDotNetRuntime proc, long gcIndex)
+        {
+            for (int i = (proc.GC.GCs.Count - 1); i >= 0; i--)
+            {
+                if (proc.GC.GCs[i].Number == gcIndex)
+                {
+                    return proc.GC.GCs[i];
+                }
+            }
+            return null;
+        }
+
         internal void AddConcurrentPauseTime(TraceGC _event, double RestartEEMSec)
         {
             if (suspendThreadIDBGC > 0)
@@ -3876,7 +4741,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             if (IsServerGCUsed == 1)
             {
-                Debug.Assert(HeapCount > 1);
+                // This debug assert fails in the case of DATAS where the HeapCount starts from 1.
+                // TODO (musharm): Come up with a more descriptive assert that'll take DATAS into account.
+                // Debug.Assert(HeapCount > 1);
 
                 if (serverGCThreads.Count < HeapCount)
                 {
@@ -3892,19 +4759,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         internal static void ProcessGlobalHistory(TraceLoadedDotNetRuntime proc, GCGlobalHeapHistoryTraceData data)
         {
-            if (proc.GC.m_stats.IsServerGCUsed == -1)
+            if (proc.GC.m_stats.HeapCount == -1)
             {
-                // We detected whether we are using Server GC now.
-                proc.GC.m_stats.IsServerGCUsed = ((data.NumHeaps > 1) ? 1 : 0);
-                if (proc.GC.m_stats.HeapCount == -1)
-                {
-                    proc.GC.m_stats.HeapCount = data.NumHeaps;
-                }
-
-                if (proc.GC.m_stats.IsServerGCUsed == 1)
-                {
-                    proc.GC.m_stats.serverGCThreads = new Dictionary<int, int>(data.NumHeaps);
-                }
+                proc.GC.m_stats.HeapCount = data.NumHeaps;
             }
 
             TraceGC _event = GetLastGC(proc);
@@ -3916,12 +4773,40 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     CondemnedGeneration = data.CondemnedGeneration,
                     Gen0ReductionCount = data.Gen0ReductionCount,
                     GlobalMechanisms = data.GlobalMechanisms,
+                    PauseMode = data.PauseMode,
                     HasMemoryPressure = data.HasMemoryPressure,
                     MemoryPressure = (data.HasMemoryPressure) ? data.MemoryPressure : -1,
                     NumHeaps = data.NumHeaps,
-                    Reason = data.Reason
+                    Reason = data.Reason,
+                    CondemnReasons0 = (data.HasCondemnReasons0) ? data.CondemnReasons0 : -1,
+                    CondemnReasons1 = (data.HasCondemnReasons1) ? data.CondemnReasons1 : -1,
+                    HasCondemnReasons0 = data.HasCondemnReasons0,
+                    HasCondemnReasons1 = data.HasCondemnReasons1,
+                    Times = data.Times,
                 };
-                _event.SetHeapCount(proc.GC.m_stats.HeapCount);
+                _event.SetHeapCount(data.NumHeaps);
+
+                if (data.Times != null)
+                {
+                    _event.TimingInfo = new Nullable<int>[(int)TraceGC.TimingType.Sweep + 1];
+                    _event.TimingInfo[(int)TraceGC.TimingType.MarkRoot] = data.Times[1];
+                    _event.TimingInfo[(int)TraceGC.TimingType.MarkShortWeak] = data.Times[2];
+                    _event.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization] = data.Times[3];
+                    _event.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak] = data.Times[4];
+                    if (_event.Type != GCType.BackgroundGC)
+                    {
+                        _event.TimingInfo[(int)TraceGC.TimingType.Plan] = data.Times[5];
+                        if ((_event.GlobalHeapHistory.GlobalMechanisms & GCGlobalMechanisms.Compaction) != 0)
+                        {
+                            _event.TimingInfo[(int)TraceGC.TimingType.Relocate] = data.Times[6];
+                            _event.TimingInfo[(int)TraceGC.TimingType.Compact] = data.Times[7];
+                        }
+                        else
+                        {
+                            _event.TimingInfo[(int)TraceGC.TimingType.Sweep] = data.Times[6];
+                        }
+                    }
+                }
             }
         }
 
@@ -3936,27 +4821,37 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             TraceGC _event = GetLastGC(proc);
             if (_event != null)
             {
+                int numGenerations = data.NumGenerations;
                 var hist = new GCPerHeapHistory()
                 {
                     FreeListAllocated = (data.HasFreeListAllocated) ? data.FreeListAllocated : -1,
-                    HasFreeListAllocated = data.HasFreeListAllocated,
-                    FreeListRejected = (data.HasFreeListRejected) ? data.FreeListRejected : -1,
-                    HasFreeListRejected = data.HasFreeListRejected,
+                    HasAllocatedInfo = data.HasFreeListAllocated,
+                    FreeListRejected = (data.HasFreeListAllocated) ? data.FreeListRejected : -1,
+                    EndOfSegAllocated = (data.HasFreeListAllocated) ? data.EndOfSegAllocated : -1,
+                    CondemnedAllocated = (data.HasFreeListAllocated) ? data.CondemnedAllocated : -1,
+                    PinnedAllocated = (data.HasFreeListAllocated) ? data.PinnedAllocated : -1,
+                    PinnedAllocatedAdvance = (data.HasFreeListAllocated) ? data.PinnedAllocatedAdvance : -1,
+                    RunningFreeListEfficiency = (data.HasFreeListAllocated) ? data.RunningFreeListEfficiency : -1,
                     MemoryPressure = (data.HasMemoryPressure) ? data.MemoryPressure : -1,
                     HasMemoryPressure = data.HasMemoryPressure,
                     VersionRecognized = data.VersionRecognized,
-                    GenData = new GCPerHeapHistoryGenData[(int)Gens.GenLargeObj + 1],
+                    GenData = new GCPerHeapHistoryGenData[numGenerations],
                     CondemnReasons0 = data.CondemnReasons0,
                     CondemnReasons1 = (data.HasCondemnReasons1) ? data.CondemnReasons1 : -1,
                     HasCondemnReasons1 = data.HasCondemnReasons1,
+                    CompactMechanisms = (int)data.CompactMechanisms,
+                    ExpandMechanisms = (int)data.ExpandMechanisms,
+                    ExtraGen0Commit = data.ExtraGen0Commit,
+                    HasExtraGen0Commit = data.HasExtraGen0Commit,
                     Version = data.Version
                 };
 
-                for (Gens GenIndex = Gens.Gen0; GenIndex <= Gens.GenLargeObj; GenIndex++)
+                for (Gens GenIndex = Gens.Gen0; GenIndex < (Gens)numGenerations; GenIndex++)
                 {
                     hist.GenData[(int)GenIndex] = data.GenData(GenIndex);
                 }
 
+                if (_event.PerHeapHistories == null) { _event.PerHeapHistories = new List<GCPerHeapHistory>(); }
                 _event.PerHeapHistories.Add(hist);
             }
         }
@@ -3987,18 +4882,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         internal bool IsBGCThread(int threadID)
         {
             if (backgroundGCThreads != null)
+            {
                 return backgroundGCThreads.ContainsKey(threadID);
+            }
+
             return false;
         }
 
-        // I keep this for the purpose of server Background GC. Unfortunately for server background 
+        // I keep this for the purpose of server Background GC. Unfortunately for server background
         // GC we are firing the GCEnd/GCHeaps events and Global/Perheap events in the reversed order.
         // This is so that the Global/Perheap events can still be attributed to the right BGC.
         internal TraceGC lastCompletedGC = null;
 
 
         internal bool gotThreadInfo = false;
-        // This is the server GC threads. It's built up in the 2nd server GC we see. 
+        // This is the server GC threads. It's built up in the 2nd server GC we see.
         internal Dictionary<int, int> serverGCThreads = new Dictionary<int, int>();
 
 
@@ -4030,6 +4928,47 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     GcWorkingThreadId = gcThreadId,
                     GcWorkingThreadPriority = gcThreadPriority
                 });
+            }
+        }
+
+        internal static void ProcessCommittedUsage(TraceLoadedDotNetRuntime proc, CommittedUsageTraceEvent committedUsage)
+        {
+            TraceGC _event = GetLastGC(proc);
+            if (_event != null)
+            {
+                CommittedUsage traceData = new CommittedUsage
+                {
+                    Version = committedUsage.Version,
+                    TotalCommittedInUse = committedUsage.TotalCommittedInUse,
+                    TotalCommittedInGlobalDecommit = committedUsage.TotalCommittedInGlobalDecommit,
+                    TotalCommittedInFree = committedUsage.TotalCommittedInFree,
+                    TotalCommittedInGlobalFree = committedUsage.TotalCommittedInGlobalFree,
+                    TotalBookkeepingCommitted = committedUsage.TotalBookkeepingCommitted
+                };
+
+                if (_event.CommittedUsageBefore == null)
+                {
+                    _event.CommittedUsageBefore = traceData;
+                }
+                else
+                {
+                    Debug.Assert(_event.CommittedUsageAfter == null);
+                    _event.CommittedUsageAfter = traceData;
+                }
+            }
+        }
+
+        internal static void ProcessGCDynamicEvent(TraceLoadedDotNetRuntime proc, GCDynamicTraceEvent gcDynamic)
+        {
+            TraceGC _event = GetLastGC(proc);
+            if (_event != null)
+            {
+                _event.AddDynamicEvent(new GCDynamicEvent
+                (
+                    gcDynamic.UnderlyingEvent.Name,
+                    gcDynamic.UnderlyingEvent.TimeStamp,
+                    gcDynamic.DataField
+                ));
             }
         }
 

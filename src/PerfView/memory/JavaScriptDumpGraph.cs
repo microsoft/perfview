@@ -37,7 +37,9 @@ public class JavaScriptDumpGraphReader
     public void Append(MemoryGraph memoryGraph, string javaScriptEtlName, int processId, double startTimeRelativeMSec = 0)
     {
         using (var source = new ETWTraceEventSource(javaScriptEtlName))
+        {
             Append(memoryGraph, source, processId, startTimeRelativeMSec);
+        }
     }
     public void Append(MemoryGraph memoryGraph, TraceEventDispatcher source, int processId, double startTimeRelativeMSec = 0)
     {
@@ -59,71 +61,111 @@ public class JavaScriptDumpGraphReader
         m_processId = processID;
 
         var jsDump = new JSDumpHeapTraceEventParser(source);
-        jsDump.JSDumpHeapEnvelopeStart += delegate(SettingsTraceData data)
+        jsDump.JSDumpHeapEnvelopeStart += delegate (SettingsTraceData data)
         {
             if (data.TimeStampRelativeMSec < m_ignoreUntilMSec)
+            {
                 return;
+            }
+
             if (m_processId == 0)
+            {
                 m_processId = data.ProcessID;
+            }
+
             if (data.ProcessID != m_processId)
+            {
                 return;
+            }
 
             if (!m_seenStart)
+            {
                 m_ignoreEvents = false;
+            }
+
             m_seenStart = true;
         };
-        jsDump.JSDumpHeapEnvelopeStop += delegate(SummaryTraceData data)
+        jsDump.JSDumpHeapEnvelopeStop += delegate (SummaryTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
+            {
                 return;
+            }
+
             m_ignoreEvents = true;
             source.StopProcessing();
         };
-        jsDump.JSDumpHeapBulkNode += delegate(BulkNodeTraceData data)
+        jsDump.JSDumpHeapBulkNode += delegate (BulkNodeTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
+            {
                 return;
+            }
+
             m_nodeBlocks.Enqueue((BulkNodeTraceData)data.Clone());
         };
-        jsDump.JSDumpHeapBulkAttribute += delegate(BulkAttributeTraceData data)
+        jsDump.JSDumpHeapBulkAttribute += delegate (BulkAttributeTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
+            {
                 return;
+            }
+
             m_attributeBlocks.Enqueue((BulkAttributeTraceData)data.Clone());
         };
-        jsDump.JSDumpHeapBulkEdge += delegate(BulkEdgeTraceData data)
+        jsDump.JSDumpHeapBulkEdge += delegate (BulkEdgeTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
+            {
                 return;
+            }
+
             m_edgeBlocks.Enqueue((BulkEdgeTraceData)data.Clone());
         };
-        jsDump.JSDumpHeapStringTable += delegate(StringTableTraceData data)
+        jsDump.JSDumpHeapStringTable += delegate (StringTableTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
+            {
                 return;
+            }
+
             for (int i = 0; i < data.Count; i++)
+            {
                 m_stringTable.Add(data.Strings(i));
+            }
         };
-        jsDump.JSDumpHeapDoubleTable += delegate(DoubleTableTraceData data)
+        jsDump.JSDumpHeapDoubleTable += delegate (DoubleTableTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
+            {
                 return;
+            }
+
             for (int i = 0; i < data.Count; i++)
+            {
                 m_doubleTable.Add(data.Doubles(i));
+            }
         };
     }
 
     internal unsafe void ConvertHeapDataToGraph()
     {
         if (m_converted)
+        {
             return;
+        }
+
         m_converted = true;
 
         if (!m_seenStart)
+        {
             throw new ApplicationException("ETL file did not include a Start Heap Dump Event");
+        }
 
         if (!m_ignoreEvents)
+        {
             throw new ApplicationException("ETL file did not include a Stop Heap Dump Event");
+        }
 
         // Since we may have multiple roots, I create a pseudo-node to act as its parent. 
         var root = new MemoryNodeBuilder(m_graph, "[JS Roots]");
@@ -133,7 +175,9 @@ public class JavaScriptDumpGraphReader
         {
             BulkNodeValues node;
             if (!GetNextNode(out node))
+            {
                 break;
+            }
 
             // Get the node index
             var nodeIdx = m_graph.GetNodeIndex(node.Address);
@@ -145,7 +189,9 @@ public class JavaScriptDumpGraphReader
             {
                 typeName = m_stringTable[node.TypeNameId];
                 if (typeName.Length > 6 && typeName.EndsWith("Object"))
+                {
                     typeName = "JS" + typeName.Substring(0, typeName.Length - 6);
+                }
             }
             var relationships = "";
 
@@ -154,7 +200,9 @@ public class JavaScriptDumpGraphReader
             {
                 BulkEdgeValues edge;
                 if (!GetNextEdge(out edge))
+                {
                     throw new ApplicationException("Missing Edge Nodes in ETW data");
+                }
 
                 // Is this an edge to another object?  (externals count)
                 if (edge.TargetType == EdgeTargetType.Object || edge.TargetType == EdgeTargetType.External)
@@ -164,7 +212,9 @@ public class JavaScriptDumpGraphReader
                     // Get the property name if it has one
                     string childPropertyName = null;
                     if (edge.RelationshipType == EdgeRelationshipType.NamedProperty || edge.RelationshipType == EdgeRelationshipType.Event)
+                    {
                         childPropertyName = m_stringTable[edge.NameId];
+                    }
                     else if (edge.RelationshipType == EdgeRelationshipType.IndexedProperty)
                     {
                         // The edge is an element of an array and the NameID is the index in the array.  
@@ -172,13 +222,18 @@ public class JavaScriptDumpGraphReader
                         childPropertyName = "[]";
                     }
                     else if (edge.RelationshipType == EdgeRelationshipType.InternalProperty)
+                    {
                         childPropertyName = "InternalProperty";
+                    }
 
                     if (childPropertyName != null)
                     {
                         // Remember the property so that when we display the target object, we show that too. 
                         if ((int)childIdx >= nodeNames.Count)
+                        {
                             nodeNames.Count = (int)childIdx + 100;   // expand by at least 100.  
+                        }
+
                         nodeNames[(int)childIdx] = childPropertyName;
                     }
                     m_children.Add(childIdx);
@@ -191,7 +246,10 @@ public class JavaScriptDumpGraphReader
                         var relationshipName = m_stringTable[edge.NameId];
                         var relationshipValue = m_stringTable[(int)edge.Value];
                         if (relationships.Length > 0)
+                        {
                             relationships += " ";
+                        }
+
                         relationships += relationshipName + ":" + relationshipValue;
                     }
                 }
@@ -203,7 +261,9 @@ public class JavaScriptDumpGraphReader
             {
                 propertyName = nodeNames[(int)nodeIdx];
                 if (propertyName != null)
+                {
                     nodeNames[(int)nodeIdx] = null;
+                }
             }
 
             // Process the attributes.  We can get a good function name as well as some more children from the attributes.  
@@ -212,46 +272,70 @@ public class JavaScriptDumpGraphReader
             {
                 BulkAttributeValues attribute;
                 if (!GetNextAttribute(out attribute))
+                {
                     throw new ApplicationException("Missing Attribute Nodes in ETW data");
+                }
 
                 // TODO FIX NOW Currently I include the prototype link.  is this a good idea? 
                 if (attribute.Type == AttributeType.Prototype)
+                {
                     m_children.Add(m_graph.GetNodeIndex(attribute.Value));
+                }
                 else if (attribute.Type == AttributeType.Scope)
                 {
                     // TODO FIX NOW: it seems that Value is truncated to 32 bits and we have to restore it.  
                     // Feels like a hack (and not clear if it is correct)
                     var target = attribute.Value;
                     if ((target >> 32) == 0 && (node.Address >> 32) != 0)
+                    {
                         target += node.Address & 0xFFFFFFFF00000000;
+                    }
+
                     m_children.Add(m_graph.GetNodeIndex(target));
                 }
                 // WPA does this, I don't really understand it.  
                 if (attribute.Type == AttributeType.TextChildrenSize)
+                {
                     objSize += (int)attribute.Value;
+                }
                 else if (attribute.Type == AttributeType.FunctionName)
+                {
                     propertyName = m_stringTable[(int)attribute.Value];
+                }
             }
 
 
             if (relationships.Length > 0)
+            {
                 typeName += " <|" + relationships + "|>";
+            }
             // Create the complete type name
             if ((node.Flags & ObjectFlags.WINRT) != 0)
+            {
                 typeName = "(WinRT " + " " + typeName + ")";
+            }
             else
+            {
                 typeName = "(Type " + " " + typeName + ")";
+            }
+
             if (propertyName != null)
+            {
                 typeName = propertyName + " " + typeName;
+            }
 
             // typeName += " [0x" + node.Address.ToString("x") + "]";
             var typeIdx = GetTypeIndex(typeName, node.Size);
 
             if ((node.Flags & ObjectFlags.IS_ROOT) != 0)
+            {
                 root.AddChild(nodeIdx);
+            }
 
             if (!m_graph.IsDefined(nodeIdx))
+            {
                 m_graph.SetNode(nodeIdx, typeIdx, objSize, m_children);
+            }
             else
             {
                 // Only external objects might be listed twice.  
@@ -339,32 +423,25 @@ public class JavaScriptDumpGraphReader
         return ret;
     }
 
-    bool m_converted;
-    bool m_seenStart;
-    bool m_ignoreEvents;
-
-    int m_curNodeIdx;
-    BulkNodeTraceData m_curNodeBlock;
-    Queue<BulkNodeTraceData> m_nodeBlocks;
-
-    int m_curEdgeIdx;
-    BulkEdgeTraceData m_curEdgeBlock;
-    Queue<BulkEdgeTraceData> m_edgeBlocks;
-
-    int m_curAttributeIdx;
-    BulkAttributeTraceData m_curAttributeBlock;
-    Queue<BulkAttributeTraceData> m_attributeBlocks;
-
-    GrowableArray<string> m_stringTable;
-    GrowableArray<double> m_doubleTable;
-
-
-    GrowableArray<NodeIndex> m_children;
-    Dictionary<string, NodeTypeIndex> m_types;
-    MemoryGraph m_graph;
-    TextWriter m_log;
-
-    double m_ignoreUntilMSec;        // ignore until we see this
-    int m_processId;
+    private bool m_converted;
+    private bool m_seenStart;
+    private bool m_ignoreEvents;
+    private int m_curNodeIdx;
+    private BulkNodeTraceData m_curNodeBlock;
+    private Queue<BulkNodeTraceData> m_nodeBlocks;
+    private int m_curEdgeIdx;
+    private BulkEdgeTraceData m_curEdgeBlock;
+    private Queue<BulkEdgeTraceData> m_edgeBlocks;
+    private int m_curAttributeIdx;
+    private BulkAttributeTraceData m_curAttributeBlock;
+    private Queue<BulkAttributeTraceData> m_attributeBlocks;
+    private GrowableArray<string> m_stringTable;
+    private GrowableArray<double> m_doubleTable;
+    private GrowableArray<NodeIndex> m_children;
+    private Dictionary<string, NodeTypeIndex> m_types;
+    private MemoryGraph m_graph;
+    private TextWriter m_log;
+    private double m_ignoreUntilMSec;        // ignore until we see this
+    private int m_processId;
     #endregion
 }

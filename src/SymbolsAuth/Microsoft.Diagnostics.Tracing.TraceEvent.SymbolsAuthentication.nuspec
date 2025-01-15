@@ -1,0 +1,35 @@
+﻿<?xml version="1.0"?>
+<package>
+  <metadata minClientVersion="2.5">
+    <id>Microsoft.Diagnostics.Tracing.TraceEvent.SymbolsAuthentication</id>
+    <version>0.0.0</version>
+    <title>Microsoft TraceEvent SymbolReader Authentication Library</title>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <projectUrl>https://github.com/Microsoft/perfview</projectUrl>
+    <license type="expression">MIT</license>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>
+      Provides authentication support for symbol and source file download functionality in the
+      TraceEvent SymbolReader class.
+    </description>
+    <summary>SymbolReader authentication library for TraceEvent.</summary>
+    <releaseNotes>https://github.com/Microsoft/perfview/releases/tag/v$version$</releaseNotes>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>TraceEvent EventSource Microsoft ETW Event Tracing for Windows SymbolReader Authentication</tags>
+
+    <dependencies>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Azure.Identity" version="$AzureIdentityVersion$" />
+        <dependency id="Microsoft.IdentityModel.JsonWebTokens" version="$MicrosoftIdentityModelJsonWebTokensVersion$" />
+      </group>
+    </dependencies>
+  </metadata>
+
+  <files>	
+    <!-- Built libraries -->
+    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.SymbolsAuthentication.dll" target="lib\netstandard2.0" />
+    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.SymbolsAuthentication.pdb" target="lib\netstandard2.0" />
+  </files>
+
+</package>

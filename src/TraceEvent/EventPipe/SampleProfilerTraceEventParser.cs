@@ -1,10 +1,7 @@
 using System;
-using System.Text;
 using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing;
+using System.Text;
 using Address = System.UInt64;
-
-#pragma warning disable 1591        // disable warnings on XML comments not being present
 
 namespace Microsoft.Diagnostics.Tracing.EventPipe
 {
@@ -30,6 +27,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             }
         }
 
+        // This is obsolete in the V3 version of the EventPipe format (released in .NET Core V2.1)  Can remove in 2019.  
         public event Action<ClrThreadStackWalkTraceData> ThreadStackWalk
         {
             add
@@ -45,7 +43,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
         #region private
         protected override string GetProviderName() { return ProviderName; }
-        static private volatile TraceEvent[] s_templates;
+        private static volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
@@ -57,8 +55,12 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 s_templates = templates;
             }
             foreach (var template in s_templates)
+            {
                 if (eventsToObserve == null || eventsToObserve(template.ProviderName, template.EventName) == EventFilterResponse.AcceptEvent)
+                {
                     callback(template);
+                }
+            }
         }
 
         private void RegisterTemplate(TraceEvent template)
@@ -90,7 +92,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         internal ClrThreadSampleTraceData(Action<ClrThreadSampleTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -119,7 +121,10 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] {"Type"};
+                {
+                    payloadNames = new string[] { "Type" };
+                }
+
                 return payloadNames;
             }
         }
@@ -146,8 +151,8 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         {
             get
             {
-                System.Diagnostics.Debug.Assert(this.EventDataLength % PointerSize == 0);
-                return this.EventDataLength / PointerSize;
+                System.Diagnostics.Debug.Assert(EventDataLength % PointerSize == 0);
+                return EventDataLength / PointerSize;
             }
         }
 
@@ -166,7 +171,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         /// <summary>
         /// Access to the instruction pointers as a unsafe memory blob
         /// </summary>
-        unsafe internal void* InstructionPointers
+        internal unsafe void* InstructionPointers
         {
             get
             {
@@ -178,7 +183,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         internal ClrThreadStackWalkTraceData(Action<ClrThreadStackWalkTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.Action = action;
+            Action = action;
         }
         protected internal override void Dispatch()
         {
@@ -213,7 +218,10 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "FrameCount" };
+                }
+
                 return payloadNames;
             }
         }

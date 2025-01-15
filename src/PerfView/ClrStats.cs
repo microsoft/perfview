@@ -1,32 +1,18 @@
 ﻿// Copyright (c) Microsoft Corporation.  All rights reserved
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Analysis;
-using Microsoft.Diagnostics.Tracing.Analysis.GC;
-using Microsoft.Diagnostics.Tracing.Analysis.JIT;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
 using Microsoft.Diagnostics.Utilities;
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
-using Utilities;
-using Address = System.UInt64;
 
 namespace Stats
 {
     internal static class ClrStats
     {
-        public enum ReportType {  JIT, GC };
+        public enum ReportType { JIT, GC, RuntimeLoader, FileVersion };
 
-        public static void ToHtml(TextWriter writer, List<TraceProcess> perProc, string fileName, string title, ReportType type, bool justBody = false, bool doServerGCReport = false)
+        public static void ToHtml(TextWriter writer, List<TraceProcess> perProc, string fileName, string title, ReportType type, bool justBody = false, bool doServerGCReport = false, RuntimeLoaderStatsData runtimeOpsStats = null, Microsoft.Diagnostics.Tracing.Etlx.TraceLog traceLog = null)
         {
             if (!justBody)
             {
@@ -41,9 +27,21 @@ namespace Stats
             writer.WriteLine("<H2>{0}</H2>", title);
             List<TraceProcess> sortedProcs = perProc;
             if (type == ReportType.JIT)
-                sortedProcs.Sort( (TraceProcess p1, TraceProcess p2) => { return -p1.LoadedDotNetRuntime().JIT.Stats().TotalCpuTimeMSec.CompareTo(p2.LoadedDotNetRuntime().JIT.Stats().TotalCpuTimeMSec); });
+            {
+                sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return -p1.LoadedDotNetRuntime().JIT.Stats().TotalCpuTimeMSec.CompareTo(p2.LoadedDotNetRuntime().JIT.Stats().TotalCpuTimeMSec); });
+            }
             else if (type == ReportType.GC)
+            {
                 sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return -p1.LoadedDotNetRuntime().GC.Stats().MaxSizePeakMB.CompareTo(p2.LoadedDotNetRuntime().GC.Stats().MaxSizePeakMB); });
+            }
+            else if (type == ReportType.RuntimeLoader)
+            {
+                sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return -RuntimeLoaderStats.TotalCPUMSec(p1, runtimeOpsStats).CompareTo(RuntimeLoaderStats.TotalCPUMSec(p2, runtimeOpsStats)); });
+            }
+            else if(type == ReportType.FileVersion)
+            {
+                sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return string.Compare(p1.Name, p2.Name); });
+            }
 
             int count = sortedProcs.Count;
 
@@ -55,14 +53,25 @@ namespace Stats
                     var mang = data.LoadedDotNetRuntime();
 
                     if (mang == null)
+                    {
                         continue;
+                    }
 
                     if (type == ReportType.JIT && !mang.JIT.Stats().Interesting)
+                    {
                         continue;
+                    }
+
+                    if (type == ReportType.RuntimeLoader && !RuntimeLoaderStats.IsInteresting(data, runtimeOpsStats))
+                    {
+                        continue;
+                    }
 
                     var id = Shorten(data.CommandLine);
                     if (string.IsNullOrEmpty(id))
+                    {
                         id = data.Name;
+                    }
 
                     writer.WriteLine("<LI><A HREF=\"#Stats_{0}\">Process {0,5}: {1}</A></LI>", data.ProcessID, XmlUtilities.XmlEscape(id));
                 }
@@ -72,11 +81,30 @@ namespace Stats
             foreach (TraceProcess stats in sortedProcs)
             {
                 var mang = stats.LoadedDotNetRuntime();
-                if (mang == null) continue;
+                if (mang == null)
+                {
+                    continue;
+                }
+
                 if (type == ReportType.GC)
+                {
                     Stats.GcStats.ToHtml(writer, stats, mang, fileName, doServerGCReport);
+                }
+
                 if (type == ReportType.JIT && mang.JIT.Stats().Interesting)
+                {
                     Stats.JitStats.ToHtml(writer, stats, mang, fileName);
+                }
+
+                if (type == ReportType.RuntimeLoader && RuntimeLoaderStats.IsInteresting(stats, runtimeOpsStats))
+                {
+                    Stats.RuntimeLoaderStats.ToHtml(writer, stats, fileName, runtimeOpsStats);
+                }
+
+                if(type == ReportType.FileVersion)
+                {
+                    Stats.FileVersionInformation.ToHtml(writer, stats, traceLog);
+                }
             }
 
             writer.WriteLine("<BR/><BR/><BR/><BR/><BR/><BR/><BR/><BR/><BR/><BR/>");
@@ -95,7 +123,9 @@ namespace Stats
         public static string Shorten(string commandLine)
         {
             if (commandLine == null)
+            {
                 return null;
+            }
 
             // Remove quotes, replacing ' ' with '_'
             commandLine = Regex.Replace(commandLine, "\"(.*?)\"", (m) => m.Groups[1].Value.Replace(' ', '_'));
@@ -108,7 +138,10 @@ namespace Stats
 
             // truncate if necessary. 
             if (commandLine.Length > 80)
+            {
                 commandLine = commandLine.Substring(0, 80) + "...";
+            }
+
             return commandLine;
         }
     }

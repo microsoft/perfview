@@ -1,0 +1,73 @@
+EVENT 0.000: Windows Kernel/EventTrace PID=179356; TID=179388; PName=Process(179356); ProceNum=0; DataLen=392; BufferSize=65,536; Version=83,951,626; ProviderVersion=19,045; NumberOfProcessors=8; EndTime=23/03/14 00:46:50.70...; TimerResolution=156,250; MaxFileSize=800; LogFileMode=134,217,730; BuffersWritten=5; StartBuffers=1; PointerSize=8; EventsLost=0; CPUSpeed=3,408; BootTime=23/03/07 16:58:36.50...; PerfFreq=10,000,000; StartTime=23/03/14 00:46:36.69...; ReservedFlags=1; BuffersLost=0; SessionName=PerfViewSession; LogFileName=C:\Dev\runtime\CoreL...; UtcOffsetMinutes=480; 
+EVENT 8,184.674: Microsoft-Windows-DotNETRuntime/Runtime/Start PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=203; ClrInstanceID=8; Sku=CoreClr; BclMajorVersion=8; BclMinorVersion=0; BclBuildNumber=0; BclQfeNumber=0; VMMajorVersion=42; VMMinorVersion=42; VMBuildNumber=42; VMQfeNumber=42,424; StartupFlags=8388611; StartupMode=None; CommandLine=; ComObjectGuid=00000000-0000-0000-0...; RuntimeDllPath=C:\Dev\runtime\artif...; 
+EVENT 8,185.741: Microsoft-Windows-DotNETRuntime/GC/CreateSegment PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=22; Address=0x1b0f1000028; Size=0x01ffffd8; Type=PinnedObjectHeap; ClrInstanceID=8; 
+EVENT 8,185.743: Microsoft-Windows-DotNETRuntime/GC/CreateSegment PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=22; Address=0x1b0f3000028; Size=0x003fffd8; Type=SmallObjectHeap; ClrInstanceID=8; 
+EVENT 8,185.744: Microsoft-Windows-DotNETRuntime/GC/CreateSegment PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=22; Address=0x1b0f3400028; Size=0x003fffd8; Type=SmallObjectHeap; ClrInstanceID=8; 
+EVENT 8,185.745: Microsoft-Windows-DotNETRuntime/GC/CreateSegment PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=22; Address=0x1b0f3800028; Size=0x003fffd8; Type=SmallObjectHeap; ClrInstanceID=8; 
+EVENT 8,185.747: Microsoft-Windows-DotNETRuntime/GC/CreateSegment PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=22; Address=0x1b0f3c00028; Size=0x01ffffd8; Type=LargeObjectHeap; ClrInstanceID=8; 
+EVENT 8,199.580: Microsoft-Windows-DotNETRuntime/GC/FinalizersStart PID=179596; TID=177072; PName=Process(179596); ProceNum=7; DataLen=2; ClrInstanceID=8; 
+EVENT 8,199.585: Microsoft-Windows-DotNETRuntime/GC/FinalizersStop PID=179596; TID=177072; PName=Process(179596); ProceNum=7; DataLen=6; Count=0; ClrInstanceID=8; 
+EVENT 8,215.606: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=179596; TID=168672; PName=Process(179596); ProceNum=6; DataLen=74; AllocationAmount=109,120; AllocationKind=Small; ClrInstanceID=8; AllocationAmount64=109,120; TypeID=0x7ffb485e1c08; TypeName=System.String; HeapIndex=0; Address=0x1b0f3818b30; ObjectSize=32; 
+EVENT 8,224.960: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=179596; TID=168672; PName=Process(179596); ProceNum=6; DataLen=98; AllocationAmount=109,440; AllocationKind=Small; ClrInstanceID=8; AllocationAmount64=109,440; TypeID=0x7ffb486cf828; TypeName=System.Text.StringBu...; HeapIndex=0; Address=0x1b0f3833850; ObjectSize=48; 
+EVENT 8,225.472: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=179596; TID=168672; PName=Process(179596); ProceNum=6; DataLen=74; AllocationAmount=110,496; AllocationKind=Small; ClrInstanceID=8; AllocationAmount64=110,496; TypeID=0x7ffb485e1c08; TypeName=System.String; HeapIndex=0; Address=0x1b0f384e8d8; ObjectSize=88; 
+EVENT 8,229.584: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=179596; TID=168672; PName=Process(179596); ProceNum=6; DataLen=128; AllocationAmount=107,664; AllocationKind=Small; ClrInstanceID=8; AllocationAmount64=107,664; TypeID=0x7ffb48635478; TypeName=System.Diagnostics.T...; HeapIndex=0; Address=0x1b0f3868e88; ObjectSize=24; 
+EVENT 8,229.863: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=179596; TID=168672; PName=Process(179596); ProceNum=6; DataLen=74; AllocationAmount=110,384; AllocationKind=Small; ClrInstanceID=8; AllocationAmount64=110,384; TypeID=0x7ffb486e2cd8; TypeName=System.Char[]; HeapIndex=0; Address=0x1b0f3882068; ObjectSize=16,024; 
+EVENT 11,607.358: Microsoft-Windows-DotNETRuntime/GC/SuspendEEStart PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=10; Reason=SuspendForGC; Count=0; ClrInstanceID=8; 
+EVENT 11,607.367: Microsoft-Windows-DotNETRuntime/GC/SuspendEEStop PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=2; ClrInstanceID=8; 
+EVENT 11,607.371: Microsoft-Windows-DotNETRuntime/GC/Triggered PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=6; Reason=Induced; ClrInstanceID=8; 
+EVENT 11,607.432: Microsoft-Windows-DotNETRuntime/GC/Start PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=26; Count=1; Reason=Induced; Depth=1; Type=NonConcurrentGC; ClrInstanceID=8; ClientSequenceNumber=0; 
+EVENT 11,607.466: Microsoft-Windows-DotNETRuntime/GC/MarkWithType PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=18; HeapNum=0; ClrInstanceID=8; Type=0; Promoted=24; 
+EVENT 11,607.467: Microsoft-Windows-DotNETRuntime/GC/MarkWithType PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=18; HeapNum=0; ClrInstanceID=8; Type=1; Promoted=0; 
+EVENT 11,607.477: Microsoft-Windows-DotNETRuntime/GC/PinObjectAtGCTime PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=54; HandleID=0x1b0f0a815f8; ObjectID=0x1b0f3800208; ObjectSize=24; TypeName=System.Object; ClrInstanceID=8; 
+EVENT 11,607.481: Microsoft-Windows-DotNETRuntime/GC/MarkWithType PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=18; HeapNum=0; ClrInstanceID=8; Type=2; Promoted=904; 
+EVENT 11,607.589: Microsoft-Windows-DotNETRuntime/GC/MarkWithType PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=18; HeapNum=0; ClrInstanceID=8; Type=3; Promoted=293,544; 
+EVENT 11,607.590: Microsoft-Windows-DotNETRuntime/GC/MarkWithType PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=18; HeapNum=0; ClrInstanceID=8; Type=6; Promoted=0; 
+EVENT 11,607.765: Microsoft-Windows-DotNETRuntime/GC/FitBucketInfo PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=158; ClrInstanceID=8; BucketKind=PlugsInCondemned; TotalSize=310,848; Count=9; 
+EVENT 11,608.126: Microsoft-Windows-DotNETRuntime/GC/GlobalHeapHistory PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=82; FinalYoungestDesired=4,677,560; NumHeaps=1; CondemnedGeneration=1; Gen0ReductionCount=0; Reason=Induced; GlobalMechanisms=Compaction, Promotio...; ClrInstanceID=8; PauseMode=Interactive; MemoryPressure=59; CondemnReasons0=0; CondemnReasons1=0; Count=8; 
+EVENT 11,608.130: Microsoft-Windows-DotNETRuntime/GC/PerHeapHistory PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=486; ClrInstanceID=8; FreeListAllocated=0; FreeListRejected=0; EndOfSegAllocated=0; CondemnedAllocated=0; PinnedAllocated=0; PinnedAllocatedAdvance=0; RunningFreeListEfficiency=0; CondemnReasons0=5; CondemnReasons1=0; CompactMechanisms=compact_high_frag; ExpandMechanisms=not_specified; ConcurrentCompactMechanisms=; HeapIndex=0; ExtraGen0Commit=0; Count=5; MemoryPressure=; 
+EVENT 11,608.135: Microsoft-Windows-DotNETRuntime/GC/Stop PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=10; Count=1; Depth=1; ClrInstanceID=8; 
+EVENT 11,608.136: Microsoft-Windows-DotNETRuntime/GC/HeapStats PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=110; TotalHeapSize=657,192; TotalPromoted=310,952; Depth=0; GenerationSize0=584; TotalPromotedSize0=310,952; GenerationSize1=314,184; TotalPromotedSize1=0; GenerationSize2=0; TotalPromotedSize2=0; GenerationSize3=326,056; TotalPromotedSize3=0; FinalizationPromotedSize=13,948; FinalizationPromotedCount=6; PinnedObjectCount=1; SinkBlockCount=0; GCHandleCount=53; ClrInstanceID=8; GenerationSize4=16,368; TotalPromotedSize4=0; 
+EVENT 11,608.140: Microsoft-Windows-DotNETRuntime/GC/RestartEEStart PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=2; ClrInstanceID=8; 
+EVENT 11,608.145: Microsoft-Windows-DotNETRuntime/GC/RestartEEStop PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=2; ClrInstanceID=8; 
+EVENT 11,608.167: Microsoft-Windows-DotNETRuntime/GC/SuspendEEStart PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=10; Reason=SuspendForGC; Count=1; ClrInstanceID=8; 
+EVENT 11,608.173: Microsoft-Windows-DotNETRuntime/GC/SuspendEEStop PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=2; ClrInstanceID=8; 
+EVENT 11,608.175: Microsoft-Windows-DotNETRuntime/GC/Triggered PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=6; Reason=Induced; ClrInstanceID=8; 
+EVENT 11,608.181: Microsoft-Windows-DotNETRuntime/GC/Start PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=26; Count=2; Reason=Induced; Depth=2; Type=NonConcurrentGC; ClrInstanceID=8; ClientSequenceNumber=0; 
+EVENT 11,608.204: Microsoft-Windows-DotNETRuntime/GC/PinObjectAtGCTime PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=54; HandleID=0x1b0f0a815f8; ObjectID=0x1b0f3800208; ObjectSize=24; TypeName=System.Object; ClrInstanceID=8; 
+EVENT 11,608.686: Microsoft-Windows-DotNETRuntime/GC/GlobalHeapHistory PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=82; FinalYoungestDesired=4,194,304; NumHeaps=1; CondemnedGeneration=2; Gen0ReductionCount=0; Reason=Induced; GlobalMechanisms=Compaction, Promotio...; ClrInstanceID=8; PauseMode=Interactive; MemoryPressure=59; CondemnReasons0=0; CondemnReasons1=0; Count=8; 
+EVENT 11,608.688: Microsoft-Windows-DotNETRuntime/GC/PerHeapHistory PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=486; ClrInstanceID=8; FreeListAllocated=0; FreeListRejected=0; EndOfSegAllocated=0; CondemnedAllocated=0; PinnedAllocated=0; PinnedAllocatedAdvance=0; RunningFreeListEfficiency=0; CondemnReasons0=10; CondemnReasons1=1; CompactMechanisms=compact_loh_forced; ExpandMechanisms=not_specified; ConcurrentCompactMechanisms=; HeapIndex=0; ExtraGen0Commit=0; Count=5; MemoryPressure=; 
+EVENT 11,608.690: Microsoft-Windows-DotNETRuntime/GC/LOHCompact PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=36; ClrInstanceID=8; Count=1; 
+EVENT 11,608.693: Microsoft-Windows-DotNETRuntime/GC/Stop PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=10; Count=2; Depth=2; ClrInstanceID=8; 
+EVENT 11,608.694: Microsoft-Windows-DotNETRuntime/GC/HeapStats PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=110; TotalHeapSize=436,504; TotalPromoted=419,624; Depth=1; GenerationSize0=584; TotalPromotedSize0=104; GenerationSize1=0; TotalPromotedSize1=310,848; GenerationSize2=310,848; TotalPromotedSize2=0; GenerationSize3=108,704; TotalPromotedSize3=108,672; FinalizationPromotedSize=0; FinalizationPromotedCount=0; PinnedObjectCount=1; SinkBlockCount=0; GCHandleCount=53; ClrInstanceID=8; GenerationSize4=16,368; TotalPromotedSize4=0; 
+EVENT 11,608.704: Microsoft-Windows-DotNETRuntime/GC/RestartEEStart PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=2; ClrInstanceID=8; 
+EVENT 11,608.709: Microsoft-Windows-DotNETRuntime/GC/RestartEEStop PID=179596; TID=168672; PName=Process(179596); ProceNum=4; DataLen=2; ClrInstanceID=8; 
+EVENT 11,608.761: Microsoft-Windows-DotNETRuntime/GC/FinalizersStart PID=179596; TID=177072; PName=Process(179596); ProceNum=7; DataLen=2; ClrInstanceID=8; 
+EVENT 11,608.782: Microsoft-Windows-DotNETRuntime/GC/FinalizeObject PID=179596; TID=177072; PName=Process(179596); ProceNum=7; DataLen=18; TypeName=; ObjectID=0x1b0f3015020; TypeID=0x7ffb487311c0; ClrInstanceID=8; 
+EVENT 11,608.884: Microsoft-Windows-DotNETRuntime/GC/FinalizeObject PID=179596; TID=177072; PName=Process(179596); ProceNum=7; DataLen=18; TypeName=; ObjectID=0x1b0f30155b8; TypeID=0x7ffb487311c0; ClrInstanceID=8; 
+EVENT 11,608.885: Microsoft-Windows-DotNETRuntime/GC/FinalizeObject PID=179596; TID=177072; PName=Process(179596); ProceNum=7; DataLen=18; TypeName=; ObjectID=0x1b0f3015b58; TypeID=0x7ffb487311c0; ClrInstanceID=8; 
+EVENT 11,608.887: Microsoft-Windows-DotNETRuntime/GC/FinalizeObject PID=179596; TID=177072; PName=Process(179596); ProceNum=7; DataLen=18; TypeName=; ObjectID=0x1b0f30160f8; TypeID=0x7ffb487311c0; ClrInstanceID=8; 
+EVENT 11,608.888: Microsoft-Windows-DotNETRuntime/GC/FinalizeObject PID=179596; TID=177072; PName=Process(179596); ProceNum=7; DataLen=18; TypeName=; ObjectID=0x1b0f30166a0; TypeID=0x7ffb487311c0; ClrInstanceID=8; 
+EVENT 11,608.890: Microsoft-Windows-DotNETRuntime/GC/FinalizersStop PID=179596; TID=177072; PName=Process(179596); ProceNum=7; DataLen=6; Count=6; ClrInstanceID=8; 
+EVENT 11,608.894: Microsoft-Windows-DotNETRuntime/GC/FinalizersStart PID=179596; TID=177072; PName=Process(179596); ProceNum=7; DataLen=2; ClrInstanceID=8; 
+EVENT 11,608.895: Microsoft-Windows-DotNETRuntime/GC/FinalizersStop PID=179596; TID=177072; PName=Process(179596); ProceNum=7; DataLen=6; Count=0; ClrInstanceID=8; 
+COUNT Microsoft-Windows-DotNETRuntime/GC/AllocationTick:12
+COUNT Microsoft-Windows-DotNETRuntime/GC/CreateSegment:7
+COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizeObject:6
+COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizersStart:3
+COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizersStop:3
+COUNT Microsoft-Windows-DotNETRuntime/GC/FitBucketInfo:1
+COUNT Microsoft-Windows-DotNETRuntime/GC/GlobalHeapHistory:2
+COUNT Microsoft-Windows-DotNETRuntime/GC/HeapStats:2
+COUNT Microsoft-Windows-DotNETRuntime/GC/LOHCompact:1
+COUNT Microsoft-Windows-DotNETRuntime/GC/MarkWithType:13
+COUNT Microsoft-Windows-DotNETRuntime/GC/PerHeapHistory:2
+COUNT Microsoft-Windows-DotNETRuntime/GC/PinObjectAtGCTime:2
+COUNT Microsoft-Windows-DotNETRuntime/GC/RestartEEStart:2
+COUNT Microsoft-Windows-DotNETRuntime/GC/RestartEEStop:2
+COUNT Microsoft-Windows-DotNETRuntime/GC/Start:2
+COUNT Microsoft-Windows-DotNETRuntime/GC/Stop:2
+COUNT Microsoft-Windows-DotNETRuntime/GC/SuspendEEStart:2
+COUNT Microsoft-Windows-DotNETRuntime/GC/SuspendEEStop:2
+COUNT Microsoft-Windows-DotNETRuntime/GC/Triggered:2
+COUNT Microsoft-Windows-DotNETRuntime/Runtime/Start:1
+COUNT Windows Kernel/EventTrace:1

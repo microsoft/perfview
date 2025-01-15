@@ -1,16 +1,10 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 /* README FIRST */
 // Until Windows 8, kernel events can only be turned on in a session called 'NT Kernel Logger' and no
@@ -38,7 +32,7 @@ namespace TraceEventSamples
         /// <summary>
         /// Where all the output goes.  
         /// </summary>
-        static TextWriter Out = AllSamples.Out;
+        private static TextWriter Out = AllSamples.Out;
 
         public static void Run()
         {
@@ -51,7 +45,7 @@ namespace TraceEventSamples
         /// <summary>
         /// Turning on providers and creating files
         /// </summary>
-        static void DataCollection(string dataFileName)
+        private static void DataCollection(string dataFileName)
         {
             Out.WriteLine("Collecting 10 seconds of kernel and CLR events to a file, and then printing.");
             Out.WriteLine();
@@ -72,9 +66,9 @@ namespace TraceEventSamples
             using (var kernelSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName, kernelDataFileName))
             {
                 // Set up Ctrl-C to stop both user mode and kernel mode sessions
-                Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs cancelArgs)
+                Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs cancelArgs)
                 {
-                    Out.WriteLine("Insuring all ETW sessions are stopped.");
+                    Out.WriteLine("Ensuring all ETW sessions are stopped.");
                     kernelSession.Stop(true);         // true means don't throw on error
                     userSession.Stop(true);           // true means don't throw on error
                     // Since we don't cancel the Ctrl-C we will terminate the process as normal for Ctrl-C
@@ -100,7 +94,7 @@ namespace TraceEventSamples
                 Thread.Sleep(10000);
 
                 Out.WriteLine("Stopping sessions");
-            }    // Using clauses will insure that session are disposed (and thus stopped) before Main returns.  
+            }    // Using clauses will ensure that session are disposed (and thus stopped) before Main returns.  
 
             Out.WriteLine("Merging the raw files into a single '{0}' file.", dataFileName);
             TraceEventSession.MergeInPlace(dataFileName, Out);
@@ -110,13 +104,15 @@ namespace TraceEventSamples
         /// <summary>
         /// Processing the data in a particular file.  
         /// </summary>
-        static void DataProcessing(string dataFileName)
+        private static void DataProcessing(string dataFileName)
         {
             Out.WriteLine("Opening the output file and printing the results.");
             using (var source = new ETWTraceEventSource(dataFileName))
             {
                 if (source.EventsLost != 0)
+                {
                     Out.WriteLine("WARNING: there were {0} lost events", source.EventsLost);
+                }
 
                 // Set up callbacks to 
                 source.Clr.All += Print;
@@ -158,19 +154,25 @@ namespace TraceEventSamples
         /// lock any read-write data you access.   It turns out Out.Writeline is already thread safe so
         /// there is nothing I have to do in this case. 
         /// </summary>
-        static void Print(TraceEvent data)
+        private static void Print(TraceEvent data)
         {
             // There are a lot of data collection start on entry that I don't want to see (but often they are quite handy
             if (data.Opcode == TraceEventOpcode.DataCollectionStart || data.Opcode == TraceEventOpcode.DataCollectionStop)
+            {
                 return;
+            }
 
             // Merging inject some 'symbol' events that are not that interesting so we ignore those too.  
             if (data.ProviderGuid == SymbolTraceEventParser.ProviderGuid)
+            {
                 return;
+            }
 
             // To avoid 'rundown' events that happen in the beginning and end of the trace filter out things during those times
             if (data.TimeStampRelativeMSec < 1000 || 9000 < data.TimeStampRelativeMSec)
+            {
                 return;
+            }
 
             Out.WriteLine(data.ToString());
         }

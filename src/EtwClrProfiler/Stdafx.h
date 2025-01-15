@@ -6,6 +6,9 @@
 
 #include <assert.h>
 
+// Discover banned API usage
+#include "banned.h"
+
 // Generic logging 
 #include "Logger.h"
 

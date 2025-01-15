@@ -1,7 +1,5 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.IO;
 using System.Reflection;
-using System.IO;
 
 public class ResourceUtilities
 {
@@ -13,7 +11,9 @@ public class ResourceUtilities
     {
         Stream sourceStream = sourceAssembly.GetManifestResourceStream(resourceName);
         if (sourceStream == null)
+        {
             return false;
+        }
 
         FileStream targetStream = File.Open(targetFileName, FileMode.Create);
         StreamUtilities.CopyStream(sourceStream, targetStream);

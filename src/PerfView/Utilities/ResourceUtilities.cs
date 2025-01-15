@@ -1,9 +1,6 @@
-﻿using System;
-using System.Diagnostics;
-using System.Reflection;
+﻿using Microsoft.Diagnostics.Utilities;
 using System.IO;
-using Utilities;
-using Microsoft.Diagnostics.Utilities;
+using System.Reflection;
 
 namespace PerfView
 {
@@ -17,7 +14,9 @@ namespace PerfView
         {
             Stream sourceStream = sourceAssembly.GetManifestResourceStream(resourceName);
             if (sourceStream == null)
+            {
                 return false;
+            }
 
             var dir = Path.GetDirectoryName(targetFileName);
             Directory.CreateDirectory(dir);     // Create directory if needed.  

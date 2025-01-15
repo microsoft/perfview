@@ -1,9 +1,9 @@
-﻿using System;
-using Microsoft.Diagnostics.Tracing.Parsers;
+﻿using Microsoft.Diagnostics.Tracing.Parsers;
+using System;
 using System.Diagnostics.Tracing;
 
 [EventSource(Name = "PerfView")]
-class PerfViewLogger : System.Diagnostics.Tracing.EventSource
+internal class PerfViewLogger : System.Diagnostics.Tracing.EventSource
 {
     [Event(1)]
     public void Mark(string message) { WriteEvent(1, message); }
@@ -63,14 +63,20 @@ class PerfViewLogger : System.Diagnostics.Tracing.EventSource
         var now = DateTime.UtcNow;
         int startTimeRelativeMSec = 0;
         if (StartTime.Ticks != 0)
+        {
             startTimeRelativeMSec = (int)(now - StartTime).TotalMilliseconds;
+        }
+
         int stopTimeRelativeMSec = 0;
         if (StopTime.Ticks != 0)
+        {
             stopTimeRelativeMSec = (int)(now - StopTime).TotalMilliseconds;
+        }
+
         StartAndStopTimes(startTimeRelativeMSec, stopTimeRelativeMSec);
     }
     [Event(17)]
-    public void CpuCountersConfigured(string profileSourceName, int profileSourceCount) { WriteEvent(17, profileSourceName, profileSourceCount); }
+    public void CpuCounterIntervalSetting(string profileSourceName, int profileSourceCount, int profileSourceID) { WriteEvent(17, profileSourceName, profileSourceCount, profileSourceID); }
     /// <summary>
     /// Logged at consistent intervals so we can see where circular buffering starts.  
     /// </summary>
@@ -79,7 +85,7 @@ class PerfViewLogger : System.Diagnostics.Tracing.EventSource
     [Event(19)]
     public void StopReason(string message) { WriteEvent(19, message); }
     [Event(20)]
-    public void Unused1() { WriteEvent(20); } 
+    public void Unused1() { WriteEvent(20); }
     [Event(21)]
     public void Unused2() { WriteEvent(21); }
     [Event(22)]
@@ -93,6 +99,8 @@ class PerfViewLogger : System.Diagnostics.Tracing.EventSource
     { WriteEvent(25, eventTime, processID, threadID, processName, eventName, durationMSec); }
     [Event(26)]
     public void StopTriggerDebugMessage(DateTime eventTime, string message) { WriteEvent(26, eventTime, message); }
+    [Event(27)]
+    public void RuntimeVersion(string path, string version) { WriteEvent(27, path, version); }
     public class Tasks
     {
         public const EventTask Tracing = (EventTask)1;

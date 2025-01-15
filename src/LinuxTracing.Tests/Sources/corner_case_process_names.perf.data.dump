@@ -1,0 +1,29 @@
+﻿6	0/0		[000] 0.0:			1 event_name: event_properties
+	address symbol (module)
+	address symbol2 (module2)
+	address main (main)
+
+77	1/1		[000] 0.0:			1 event_name: event_properties
+	address symbol3 (module3)
+	address symbol4 (module4)
+	address main (main)
+
+    2/2		[000] 0.0:			1 event_name: event_properties
+	address symbol5 (module5)
+	address symbol6 (module6)
+	address main (main)
+
+k/2    3/3		[000] 0.0:			1 event_name: event_properties
+	address symbol7 (module7)
+	address symbol8 (module8)
+	address main (main)
+
+k/[2]  4/4		[000] 0.0:			1 event_name: event_properties
+	address symbol9  (module9)
+	address symbol10 (module10)
+	address main (main)
+
+k:2    5/5		[000] 0.0:			1 event_name: event_properties
+	address symbol11 (module11)
+	address symbol12 (module12)
+	address main (main)

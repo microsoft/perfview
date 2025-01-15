@@ -2,7 +2,8 @@ namespace System.IO.Compression2
 {
     using System.Diagnostics;
 
-    internal static class GZipConstants {
+    internal static class GZipConstants
+    {
         internal const int CompressionLevel_3 = 3;
         internal const int CompressionLevel_10 = 10;
 
@@ -17,7 +18,8 @@ namespace System.IO.Compression2
         internal const byte Xfl_MaxCompressionSlowestAlgorithm = 2;
     }
 
-    internal class GZipFormatter : IFileFormatWriter {
+    internal class GZipFormatter : IFileFormatWriter
+    {
 
         private byte[] headerBytes = new byte[] {
                 GZipConstants.ID1,      // ID1
@@ -26,9 +28,9 @@ namespace System.IO.Compression2
                 0,                      // FLG, no text, no crc, no extra, no name, no comment
 
                 // MTIME (Modification Time) - no time available
-                0,    
-                0, 
-                0, 
+                0,
+                0,
+                0,
                 0, 
 
                 // XFL
@@ -37,7 +39,7 @@ namespace System.IO.Compression2
                 GZipConstants.Xfl_FastestAlgorithm,
 
                 // OS: 0 = FAT filesystem (MS-DOS, OS/2, NT/Win32)
-                0     
+                0
             };
 
         private uint _crc32;
@@ -45,27 +47,33 @@ namespace System.IO.Compression2
 
         internal GZipFormatter() : this(GZipConstants.CompressionLevel_3) { }
 
-        internal GZipFormatter(int compressionLevel) {
-            if (compressionLevel == GZipConstants.CompressionLevel_10) {
+        internal GZipFormatter(int compressionLevel)
+        {
+            if (compressionLevel == GZipConstants.CompressionLevel_10)
+            {
                 headerBytes[GZipConstants.Xfl_HeaderPos] = GZipConstants.Xfl_MaxCompressionSlowestAlgorithm;
             }
         }
 
-        public byte[] GetHeader() {
+        public byte[] GetHeader()
+        {
             return headerBytes;
         }
 
-        public void UpdateWithBytesRead(byte[] buffer, int offset, int bytesToCopy) {
+        public void UpdateWithBytesRead(byte[] buffer, int offset, int bytesToCopy)
+        {
             _crc32 = Crc32Helper.UpdateCrc32(_crc32, buffer, offset, bytesToCopy);
 
             long n = _inputStreamSize + (uint)bytesToCopy;
-            if (n > GZipConstants.FileLengthModulo) {
+            if (n > GZipConstants.FileLengthModulo)
+            {
                 long temp = Math.DivRem(n, GZipConstants.FileLengthModulo, out n);
             }
             _inputStreamSize = n;
         }
 
-        public byte[] GetFooter() {
+        public byte[] GetFooter()
+        {
             byte[] b = new byte[8];
 
             WriteUInt32(b, _crc32, 0);
@@ -75,7 +83,8 @@ namespace System.IO.Compression2
 
         }
 
-        internal void WriteUInt32(byte[] b, uint value, int startIndex) {
+        internal void WriteUInt32(byte[] b, uint value, int startIndex)
+        {
             b[startIndex] = (byte)value;
             b[startIndex + 1] = (byte)(value >> 8);
             b[startIndex + 2] = (byte)(value >> 16);
@@ -83,10 +92,11 @@ namespace System.IO.Compression2
         }
     }
 
-    internal static class Crc32Helper {
+    internal static class Crc32Helper
+    {
 
         // Table for CRC calculation
-        static readonly uint[] crcTable = new uint[256] {  
+        private static readonly uint[] crcTable = new uint[256] {
             0x00000000u, 0x77073096u, 0xee0e612cu, 0x990951bau, 0x076dc419u,
             0x706af48fu, 0xe963a535u, 0x9e6495a3u, 0x0edb8832u, 0x79dcb8a4u,
             0xe0d5e91eu, 0x97d2d988u, 0x09b64c2bu, 0x7eb17cbdu, 0xe7b82d07u,
@@ -143,13 +153,15 @@ namespace System.IO.Compression2
 
         // Calculate CRC based on the old CRC and the new bytes 
         // See RFC1952 for details.
-        static public uint UpdateCrc32(uint crc32, byte[] buffer, int offset, int length) {
+        public static uint UpdateCrc32(uint crc32, byte[] buffer, int offset, int length)
+        {
             Debug.Assert((buffer != null) && (offset >= 0) && (length >= 0)
                           && (offset <= buffer.Length - length), "check the caller");
 
             crc32 ^= 0xffffffffU;
 
-            while (--length >= 0) {
+            while (--length >= 0)
+            {
                 crc32 = crcTable[(crc32 ^ buffer[offset++]) & 0xFF] ^ (crc32 >> 8);
             }
 

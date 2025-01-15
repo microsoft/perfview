@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Microsoft.Diagnostics.Tracing.Ctf
 {
-    class CtfEventHeader
+    internal class CtfEventHeader
     {
         public CtfEvent Event;
         public ulong Timestamp;
@@ -30,24 +29,25 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
-    sealed class CtfReader : IDisposable
+    internal sealed class CtfReader : IDisposable
     {
         private Stream _stream;
         private byte[] _buffer = new byte[1024];
         private CtfMetadata _metadata;
         private CtfStream _streamDefinition;
-        CtfEventHeader _header = new CtfEventHeader();
+        private CtfEventHeader _header = new CtfEventHeader();
 
         private bool _eof;
         private GCHandle _handle;
         private int _bitOffset;
+        private long _bitOffsetBase;
         private int _bufferLength;
+        private int _bufferStartOffset;
         private bool _readHeader;
 
-        public int BufferLength { get { return _bufferLength; } }
-        public byte[] Buffer { get { return _buffer; } }
-        public IntPtr BufferPtr { get { return _handle.AddrOfPinnedObject(); } }
-        
+        public int BufferLength { get { return _bufferLength - _bufferStartOffset; } }
+        public IntPtr BufferPtr { get { return IntPtr.Add(_handle.AddrOfPinnedObject(), _bufferStartOffset); } }
+
         public CtfReader(Stream stream, CtfMetadata metadata, CtfStream ctfStream)
         {
             _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
@@ -63,7 +63,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Dispose(false);
         }
 
-        byte[] ReallocateBuffer(int size)
+        private byte[] ReallocateBuffer(int size)
         {
             Debug.Assert(_buffer.Length < size);
 
@@ -88,7 +88,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             CtfInteger extendedId = (CtfInteger)extended.GetField("id").Type;
             CtfInteger extendedTimestamp = (CtfInteger)extended.GetField("timestamp").Type;
             CtfInteger compactTimestamp = (CtfInteger)((CtfStruct)v.GetVariant("compact").Type).GetField("timestamp").Type;
-            
+
             CtfInteger pid = null;
             CtfInteger tid = null;
             CtfArray processName = null;
@@ -97,8 +97,23 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             CtfStruct eventContext = _streamDefinition.EventContext;
             if (eventContext != null)
             {
-                pid = (CtfInteger)eventContext.GetField("_vpid")?.Type;
-                tid = (CtfInteger)eventContext.GetField("_vtid")?.Type;
+
+                if (_metadata.Environment.Domain == "kernel")
+                {
+                    pid = (CtfInteger)eventContext.GetField("_pid")?.Type;
+                    tid = (CtfInteger)eventContext.GetField("_tid")?.Type;
+                }
+                else if (_metadata.Environment.Domain == "ust")
+                {
+                    pid = (CtfInteger)eventContext.GetField("_vpid")?.Type;
+                    tid = (CtfInteger)eventContext.GetField("_vtid")?.Type;
+                }
+                else
+                {
+                    Debug.Fail("Other domains not supported.");
+                }
+
+
                 processName = (CtfArray)eventContext.GetField("_procname")?.Type;
 
                 // We only handle ascii process names, which seems to be the only thing lttng provides.
@@ -108,27 +123,32 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     Debug.Assert(processName.Type.GetSize() == 8);
 
                     if (processName.Type.GetSize() != 8)
+                    {
                         processName = null;
+                    }
                 }
             }
 
-            
+
             uint extendedIdValue = (uint)id.GetValue("extended").End;
 
             ulong lowMask = 0, highMask = 0, overflowBit = 0;
             ulong lastTimestamp = 0;
-            
+
             while (!_eof)
             {
                 if (_readHeader)
+                {
                     throw new InvalidOperationException("Must read an events data before reading the header again.");
+                }
 
                 _header.Clear();
                 ResetBuffer();
                 ReadStruct(header);
                 if (_eof)
+                {
                     break;
-                
+                }
 
                 ulong timestamp;
                 uint event_id = CtfInteger.ReadInt<uint>(id.Type, _buffer, id.BitOffset);
@@ -146,10 +166,10 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                         lowMask = overflowBit - 1;
                         highMask = ~lowMask;
                     }
-                    
+
                     ulong uint27timestamp = CtfInteger.ReadInt<ulong>(compactTimestamp, _buffer, compactTimestamp.BitOffset);
                     ulong prevLowerBits = lastTimestamp & lowMask;
-                    
+
                     if (prevLowerBits < uint27timestamp)
                     {
                         timestamp = (lastTimestamp & highMask) | uint27timestamp;
@@ -166,16 +186,20 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 CtfEvent evt = _streamDefinition.Events[(int)event_id];
                 _header.Event = evt;
                 _header.Timestamp = timestamp;
-                
+
                 if (eventContext != null)
                 {
                     ReadStruct(eventContext);
 
                     if (pid != null)
+                    {
                         _header.Pid = CtfInteger.ReadInt<int>(pid, _buffer, pid.BitOffset);
+                    }
 
                     if (tid != null)
+                    {
                         _header.Tid = CtfInteger.ReadInt<int>(tid, _buffer, tid.BitOffset);
+                    }
 
                     bool matches = true;
                     int processNameOffset = processName.BitOffset >> 3;
@@ -190,13 +214,19 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                         for (; len < processLen && _buffer[processNameOffset + len] != 0; len++)
                         {
                             if (len >= lastProcessName.Length)
+                            {
                                 matches = false;
+                            }
                             else
+                            {
                                 matches &= lastProcessName[len] == _buffer[processNameOffset + len];
+                            }
                         }
 
                         if (!matches || len != lastProcessName.Length)
+                        {
                             lastProcessName = Encoding.UTF8.GetString(_buffer, processName.BitOffset >> 3, len);
+                        }
                     }
 
                     _header.ProcessName = lastProcessName;
@@ -210,13 +240,17 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public void ResetBuffer()
         {
             _bitOffset = 0;
+            _bitOffsetBase = _stream.Position * 8;
             _bufferLength = 0;
+            _bufferStartOffset = 0;
         }
 
         internal void ReadEventIntoBuffer(CtfEvent evt)
         {
             if (!_readHeader)
+            {
                 throw new InvalidOperationException("Must read an event's header before reading an event's data.");
+            }
 
             if (evt.IsPacked)
             {
@@ -242,13 +276,15 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             ResetBuffer();
             ReadBits(8 * len);
         }
-        
+
         public void ReadStruct(CtfStruct strct)
         {
             var fields = strct.Fields;
 
             for (int i = 0; i < fields.Length; i++)
+            {
                 ReadTypeIntoBuffer(strct, fields[i].Type);
+            }
         }
 
         public void ReadTypeIntoBuffer(CtfStruct context, CtfMetadataType type)
@@ -284,7 +320,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     if (elemSize == CtfEvent.SizeIndeterminate)
                     {
                         for (int j = 0; j < len; j++)
+                        {
                             ReadTypeIntoBuffer(null, array.Type);
+                        }
                     }
                     else
                     {
@@ -316,7 +354,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     if (ascii)
                     {
                         while (_buffer[offset++] != 0)
+                        {
                             ReadBits(8);
+                        }
                     }
                     else
                     {
@@ -350,7 +390,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     int bufferLen = (_bitOffset >> 3) - startOffset;
 
                     Encoding encoding = ascii ? Encoding.ASCII : Encoding.UTF8;
-                    
+
                     byte[] newArr = Encoding.Convert(encoding, Encoding.Unicode, _buffer, startOffset, bufferLen);
                     ((CtfString)type).Length = bufferLen;
 
@@ -363,7 +403,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     System.Buffer.BlockCopy(newArr, 0, _buffer, startOffset, newArr.Length);
                     _bufferLength = startOffset + newArr.Length;
                     _bitOffset = _bufferLength * 8;
-                    
+
                     break;
 
 
@@ -388,7 +428,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     throw new InvalidOperationException();
             }
         }
-        
+
         #region IDisposable
         public void Dispose()
         {
@@ -396,13 +436,17 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             GC.SuppressFinalize(this);
         }
 
-        void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing)
+            {
                 _stream.Dispose();
+            }
 
             if (_handle.IsAllocated)
+            {
                 _handle.Free();
+            }
         }
         #endregion
 
@@ -411,11 +455,20 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Debug.Assert(bits > 0);
 
             if (bits == 1)
+            {
                 return;
+            }
 
-            int amount = (int)(IntHelpers.AlignUp(_bitOffset, bits) - _bitOffset);
+            long offset = _bitOffsetBase + _bitOffset;
+            int amount = (int)(IntHelpers.AlignUp(offset, bits) - offset);
             if (amount != 0)
+            {
+                if (_bitOffset == 0)
+                {
+                    _bufferStartOffset = amount / 8;
+                }
                 ReadBits(amount);
+            }
         }
 
         private int ReadBits(int bits)
@@ -440,10 +493,14 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Debug.Assert(count >= 0);
 
             if (_eof)
+            {
                 return;
+            }
 
             if (count == 0)
+            {
                 return;
+            }
 
             if (offset + count > _buffer.Length)
             {
@@ -451,23 +508,29 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 System.Buffer.BlockCopy(buffer, 0, _buffer, 0, offset);
             }
 
-
             if (count == 1)
             {
                 int value = _stream.ReadByte();
                 if (value != -1)
+                {
                     _buffer[_bufferLength++] = (byte)value;
+                }
                 else
+                {
                     _eof = true;
+                }
             }
             else
             {
-
                 int read = _stream.Read(_buffer, offset, count);
                 if (read == count)
+                {
                     _bufferLength = offset + count;
+                }
                 else
+                {
                     _eof = true;
+                }
             }
         }
     }

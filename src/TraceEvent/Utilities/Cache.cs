@@ -1,15 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Utilities
+namespace Microsoft.Diagnostics.Utilities
 {
     /// <summary>
-    /// A finite cache based with a least reciently used algorithm for replacement.   
-    /// It is meant to be fast (fast as a hashtable), and space efficient (not much
+    /// A finite cache based with a least recently used algorithm for replacement.   
+    /// It is meant to be fast (fast as a hash table), and space efficient (not much
     /// over the MaxEntry key-value pairs are stored.  (only 8 bytes per entry additional).  
     /// 
-    /// After reaching MaxEntry entries.  It uses a roughtly least-reciently used
+    /// After reaching MaxEntry entries.  It uses a roughly least-recently used
     /// algorithm to pick a entry to recycle.    To stay efficient it only searches
     /// a finite time (up to 5 entries) for a entry that is older than 1/2 of the
     /// entries in the table.  
@@ -20,7 +19,7 @@ namespace Utilities
 #if UTILITIES_PUBLIC
     public 
 #endif
-    class Cache<K, T> where T : class where K : IEquatable<K>
+    internal class Cache<K, T> where T : class where K : IEquatable<K>
     {
         /// <summary>
         /// maxEntries currently is only set in the constructor.   Thus this is a finite sized cache
@@ -30,9 +29,11 @@ namespace Utilities
         /// <param name="maxEntries"></param>
         public Cache(int maxEntries)
         {
-            // We use ushorts in the implemenation, so make sure we are in the regime that we can represent.  
+            // We use ushorts in the implementation, so make sure we are in the regime that we can represent.  
             if (maxEntries > 0xFFFE)
+            {
                 maxEntries = 0xFFFE;
+            }
 
             // The Hash table is only ushorts, so it is OK to have a bigger table.   
             var hashEntries = maxEntries * 2 + 1;
@@ -48,8 +49,7 @@ namespace Utilities
         /// </summary>
         public T Get(K key)
         {
-            T retVal;
-            TryGet(key, out retVal);
+            TryGet(key, out T retVal);
             return retVal;
         }
 
@@ -62,22 +62,27 @@ namespace Utilities
             uint tableIndex = (uint)((uint)hash % (uint)m_hashTable.Length);
             int entryIndex = m_hashTable[tableIndex];
             int entryHash = (hash ^ (hash >> 16)) & HashMask;
-            for (;;)
+            for (; ; )
             {
                 if (entryIndex == End)
                 {
-                    valueRet = default(T);
+                    valueRet = default;
                     return false;
                 }
+
                 CacheEntry entry = m_entries[entryIndex];
                 if (entry.Hash == entryHash && entry.Key.Equals(key))
                 {
-                    // Update the age of the entry (to allow pseudo-least-reciently used recycling)
+                    // Update the age of the entry (to allow pseudo-least-recently used recycling)
                     if (entry.Age != m_curAge)
+                    {
                         UpdateAge(ref m_entries[entryIndex]);
+                    }
+
                     valueRet = entry.Value;
                     return true;
                 }
+
                 entryIndex = entry.Next;
             }
         }
@@ -99,31 +104,34 @@ namespace Utilities
                 Value = value,
                 Next = m_hashTable[tableIndex]
             };
+
             UpdateAge(ref m_entries[entryIndex]);
             m_hashTable[tableIndex] = entryIndex;
         }
 
         /// <summary>
-        /// Remvoves all entries in the cache.  
+        /// Removes all entries in the cache.  
         /// </summary>
         public void Clear()
         {
-            // Intialize the has table to be emtpy (pointers pointing to 'End')
+            // Initialize the has table to be empty (pointers pointing to 'End')
             for (int i = 0; i < m_hashTable.Length; i++)
+            {
                 m_hashTable[i] = End;
+            }
 
             // Null out values so that we release the memory.   
             for (int i = 0; i < m_entries.Length; i++)
             {
-                m_entries[i].Key = default(K);
-                m_entries[i].Value = null;
+                ClearEntry(ref m_entries[i]);
             }
+
             // indicate the free entries. 
             m_freeEntries = (ushort)m_entries.Length;
         }
 
         /// <summary>
-        /// Sets the maxiumum number of key-value pairs the cache will keep.  (after that old ones are remvoed). 
+        /// Sets the maximum number of key-value pairs the cache will keep.  (after that old ones are removed). 
         /// </summary>
         public int MaxEntries
         {
@@ -143,57 +151,85 @@ namespace Utilities
             }
         }
 
+        /// <summary>
+        /// Clear <see cref="CacheEntry.Key"/> and <see cref="CacheEntry.Value"/>,
+        /// disposing the old <see cref="CacheEntry.Value"/> if necessary.
+        /// This should be called when removing an entry from the cache to ensure
+        /// that the value is disposed.
+        /// </summary>
+        /// <param name="entry">The entry being removed from the cache.</param>
+        private static void ClearEntry(ref CacheEntry entry)
+        {
+            entry.Key = default;
+            (entry.Value as IDisposable)?.Dispose();
+            entry.Value = null;
+        }
+
         // Finds an free entry in the table and returns the index to it.  
         private ushort GetFreeEntry()
         {
             // Easy case, we still have some from the last Clear() operation.  
             if (0 < m_freeEntries)
+            {
                 return --m_freeEntries;
+            }
 
             // Find an old entry to recycle.  
             int tries = 0;
-            for (;;)
+            for (; ; )
             {
                 // Continue the scan where we left off and simply free the next non-empty
                 // hash chain we encounter.  
                 ushort cur = m_hashTable[m_freeScan];
                 ushort prev = End;
-                for (;;)
+                for (; ; )
                 {
                     if (cur == End)
+                    {
                         break;
+                    }
 
                     // Look for an older age (0 means current age, 1 means
-                    // it is in the older epoc.  After a number of trials we simply
-                    // steal one, and the unlucky entry gets evicited 'unfairly'. 
+                    // it is in the older epoch.  After a number of trials we simply
+                    // steal one, and the unlucky entry gets evicted 'unfairly'. 
                     // We don't care about wrap around as that is rare and it just
-                    // means that it has to wait until the next epoc to die.  
+                    // means that it has to wait until the next epoch to die.  
                     int age = (m_curAge - m_entries[cur].Age) & AgeMask;
                     if (age > 1 || tries >= 5)
                     {
                         // Remove cur 
                         if (prev == End)
+                        {
                             m_hashTable[m_freeScan] = m_entries[cur].Next;
+                        }
                         else
+                        {
                             m_entries[prev].Next = m_entries[cur].Next;
+                        }
+
+                        ClearEntry(ref m_entries[cur]);
 
                         // Note that because we don't advance m_freeScan, we will
                         // scan the elements in the front of this chain again but
                         // that is OK.  
                         return cur;
                     }
+
                     tries++;
                     prev = cur;
                     cur = m_entries[cur].Next;
                 }
+
                 m_freeScan++;
                 if (m_freeScan >= m_hashTable.Length)
+                {
                     m_freeScan = 0;
+                }
             }
         }
 
         // Holds a entry in our open hash table.  
-        struct CacheEntry
+        private struct CacheEntry
         {
             // This field has to fit in HashMask (13 bits)
             public int Hash             // the hash associated with Value
@@ -215,7 +251,7 @@ namespace Utilities
             // This field has to fit in AgeMask (3 bits)
             public int Age              // a number that represents the last access (see GetFreeEntry)
             {
-                get { return (int) (((uint) HashAge) >> HashBits); }
+                get { return (int)(((uint)HashAge) >> HashBits); }
                 set
                 {
 #if DEBUG
@@ -241,61 +277,27 @@ namespace Utilities
             #endregion 
         }
 
-#if false
-        public override string ToString()
-        {
-            System.IO.StringWriter writer = new System.IO.StringWriter();
-
-            writer.WriteLine("Cache {");
-            writer.WriteLine(" MaxEntries: {0}", MaxEntries);
-            writer.WriteLine(" CurAge: {0}", m_curAge);
-            writer.WriteLine(" EntriesInCurrentAge: {0}", m_entriesInCurAge);
-            writer.WriteLine(" FreeScan: {0}", m_freeScan);
-            writer.WriteLine(" FreeEntries: {0}", m_freeEntries);
-            writer.WriteLine(" values: [");
-            for (int i = 0; i < m_hashTable.Length; i++)
-            {
-                var entryIdx = m_hashTable[i];
-                while (entryIdx != End)
-                {
-                    writer.WriteLine("   Entry {");
-                    writer.WriteLine("      HashIdx: {0}", i);
-                    writer.WriteLine("      EntryIdx: {0}", entryIdx);
-                    writer.WriteLine("      Age: {0}", m_entries[entryIdx].Age);
-                    writer.WriteLine("      Hash: {0}", m_entries[entryIdx].Hash);
-                    writer.WriteLine("      Key: {0}", m_entries[entryIdx].Key.ToString());
-                    writer.WriteLine("      Value: {0}", m_entries[entryIdx].Value.ToString());
-                    writer.WriteLine("   },");
-                    entryIdx = m_entries[entryIdx].Next;
-                }
-            }
-
-            writer.WriteLine(" ],");
-            writer.WriteLine("}");
-            return writer.ToString();
-        }
-#endif
-
         /// <summary>
-        /// Reprenents a null pointer (end of a linked list)
+        /// Represents a null pointer (end of a linked list)
         /// </summary>
-        const ushort End = 0xFFFF;
-        const int HashBits = 13;           // 13 bits for the hash
-        const int HashMask = (1 << HashBits) - 1;
-        const int AgeMask = 0x7;            // 3 bits for the age
+        private const ushort End = 0xFFFF;
+        private const int HashBits = 13;           // 13 bits for the hash
+        private const int HashMask = (1 << HashBits) - 1;
+        private const int AgeMask = 0x7;            // 3 bits for the age
 
         // fields...
-        ushort[] m_hashTable;         // We hash here, which returns an index 
-        CacheEntry[] m_entries;       // which point here.  Effectively this is open hashing, but is more efficient than using pointers.  
-        ushort m_freeEntries;         // from 0 to m_freeEntries-1 are free. 
-        // when we run out of free entries, we look for old ones.  Remembers the m_hashTable entry were we are in this scan.
-        int m_freeScan;
+        private readonly ushort[] m_hashTable;  // We hash here, which returns an index 
+        private readonly CacheEntry[] m_entries;// which point here.  Effectively this is open hashing, but is more efficient than using pointers.  
+        private ushort m_freeEntries;           // from 0 to m_freeEntries-1 are free. 
+                                                // when we run out of free entries, we look for old ones.  Remembers the m_hashTable entry were we are in this scan.
+
+        private int m_freeScan;
 
         // Every time a entry is accessed, it is marked with the current age.   
         // Every time we have marked 1/2 the entries this way, we move on to a new age.
         // Thus we want to reclaim entries that are 'far away' from this current age.   See GetFreeEntry() for more.  
-        byte m_curAge;                // The age that represents 'now' 
-        ushort m_entriesInCurAge;     // The number of entries that have been marked as being used 'now'
+        private byte m_curAge;                // The age that represents 'now' 
+        private ushort m_entriesInCurAge;     // The number of entries that have been marked as being used 'now'
         #endregion
     }
 }

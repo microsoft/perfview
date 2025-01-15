@@ -16,7 +16,7 @@ namespace System.Collections.Generic
     /// </summary>
     [DebuggerDisplay("Count = {Count}")]
 #if GROWABLEARRAY_PUBLIC
-    public 
+    public
 #endif
     struct GrowableArray<T>
     {
@@ -46,7 +46,6 @@ namespace System.Collections.Generic
                 array[index] = value;
             }
         }
-
         /// <summary>
         /// The number of elements in the array
         /// </summary>
@@ -64,10 +63,14 @@ namespace System.Collections.Generic
                     {
                         // Null out the entries.  
                         for (int i = arrayLength; i < value; i++)
+                        {
                             array[i] = default(T);
+                        }
                     }
                     else
+                    {
                         Realloc(value);
+                    }
                 }
                 arrayLength = value;
             }
@@ -87,7 +90,10 @@ namespace System.Collections.Generic
         public void Add(T item)
         {
             if (array == null || arrayLength >= array.Length)
+            {
                 Realloc(0);
+            }
+
             array[arrayLength++] = item;
         }
         /// <summary>
@@ -97,7 +103,9 @@ namespace System.Collections.Generic
         public void AddRange(IEnumerable<T> items)
         {
             foreach (T item in items)
+            {
                 Add(item);
+            }
         }
         /// <summary>
         /// Insert 'item' directly at 'index', shifting all items >= index up.  'index' can be code:Count in
@@ -106,13 +114,20 @@ namespace System.Collections.Generic
         public void Insert(int index, T item)
         {
             if ((uint)index > (uint)arrayLength)
+            {
                 throw new IndexOutOfRangeException();
+            }
+
             if (array == null || arrayLength >= array.Length)
+            {
                 Realloc(0);
+            }
 
             // Shift everything up to make room. 
             for (int idx = arrayLength; index < idx; --idx)
+            {
                 array[idx] = array[idx - 1];
+            }
 
             // insert the element
             array[index] = item;
@@ -124,17 +139,27 @@ namespace System.Collections.Generic
         public void RemoveRange(int index, int count)
         {
             if (count == 0)
+            {
                 return;
+            }
+
             if (count < 0)
+            {
                 throw new ArgumentException("count can't be negative");
+            }
 
             if ((uint)index >= (uint)arrayLength)
+            {
                 throw new IndexOutOfRangeException();
+            }
+
             Debug.Assert(index + count <= arrayLength);     // If you violate this it does not hurt
 
             // Shift everything down. 
             for (int endIndex = index + count; endIndex < arrayLength; endIndex++)
+            {
                 array[index++] = array[endIndex];
+            }
 
             arrayLength = index;
         }
@@ -145,20 +170,28 @@ namespace System.Collections.Generic
         /// </summary>
         public void Set(int index, T value)
         {
+            GetRef(index) = value;
+        }
+
+        public ref T GetRef(int index)
+        {
             if (index >= Count)
                 Count = index + 1;
-
-            this[index] = value;
-        }        
+            return ref array[index];
+        }
         /// <summary>
         /// Gets the value at 'index'.   Never fails, will return 'default' if out of range.  
         /// </summary>
         public T Get(int index)
         {
             if ((uint)index < (uint)arrayLength)
+            {
                 return this[index];
+            }
             else
+            {
                 return default(T);
+            }
         }
 
         // Support for stack-like operations 
@@ -167,7 +200,7 @@ namespace System.Collections.Generic
         /// </summary>
         public bool Empty { get { return arrayLength == 0; } }
         /// <summary>
-        /// Remove the last element added and return it.   Will throw if there are no elements. 
+        /// Remove the last element added and return it. Will throw if there are no elements.
         /// </summary>
         /// <returns></returns>
         public T Pop()
@@ -192,7 +225,9 @@ namespace System.Collections.Generic
                 if (array.Length > arrayLength + maxWaste)
                 {
                     if (arrayLength == 0)
+                    {
                         array = null;
+                    }
                     else
                     {
                         T[] newArray = new T[arrayLength];
@@ -208,9 +243,9 @@ namespace System.Collections.Generic
         /// which has no capacity (and thus will cause growth on the first addition).
         /// This method allows you to lazily set the compacity of your GrowableArray by
         /// testing if it is of EmtpyCapacity, and if so set it to some useful capacity.
-        /// This avoids unecessary reallocs to get to a reasonable capacity.   
+        /// This avoids unnecessary reallocs to get to a reasonable capacity.   
         /// </summary>
-        public bool EmptyCapacity { get { return array == null; } } 
+        public bool EmptyCapacity { get { return array == null; } }
 
         /// <summary>
         /// A string representing the array.   Only intended for debugging.  
@@ -221,7 +256,10 @@ namespace System.Collections.Generic
             StringBuilder sb = new StringBuilder();
             sb.Append("GrowableArray(Count=").Append(Count).Append(", [").AppendLine();
             for (int i = 0; i < Count; i++)
+            {
                 sb.Append("  ").Append(this[i].ToString()).AppendLine();
+            }
+
             sb.Append("  ])");
             return sb.ToString();
         }
@@ -254,14 +292,19 @@ namespace System.Collections.Generic
                     {
                         lastLowCompare = compareResult; // remember this result, as it indicates a successful match. 
                         if (mid == low)
+                        {
                             break;
+                        }
+
                         low = mid;
                     }
                     else                                // key < array[mid], move high down 
                     {
                         high = mid;
                         if (mid == low)
+                        {
                             break;
+                        }
                     }
 
                     // Note that if compareResults == 0, we don't return the match eagerly because there could be
@@ -289,7 +332,9 @@ namespace System.Collections.Generic
         {
             Debug.Assert(index + count <= arrayLength);
             if (count > 0)
+            {
                 Array.Sort<T>(array, index, count, new FunctorComparer<T>(comparison));
+            }
         }
         /// <summary>
         /// Sort the whole array using 'comparison' in ascending order
@@ -297,7 +342,9 @@ namespace System.Collections.Generic
         public void Sort(Comparison<T> comparison)
         {
             if (array != null)
+            {
                 Array.Sort<T>(array, 0, arrayLength, new FunctorComparer<T>(comparison));
+            }
         }
 
         /// <summary>
@@ -310,7 +357,10 @@ namespace System.Collections.Generic
             ret.Count = Count;
 
             for (int i = 0; i < Count; i++)
+            {
                 ret[i] = func(array[i]);
+            }
+
             return ret;
         }
 
@@ -331,7 +381,6 @@ namespace System.Collections.Generic
             }
             return false;
         }
-
         /// <summary>
         /// Returns the underlying array.  Should not be used most of the time!
         /// </summary>
@@ -342,22 +391,34 @@ namespace System.Collections.Generic
             if (array == null)
             {
                 if (minSize < 16)
+                {
                     minSize = 16;
+                }
+
                 array = new T[minSize];
             }
             else
             {
-                int expandSize = array.Length * 3 / 2 + 8;
+                long expandSize = (long)array.Length * 3 / 2 + 8;
+                if (expandSize > int.MaxValue)
+                {
+                    if (array.Length == int.MaxValue)
+                        throw new NotSupportedException("Array cannot have more than int.MaxValue elements.");
+
+                    expandSize = int.MaxValue;
+                }
+
                 if (minSize < expandSize)
-                    minSize = expandSize;
-                T[] newArray = new T[minSize];
-                Array.Copy(array, newArray, arrayLength);
-                array = newArray;
+                {
+                    minSize = (int)expandSize;
+                }
+
+                Array.Resize(ref array, minSize);
             }
         }
 
-        T[] array;
-        int arrayLength;
+        private T[] array;
+        private int arrayLength;
         #endregion
 
         #region TESTING
@@ -396,7 +457,7 @@ namespace System.Collections.Generic
         lastSuccesses = TestBinarySearch(testArray);
         Debug.Assert(lastSuccesses == 11);
 
-        // We always get the last one when the equality comparision allows multiple items to match.  
+        // We always get the last one when the equality comparison allows multiple items to match.  
         for (float i = 0; i < 11; i += 1)
         {
             int index;
@@ -459,19 +520,11 @@ namespace System.Collections.Generic
                 end = growableArray.arrayLength;
                 array = growableArray.array;
             }
-            int cur;
-            int end;
-            T[] array;
+
+            private int cur;
+            private int end;
+            private T[] array;
             #endregion
         }
     }
-    #region private classes 
-    internal class FunctorComparer<T> : IComparer<T>
-    {
-        public FunctorComparer(Comparison<T> comparison) { this.comparison = comparison; }
-        public int Compare(T x, T y) { return comparison(x, y); }
-
-        private Comparison<T> comparison;
-    };
-    #endregion
 }

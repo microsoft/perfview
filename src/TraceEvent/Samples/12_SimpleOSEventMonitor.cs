@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using TraceEventSamples.Producer;
 
 /* README FIRST */
 // This program is a simple demo that demonstrates the RegisteredTraceEventParser to look at OS events
@@ -36,9 +35,9 @@ namespace TraceEventSamples
     /// The main program is the 'listener' that listens and processes the events that come from ANY 
     /// process that is generating Microsoft-Demos-SimpleMonitor events.  
     /// </summary>
-    class SimpleOSEventMonitor
+    internal class SimpleOSEventMonitor
     {
-        static TextWriter Out = AllSamples.Out;
+        private static TextWriter Out = AllSamples.Out;
 
         /// <summary>
         /// This is a demo of using TraceEvent to activate a 'real time' provider that is listening to 
@@ -100,7 +99,7 @@ namespace TraceEventSamples
                 // In this mode if a session already exists, it is stopped and the new one is created.   
                 // 
                 // Here we install the Control C handler.   It is OK if Dispose is called more than once.  
-                Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs e) { session.Dispose(); };
+                Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) { session.Dispose(); };
 
                 // To demonstrate non-trivial event manipulation, we calculate the time delta between 'MyFirstEvent and 'MySecondEvent'
                 // firstEventTimeMSec remembers all the 'MyFirstEvent' arrival times (indexed by their ID)  
@@ -114,7 +113,7 @@ namespace TraceEventSamples
                 // For debugging, and demo purposes, hook up a callback for every event that 'Dynamic' knows about (this is not EVERY
                 // event only those know about by RegisteredTraceEventParser).   However the 'UnhandledEvents' handler below will catch
                 // the other ones.
-                session.Source.Dynamic.All += delegate(TraceEvent data)
+                session.Source.Dynamic.All += delegate (TraceEvent data)
                 {
                     // ETW buffers events and only delivers them after buffering up for some amount of time.  Thus 
                     // there is a small delay of about 2-4 seconds between the timestamp on the event (which is very 
@@ -143,10 +142,12 @@ namespace TraceEventSamples
                 // Because this EventSource did not define any keywords, I can only turn on all events or none.  
                 var restarted = session.EnableProvider("Microsoft-Windows-Kernel-File");
                 if (restarted)      // Generally you don't bother with this warning, but for the demo we do. 
+                {
                     Out.WriteLine("The session {0} was already active, it has been restarted.", sessionName);
+                }
 
                 // Set up a timer to stop processing after monitoringTimeSec
-                var timer = new Timer(delegate(object state)
+                var timer = new Timer(delegate (object state)
                 {
                     Out.WriteLine("Stopped after {0} sec", monitoringTimeSec);
                     session.Source.StopProcessing();

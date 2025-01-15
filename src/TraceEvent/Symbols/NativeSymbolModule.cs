@@ -2,12 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using Utilities;
+using Microsoft.Diagnostics.Utilities;
 
 namespace Microsoft.Diagnostics.Symbols
 {
@@ -20,18 +21,31 @@ namespace Microsoft.Diagnostics.Symbols
     /// simply implement Windows PDBS here.   This can be factored out of this class when we 
     /// support other formats (e.g. Dwarf).
     /// 
-    /// To implmente support for Windows PDBs we use the Debug Interface Access (DIA).  See 
-    /// http://msdn.microsoft.com/en-us/library/x93ctkx8.aspx for more.   I have only exposed what
+    /// To implement support for Windows PDBs we use the Debug Interface Access (DIA).  See 
+    /// http://msdn.microsoft.com/library/x93ctkx8.aspx for more.   I have only exposed what
     /// I need, and the interface is quite large (and not super pretty).  
     /// </summary>
-    public unsafe class NativeSymbolModule : ManagedSymbolModule
+    public unsafe class NativeSymbolModule : ManagedSymbolModule, IDisposable
     {
+        /// <summary>
+        /// Returns the name of the type allocated for a given relative virtual address.
+        /// Returns null if the given rva does not match a known heap allocation site.
+        /// </summary>
+        public string GetTypeForHeapAllocationSite(uint rva)
+        {
+            ThrowIfDisposed();
+
+            return m_heapAllocationSites.Value.TryGetValue(rva, out var name) ? name : null;
+        }
+
         /// <summary>
         /// Finds a (method) symbolic name for a given relative virtual address of some code.  
         /// Returns an empty string if a name could not be found. 
         /// </summary>
         public string FindNameForRva(uint rva)
         {
+            ThrowIfDisposed();
+
             uint dummy = 0;
             return FindNameForRva(rva, ref dummy);
         }
@@ -42,9 +56,14 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public string FindNameForRva(uint rva, ref uint symbolStartRva)
         {
+            ThrowIfDisposed();
+
             System.Threading.Thread.Sleep(0);           // Allow cancellation.  
             if (m_symbolsByAddr == null)
+            {
                 return "";
+            }
+
             IDiaSymbol symbol = m_symbolsByAddr.symbolByRVA(rva);
             if (symbol == null)
             {
@@ -81,30 +100,33 @@ namespace Microsoft.Diagnostics.Symbols
                 string unmangled = null;
                 symbol.get_undecoratedNameEx(0x1000, out unmangled);
                 if (unmangled != null)
+                {
                     ret = unmangled;
+                }
 
                 if (ret.StartsWith("@"))
+                {
                     ret = ret.Substring(1);
-                if (ret.StartsWith("_"))
-                    ret = ret.Substring(1);
+                }
 
-#if false // TODO FIX NOW remove  
-                var m = Regex.Match(ret, @"(.*)@\d+$");
-                if (m.Success)
-                    ret = m.Groups[1].Value;
-                else
-                    Debug.WriteLine(string.Format("Warning: address 0x{0:x} symbol {1} has a mangled name.", rva, ret));
-#else
+                if (ret.StartsWith("_"))
+                {
+                    ret = ret.Substring(1);
+                }
+
                 var atIdx = ret.IndexOf('@');
                 if (0 < atIdx)
+                {
                     ret = ret.Substring(0, atIdx);
-#endif
+                }
             }
 
             // See if this is a NGEN mangled name, which is $#Assembly#Token suffix.  If so strip it off. 
             var dollarIdx = ret.LastIndexOf('$');
             if (0 <= dollarIdx && dollarIdx + 2 < ret.Length && ret[dollarIdx + 1] == '#' && 0 <= ret.IndexOf('#', dollarIdx + 2))
+            {
                 ret = ret.Substring(0, dollarIdx);
+            }
 
             // See if we have a Project N map that maps $_NN to a pre-merged assembly name 
             var mergedAssembliesMap = GetMergedAssembliesMap();
@@ -117,24 +139,35 @@ namespace Microsoft.Diagnostics.Symbols
                     prefixMatchFound = true;
                     var original = m.Groups[1].Value;
                     var moduleIndex = int.Parse(original);
-                    string fullAssemblyName;
-                    if (mergedAssembliesMap.TryGetValue(moduleIndex, out fullAssemblyName))
-                    {
-                        try
-                        {
-                            var assemblyName = new AssemblyName(fullAssemblyName);
-                            return assemblyName.Name + "!";
-                        }
-                        catch (Exception) { } // Catch all AssemlyName fails with ' in the name.   
-                    }
-                    return original;
+                    return GetAssemblyNameFromModuleIndex(mergedAssembliesMap, moduleIndex, original);
                 });
 
-                // corefx.dll does not have a tag.  TODO this feels like a hack!
+                // By default - .NET native compilers do not generate a $#_ prefix for the methods coming from 
+                // the assembly containing System.Object - the implicit module number is int.MaxValue
+
                 if (!prefixMatchFound)
-                    ret = "mscorlib!" + ret;
+                {
+                    ret = GetAssemblyNameFromModuleIndex(mergedAssembliesMap, int.MaxValue, String.Empty) + ret;
+                }
             }
+
             return ret;
+        }
+
+        private static string GetAssemblyNameFromModuleIndex(Dictionary<int, string> mergedAssembliesMap, int moduleIndex, string defaultValue)
+        {
+            string fullAssemblyName;
+            if (mergedAssembliesMap.TryGetValue(moduleIndex, out fullAssemblyName))
+            {
+                try
+                {
+                    var assemblyName = new AssemblyName(fullAssemblyName);
+                    return assemblyName.Name + "!";
+                }
+                catch (Exception) { } // Catch all AssemblyName fails with ' in the name.   
+            }
+
+            return defaultValue;
         }
 
         /// <summary>
@@ -153,7 +186,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// This overload of SourceLocationForRva like the one that takes only an RVA will return a source location
         /// if it can.   However this version has additional support for NGEN images.   In the case of NGEN images 
         /// for .NET V4.6.1 or later), the NGEN images can't convert all the way back to a source location, but they 
-        /// can convert the RVA back to IL artifacts (ilAssemblyName, methodMetadataToken, iloffset).  THese can then
+        /// can convert the RVA back to IL artifacts (ilAssemblyName, methodMetadataToken, iloffset).  These can then
         /// be used to look up the source line using the IL PDB.  
         /// 
         /// Thus if the return value from this is null, check to see if the ilAssemblyName is non-null, and if not 
@@ -161,6 +194,8 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public SourceLocation SourceLocationForRva(uint rva, out string ilAssemblyName, out uint methodMetadataToken, out int ilOffset)
         {
+            ThrowIfDisposed();
+
             ilAssemblyName = null;
             methodMetadataToken = 0;
             ilOffset = -1;
@@ -210,10 +245,15 @@ namespace Microsoft.Diagnostics.Symbols
                                 ilAssemblyName = Path.GetFileNameWithoutExtension(SymbolFilePath);
                                 // strip off the .ni if present
                                 if (ilAssemblyName.EndsWith(".ni", StringComparison.OrdinalIgnoreCase))
+                                {
                                     ilAssemblyName = ilAssemblyName.Substring(0, ilAssemblyName.Length - 3);
+                                }
                             }
                             else
+                            {
                                 ilAssemblyName = name.Substring(suffixIdx + 2, tokenIdx - (suffixIdx + 2));
+                            }
+
                             methodMetadataToken = (uint)token;
                             ilOffset = 0;           // If we don't find an IL offset, we 'guess' an ILOffset of 0
 
@@ -231,7 +271,10 @@ namespace Microsoft.Diagnostics.Symbols
                                 }
                                 ilOffset = (int)sourceLoc.lineNumber;
                                 if (ilOffset != 0xFEEFEE)
+                                {
                                     break;
+                                }
+
                                 m_reader.m_log.WriteLine("SourceLocationForRva: got illegal offset FEEFEE picking next offset.");
                                 ilOffset = 0;
                             }
@@ -250,9 +293,12 @@ namespace Microsoft.Diagnostics.Symbols
 
             var sourceFile = new MicrosoftPdbSourceFile(this, diaSrcFile);
             if (lineNum == 0xFEEFEE)
+            {
                 lineNum = 0;
-            var sourceLocation = new SourceLocation(sourceFile, lineNum);
-            m_reader.m_log.WriteLine("SourceLocationForRva: RVA {0:x} maps to line {1} file {2} ", rva, lineNum, sourceFile.BuildTimeFilePath);
+            }
+
+            var sourceLocation = new SourceLocation(sourceFile, (int)sourceLoc.lineNumber, (int)sourceLoc.lineNumberEnd, (int)sourceLoc.columnNumber, (int)sourceLoc.columnNumberEnd);
+            m_reader.m_log.WriteLine("SourceLocationForRva: RVA {0:x} maps to line ({1},{2}):({3},{4}) file {5} ", rva, sourceLocation.LineNumber, sourceLocation.ColumnNumber, sourceLocation.LineNumberEnd, sourceLocation.ColumnNumberEnd, sourceFile.BuildTimeFilePath);
             return sourceLocation;
         }
 
@@ -263,6 +309,8 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public override SourceLocation SourceLocationForManagedCode(uint methodMetadataToken, int ilOffset)
         {
+            ThrowIfDisposed();
+
             m_reader.m_log.WriteLine("SourceLocationForManaged: Looking up method token {0:x} ilOffset {1:x}", methodMetadataToken, ilOffset);
 
             IDiaSymbol methodSym;
@@ -302,29 +350,47 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             var sourceFile = new MicrosoftPdbSourceFile(this, sourceLoc.sourceFile);
-            int lineNum;
+            IDiaLineNumber lineNum = null;
+
             // FEEFEE is some sort of illegal line number that is returned some time,  It is better to ignore it.  
             // and take the next valid line
             for (; ; )
             {
-                lineNum = (int)sourceLoc.lineNumber;
-                if (lineNum != 0xFEEFEE)
+                lineNum = sourceLoc;
+                if (sourceLoc.lineNumber != 0xFEEFEE)
+                {
                     break;
-                lineNum = 0;
+                }
+
+                lineNum = null;
                 sourceLocs.Next(1, out sourceLoc, out fetchCount);
                 if (fetchCount == 0)
+                {
                     break;
+                }
             }
 
-            var sourceLocation = new SourceLocation(sourceFile, lineNum);
-            m_reader.m_log.WriteLine("SourceLocationForManaged: found source linenum {0} file {1}", lineNum, sourceFile.BuildTimeFilePath);
+            int lineBegin = lineNum != null ? (int)lineNum.lineNumber : 0;
+            int lineEnd = lineNum != null ? (int)lineNum.lineNumberEnd : 0;
+            int columnBegin = lineNum != null ? (int)lineNum.columnNumber : 0;
+            int columnEnd = lineNum != null ? (int)lineNum.columnNumberEnd : 0;
+
+            var sourceLocation = new SourceLocation(sourceFile, lineBegin, lineEnd, columnBegin, columnEnd);
+            m_reader.m_log.WriteLine("SourceLocationForManaged: found source linenum ({0},{1}):({2},{3}) file {4}", sourceLocation.LineNumber, sourceLocation.ColumnNumber, sourceLocation.LineNumberEnd, sourceLocation.ColumnNumberEnd, sourceFile.BuildTimeFilePath);
             return sourceLocation;
         }
 
         /// <summary>
         /// The symbol representing the module as a whole.  All global symbols are children of this symbol 
         /// </summary>
-        public Symbol GlobalSymbol { get { return new Symbol(this, m_session.globalScope); } }
+        public Symbol GlobalSymbol 
+        { 
+            get 
+            {
+                ThrowIfDisposed();
+                return new Symbol(this, m_session.globalScope); 
+            } 
+        }
 
 #if TEST_FIRST
         /// <summary>
@@ -332,6 +398,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public IEnumerable<SourceFile> AllSourceFiles()
         {
+            ThrowIfDisposed();
 
             IDiaEnumTables tables;
             m_session.getEnumTables(out tables);
@@ -365,13 +432,28 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// The a unique identifier that is used to relate the DLL and its PDB.   
         /// </summary>
-        public override Guid PdbGuid { get { return m_session.globalScope.guid; } }
+        public override Guid PdbGuid 
+        { 
+            get 
+            {
+                ThrowIfDisposed();
+                return m_session.globalScope.guid; 
+            } 
+        }
+
         /// <summary>
         /// Along with the PdbGuid, there is a small integer 
         /// call the age is also used to find the PDB (it represents the different 
         /// post link transformations the DLL has undergone).  
         /// </summary>
-        public override int PdbAge { get { return (int)m_session.globalScope.age; } }
+        public override int PdbAge 
+        { 
+            get 
+            {
+                ThrowIfDisposed();
+                return (int)m_session.globalScope.age; 
+            } 
+        }
 
         #region private
         /// <summary>
@@ -382,31 +464,34 @@ namespace Microsoft.Diagnostics.Symbols
         /// TODO We don't need this subclass.   We can have SourceFile simply a container
         /// that holds the BuildTimePath, hashType and hashValue.    The lookup of the
         /// source can then be put on NativeSymbolModule and called from SourceFile generically.  
-        /// This makes the different symbol files more simmilar and is a nice simplification.  
+        /// This makes the different symbol files more similar and is a nice simplification.  
         /// </summary>
         public class MicrosoftPdbSourceFile : SourceFile
         {
-            /// <summary>
-            /// If the source file is directly available on the web (that is there is a Url that 
-            /// can be used to fetch it with HTTP Get), then return that Url.   If no such publishing 
-            /// point exists this property will return null.   
-            /// </summary>
-            public override string Url
-            {
-                get
-                {
-                    string target = base.Url; // See if it is in sourceLink information.
-                    if (target != null)
-                        return target;
+            private const string OldSourceServerUrl = "http://vstfdevdiv.redmond.corp.microsoft.com:8080";
+            private const string NewSourceServerUrl = "https://vstfdevdiv";
 
-                    // Use srcsrv information 
-                    string command;
-                    GetSourceServerTargetAndCommand(out target, out command);
+            /// <inheritdoc/>
+            public override bool GetSourceLinkInfo(out string url, out string relativePath)
+            {
+                // See if it is in sourceLink information.
+                if (base.GetSourceLinkInfo(out url, out relativePath))
+                {
+                    return true;
+                }
+                else
+                {
+                    // Try to convert srcsrv information 
+                    GetSourceServerTargetAndCommand(out string target, out _);
 
                     if (!string.IsNullOrEmpty(target) && Uri.IsWellFormedUriString(target, UriKind.Absolute))
-                        return target;
-                    else
-                        return null;
+                    {
+                        url = target;
+                        relativePath = Path.GetFileName(this.BuildTimeFilePath);
+                        return true;
+                    }
+
+                    return false;
                 }
             }
 
@@ -436,7 +521,9 @@ namespace Microsoft.Diagnostics.Symbols
                 // Try getting the source from the source server using SourceLink information.  
                 var ret = base.GetSourceFromSrcServer();
                 if (ret != null)
+                {
                     return ret;
+                }
 
                 var cacheDir = _symbolModule.SymbolReader.SourceCacheDirectory;
 
@@ -454,7 +541,9 @@ namespace Microsoft.Diagnostics.Symbols
                             target = null;
                             var newTarget = Path.Combine(cacheDir, uri.AbsolutePath.TrimStart('/').Replace('/', '\\'));
                             if (_symbolModule.SymbolReader.GetPhysicalFileFromServer(uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped), uri.AbsolutePath, newTarget))
+                            {
                                 target = newTarget;
+                            }
 
                             if (target == null)
                             {
@@ -475,15 +564,8 @@ namespace Microsoft.Diagnostics.Symbols
                         var toolsDir = Path.GetDirectoryName(typeof(SourceFile).GetTypeInfo().Assembly.ManifestModule.FullyQualifiedName);
                         var archToolsDir = Path.Combine(toolsDir, NativeDlls.ProcessArchitectureDirectory);
 
-                        // Find the EXE to do the source server fetch.  We only support SD.exe and TF.exe.   
+                        // Find the EXE to do the source server fetch.  We only support TF.exe.   
                         string addToPath = null;
-                        if (fetchCmdStr.StartsWith("sd.exe ", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (!File.Exists(Path.Combine(archToolsDir, "sd.exe")))
-                                _log.WriteLine("WARNING: Could not find sd.exe that should have been deployed at {0}", archToolsDir);
-                            addToPath = archToolsDir;
-                        }
-                        else
                         if (fetchCmdStr.StartsWith("tf.exe ", StringComparison.OrdinalIgnoreCase))
                         {
                             var tfExe = Command.FindOnPath("tf.exe");
@@ -500,19 +582,28 @@ namespace Microsoft.Diagnostics.Symbols
                         }
                         else
                         {
-                            _log.WriteLine("Source Server command {0} is not recognized as safe (sd.exe or tf.exe), failing.", fetchCmdStr);
+                            _log.WriteLine("Source Server command {0} is not recognized as safe (tf.exe) command. Failing.", fetchCmdStr);
                             return null;
                         }
+
+                        // Update the source server URL if necessary.
+                        fetchCmdStr = fetchCmdStr.Replace(OldSourceServerUrl, NewSourceServerUrl);
+
                         Directory.CreateDirectory(Path.GetDirectoryName(target));
                         fetchCmdStr = "cmd /c " + fetchCmdStr;
                         var options = new CommandOptions().AddOutputStream(_log).AddNoThrow();
                         if (addToPath != null)
+                        {
                             options = options.AddEnvironmentVariable("PATH", addToPath + ";%PATH%");
+                        }
 
                         _log.WriteLine("Source Server command {0}", fetchCmdStr);
                         var fetchCmd = Command.Run(fetchCmdStr, options);
                         if (fetchCmd.ExitCode != 0)
+                        {
                             _log.WriteLine("Source Server command failed with exit code {0}", fetchCmd.ExitCode);
+                        }
+
                         if (File.Exists(target))
                         {
                             // If TF.exe command files it might still create an empty output file.   Fix that 
@@ -523,15 +614,24 @@ namespace Microsoft.Diagnostics.Symbols
                             }
                         }
                         else
+                        {
                             target = null;
+                        }
 
                         if (target == null)
+                        {
                             _log.WriteLine("Source Server command failed to produce the output file.");
+                        }
                         else
+                        {
                             _log.WriteLine("Source Server command succeeded creating {0}", target);
+                        }
                     }
                     else
+                    {
                         _log.WriteLine("Found an existing source server file {0}.", target);
+                    }
+
                     return target;
                 }
 
@@ -541,20 +641,39 @@ namespace Microsoft.Diagnostics.Symbols
 
 
             #region private
-            unsafe internal MicrosoftPdbSourceFile(NativeSymbolModule module, IDiaSourceFile sourceFile) : base(module)
+            internal unsafe MicrosoftPdbSourceFile(NativeSymbolModule module, IDiaSourceFile sourceFile) : base(module)
             {
                 BuildTimeFilePath = sourceFile.fileName;
 
-                // 0 No checksum present.
+                if (sourceFile.checksumType == 0)
+                {
+                    // If the checksum type is zero, this means either this is a non-C++ PDB, or there is no checksum info
+                    TryInitializeManagedChecksum(module);
+                }
+                else
+                {
+                    // Otherwise this is a C++ style PDB
+                    TryInitializeCppChecksum(sourceFile);
+                }
+            }
+
+            private void TryInitializeCppChecksum(IDiaSourceFile sourceFile)
+            {
                 // 1 CALG_MD5 checksum generated with the MD5 hashing algorithm.
                 // 2 CALG_SHA1 checksum generated with the SHA1 hashing algorithm.
                 // 3 checksum generated with the SHA256 hashing algorithm.
                 if (sourceFile.checksumType == 1)
-                    _hashAlgorithm = System.Security.Cryptography.MD5.Create();
+                {
+                    _hashAlgorithm = System.Security.Cryptography.MD5.Create(); // lgtm [cs/weak-crypto]
+                }
                 else if (sourceFile.checksumType == 2)
-                    _hashAlgorithm = System.Security.Cryptography.SHA1.Create();
+                {
+                    _hashAlgorithm = System.Security.Cryptography.SHA1.Create(); // lgtm [cs/weak-crypto]
+                }
                 else if (sourceFile.checksumType == 3)
+                {
                     _hashAlgorithm = System.Security.Cryptography.SHA256.Create();
+                }
 
                 if (_hashAlgorithm != null)
                 {
@@ -569,21 +688,76 @@ namespace Microsoft.Diagnostics.Symbols
 
                     uint bytesFetched;
                     fixed (byte* bufferPtr = _hash)
+                    {
                         sourceFile.get_checksum((uint)_hash.Length, out bytesFetched, out *bufferPtr);
+                    }
+
                     Debug.Assert(bytesFetched == _hash.Length);
+                }
+            }
+
+            private void TryInitializeManagedChecksum(NativeSymbolModule module)
+            {
+                try
+                {
+                    module.m_session.findInjectedSource(this.BuildTimeFilePath, out IDiaEnumInjectedSources injectedSources);
+                    if (injectedSources == null)
+                    {
+                        return;
+                    }
+
+                    injectedSources.Next(1, out IDiaInjectedSource injectedSource, out uint count);
+                    if (count != 1)
+                    {
+                        return;
+                    }
+
+                    SrcFormat srcFormat = new SrcFormat();
+                    int srcFormatSize = Marshal.SizeOf(typeof(SrcFormat));
+                    int srcFormatHeaderSize = Marshal.SizeOf(typeof(SrcFormatHeader));
+                    byte* pSrcFormat = (byte*)&srcFormat;
+                    injectedSource.get_source((uint)srcFormatSize, out uint sizeAvailable, out *pSrcFormat);
+
+                    if (sizeAvailable < srcFormatHeaderSize || sizeAvailable < srcFormat.Header.checkSumSize + srcFormatHeaderSize || srcFormatSize < srcFormat.Header.checkSumSize + srcFormatHeaderSize)
+                    {
+                        return;
+                    }
+
+                    if (srcFormat.Header.algorithmId == guidMD5)
+                    {
+                        _hashAlgorithm = System.Security.Cryptography.MD5.Create(); // lgtm [cs/weak-crypto]
+                    }
+                    else if (srcFormat.Header.algorithmId == guidSHA1)
+                    {
+                        _hashAlgorithm = System.Security.Cryptography.SHA1.Create(); // lgtm [cs/weak-crypto]
+                    }
+                    else if (srcFormat.Header.algorithmId == guidSHA256)
+                    {
+                        _hashAlgorithm = System.Security.Cryptography.SHA256.Create();
+                    }
+
+                    if (_hashAlgorithm != null)
+                    {
+                        _hash = new byte[srcFormat.Header.checkSumSize];
+                        Marshal.Copy((IntPtr)srcFormat.checksumBytes, _hash, startIndex: 0, length: _hash.Length);
+                    }
+                }
+                catch (COMException)
+                {
+                    // DIA API failed. Ignore.
                 }
             }
 
             /// <summary>
             /// Parse the 'srcsrv' stream in a PDB file and return the target for SourceFile
-            /// represented by the 'this' pointer.   This target is iether a ULR or a local file
+            /// represented by the 'this' pointer.   This target is either a ULR or a local file
             /// path.  
             /// 
             /// You can dump the srcsrv stream using a tool called pdbstr 
             ///     pdbstr -r -s:srcsrv -p:PDBPATH
             /// 
             /// The target in this stream is called SRCSRVTRG and there is another variable SRCSRVCMD
-            /// which represents the command to run to fetch the soruce into SRCSRVTRG
+            /// which represents the command to run to fetch the source into SRCSRVTRG
             /// 
             /// To form the target, the stream expect you to private a %targ% variable which is a directory
             /// prefix to tell where to put the source file being fetched.   If the source file is
@@ -620,7 +794,7 @@ namespace Microsoft.Diagnostics.Symbols
             ///  SRCSRVCMD=
             ///  SRCSRVVERCTRL=http
             ///  SRCSRV: source files ---------------------------------------
-            ///  c:\Users\rafalkrynski\Documents\Visual Studio 2012\Projects\DavidSymbolSourceTest\DavidSymbolSourceTest\Demo.cs*SQPvxWBMtvANyCp8Pd3OjoZEUgpKvjDVIY1WbaiFPMw=
+            ///  c:\Users\dev\Documents\Visual Studio 2012\Projects\DavidSymbolSourceTest\DavidSymbolSourceTest\Demo.cs*SQPvxWBMtvANyCp8Pd3OjoZEUgpKvjDVIY1WbaiFPMw=
             ///  SRCSRV: end ------------------------------------------------
             ///  
             /// </summary>
@@ -628,7 +802,7 @@ namespace Microsoft.Diagnostics.Symbols
             /// <param name="command">returns the command to fetch the target source file</param>
             /// <param name="localDirectoryToPlaceSourceFiles">Specify the value for %targ% variable. This is the
             /// directory where source files can be fetched to.  Typically the returned file is under this directory
-            /// If the value is null, %targ% variable be emtpy.  This assumes that the resulting file is something
+            /// If the value is null, %targ% variable be empty.  This assumes that the resulting file is something
             /// that does not need to be copied to the machine (either a URL or a file that already exists)</param>
             private void GetSourceServerTargetAndCommand(out string target, out string command, string localDirectoryToPlaceSourceFiles = null)
             {
@@ -659,13 +833,17 @@ namespace Microsoft.Diagnostics.Symbols
                 var vars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
                 if (localDirectoryToPlaceSourceFiles != null)
+                {
                     vars.Add("targ", localDirectoryToPlaceSourceFiles);
+                }
 
                 for (; ; )
                 {
                     var line = reader.ReadLine();
                     if (line == null)
+                    {
                         break;
+                    }
 
                     // log.WriteLine("Got srcsrv line {0}", line);
                     if (line.StartsWith("SRCSRV: "))
@@ -685,7 +863,9 @@ namespace Microsoft.Diagnostics.Symbols
                             {
                                 // Create variables for each of the pieces.  
                                 for (int i = 0; i < pieces.Length; i++)
+                                {
                                     vars.Add("var" + (i + 1).ToString(), pieces[i]);
+                                }
 
                                 target = SourceServerFetchVar("SRCSRVTRG", vars);
                                 command = SourceServerFetchVar("SRCSRVCMD", vars);
@@ -699,7 +879,9 @@ namespace Microsoft.Diagnostics.Symbols
                         // Gather up the KEY=VALUE pairs into a dictionary.  
                         var m = Regex.Match(line, @"^(\w+)=(.*?)\s*$");
                         if (m.Success)
+                        {
                             vars[m.Groups[1].Value] = m.Groups[2].Value;
+                        }
                     }
                 }
             }
@@ -713,7 +895,10 @@ namespace Microsoft.Diagnostics.Symbols
                 // If you have VS installed used that TF.exe associated with that.  
                 var progFiles = Environment.GetEnvironmentVariable("ProgramFiles (x86)");
                 if (progFiles == null)
+                {
                     progFiles = Environment.GetEnvironmentVariable("ProgramFiles");
+                }
+
                 if (progFiles != null)
                 {
                     // Find the oldest Visual Studio directory;
@@ -724,7 +909,9 @@ namespace Microsoft.Diagnostics.Symbols
                         var VSDir = Path.Combine(dirs[dirs.Length - 1], @"Common7\IDE");
                         var tfexe = Path.Combine(VSDir, "tf.exe");
                         if (File.Exists(tfexe))
+                        {
                             return tfexe;
+                        }
                     }
                 }
                 return null;
@@ -736,7 +923,10 @@ namespace Microsoft.Diagnostics.Symbols
                 if (vars.TryGetValue(variable, out result))
                 {
                     if (0 <= result.IndexOf('%'))
+                    {
                         _log.WriteLine("SourceServerFetchVar: Before Evaluation {0} = '{1}'", variable, result);
+                    }
+
                     result = SourceServerEvaluate(result, vars);
                 }
                 _log.WriteLine("SourceServerFetchVar: {0} = '{1}'", variable, result);
@@ -792,30 +982,6 @@ f:\dd\ndp\clr\src\vm\i386\RedirectedHandledJITCase.asm*DEVDIV_TFS2*/DevDiv/D11Re
 f:\dd\public\devdiv\inc\ddbanned.h*DEVDIV_TFS2*/DevDiv/D11RelS/FX45RTMGDR/public/devdiv/inc/ddbanned.h*592925
 f:\dd\ndp\clr\src\debug\ee\i386\dbghelpers.asm*DEVDIV_TFS2*/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/Debug/EE/i386/dbghelpers.asm*592925
 SRCSRV: end ------------------------------------------------
-      
-        // Here is one for SD. 
-
-SRCSRV: ini ------------------------------------------------
-VERSION=1
-VERCTRL=Source Depot
-SRCSRV: variables ------------------------------------------
-SRCSRVTRG=%targ%\%var2%\%fnbksl%(%var3%)\%var4%\%fnfile%(%var1%)
-SRCSRVCMD=sd.exe -p %fnvar%(%var2%) print -o %srcsrvtrg% -q %depot%/%var3%#%var4%
-DEPOT=//depot
-SRCSRVVERCTRL=sd
-SRCSRVERRDESC=Connect to server failed
-SRCSRVERRVAR=var2
-WIN_MINKERNEL=minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020
-WIN_PUBLIC=publicdepot.sys-ntgroup.ntdev.microsoft.com:2017
-WIN_PUBLICINT=publicintdepot.sys-ntgroup.ntdev.microsoft.com:2018
-SRCSRV: source files ---------------------------------------
-d:\win7sp1_gdr.public.amd64fre\sdk\inc\pshpack4.h*WIN_PUBLIC*win7sp1_gdr/public/sdk/inc/pshpack4.h*1
-d:\win7sp1_gdr.public.amd64fre\internal\minwin\priv_sdk\inc\ntos\pnp.h*WIN_PUBLICINT*win7sp1_gdr/publicint/minwin/priv_sdk/inc/ntos/pnp.h*1
-d:\win7sp1_gdr.public.amd64fre\internal\minwin\priv_sdk\inc\ntos\cm.h*WIN_PUBLICINT*win7sp1_gdr/publicint/minwin/priv_sdk/inc/ntos/cm.h*1
-d:\win7sp1_gdr.public.amd64fre\internal\minwin\priv_sdk\inc\ntos\pnp_x.h*WIN_PUBLICINT*win7sp1_gdr/publicint/minwin/priv_sdk/inc/ntos/pnp_x.h*2
-SRCSRV: end ------------------------------------------------
-
-
 #endif
 #if false
         // Here is ana example of the stream in use for the jithlp.asm file.  
@@ -825,33 +991,56 @@ f:\dd\ndp\clr\src\vm\i386\jithelp.asm*DEVDIV_TFS2*/DevDiv/D11RelS/FX45RTMGDR/ndp
         // Here is the command that it issues.  
 tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/VM/i386/jithelp.asm" /server:http://vstfdevdiv.redmond.corp.microsoft.com:8080/devdiv2 /console >"C:\Users\vancem\AppData\Local\Temp\PerfView\src\DEVDIV_TFS2\DevDiv\D11RelS\FX45RTMGDR\ndp\clr\src\VM\i386\jithelp.asm\592925\jithelp.asm"
 
-sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users\vancem\AppData\Local\Temp\PerfView\src\WIN_MINKERNEL\win8_gdr\minkernel\ntdll\rtlstrt.c\1\rtlstrt.c" -q //depot/win8_gdr/minkernel/ntdll/rtlstrt.c#1
-
 #endif
             #endregion
         }
 
-        private void Initialize(SymbolReader reader, string pdbFilePath, Action loadData)
+        private NativeSymbolModule(SymbolReader reader, string pdbFilePath, Action<IDiaDataSource3> loadData) : base(reader, pdbFilePath)
         {
-            this.m_reader = reader;
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // DIA is not supported on non-Windows systems.
+                throw new PlatformNotSupportedException("Cannot load a Windows PDB on a non-Windows system.");
+            }
+
+            m_reader = reader;
 
             m_source = DiaLoader.GetDiaSourceObject();
-            loadData();
+            loadData(m_source);
             m_source.openSession(out m_session);
             m_session.getSymbolsByAddr(out m_symbolsByAddr);
+
+            m_heapAllocationSites = new Lazy<IReadOnlyDictionary<uint, string>>(() =>
+            {
+                // Retrieves the S_HEAPALLOCSITE information from the pdb as described here:
+                // https://docs.microsoft.com/visualstudio/profiling/custom-native-etw-heap-events
+                Dictionary<uint, string> result = null;
+                m_session.getHeapAllocationSites(out var diaEnumSymbols);
+                for (; ; )
+                {
+                    diaEnumSymbols.Next(1, out var sym, out var fetchCount);
+                    if (fetchCount == 0)
+                    {
+                        return (IReadOnlyDictionary<uint, string>)result ?? System.Collections.Immutable.ImmutableDictionary<uint, string>.Empty;
+                    }
+
+                    result = result ?? new Dictionary<uint, string>();
+                    m_session.symbolById(sym.typeId, out var typeSym);
+                    result[sym.relativeVirtualAddress + (uint)sym.length] = HeapAllocationTypeInfo.GetTypeName(typeSym);
+                }
+            });
 
             m_reader.m_log.WriteLine("Opening PDB {0} with signature GUID {1} Age {2}", pdbFilePath, PdbGuid, PdbAge);
         }
 
-        internal NativeSymbolModule(SymbolReader reader, string pdbFilePath) : base(reader, pdbFilePath)
+        internal NativeSymbolModule(SymbolReader reader, string pdbFilePath)
+            : this(reader, pdbFilePath, s => s.loadDataFromPdb(pdbFilePath))
         {
-            Initialize(reader, pdbFilePath, () => m_source.loadDataFromPdb(pdbFilePath));
         }
 
-        internal NativeSymbolModule(SymbolReader reader, string pdbFilePath, Stream pdbStream) : base(reader, pdbFilePath)
+        internal NativeSymbolModule(SymbolReader reader, string pdbFilePath, Stream pdbStream)
+            : this(reader, pdbFilePath, s => s.loadDataFromIStream(new ComStreamWrapper(pdbStream)))
         {
-            IStream comStream = new ComStreamWrapper(pdbStream);
-            Initialize(reader, pdbFilePath, () => m_source.loadDataFromIStream(comStream));
         }
 
         internal void LogManagedInfo(string pdbName, Guid pdbGuid, int pdbAge)
@@ -871,7 +1060,9 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// </summary>
         internal string GetSrcSrvStream()
         {
-            // In order to get the IDiaDataSource3 which includes'getStreamSize' API, you need to use the 
+            ThrowIfDisposed();
+
+            // In order to get the IDiaDataSource3 which includes 'getStreamSize' API, you need to use the 
             // dia2_internal.idl file from devdiv to produce the Interop.Dia2Lib.dll 
             // see class DiaLoader for more
             var log = m_reader.m_log;
@@ -881,46 +1072,68 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             if (len == 0)
             {
                 if (0 <= SymbolFilePath.IndexOf(".ni.", StringComparison.OrdinalIgnoreCase))
+                {
                     log.WriteLine("Error, trying to look up source information on an NGEN file, giving up");
+                }
                 else
+                {
                     log.WriteLine("Pdb {0} does not have source server information (srcsrv stream) in it", SymbolFilePath);
+                }
+
                 return null;
             }
 
+            return GetUTF8PDBStream("srcsrv", len);
+        }
+
+        private string GetUTF8PDBStream(string name, uint len)
+        {
             byte[] buffer = new byte[len];
             fixed (byte* bufferPtr = buffer)
             {
-                m_source.getStreamRawData("srcsrv", len, out *bufferPtr);
+                m_source.getStreamRawData(name, len, out *bufferPtr);
                 var ret = new UTF8Encoding().GetString(buffer);
                 return ret;
             }
         }
 
-        protected override string GetSourceLinkJson()
+        protected override IEnumerable<string> GetSourceLinkJson()
         {
-            // To avoid the expensive match below, don't even try to get SourceLink data if you have srcsrv data.  
-            // This at least avoids the cost on many OS PDBs.  
-            // You can remove this when we can look up SourceLink information easily.  
-            uint len = 0;
-            m_source.getStreamSize("srcsrv", out len);
-            if (len != 0)
-            {
-                m_reader.m_log.WriteLine("Has srcsrv information, skipping looking for SourceLink information for {0}", SymbolFilePath);
-                return null;
-            }
+            ThrowIfDisposed();
 
-            // TODO We should be using msdia APIs to fetch this. 
-            // I don't know exactly which ones.  In the mean time we grep for something in the PDB that looks like the SourceLink json blob. 
-            string allData = File.ReadAllText(SymbolFilePath);
-            Match m = Regex.Match(allData, "({\\s*\"documents\"\\s*:\\s*{[ -~]*?}\\s*})", RegexOptions.Singleline);
-            if (m.Success)
+            // Source Link is stored in windows pdb in *EITHER* the 'sourcelink' stream *OR* 1 or more 'sourcelink$n' streams where n starts at 1.
+            // For multi stream format, we read the streams starting at 1 until we receive a stream size of 0.
+
+            const string singleStreamName = "sourcelink";
+            const string multiStreamNameFormat = "sourcelink${0}";
+
+            // first check the single stream
+            m_source.getStreamSize(singleStreamName, out uint streamSize);
+            if (streamSize > 0)
             {
-                string ret = m.Groups[1].Value;
-                m_reader.m_log.WriteLine("Found SourceLink Infomation for {0}\r\nData:    {1}", SymbolFilePath, ret.Replace("\r\n", " "));
-                return ret;
+                string content = GetUTF8PDBStream(singleStreamName, streamSize);
+                return new string[] { content };
             }
-            m_reader.m_log.WriteLine("Failed to look up SourceLink Infomation for {0}.", SymbolFilePath);
-            return null;
+            else
+            {
+                List<string> result = new List<string>();
+
+                // if there was no single stream, check the multi stream
+                for (int cStream = 1; cStream < int.MaxValue; cStream++)
+                {
+                    string streamName = string.Format(CultureInfo.InvariantCulture, multiStreamNameFormat, cStream);
+                    m_source.getStreamSize(streamName, out streamSize);
+                    if (streamSize == 0)
+                    {
+                        break;
+                    }
+
+                    string content = GetUTF8PDBStream(streamName, streamSize);
+                    result.Add(content);
+                }
+
+                return result;
+            }
         }
 
         // returns the path of the PDB that has source server information in it (which for NGEN images is the PDB for the managed image)
@@ -929,7 +1142,9 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             get
             {
                 if (m_managedPdbName == null)
+                {
                     return this;
+                }
 
                 if (!m_managedPdbAttempted)
                 {
@@ -942,7 +1157,9 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                         m_managedPdb = m_reader.OpenSymbolFile(managedPdbPath);
                     }
                     else
+                    {
                         m_reader.m_log.WriteLine("Could not find managed PDB {0}", m_managedPdbName);
+                    }
                 }
                 return m_managedPdb;
             }
@@ -951,20 +1168,32 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// <summary>
         /// For Project N modules it returns the list of pre merged IL assemblies and the corresponding mapping.
         /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public Dictionary<int, string> GetMergedAssembliesMap()
         {
+            ThrowIfDisposed();
+
             if (m_mergedAssemblies == null && !m_checkedForMergedAssemblies)
             {
                 IDiaEnumInputAssemblyFiles diaMergedAssemblyRecords;
                 m_session.findInputAssemblyFiles(out diaMergedAssemblyRecords);
-                foreach (IDiaInputAssemblyFile inputAssembly in diaMergedAssemblyRecords)
+                for (; ; )
                 {
+                    IDiaInputAssemblyFile inputAssembly;
+                    uint fetchCount;
+                    diaMergedAssemblyRecords.Next(1, out inputAssembly, out fetchCount);
+                    if (fetchCount != 1)
+                    {
+                        break;
+                    }
+
                     int index = (int)inputAssembly.index;
                     string assemblyName = inputAssembly.fileName;
 
                     if (m_mergedAssemblies == null)
+                    {
                         m_mergedAssemblies = new Dictionary<int, string>();
+                    }
+
                     m_mergedAssemblies.Add(index, assemblyName);
                 }
                 m_checkedForMergedAssemblies = true;
@@ -977,6 +1206,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// </summary>
         public MemoryStream GetEmbeddedILImage()
         {
+            ThrowIfDisposed();
+
             try
             {
                 uint ilimageSize;
@@ -1001,6 +1232,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// <returns></returns>
         public MemoryStream GetPseudoAssembly()
         {
+            ThrowIfDisposed();
+
             try
             {
                 uint ilimageSize;
@@ -1024,6 +1257,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// </summary>
         public byte[] GetFuncMDTokenMap()
         {
+            ThrowIfDisposed();
+
             uint mapSize;
             m_session.getFuncMDTokenMapSize(out mapSize);
 
@@ -1043,6 +1278,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// <returns></returns>
         public byte[] GetTypeMDTokenMap()
         {
+            ThrowIfDisposed();
+
             uint mapSize;
             m_session.getTypeMDTokenMapSize(out mapSize);
 
@@ -1056,8 +1293,213 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             return buf;
         }
 
-        bool m_checkedForMergedAssemblies;
-        Dictionary<int, string> m_mergedAssemblies;
+        ~NativeSymbolModule()
+        {
+            Dispose(disposing: false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!m_isDisposed)
+            {
+                m_isDisposed = true;
+
+                if (m_session is IDiaSession3 diaSession3)
+                {
+                    int hr = diaSession3.dispose();
+                    Debug.Assert(hr == 0, "IDiaSession3.dispose failed");
+                }
+            }
+        }
+
+        /// <summary>
+        /// This function checks if the SymbolModule is disposed before proceeding with the call.
+        /// This is important because DIA doesn't provide any guarantees as to what will happen if 
+        /// one attempts to call after the session is disposed, so this at least ensure that we
+        /// fail cleanly in non-concurrent cases.
+        /// </summary>
+        private void ThrowIfDisposed()
+        {
+            if (m_isDisposed)
+            {
+                throw new ObjectDisposedException(nameof(NativeSymbolModule));
+            }
+        }
+
+        /// <summary>
+        /// This static class contains the GetTypeName method for retrieving the type name of 
+        /// a heap allocation site. 
+        /// 
+        /// See https://github.com/KirillOsenkov/Dia2Dump/blob/master/PrintSymbol.cpp for more details
+        /// </summary>
+        private static class HeapAllocationTypeInfo
+        {
+            internal static string GetTypeName(IDiaSymbol symbol)
+            {
+                var name = symbol.name ?? "<unknown>";
+
+                switch ((SymTagEnum)symbol.symTag)
+                {
+                    case SymTagEnum.UDT:
+                    case SymTagEnum.Enum:
+                    case SymTagEnum.Typedef:
+                        return name;
+                    case SymTagEnum.FunctionType:
+                        return "function";
+                    case SymTagEnum.PointerType:
+                        return $"{GetTypeName(symbol.type)} {(symbol.reference != 0 ? "&" : "*") }";
+                    case SymTagEnum.ArrayType:
+                        return "array";
+                    case SymTagEnum.BaseType:
+                        var sb = new StringBuilder();
+                        switch ((BasicType)symbol.baseType)
+                        {
+                            case BasicType.btUInt:
+                                sb.Append("unsigned ");
+                                goto case BasicType.btInt;
+                            case BasicType.btInt:
+                                switch (symbol.length)
+                                {
+                                    case 1:
+                                        sb.Append("char");
+                                        break;
+                                    case 2:
+                                        sb.Append("short");
+                                        break;
+                                    case 4:
+                                        sb.Append("int");
+                                        break;
+                                    case 8:
+                                        sb.Append("long");
+                                        break;
+                                }
+                                return sb.ToString();
+                            case BasicType.btFloat:
+                                return symbol.length == 4 ? "float" : "double";
+                            default:
+                                return BaseTypes.Length > symbol.baseType ? BaseTypes[symbol.baseType] : $"base type {symbol.baseType}";
+                        }
+                }
+
+                return $"unhandled symbol tag {symbol.symTag}";
+            }
+
+            private enum SymTagEnum
+            {
+                Null,
+                Exe,
+                Compiland,
+                CompilandDetails,
+                CompilandEnv,
+                Function,
+                Block,
+                Data,
+                Annotation,
+                Label,
+                PublicSymbol,
+                UDT,
+                Enum,
+                FunctionType,
+                PointerType,
+                ArrayType,
+                BaseType,
+                Typedef,
+                BaseClass,
+                Friend,
+                FunctionArgType,
+                FuncDebugStart,
+                FuncDebugEnd,
+                UsingNamespace,
+                VTableShape,
+                VTable,
+                Custom,
+                Thunk,
+                CustomType,
+                ManagedType,
+                Dimension,
+                CallSite,
+                InlineSite,
+                BaseInterface,
+                VectorType,
+                MatrixType,
+                HLSLType
+            };
+
+            // See https://learn.microsoft.com/visualstudio/debugger/debug-interface-access/basictype
+            private enum BasicType
+            {
+                btNoType = 0,
+                btVoid = 1,
+                btChar = 2,
+                btWChar = 3,
+                btInt = 6,
+                btUInt = 7,
+                btFloat = 8,
+                btBCD = 9,
+                btBool = 10,
+                btLong = 13,
+                btULong = 14,
+                btCurrency = 25,
+                btDate = 26,
+                btVariant = 27,
+                btComplex = 28,
+                btBit = 29,
+                btBSTR = 30,
+                btHresult = 31,
+                btChar16 = 32,  // char16_t
+                btChar32 = 33,  // char32_t
+                btChar8 = 34,   // char8_t
+            };
+
+            private static readonly string[] BaseTypes = new[]
+            {
+                "<NoType>",             // btNoType = 0,
+                "void",                 // btVoid = 1,
+                "char",                 // btChar = 2,
+                "wchar_t",              // btWChar = 3,
+                "signed char",
+                "unsigned char",
+                "int",                  // btInt = 6,
+                "unsigned int",         // btUInt = 7,
+                "float",                // btFloat = 8,
+                "<BCD>",                // btBCD = 9,
+                "bool",                 // btBool = 10,
+                "short",
+                "unsigned short",
+                "long",                 // btLong = 13,
+                "unsigned long",        // btULong = 14,
+                "__int8",
+                "__int16",
+                "__int32",
+                "__int64",
+                "__int128",
+                "unsigned __int8",
+                "unsigned __int16",
+                "unsigned __int32",
+                "unsigned __int64",
+                "unsigned __int128",
+                "<currency>",           // btCurrency = 25,
+                "<date>",               // btDate = 26,
+                "VARIANT",              // btVariant = 27,
+                "<complex>",            // btComplex = 28,
+                "<bit>",                // btBit = 29,
+                "BSTR",                 // btBSTR = 30,
+                "HRESULT",              // btHresult = 31,
+                "char16_t",             // btChar16 = 32,
+                "char32_t",             // btChar32 = 33,
+                "char8_t",              // btChar8 = 34
+            };
+        }
+
+        private bool m_isDisposed;
+        private bool m_checkedForMergedAssemblies;
+        private Dictionary<int, string> m_mergedAssemblies;
 
         private string m_managedPdbName;
         private Guid m_managedPdbGuid;
@@ -1065,10 +1507,33 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         private ManagedSymbolModule m_managedPdb;
         private bool m_managedPdbAttempted;
 
-        internal SymbolReader m_reader;
-        internal IDiaSession m_session;
-        IDiaDataSource3 m_source;
-        IDiaEnumSymbolsByAddr m_symbolsByAddr;
+        internal readonly IDiaSession m_session;
+        private readonly SymbolReader m_reader;
+        private readonly IDiaDataSource3 m_source;
+        private readonly IDiaEnumSymbolsByAddr m_symbolsByAddr;
+        private readonly Lazy<IReadOnlyDictionary<uint, string>> m_heapAllocationSites; // rva => typename
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct SrcFormatHeader
+        {
+            public Guid language;
+            public Guid languageVendor;
+            public Guid documentType;
+            public Guid algorithmId;
+            public UInt32 checkSumSize;
+            public UInt32 sourceSize;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct SrcFormat
+        {
+            public SrcFormatHeader Header;
+            public fixed byte checksumBytes[512/8]; // this size of this may be smaller, it is controlled by the size of the `checksumSize` field
+        }
+
+        private static readonly Guid guidMD5 = new Guid("406ea660-64cf-4c82-b6f0-42d48172a799");
+        private static readonly Guid guidSHA1 = new Guid("ff1816ec-aa5e-4d10-87f7-6f4963833460");
+        private static readonly Guid guidSHA256 = new Guid("8829d00f-11b8-4213-878b-770e8597ac16");
 
         #endregion
     }
@@ -1136,7 +1601,9 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             IDiaEnumSymbols symEnum = null;
             m_module.m_session.findChildren(m_diaSymbol, tag, null, 0, out symEnum);
             if (symEnum == null)
+            {
                 return null;
+            }
 
             uint fetchCount;
             var ret = new List<Symbol>();
@@ -1145,7 +1612,10 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                 IDiaSymbol sym;
                 symEnum.Next(1, out sym, out fetchCount);
                 if (fetchCount == 0)
+                {
                     break;
+                }
+
                 SymTagEnum symTag = (SymTagEnum)sym.symTag;
                 ret.Add(new Symbol(m_module, sym));
             }
@@ -1161,18 +1631,6 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             return ((int)RVA - (int)other.RVA);
         }
         #region private
-#if false
-        // TODO FIX NOW use or remove
-        internal enum NameSearchOptions
-        {
-            nsNone,
-            nsfCaseSensitive = 0x1,
-            nsfCaseInsensitive = 0x2,
-            nsfFNameExt = 0x4,                  // treat as a file path
-            nsfRegularExpression = 0x8,         // * and ? wildcards
-            nsfUndecoratedName = 0x10,          // A undecorated name is the name you see in the source code.  
-        };
-#endif
 
         /// <summary>
         /// override
@@ -1221,7 +1679,9 @@ internal sealed class ComStreamWrapper : IStream
         fixed (byte* p = &pv)
         {
             for (int i = 0; i < bytesRead; i++)
+            {
                 p[i] = buf[i];
+            }
         }
     }
 
@@ -1285,7 +1745,7 @@ namespace Dia2Lib
     /// It has one public method 'GetDiaSourceObject' which knows how to create a IDiaDataSource object. 
     /// From there you can do anything you need.  
     /// 
-    /// In order to get IDiaDataSource3 which includes'getStreamSize' API, you need to use the 
+    /// In order to get IDiaDataSource3 which includes 'getStreamSize' API, you need to use the 
     /// vctools\langapi\idl\dia2_internal.idl file from devdiv to produce Dia2Lib.dll
     /// 
     /// roughly what you need to do is 
@@ -1300,36 +1760,35 @@ namespace Dia2Lib
     internal static class DiaLoader
     {
         /// <summary>
-        /// Load the msdia100 dll and get a IDiaDataSource from it.  This is your gateway to PDB reading.   
+        /// Load the msdia140 dll and get a IDiaDataSource from it.  This is your gateway to PDB reading.
         /// </summary>
         public static IDiaDataSource3 GetDiaSourceObject()
         {
-            if (!s_loadedNativeDll)
-            {
-                // Insure that the native DLL we need exist.  
-                NativeDlls.LoadNative("msdia140.dll");
-                s_loadedNativeDll = true;
-            }
+            Guid iDataDataSourceGuid = typeof(IDiaDataSource3).GetTypeInfo().GUID;
+            s_diaClassFactory.CreateInstance(null, iDataDataSourceGuid, out object comObject);
+            return comObject as IDiaDataSource3;
+        }
+
+        private static IClassFactory CreateDiaClassFactory()
+        {
+            // Ensure that the native DLL we need exists.
+            NativeDlls.LoadNative("msdia140.dll");
 
             // This is the value it was for msdia120 and before 
             // var diaSourceClassGuid = new Guid("{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}");
 
             // This is the value for msdia140.  
             var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
-            var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GetTypeInfo().GUID);
-
-            object comObject = null;
-            Guid iDataDataSourceGuid = typeof(IDiaDataSource3).GetTypeInfo().GUID;
-            comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
-            return (comObject as IDiaDataSource3);
+            return (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GetTypeInfo().GUID);
         }
+
         #region private
         [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
          InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private interface IClassFactory
         {
             void CreateInstance([MarshalAs(UnmanagedType.Interface)] object aggregator,
-                                ref Guid refiid,
+                                [In] in Guid refiid,
                                 [MarshalAs(UnmanagedType.Interface)] out object createdObject);
             void LockServer(bool incrementRefCount);
         }
@@ -1338,16 +1797,99 @@ namespace Dia2Lib
         [return: MarshalAs(UnmanagedType.Interface)]
         [DllImport("msdia140.dll", CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
         private static extern object DllGetClassObject(
-            [In, MarshalAs(UnmanagedType.LPStruct)] Guid rclsid,
-            [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);
+            [In] in Guid rclsid,
+            [In] in Guid riid);
 
         /// <summary>
-        /// Used to ensure the native library is loaded at least once prior to trying to use it. No protection is
-        /// included to avoid multiple loads, but this is not a problem since we aren't trying to unload the library
-        /// after use.
+        /// The COM class factory for DIA.
+        /// Used to ensure the native library is loaded prior to trying to use it.
+        /// Note that we never release this class factory, but this is not a problem since we
+        /// aren't trying to unload the library after use.
         /// </summary>
-        static bool s_loadedNativeDll;
+        private static readonly IClassFactory s_diaClassFactory = CreateDiaClassFactory();
         #endregion
     }
+
+    [ComVisible(true)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [GuidAttribute("52585014-e2b6-49fe-aa72-3a1e178682ee")]
+    interface IDiaSession3
+    {
+        #region Uncalled methods to declare the VTable correctly
+        void Reserved01(); // get_loadAddress
+        void Reserved02(); // put_loadAddress
+        void Reserved03(); // get_globalScope
+        void Reserved04(); // getEnumTables
+        void Reserved05(); // getSymbolsByAddr
+        void Reserved06(); // findChildren
+        void Reserved07(); // findChildrenEx
+        void Reserved08(); // findChildrenExByAddr
+        void Reserved09(); // findChildrenExByVA
+        void Reserved10(); // findChildrenExByRVA
+        void Reserved11(); // findSymbolByAddr
+        void Reserved12(); // findSymbolByRVA
+        void Reserved13(); // findSymbolByVA
+        void Reserved14(); // findSymbolByToken
+        void Reserved15(); // symsAreEquiv
+        void Reserved16(); // symbolById
+        void Reserved17(); // findSymbolByRVAEx
+        void Reserved18(); // findSymbolByVAEx
+        void Reserved19(); // findFile
+        void Reserved20(); // findFileById
+        void Reserved21(); // findLines
+        void Reserved22(); // findLinesByAddr
+        void Reserved23(); // findLinesByRVA
+        void Reserved24(); // findLinesByVA
+        void Reserved25(); // findLinesByLinenum
+        void Reserved26(); // findInjectedSource
+        void Reserved27(); // getEnumDebugStreams
+        void Reserved28(); // findInlineFramesByAddr
+        void Reserved29(); // findInlineFramesByRVA
+        void Reserved30(); // findInlineFramesByVA
+        void Reserved31(); // findInlineeLines
+        void Reserved32(); // findInlineeLinesByAddr
+        void Reserved33(); // findInlineeLinesByRVA
+        void Reserved34(); // findInlineeLinesByVA
+        void Reserved35(); // findInlineeLinesByLinenum
+        void Reserved36(); // findInlineesByName
+        void Reserved37(); // findAcceleratorInlineeLinesByLinenum
+        void Reserved38(); // findSymbolsForAcceleratorPointerTag
+        void Reserved39(); // findSymbolsByRVAForAcceleratorPointerTag
+        void Reserved40(); // findAcceleratorInlineesByName
+        void Reserved41(); // addressForVA
+        void Reserved42(); // addressForRVA
+        void Reserved43(); // findILOffsetsByAddr
+        void Reserved44(); // findILOffsetsByRVA
+        void Reserved45(); // findILOffsetsByVA
+        void Reserved46(); // findInputAssemblyFiles
+        void Reserved47(); // findInputAssembly
+        void Reserved48(); // findInputAssemblyById
+        void Reserved49(); // getFuncMDTokenMapSize
+        void Reserved50(); // getFuncMDTokenMap
+        void Reserved51(); // getTypeMDTokenMapSize
+        void Reserved52(); // getTypeMDTokenMap
+        void Reserved53(); // getNumberOfFunctionFragments_VA
+        void Reserved54(); // getNumberOfFunctionFragments_RVA
+        void Reserved55(); // getFunctionFragments_VA
+        void Reserved56(); // getFunctionFragments_RVA
+        void Reserved57(); // getExports
+        void Reserved58(); // getHeapAllocationSites
+        void Reserved59(); // findInputAssemblyFile
+        void Reserved60(); // addPublicSymbol
+        void Reserved61(); // addStaticSymbol
+        void Reserved62(); // findSectionAddressByCrc
+        void Reserved63(); // findThunkSymbol
+        void Reserved64(); // makeThunkSymbol
+        void Reserved65(); // mergeObjPDB
+        void Reserved66(); // commitObjPDBMerge
+        void Reserved67(); // cancelObjPDBMerge
+        void Reserved68(); // getLinkInfo
+        void Reserved69(); // isMiniPDB
+        void Reserved70(); // prepareEnCRebuild
+        #endregion
+
+        [PreserveSig] 
+        int dispose();
+    };
 }
 #endregion

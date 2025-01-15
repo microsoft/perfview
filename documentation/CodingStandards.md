@@ -14,7 +14,7 @@ this.
 ## Layout of a Class
 
 Items in a class should be ordered and structured to make reading the
-as a **public contract** easy.   In particular
+as a **public contract** easy. In particular:
 
 1. All private items come AFTER all public ones and are surrounded
 by a '#region private' grouping.   This makes Visual Studio's 
@@ -29,7 +29,7 @@ come first in the class, and methods that are used together
 should be near each other.   
 
 4. Fields should be private and placed TOGETHER, LAST in the class 
-(in the #region private).   That makes it relatively easy for 
+(in the #region private). That makes it relatively easy for 
 developers to find all the state in an object (since that is what
 really defines its semantics).
 
@@ -48,8 +48,8 @@ really defines its semantics).
 
 ## Minimum Commenting
 
-PerfView is probably commented more than most code bases.  We wish
-to keep it that way.  Here is what is expected.
+PerfView is probably commented more than most code bases. We wish
+to keep it that way. Here is what is expected.
 
 1. If the type is public (outside the assembly) it needs a comment
        and all its public members need comments.  
@@ -62,7 +62,7 @@ to keep it that way.  Here is what is expected.
 
 3. Field variables of a class typically DO need commenting. This is
        especially true if there is some condition (invariant) that is maintained
-       for that variable.   These are VERY valuable to document.   
+       for that variable. These are VERY valuable to the document.   
  
 ## When in Doubt
 

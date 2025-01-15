@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net40</TargetFrameworks>
+    <TargetFrameworks>net462</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <AssemblyName>TraceParserGen</AssemblyName>
   </PropertyGroup>
@@ -13,6 +13,18 @@
       <WithCulture>false</WithCulture>
       <LogicalName>UsersGuide.htm</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
+  <!-- ******************* Signing Support *********************** -->
+  <ItemGroup>
+    <FilesToSign Include="$(TargetPath)">
+        <Authenticode>Microsoft400</Authenticode>
+    </FilesToSign>
+    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
   </ItemGroup>
 
 </Project>

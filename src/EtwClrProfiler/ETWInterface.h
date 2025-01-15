@@ -30,25 +30,25 @@ EXTERN_C __declspec(selectany) PENABLECALLBACK ETWClrProfiler_pCallBack;
 // We register this callback function that does the setup for the MC.EXE generated control (McGenControlCallbackV2) 
 // but also calls the user defined callback. 
 static inline void WINAPI ETWClrProfiler_WrapperCallback(
-  LPCGUID SourceId,
-  ULONG IsEnabled,
-  UCHAR Level,
-  ULONGLONG MatchAnyKeywords,
-  ULONGLONG MatchAllKeywords,
-  PEVENT_FILTER_DESCRIPTOR FilterData,
-  PVOID CallbackContext
+	LPCGUID SourceId,
+	ULONG IsEnabled,
+	UCHAR Level,
+	ULONGLONG MatchAnyKeywords,
+	ULONGLONG MatchAllKeywords,
+	PEVENT_FILTER_DESCRIPTOR FilterData,
+	PVOID CallbackContext
 )
 {
-    McGenControlCallbackV2(SourceId, IsEnabled, Level, MatchAnyKeywords, MatchAllKeywords, FilterData, &ETWClrProfiler_Context);
+	McGenControlCallbackV2(SourceId, IsEnabled, Level, MatchAnyKeywords, MatchAllKeywords, FilterData, &ETWClrProfiler_Context);
 
-    if (ETWClrProfiler_pCallBack != NULL)
-        ETWClrProfiler_pCallBack(SourceId, IsEnabled, Level, MatchAnyKeywords, MatchAllKeywords, FilterData, CallbackContext);
+	if (ETWClrProfiler_pCallBack != NULL)
+		ETWClrProfiler_pCallBack(SourceId, IsEnabled, Level, MatchAnyKeywords, MatchAllKeywords, FilterData, CallbackContext);
 }
 
 // Replace the registration function with one that remembers a user callback 
 inline HRESULT EventRegisterETWClrProfiler(PENABLECALLBACK callback, void* callBackContext)
 {
-    ETWClrProfiler_pCallBack = callback;
-    // Note we register our ETWClrProfiler_WrapperCallback callback which does both.  
-    return McGenEventRegister(&ETWClrProfiler, ETWClrProfiler_WrapperCallback, callBackContext, &ETWClrProfilerHandle);
+	ETWClrProfiler_pCallBack = callback;
+	// Note we register our ETWClrProfiler_WrapperCallback callback which does both.  
+	return McGenEventRegister(&ETWClrProfiler, ETWClrProfiler_WrapperCallback, callBackContext, &ETWClrProfilerHandle);
 }

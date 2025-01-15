@@ -1,19 +1,24 @@
-﻿using System.Windows;
+﻿using PerfView;
 using System.ComponentModel;
+using System.Windows;
 
 namespace Controls
 {
     /// <summary>
     /// Interaction logic for TextEditorWindow.xaml
     /// </summary>
-    public partial class TextEditorWindow : Window
+    public partial class TextEditorWindow : WindowBase
     {
-        public TextEditorWindow(string[] args = null)
+        public TextEditorWindow(string[] args = null) : this (null, args) { }
+
+        public TextEditorWindow(Window parentWindow, string[] args = null) : base(parentWindow)
         {
             InitializeComponent();
 
-            if (args !=null && args.Length == 1)
+            if (args != null && args.Length == 1)
+            {
                 TextEditor.OpenText(args[0]);
+            }
 
             TextEditor.Body.Focus();
         }

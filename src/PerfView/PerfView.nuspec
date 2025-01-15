@@ -1,0 +1,27 @@
+﻿<?xml version="1.0"?>
+<package>
+  <metadata minClientVersion="2.5">
+    <id>Microsoft.PerfView</id>
+    <version>0.0.0</version>
+    <title>Microsoft PerfView</title>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <projectUrl>https://github.com/Microsoft/perfview</projectUrl>
+    <license type="expression">MIT</license>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>
+      PerfView is a free performance-analysis tool that helps isolate CPU and memory-related performance issues.
+      It is a Windows tool, but it also has some support for analyzing data collected on Linux machines.
+      It works for a wide variety of scenarios, but has a number of special features for investigating performance issues in code written for the .NET runtime.
+    </description>
+    <summary>PerfView is a free performance-analysis tool that helps isolate CPU and memory-related performance issues.</summary>
+    <releaseNotes>https://github.com/Microsoft/perfview/releases/tag/v$version$</releaseNotes>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>Perfview Microsoft ETW Event Tracing for Windows</tags>
+  </metadata>
+
+  <files>
+    <file src="$OutDir$PerfView.exe" target="content\PerfView.exe" />
+  </files>
+
+</package>

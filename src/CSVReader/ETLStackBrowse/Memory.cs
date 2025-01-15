@@ -1,22 +1,21 @@
 using System;
-using System.Text;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 
 namespace ETLStackBrowse
 {
     public partial class ETLTrace
     {
         // common field indexes in memory records
-        const int fldProcessNamePID = 2;
-        const int fldMemBaseAddr = 3;
-        const int fldMemEndAddr = 4;
-        const int fldFlags = 5;
+        private const int fldProcessNamePID = 2;
+        private const int fldMemBaseAddr = 3;
+        private const int fldMemEndAddr = 4;
+        private const int fldFlags = 5;
 
         // common field indexes for image start/end records
-        const int fldImageBaseAddr = 3;
-        const int fldImageEndAddr = 4;
-        const int fldImageFileName = 8;
+        private const int fldImageBaseAddr = 3;
+        private const int fldImageEndAddr = 4;
+        private const int fldImageFileName = 8;
 
         public const int memoryPlotColumns = 80;
         public const int memoryPlotRows = standardPlotRows;
@@ -61,7 +60,7 @@ namespace ETLStackBrowse
             }
         }
 
-        MemProcessor lastMemProcessor = null;
+        private MemProcessor lastMemProcessor = null;
         public MemProcessor LastMemProcessor
         {
             get { return lastMemProcessor; }
@@ -103,16 +102,24 @@ namespace ETLStackBrowse
                 }
 
                 if (l.idType != mem.idAlloc && l.idType != mem.idFree)
+                {
                     continue;
+                }
 
                 if (fFilterProcesses && !l.MatchingProcess())
+                {
                     continue;
+                }
 
                 if (!l.MatchingTextFilter())
+                {
                     continue;
+                }
 
                 if (!l.MatchingMemory())
+                {
                     continue;
+                }
 
                 mem.ProcessMemRecord(l, b, effect);
             }
@@ -125,7 +132,7 @@ namespace ETLStackBrowse
             }
 
             sw.WriteLine(mem.DumpMemoryPlots());
-            
+
             if (fOut)
             {
                 if (fDumpRanges)
@@ -157,21 +164,19 @@ namespace ETLStackBrowse
             public ulong decommitted;
             public ulong released;
         }
-       
+
         public class MemProcessor
         {
-            ByteWindow bT = new ByteWindow();
+            private ByteWindow bT = new ByteWindow();
             public int idAlloc;
             public int idFree;
+            private byte[] byRelease = ByteWindow.MakeBytes("RELEASE");
+            private byte[] byReserve = ByteWindow.MakeBytes("RESERVE");
+            private byte[] byCommit = ByteWindow.MakeBytes("COMMIT");
+            private byte[] byDecommit = ByteWindow.MakeBytes("DECOMMIT");
+            private byte[] byReserveCommit = ByteWindow.MakeBytes("RESERVE COMMIT");
+            private ETLTrace trace;
 
-            byte[] byRelease = ByteWindow.MakeBytes("RELEASE");
-            byte[] byReserve = ByteWindow.MakeBytes("RESERVE");
-            byte[] byCommit = ByteWindow.MakeBytes("COMMIT");
-            byte[] byDecommit = ByteWindow.MakeBytes("DECOMMIT");
-            byte[] byReserveCommit = ByteWindow.MakeBytes("RESERVE COMMIT");
-
-            ETLTrace trace;
-            
             public MemInfo[] memInfos;
 
             public MemProcessor(ETLTrace trace)
@@ -190,9 +195,13 @@ namespace ETLStackBrowse
                 for (int i = 0; i < memInfos.Length; i++)
                 {
                     if (memInfos[i] == null)
+                    {
                         memInfos[i] = new MemInfo(trace.processes[i].processPid);
+                    }
                     else
+                    {
                         memInfos[i].Reset();
+                    }
                 }
             }
 
@@ -201,22 +210,28 @@ namespace ETLStackBrowse
                 // empty the net effect of this record
                 memeffect.released = memeffect.reserved = memeffect.committed = memeffect.decommitted = 0;
 
-                int interval = (int)((l.t-l.t0)/(double)(l.t1 - l.t0) * memoryPlotColumns);
+                int interval = (int)((l.t - l.t0) / (double)(l.t1 - l.t0) * memoryPlotColumns);
 
                 // the above can overflow because time ranges might be out of order so clamp any overflows
                 // also we have to handle the case where l.t == l.t1 which would otherwise overflow
                 if (interval < 0)
+                {
                     interval = 0;
+                }
 
-                if (interval >= memoryPlotColumns) 
+                if (interval >= memoryPlotColumns)
+                {
                     interval = memoryPlotColumns - 1;
+                }
 
                 bT.Assign(b, fldProcessNamePID).Trim();
                 int idProcess = trace.atomsProcesses.Lookup(bT);
 
                 // bogus process, disregard
                 if (idProcess == -1)
+                {
                     return;
+                }
 
                 MemInfo p = memInfos[idProcess];
 
@@ -235,26 +250,38 @@ namespace ETLStackBrowse
                         memeffect.reserved = rsReserved.AddRange(addrBase, addrEnd);
                         p.cbReserved += memeffect.reserved;
                         p.reservedDistribution[interval] += (long)memeffect.reserved;
-                        if (memeffect.reserved != 0) p.cReserved++;
+                        if (memeffect.reserved != 0)
+                        {
+                            p.cReserved++;
+                        }
 
                         memeffect.committed = rsCommitted.AddRange(addrBase, addrEnd);
                         p.cbCommitted += memeffect.committed;
                         p.committedDistribution[interval] += (long)memeffect.committed;
-                        if (memeffect.committed != 0) p.cCommitted++;
+                        if (memeffect.committed != 0)
+                        {
+                            p.cCommitted++;
+                        }
                     }
                     else if (b.StartsWith(byReserve))
                     {
                         memeffect.reserved = rsReserved.AddRange(addrBase, addrEnd);
                         p.cbReserved += memeffect.reserved;
                         p.reservedDistribution[interval] += (long)memeffect.reserved;
-                        if (memeffect.reserved != 0) p.cReserved++;
+                        if (memeffect.reserved != 0)
+                        {
+                            p.cReserved++;
+                        }
                     }
                     else if (b.StartsWith(byCommit))
                     {
                         memeffect.committed = rsCommitted.AddRange(addrBase, addrEnd);
                         p.cbCommitted += memeffect.committed;
                         p.committedDistribution[interval] += (long)memeffect.committed;
-                        if (memeffect.committed != 0) p.cCommitted++;
+                        if (memeffect.committed != 0)
+                        {
+                            p.cCommitted++;
+                        }
                     }
                 }
 
@@ -265,19 +292,28 @@ namespace ETLStackBrowse
                         memeffect.decommitted = rsCommitted.RemoveRange(addrBase, addrEnd);
                         p.cbDecommitted += memeffect.decommitted;
                         p.committedDistribution[interval] -= (long)memeffect.decommitted;
-                        if (memeffect.decommitted != 0) p.cDecommitted++;
+                        if (memeffect.decommitted != 0)
+                        {
+                            p.cDecommitted++;
+                        }
 
                         memeffect.released = rsReserved.RemoveRange(addrBase, addrEnd);
                         p.cbReleased += memeffect.released;
                         p.reservedDistribution[interval] -= (long)memeffect.released;
-                        if (memeffect.released != 0) p.cReleased++;
+                        if (memeffect.released != 0)
+                        {
+                            p.cReleased++;
+                        }
                     }
                     else if (b.StartsWith(byDecommit))
                     {
                         memeffect.decommitted = rsCommitted.RemoveRange(addrBase, addrEnd);
                         p.cbDecommitted += memeffect.decommitted;
                         p.committedDistribution[interval] -= (long)memeffect.decommitted;
-                        if (memeffect.decommitted != 0) p.cDecommitted++;
+                        if (memeffect.decommitted != 0)
+                        {
+                            p.cDecommitted++;
+                        }
                     }
                 }
             }
@@ -285,8 +321,10 @@ namespace ETLStackBrowse
             public string DumpMemoryPlots()
             {
                 if (sortedMemInfos == null || sortedMemInfos.Length < 1)
+                {
                     return "";
-                
+                }
+
                 StringWriter sw = new StringWriter();
 
                 sw.WriteLine();
@@ -300,7 +338,9 @@ namespace ETLStackBrowse
                     MemInfo p = memInfos[ipi];
 
                     if (p.cCommitted == 0 && p.cDecommitted == 0 && p.cReleased == 0 && p.cReserved == 0)
+                    {
                         continue;
+                    }
 
                     sw.WriteLine();
                     sw.WriteLine();
@@ -321,7 +361,9 @@ namespace ETLStackBrowse
                     count++;
 
                     if (count >= 3)
+                    {
                         break;
+                    }
                 }
 
                 return sw.ToString();
@@ -336,7 +378,9 @@ namespace ETLStackBrowse
                     MemInfo p = memInfos[ipi];
 
                     if (p.cCommitted == 0 && p.cDecommitted == 0 && p.cReleased == 0 && p.cReserved == 0)
+                    {
                         continue;
+                    }
 
                     sw.WriteLine("Live ranges for {0}", ByteWindow.MakeString(p.processPid));
                     sw.WriteLine();
@@ -362,7 +406,9 @@ namespace ETLStackBrowse
                     foreach (MemInfo p in memInfos)
                     {
                         if (p.cCommitted != 0 || p.cDecommitted != 0 || p.cReleased != 0 || p.cReserved != 0)
+                        {
                             return false;
+                        }
                     }
                     return true;
                 }
@@ -396,7 +442,9 @@ namespace ETLStackBrowse
                     MemInfo p = memInfos[ipi];
 
                     if (p.cCommitted == 0 && p.cDecommitted == 0 && p.cReleased == 0 && p.cReserved == 0)
+                    {
                         continue;
+                    }
 
                     sw.WriteLine("{8,-35} {0,14:n0} {1,14:n0} {2,14:n0} {3,14:n0} {4,14:n0} {5,14:n0} {6,14:n0} {7,14:n0}"
                         , p.cbReserved
@@ -431,7 +479,9 @@ namespace ETLStackBrowse
                     MemInfo p = memInfos[ipi];
 
                     if (p.cCommitted == 0 && p.cDecommitted == 0 && p.cReleased == 0 && p.cReserved == 0)
+                    {
                         continue;
+                    }
 
                     sw.WriteLine("{4,-35} {0,14:n0} {1,14:n0} {2,14:n0} {3,14:n0}"
                         , p.rsReserved.Count
@@ -450,17 +500,25 @@ namespace ETLStackBrowse
                 sortedMemInfos = new int[memInfos.Length];
 
                 for (int i = 0; i < sortedMemInfos.Length; i++)
+                {
                     sortedMemInfos[i] = i;
+                }
 
-                Array.Sort<int>(sortedMemInfos, delegate(int i, int j)
+                Array.Sort<int>(sortedMemInfos, delegate (int i, int j)
                 {
                     MemInfo a = memInfos[i];
                     MemInfo b = memInfos[j];
 
                     if (a.cbCommitted > b.cbCommitted)
+                    {
                         return -1;
+                    }
+
                     if (a.cbCommitted < b.cbCommitted)
+                    {
                         return 1;
+                    }
+
                     return 0;
                 }
                 );
@@ -476,7 +534,7 @@ namespace ETLStackBrowse
 
     public class RangeSet
     {
-        List<Range> ranges = new List<Range>();
+        private List<Range> ranges = new List<Range>();
 
         public ulong AddRange(ulong lo, ulong hi)
         {
@@ -485,7 +543,9 @@ namespace ETLStackBrowse
             int iExtended = -1;
 
             if (count == 0)
+            {
                 return 0;
+            }
 
             int i = FirstAffectedRange(lo); ;
             for (; i < ranges.Count; i++)
@@ -494,11 +554,15 @@ namespace ETLStackBrowse
 
                 // this item is before the range
                 if (rMerge.hi < lo)
+                {
                     continue;
+                }
 
                 // this item is after the range, stop here
                 if (rMerge.lo > hi)
+                {
                     break;
+                }
 
                 // ok there is some overlap, so we have to do something
 
@@ -546,20 +610,24 @@ namespace ETLStackBrowse
 
             string line = null;
 
-            char[] spacetab = new char[] {' ', '\t'};
+            char[] spacetab = new char[] { ' ', '\t' };
 
             while ((line = sr.ReadLine()) != null)
             {
                 line = line.Trim();
                 int ich = line.IndexOfAny(spacetab);
                 if (ich < 0)
+                {
                     continue;
+                }
 
                 ulong start = ETLTrace.ParseHex(line, 0);
                 ulong end = ETLTrace.ParseHex(line, ich);
 
                 if (start >= end)
+                {
                     continue;
+                }
 
                 AddRange(start, end);
             }
@@ -607,7 +675,9 @@ namespace ETLStackBrowse
             int c = ranges.Count;
 
             if (c != rs.ranges.Count)
+            {
                 return false;
+            }
 
             for (int i = 0; i < c; i++)
             {
@@ -615,10 +685,14 @@ namespace ETLStackBrowse
                 Range r2 = rs.ranges[i];
 
                 if (r1.lo != r2.lo)
+                {
                     return false;
+                }
 
                 if (r1.hi != r2.hi)
+                {
                     return false;
+                }
             }
 
             return true;
@@ -668,7 +742,7 @@ namespace ETLStackBrowse
 
             return rOut;
         }
-        
+
         public RangeSet Intersection(RangeSet rs2)
         {
             RangeSet rOut = new RangeSet();
@@ -692,9 +766,13 @@ namespace ETLStackBrowse
                 }
 
                 if (r1.hi < r2.hi)
+                {
                     i1++;
+                }
                 else
+                {
                     i2++;
+                }
             }
 
             return rOut;
@@ -706,7 +784,9 @@ namespace ETLStackBrowse
             ulong count = 0;
 
             if (lo == hi)
+            {
                 return 0;
+            }
 
             int i = FirstAffectedRange(lo);
             for (; i < ranges.Count; i++)
@@ -715,11 +795,15 @@ namespace ETLStackBrowse
 
                 // this item is before the range
                 if (rMerge.hi < lo)
+                {
                     continue;
+                }
 
                 // this item is after the range, stop here
                 if (rMerge.lo > hi)
+                {
                     break;
+                }
 
                 // ok there is some overlap, so we have to do something
 
@@ -792,8 +876,10 @@ namespace ETLStackBrowse
 
         public string CheckValid()
         {
-            if (this.RangeCount == 0)
+            if (RangeCount == 0)
+            {
                 return null;
+            }
 
             ulong lasthi = 0;
 
@@ -802,13 +888,19 @@ namespace ETLStackBrowse
                 Range r = ranges[i];
 
                 if (r.lo == r.hi)
+                {
                     return "range has empty interval";
+                }
 
                 if (r.lo > r.hi)
+                {
                     return "range has hi/lo out of order";
+                }
 
                 if (i > 0 && r.lo <= lasthi)
+                {
                     return "range has intervals out of order or overlapping";
+                }
 
                 lasthi = r.hi;
             }
@@ -821,15 +913,21 @@ namespace ETLStackBrowse
             int c = ranges.Count;
             // there's 0 or 1 in the set, just start at the beginning
             if (c < 2)
+            {
                 return 0;
+            }
 
             // the first one is already too big, have to start there
             if (ranges[0].hi >= lo)
+            {
                 return 0;
+            }
 
             // if we're at the end or past it, then skip it all
             if (ranges[c - 1].hi < lo)
+            {
                 return c - 1;
+            }
 
             int index = 0;
             int delta = c / 2;
@@ -838,7 +936,9 @@ namespace ETLStackBrowse
             while (delta > 0)
             {
                 if (ranges[index + delta].hi < lo)
+                {
                     index = index + delta;
+                }
 
                 delta /= 2;
             }

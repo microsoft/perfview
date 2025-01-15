@@ -1,40 +1,34 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.ComponentModel;
 using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.ComponentModel;
 
 namespace PerfView.Dialogs
 {
     /// <summary>
     /// Display a dialog box for executing user commands. 
     /// </summary>
-    public partial class UserCommandDialog : Window
+    public partial class UserCommandDialog : WindowBase
     {
-        public UserCommandDialog(Action<string> doDommand)
+        public UserCommandDialog(Window parentWindow, Action<string> doDommand) : base(parentWindow)
         {
             m_DoCommand = doDommand;
             InitializeComponent();
             CommandTextBox.HistoryLength = 50;      // Keep a fair bit of history for user commands. 
 
             // Initialize from persistent store. 
-            var history = App.ConfigData["UserCommandHistory"];
+            var history = App.UserConfigData["UserCommandHistory"];
             if (history != null)
+            {
                 CommandTextBox.SetHistory(history.Split(';'));
+            }
 
-            Loaded += delegate(object sender, RoutedEventArgs e)
+            Loaded += delegate (object sender, RoutedEventArgs e)
             {
                 CommandTextBox.Focus();
             };
-            Closing += delegate(object sender, CancelEventArgs e)
+            Closing += delegate (object sender, CancelEventArgs e)
             {
                 CommandTextBox.Text = "";
                 CommandTextBox.Focus();
@@ -57,10 +51,13 @@ namespace PerfView.Dialogs
             foreach (string item in CommandTextBox.Items)
             {
                 if (sb.Length != 0)
+                {
                     sb.Append(';');
+                }
+
                 sb.Append(item);
             }
-            App.ConfigData["UserCommandHistory"] = sb.ToString();
+            App.UserConfigData["UserCommandHistory"] = sb.ToString();
         }
 
         private void DoHyperlinkHelp(object sender, ExecutedRoutedEventArgs e)
@@ -86,7 +83,8 @@ namespace PerfView.Dialogs
         {
             GuiApp.MainWindow.DoUserCommandHelp(null, null);
         }
-        Action<string> m_DoCommand;
+
+        private Action<string> m_DoCommand;
         #endregion
 
     }

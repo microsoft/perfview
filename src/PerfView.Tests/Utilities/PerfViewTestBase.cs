@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.Threading;
+using PerfView;
+using System;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
-using Microsoft.VisualStudio.Threading;
-using PerfView;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -24,7 +24,6 @@ namespace PerfViewTests.Utilities
         {
             _testOutputHelper = testOutputHelper;
 
-            AppLog.s_IsUnderTest = true;
             App.CommandLineArgs = new CommandLineArgs();
             App.CommandProcessor = new CommandProcessor();
 
@@ -44,7 +43,9 @@ namespace PerfViewTests.Utilities
 
         protected static async Task WaitForUIAsync(Dispatcher dispatcher, CancellationToken cancellationToken)
         {
+#pragma warning disable VSTHRD001
             await dispatcher.InvokeAsync(EmptyAction, DispatcherPriority.ContextIdle, cancellationToken);
+#pragma warning restore VSTHRD001
         }
 
         protected async Task RunUITestAsync<T>(
@@ -86,7 +87,7 @@ namespace PerfViewTests.Utilities
             JoinableTaskFactory?.Context.Dispose();
             Assert.Empty(StackWindow.StackWindows);
 
-            GuiApp.MainWindow = new MainWindow();
+            GuiApp.MainWindow = new MainWindow(true);
             JoinableTaskFactory = new JoinableTaskFactory(new JoinableTaskContext());
         }
 

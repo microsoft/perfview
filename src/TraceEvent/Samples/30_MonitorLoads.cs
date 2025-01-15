@@ -1,12 +1,7 @@
-﻿using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Session;
-using Microsoft.Diagnostics.Tracing.Parsers;
+﻿using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Session;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -34,12 +29,12 @@ using System.Threading;
 // </summary
 namespace TraceEventSamples
 {
-    class ModuleLoadMonitor
+    internal class ModuleLoadMonitor
     {
         /// <summary>
         /// Where all the output goes.  
         /// </summary>
-        static TextWriter Out = AllSamples.Out;
+        private static TextWriter Out = AllSamples.Out;
 
         public static void Run()
         {
@@ -102,24 +97,24 @@ namespace TraceEventSamples
                 // .Source will auto-create a TraceEventSource reading the data from the session
                 // .Kernel will auto-create a KernelTraceEventParser getting its events from the source
                 // .ImageLoad is an event that you can subscribe to that will be called back when Image load events happen (complete with parsed event)
-                session.Source.Kernel.ImageLoad += delegate(ImageLoadTraceData data)
+                session.Source.Kernel.ImageLoad += delegate (ImageLoadTraceData data)
                 {
                     Out.WriteLine("Process {0,16} At 0x{1,8:x} Loaded {2}", data.ProcessName, data.ImageBase, data.FileName);
                 };
                 //  Subscribe to more events (process start) 
-                session.Source.Kernel.ProcessStart += delegate(ProcessTraceData data)
+                session.Source.Kernel.ProcessStart += delegate (ProcessTraceData data)
                 {
                     Out.WriteLine("Process Started {0,6} Parent {1,6} Name {2,8} Cmd: {3}",
                         data.ProcessID, data.ParentID, data.ProcessName, data.CommandLine);
                 };
                 //  Subscribe to more events (process end)
-                session.Source.Kernel.ProcessStop += delegate(ProcessTraceData data)
+                session.Source.Kernel.ProcessStop += delegate (ProcessTraceData data)
                 {
                     Out.WriteLine("Process Ending {0,6} ", data.ProcessID);
                 };
 
                 // Set up a timer to stop processing after monitoringTimeSec
-                var timer = new Timer(delegate(object state)
+                var timer = new Timer(delegate (object state)
                 {
                     Out.WriteLine("Stopped after {0} sec", monitoringTimeSec);
                     session.Source.StopProcessing();

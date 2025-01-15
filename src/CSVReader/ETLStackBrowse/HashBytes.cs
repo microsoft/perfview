@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace ETLStackBrowse
 {
@@ -8,14 +7,14 @@ namespace ETLStackBrowse
     public class ByteAtomTable
     {
         [Serializable]
-        struct Bucket
+        private struct Bucket
         {
             public int id;
             public byte[] bytes;
         }
 
         private Bucket[] buckets = new Bucket[128];
-        int count;
+        private int count;
 
         private List<byte[]> idMap = new List<byte[]>();
 
@@ -42,7 +41,9 @@ namespace ETLStackBrowse
             uint hash = 0;
 
             foreach (byte b in bytes)
-                hash = ((hash<<2) | (hash>>30)) ^ b;
+            {
+                hash = ((hash << 2) | (hash >> 30)) ^ b;
+            }
 
             return hash;
         }
@@ -56,7 +57,9 @@ namespace ETLStackBrowse
             uint hash = 0;
 
             for (int i = 0; i < len; i++)
-                hash = ((hash<<2) | (hash>>30)) ^ buffer[ib+i];
+            {
+                hash = ((hash << 2) | (hash >> 30)) ^ buffer[ib + i];
+            }
 
             return hash;
         }
@@ -64,21 +67,27 @@ namespace ETLStackBrowse
         private bool Equals(ByteWindow by, byte[] bytes)
         {
             if (by.len != bytes.Length)
+            {
                 return false;
+            }
 
             int len = by.len;
             int ib = by.ib;
             byte[] buffer = by.buffer;
 
-            for (int i = len; --i >= 0; )
-                if (bytes[i] != buffer[ib+i])
+            for (int i = len; --i >= 0;)
+            {
+                if (bytes[i] != buffer[ib + i])
+                {
                     return false;
+                }
+            }
 
             return true;
 
         }
 
-        ByteWindow bT = new ByteWindow();
+        private ByteWindow bT = new ByteWindow();
 
         public int Lookup(string s)
         {
@@ -90,17 +99,23 @@ namespace ETLStackBrowse
             uint hash = Hash(ref by);
             int i = (int)(hash % buckets.Length);
 
-            for (;;)
+            for (; ; )
             {
                 if (buckets[i].bytes == null)
+                {
                     return -1;
+                }
 
                 if (Equals(by, buckets[i].bytes))
+                {
                     return buckets[i].id;
+                }
 
                 i++;
                 if (i == buckets.Length)
+                {
                     i = 0;
+                }
             }
         }
 
@@ -113,12 +128,14 @@ namespace ETLStackBrowse
         public int EnsureContains(ByteWindow by)
         {
             if (count >= buckets.Length / 10 * 7)
+            {
                 Rehash();
+            }
 
             uint hash = Hash(ref by);
             int i = (int)(hash % buckets.Length);
 
-            for (;;)
+            for (; ; )
             {
                 if (buckets[i].bytes == null)
                 {
@@ -130,26 +147,32 @@ namespace ETLStackBrowse
                 }
 
                 if (Equals(by, buckets[i].bytes))
+                {
                     return buckets[i].id;
+                }
 
                 i++;
                 if (i == buckets.Length)
+                {
                     i = 0;
+                }
             }
         }
 
-        void Rehash()
+        private void Rehash()
         {
-            Bucket[] bucketsNew = new Bucket[buckets.Length*2];
+            Bucket[] bucketsNew = new Bucket[buckets.Length * 2];
 
             for (int j = 0; j < buckets.Length; j++)
             {
                 if (buckets[j].bytes == null)
+                {
                     continue;
+                }
 
                 int i = (int)(Hash(buckets[j].bytes) % bucketsNew.Length);
 
-                for (;;)
+                for (; ; )
                 {
                     if (bucketsNew[i].bytes == null)
                     {
@@ -159,7 +182,9 @@ namespace ETLStackBrowse
 
                     i++;
                     if (i == bucketsNew.Length)
+                    {
                         i = 0;
+                    }
                 }
             }
 

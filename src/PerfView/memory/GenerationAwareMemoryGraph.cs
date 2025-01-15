@@ -1,10 +1,5 @@
-﻿using Diagnostics.Tracing.StackSources;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using Microsoft.Diagnostics.Tracing.Stacks;
 using System.IO;
-using System.Text.RegularExpressions;
 
 namespace Graphs
 {
@@ -89,7 +84,7 @@ namespace Graphs
 
         private void VisitNodeFromSample(StackSourceSample sample)
         {
-            MemoryNode currentNode = (MemoryNode) _OriginalMemoryGraph.GetNode((NodeIndex)sample.SampleIndex, _OriginalMemoryGraph.AllocNodeStorage());
+            MemoryNode currentNode = (MemoryNode)_OriginalMemoryGraph.GetNode((NodeIndex)sample.SampleIndex, _OriginalMemoryGraph.AllocNodeStorage());
             VisitNode(currentNode);
         }
 
@@ -131,7 +126,7 @@ namespace Graphs
                 {
                     parentMemNodeBuilder = _UnknownRootNode;
                 }
-                
+
                 // Get the current node's type and object address.
                 NodeType nodeType = _OriginalMemoryGraph.GetType(oldMemNode.TypeIndex, _OldNodeTypeStorage);
 
@@ -142,6 +137,10 @@ namespace Graphs
                     if (generation == 3)
                     {
                         typeName = string.Format("LOH: {0}", nodeType.Name);
+                    }
+                    else if (generation == 4)
+                    {
+                        typeName = string.Format("POH: {0}", nodeType.Name);
                     }
                     else
                     {

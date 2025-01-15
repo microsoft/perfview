@@ -2,33 +2,47 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard1.3</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <RootNamespace>Microsoft.Diagnostics.FastSerialization</RootNamespace>
     <AssemblyName>Microsoft.Diagnostics.FastSerialization</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
     <Company>Microsoft</Company>
     <Description>Serialization library for TraceEvent.</Description>
     <Copyright>Copyright © Microsoft 2010</Copyright>
+    <Version>$(FastSerializationVersion)</Version>
+    <FileVersion>$(FastSerializationVersion)</FileVersion>
+    <InformationalVersion>$(FastSerializationVersion)</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);GROWABLEARRAY_PUBLIC;STREAMREADER_PUBLIC;FASTSERIALIZATION_PUBLIC</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- *** SourceLink Support *** -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All" />
+  </ItemGroup>
+
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
     <FilesToSign Include="$(TargetPath)">
-        <Authenticode>Microsoft</Authenticode>
+        <Authenticode>Microsoft400</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
   </ItemGroup>
 
   <!-- .NET Strong Name Signing -->
   <PropertyGroup>
-    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
-    <DelaySign>true</DelaySign>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(SIGNING_BUILD)'!= 'true'">true</PublicSign>
+    <DelaySign Condition="'$(SIGNING_BUILD)'== 'true'">true</DelaySign>
     <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 

@@ -3,7 +3,7 @@
 @echo.This script simply calls msbuild to build PerfView.exe
 @echo.*************************************************************
 @echo.
-msbuild /p:Configuration=Release %*
+msbuild /restore /m /p:Configuration=Release %*
 @if '%ERRORLEVEL%' == '0' (
     echo.
     echo.

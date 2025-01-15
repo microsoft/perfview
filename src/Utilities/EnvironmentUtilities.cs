@@ -2,7 +2,7 @@
 using System;
 namespace Microsoft.Diagnostics.Utilities
 {
-#if UTILITIES_PUBLIC 
+#if UTILITIES_PUBLIC
     public 
 #endif
     static class EnvironmentUtilities

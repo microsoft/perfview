@@ -23,7 +23,8 @@ namespace Microsoft.Diagnostics.Utilities
                 m_stream1.Write(value); m_stream2.Write(value);
             }
         }
-        public override void Write(char[] buffer, int index, int count) {
+        public override void Write(char[] buffer, int index, int count)
+        {
             lock (this)
             {
                 Write(new string(buffer, index, count));
@@ -51,7 +52,7 @@ namespace Microsoft.Diagnostics.Utilities
             }
         }
 
-        TextWriter m_stream1;
-        TextWriter m_stream2;
+        private TextWriter m_stream1;
+        private TextWriter m_stream2;
     }
 }

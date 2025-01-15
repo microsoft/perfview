@@ -1,17 +1,27 @@
-﻿using System.Collections.Generic;
+﻿using FastSerialization;
+using System.Collections.Generic;
 using System.Diagnostics;
-using FastSerialization;
 using Address = System.UInt64;
 
 namespace Graphs
 {
     public class MemoryGraph : Graph, IFastSerializable
     {
-        public MemoryGraph(int expectedSize)
-            : base(expectedSize)
+        public MemoryGraph(int expectedSize, bool isVeryLargeGraph = false)
+            : base(expectedSize, isVeryLargeGraph)
         {
-            m_addressToNodeIndex = new Dictionary<Address, NodeIndex>(expectedSize);
-            m_nodeAddresses = new GrowableArray<Address>(expectedSize);
+            // If we have too many addresses we will reach the Dictionary's internal array's size limit and throw.
+            // Therefore use a new implementation of it that is similar in performance but that can handle the extra load.
+            if (isVeryLargeGraph)
+            {
+                m_addressToNodeIndex = new SegmentedDictionary<Address, NodeIndex>(expectedSize);
+            }
+            else
+            {
+                m_addressToNodeIndex = new Dictionary<Address, NodeIndex>(expectedSize);
+            }
+                                                              
+            m_nodeAddresses = new SegmentedList<Address>(SegmentSize, expectedSize);
         }
 
         public void WriteAsBinaryFile(string outputFileName)
@@ -21,10 +31,9 @@ namespace Graphs
         }
         public static MemoryGraph ReadFromBinaryFile(string inputFileName)
         {
-            Deserializer deserializer = new Deserializer(inputFileName);
-            deserializer.TypeResolver = typeName => System.Type.GetType(typeName);  // resolve types in this assembly (and mscorlib)
-            deserializer.RegisterFactory(typeof(MemoryGraph), delegate() { return new MemoryGraph(1); });
-            deserializer.RegisterFactory(typeof(Graphs.Module), delegate() { return new Graphs.Module(0); });
+            Deserializer deserializer = new Deserializer(inputFileName, SerializationSettings.Default);
+            deserializer.RegisterFactory(typeof(MemoryGraph), delegate () { return new MemoryGraph(1); });
+            deserializer.RegisterFactory(typeof(Graphs.Module), delegate () { return new Graphs.Module(0); });
             return (MemoryGraph)deserializer.GetEntryObject();
         }
 
@@ -33,11 +42,14 @@ namespace Graphs
         /// as part of normal graph processing, it needs to be set by the caller.   MemoryGraph is only 
         /// acting as storage.  
         /// </summary>
-        public bool Is64Bit { get; set; } 
+        public bool Is64Bit { get; set; }
         public Address GetAddress(NodeIndex nodeIndex)
         {
             if (nodeIndex == NodeIndex.Invalid)
+            {
                 return 0;
+            }
+
             return m_nodeAddresses[(int)nodeIndex];
         }
         public void SetAddress(NodeIndex nodeIndex, Address nodeAddress)
@@ -54,7 +66,7 @@ namespace Graphs
         }
         public override Node AllocNodeStorage()
         {
-            return new MemoryNode   (this);
+            return new MemoryNode(this);
         }
         public override long SizeOfGraphDescription()
         {
@@ -91,7 +103,7 @@ namespace Graphs
             NodeIndex nodeIndex;
             if (!m_addressToNodeIndex.TryGetValue(objectAddress, out nodeIndex))
             {
-                nodeIndex = this.CreateNode();
+                nodeIndex = CreateNode();
                 m_nodeAddresses[(int)nodeIndex] = objectAddress;
                 m_addressToNodeIndex.Add(objectAddress, nodeIndex);
             }
@@ -100,7 +112,7 @@ namespace Graphs
         }
         public bool IsInGraph(Address objectAddress)
         {
-            return m_addressToNodeIndex.ContainsKey(objectAddress); 
+            return m_addressToNodeIndex.ContainsKey(objectAddress);
         }
 
         /// <summary>
@@ -108,17 +120,28 @@ namespace Graphs
         /// THis table maps the ID that CLRProfiler uses (an address), to the NodeIndex we have assigned to it.  
         /// It is only needed while the file is being read in.  
         /// </summary>
-        protected Dictionary<Address, NodeIndex> m_addressToNodeIndex;    // This field is only used during construction
+        protected IDictionary<Address, NodeIndex> m_addressToNodeIndex;    // This field is only used during construction
 
         #endregion
         #region private
         void IFastSerializable.ToStream(Serializer serializer)
         {
             base.ToStream(serializer);
-            // Write out the Memory addresses of each object 
-            serializer.Write(m_nodeAddresses.Count);
+            // Write out the Memory addresses of each object
+            if (m_isVeryLargeGraph)
+            {
+                serializer.Write(m_nodeAddresses.Count);
+            }
+            else
+            {
+                serializer.Write((int)m_nodeAddresses.Count);
+            }
+            
             for (int i = 0; i < m_nodeAddresses.Count; i++)
+            {
                 serializer.Write((long)m_nodeAddresses[i]);
+            }
+
             serializer.WriteTagged(Is64Bit);
         }
 
@@ -126,10 +149,13 @@ namespace Graphs
         {
             base.FromStream(deserializer);
             // Read in the Memory addresses of each object 
-            int addressCount = deserializer.ReadInt();
-            m_nodeAddresses = new GrowableArray<Address>(addressCount);
-            for (int i = 0; i < addressCount; i++)
+            long addressCount = m_isVeryLargeGraph ? deserializer.ReadInt64() : deserializer.ReadInt();
+            m_nodeAddresses = new SegmentedList<Address>(SegmentSize, addressCount);
+
+            for (long i = 0; i < addressCount; i++)
+            {
                 m_nodeAddresses.Add((Address)deserializer.ReadInt64());
+            }
 
             bool is64bit = false;
             deserializer.TryReadTagged(ref is64bit);
@@ -138,7 +164,7 @@ namespace Graphs
 
         // This array survives after the constructor completes
         // TODO Fold this into the existing blob. Currently this dominates the Size cost of the graph!
-        protected GrowableArray<Address> m_nodeAddresses;
+        protected SegmentedList<Address> m_nodeAddresses;
         #endregion
     }
 
@@ -157,13 +183,14 @@ namespace Graphs
 
         public override void WriteXml(System.IO.TextWriter writer, bool includeChildren = true, string prefix = "", NodeType typeStorage = null, string additinalAttribs = "")
         {
-            Address end = Address + (uint) Size;
+            Address end = Address + (uint)Size;
             // base.WriteXml(writer, prefix, storage, typeStorage, additinalAttribs + " Address=\"0x" + Address.ToString("x") + "\"");
-            base.WriteXml(writer, includeChildren, prefix, typeStorage, 
-                additinalAttribs + " Address=\"0x" + Address.ToString("x") + "\"" 
+            base.WriteXml(writer, includeChildren, prefix, typeStorage,
+                additinalAttribs + " Address=\"0x" + Address.ToString("x") + "\""
                                  + " End=\"0x" + end.ToString("x") + "\"");
         }
-        MemoryGraph m_memoryGraph;
+
+        private MemoryGraph m_memoryGraph;
         #endregion
     }
 
@@ -175,14 +202,17 @@ namespace Graphs
     /// </summary>
     public class MemoryNodeBuilder
     {
-        public MemoryNodeBuilder(MemoryGraph graph, string typeName, string moduleName=null, NodeIndex nodeIndex = NodeIndex.Invalid)
+        public MemoryNodeBuilder(MemoryGraph graph, string typeName, string moduleName = null, NodeIndex nodeIndex = NodeIndex.Invalid)
         {
             Debug.Assert(typeName != null);
             m_graph = graph;
             TypeName = typeName;
             Index = nodeIndex;
             if (Index == NodeIndex.Invalid)
+            {
                 Index = m_graph.CreateNode();
+            }
+
             Debug.Assert(m_graph.m_nodes[(int)Index] == m_graph.m_undefinedObjDef, "SetNode cannot be called on the nodeIndex passed");
             ModuleName = moduleName;
             m_mutableChildren = new List<MemoryNodeBuilder>();
@@ -199,12 +229,14 @@ namespace Graphs
         /// present, it will be created.  Note it will ONLY find MutableNode children
         /// (not children added with AddChild(NodeIndex).  
         /// </summary>
-        public MemoryNodeBuilder FindOrCreateChild(string childTypeName, string childModuleName=null)
+        public MemoryNodeBuilder FindOrCreateChild(string childTypeName, string childModuleName = null)
         {
             foreach (var child in m_mutableChildren)
             {
                 if (child.TypeName == childTypeName)
+                {
                     return child;
+                }
             }
 
             var ret = new MemoryNodeBuilder(m_graph, childTypeName, childModuleName);
@@ -232,7 +264,9 @@ namespace Graphs
         public NodeIndex Build()
         {
             if (m_typeIndex == NodeTypeIndex.Invalid)
+            {
                 AllocateTypeIndexes();
+            }
 
             if (m_mutableChildren != null)
             {
@@ -241,7 +275,9 @@ namespace Graphs
                 var mutableChildren = m_mutableChildren;
                 m_mutableChildren = null;           // Signals that I have been built
                 foreach (var child in mutableChildren)
+                {
                     child.Build();
+                }
             }
             return Index;
         }
@@ -258,59 +294,16 @@ namespace Graphs
                     types.Add(TypeName, m_typeIndex);
                 }
                 foreach (var child in m_mutableChildren)
+                {
                     child.AllocateTypeIndexes(types);
+                }
             }
         }
 
-        NodeTypeIndex m_typeIndex;
-        List<MemoryNodeBuilder> m_mutableChildren;
-        GrowableArray<NodeIndex> m_unmutableChildren;
-        MemoryGraph m_graph;
+        private NodeTypeIndex m_typeIndex;
+        private List<MemoryNodeBuilder> m_mutableChildren;
+        private GrowableArray<NodeIndex> m_unmutableChildren;
+        private MemoryGraph m_graph;
         #endregion
     }
 }
-
-#if false 
-namespace Graphs.Samples
-{
-    class Sample
-    {
-        static void Main()
-        {
-            int expectedNumberOfNodes = 1000;
-            MemoryGraph memoryGraph = new MemoryGraph(expectedNumberOfNodes);
-
-            GrowableArray<NodeIndex> tempForChildren = new GrowableArray<NodeIndex>();
-
-
-            // We can make a new Node index
-            NodeIndex newNodeIdx = memoryGraph.CreateNode();
-
-            NodeIndex childIdx = memoryGraph.CreateNode();
-
-
-            // 
-            NodeTypeIndex newNodeType = memoryGraph.CreateType("MyChild");
-
-
-
-            memoryGraph.SetNode(childIdx, newType, 100, tempForChildren);
-
-
-
-
-
-            memoryGraph.AllowReading();
-
-            // Serialize to a file
-            memoryGraph.WriteAsBinaryFile("file.gcHeap");
-
-
-
-            // Can unserialize easily. 
-            // var readBackIn = MemoryGraph.ReadFromBinaryFile("file.gcHeap");
-        }
-
-    }
-}
-#endif

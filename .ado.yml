@@ -1,0 +1,53 @@
+trigger:
+  - main
+
+pr:
+  - main
+
+jobs:
+  - job: PerfView_Debug
+    pool:
+      vmImage: 'windows-2022'
+      name: Azure Pipelines
+      demands:
+      - msbuild
+      - vstest
+
+    steps:
+    - template: /.pipelines/perfview-job.yml
+      parameters:
+        flavor: 'Debug'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifacts'
+      inputs:
+        PathtoPublish: '$(build.artifactstagingdirectory)'
+        ArtifactName: 'PerfViewBinaries-Debug'
+      condition: succeededOrFailed()
+
+  - job: PerfView_Release
+    pool:
+      vmImage: 'windows-2022'
+      name: Azure Pipelines
+      demands:
+      - msbuild
+      - vstest
+
+    steps:
+    - template: /.pipelines/perfview-job.yml
+      parameters:
+        flavor: 'Release'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact'
+      inputs:
+        PathtoPublish: '$(build.artifactstagingdirectory)'
+        ArtifactName: 'PerfViewBinaries-Release'
+
+  - job: PerfCollect
+    pool:
+      vmImage: 'ubuntu-latest'
+      name: Azure Pipelines
+
+    steps:
+    - template: /.pipelines/perfcollect-job.yml

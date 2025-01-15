@@ -5,7 +5,6 @@
 // It is available from http://www.codeplex.com/hyperAddin 
 // using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using System;
 using Address = System.UInt64;
 
 namespace Microsoft.Diagnostics.Tracing
@@ -68,13 +67,6 @@ namespace Microsoft.Diagnostics.Tracing
         public void DisposeGCReference(GCReferenceID GCReferenceID)
         {
         }
-
-#if false 
-        /// <summary>
-        /// This callback will be fired any time a tracked GC reference dies.  
-        /// </summary>
-        public event Action<GCReferenceID> OnDeath;
-#endif 
     }
 
 }

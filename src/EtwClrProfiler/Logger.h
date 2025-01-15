@@ -35,24 +35,24 @@
 //=============================================================
 class Logger
 {
-public  :
-    Logger(wchar_t * logFileName);
-    ~Logger();
+public:
+	Logger(wchar_t * logFileName);
+	~Logger();
 
-    void                                Open();
-    void                                Close();
-    void                                Flush();
+	void                                Open();
+	void                                Close();
+	void                                Flush();
 
-    void __cdecl                        Trace(wchar_t * format, ...);
-    void                                TraceString(wchar_t * lpsz);
+	void __cdecl                        Trace(wchar_t * format, ...);
+	void                                TraceString(wchar_t * lpsz);
 
-    void                                Print();
+	void                                Print();
 
-    static Logger * s_pTraceLogger;
-    static Logger * s_pErrorLogger;
+	static Logger * s_pTraceLogger;
+	static Logger * s_pErrorLogger;
 
-private :
-    struct _iobuf * /* FILE */ m_logFileStream;
+private:
+	struct _iobuf * /* FILE */ m_logFileStream;
 };
 
 #endif // DEBUG

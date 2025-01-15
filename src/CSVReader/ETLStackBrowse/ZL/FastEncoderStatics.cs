@@ -1,9 +1,9 @@
 namespace System.IO.Compression2
 {
     using System.Diagnostics;
-    using System.Globalization;
 
-    internal static class FastEncoderStatics {
+    internal static class FastEncoderStatics
+    {
         // static information for encoding, DO NOT MODIFY
 
         internal static readonly byte[] FastEncoderTreeStructureData = {
@@ -162,9 +162,10 @@ namespace System.IO.Compression2
         internal const int BFinalNoCompressionHeaderBitCount = 3;
         internal const int MaxCodeLen = 16;
 
-        static private byte[] distLookup;
+        private static byte[] distLookup;
 
-        static FastEncoderStatics() {
+        static FastEncoderStatics()
+        {
             distLookup = new byte[512];
             GenerateSlotTables();
         }
@@ -188,7 +189,8 @@ namespace System.IO.Compression2
         //   8   3  17-24   18   8    513-768   28   13 16385-24576
         //   9   3  25-32   19   8   769-1024   29   13 24577-32768
 
-        static internal void GenerateSlotTables() {
+        internal static void GenerateSlotTables()
+        {
             // Initialize the mapping length (0..255) -> length code (0..28)
             //int length = 0;
             //for (code = 0; code < FastEncoderStatics.NumLengthBaseCodes-1; code++) {
@@ -200,30 +202,39 @@ namespace System.IO.Compression2
             // Initialize the mapping dist (0..32K) -> dist code (0..29)
             int dist = 0;
             int code;
-            for (code = 0; code < 16; code++) {
+            for (code = 0; code < 16; code++)
+            {
                 for (int n = 0; n < (1 << FastEncoderStatics.ExtraDistanceBits[code]); n++)
+                {
                     distLookup[dist++] = (byte)code;
+                }
             }
 
             dist >>= 7; // from now on, all distances are divided by 128 
 
-            for (; code < FastEncoderStatics.NumDistBaseCodes; code++) {
+            for (; code < FastEncoderStatics.NumDistBaseCodes; code++)
+            {
                 for (int n = 0; n < (1 << (FastEncoderStatics.ExtraDistanceBits[code] - 7)); n++)
+                {
                     distLookup[256 + dist++] = (byte)code;
+                }
             }
         }
 
         // Return the position slot (0...29) of a match offset (0...32767)
-        static internal int GetSlot(int pos) {
+        internal static int GetSlot(int pos)
+        {
             return distLookup[((pos) < 256) ? (pos) : (256 + ((pos) >> 7))];
         }
 
         // Reverse 'length' of the bits in code
-        public static uint BitReverse(uint code, int length) {
+        public static uint BitReverse(uint code, int length)
+        {
             uint new_code = 0;
 
             Debug.Assert(length > 0 && length <= 16, "Invalid len");
-            do {
+            do
+            {
                 new_code |= (code & 1);
                 new_code <<= 1;
                 code >>= 1;

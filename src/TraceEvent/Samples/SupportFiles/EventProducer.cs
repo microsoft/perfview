@@ -13,7 +13,7 @@ namespace TraceEventSamples
     namespace Producer
     {
         [EventSource(Name = "Microsoft-Demos-SimpleMonitor")]     // This is the name of my eventSource outside my program.  
-        class MyEventSource : EventSource
+        internal class MyEventSource : EventSource
         {
             // Notice that the bodies of the events follow a pattern:  WriteEvent(ID, <args>) where 
             //     ID is a unique ID starting at 1 and incrementing for each new event method. and
@@ -39,9 +39,9 @@ namespace TraceEventSamples
         }
 
         // This code belongs in the process generating the events.   It is in this process for simplicity.  
-        class EventGenerator
+        internal class EventGenerator
         {
-            static internal TextWriter Out = AllSamples.Out;
+            internal static TextWriter Out = AllSamples.Out;
 
             public static void CreateEvents()
             {

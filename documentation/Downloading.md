@@ -13,15 +13,13 @@ care about specific bug fixes or features go there.
 
 ## Shortcut to Download the Latest PerfView.exe
 
-In the common case, the only file you need one file, PerfView.exe, to use the tool.  The most recent copy of
-this file can be downloaded here
-
-* [Download Version 2.02 of PerfView.exe](https://github.com/Microsoft/perfview/releases/download/P2.0.2/PerfView.exe)
+In the common case, you only need one file, PerfView.exe, to use the tool.  The most recent copy of
+this file can be downloaded [directly from this link](https://github.com/microsoft/perfview/releases/latest/download/PerfView.exe).
 
 Once you click the above link in your browser it will start downloading, the details of which vary from browser to browser.
 In some cases it will prompt for more information (IE) and in others (Chrome) it may not be obvious that
 you clicked on anything (look at the bottom of the pane for changes).  The result, however will be a PerfView.exe on your
-local machine.   
+local machine.
 
 Once downloaded you you can simply double click on the downloaded EXE to launch PerfView.
 While Github itself and your browser do some validation, to be extra careful you can
@@ -37,7 +35,7 @@ the Digital Signatures page for perfView by
 
 * Selecting PerfView -> right click -> Properties -> Digital Signatures.
 
-You will see a sha1 and sha256 signature from the 'Microsoft Corporation'.
+You will see a sha256 signature from the 'Microsoft Corporation'.
 This confirms that software is authentic. You can also do this by running the signtool command
 ```
  signtool verify /pa /all  PerfView.exe
@@ -52,7 +50,7 @@ so by visiting the [PerfView GitHub Releases](https://github.com/Microsoft/perfv
 
 
 ## Microsoft Download Site
-The [Microsoft Download Site for PerfView](https://www.microsoft.com/en-us/download/details.aspx?id=28567) has
+The Microsoft Download Site for PerfView has
 been retired as the official download site for PerfView.  It has been replaced by
 [PerfView GitHub Releases page](https://github.com/Microsoft/perfview/releases) referenced above. 
 

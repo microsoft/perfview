@@ -1,17 +1,15 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
-// It is available from http://www.codeplex.com/hyperAddin 
+// It is available from http://www.codeplex.com/hyperAddin
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Text.RegularExpressions;
 public enum Address : long { };
 
-class Program
+internal class Program
 {
     /// <summary>
-    /// This program generates C# code for manipulating ETW events given the event XML schema definition 
+    /// This program generates C# code for manipulating ETW events given the event XML schema definition
     /// </summary>
     /// <param name="args"></param>
     public static int Main(string[] args)
@@ -50,12 +48,14 @@ class Program
                     }
                 }
                 if (!foundEventSource)
+                {
                     throw new ApplicationException("Could not find an eventSource named " + commandLine.EventSource + " in " + exe);
+                }
             }
 
             Console.WriteLine("Reading manifest file " + commandLine.ManifestFile);
 #if PRIVATE
-#if MERGE 
+#if MERGE
             if (commandLine.Merge)
             {
                 bool shouldMerge = File.Exists(commandLine.OutputFile) && File.Exists(commandLine.BaseFile);
@@ -91,7 +91,7 @@ class Program
                 }
                 else
                 {
-                    FileUtilities.ForceMove(newBaseLine, commandLine.OutputFile);   
+                    FileUtilities.ForceMove(newBaseLine, commandLine.OutputFile);
                     FileUtilities.ForceMove(newBaseLine, commandLine.BaseFile);
                 }
             }
@@ -116,7 +116,7 @@ class Program
 
                 Console.WriteLine("Writing output to " + commandLine.OutputFile);
                 parserGen.GenerateTraceEventParserFile(commandLine.OutputFile);
-                break;  // TODO FIX NOW allow multiple providers in a manifest.  
+                break;  // TODO FIX NOW allow multiple providers in a manifest.
             }
 #if PRIVATE
             ApplyRenames(commandLine.RenameFile, commandLine.OutputFile);
@@ -255,7 +255,7 @@ class Program
     }
 
     /// <summary>
-    /// Given a textual MOf file create a XML file 'manifestFileName' from it 
+    /// Given a textual MOf file create a XML file 'manifestFileName' from it
     /// </summary>
     private static void CreateManifestFromMof(string mofFileName, string manifestFileName, bool verbose)
     {
@@ -273,7 +273,7 @@ class Program
             {
                 Match classMatch = classPat.Match(mofFileData, pos);
                 if (!classMatch.Success || classMatch.Index != pos)
-                    throw new ApplicationException("Error parsing class defintion starting at line " + (NewLineCount(mofFileData, 0, pos) + 1));
+                    throw new ApplicationException("Error parsing class definition starting at line " + (NewLineCount(mofFileData, 0, pos) + 1));
 
                 MofClass mofClass = new MofClass();
                 mofClass.attributes = classMatch.Groups[1].Value;
@@ -290,7 +290,7 @@ class Program
                 {
                     Match fieldMatch = fieldPat.Match(mofClass.body, fieldPos);
                     if (!fieldMatch.Success || fieldMatch.Index != fieldPos)
-                        throw new ApplicationException("Error parsing field defintion at line " + (NewLineCount(mofFileData, 0, bodyStart + fieldPos) + 1));
+                        throw new ApplicationException("Error parsing field definition at line " + (NewLineCount(mofFileData, 0, bodyStart + fieldPos) + 1));
                     MofField mofField = new MofField();
                     mofField.attributes = fieldMatch.Groups[1].Value;
                     mofField.type = fieldMatch.Groups[2].Value;
@@ -328,7 +328,7 @@ class Program
             classesByName = null;       // we are done with the dictionary.
 
             // OK at this point we have a mofClasses list intialized, so now we spit it out as
-            // and XML manifest.   
+            // and XML manifest.
 
             manifestFile.WriteLine("<instrumentationManifest xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
             manifestFile.WriteLine("  <instrumentation xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:win=\"http://manifests.microsoft.com/win/2004/08/windows/events\">");
@@ -342,7 +342,7 @@ class Program
                 manifestFile.WriteLine("      <provider name=\"" + provider.name + "\" guid=\"{" + provider.Guid + "}\">");
 
                 /***
-                // Output all opcodes 
+                // Output all opcodes
                 manifestFile.WriteLine("        <opcodes>");
                 manifestFile.WriteLine("          <opcode name=\"" + "\" symbol=\""+"\" value=\""+"\"/>");
                 manifestFile.WriteLine("        </opcodes>");
@@ -437,7 +437,7 @@ class Program
                             EventIDs.Add(eventKey, EventID);
                         }
 
-                        // TODO opcode wrong.  
+                        // TODO opcode wrong.
                         manifestFile.WriteLine("          <event value=\"" + EventID + "\" version=\"" + aEvent.Version +
                             "\" template=\"" + aEvent.name +
                             "\" opcode=\"" + opcode + "\" task=\"" + aEvent.Task().name + "\" symbol=\"" + aEvent.Task().name + opcodeName + "\"/>");
@@ -503,7 +503,10 @@ class Program
         {
             int newLineIndex = str.IndexOf('\n', startIndex, length);
             if (newLineIndex < 0)
+            {
                 return ret;
+            }
+
             length -= newLineIndex - startIndex + 1;
             startIndex = newLineIndex + 1;
             ret++;
@@ -512,11 +515,11 @@ class Program
 }
 
 /// <summary>
-/// EventSourceFinder is a class that can find all the EventSources in a file and can 
+/// EventSourceFinder is a class that can find all the EventSources in a file and can
 /// </summary>
-static class EventSourceFinder
+internal static class EventSourceFinder
 {
-    // TODO remove and depend on framework for these instead.  
+    // TODO remove and depend on framework for these instead.
     public static Guid GetGuid(Type eventSource)
     {
         foreach (var attrib in CustomAttributeData.GetCustomAttributes(eventSource))
@@ -565,9 +568,13 @@ static class EventSourceFinder
         try
         {
             if (allowInvoke)
+            {
                 assembly = System.Reflection.Assembly.LoadFrom(fileName);
+            }
             else
+            {
                 assembly = System.Reflection.Assembly.ReflectionOnlyLoadFrom(fileName);
+            }
         }
         catch (Exception e)
         {
@@ -586,7 +593,9 @@ static class EventSourceFinder
                 foreach (Type type in subAssembly.GetTypes())
                 {
                     if (type.BaseType != null && type.BaseType.Name == "EventSource")
+                    {
                         eventSources.Add(type);
+                    }
                 }
             }
             catch (Exception)
@@ -601,13 +610,13 @@ static class EventSourceFinder
     {
         // The algorithm below is following the guidance of http://www.ietf.org/rfc/rfc4122.txt
         // Create a blob containing a 16 byte number representing the namespace
-        // followed by the unicode bytes in the name.  
+        // followed by the unicode bytes in the name.
         var bytes = new byte[name.Length * 2 + 16];
         uint namespace1 = 0x482C2DB2;
         uint namespace2 = 0xC39047c8;
         uint namespace3 = 0x87F81A15;
         uint namespace4 = 0xBFC130FB;
-        // Write the bytes most-significant byte first.  
+        // Write the bytes most-significant byte first.
         for (int i = 3; 0 <= i; --i)
         {
             bytes[i] = (byte)namespace1;
@@ -626,8 +635,8 @@ static class EventSourceFinder
             bytes[2 * i + 16] = (byte)(name[i] >> 8);
         }
 
-        // Compute the Sha1 hash 
-        var sha1 = System.Security.Cryptography.SHA1.Create();
+        // Compute the Sha1 hash
+        var sha1 = System.Security.Cryptography.SHA1.Create(); // lgtm [cs/weak-crypto]
         byte[] hash = sha1.ComputeHash(bytes);
 
         // Create a GUID out of the first 16 bytes of the hash (SHA-1 create a 20 byte hash)
@@ -648,18 +657,22 @@ static class EventSourceFinder
         {
             try
             {
-                // TODO is this is at best heuristic.  
+                // TODO is this is at best heuristic.
                 string childPath = Path.Combine(assemblyDirectory, childAssemblyName.Name + ".dll");
                 Assembly childAssembly = null;
                 if (File.Exists(childPath))
+                {
                     childAssembly = Assembly.ReflectionOnlyLoadFrom(childPath);
+                }
 
-                //TODO do we care about things in the GAC?   it expands the search quite a bit. 
+                //TODO do we care about things in the GAC?   it expands the search quite a bit.
                 //else
                 //    childAssembly = Assembly.Load(childAssemblyName);
 
                 if (childAssembly != null && !soFar.ContainsKey(childAssembly))
+                {
                     GetStaticReferencedAssemblies(childAssembly, soFar);
+                }
             }
             catch (Exception)
             {
@@ -674,16 +687,16 @@ static class EventSourceFinder
 /// The code:CommandLine class holds the parsed form of all the command line arguments.  It is
 /// intialized by handing it the 'args' array for main, and it has a public field for each named argument
 /// (eg -debug). See code:#CommandLineDefinitions for the code that defines the arguments (and the help
-/// strings associated with them). 
-/// 
-/// See code:CommandLineParser for more on parser itself.   
+/// strings associated with them).
+///
+/// See code:CommandLineParser for more on parser itself.
 /// </summary>
-class CommandLine
+internal class CommandLine
 {
     public CommandLine()
     {
         bool usersGuide = false;
-        CommandLineParser.ParseForConsoleApplication(delegate(CommandLineParser parser)
+        CommandLineParser.ParseForConsoleApplication(delegate (CommandLineParser parser)
         {
             // #CommandLineDefinitions
             parser.DefineParameterSet("UsersGuide", ref usersGuide, true, "Display the users guide.");
@@ -714,7 +727,9 @@ class CommandLine
 #endif
         });
         if (usersGuide)
+        {
             UsersGuide.DisplayConsoleAppUsersGuide("UsersGuide.htm");
+        }
     }
     public string ManifestFile;
     public string OutputFile
@@ -722,7 +737,10 @@ class CommandLine
         get
         {
             if (outputFile == null)
+            {
                 outputFile = Path.ChangeExtension(ManifestFile, ".cs");
+            }
+
             return outputFile;
         }
     }
@@ -731,7 +749,10 @@ class CommandLine
         get
         {
             if (baseFile == null)
+            {
                 baseFile = Path.ChangeExtension(outputFile, ".base.cs");
+            }
+
             return baseFile;
         }
     }

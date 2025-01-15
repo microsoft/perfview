@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- This project is here only to support MicroBuild Signing of the NuGet packages. -->
+
+  <PropertyGroup>
+    <OutputType>library</OutputType>
+    <TargetFramework>net462</TargetFramework>
+  </PropertyGroup>
+   
+  <ItemGroup>
+    <!-- To support Signing new SupportFile packages, look for any packages in the NugetSupportFiles directory -->
+    <None Include="..\NugetSupportFiles\*.SupportFiles.*.nupkg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+
+    <!-- Get the Microsoft.PerfView.*.nuget package we just built -->
+    <None Include="..\PerfView\bin\$(Configuration)\Microsoft.PerfView.*nupkg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+
+    <!-- Get the Microsoft.Diagnostics.TraceEvent.*.nuget package we just built -->
+    <None Include="..\SymbolsAuth\bin\$(Configuration)\Microsoft.Diagnostics.Tracing.TraceEvent.SymbolsAuthentication.*nupkg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+
+    <!-- Get the Microsoft.Diagnostics.TraceEvent.*.nuget package we just built -->
+    <None Include="..\TraceEvent\bin\$(Configuration)\Microsoft.Diagnostics.Tracing.TraceEvent.*nupkg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+
+    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
+  </ItemGroup>
+
+  <Target Name="DeleteUnusedDlls" BeforeTargets="PostBuild">
+    <ItemGroup>
+      <FilesToDelete Include="$(OutDir)*.dll;$(OutDir)*.pdb" />
+    </ItemGroup>
+    <Delete Files="@(FilesToDelete)" />
+  </Target>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <ItemGroup>
+      <!-- Sign any nuget packages that made it to our output directory -->
+      <FilesToSign Include="$(OutDir)*.nupkg">
+	 <Authenticode>Nuget</Authenticode>
+      </FilesToSign>
+    </ItemGroup>
+    <Message Importance="High" Text="Package Sign '%(FilesToSign.Identity)'" /> 
+  </Target>
+</Project>

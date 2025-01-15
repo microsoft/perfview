@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.HeapDump
         public HeapDumpException(string message, HR hr) :
             base(message)
         {
-            this.HResult = (int)hr;
+            HResult = (int)hr;
         }
     }
 }

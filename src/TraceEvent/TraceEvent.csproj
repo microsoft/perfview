@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk"> 
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard1.6</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -20,57 +20,50 @@
 
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
     <NuspecFile>Microsoft.Diagnostics.Tracing.TraceEvent.nuspec</NuspecFile>
     <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);SetNuspecProperties</GenerateNuspecDependsOn>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
 
   <Target Name="SetNuspecProperties">
     <PropertyGroup>
-      <NuspecProperties>Configuration=$(Configuration);version=$(InformationalVersion);OutDir=$(OutputPath)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);Configuration=$(Configuration)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);version=$(InformationalVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);OutDir=$(OutputPath)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);MicrosoftWin32RegistryVersion=$(MicrosoftWin32RegistryVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemCollectionsImmutableVersion=$(SystemCollectionsImmutableVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemReflectionMetadataVersion=$(SystemReflectionMetadataVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemReflectionTypeExtensionsVersion=$(SystemReflectionTypeExtensionsVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemRuntimeCompilerServicesUnsafeVersion=$(SystemRuntimeCompilerServicesUnsafeVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);MicrosoftDiagnosticsNETCoreClientVersion=$(MicrosoftDiagnosticsNETCoreClientVersion)</NuspecProperties>
     </PropertyGroup>
   </Target>
 
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW</DefineConstants>
+    <DefineConstants>$(DefineConstants);COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW;SUPPORT_V1_V2;CONTAINER_WORKAROUND_NOT_NEEDED</DefineConstants>
     <NoWarn>$(NoWarn),0649,0618</NoWarn>
+    <DebugType>portable</DebugType>
   </PropertyGroup>
-
-  <!--
-    Unconditional use of PackageReference would work if we targeted net46, but the reference APIs do not include
-    support for net45 targets. Work around the issue by using conditional references.
-  -->
-  <Choose>
-    <When Condition="'$(TargetFramework)' == 'netstandard1.6'">
-      <ItemGroup>
-        <PackageReference Include="Microsoft.Win32.Registry" Version="4.3.0" />
-        <PackageReference Include="System.IO.Compression" Version="4.3.0" />
-        <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
-        <PackageReference Include="System.Runtime" Version="4.3.0" />
-        <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-        <PackageReference Include="System.Reflection.TypeExtensions" Version="4.3.0" />
-        <PackageReference Include="System.Net.Requests" Version="4.3.0" />
-        <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
-        <PackageReference Include="System.Diagnostics.TraceSource" Version="4.3.0" />
-        <PackageReference Include="System.IO.UnmanagedMemoryStream" Version="4.3.0" />
-        <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
-        <PackageReference Include="System.Security.Cryptography.Algorithms" Version="4.3.0" />
-        <PackageReference Include="Microsoft.NETCore.Portable.Compatibility" Version="1.0.1" />
-      </ItemGroup>
-    </When>
-
-    <When Condition="'$(TargetFramework)' == 'net45'">
-      <ItemGroup>
-        <Reference Include="System.IO.Compression" />
-        <Reference Include="System.Net.Http" />
-        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
-      </ItemGroup>
-    </When>
-  </Choose>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
-    <PackageReference Include="System.Reflection.Metadata" Version="1.5.0" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
+    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
+    <PackageReference Include="System.Reflection.TypeExtensions" Version="$(SystemReflectionTypeExtensionsVersion)" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="$(MicrosoftDiagnosticsNETCoreClientVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- *** SourceLink Support *** -->
+  <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -78,6 +71,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\FastSerialization\FunctorComparer`1.cs" Link="Utilities\FunctorComparer`1.cs" />
     <Compile Include="..\Utilities\OperatingSystemVersion.cs">
       <Link>Utilities\OperatingSystemVersion.cs</Link>
     </Compile>
@@ -127,22 +121,27 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-
-    <!-- *********************************************************** -->
-    <!-- Copying thee managed binaries explicitly should not be needed because the 
-         dependency logic should just do it for us, but for some reason ths only
-         works for the net45 target framework and not the netstandard1.6.  We 
-         work around it here by copying the files explicitly. -->
-
-    <None Include="$(TraceEventSupportFilesBase)$(TargetFramework)\Dia2Lib.dll">
+    <None Include="$(TraceEventSupportFilesBase)native\arm64\KernelTraceControl.dll">
+      <Link>arm64\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Include="$(TraceEventSupportFilesBase)$(TargetFramework)\OSExtensions.dll">
+    <None Include="$(TraceEventSupportFilesBase)native\arm64\msdia140.dll">
+      <Link>arm64\msdia140.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Include="$(TraceEventSupportFilesBase)$(TargetFramework)\TraceReloggerLib.dll">
+    <None Include="EventPipe\EventPipeFormat.md" />
+    <None Include="EventPipe\EventSerialization.md" />
+    <None Include="EventPipe\NetPerfFormat.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(TraceEventSupportFilesBase)\netstandard1.6\Dia2Lib.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)netstandard1.6\TraceReloggerLib.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
@@ -155,19 +154,22 @@
 
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
+    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackageSpec)'==''">
     <FilesToSign Include="$(TargetPath)">
-        <Authenticode>Microsoft</Authenticode>
+        <Authenticode>Microsoft400</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
   </ItemGroup>
 
   <!-- .NET Strong Name Signing -->
   <PropertyGroup>
-    <DefineConstants Condition="'$(SIGNING_BUILD)'!=''">$(DefineConstants);SIGNING_BUILD</DefineConstants>
-    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
-    <DelaySign>true</DelaySign>
+    <DefineConstants>$(DefineConstants);SIGNING_BUILD</DefineConstants>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(SIGNING_BUILD)'!= 'true'">true</PublicSign>
+    <DelaySign Condition="'$(SIGNING_BUILD)'== 'true'">true</DelaySign>
     <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
-
 </Project>

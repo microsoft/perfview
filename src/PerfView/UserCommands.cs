@@ -1,32 +1,27 @@
-﻿using System;
+﻿using Diagnostics.Tracing.StackSources;
+using Microsoft.Diagnostics.Tracing.StackSources;
+using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.Stacks.Formats;
+using Microsoft.Diagnostics.Utilities;
+using PerfView;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Xml;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using PerfView;
-using PerfViewModel;
-using Microsoft.Diagnostics.Symbols;
 using Utilities;
-using FastSerialization;
-using Microsoft.Diagnostics.Utilities;
-using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing.Session;
-using Diagnostics.Tracing.StackSources;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Address = System.UInt64;
-using System.Threading.Tasks;
-using System.ComponentModel;
 
 #if !PERFVIEW_COLLECT
 using Graphs;
@@ -44,80 +39,35 @@ namespace PerfViewExtensibility
     /// </summary>
     public class Commands : CommandEnvironment
     {
-        public void LinuxGCStats(string traceFileName)
+        // If you add new build-in commands you need to add lines to src\PerfView\SupportFiles\PerfVIew.xml.
+        // This is the file that contains the help for the user commands.   If you don't update this
+        // file, your new command will not have help.   
+        //
+        // This can be as simple as coping the PerfView.xml file from output directory to src\PerfView\SupportFiles.
+        // However you can do better than this by removing all 'method' entries that are not user commands
+        // That is members of this class.   This makes the file (and therefore PerfView.exe) smaller.  
+
+        /// <summary>
+        /// Save Thread stacks from a NetPerf file into a *.speedscope.json file.
+        /// </summary>
+        /// <param name="netPerfFileName">The ETL file to convert</param>
+        public void NetperfToSpeedScope(string netPerfFileName)
         {
-            var options = new TraceLogOptions();
-            options.ConversionLog = LogFile;
-            if (App.CommandLineArgs.KeepAllEvents)
-                options.KeepAllEvents = true;
-            options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
-            options.SkipMSec = App.CommandLineArgs.SkipMSec;
-            options.LocalSymbolsOnly = false;
-            options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
+            string outputName = Path.ChangeExtension(netPerfFileName, ".speedscope.json");
 
-            string etlxFilePath = traceFileName + ".etlx";
-            etlxFilePath = TraceLog.CreateFromLttngTextDataFile(traceFileName, etlxFilePath, options);
-
-            TraceLog traceLog = new TraceLog(etlxFilePath);
-
-            List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> processes = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
-            using (var source = traceLog.Events.GetSource())
+            string etlxFileName = TraceLog.CreateFromEventPipeDataFile(netPerfFileName);
+            using (var eventLog = new TraceLog(etlxFileName))
             {
-                Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
-                source.Process();
-                foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) processes.Add(proc);
-            }
+                var startStopSource = new MutableTraceEventStackSource(eventLog);
+                // EventPipe currently only has managed code stacks.
+                startStopSource.OnlyManagedCodeStacks = true;
 
-            string outputFileName = traceFileName + ".gcStats.html";
-            using (StreamWriter output = File.CreateText(outputFileName))
-            {
-                Stats.ClrStats.ToHtml(output, processes, outputFileName, "GCStats", Stats.ClrStats.ReportType.GC);
-            }
-        }
+                var computer = new SampleProfilerThreadTimeComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
+                computer.GenerateThreadTimeStacks(startStopSource);
 
-        public void LinuxJITStats(string traceFileName)
-        {
-            var options = new TraceLogOptions();
-            options.ConversionLog = LogFile;
-            if (App.CommandLineArgs.KeepAllEvents)
-                options.KeepAllEvents = true;
-            options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
-            options.SkipMSec = App.CommandLineArgs.SkipMSec;
-            options.LocalSymbolsOnly = false;
-            options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
+                SpeedScopeStackSourceWriter.WriteStackViewAsJson(startStopSource, outputName);
 
-            string outputFileName = traceFileName + ".jitStats.html";
-            string etlxFilePath = traceFileName + ".etlx";
-            etlxFilePath = TraceLog.CreateFromLttngTextDataFile(traceFileName, etlxFilePath, options);
-
-            TraceLog traceLog = new TraceLog(etlxFilePath);
-            var source = traceLog.Events.GetSource();
-
-            Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> jitStats = new Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
-            Dictionary<int, List<object>> bgJitEvents = new Dictionary<int, List<object>>();
-
-            // attach callbacks to grab background JIT events
-            var clrPrivate = new ClrPrivateTraceEventParser(source);
-            clrPrivate.ClrMulticoreJitCommon += delegate (Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate.MulticoreJitPrivateTraceData data)
-            {
-                if (!bgJitEvents.ContainsKey(data.ProcessID)) bgJitEvents.Add(data.ProcessID, new List<object>());
-                bgJitEvents[data.ProcessID].Add(data.Clone());
-            };
-            source.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
-            {
-                if (!bgJitEvents.ContainsKey(data.ProcessID)) bgJitEvents.Add(data.ProcessID, new List<object>());
-                bgJitEvents[data.ProcessID].Add(data.Clone());
-            };
-
-            // process the model
-            Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
-            source.Process();
-            foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !jitStats.ContainsKey(proc.ProcessID)) jitStats.Add(proc.ProcessID, proc);
-            using (TextWriter output = File.CreateText(outputFileName))
-            {
-                Stats.ClrStats.ToHtml(output, jitStats.Values.ToList(), outputFileName, "JITStats", Stats.ClrStats.ReportType.JIT, true);
+                LogFile.WriteLine("[Converted {0} to {1}  Use https://www.speedscope.app/ to view.]", netPerfFileName, outputName);
             }
         }
 
@@ -171,6 +121,73 @@ namespace PerfViewExtensibility
                         throw new ApplicationException("Could not find process named " + processName);
                 }
                 SaveCPUStacksForProcess(etlFile, process);
+            }
+        }
+
+        /// <summary>
+        /// Returns the process with the most amount of CpuMsec time.  Should this time be equal, the oldest ID is prioritized
+        /// </summary>
+        /// <param name="processName"> The process name to look for in the stacks </param>
+        /// <returns> The process with the greatest cpuMSec, or the oldest process if there was a tie. </returns>
+        TraceProcess ProcessWithGreatestCpuMSec(ETLDataFile etlDataFile, string processName)
+        {
+            if (etlDataFile == null || string.IsNullOrWhiteSpace(processName))
+            {
+                return null;
+            }
+            float greatestMSec = 0.0f;
+            TraceProcess ret = null;
+            for (int i = 0; i < etlDataFile.Processes.Count; i++)
+            {
+                TraceProcess process = etlDataFile.Processes[(ProcessIndex)i];
+                if (string.Compare(process.Name, processName, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    if (greatestMSec == process.CPUMSec && (ret == null || process.ProcessID < ret.ProcessID))
+                    {
+                        ret = process;
+                        greatestMSec = process.CPUMSec;
+                    }
+                    else if (greatestMSec < process.CPUMSec)
+                    {
+                        ret = process;
+                        greatestMSec = process.CPUMSec;
+                    }
+                }
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// Save the entire CPU stacks from 'etlFileName' as a csv.  If the /process qualifier is present use it to narrow what
+        /// is put into the file to a single process.  If warmSymbolLookupMinimumValue is present, then PerfView will lookup symbols 
+        /// if that many trace events from a library are found.  If processLookupMethod can be specified as GreatestMSec to
+        /// instead get the process with the greatest msec as opposed to the last process with a name.
+        /// </summary>
+        /// <param name="etlFileName"> The name of the etl file to convert to a csv </param>
+        /// <param name="processName"> The process name to filter on </param>
+        /// <param name="warmSymbolLookupMinimumValue"> The number of trace events needed to lookup symbols </param>
+        /// <param name="processLookupMethod"> The lookup method to use to filter processes </param>
+        public void SaveCPUStacksAsCsv(string etlFileName, string processName = null, string warmSymbolLookupMinimumValue = "10", string processLookupMethod = "LastProcess")
+        {
+            using (var etlFile = OpenETLFile(etlFileName))
+            {
+                TraceProcess process = null;
+                if (processName != null)
+                {
+                    if (processLookupMethod == "GreatestMSec")
+                    {
+                        process = ProcessWithGreatestCpuMSec(etlFile, processName);
+                    }
+                    else
+                    {
+                        process = etlFile.Processes.LastProcessWithName(processName);
+                    }
+                    if (process == null)
+                    {
+                        throw new ApplicationException("Could not find process named " + processName);
+                    }
+                }
+                SaveCPUStacksForProcessAsCsv(etlFile, process, Int32.Parse(warmSymbolLookupMinimumValue));
             }
         }
 
@@ -348,14 +365,6 @@ namespace PerfViewExtensibility
                 }
             }
             LogFile.WriteLine("[Created {0} manifest files in {1}]", manifestCount, outputDirectory);
-        }
-
-        /// <summary>
-        /// This is a test hook.  
-        /// </summary>
-        public void DumpJSHeapAsEtlFile(string processID)
-        {
-            JavaScriptHeapDumper.DumpAsEtlFile(int.Parse(processID), processID + ".etl", LogFile);
         }
 
         /// <summary>
@@ -667,7 +676,7 @@ namespace PerfViewExtensibility
                 {
                     GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                     {
-                        var logTextWindow = new Controls.TextEditorWindow();
+                        var logTextWindow = new Controls.TextEditorWindow(GuiApp.MainWindow);
                         // Destroy the session when the widow is closed.  
                         logTextWindow.Closed += delegate (object sender, EventArgs e) { session.Dispose(); };
 
@@ -726,7 +735,7 @@ namespace PerfViewExtensibility
 
                 // Enable all the providers the users asked for
 
-                var parsedProviders = ProviderParser.ParseProviderSpecs(etwProviderNames.Split(','), null, LogFile);
+                var parsedProviders = ProviderParser.ParseProviderSpecs(etwProviderNames.Split(','), null, null, LogFile);
                 foreach (var parsedProvider in parsedProviders)
                 {
                     LogFile.WriteLine("Enabling provider {0}:{1:x}:{2}", parsedProvider.Name, (ulong)parsedProvider.MatchAnyKeywords, parsedProvider.Level);
@@ -752,7 +761,7 @@ namespace PerfViewExtensibility
                 // Hop to the GUI thread and get the arguments from a dialog box and then call myself again.  
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    var dialog = new FileInputAndOutput(delegate (string dirPath, string outFileName)
+                    var dialog = new FileInputAndOutput(GuiApp.MainWindow, delegate (string dirPath, string outFileName)
                     {
                         App.CommandLineArgs.CommandAndArgs = new string[] { "DirectorySize", dirPath, outFileName };
                         App.CommandLineArgs.DoCommand = App.CommandProcessor.UserCommand;
@@ -906,7 +915,7 @@ namespace PerfViewExtensibility
                 // Hop to the GUI thread and get the arguments from a dialog box and then call myself again.  
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    var dialog = new FileInputAndOutput(delegate (string inExeName, string outFileName)
+                    var dialog = new FileInputAndOutput(GuiApp.MainWindow, delegate (string inExeName, string outFileName)
                     {
                         App.CommandLineArgs.CommandAndArgs = new string[] { "ImageSize", inExeName, outFileName };
                         App.CommandLineArgs.DoCommand = App.CommandProcessor.UserCommand;
@@ -1003,7 +1012,7 @@ namespace PerfViewExtensibility
                 source.Clr.AddCallbackForEvents<CodeSymbolsTraceData>(OnCodeSymbols);
             }
 
-#region private
+        #region private
             private void OnModuleLoad(ModuleLoadUnloadTraceData data)
             {
                 Put(data.ProcessID, data.ModuleID, new CodeSymbolState(data, m_targetSymbolCachePath));
@@ -1080,7 +1089,7 @@ namespace PerfViewExtensibility
             // Indexed by key;
             Dictionary<long, CodeSymbolState> m_symbolFiles;
             string m_targetSymbolCachePath;
-#endregion
+        #endregion
         }
 
         /// <summary>
@@ -1105,6 +1114,11 @@ namespace PerfViewExtensibility
             }
         }
 
+        /// <summary>
+        /// Given an NGEN image 'ngenImagePath' create a 'heap' description of what is
+        /// in the NGEN image (where the metric is size).  
+        /// </summary>
+        /// <param name="ngenImagePath"></param>
         public void NGenImageSize(string ngenImagePath)
         {
             SymbolReader symReader = App.GetSymbolReader();
@@ -1127,7 +1141,7 @@ namespace PerfViewExtensibility
             CommandProcessor.UnZipIfNecessary(ref etlFile, LogFile);
 
             List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> processes = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
-            using (var source = new ETWTraceEventSource(etlFile))
+            using (var source = TraceEventDispatcher.GetDispatcherFromFileName(etlFile))
             {
                 Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
                 source.Process();
@@ -1160,32 +1174,29 @@ namespace PerfViewExtensibility
         /// </summary>
         public void ServerGCReport(string etlFile)
         {
-            if (PerfView.AppLog.InternalUser)
+            CommandProcessor.UnZipIfNecessary(ref etlFile, LogFile);
+
+            List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> gcStats = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
+            using (TraceLog tracelog = TraceLog.OpenOrConvert(etlFile))
             {
-                CommandProcessor.UnZipIfNecessary(ref etlFile, LogFile);
-
-                List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> gcStats = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
-                using (TraceLog tracelog = TraceLog.OpenOrConvert(etlFile))
+                using (var source = tracelog.Events.GetSource())
                 {
-                    using (var source = tracelog.Events.GetSource())
-                    {
-                        Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
-                        Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(source, proc => { proc.Log = tracelog; });
-                        source.Process();
-                        foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                            if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) gcStats.Add(proc);
-                    }
+                    Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
+                    Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(source, proc => { proc.Log = tracelog; });
+                    source.Process();
+                    foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
+                        if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) gcStats.Add(proc);
                 }
-
-                var outputFileName = Path.ChangeExtension(etlFile, ".gcStats.html");
-                using (var output = File.CreateText(outputFileName))
-                {
-                    LogFile.WriteLine("Wrote GCStats to {0}", outputFileName);
-                    Stats.ClrStats.ToHtml(output, gcStats, outputFileName, "GCStats", Stats.ClrStats.ReportType.GC, false, true /* do server report */);
-                }
-                if (!App.CommandLineArgs.NoGui)
-                    OpenHtmlReport(outputFileName, "GCStats report");
             }
+
+            var outputFileName = Path.ChangeExtension(etlFile, ".gcStats.html");
+            using (var output = File.CreateText(outputFileName))
+            {
+                LogFile.WriteLine("Wrote GCStats to {0}", outputFileName);
+                Stats.ClrStats.ToHtml(output, gcStats, outputFileName, "GCStats", Stats.ClrStats.ReportType.GC, false, true /* do server report */);
+            }
+            if (!App.CommandLineArgs.NoGui)
+                OpenHtmlReport(outputFileName, "GCStats report");
         }
 
         /// <summary>
@@ -1348,7 +1359,7 @@ namespace PerfViewExtensibility
         /// <summary>
         /// Fetch all the PDBs files needed for viewing 'etlFileName' locally.   If 'processName'
         /// is present we only fetch PDBs needed for that process.  This can be either a process
-        /// name (exe without extention or path) or a decimal numeric ID.  
+        /// name (exe without extension or path) or a decimal numeric ID.  
         /// </summary>
         public void FetchSymbolsForProcess(string etlFileName, string processName = null)
         {
@@ -1397,93 +1408,7 @@ namespace PerfViewExtensibility
             }
         }
 
-
-#if ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO turn on when CLRMD has been updated. 
-        /// <summary>
-        /// PrintSerializedExceptionFromProcessDump
-        /// </summary>
-        /// <param name="inputDumpFile">inputDumpFile</param>
-        public void PrintSerializedExceptionFromProcessDump(string inputDumpFile)
-        {
-            TextWriter log = LogFile;
-            if (!App.IsElevated)
-                throw new ApplicationException("Must be Administrator (elevated).");
-
-            if (Environment.Is64BitOperatingSystem)
-            {
-                // TODO FIX NOW.   Find a way of determing which architecture a dump is
-                try
-                {
-                    log.WriteLine("********** TRYING TO OPEN THE DUMP AS 64 BIT ************");
-                    PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, ProcessorArchitecture.Amd64);
-                    return; // Yeah! success the first time
-                }
-                catch (Exception e)
-                {
-                    // It might have failed because this was a 32 bit dump, if so try again.  
-                    if (e is ApplicationException)
-                    {
-                        log.WriteLine("********** TRYING TO OPEN THE DUMP AS 32 BIT ************");
-                        PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, ProcessorArchitecture.X86);
-                        return;
-                    }
-                    throw;
-                }
-            }
-            else
-            {
-                PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, ProcessorArchitecture.X86);
-            }
-
-        }
-
-        private void PrintSerializedExceptionFromProcessDumpThroughHeapDump(string inputDumpFile, TextWriter log, ProcessorArchitecture arch)
-        {
-            var directory = arch.ToString().ToLowerInvariant();
-            var heapDumpExe = Path.Combine(SupportFiles.SupportFileDir, directory, "HeapDump.exe");
-            var options = new CommandOptions().AddNoThrow().AddTimeout(CommandOptions.Infinite);
-            options.AddOutputStream(LogFile);
-
-            options.AddEnvironmentVariable("_NT_SYMBOL_PATH", App.SymbolPath);
-            log.WriteLine("set _NT_SYMBOL_PATH={0}", App.SymbolPath);
-
-            var commandLine = string.Format("\"{0}\" {1} \"{2}\"", heapDumpExe, "/dumpSerializedException:", inputDumpFile);
-            log.WriteLine("Exec: {0}", commandLine);
-            var cmd = Command.Run(commandLine, options);
-            if (cmd.ExitCode != 0)
-            {
-                throw new ApplicationException("HeapDump failed with exit code " + cmd.ExitCode);
-            }
-        }
-#endif
-
-#if false
-        public void Test()
-        {
-            Cache<string, string> myCache = new Cache<string, string>(8);
-
-            string prev = null;
-            for(int i = 0; ;  i++)
-            {
-                var str = i.ToString() + (i*i).ToString(); 
-
-                Trace.WriteLine(string.Format("**** BEFORE ITERATION {0} CACHE\r\n{1}********", i,  myCache.ToString()));
-                if (i == 48)
-                    break;
-
-                Trace.WriteLine(string.Format("ADD {0}", str));
-                myCache.Add(str, "Out" + str);
-
-                if (i % 2 == 0) myCache.Get("00");
-
-                Trace.WriteLine(string.Format("FETCH {0} = {1}", str, myCache.Get(str)));
-                if (prev != null)
-                    Trace.WriteLine(string.Format("FETCH {0} = {1}", prev, myCache.Get(prev)));
-                prev = str;
-            }
-        }
-#endif
-#region private
+        #region private
         /// <summary>
         /// Strips the file extension for files and if extension is .etl.zip removes both.
         /// </summary>
@@ -1515,6 +1440,32 @@ namespace PerfViewExtensibility
             else
                 events = etlFile.TraceLog.Events;           // All events in the process.
             return events;
+        }
+
+        /// <summary>
+        /// Save the CPU stacks for an ETL file into a perfView.xml.zip file.
+        /// </summary>
+        /// <param name="etlFile">The ETL file to save.</param>
+        /// <param name="process">The process to save. If null, save all processes.</param>
+        /// <param name="warmSymbolLookupMinimumValue"> The number of samples needed to warrant looking up the symbols on the sample server. </param>
+        private static void SaveCPUStacksForProcessAsCsv(ETLDataFile etlFile, TraceProcess process = null, int warmSymbolLookupMinimumValue = 10)
+        {
+            // Focus on a particular process if the user asked for it via command line args.
+            if (process != null)
+            {
+                etlFile.SetFilterProcess(process);
+            }
+
+            var stacks = etlFile.CPUStacks();
+
+            // Look up symbols (even on the symbol server) for modules with more than the requested number of samples
+            stacks.LookupWarmSymbols(warmSymbolLookupMinimumValue);
+            stacks.GuiState.Notes = string.Format("Created by SaveCPUStacksAsCsv from {0} on {1}", etlFile.FilePath, DateTime.Now);
+
+            // Derive the output file name from the input file name.
+            var stackSourceFileName = PerfViewFile.ChangeExtension(etlFile.FilePath, ".perfView.csv");
+            stacks.SaveAsCsvByName(stackSourceFileName);
+            LogFile.WriteLine("[Saved {0} to {1}]", etlFile.FilePath, stackSourceFileName);
         }
 
         /// <summary>
@@ -1779,7 +1730,7 @@ namespace PerfViewExtensibility
 
             return (startEvent.Flags & ProcessFlags.PackageFullName) != 0;
         }
-#endregion
+        #endregion
 #endif
     }
 }
@@ -1787,23 +1738,32 @@ namespace PerfViewExtensibility
 // TODO FIX NOW decide where to put these.
 public static class TraceEventStackSourceExtensions
 {
-    public static StackSource CPUStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false, Predicate<TraceEvent> predicate = null)
+    public static StackSource CPUStacks(this TraceLog eventLog, TraceProcess process = null, CommandLineArgs commandLineArgs = null, bool showOptimizationTiers = false, Predicate<TraceEvent> predicate = null)
     {
         TraceEvents events;
         if (process == null)
+        {
             events = eventLog.Events.Filter((x) => ((predicate == null) || predicate(x)) && x is SampledProfileTraceData && x.ProcessID != 0);
+        }
         else
+        {
             events = process.EventsInProcess.Filter((x) => ((predicate == null) || predicate(x)) && x is SampledProfileTraceData);
+        }
 
         var traceStackSource = new TraceEventStackSource(events);
-        traceStackSource.ShowUnknownAddresses = showUnknownAddresses;
+        if (commandLineArgs != null)
+        {
+            traceStackSource.ShowUnknownAddresses = commandLineArgs.ShowUnknownAddresses;
+            traceStackSource.ShowOptimizationTiers = showOptimizationTiers || commandLineArgs.ShowOptimizationTiers;
+        }
         // We clone the samples so that we don't have to go back to the ETL file from here on.  
         return CopyStackSource.Clone(traceStackSource);
     }
-    public static MutableTraceEventStackSource ThreadTimeStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
+    public static MutableTraceEventStackSource ThreadTimeStacks(this TraceLog eventLog, TraceProcess process = null)
     {
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
         computer.ExcludeReadyThread = true;
@@ -1811,21 +1771,24 @@ public static class TraceEventStackSourceExtensions
 
         return stackSource;
     }
-    public static MutableTraceEventStackSource ThreadTimeWithReadyThreadStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
+
+    public static MutableTraceEventStackSource ThreadTimeWithReadyThreadStacks(this TraceLog eventLog, TraceProcess process = null)
     {
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
         computer.GenerateThreadTimeStacks(stackSource);
 
         return stackSource;
     }
-    public static MutableTraceEventStackSource ThreadTimeWithTasksStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
+    public static MutableTraceEventStackSource ThreadTimeWithTasksStacks(this TraceLog eventLog, TraceProcess process = null)
     {
         // Use MutableTraceEventStackSource to disable activity tracing support
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
         computer.UseTasks = true;
         computer.ExcludeReadyThread = true;
@@ -1833,10 +1796,11 @@ public static class TraceEventStackSourceExtensions
 
         return stackSource;
     }
-    public static MutableTraceEventStackSource ThreadTimeWithTasksAspNetStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
+    public static MutableTraceEventStackSource ThreadTimeWithTasksAspNetStacks(this TraceLog eventLog, TraceProcess process = null)
     {
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
         computer.UseTasks = true;
@@ -1846,10 +1810,11 @@ public static class TraceEventStackSourceExtensions
 
         return stackSource;
     }
-    public static MutableTraceEventStackSource ThreadTimeAspNetStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
+    public static MutableTraceEventStackSource ThreadTimeAspNetStacks(this TraceLog eventLog, TraceProcess process = null)
     {
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
         computer.ExcludeReadyThread = true;

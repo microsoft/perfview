@@ -4,19 +4,12 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
 // #define DEBUG_SERIALIZE
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel; // For Win32Excption;
-using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Security;
 using System.Text;
-using Microsoft.Diagnostics.Tracing.Parsers;
 using System.Text.RegularExpressions;
-using Microsoft.Diagnostics.Symbols;
-using Address = System.UInt64;
-using Microsoft.Diagnostics.Utilities;
 using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Symbols
@@ -35,7 +28,10 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 var ret = Environment.GetEnvironmentVariable("_NT_SYMBOL_PATH");
                 if (ret == null)
+                {
                     ret = "";
+                }
+
                 return ret;
             }
             set
@@ -47,7 +43,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// This 'cleans up' a symbol path.  In particular
         /// Empty ones are replaced with good defaults (symweb or msdl)
-        /// All symbol server specs have local caches (%Temp%\symbols if nothing else is specified).  
+        /// All symbol server specs have local caches (%Temp%\SymbolCache if nothing else is specified).  
         /// 
         /// Note that this routine does NOT update _NT_SYMBOL_PATH.  
         /// </summary>
@@ -55,7 +51,10 @@ namespace Microsoft.Diagnostics.Symbols
         {
             string symPathStr = SymbolPathFromEnvironment;
             if (symPathStr.Length == 0)
+            {
                 symPathStr = MicrosoftSymbolServerPath;
+            }
+
             var symPath = new SymbolPath(symPathStr);
             return symPath.InsureHasCache(symPath.DefaultSymbolCache()).CacheFirst();
         }
@@ -71,10 +70,7 @@ namespace Microsoft.Diagnostics.Symbols
                 if (s_MicrosoftSymbolServerPath == null)
                 {
                     s_MicrosoftSymbolServerPath = s_MicrosoftSymbolServerPath +
-                        ";" + @"SRV*http://msdl.microsoft.com/download/symbols" +     // Operatig system Symbols
-                        ";" + @"SRV*https://nuget.smbsrc.net" +                       // Nuget symbols
-                        ";" + @"SRV*http://referencesource.microsoft.com/symbols" +   // .NET Runtime desktop symbols 
-                        ";" + @"SRV*https://dotnet.myget.org/F/dotnet-core/symbols";  // Pre-release Nuget symbols.  
+                        ";" + @"SRV*https://msdl.microsoft.com/download/symbols";
                 }
                 return s_MicrosoftSymbolServerPath;
             }
@@ -110,13 +106,22 @@ namespace Microsoft.Diagnostics.Symbols
         public SymbolPath Add(string path)
         {
             if (path == null)
+            {
                 return this;
+            }
+
             path = path.Trim();
             if (path.Length == 0)
+            {
                 return this;
+            }
+
             var strElems = path.Split(';');
             foreach (var strElem in strElems)
+            {
                 Add(new SymbolPathElement(strElem));
+            }
+
             return this;
         }
         /// <summary>
@@ -126,7 +131,10 @@ namespace Microsoft.Diagnostics.Symbols
         public SymbolPath Add(SymbolPathElement elem)
         {
             if (elem != null && !m_elements.Contains(elem))
+            {
                 m_elements.Add(elem);
+            }
+
             return this;
         }
 
@@ -138,7 +146,10 @@ namespace Microsoft.Diagnostics.Symbols
         {
             var strElems = path.Split(';');
             foreach (var strElem in strElems)
+            {
                 Insert(new SymbolPathElement(strElem));
+            }
+
             return this;
         }
         /// <summary>
@@ -151,7 +162,10 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 var existing = m_elements.IndexOf(elem);
                 if (existing >= 0)
+                {
                     m_elements.RemoveAt(existing);
+                }
+
                 m_elements.Insert(0, elem);
             }
             return this;
@@ -159,7 +173,7 @@ namespace Microsoft.Diagnostics.Symbols
 
         /// <summary>
         /// If you need to cache files locally, put them here.  It is defined
-        /// to be the first local path of a SRV* qualification or %TEMP%\symbols
+        /// to be the first local path of a SRV* qualification or %TEMP%\SymbolCache
         /// if not is present.
         /// </summary>
         public string DefaultSymbolCache(bool localOnly = true)
@@ -169,15 +183,22 @@ namespace Microsoft.Diagnostics.Symbols
                 if (elem.IsSymServer)
                 {
                     if (elem.Cache != null)
+                    {
                         return elem.Cache;
+                    }
                     else if (!localOnly || !elem.IsRemote)
+                    {
                         return elem.Target;
+                    }
                 }
             }
             string temp = Environment.GetEnvironmentVariable("TEMP");
             if (temp == null)
+            {
                 temp = ".";
-            return Path.Combine(temp, "symbols");
+            }
+
+            return Path.Combine(temp, "SymbolCache");
         }
         /// <summary>
         /// People can use symbol servers without a local cache.  This is bad, add one if necessary. 
@@ -186,17 +207,23 @@ namespace Microsoft.Diagnostics.Symbols
         {
             var ret = new SymbolPath();
             foreach (var elem in Elements)
+            {
                 ret.Add(elem.InsureHasCache(defaultCachePath));
+            }
+
             return ret;
         }
         /// <summary>
-        /// Removes all references to remote paths.  This insures that network issues don't cause grief.  
+        /// Removes all references to remote paths.  This ensures that network issues don't cause grief.  
         /// </summary>
         public SymbolPath LocalOnly()
         {
             var ret = new SymbolPath();
             foreach (var elem in Elements)
+            {
                 ret.Add(elem.LocalOnly());
+            }
+
             return ret;
         }
         /// <summary>
@@ -209,13 +236,18 @@ namespace Microsoft.Diagnostics.Symbols
             foreach (var elem in Elements)
             {
                 if (elem.IsSymServer && elem.IsRemote)
+                {
                     continue;
+                }
+
                 ret.Add(elem);
             }
             foreach (var elem in Elements)
             {
                 if (elem.IsSymServer && elem.IsRemote)
+                {
                     ret.Add(elem);
+                }
             }
             return ret;
         }
@@ -231,7 +263,10 @@ namespace Microsoft.Diagnostics.Symbols
             foreach (var elem in Elements)
             {
                 if (!first)
+                {
                     sb.Append(";");
+                }
+
                 first = false;
                 sb.Append(elem.ToString());
             }
@@ -244,7 +279,10 @@ namespace Microsoft.Diagnostics.Symbols
         {
             writer.WriteLine("{0}<SymbolPaths>", indent);
             foreach (var elem in Elements)
+            {
                 writer.WriteLine("  <SymbolPath Value=\"{0}\"/>", XmlUtilities.XmlEscape(elem.ToString()));
+            }
+
             writer.WriteLine("{0}</SymbolPaths>", indent);
         }
         /// <summary>
@@ -259,10 +297,14 @@ namespace Microsoft.Diagnostics.Symbols
                 System.Net.IPHostEntry ipEntry = null;
                 var result = System.Net.Dns.GetHostEntryAsync(computerName);
                 if (Task.WaitAny(result, Task.Delay(timeoutMSec)) == 0)
+                {
                     ipEntry = result.Result;
+                }
 
                 if (ipEntry != null)
+                {
                     return true;
+                }
             }
             catch (Exception) { }
             return false;
@@ -270,7 +312,6 @@ namespace Microsoft.Diagnostics.Symbols
 
         #region private
         private List<SymbolPathElement> m_elements;
-
         /// <summary>
         /// This is the backing field for the lazily-computed <see cref="MicrosoftSymbolServerPath"/> property.
         /// </summary>
@@ -309,26 +350,41 @@ namespace Microsoft.Diagnostics.Symbols
                 if (Target != null)
                 {
                     if (Target.StartsWith(@"\\"))
+                    {
                         return true;
+                    }
                     // We assume drive letters from the back of the alphabet are remote.  
                     if (2 <= Target.Length && Target[1] == ':')
                     {
                         char driveLetter = Char.ToUpperInvariant(Target[0]);
                         if ('T' <= driveLetter && driveLetter <= 'Z')
+                        {
                             return true;
+                        }
                     }
                 }
 
                 if (!IsSymServer)
+                {
                     return false;
+                }
+
                 if (Cache != null)
+                {
                     return true;
+                }
+
                 if (Target == null)
+                {
                     return false;
+                }
 
                 if (Target.StartsWith("http:/", StringComparison.OrdinalIgnoreCase)
                     || Target.StartsWith("https:/", StringComparison.OrdinalIgnoreCase))
+                {
                     return true;
+                }
+
                 return false;
             }
         }
@@ -341,13 +397,21 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 var ret = "SRV";
                 if (Cache != null)
+                {
                     ret += "*" + Cache;
+                }
+
                 if (Target != null)
+                {
                     ret += "*" + Target;
+                }
+
                 return ret;
             }
             else
+            {
                 return Target;
+            }
         }
         #region overrides
 
@@ -358,7 +422,10 @@ namespace Microsoft.Diagnostics.Symbols
         {
             var asSymPathElem = obj as SymbolPathElement;
             if (asSymPathElem == null)
+            {
                 return false;
+            }
+
             return
                 Target == asSymPathElem.Target &&
                 Cache == asSymPathElem.Cache &&
@@ -376,19 +443,34 @@ namespace Microsoft.Diagnostics.Symbols
         internal SymbolPathElement InsureHasCache(string defaultCachePath)
         {
             if (!IsSymServer)
+            {
                 return this;
+            }
+
             if (Cache != null)
+            {
                 return this;
+            }
+
             if (Target == defaultCachePath)
+            {
                 return this;
+            }
+
             return new SymbolPathElement(true, defaultCachePath, Target);
         }
         internal SymbolPathElement LocalOnly()
         {
             if (!IsRemote)
+            {
                 return this;
+            }
+
             if (Cache != null)
+            {
                 return new SymbolPathElement(true, null, Cache);
+            }
+
             return null;
         }
 
@@ -407,9 +489,15 @@ namespace Microsoft.Diagnostics.Symbols
                 Cache = m.Groups[2].Value;
                 Target = m.Groups[3].Value;
                 if (Cache.Length == 0)
+                {
                     Cache = null;
+                }
+
                 if (Target.Length == 0)
+                {
                     Target = null;
+                }
+
                 return;
             }
             m = Regex.Match(strElem, @"^\s*CACHE\*(.*?)\s*$", RegexOptions.IgnoreCase);
@@ -419,7 +507,9 @@ namespace Microsoft.Diagnostics.Symbols
                 Cache = m.Groups[1].Value;
             }
             else
+            {
                 Target = strElem.Trim();
+            }
         }
         #endregion
     }

@@ -1,11 +1,7 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing.Stacks;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
-using System.Text.RegularExpressions;
-using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing.Stacks;
 using System.Runtime.InteropServices;
 
 namespace Diagnostics.Tracing.StackSources
@@ -13,12 +9,12 @@ namespace Diagnostics.Tracing.StackSources
     /// <summary>
     /// A stack source that displays file size by path.     
     /// </summary>
-    class FileSizeStackSource : InternStackSource
+    internal class FileSizeStackSource : InternStackSource
     {
         /// <summary>
         /// Note that on windows, lastAccessTime does not really work (acts like lastWriteTime).  They turned it off for efficiency reasons. 
         /// </summary>
-        public FileSizeStackSource(string directoryPath, TextWriter log, bool useWriteTime=true)
+        public FileSizeStackSource(string directoryPath, TextWriter log, bool useWriteTime = true)
         {
             m_useWriteTime = useWriteTime;
             m_nowUtc = DateTime.UtcNow;
@@ -62,7 +58,10 @@ namespace Diagnostics.Tracing.StackSources
                                 {
                                     suffix = peFile.Header.IsManaged ? " (MANAGED)" : " (UNMANAGED)";
                                     if (peFile.Header.IsPE64)
+                                    {
                                         suffix += " (64Bit)";
+                                    }
+
                                     if (peFile.HasPrecompiledManagedCode)
                                     {
                                         if (peFile.IsManagedReadyToRun)
@@ -73,11 +72,14 @@ namespace Diagnostics.Tracing.StackSources
 
                                         }
                                         else
+                                        {
                                             suffix += " (NGEN)";
+                                        }
                                     }
                                 }
                             }
-                            catch (Exception) {
+                            catch (Exception)
+                            {
                                 m_log.WriteLine("Error: exception looking at file " + fileName);
                                 m_log.Flush();
                             }
@@ -87,33 +89,42 @@ namespace Diagnostics.Tracing.StackSources
                         // Finally the file name itself.  
                         stack = Interner.CallStackIntern(Interner.FrameIntern("FILE: " + member.Name), stack);
                         if (sample == null)
+                        {
                             sample = new StackSourceSample(this);
+                        }
 
                         sample.Metric = member.Size;
                         sample.StackIndex = stack;
                         if (m_useWriteTime)
+                        {
                             sample.TimeRelativeMSec = (m_nowUtc - member.LastWriteTimeUtc).TotalDays;
-                        else 
-                            sample.TimeRelativeMSec = (m_nowUtc - member.LastAccessTimeUtc).TotalDays; 
+                        }
+                        else
+                        {
+                            sample.TimeRelativeMSec = (m_nowUtc - member.LastAccessTimeUtc).TotalDays;
+                        }
+
                         AddSample(sample);
 
                         m_totalSize += member.Size;
                         int count = SampleIndexLimit;
                         if ((count % 1000) == 0)
-                            m_log.WriteLine("[Processed " + count + " files, size " + (m_totalSize/1000000).ToString("n0") + " MB in directory scan at " + Path.Combine(directoryPath, member.Name) + " ]");
+                        {
+                            m_log.WriteLine("[Processed " + count + " files, size " + (m_totalSize / 1000000).ToString("n0") + " MB in directory scan at " + Path.Combine(directoryPath, member.Name) + " ]");
+                        }
                     }
                 }
             }
             catch (Exception e)
             {
-                m_log.WriteLine("Error processing directory " + directoryPath + ": " + e.Message); 
+                m_log.WriteLine("Error processing directory " + directoryPath + ": " + e.Message);
             }
         }
 
-        TextWriter m_log;
-        DateTime m_nowUtc;
-        bool m_useWriteTime;
-        long m_totalSize;
+        private TextWriter m_log;
+        private DateTime m_nowUtc;
+        private bool m_useWriteTime;
+        private long m_totalSize;
         #endregion 
     }
 
@@ -146,7 +157,9 @@ namespace Diagnostics.Tracing.StackSources
                 LastAccessFileTime = info.ftLastAccessTime;
                 Size = (((long)info.nFileSizeHigh) << 32) + info.nFileSizeLow;
                 fixed (char* ptr = info.cFileName)
+                {
                     Name = new string(ptr);
+                }
             }
             #endregion
         }
@@ -156,7 +169,9 @@ namespace Diagnostics.Tracing.StackSources
             members = new Dictionary<string, FastDirectoryMember>(32, StringComparer.OrdinalIgnoreCase);
             WIN32_FIND_DATA info = new WIN32_FIND_DATA();
             if (directoryName.Length == 0 || (directoryName.Length == 2 && directoryName[1] == ':'))
+            {
                 directoryName += ".";
+            }
 
             IntPtr handle = FindFirstFileW(directoryName + @"\*", ref info);
             if (handle != (IntPtr)(-1))
@@ -172,7 +187,10 @@ namespace Diagnostics.Tracing.StackSources
                     {
                         int hr = Marshal.GetLastWin32Error();
                         if (hr != 18)       // NO MORE FILES 
+                        {
                             throw new System.ComponentModel.Win32Exception(hr);
+                        }
+
                         break;
                     }
                 }
@@ -182,7 +200,9 @@ namespace Diagnostics.Tracing.StackSources
             {
                 int hr = Marshal.GetLastWin32Error();
                 if (hr != 3)       // FILE NOT FOUND
+                {
                     throw new System.ComponentModel.Win32Exception(hr);
+                }
             }
         }
         public IEnumerable<FastDirectoryMember> Members { get { return members.Values; } }
@@ -228,17 +248,32 @@ namespace Diagnostics.Tracing.StackSources
         private static bool ShouldAdd(ref WIN32_FIND_DATA info)
         {
             if ((info.dwFileAttributes & FileAttributes.Directory) == 0)
+            {
                 return true;
+            }
+
             fixed (char* ptr = info.cFileName)
             {
                 if (ptr[0] != '.')
+                {
                     return true;
+                }
+
                 if (ptr[1] == '\0')
+                {
                     return false;         // . should not be included
+                }
+
                 if (ptr[1] != '.')
+                {
                     return true;
+                }
+
                 if (ptr[2] == '\0')       // .. should not be included
+                {
                     return false;
+                }
+
                 return true;
             }
         }

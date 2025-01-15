@@ -1,11 +1,12 @@
-﻿namespace System.IO.Compression2 
+﻿namespace System.IO.Compression2
 {
     using System;
     using System.Diagnostics;
 
     // This class decodes GZip header and footer information.
     // See RFC 1952 for details about the format.
-    internal class GZipDecoder : IFileFormatReader {
+    internal class GZipDecoder : IFileFormatReader
+    {
 
         private GzipHeaderState gzipHeaderSubstate;
         private GzipHeaderState gzipFooterSubstate;
@@ -18,29 +19,36 @@
         // private uint actualCrc32;
         private long actualStreamSize;
 
-        public GZipDecoder() {
+        public GZipDecoder()
+        {
             Reset();
         }
 
-        public void Reset() {
+        public void Reset()
+        {
             gzipHeaderSubstate = GzipHeaderState.ReadingID1;
             gzipFooterSubstate = GzipHeaderState.ReadingCRC;
             expectedCrc32 = 0;
             expectedOutputStreamSize = 0;
         }
 
-        public bool ReadHeader(InputBuffer input) {
+        public bool ReadHeader(InputBuffer input)
+        {
 
-            while (true) {
+            while (true)
+            {
                 int bits;
-                switch (gzipHeaderSubstate) {
+                switch (gzipHeaderSubstate)
+                {
                     case GzipHeaderState.ReadingID1:
                         bits = input.GetBits(8);
-                        if (bits < 0) {
+                        if (bits < 0)
+                        {
                             return false;
                         }
 
-                        if (bits != GZipConstants.ID1) {
+                        if (bits != GZipConstants.ID1)
+                        {
                             throw new InvalidDataException("CorruptedGZipHeader");
                         }
                         gzipHeaderSubstate = GzipHeaderState.ReadingID2;
@@ -48,11 +56,13 @@
 
                     case GzipHeaderState.ReadingID2:
                         bits = input.GetBits(8);
-                        if (bits < 0) {
+                        if (bits < 0)
+                        {
                             return false;
                         }
 
-                        if (bits != GZipConstants.ID2) {
+                        if (bits != GZipConstants.ID2)
+                        {
                             throw new InvalidDataException("CorruptedGZipHeader");
                         }
 
@@ -61,11 +71,13 @@
 
                     case GzipHeaderState.ReadingCM:
                         bits = input.GetBits(8);
-                        if (bits < 0) {
+                        if (bits < 0)
+                        {
                             return false;
                         }
 
-                        if (bits != GZipConstants.Deflate) {         // compression mode must be 8 (deflate)
+                        if (bits != GZipConstants.Deflate)
+                        {         // compression mode must be 8 (deflate)
                             throw new InvalidDataException("UnknownCompressionMode");
                         }
 
@@ -74,7 +86,8 @@
 
                     case GzipHeaderState.ReadingFLG:
                         bits = input.GetBits(8);
-                        if (bits < 0) {
+                        if (bits < 0)
+                        {
                             return false;
                         }
 
@@ -85,9 +98,11 @@
 
                     case GzipHeaderState.ReadingMMTime:
                         bits = 0;
-                        while (loopCounter < 4) {
+                        while (loopCounter < 4)
+                        {
                             bits = input.GetBits(8);
-                            if (bits < 0) {
+                            if (bits < 0)
+                            {
                                 return false;
                             }
 
@@ -100,7 +115,8 @@
 
                     case GzipHeaderState.ReadingXFL:      // ignore XFL
                         bits = input.GetBits(8);
-                        if (bits < 0) {
+                        if (bits < 0)
+                        {
                             return false;
                         }
 
@@ -109,7 +125,8 @@
 
                     case GzipHeaderState.ReadingOS:      // ignore OS
                         bits = input.GetBits(8);
-                        if (bits < 0) {
+                        if (bits < 0)
+                        {
                             return false;
                         }
 
@@ -117,12 +134,14 @@
                         goto case GzipHeaderState.ReadingXLen1;
 
                     case GzipHeaderState.ReadingXLen1:
-                        if ((gzip_header_flag & (int)GZipOptionalHeaderFlags.ExtraFieldsFlag) == 0) {
+                        if ((gzip_header_flag & (int)GZipOptionalHeaderFlags.ExtraFieldsFlag) == 0)
+                        {
                             goto case GzipHeaderState.ReadingFileName;
                         }
 
                         bits = input.GetBits(8);
-                        if (bits < 0) {
+                        if (bits < 0)
+                        {
                             return false;
                         }
 
@@ -132,7 +151,8 @@
 
                     case GzipHeaderState.ReadingXLen2:
                         bits = input.GetBits(8);
-                        if (bits < 0) {
+                        if (bits < 0)
+                        {
                             return false;
                         }
 
@@ -143,9 +163,11 @@
 
                     case GzipHeaderState.ReadingXLenData:
                         bits = 0;
-                        while (loopCounter < gzip_header_xlen) {
+                        while (loopCounter < gzip_header_xlen)
+                        {
                             bits = input.GetBits(8);
-                            if (bits < 0) {
+                            if (bits < 0)
+                            {
                                 return false;
                             }
 
@@ -156,18 +178,22 @@
                         goto case GzipHeaderState.ReadingFileName;
 
                     case GzipHeaderState.ReadingFileName:
-                        if ((gzip_header_flag & (int)GZipOptionalHeaderFlags.FileNameFlag) == 0) {
+                        if ((gzip_header_flag & (int)GZipOptionalHeaderFlags.FileNameFlag) == 0)
+                        {
                             gzipHeaderSubstate = GzipHeaderState.ReadingComment;
                             goto case GzipHeaderState.ReadingComment;
                         }
 
-                        do {
+                        do
+                        {
                             bits = input.GetBits(8);
-                            if (bits < 0) {
+                            if (bits < 0)
+                            {
                                 return false;
                             }
 
-                            if (bits == 0) {   // see '\0' in the file name string
+                            if (bits == 0)
+                            {   // see '\0' in the file name string
                                 break;
                             }
                         } while (true);
@@ -176,18 +202,22 @@
                         goto case GzipHeaderState.ReadingComment;
 
                     case GzipHeaderState.ReadingComment:
-                        if ((gzip_header_flag & (int)GZipOptionalHeaderFlags.CommentFlag) == 0) {
+                        if ((gzip_header_flag & (int)GZipOptionalHeaderFlags.CommentFlag) == 0)
+                        {
                             gzipHeaderSubstate = GzipHeaderState.ReadingCRC16Part1;
                             goto case GzipHeaderState.ReadingCRC16Part1;
                         }
 
-                        do {
+                        do
+                        {
                             bits = input.GetBits(8);
-                            if (bits < 0) {
+                            if (bits < 0)
+                            {
                                 return false;
                             }
 
-                            if (bits == 0) {   // see '\0' in the file name string
+                            if (bits == 0)
+                            {   // see '\0' in the file name string
                                 break;
                             }
                         } while (true);
@@ -196,13 +226,15 @@
                         goto case GzipHeaderState.ReadingCRC16Part1;
 
                     case GzipHeaderState.ReadingCRC16Part1:
-                        if ((gzip_header_flag & (int)GZipOptionalHeaderFlags.CRCFlag) == 0) {
+                        if ((gzip_header_flag & (int)GZipOptionalHeaderFlags.CRCFlag) == 0)
+                        {
                             gzipHeaderSubstate = GzipHeaderState.Done;
                             goto case GzipHeaderState.Done;
                         }
 
                         bits = input.GetBits(8);     // ignore crc
-                        if (bits < 0) {
+                        if (bits < 0)
+                        {
                             return false;
                         }
 
@@ -211,7 +243,8 @@
 
                     case GzipHeaderState.ReadingCRC16Part2:
                         bits = input.GetBits(8);     // ignore crc
-                        if (bits < 0) {
+                        if (bits < 0)
+                        {
                             return false;
                         }
 
@@ -227,12 +260,16 @@
             }
         }
 
-        public bool ReadFooter(InputBuffer input) {
+        public bool ReadFooter(InputBuffer input)
+        {
             input.SkipToByteBoundary();
-            if (gzipFooterSubstate == GzipHeaderState.ReadingCRC) {
-                while (loopCounter < 4) {
+            if (gzipFooterSubstate == GzipHeaderState.ReadingCRC)
+            {
+                while (loopCounter < 4)
+                {
                     int bits = input.GetBits(8);
-                    if (bits < 0) {
+                    if (bits < 0)
+                    {
                         return false;
                     }
 
@@ -244,13 +281,18 @@
 
             }
 
-            if (gzipFooterSubstate == GzipHeaderState.ReadingFileSize) {
+            if (gzipFooterSubstate == GzipHeaderState.ReadingFileSize)
+            {
                 if (loopCounter == 0)
+                {
                     expectedOutputStreamSize = 0;
+                }
 
-                while (loopCounter < 4) {
+                while (loopCounter < 4)
+                {
                     int bits = input.GetBits(8);
-                    if (bits < 0) {
+                    if (bits < 0)
+                    {
                         return false;
                     }
 
@@ -262,28 +304,33 @@
             return true;
         }
 
-        public void UpdateWithBytesRead(byte[] buffer, int offset, int copied) {
+        public void UpdateWithBytesRead(byte[] buffer, int offset, int copied)
+        {
             // actualCrc32 = Crc32Helper.UpdateCrc32(actualCrc32, buffer, offset, copied);
 
             long n = actualStreamSize + (uint)copied;
-            if (n > GZipConstants.FileLengthModulo) {
+            if (n > GZipConstants.FileLengthModulo)
+            {
                 long temp = Math.DivRem(n, GZipConstants.FileLengthModulo, out n);
             }
             actualStreamSize = n;
         }
 
-        public void Validate() {
+        public void Validate()
+        {
             /*
             if (expectedCrc32 != actualCrc32) {
                 throw new InvalidDataException("InvalidCRC");
             }
             */
-            if (actualStreamSize != expectedOutputStreamSize) {
+            if (actualStreamSize != expectedOutputStreamSize)
+            {
                 throw new InvalidDataException("InvalidStreamSize");
             }
         }
 
-        internal enum GzipHeaderState {
+        internal enum GzipHeaderState
+        {
             // GZIP header
             ReadingID1,
             ReadingID2,
@@ -307,7 +354,8 @@
         }
 
         [Flags]
-        internal enum GZipOptionalHeaderFlags {
+        internal enum GZipOptionalHeaderFlags
+        {
             CRCFlag = 2,
             ExtraFieldsFlag = 4,
             FileNameFlag = 8,

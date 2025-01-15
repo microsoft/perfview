@@ -1,15 +1,12 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Utilities;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using System.IO;
-using Utilities;
-using Microsoft.Diagnostics.Utilities;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using System.Text;
 
 
 // The MemoryStats namespace is about taking a complete memory snapshot of the process (basically using Virtual Query 
@@ -20,13 +17,13 @@ namespace MemoryStats
     /// A MemoryNode represents a set of memory regions in a process.   MemoryNodes can have children and thus
     /// form trees.   Node also have names, 
     /// </summary>
-    class MemoryNode
+    internal class MemoryNode
     {
         /// <summary>
         /// This is the main entry point into the MemoryNode class.  Basically giving a process ID return
         /// a MemoryNode that represents the roll-up of all memory in the process.  
         /// </summary>
-        public unsafe static MemoryNode MemorySnapShotForProcess(int processID)
+        public static unsafe MemoryNode MemorySnapShotForProcess(int processID)
         {
             var root = Root();
             var process = Process.GetProcessById(processID);
@@ -49,7 +46,9 @@ namespace MemoryStats
 
                 // TODO FIX NOW worry about error codes. 
                 if (result == 0)
+                {
                     break;
+                }
 
                 if (child.info.Type == NativeMethods.MemoryType.MEM_IMAGE || child.info.Type == NativeMethods.MemoryType.MEM_MAPPED)
                 {
@@ -61,7 +60,9 @@ namespace MemoryStats
                         child.Name = kernelToUser[kernelName];
                     }
                     else
+                    {
                         Debug.WriteLine("Error, GetMappedFileName failed.");
+                    }
                 }
                 root.Insert(child);
             } while (address <= MaxAddress);
@@ -81,7 +82,10 @@ namespace MemoryStats
             int numBlocks = (int)WSInfo->NumberOfEntries;
             ulong[] blocks = new ulong[numBlocks];
             for (var curWSIdx = 0; curWSIdx < numBlocks; curWSIdx++)
+            {
                 blocks[curWSIdx] = WSInfo->WorkingSetInfo(curWSIdx).Address;
+            }
+
             Array.Sort(blocks);
             Marshal.FreeHGlobal((IntPtr)WSInfo);
 
@@ -153,25 +157,32 @@ namespace MemoryStats
                 writer.WriteLine(">");
                 var childIndent = indent + " ";
                 foreach (var child in Children)
+                {
                     child.ToXml(writer, childIndent);
+                }
+
                 writer.WriteLine("{0}</MemoryNode>", indent);
             }
             else
+            {
                 writer.WriteLine("/>");
+            }
         }
 
         #region private
-        NativeMethods.MEMORY_BASIC_INFORMATION info;
+        private NativeMethods.MEMORY_BASIC_INFORMATION info;
 
         private MemoryNode() { }
         private void Insert(MemoryNode newNode)
         {
             Debug.Assert(Address <= newNode.Address && newNode.End <= End);
             if (Children == null)
+            {
                 Children = new List<MemoryNode>();
+            }
 
             // Search backwards for efficiency.  
-            for (int i = Children.Count; 0 < i; )
+            for (int i = Children.Count; 0 < i;)
             {
                 var child = Children[--i];
                 if (child.Address <= newNode.Address && newNode.End <= child.End)
@@ -195,7 +206,7 @@ namespace MemoryStats
     }
 
     [Flags]
-    enum PageProtection
+    internal enum PageProtection
     {
         PAGE_EXECUTE = 0x10,
         PAGE_EXECUTE_READ = 0x20,
@@ -207,7 +218,7 @@ namespace MemoryStats
         PAGE_WRITECOPY = 0x08,
     }
 
-    enum UseType
+    internal enum UseType
     {
         Heap = 0,
         Stack = 1,
@@ -289,7 +300,7 @@ namespace MemoryStats
             {
                 fixed (PSAPI_WORKING_SET_INFORMATION* ptr = &this)
                 {
-                    var blockPtr = (PSAPI_WORKING_SET_BLOCK*) (ptr + 1);
+                    var blockPtr = (PSAPI_WORKING_SET_BLOCK*)(ptr + 1);
                     return blockPtr[idx];
                 }
             }
@@ -333,7 +344,7 @@ namespace MemoryStats
 
         // TODO FIX NOW this can be in kernel32 too
         [DllImport("psapi.dll", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
-        internal unsafe static extern bool QueryWorkingSet(
+        internal static extern unsafe bool QueryWorkingSet(
            IntPtr hProcess,
            PSAPI_WORKING_SET_INFORMATION* workingSetInfo,
            int workingSetInfoSize);

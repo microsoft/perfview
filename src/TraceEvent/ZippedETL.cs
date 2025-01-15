@@ -1,4 +1,5 @@
 ﻿using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
@@ -6,12 +7,10 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Microsoft.Diagnostics.Tracing.Compatibility;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Symbols { } // avoids compile errors in .NET Core build
-
 
 namespace Microsoft.Diagnostics.Tracing
 {
@@ -64,16 +63,22 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// By default ZippedETL file will zip the ETL file itself and the NGEN pdbs associated with it.
-        /// You can add additional files to the archive by calling AddFile.   In specififed 'archivePath' 
+        /// You can add additional files to the archive by calling AddFile.   In specified 'archivePath' 
         /// is the path in the archive and defaults to just the file name of the original file path.  
         /// </summary>
         public void AddFile(string filePath, string archivePath = null)
         {
             // Just remember it for the WriteArchive operation.  
             if (m_additionalFiles == null)
+            {
                 m_additionalFiles = new List<Tuple<string, string>>();
+            }
+
             if (archivePath == null)
+            {
                 archivePath = Path.GetFileName(filePath);
+            }
+
             m_additionalFiles.Add(new Tuple<string, string>(filePath, archivePath));
         }
 
@@ -85,20 +90,32 @@ namespace Microsoft.Diagnostics.Tracing
             List<string> pdbFileList = PrepForWrite();
 
             if (!Zip)
+            {
                 return true;
+            }
+
+            // Any generated PDBs were written alongside the existing PDBs, so if existing PDBs are requested, produce the combined list, and overwrite the generated list.
+            if (IncludeExistingPDBs)
+            {
+                string[] existingPDBs = Directory.GetFiles(Path.GetDirectoryName(m_etlFilePath), "*.ni.pdb", SearchOption.AllDirectories);
+                pdbFileList = new List<string>(existingPDBs);
+            }
 
             bool success = false;
             var sw = Stopwatch.StartNew();
             if (ZipArchivePath == null)
+            {
                 ZipArchivePath = m_etlFilePath + ".zip";
+            }
+
             var newFileName = ZipArchivePath + ".new";
             FileUtilities.ForceDelete(newFileName);
             try
             {
-#if !NETSTANDARD1_6
                 if (LowPriority)
+                {
                     Thread.CurrentThread.Priority = ThreadPriority.Lowest;
-#endif
+                }
                 Log.WriteLine("[Zipping ETL file {0}]", m_etlFilePath);
                 using (var zipArchive = ZipFile.Open(newFileName, ZipArchiveMode.Create))
                 {
@@ -113,9 +130,13 @@ namespace Microsoft.Diagnostics.Tracing
                             string relativePath;
                             var m = Regex.Match(pdb, @"\\([^\\]+.pdb\\\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\w\d+\\[^\\]+)$");
                             if (m.Success)
+                            {
                                 relativePath = m.Groups[1].Value;
+                            }
                             else
+                            {
                                 relativePath = Path.GetFileName(pdb);
+                            }
 
                             var archivePath = Path.Combine("symbols", relativePath);
 
@@ -129,20 +150,22 @@ namespace Microsoft.Diagnostics.Tracing
                         Log.WriteLine("ZIP output file {0}", ZipArchivePath);
                         Log.WriteLine("Time: {0}", DateTime.Now);
                         Log.Flush();
+                    }
 
-                        if (m_additionalFiles != null)
+                    if (m_additionalFiles != null)
+                    {
+                        foreach (Tuple<string, string> additionalFile in m_additionalFiles)
                         {
-                            foreach (Tuple<string, string> additionalFile in m_additionalFiles)
+                            // We dont use CreatEntryFromFile because it will not open files thar are open for writing.  
+                            // Since a typical use of this is to write the log file, which will be open for writing, we 
+                            // use File.Open and allow this case explicitly. 
+                            using (Stream fs = File.Open(additionalFile.Item1, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                             {
-                                // We dont use CreatEntryFromFile because it will not open files thar are open for writting.  
-                                // Since a typical use of this is to write the log file, which will be open for writing, we 
-                                // use File.Open and allow this case explicitly. 
-                                using (Stream fs = File.Open(additionalFile.Item1, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                                // Item2 tells you the path in the archive.  
+                                var entry = zipArchive.CreateEntry(additionalFile.Item2, compressionLevel);
+                                using (Stream es = entry.Open())
                                 {
-                                    // Item2 tells you the path in the archive.  
-                                    var entry = zipArchive.CreateEntry(additionalFile.Item2, compressionLevel);
-                                    using (Stream es = entry.Open())
-                                        fs.CopyTo(es);
+                                    fs.CopyTo(es);
                                 }
                             }
                         }
@@ -161,9 +184,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             finally
             {
-#if !NETSTANDARD1_6
                 Thread.CurrentThread.Priority = ThreadPriority.Normal;
-#endif
                 FileUtilities.ForceDelete(newFileName);
             }
             return success;
@@ -172,7 +193,7 @@ namespace Microsoft.Diagnostics.Tracing
         // Overriding the normal defaults.  
         /// <summary>
         /// This is the symbol reader that is used to generate the NGEN Pdbs as needed
-        /// If it is not specififed one is created on the fly.  
+        /// If it is not specified one is created on the fly.  
         /// </summary>
         public SymbolReader SymbolReader { get; set; }
 
@@ -181,6 +202,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// this is not necessary, you can set this to false.   
         /// </summary>
         public bool Merge { get; set; }
+
+        /// <summary>
+        /// By default there are a number of steps to merging an ETL file.  Sometimes,
+        /// it is desirable to only perform ImageID merging.  If desired, set this to true.
+        /// </summary>
+        public bool MergeImageIDsOnly { get; set; }
 
         /// <summary>
         /// Uses a compressed format for the ETL file.   Normally off.  
@@ -201,7 +228,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Normally WriteArchive creates a ZIP archive.  However it is possible that you only wish
         /// to do the merging and NGEN symbol generation.   Setting this property to false
-        /// will supress the final ZIP operation.  
+        /// will suppress the final ZIP operation.  
         /// </summary>
         public bool Zip { get; set; }
 
@@ -210,19 +237,30 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public bool DeleteInputFile { get; set; }
 
-            #region private
+        /// <summary>
+        /// When merging an ETL for the first time, we might generate some NGEN PDBs and save them as part of the archive.
+        /// When merging the second time, use this option to make sure that the PDBs that were part of the original archive are included in the new archive.
+        /// </summary>
+        public bool IncludeExistingPDBs { get; set; }
+
+        #region private
         private List<string> PrepForWrite()
         {
             // If the user did not specify a place to put log messages, make one for them.  
             if (Log == null)
+            {
                 Log = new StringWriter();
+            }
 
             Stopwatch sw = Stopwatch.StartNew();
 
             // Compute input & temp files.
             var dir = Path.GetDirectoryName(m_etlFilePath);
             if (dir.Length == 0)
+            {
                 dir = ".";
+            }
+
             var baseName = Path.GetFileNameWithoutExtension(m_etlFilePath);
             List<string> mergeInputs = new List<string>();
             mergeInputs.Add(m_etlFilePath);
@@ -240,17 +278,23 @@ namespace Microsoft.Diagnostics.Tracing
                     if (Merge)
                     {
                         var startTime = DateTime.UtcNow;
-#if !NETSTANDARD1_6
                         if (LowPriority)
+                        {
                             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
-#endif
+                        }
                         try
                         {
                             Log.WriteLine("Starting Merging of {0}", m_etlFilePath);
 
                             var options = Session.TraceEventMergeOptions.None;
                             if (CompressETL)
+                            {
                                 options |= Session.TraceEventMergeOptions.Compress;
+                            }
+                            else if(MergeImageIDsOnly)
+                            {
+                                options |= Session.TraceEventMergeOptions.ImageIDsOnly;
+                            }
 
                             // Do the merge
                             Session.TraceEventSession.Merge(mergeInputs.ToArray(), tempName, options);
@@ -258,13 +302,13 @@ namespace Microsoft.Diagnostics.Tracing
                         }
                         finally
                         {
-#if !NETSTANDARD1_6
                             Thread.CurrentThread.Priority = ThreadPriority.Normal;
-#endif
                         }
                     }
                     else
+                    {
                         Log.WriteLine("Merge == false, skipping Merge operation.");
+                    }
                 });
 
                 // If we are running low priority, don't do work in parallel, so wait merging before doing NGEN pdb generation. 
@@ -279,29 +323,32 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     if (NGenSymbolFiles)
                     {
-#if !NETSTANDARD1_6
                         if (LowPriority)
+                        {
                             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
-#endif
+                        }
                         try
                         {
                             var startTime = DateTime.UtcNow;
                             Log.WriteLine("Starting Generating NGEN pdbs for {0}", m_etlFilePath);
                             var symbolReader = SymbolReader;
                             if (symbolReader == null)
+                            {
                                 symbolReader = new SymbolReader(Log);
+                            }
+
                             pdbFileList = GetNGenPdbs(m_etlFilePath, symbolReader, Log);
                             Log.WriteLine("Generating NGEN Pdbs took {0:f1} sec", (DateTime.UtcNow - startTime).TotalSeconds);
                         }
                         finally
                         {
-#if !NETSTANDARD1_6
                             Thread.CurrentThread.Priority = ThreadPriority.Normal;
-#endif
                         }
                     }
                     else
+                    {
                         Log.WriteLine("NGenSymbolFiles == false, skipping NGEN pdb generation");
+                    }
                 });
                 Task.WaitAll(mergeWorker, pdbWorker);
 
@@ -309,7 +356,9 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     // Delete/move the original files after the two worker threads finished execution to avoid races.
                     foreach (var mergeInput in mergeInputs)
+                    {
                         FileUtilities.ForceDelete(mergeInput);
+                    }
 
                     Log.WriteLine("Moving {0} to {1}", tempName, m_etlFilePath);
                     // Place the output in its final resting place.  
@@ -320,7 +369,9 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 Log.WriteLine("Deleting temp file");
                 if (File.Exists(tempName))
+                {
                     File.Delete(tempName);
+                }
             }
 
             sw.Stop();
@@ -352,19 +403,19 @@ namespace Microsoft.Diagnostics.Tracing
             return pdbFileList;
         }
 
-        List<Tuple<string, string>> m_additionalFiles;
-        string m_etlFilePath;
-            #endregion // private
+        private List<Tuple<string, string>> m_additionalFiles;
+        private string m_etlFilePath;
+        #endregion // private
     }
 #endif
 
-            /// <summary>
-            /// ZippedETLReader is a helper class that unpacks the ZIP files generated
-            /// by the ZippedETLWriter class.    It can be smart about placing the 
-            /// symbolic information in these files on the SymbolReader's path so that
-            /// symbolic lookup 'just works'.  
-            /// </summary>
-        public class ZippedETLReader
+    /// <summary>
+    /// ZippedETLReader is a helper class that unpacks the ZIP files generated
+    /// by the ZippedETLWriter class.    It can be smart about placing the 
+    /// symbolic information in these files on the SymbolReader's path so that
+    /// symbolic lookup 'just works'.  
+    /// </summary>
+    public class ZippedETLReader
     {
         /// <summary>
         /// Declares the intent to unzip an .ETL.ZIP file that contain an compressed ETL file 
@@ -401,18 +452,26 @@ namespace Microsoft.Diagnostics.Tracing
         public void UnpackArchive()
         {
             if (Log == null)
+            {
                 Log = new StringWriter();
+            }
 
             if (EtlFileName == null)
             {
                 if (m_zipFilePath.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+                {
                     EtlFileName = m_zipFilePath.Substring(0, m_zipFilePath.Length - 4);
+                }
                 else
+                {
                     EtlFileName = Path.ChangeExtension(m_zipFilePath, ".etl");
+                }
             }
 
             if (SymbolDirectory == null)
+            {
                 SymbolDirectory = new SymbolPath(SymbolPath.SymbolPathFromEnvironment).DefaultSymbolCache();
+            }
 
             Stopwatch sw = Stopwatch.StartNew();
             Log.WriteLine("[Decompressing {0}]", m_zipFilePath);
@@ -423,7 +482,9 @@ namespace Microsoft.Diagnostics.Tracing
                 foreach (var entry in zipArchive.Entries)
                 {
                     if (entry.Length == 0)  // Skip directories. 
+                    {
                         continue;
+                    }
 
                     var archivePath = entry.FullName;
                     if (archivePath.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
@@ -431,21 +492,29 @@ namespace Microsoft.Diagnostics.Tracing
                         archivePath = archivePath.Replace('/', '\\');     // normalize separator convention 
                         string pdbRelativePath = null;
                         if (archivePath.StartsWith(@"symbols\", StringComparison.OrdinalIgnoreCase))
+                        {
                             pdbRelativePath = archivePath.Substring(8);
+                        }
                         else if (archivePath.StartsWith(@"ngenpdbs\", StringComparison.OrdinalIgnoreCase))
+                        {
                             pdbRelativePath = archivePath.Substring(9);
+                        }
                         else
                         {
                             var m = Regex.Match(archivePath, @"^[^\\]+\.ngenpdbs?\\(.*)", RegexOptions.IgnoreCase);
                             if (m.Success)
+                            {
                                 pdbRelativePath = m.Groups[1].Value;
+                            }
                             else
                             {
                                 // .diagsession files (created by the Visual Studio Diagnostic Hub) put PDBs in a path like
                                 // 194BAE98-C4ED-470E-9204-1F9389FC9DC1\symcache\xyz.pdb
-                                m = Regex.Match(archivePath, @"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\symcache\\(.*)", RegexOptions.IgnoreCase);
+                                m = Regex.Match(archivePath, @"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\(?:sym|pdb)cache\\(.*)", RegexOptions.IgnoreCase);
                                 if (m.Success)
+                                {
                                     pdbRelativePath = m.Groups[1].Value;
+                                }
                                 else
                                 {
                                     Log.WriteLine("WARNING: found PDB file that was not in a symbol server style directory, skipping extraction");
@@ -463,13 +532,16 @@ namespace Microsoft.Diagnostics.Tracing
                             continue;
                         }
 
-                        // There is a possibilty that you want to put symbol file using symbol server conventions
+                        // There is a possibility that you want to put symbol file using symbol server conventions
                         // (in which case it is X.pdb\NNNN\X.pdb, but you already have a file named X.pdb)  detect
                         // this and delete the file if necessary.  
                         var firstNameInRelativePath = pdbRelativePath;
                         var sepIdx = firstNameInRelativePath.IndexOf('\\');
                         if (sepIdx >= 0)
+                        {
                             firstNameInRelativePath = firstNameInRelativePath.Substring(0, sepIdx);
+                        }
+
                         var firstNamePath = Path.Combine(SymbolDirectory, firstNameInRelativePath);
                         if (File.Exists(firstNamePath))
                         {
@@ -483,7 +555,10 @@ namespace Microsoft.Diagnostics.Tracing
                     else if (archivePath.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
                     {
                         if (seenEtlFile)
+                        {
                             throw new ApplicationException("The ZIP file does not have exactly 1 ETL file in it, can't auto-extract.");
+                        }
+
                         seenEtlFile = true;
                         AtomicExtract(entry, EtlFileName);
                         Log.WriteLine("Extracting {0} Zipped size = {1:f3} MB Unzipped = {2:f3} MB", EtlFileName,
@@ -502,21 +577,27 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                 }
                 if (!seenEtlFile)
+                {
                     throw new ApplicationException("The ZIP file does not have any ETL files in it!");
+                }
+
                 Log.WriteLine("Finished decompression, took {0:f0} sec", sw.Elapsed.TotalSeconds);
             }
         }
 
         #region private
         // Extract to a temp file and move so we get atomic update.   Otherwise if things are
-        // interrupted half way through we confuse algorthms that do nothing if a file is 
+        // interrupted half way through we confuse algorithms that do nothing if a file is 
         // already present.  
         private static void AtomicExtract(ZipArchiveEntry zipEntry, string targetPath)
         {
-            // Insure directory exists. 
+            // Ensure directory exists. 
             var dirName = Path.GetDirectoryName(targetPath);
             if (dirName.Length != 0)
+            {
                 Directory.CreateDirectory(dirName);
+            }
+
             var extractPath = targetPath + ".new";
             try
             {
@@ -530,7 +611,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        string m_zipFilePath;
+        private string m_zipFilePath;
         #endregion // private
     }
 }

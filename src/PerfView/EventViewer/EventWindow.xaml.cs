@@ -1,4 +1,9 @@
-﻿using System;
+﻿using EventSources;
+using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression;
+using Microsoft.Diagnostics.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -10,23 +15,21 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using EventSources;
-using Microsoft.Diagnostics.Utilities;
-using Microsoft.Diagnostics.Symbols;
 using Utilities;
-using System.Windows.Data;
-using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace PerfView
 {
     /// <summary>
     /// Interaction logic for SelectProcess.xaml
     /// </summary>
-    public partial class EventWindow : Window
+    public partial class EventWindow : WindowBase
     {
-        public EventWindow(Window parent, EventSource source)
+        public static bool TruncateRawEventData = true;
+
+        public EventWindow(Window parent, EventSource source) : base(parent)
         {
             throw new NotImplementedException();
         }
@@ -49,7 +52,10 @@ namespace PerfView
             var selection = EventTypes.SelectedItems;
             selection.Clear();
             foreach (var item in template.EventTypes.SelectedItems)
+            {
                 selection.Add(item);
+            }
+
             Update();
         }
         public EventWindow(Window parent, PerfViewEventSource data)
@@ -66,25 +72,37 @@ namespace PerfView
 
                     string morphedContent = null;
                     if (e.IsColumnHeadersRow)
+                    {
                         morphedContent = GetColumnHeaderText(clipboardContent.Column);
+                    }
                     else
                     {
                         var cellContent = clipboardContent.Content;
                         if (cellContent is float)
+                        {
                             morphedContent = PerfDataGrid.GoodPrecision((float)cellContent, clipboardContent.Column);
+                        }
                         else if (cellContent is double)
+                        {
                             morphedContent = PerfDataGrid.GoodPrecision((double)cellContent, clipboardContent.Column);
+                        }
                         else if (cellContent != null)
+                        {
                             morphedContent = cellContent.ToString();
+                        }
                         else
+                        {
                             morphedContent = "";
+                        }
                     }
 
                     if (e.ClipboardRowContent.Count > 1 && i + e.StartColumnDisplayIndex != Grid.Columns.Count - 1)
+                    {
                         morphedContent = PadForColumn(morphedContent, i + e.StartColumnDisplayIndex);
+                    }
 
-                    // TODO Ugly, morph two cells on different rows into one line for the correct cut/paste experience 
-                    // for ranges.  
+                    // TODO Ugly, morph two cells on different rows into one line for the correct cut/paste experience
+                    // for ranges.
                     if (m_clipboardRangeEnd != m_clipboardRangeStart)  // If we have just 2 things selected (and I can tell them apart)
                     {
                         if (PerfDataGrid.VeryClose(morphedContent, m_clipboardRangeStart))
@@ -129,14 +147,28 @@ namespace PerfView
 
             m_userDefinedColumns = new List<DataGridColumn>();
             foreach (var gridColumn in Grid.Columns)
+            {
                 if (((string)gridColumn.Header).StartsWith("Field"))
+                {
                     m_userDefinedColumns.Add(gridColumn);
+                }
+            }
 
             EventTypes.ItemsSource = m_source.EventNames;
+
+            Grid.Sorting += delegate (object sender, DataGridSortingEventArgs e)
+            {
+                e.Handled = true;
+                var direction = (e.Column.SortDirection != ListSortDirection.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                e.Column.SortDirection = direction;
+                var lcv = (ListCollectionView)CollectionViewSource.GetDefaultView(Grid.ItemsSource);
+                lcv.CustomSort = new LogicalGridDataComparer<EventRecord>(e.Column.SortMemberPath, direction);
+            };
         }
 
         public PerfViewEventSource DataSource { get; private set; }
         public Window ParentWindow { get; private set; }
+        public bool UseLocalTime { get; set; } = false;
 
         public void SaveDataToCsvFile(string csvFileName, int maxNonRestFields = int.MaxValue)
         {
@@ -168,22 +200,33 @@ namespace PerfView
                         }
                     }
                     if (hasRest)
+                    {
                         csvFile.Write("{0}Rest", listSeparator);
+                    }
+
                     csvFile.WriteLine();
 
-                    // Write out events 
+                    // Write out events
                     m_source.ForEach(delegate (EventRecord _event)
                     {
-                        // We have exceeded MaxRet, skip it.  
+                        // We have exceeded MaxRet, skip it.
                         if (_event.EventName == null)
+                        {
                             return false;
+                        }
 
                         csvFile.Write("{0}{1}{2:f3}{1}{3}", _event.EventName, listSeparator, _event.TimeStampRelatveMSec, EscapeForCsv(_event.ProcessName, listSeparator));
                         var fields = _event.DisplayFields;
                         for (int i = 0; i < maxField; i++)
+                        {
                             csvFile.Write("{0}{1}", listSeparator, EscapeForCsv(fields[i], listSeparator));
+                        }
+
                         if (hasRest)
+                        {
                             csvFile.Write("{0}{1}", listSeparator, EscapeForCsv(_event.Rest, listSeparator));
+                        }
+
                         csvFile.WriteLine();
                         return true;
                     });
@@ -197,7 +240,7 @@ namespace PerfView
         public void SaveDataToXmlFile(string xmlFileName)
         {
             // Sadly, streamWriter does not have a way of setting the IFormatProvider property
-            // So we have to do it in this ugly, global variable way.  
+            // So we have to do it in this ugly, global variable way.
             var savedCulture = Thread.CurrentThread.CurrentCulture;
             try
             {
@@ -209,9 +252,11 @@ namespace PerfView
                     xmlFile.WriteLine("<Events>");
                     m_source.ForEach(delegate (EventRecord _event)
                     {
-                        // We have exceeded MaxRet, skip it.  
+                        // We have exceeded MaxRet, skip it.
                         if (_event.EventName == null)
+                        {
                             return false;
+                        }
 
                         xmlFile.Write(" <Event EventName=\"{0}\" TimeMsec=\"{1:f3}\" ProcessName=\"{2}\"",
                             _event.EventName, _event.TimeStampRelatveMSec, XmlUtilities.XmlEscape(_event.ProcessName));
@@ -234,13 +279,13 @@ namespace PerfView
                             if (rest.Contains("\\\"") || rest.IndexOfAny(xmlExcapesExceptQuote) >= 0)
                             {
                                 // Rest contains name="XXXX"  and we have determined that the XXX has either
-                                // XML special characters or quoted quotes e.g. \"   
-                                // So we need to transform this to legal XML data.  
+                                // XML special characters or quoted quotes e.g. \"
+                                // So we need to transform this to legal XML data.
 
-                                // TODO painfully slow, fragile, trickly 
+                                // TODO painfully slow, fragile, trickly
                                 rest = XmlUtilities.XmlEscape(_event.Rest);                      // First escape all XML special chars (including quotes)
                                 rest = rest.Replace("&quot;", "\"");                             // Put back all the quotes
-                                rest = Regex.Replace(rest, "\\\\(\\\\*)\"", "$1&quote;");        // But escape the escaped quotes.  
+                                rest = Regex.Replace(rest, "\\\\(\\\\*)\"", "$1&quote;");        // But escape the escaped quotes.
                             }
                             xmlFile.Write(" ");
                             xmlFile.Write(rest);
@@ -262,7 +307,9 @@ namespace PerfView
         {
             var param = e.Parameter as string;
             if (param == null)
+            {
                 param = "EventViewerQuickStart";       // This is the F1 help
+            }
 
             StatusBar.Log("Displaying Users Guide in Web Browser.");
             MainWindow.DisplayUsersGuide(param);
@@ -274,7 +321,7 @@ namespace PerfView
         }
         private void DoOpenParent(object sender, RoutedEventArgs e)
         {
-            for (;;)
+            for (; ; )
             {
                 try
                 {
@@ -287,7 +334,7 @@ namespace PerfView
                 }
                 catch (InvalidOperationException)
                 {
-                    // This means the window was closed, fix our parent to skip it.  
+                    // This means the window was closed, fix our parent to skip it.
                     var asStackWindow = ParentWindow as PerfView.StackWindow;
                     if (asStackWindow != null)
                     {
@@ -323,7 +370,9 @@ namespace PerfView
             StatusBar.Status = "";
             bool ret = Find(FindTextBox.Text);
             if (!ret)
+            {
                 StatusBar.LogError("Could not find " + FindTextBox.Text + ".");
+            }
         }
         private void DoOpenCpuStacks(object sender, ExecutedRoutedEventArgs e)
         {
@@ -347,10 +396,10 @@ namespace PerfView
         }
         private void OpenStacks(string stackSourceName)
         {
-            // TODO this could be confusing as we have filtered out everything before a range and can't get it back.  
+            // TODO this could be confusing as we have filtered out everything before a range and can't get it back.
             if (DataSource != null)
             {
-                // If we have selected exactly two items, use that as the time limits, otherwise use what is the my dialog.  
+                // If we have selected exactly two items, use that as the time limits, otherwise use what is the my dialog.
                 var startTimeRelativeMSec = m_source.StartTimeRelativeMSec;
                 var endTimeRelativeMSec = m_source.EndTimeRelativeMSec;
                 var selectedCells = Grid.SelectedCells;
@@ -381,7 +430,7 @@ namespace PerfView
                             }
                         }
 
-                        // Make sure that start < end 
+                        // Make sure that start < end
                         if (endTimeRelativeMSec < startTimeRelativeMSec)
                         {
                             var tmp = startTimeRelativeMSec;
@@ -391,27 +440,33 @@ namespace PerfView
                     }
                 }
 
-                // TODO FIX NOW: this should call a routine that does the opening of the stack view 
+                // TODO FIX NOW: this should call a routine that does the opening of the stack view
                 // (m_lookedUpCachedSymbolsForETLData should not be needed ...)
                 StatusBar.StartWork("Reading " + DataSource.Name, delegate ()
                 {
-                    // This is where the work gets done.  
+                    // This is where the work gets done.
 
                     PerfViewStackSource dataSource = null;
                     var dataFile = DataSource.DataFile;
                     if (dataFile != null)
                     {
                         if (stackSourceName == null)
+                        {
                             stackSourceName = dataFile.DefaultStackSourceName;
+                        }
+
                         dataSource = dataFile.GetStackSource(stackSourceName);
                     }
                     if (dataSource == null)
+                    {
                         throw new ApplicationException("Could not find stack source " + stackSourceName);
+                    }
+
                     var stackSource = dataSource.GetStackSource(StatusBar.LogWriter, startTimeRelativeMSec - .001, endTimeRelativeMSec + .001);
 
                     if (!m_lookedUpCachedSymbolsForETLData)
                     {
-                        // Lookup all the symbols you can from the cache.  
+                        // Lookup all the symbols you can from the cache.
                         m_lookedUpCachedSymbolsForETLData = true;
                         StatusBar.Log("Quick Looking up symbols from PDB cache.");
                         var etlDataFile = dataFile as ETLPerfViewData;
@@ -421,26 +476,25 @@ namespace PerfView
                             using (var reader = etlDataFile.GetSymbolReader(StatusBar.LogWriter,
                                 SymbolReaderOptions.CacheOnly | SymbolReaderOptions.NoNGenSymbolCreation))
                             {
-                                // TODO FIX NOW, make this so that it uses the stacks in the view.  
+                                // TODO FIX NOW, make this so that it uses the stacks in the view.
                                 var moduleFiles = ETLPerfViewData.GetInterestingModuleFiles(etlDataFile, 5.0, StatusBar.LogWriter, null);
                                 foreach (var moduleFile in moduleFiles)
+                                {
                                     traceLog.CodeAddresses.LookupSymbolsForModule(reader, moduleFile);
+                                }
                             }
                         }
                         StatusBar.Log("Quick Done looking up symbols from PDB cache.");
                     }
                     StatusBar.EndWork(delegate ()
                     {
-                        App.CommandProcessor.NoExitOnElevate = true;        // Don't exit because we might have state 
+                        App.CommandProcessor.NoExitOnElevate = true;        // Don't exit because we might have state
 
                         var stackWindow = new PerfView.StackWindow(this, dataSource);
                         stackWindow.StatusBar.Log("Read " + DataSource.Name);
                         dataSource.ConfigureStackWindow(stackWindow);
                         stackWindow.StartTextBox.Text = startTimeRelativeMSec.ToString();
                         stackWindow.EndTextBox.Text = endTimeRelativeMSec.ToString();
-                        stackWindow.GroupRegExTextBox.Text = "";
-                        stackWindow.FoldPercentTextBox.Text = "";
-                        stackWindow.CallTreeTab.IsSelected = true;
                         stackWindow.Show();
                         stackWindow.SetStackSource(stackSource);
                     });
@@ -451,11 +505,230 @@ namespace PerfView
         {
             var selectedCells = Grid.SelectedCells;
             if (selectedCells.Count != 1)
+            {
                 throw new ApplicationException("No cells selected.");
+            }
 
             ProcessFilterTextBox.Text = GetCellStringValue(selectedCells[0]);
             Update();
         }
+        private void DoShowEventCounterGraph(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (EventTypes.SelectedItems.Count != 1)
+            {
+                return;
+            }
+            if (!((string)EventTypes.SelectedItems[0]).EndsWith("/EventCounters"))
+            {
+                return;
+            }
+            Update();
+
+            string templatePath = Path.Combine(SupportFiles.SupportFileDir, "EventCounterVisualization.html");
+            string template = File.ReadAllText(templatePath);
+
+            var counters = BuildCounters(m_source);
+
+            var firstCounter = true;
+            var sb = new StringBuilder();
+            sb.Append("var data = [");
+            foreach (var counter in counters)
+            {
+                if (firstCounter)
+                {
+                    firstCounter = false;
+                }
+                else
+                {
+                    sb.Append(",");
+                }
+                sb.Append("{");
+                sb.Append(@"name:""");
+                sb.Append(counter.Key);
+                sb.Append(@""", points:[");
+                var firstPoint = true;
+                foreach (var point in counter.Value)
+                {
+                    if (firstPoint)
+                    {
+                        firstPoint = false;
+                    }
+                    else
+                    {
+                        sb.Append(",");
+                    }
+                    sb.Append("{ X:");
+                    sb.Append(point.Item1.ToString(CultureInfo.InvariantCulture));
+                    sb.Append(", Y:");
+                    sb.Append(point.Item2.ToString(CultureInfo.InvariantCulture));
+                    sb.Append("}");
+                }
+                sb.Append("]}");
+            }
+            sb.Append("];");
+            string html = Path.GetTempFileName() + ".html";
+            File.WriteAllText(html, template.Replace("// REPLACE-DATA-HERE", sb.ToString()));
+
+            string uri = "file:///" + html.Replace('\\', '/').Replace(" ", "%20");
+            Process.Start(uri);
+        }
+
+        private const string PayloadToken = "Payload=\"{";
+        private const string PayloadTokenNetCore = "Payload\":{";
+        private const string NameToken = "Name\":";
+        private const string DisplayNameToken = "DisplayName\":";
+        private const string MeanToken = "Mean\":";
+        private const string IncrementToken = "Increment\":";
+        private const string IntervalToken = "IntervalSec\":";
+
+        private Dictionary<string, List<Tuple<double, double>>> BuildCounters(EventSource source)
+        {
+            // look for events from "EventCounters"
+            // i.e. within Payload={...}, need to find Name, DisplayName and IntervalSec fields
+            // however, two counter types exist:
+            //  - Mean: Min, Max, Mean fields
+            //  - Sum: Increment field with the delta of the values between the last fetch and the current one
+            //
+            double t = 0;
+            var counters = new Dictionary<string, List<Tuple<double, double>>>();
+            source.ForEach(delegate (EventRecord event_)
+            {
+                string rest = event_.Rest;
+                if (rest == null)
+                {
+                    return false;
+                }
+
+                // ensure that a payload is available
+                var pos = rest.IndexOf(PayloadToken);
+                if (pos == -1)
+                {
+                    pos = rest.IndexOf(PayloadTokenNetCore);
+                    if (pos == -1)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        pos += PayloadTokenNetCore.Length;
+                    }
+                }
+                else
+                {
+                    pos += PayloadToken.Length;
+                }
+
+                // get Name and DisplayName fields value
+                // i.e. use display name if available (.NET Core) or name otherwise
+                string name = GetStringField(rest, NameToken, ref pos);
+                if (name == null)
+                    return false;
+
+                string displayName = GetStringField(rest, DisplayNameToken, ref pos);
+                if (displayName == null)
+                    displayName = name;
+
+                // check for Mean or Sum type of counter value
+                var value = GetNumericField(rest, IncrementToken, ref pos);
+                if (value == null)
+                {
+                    value = GetNumericField(rest, MeanToken, ref pos);
+                    if (value == null)
+                        return false;
+                }
+
+                var interval = GetNumericField(rest, IntervalToken, ref pos);
+                if (interval == null)
+                    return false;
+
+                string namePart = displayName;
+                string meanPart = value;
+                string intervalSecPart = interval;
+
+                double mean;
+                double intervalSec;
+                if (!double.TryParse(meanPart, out mean))
+                {
+                    return false;
+                }
+                if (!double.TryParse(intervalSecPart, out intervalSec))
+                {
+                    return false;
+                }
+
+                if (!counters.TryGetValue(namePart, out var points))
+                {
+                    points = new List<Tuple<double, double>>();
+                    counters.Add(namePart, points);
+                }
+                points.Add(Tuple.Create(t, mean));
+
+                t += intervalSec;
+
+                return true;
+            });
+
+            return counters;
+        }
+
+        private string GetStringField(string payload, string token, ref int pos)
+        {
+            var next = pos;
+
+            // a string field is stored in the payload as:
+            //    <token>"<value>"
+            // note that <token> has the following format: <field>=
+            //
+            next = payload.IndexOf(token, next);
+            if (next == -1)
+                return null;
+
+            next += token.Length;
+            if (payload[next] != '"')
+                return null;
+            // skip the " at the beginning of the field value
+            next++;
+
+            var end = payload.IndexOf('"', next);
+            if (end == -1)
+                return null;
+
+            var length = end - next;
+            pos = end;
+            return payload.Substring(next, length);
+
+        }
+
+        private string GetNumericField(string payload, string field, ref int pos)
+        {
+            var next = pos;
+
+            // a numeric field is stored in the payload as:
+            //    <token><value>
+            // note that <token> has the following format: <field>:
+            //
+            next = payload.IndexOf(field, next);
+            if (next == -1)
+                return null;
+
+            next += field.Length;
+
+            var end = payload.IndexOf(',', next);
+            // handle the case of the last numeric value of the payload
+            // i.e. look for " }" instead of ","
+            if (end == -1)
+            {
+                end = payload.IndexOf(" }", next);
+                if (end == -1)
+                    return null;
+            }
+
+            var length = end - next;
+            pos = next;
+            return payload.Substring(next, length);
+        }
+
+
         private void DoRangeFilter(object sender, ExecutedRoutedEventArgs e)
         {
             if (Histogram.IsFocused)
@@ -486,7 +759,9 @@ namespace PerfView
         private void DoEventTypesKey(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Return)
+            {
                 DoUpdate(sender, e);
+            }
         }
         private void DoCancel(object sender, ExecutedRoutedEventArgs e)
         {
@@ -500,13 +775,16 @@ namespace PerfView
         }
         private void DoColumnsToDisplayListClick(object sender, RoutedEventArgs e)
         {
-            var eventFilter = new List<string>();
-            foreach (var item in EventTypes.SelectedItems)
-                eventFilter.Add((string)item);
-            if (eventFilter.Count == 0)
+            if (EventTypes.SelectedItems.Count == 0)
             {
                 StatusBar.LogError("No event types selected.");
                 return;
+            }
+
+            var eventFilter = new List<string>(EventTypes.SelectedItems.Count);
+            foreach (var item in EventTypes.SelectedItems)
+            {
+                eventFilter.Add((string)item);
             }
 
             var columns = m_source.AllColumnNames(eventFilter);
@@ -528,9 +806,13 @@ namespace PerfView
                 DoUpdate(sender, e);
             }
             else if (e.Key == Key.Tab)
+            {
                 UpdateColumnsToDisplay();
+            }
             else if (e.Key == Key.Escape)
+            {
                 ColumnsToDisplayPopup.IsOpen = false;
+            }
         }
         private void DoColumnsToDisplayListBoxDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -608,7 +890,9 @@ namespace PerfView
                     {
                         csvFile = baseFile + i.ToString() + ".excel.csv";
                         if (!File.Exists(csvFile))
+                        {
                             break;
+                        }
                     }
                 }
 
@@ -622,7 +906,7 @@ namespace PerfView
         }
         private void DoCopyTimeRange(object sender, ExecutedRoutedEventArgs e)
         {
-            Clipboard.SetText(StartTextBox.Text + " " + EndTextBox.Text);
+            Clipboard.SetText(RangeUtilities.ToString(StartTextBox.Text, EndTextBox.Text));
         }
         private void DoHistogramSelectionChanged(object sender, RoutedEventArgs e)
         {
@@ -638,7 +922,9 @@ namespace PerfView
             for (int i = start; i < end; i++)
             {
                 if (i < m_buckets.Length)
+                {
                     total += m_buckets[i];
+                }
             }
 
             var startTimeMSec = m_bucketTimeMSec * start + m_source.StartTimeRelativeMSec;
@@ -654,24 +940,36 @@ namespace PerfView
             int guiIdx = SelectionStartIndex();
             var list = Grid.ItemsSource as System.Collections.IList;
             if (list == null)
+            {
                 return;
+            }
+
             if (list.Count <= guiIdx)
+            {
                 return;
+            }
+
             if (DataSource == null)
+            {
                 return;
+            }
 
             var traceLog = TryGetTraceLog(DataSource.DataFile);
             if (traceLog == null)
+            {
                 return;
+            }
 
             var elem = list[guiIdx] as PerfView.ETWEventSource.ETWEventRecord;
             if (elem == null)
+            {
                 return;
+            }
 
             var eventData = traceLog.GetEvent(elem.Index);
             if (eventData != null)
             {
-                string eventDataAsString = eventData.Dump(true, true);
+                string eventDataAsString = eventData.Dump(true, TruncateRawEventData);
                 StatusBar.LogWriter.WriteLine(eventDataAsString);
                 StatusBar.OpenLog();
                 StatusBar.Status = "Event Dumped to log.";
@@ -683,6 +981,10 @@ namespace PerfView
             if (dataFile is ETLPerfViewData)
             {
                 return ((ETLPerfViewData)dataFile).TryGetTraceLog();
+            }
+            if (dataFile is LinuxPerfViewData)
+            {
+                return ((LinuxPerfViewData)dataFile).TryGetTraceLog();
             }
             else if (dataFile is EventPipePerfViewData)
             {
@@ -704,7 +1006,7 @@ namespace PerfView
                 if (double.TryParse(GetCellStringValue(cells[0]), out min) &&
                     double.TryParse(GetCellStringValue(cells[cells.Count - 1]), out max))
                 {
-                    // Swap them if necessary.  
+                    // Swap them if necessary.
                     if (max < min)
                     {
                         var tmp = max;
@@ -717,7 +1019,10 @@ namespace PerfView
                         int firstPos = (int)((min - m_source.StartTimeRelativeMSec) / m_bucketTimeMSec);
                         int lastPos = (int)Math.Ceiling((max - m_source.StartTimeRelativeMSec) / m_bucketTimeMSec);
                         if (firstPos == lastPos)
+                        {
                             lastPos++;
+                        }
+
                         int totalLength = Histogram.Text.Length;
                         if (lastPos <= totalLength)
                         {
@@ -728,10 +1033,14 @@ namespace PerfView
                     }
                 }
                 else
+                {
                     StatusBar.LogError("Cells are not numbers.");
+                }
             }
             else
+            {
                 StatusBar.LogError("No Cells Selected.");
+            }
         }
 
         private void UpdateColumnsToDisplay()
@@ -757,8 +1066,13 @@ namespace PerfView
             catch { }
 
             foreach (var name in m_source.EventNames)
+            {
                 if (regEx == null || regEx.IsMatch(name))
+                {
                     filteredList.Add(name);
+                }
+            }
+
             EventTypes.ItemsSource = filteredList;
         }
 
@@ -773,6 +1087,23 @@ namespace PerfView
             Grid.Focus();
             int curPos = SelectionStartIndex();
             var startingNewSearch = false;
+
+            FilterQueryExpressionTree tree;
+            try
+            {
+                string modifiedPat = FilterQueryUtilities.TryExtractFilterQueryExpression(pat, out tree);
+            }
+            catch(FilterQueryExpressionParsingException exp)
+            {
+                StatusBar.LogError(exp.Message);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                StatusBar.LogError($"Exception while parsing expression into a Filter Query Expression: {pat} - {ex.Message}");
+                return false;
+            }
+
             if (m_findPat == null || m_findPat.ToString() != pat)
             {
                 startingNewSearch = true;
@@ -782,17 +1113,24 @@ namespace PerfView
 
             var list = Grid.ItemsSource as System.Collections.IList;
             if (list == null || list.Count == 0)
+            {
                 return false;
+            }
 
-            for (;;)
+            Dictionary<string, string> data = new Dictionary<string, string>();
+            for (; ; )
             {
                 if (startingNewSearch)
+                {
                     startingNewSearch = false;
+                }
                 else
                 {
                     curPos++;
                     if (curPos >= list.Count)
+                    {
                         curPos = 0;
+                    }
 
                     if (curPos == m_FindEnd)
                     {
@@ -802,16 +1140,79 @@ namespace PerfView
                 }
 
                 var item = list[curPos] as EventRecord;
-                var foundItem = m_findPat.IsMatch(item.Rest) || m_findPat.IsMatch(item.EventName) ||
-                    m_findPat.IsMatch(item.ProcessName) || m_findPat.IsMatch(item.TimeStampRelatveMSec.ToString());
-                var fields = item.DisplayFields;
-                for (int i = 0; i < fields.Length; i++)
+                var foundItem = false;
+
+                // If the filter query tree is successfully generated, use it to find.
+                if (tree != null)
                 {
+                    data["ProcessName"] = item.ProcessName;
+                    data["TimestampRelativeMsec"] = item.TimeStampRelatveMSec.ToString();
+
+                    // Before parsing the "Rest" column, grab everything displayed from the ColumnsToDisplay.
+                    if (m_source.ColumnsToDisplay != null)
+                    {
+                        for(int displayFieldIdx = 0; displayFieldIdx < m_source.ColumnsToDisplay.Count; displayFieldIdx++)
+                        {
+                            data[m_source.ColumnsToDisplay[displayFieldIdx]] = item.DisplayFields[displayFieldIdx];
+                        }
+                    }
+
+                    foundItem = tree.Match(data, item.EventName);
                     if (foundItem)
-                        break;
-                    var field = fields[i];
-                    if (field != null)
-                        foundItem = m_findPat.IsMatch(field);
+                    {
+                        Select(item);
+                        return true;
+                    }
+
+                    // Clear so we don't waste re-processing the ProcessName, Timestamp and ColumnsToDisplay again.
+                    data.Clear();
+
+                    // Parse Rest if the above steps fail.
+                    if (!string.IsNullOrEmpty(item.Rest))
+                    {
+                        foreach(var r in item.Rest.Split(FilterQueryUtilities.SpaceSeparator, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            // Format of Rest: Property0=Value0 Property1=Value1
+                            var splitOnEquals = r.Trim().Split('=');
+                            if (splitOnEquals.Length != 2)
+                            {
+                                continue;
+                            }
+
+                            data[splitOnEquals[0]] = splitOnEquals[1].Replace("\"", "");
+                        }
+                    }
+
+                    foundItem = tree.Match(data, item.EventName);
+
+                    // Clear again so that next time we start afresh with a new EventRecord.
+                    data.Clear();
+
+                    if (foundItem)
+                    {
+                        Select(item);
+                        return true;
+                    }
+                }
+
+                else
+                {
+                    foundItem = m_findPat.IsMatch(item.Rest) || m_findPat.IsMatch(item.EventName) ||
+                        m_findPat.IsMatch(item.ProcessName) || m_findPat.IsMatch(item.TimeStampRelatveMSec.ToString());
+                    var fields = item.DisplayFields;
+                    for (int i = 0; i < fields.Length; i++)
+                    {
+                        if (foundItem)
+                        {
+                            break;
+                        }
+
+                        var field = fields[i];
+                        if (field != null)
+                        {
+                            foundItem = m_findPat.IsMatch(field);
+                        }
+                    }
                 }
 
                 if (foundItem)
@@ -824,26 +1225,26 @@ namespace PerfView
         public void Update()
         {
             if (string.IsNullOrWhiteSpace(EndTextBox.Text))
+            {
                 m_source.EndTimeRelativeMSec = m_source.MaxEventTimeRelativeMsec;
+            }
             else if (!double.TryParse(EndTextBox.Text, out m_source.EndTimeRelativeMSec))
             {
                 StatusBar.LogError("Invalid number " + EndTextBox.Text);
                 return;
             }
 
-            // See if we are pasting a range.  
+            // See if we are pasting a range.
             if (string.IsNullOrWhiteSpace(StartTextBox.Text))
+            {
                 m_source.StartTimeRelativeMSec = 0;
+            }
             else
             {
-                var match = Regex.Match(StartTextBox.Text, @"^\s*([\d\.,]+)\s+([\d\.,]+)\s*$");
-                if (match.Success)
+                if (RangeUtilities.TryParse(StartTextBox.Text, out var startTimeRelativeMSec, out var endTimeRelativeMSec))
                 {
-                    m_source.StartTimeRelativeMSec = 0;
-                    double.TryParse(match.Groups[1].Value, out m_source.StartTimeRelativeMSec);
-
-                    m_source.EndTimeRelativeMSec = m_source.MaxEventTimeRelativeMsec;
-                    double.TryParse(match.Groups[2].Value, out m_source.EndTimeRelativeMSec);
+                    m_source.StartTimeRelativeMSec = startTimeRelativeMSec;
+                    m_source.EndTimeRelativeMSec = endTimeRelativeMSec;
                 }
                 else
                 {
@@ -864,13 +1265,15 @@ namespace PerfView
 
             EndTextBox.Text = m_source.EndTimeRelativeMSec.ToString("n3");
             StartTextBox.Text = m_source.StartTimeRelativeMSec.ToString("n3");
-            m_source.StartTimeRelativeMSec -= .0006;         // Insure that we are inclusive as far as rounding goes.
+            m_source.StartTimeRelativeMSec -= .0006;         // Ensure that we are inclusive as far as rounding goes.
             m_source.EndTimeRelativeMSec += .0006;
 
             if (!int.TryParse(MaxRetTextBox.Text, out m_source.MaxRet))
             {
                 if (MaxRetTextBox.Text == "")
+                {
                     m_source.MaxRet = 10000;
+                }
                 else
                 {
                     StatusBar.LogError("Invalid number " + MaxRetTextBox.Text);
@@ -885,11 +1288,37 @@ namespace PerfView
                 return;
             }
 
-            var eventFilter = new List<string>();
+            var eventFilter = new List<string>(EventTypes.SelectedItems.Count);
             foreach (var item in EventTypes.SelectedItems)
+            {
                 eventFilter.Add((string)item);
+            }
+
             m_source.SetEventFilter(eventFilter);
-            m_source.ColumnsToDisplay = EventSource.ParseColumns(ColumnsToDisplayTextBox.Text, m_source.AllColumnNames(eventFilter));
+            try
+            {
+                string columnSpec = FilterQueryUtilities.TryExtractFilterQueryExpression(ColumnsToDisplayTextBox.Text, out FilterQueryExpressionTree tree);
+                m_source.FilterQueryExpressionTree = tree;
+                m_source.ColumnsToDisplay = EventSource.ParseColumns(columnSpec, m_source.AllColumnNames(eventFilter));
+            }
+
+            // Appropriately log any filter query expression parsing issue to give as much info to the user.
+            catch (FilterQueryExpressionTreeParsingException fqpEx)
+            {
+                StatusBar.LogError(fqpEx.Message);
+                m_source.FilterQueryExpressionTree = null;
+            }
+            catch (FilterQueryExpressionParsingException fqepEx)
+            {
+                StatusBar.LogError(fqepEx.Message);
+                m_source.FilterQueryExpressionTree = null;
+            }
+            catch(Exception ex)
+            {
+                StatusBar.LogError(ex.Message);
+                m_source.FilterQueryExpressionTree = null;
+            }
+
             for (int i = 0; i < m_userDefinedColumns.Count; i++)
             {
                 if (m_source.ColumnsToDisplay != null && i < m_source.ColumnsToDisplay.Count)
@@ -897,23 +1326,24 @@ namespace PerfView
                     m_userDefinedColumns[i].Visibility = System.Windows.Visibility.Visible;
                     // For some reason underscores in the name of the column header get removed
                     // (it probably means something special to the Grid), we fix this by replacing
-                    // them with __.  
+                    // them with __.
                     m_userDefinedColumns[i].Header = m_source.ColumnsToDisplay[i].Replace("_", "__");
                 }
                 else
+                {
                     m_userDefinedColumns[i].Visibility = System.Windows.Visibility.Hidden;
+                }
             }
 
-            // Change 'spin.exe (32434)' into 'spin.exe \(32434\)'   
+            // Change 'spin.exe (32434)' into 'spin.exe \(32434\)'
             m_source.ProcessFilterRegex = Regex.Replace(ProcessFilterTextBox.Text, @"\\*\((\d+)\\*\)", @"\($1\)");
             m_source.TextFilterRegex = TextFilterTextBox.Text;
 
-            // Can make this incremental by using an ObservableCollection.  
+            // Can make this incremental by using an ObservableCollection.
             var events = new ObservableCollection<EventRecord>();
             Grid.ItemsSource = events;
-            Grid.Background = Brushes.Gray;
-            EventTypes.Background = Brushes.Gray;
-            Grid.RowBackground = new SolidColorBrush(Color.FromArgb(255, 200, 200, 200));
+            Grid.IsEnabled = false;
+            EventTypes.IsEnabled = false;
             Histogram.Text = "";
 
             StatusBar.StartWork("Scanning Events", delegate ()
@@ -929,20 +1359,29 @@ namespace PerfView
                 {
                     eventCount++;
                     if (event_.EventName != null)
+                    {
                         Add(events, event_);
+                    }
 
-                    // Compute the histogram of counts over time for the events.  
+                    // Compute the histogram of counts over time for the events.
                     var bucketNum = (int)((event_.TimeStampRelatveMSec - m_source.StartTimeRelativeMSec) / m_bucketTimeMSec);
                     if (bucketNum < 0)
+                    {
                         bucketNum = 0;
+                    }
                     else if (bucketNum >= m_buckets.Length)
+                    {
                         bucketNum = m_buckets.Length - 1;
+                    }
+
                     var bucketVal = m_buckets[bucketNum] + 1;
                     m_buckets[bucketNum] = bucketVal;
                     if (bucketVal > maxBucketCount)
+                    {
                         maxBucketCount = bucketVal;
+                    }
 
-                    // When we move on to a new bucket, update the Histogram string.   
+                    // When we move on to a new bucket, update the Histogram string.
                     if (lastBucketNum < bucketNum)
                     {
                         Dispatcher.BeginInvoke((Action)delegate ()
@@ -960,7 +1399,9 @@ namespace PerfView
                 StatusBar.EndWork(delegate ()
                 {
                     if (events.Count == m_source.MaxRet)
+                    {
                         StatusBar.Log("WARNING, returned the maximum " + events.Count + " records.");
+                    }
 
                     Histogram.Text = histString;
                     StatusBar.Log("Histogram: " + histString + " Time Bucket " + m_bucketTimeMSec.ToString("n1") + " MSec");
@@ -968,13 +1409,18 @@ namespace PerfView
                     var sb = new StringBuilder();
                     sb.Append("[Found ").Append(events.Count);
                     if (events.Count >= m_source.MaxRet)
+                    {
                         sb.Append(" (TRUNCATED. Set MaxRet for more)");
+                    }
+
                     sb.Append(" Records.  ").Append(eventCount.ToString("n0")).Append(" total events.");
 
                     if (events.Count == 0 && !string.IsNullOrWhiteSpace(m_source.TextFilterRegex))
+                    {
                         sb.Append("  WARNING: TextFilter is active.");
+                    }
 
-                    // Display any column sums that are available.  
+                    // Display any column sums that are available.
                     if (m_source.ColumnSums != null && m_source.ColumnsToDisplay != null)
                     {
                         bool first = true;
@@ -995,11 +1441,10 @@ namespace PerfView
                     sb.AppendLine("]");
                     StatusBar.Log(sb.ToString());
                 });
-            }, delegate ()       // This is the finally clause.  Happens even on exceptions and cancelations.  
+            }, delegate ()       // This is the finally clause.  Happens even on exceptions and cancelations.
             {
-                Grid.Background = Brushes.White;
-                Grid.RowBackground = Brushes.White;
-                EventTypes.Background = Brushes.White;
+                Grid.IsEnabled = true;
+                EventTypes.IsEnabled = true;
             });
         }
 
@@ -1025,8 +1470,12 @@ namespace PerfView
                 // TODO should not have to be linear
                 var list = Grid.ItemsSource as System.Collections.IList;
                 for (int i = 0; i < list.Count; i++)
+                {
                     if (list[i] == cell.Item)
+                    {
                         return i;
+                    }
+                }
                 // var row = Grid.ItemContainerGenerator.ContainerFromItem(cell.Item);
                 // ret = Grid.ItemContainerGenerator.IndexFromContainer(row);
 
@@ -1036,17 +1485,23 @@ namespace PerfView
 
         /// <summary>
         /// given the content string, and the columnIndex, return a string that is propertly padded
-        /// so that when displayed the rows will line up by columns nicely  
+        /// so that when displayed the rows will line up by columns nicely
         /// </summary>
         public string PadForColumn(string content, int columnIndex)
         {
             if (m_maxColumnInSelection == null)
+            {
                 m_maxColumnInSelection = new int[Grid.Columns.Count];
+            }
+
             int maxString = m_maxColumnInSelection[columnIndex];
             if (maxString == 0)
             {
                 for (int i = 0; i < m_maxColumnInSelection.Length; i++)
+                {
                     m_maxColumnInSelection[i] = GetColumnHeaderText(Grid.Columns[i]).Length;
+                }
+
                 foreach (var cellInfo in Grid.SelectedCells)
                 {
                     var idx = cellInfo.Column.DisplayIndex;
@@ -1055,11 +1510,15 @@ namespace PerfView
                 maxString = m_maxColumnInSelection[columnIndex];
             }
 
-            // TODO use the alignment attribute 
+            // TODO use the alignment attribute
             if (columnIndex == 1)
+            {
                 return content.PadLeft(maxString);
+            }
             else
+            {
                 return content.PadRight(maxString);
+            }
         }
         public string GetCellStringValue(DataGridCellInfo cell)
         {
@@ -1067,27 +1526,42 @@ namespace PerfView
             if (record != null)
             {
                 if (cell.Column == EventNameColumn)
+                {
                     return record.EventName;
+                }
+
                 if (cell.Column == ProcessNameColumn)
+                {
                     return record.ProcessName;
+                }
+
                 if (cell.Column == TimeMSecColumn)
+                {
                     return record.TimeStampRelatveMSec.ToString("n3");
+                }
+
                 for (int i = 0; i < m_userDefinedColumns.Count; i++)
                 {
                     if (cell.Column == m_userDefinedColumns[i])
                     {
                         var value = record.DisplayFields[i];
                         if (value == null)
+                        {
                             value = "";
+                        }
+
                         return value;
 
                     }
                 }
             }
-            // Fallback see if we can scrape it from the GUI object.  
+            // Fallback see if we can scrape it from the GUI object.
             FrameworkElement contents = cell.Column.GetCellContent(cell.Item);
             if (contents == null)
+            {
                 return "";
+            }
+
             return Helpers.GetText(contents);
         }
 
@@ -1112,6 +1586,10 @@ namespace PerfView
             typeof(EventWindow), new InputGestureCollection() { new KeyGesture(Key.S, ModifierKeys.Alt) });
         public static RoutedUICommand OpenAnyStartStopStacksCommand = new RoutedUICommand("Open Any Start Stop Stacks", "OpenAnyStartStopStacks", typeof(EventWindow));
         public static RoutedUICommand OpenAnyTaskTreeStacksCommand = new RoutedUICommand("Open Any TaskTree Stacks", "OpenAnyTaskTreeStacks", typeof(EventWindow));
+
+        public static RoutedUICommand ShowEventCounterGraphCommand = new RoutedUICommand("Show EventCounter Graph", "ShowEventCounterGraph",
+            typeof(EventWindow), new InputGestureCollection() { new KeyGesture(Key.G, ModifierKeys.Control) });
+
         public static RoutedUICommand SetProcessFilterCommand = new RoutedUICommand("Set Process Filter", "SetProcessFilter",
             typeof(EventWindow), new InputGestureCollection() { new KeyGesture(Key.P, ModifierKeys.Control) });
         public static RoutedUICommand SetRangeFilterCommand = new RoutedUICommand("Set Range Filter", "SetRangeFilter",
@@ -1143,10 +1621,14 @@ namespace PerfView
         {
             // TODO FIX NOW is this a hack?
             if (str == null)
+            {
                 return "";
-            // If you don't have a comma, you are OK (we are losing leading and trailing whitespace but I don't care about that. 
+            }
+            // If you don't have a comma, you are OK (we are losing leading and trailing whitespace but I don't care about that.
             if (str.IndexOf(listSeparator) < 0)
+            {
                 return str;
+            }
 
             // Escape all " by repeating them
             str = str.Replace("\"", "\"\"");
@@ -1189,14 +1671,22 @@ namespace PerfView
                             seenHexValue = true;
                         }
                         else
+                        {
                             parseSuccessful = double.TryParse(cellStringValue, out num);
+                        }
 
                         if (parseSuccessful)
                         {
                             if (count == 0)
+                            {
                                 first = num;
+                            }
+
                             if (count == 1)
+                            {
                                 second = num;
+                            }
+
                             count++;
                             max = Math.Max(max, num);
                             min = Math.Min(min, num);
@@ -1205,8 +1695,11 @@ namespace PerfView
                     }
                     if (firstCell)
                     {
-                        if (count == 0)     // Give up if the first cell is not a double.  
+                        if (count == 0)     // Give up if the first cell is not a double.
+                        {
                             break;
+                        }
+
                         firstCell = false;
                     }
                 }
@@ -1219,22 +1712,28 @@ namespace PerfView
                         text += string.Format("   Diff={0:n3}", max - min);
                         double ratio = Math.Abs(first / second);
                         if (.001 <= ratio && ratio <= 1000)
+                        {
                             text += string.Format("   X/Y={0:n3}   Y/X={1:n3}", ratio, 1 / ratio);
+                        }
                     }
                     else
+                    {
                         text += string.Format("   Count={0}", count);
+                    }
 
                     if (seenHexValue)
                     {
                         text += string.Format(" HexSum=0x{0:x}", (long)sum);
                         if (count == 2)
+                        {
                             text += string.Format(" HexDiff=0x{0:x}", (long)(max - min));
+                        }
                     }
                     StatusBar.Status = text;
                 }
             }
 
-            // TODO: we really need to combine PerfDataGrid and EventViewer so that all this ugly logic is in one place. 
+            // TODO: we really need to combine PerfDataGrid and EventViewer so that all this ugly logic is in one place.
             if (cells.Count <= 2)
             {
                 if (cells.Count == 2)
@@ -1252,13 +1751,18 @@ namespace PerfView
                     {
                         long asNum;
                         if (cellStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase) && long.TryParse(cellStr.Substring(2), NumberStyles.HexNumber, null, out asNum))
+                        {
                             cellAsHexDec = cellAsHexDec + " (" + asNum.ToString("n") + ")";
+                        }
                         else if (long.TryParse(cellStr.Replace(",", ""), out asNum))
+                        {
                             cellAsHexDec = cellAsHexDec + " (0x" + asNum.ToString("x") + ")";
+                        }
+
                         StatusBar.Status = "CellContents: " + cellAsHexDec;
                     }
 
-                   try
+                    try
                     {
                         var clipBoardStr = Clipboard.GetText().Trim();
                         if (clipBoardStr.Length > 0)
@@ -1273,17 +1777,21 @@ namespace PerfView
 
                                 double product = cellVal * clipBoardVal;
                                 if (Math.Abs(product) <= 1000)
+                                {
                                     reply += string.Format("   X*Y={0:n3}", product);
+                                }
 
                                 double ratio = cellVal / clipBoardVal;
                                 if (.001 <= Math.Abs(ratio) && Math.Abs(ratio) <= 1000000)
+                                {
                                     reply += string.Format("   X/Y={0:n3}   Y/X={1:n3}", ratio, 1 / ratio);
+                                }
 
                                 StatusBar.Status = reply;
                             }
                         }
                     }
-                    catch(Exception eClipBoard)
+                    catch (Exception eClipBoard)
                     {
                         StatusBar.Log("Warning: exception trying to get Clipboard: " + eClipBoard.Message);
                     }
@@ -1291,7 +1799,10 @@ namespace PerfView
                 Grid.ClipboardCopyMode = DataGridClipboardCopyMode.ExcludeHeader;
             }
             else
+            {
                 Grid.ClipboardCopyMode = DataGridClipboardCopyMode.IncludeHeader;
+            }
+
             m_maxColumnInSelection = null;
         }
 
@@ -1300,8 +1811,8 @@ namespace PerfView
         /// </summary>
         private void Add(ObservableCollection<EventRecord> events, EventRecord event_)
         {
-            // TODO we currently have a problem where we make the GUI unresponsive because we flood it with BeginInvoke request here.  
-            // We fix this currently by sleeping every 20 adds, we should probably batch these but that complicates the interface.  
+            // TODO we currently have a problem where we make the GUI unresponsive because we flood it with BeginInvoke request here.
+            // We fix this currently by sleeping every 20 adds, we should probably batch these but that complicates the interface.
             --m_adds;
             if (m_adds <= 0)
             {
@@ -1315,26 +1826,52 @@ namespace PerfView
             });
         }
 
-
-        int m_adds;
+        private int m_adds;
 
         /// <summary>
         /// If we have only two cells selected, even if they are on different rows we want to morph them
-        /// to a single row.  These variables are for detecting this situation.  
+        /// to a single row.  These variables are for detecting this situation.
         /// </summary>
-        string m_clipboardRangeStart;
-        string m_clipboardRangeEnd;
-
-        int[] m_maxColumnInSelection;
-        int m_FindEnd;
-        Regex m_findPat;
-
-        bool m_lookedUpCachedSymbolsForETLData;       // have we try to resolve symbols
-        EventSource m_source;
-        List<DataGridColumn> m_userDefinedColumns;
-
-        float[] m_buckets;                              // Keep track of the counts of events.  
-        double m_bucketTimeMSec;                        // Size for each bucket
+        private string m_clipboardRangeStart;
+        private string m_clipboardRangeEnd;
+        private int[] m_maxColumnInSelection;
+        private int m_FindEnd;
+        private Regex m_findPat;
+        private bool m_lookedUpCachedSymbolsForETLData;       // have we try to resolve symbols
+        private EventSource m_source;
+        private List<DataGridColumn> m_userDefinedColumns;
+        private float[] m_buckets;                              // Keep track of the counts of events.
+        private double m_bucketTimeMSec;                        // Size for each bucket
         #endregion
+
+        private void DoUseLocalTime(object sender, RoutedEventArgs e)
+        {
+            foreach (var i in Grid.Columns)
+            {
+                if (i == OriginTimeStampColumn)
+                {
+                    i.Visibility = Visibility.Hidden;
+                }
+                else if (i == LocalTimeStampColumn)
+                {
+                    i.Visibility = Visibility.Visible;
+                }
+            }
+        }
+
+        private void DoUseOriginTime(object sender, RoutedEventArgs e)
+        {
+            foreach (var i in Grid.Columns)
+            {
+                if (i == OriginTimeStampColumn)
+                {
+                    i.Visibility = Visibility.Visible;
+                }
+                else if (i == LocalTimeStampColumn)
+                {
+                    i.Visibility = Visibility.Hidden;
+                }
+            }
+        }
     }
 }

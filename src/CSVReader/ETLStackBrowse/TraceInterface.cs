@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 
 namespace ETLStackBrowse
@@ -49,16 +47,16 @@ namespace ETLStackBrowse
 
     public interface IContextSwitchParameters
     {
-        bool SimulateHyperthreading {get ; set; }
-        bool SortBySwitches {get; set; }
+        bool SimulateHyperthreading { get; set; }
+        bool SortBySwitches { get; set; }
         bool ComputeReasons { get; set; }
         int TopThreadCount { get; set; }
     }
 
     public interface ITraceParameters
     {
-        INamedFilter EventFilters {get;}
-        INamedFilter StackFilters { get;}
+        INamedFilter EventFilters { get; }
+        INamedFilter StackFilters { get; }
         IIndexedFilter ThreadFilters { get; }
         IIndexedFilter ProcessFilters { get; }
 
@@ -71,7 +69,7 @@ namespace ETLStackBrowse
         bool[] GetProcessFilters();
         bool[] GetThreadFilters();
         String FilterText { get; set; }
-        
+
         long T0 { get; set; }
         long T1 { get; set; }
         bool EnableThreadFilter { get; set; }
@@ -96,19 +94,19 @@ namespace ETLStackBrowse
 
     public class StackParameters : IStackParameters
     {
-        bool fSkipThunks = true;
-        bool fUseExeFrame = true;
-        bool fUsePid = true;
-        bool fUseTid = true;
-        bool fFoldModules = false;
-        bool fUseRootAI = false;
-        bool fShowWhen = true;
-        bool fUseIODuration = false;
-        bool fIndentLess = true;
-        bool fAnalyzeReservedMemory = false;
-        double minIncl = 2.0;
-        string frameFilters = "";
-        string butterflyPivot = "";
+        private bool fSkipThunks = true;
+        private bool fUseExeFrame = true;
+        private bool fUsePid = true;
+        private bool fUseTid = true;
+        private bool fFoldModules = false;
+        private bool fUseRootAI = false;
+        private bool fShowWhen = true;
+        private bool fUseIODuration = false;
+        private bool fIndentLess = true;
+        private bool fAnalyzeReservedMemory = false;
+        private double minIncl = 2.0;
+        private string frameFilters = "";
+        private string butterflyPivot = "";
 
         public bool SkipThunks { get { return fSkipThunks; } set { fSkipThunks = value; } }
         public bool UseExeFrame { get { return fUseExeFrame; } set { fUseExeFrame = value; } }
@@ -129,21 +127,21 @@ namespace ETLStackBrowse
 
     public class RollupParameters : IRollupParameters
     {
-        string rollupCommand = "";
-        int rollupIntervals = 20;
+        private string rollupCommand = "";
+        private int rollupIntervals = 20;
 
         public string RollupCommand { get { return rollupCommand; } set { rollupCommand = value; } }
         public int RollupTimeIntervals { get { return rollupIntervals; } set { rollupIntervals = value; } }
-        
+
         public RollupParameters() { }
     }
 
     public class ContextSwitchParameters : IContextSwitchParameters
     {
-        bool fSimulateHyperthreading = false;
-        bool fSortBySwitches = false;
-        bool fComputeReasons = false;
-        int nTop = 0;
+        private bool fSimulateHyperthreading = false;
+        private bool fSortBySwitches = false;
+        private bool fComputeReasons = false;
+        private int nTop = 0;
 
         public bool SimulateHyperthreading { get { return fSimulateHyperthreading; } set { fSimulateHyperthreading = value; } }
         public bool SortBySwitches { get { return fSortBySwitches; } set { fSortBySwitches = value; } }
@@ -155,13 +153,13 @@ namespace ETLStackBrowse
 
     public class TraceParameters : ITraceParameters
     {
-        AtomFilter eventfilter;
-        AtomFilter stackfilter;
-        IndexFilter processfilter;
-        IndexFilter threadfilter;
-        IStackParameters stackParameters;
-        IRollupParameters rollupParameters;
-        IContextSwitchParameters contextSwitchParameters;
+        private AtomFilter eventfilter;
+        private AtomFilter stackfilter;
+        private IndexFilter processfilter;
+        private IndexFilter threadfilter;
+        private IStackParameters stackParameters;
+        private IRollupParameters rollupParameters;
+        private IContextSwitchParameters contextSwitchParameters;
 
         public TraceParameters(ETLTrace t)
         {
@@ -188,34 +186,38 @@ namespace ETLStackBrowse
         public IStackParameters StackParameters { get { return stackParameters; } }
         public IRollupParameters RollupParameters { get { return rollupParameters; } }
         public IContextSwitchParameters ContextSwitchParameters { get { return contextSwitchParameters; } }
-        
-        public bool[] GetProcessFilters() 
+
+        public bool[] GetProcessFilters()
         {
             if (!EnableProcessFilter)
             {
                 var ret = new bool[processfilter.Count];
 
                 for (int i = 0; i < ret.Length; i++)
+                {
                     ret[i] = true;
+                }
 
                 return ret;
             }
-            return processfilter.GetFilters(); 
+            return processfilter.GetFilters();
         }
 
-        public bool[] GetThreadFilters() 
+        public bool[] GetThreadFilters()
         {
             if (!EnableThreadFilter)
             {
                 var ret = new bool[threadfilter.Count];
 
                 for (int i = 0; i < ret.Length; i++)
+                {
                     ret[i] = true;
+                }
 
                 return ret;
             }
 
-            return threadfilter.GetFilters();      
+            return threadfilter.GetFilters();
         }
 
         public String FilterText { get; set; }
@@ -231,7 +233,7 @@ namespace ETLStackBrowse
 
     public class IndexFilter : IIndexedFilter
     {
-        bool[] filters;
+        private bool[] filters;
 
         public IndexFilter(int count)
         {
@@ -241,13 +243,17 @@ namespace ETLStackBrowse
         public void Clear()
         {
             for (int i = 0; i < filters.Length; i++)
+            {
                 filters[i] = false;
+            }
         }
 
         public void SetAll()
         {
             for (int i = 0; i < filters.Length; i++)
+            {
                 filters[i] = true;
+            }
         }
 
         public bool this[int index]
@@ -278,8 +284,8 @@ namespace ETLStackBrowse
 
     public class AtomFilter : INamedFilter
     {
-        ByteAtomTable atoms;
-        bool[] filters;
+        private ByteAtomTable atoms;
+        private bool[] filters;
 
         public AtomFilter(ByteAtomTable atoms)
         {
@@ -290,14 +296,18 @@ namespace ETLStackBrowse
         public void Clear()
         {
             for (int i = 0; i < filters.Length; i++)
+            {
                 filters[i] = false;
+            }
         }
 
         public void SetAll()
         {
             for (int i = 0; i < filters.Length; i++)
+            {
                 filters[i] = true;
-       }
+            }
+        }
 
         public bool this[int index]
         {
@@ -317,14 +327,19 @@ namespace ETLStackBrowse
             {
                 int i = atoms.Lookup(key);
                 if (i < 0)
+                {
                     return false;
+                }
+
                 return filters[i];
             }
             set
             {
                 int i = atoms.Lookup(key);
                 if (i < 0)
+                {
                     return;
+                }
 
                 filters[i] = value;
             }

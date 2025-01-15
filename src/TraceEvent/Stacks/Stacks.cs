@@ -31,7 +31,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public abstract void ForEach(Action<StackSourceSample> callback);
         /// <summary>
-        /// If this is overridden to return true, then during the 'Foeach' callback you can save references
+        /// If this is overridden to return true, then during the 'ForEach' callback you can save references
         /// to the samples you are given because they will not be overridden by the stack source.  If this is
         /// false you must make a copy of the sample if you with to remember it.  
         /// </summary>
@@ -45,7 +45,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public virtual void ParallelForEach(Action<StackSourceSample> callback, int desiredParallelism = 0)
         {
             if (desiredParallelism == 0)
+            {
                 desiredParallelism = Environment.ProcessorCount * 5 / 4 + 1;
+            }
 
             var freeBlocks = new ConcurrentBag<StackSourceSample[]>();
             bool sampleImmutable = SamplesImmutable;
@@ -62,18 +64,23 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     // The cure may be worse than the disease.   
                     // Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
                     var workQueue = (BlockingCollection<StackSourceSample[]>)workQueueObj;
-                    for (;;)
+                    for (; ; )
                     {
                         StackSourceSample[] readerSampleBlock;
                         // Trace.WriteLine("Task " + Task.CurrentId + " fetching work");
                         // DebugEventSource.Log.Message(Task.CurrentId ?? 0, workQueue.GetHashCode(), 0, 0, "Waiting");
                         if (!workQueue.TryTake(out readerSampleBlock, -1))
+                        {
                             break;
+                        }
                         // Trace.WriteLine("Task " + Task.CurrentId + " Consuming Sample " + sample.SampleIndex);
                         // DebugEventSource.Log.Message(Task.CurrentId ?? 0, workQueue.GetHashCode(), workQueue.Count, (int)readerSampleBlock[0].SampleIndex, "Calling callback");
 
                         for (int j = 0; j < readerSampleBlock.Length; j++)
+                        {
                             callback(readerSampleBlock[j]);
+                        }
+
                         freeBlocks.Add(readerSampleBlock);       // Recycle sample object. 
                     }
                 });
@@ -93,13 +100,17 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                         if (!sampleImmutable)
                         {
                             for (int i = 0; i < writerSampleBlock.Length; i++)
+                            {
                                 writerSampleBlock[i] = new StackSourceSample(this);
+                            }
                         }
                     }
                 }
 
                 if (sampleImmutable)
+                {
                     writerSampleBlock[curIdx] = sample;
+                }
                 else
                 {
                     var sampleCopy = writerSampleBlock[curIdx];
@@ -124,15 +135,21 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             // Indicate to the workers they are done.   This will cause them to exit.  
             for (int i = 0; i < workerQueues.Length; i++)
+            {
                 workerQueues[i].CompleteAdding();
+            }
 
             // Wait for all my workers to die before returning.  
             for (int i = 0; i < workers.Length; i++)
+            {
                 workers[i].Join();
+            }
 
             // Write out any stragglers.  (do it after waiting since it keeps them in order (roughly).  
             for (int i = 0; i < curIdx; i++)
+            {
                 callback(writerSampleBlock[i]);
+            }
         }
 
         // These are optional
@@ -156,8 +173,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public virtual double SampleTimeRelativeMSecLimit { get { return 0; } }
         /// <summary>
-        /// In addition to Time and Metric a sample can have a Scneario number associated with it.   ScenarioCount 
-        /// returns the number of such scnearios.   Returning 0 implies no scenario support.  
+        /// In addition to Time and Metric a sample can have a Scenario number associated with it.   ScenarioCount 
+        /// returns the number of such scenarios.   Returning 0 implies no scenario support.  
         /// </summary>
         public virtual int ScenarioCount { get { return 0; } }
         /// <summary>
@@ -166,7 +183,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// things up.  If you sample at a rate of 10, it means that only one out of every 10 samples is actually
         /// produced by 'ForEach'.   Note that it is expected that when the sampling rate is set the 
         /// source will correspondingly adjust the CountMultiplier, so that the total will look like no sampling
-        /// is occuring 
+        /// is occurring 
         /// </summary>
         public virtual float? SamplingRate { get { return null; } set { } }
 
@@ -189,7 +206,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public void Dump(string fileName)
         {
             using (var writer = File.CreateText(fileName))
+            {
                 Dump(writer);
+            }
         }
         /// <summary>
         /// Dump the stack source to a TextWriter as XML.   Used for debugging.  
@@ -201,7 +220,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             ForEach(delegate (StackSourceSample sample)
             {
                 writer.Write("  ");
-                writer.WriteLine(this.ToString(sample));
+                writer.WriteLine(ToString(sample));
             });
             writer.WriteLine(" </Samples>");
             writer.WriteLine("</StackSource>");
@@ -214,11 +233,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     public enum RefDirection
     {
         /// <summary>
-        /// Indicates that you are interested in referneces FROM the node of interest
+        /// Indicates that you are interested in references FROM the node of interest
         /// </summary>
         From,
         /// <summary>
-        /// Indicates that you are interested in referneces TO the node of interest
+        /// Indicates that you are interested in references TO the node of interest
         /// </summary>
         To
     };
@@ -228,8 +247,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     /// at this information.  We don't use normal objects to represent these but rather give each stack (and frame) a unique
     /// (dense) index.   This has a number of advantages over using objects to represent the stack.
     /// 
-    ///     * Indexes are very serialization friendly, and this data will be presisted.  Thus indexes are the natural form for data on disk. 
-    ///     * It allows the data to be read from the serialized format (disk) lazily in a very straightfoward fashion, keeping only the
+    ///     * Indexes are very serialization friendly, and this data will be persisted.  Thus indexes are the natural form for data on disk. 
+    ///     * It allows the data to be read from the serialized format (disk) lazily in a very straightforward fashion, keeping only the
     ///         hottest elements in memory.  
     ///     * Users of this API can associate additional data with the call stacks or frames trivially and efficiently simply by
     ///         having an array indexed by the stack or frame index.   
@@ -246,7 +265,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public abstract StackSourceCallStackIndex GetCallerIndex(StackSourceCallStackIndex callStackIndex);
         /// <summary>
         /// For efficiency, m_frames are assumed have a integer ID instead of a string name that
-        /// is unique to the frame.  Note that it is expected that GetFrameIndex(x) == GetFrameId(y) 
+        /// is unique to the frame.  Note that it is expected that GetFrameIndex(x) == GetFrameIndex(y) 
         /// then GetFrameName(x) == GetFrameName(y).   The converse does NOT have to be true (you 
         /// can reused the same name for distinct m_frames, however this can be confusing to your
         /// users, so be careful.  
@@ -298,7 +317,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public string ToString(StackSourceSample sample, StringBuilder sb = null)
         {
             if (sb == null)
+            {
                 sb = new StringBuilder();
+            }
+
             sb.Append("<StackSourceSample");
             sb.Append(" Metric=\"").Append(sample.Metric.ToString("f1")).Append('"');
             sb.Append(" TimeRelativeMSec=\"").Append(sample.TimeRelativeMSec.ToString("n3")).Append('"');
@@ -333,7 +355,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             StringBuilder sb = new StringBuilder();
             sb.Append("  <Frame");
             if (stackIndex != StackSourceCallStackIndex.Invalid)
+            {
                 sb.Append(" StackID=\"").Append(((int)stackIndex).ToString()).Append("\"");
+            }
+
             sb.Append(" FrameID=\"").Append(((int)frameIndex).ToString()).Append("\"");
             sb.Append(" Name = \"").Append(XmlUtilities.XmlEscape(GetFrameName(frameIndex, false))).Append("\"");
             sb.Append("/>");
@@ -342,14 +367,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     }
 
     /// <summary>
-    /// StackSourceSample represents a single sample that has a stack.   It has a number of predefined data items assoicate with it
+    /// StackSourceSample represents a single sample that has a stack.   It has a number of predefined data items associate with it
     /// including a stack, a metric and a time as well as other optional fields.  Note that all its properties are read-write.  
     /// It is basically a named tuple. 
     /// 
     /// StackSource.ProductSamples push these.  
     /// 
-    /// In general StackSourceSample are NOT immutable but expected to be overwritted frequently.  Thus you need to copy 
-    /// the sample if you want to keep a refernece to it.    
+    /// In general StackSourceSample are NOT immutable but expected to be overwritten frequently.  Thus you need to copy 
+    /// the sample if you want to keep a reference to it.      
     /// </summary>
     public class StackSourceSample
     {
@@ -393,7 +418,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 Metric, TimeRelativeMSec, StackIndex, SampleIndex);
         }
         /// <summary>
-        /// Returns an XML string representing the sample, howevever this one can actually expand the stack because it is given the source
+        /// Returns an XML string representing the sample, however this one can actually expand the stack because it is given the source
         /// </summary>
         public string ToString(StackSourceStacks source)
         {
@@ -454,11 +479,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     public enum StackSourceFrameIndex
     {
         /// <summary>
-        /// Pseduo-node representing the root of all stacks
+        /// Pseudo-node representing the root of all stacks
         /// </summary>
         Root = 0,
         /// <summary>
-        /// Pseduo-frame that represents the caller of all broken stacks. 
+        /// Pseudo-frame that represents the caller of all broken stacks. 
         /// </summary>
         Broken = 1,
         /// <summary>
@@ -528,11 +553,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             m_samples.Add(sampleCopy);
             var endTime = sampleCopy.TimeRelativeMSec + sampleCopy.Metric;   // Add in the metric for the metric as time case it is OK to overestimate slightly 
             if (endTime > m_sampleTimeRelativeMSecLimit)
+            {
                 m_sampleTimeRelativeMSecLimit = endTime;
+            }
+
             return sampleCopy;
         }
         /// <summary>
-        /// Create a clone of the given stack soruce.  
+        /// Create a clone of the given stack source.  
         /// </summary>
         /// <param name="source"></param>
         /// <returns></returns>
@@ -577,7 +605,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public override void ForEach(Action<StackSourceSample> callback)
         {
             for (int i = 0; i < m_samples.Count; i++)
+            {
                 callback(m_samples[i]);
+            }
         }
         /// <summary>
         /// Implementation of the StackSource interface
@@ -609,14 +639,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public override int CallStackIndexLimit
         {
-            get { if (m_sourceStacks == null) return 0; return m_sourceStacks.CallStackIndexLimit; }
+            get { if (m_sourceStacks == null) { return 0; } return m_sourceStacks.CallStackIndexLimit; }
         }
         /// <summary>
         /// Implementation of the StackSource interface
         /// </summary>
         public override int CallFrameIndexLimit
         {
-            get { if (m_sourceStacks == null) return 0; return m_sourceStacks.CallFrameIndexLimit; }
+            get { if (m_sourceStacks == null) { return 0; } return m_sourceStacks.CallFrameIndexLimit; }
         }
         #endregion
         #region private
@@ -662,7 +692,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             // Turn on for diffing between XPERF and PerfView 
 
             // This code will throw away any samples that are not 'close' to a 'negative' sample.
-            // It was designed SPECIFICALLY to allow comparisions between PerfView decoded ETL files
+            // It was designed SPECIFICALLY to allow comparisons between PerfView decoded ETL files
             // and XPERF created CSVZ files (we consider XPERF the gold standard). 
             
             // The basic problem is that we KNOW that XPERF also has problem decoding stacks all the time
@@ -673,7 +703,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             // You can confirm that XperfView does get exactly what PerfView does for total and exclusive counts.
             // Doing a diff more than that is time consuming.  
 
-            // Sort by time assending, then by metric decending (positive before baseline)
+            // Sort by time ascending, then by metric descending (positive before baseline)
             ret.m_samples.Sort(delegate(StackSourceSample x, StackSourceSample y)
             {
                 return x.TimeRelativeMSec.CompareTo(y.TimeRelativeMSec);
@@ -721,17 +751,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public StackSourceInterner Interner { get; private set; }
 
         #region overrides
-        // TODO this should be added to the stack source interface and overriden here 
-#if false 
-        /// <summary>
-        /// Implementation of the StackSource interface
-        /// </summary>
-        public StackSourceModuleIndex GetModuleIndex(StackSourceFrameIndex frameIndex)
-        {
-            return Interner.GetModuleIndex(frameIndex);
-        }
-#endif
-
         /// <summary>
         /// Implementation of the StackSource interface
         /// </summary>
@@ -755,13 +774,21 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             if (frameIndex < StackSourceFrameIndex.Start)
             {
                 if (frameIndex == StackSourceFrameIndex.Broken)
+                {
                     return "BROKEN";
+                }
                 else if (frameIndex == StackSourceFrameIndex.Overhead)
+                {
                     return "OVERHEAD";
+                }
                 else if (frameIndex == StackSourceFrameIndex.Root)
+                {
                     return "ROOT";
+                }
                 else
+                {
                     return "?!?";
+                }
             }
             return Interner.GetFrameName(frameIndex, verboseName);
         }
@@ -793,14 +820,19 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 {
                     sampleCopy.Metric *= scaleFactor;
                     if (scaleFactor < 0)
+                    {
                         sampleCopy.Count = -sampleCopy.Count;
+                    }
                 }
                 sampleCopy.SampleIndex = (StackSourceSampleIndex)m_samples.Count;
                 sampleCopy.StackIndex = InternFullStackFromSource(sampleCopy.StackIndex, stackLookup);
                 m_samples.Add(sampleCopy);
                 var endTime = sampleCopy.TimeRelativeMSec + Math.Abs(sampleCopy.Metric);  // Add in metric in case this is a time metric.  
                 if (endTime > m_sampleTimeRelativeMSecLimit)
+                {
                     m_sampleTimeRelativeMSecLimit = endTime;
+                }
+
                 if (ctr > 8192)
                 {
                     System.Threading.Thread.Sleep(0);       // allow interruption
@@ -810,24 +842,46 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
 
         /// <summary>
+        /// OnUnresolvedStackFrame will take an unresolved module 'moduleName', try to resolve it, and return the source with the module resolved (or null if it couldn't be resolved)
+        /// </summary>
+        public delegate StackSourceStacks OnUnresolvedStackFrame(string moduleName);
+        
+        /// <summary>
         /// InternFullStackFromSource will take a call stack 'baseCallStackIndex' from the source 'source' and completely copy it into
         /// the intern stack source (interning along the way of course).   Logically baseCallStackIndex has NOTHING to do with any of the
         /// call stack indexes in the intern stack source.  
         /// </summary>
-        private StackSourceCallStackIndex InternFullStackFromSource(StackSourceCallStackIndex baseCallStackIndex, StackSourceStacks source, int maxDepth = 1000)
+        protected StackSourceCallStackIndex InternFullStackFromSource(StackSourceCallStackIndex baseCallStackIndex, StackSourceStacks source, int maxDepth = 1000, OnUnresolvedStackFrame onUnresolvedStackFrame = null)
         {
             // To avoid stack overflows.  
             if (maxDepth < 0)
+            {
                 return StackSourceCallStackIndex.Invalid;
+            }
 
             if (baseCallStackIndex == StackSourceCallStackIndex.Invalid)
+            {
                 return StackSourceCallStackIndex.Invalid;
+            }
 
             var baseCaller = source.GetCallerIndex(baseCallStackIndex);
             var baseFrame = source.GetFrameIndex(baseCallStackIndex);
 
             var baseFullFrameName = source.GetFrameName(baseFrame, true);
             var moduleName = "";
+
+            // Check if this is an unresolved frame
+            if (onUnresolvedStackFrame != null && baseFullFrameName.EndsWith("!?") && !baseFullFrameName.Equals("?!?"))
+            {
+                moduleName = baseFullFrameName.Substring(0, baseFullFrameName.Length - 2);
+                var sourceWithResolvedModule = onUnresolvedStackFrame(moduleName);
+                if (sourceWithResolvedModule != null)
+                {
+                    source = sourceWithResolvedModule;
+                    baseFullFrameName = source.GetFrameName(baseFrame, true);
+                }
+            }
+
             var frameName = baseFullFrameName;
             var index = baseFullFrameName.IndexOf('!');
             if (index >= 0)
@@ -838,7 +892,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             var myModuleIndex = Interner.ModuleIntern(moduleName);
             var myFrameIndex = Interner.FrameIntern(frameName, myModuleIndex);
-            var ret = Interner.CallStackIntern(myFrameIndex, InternFullStackFromSource(baseCaller, source, maxDepth - 1));
+            var ret = Interner.CallStackIntern(myFrameIndex, InternFullStackFromSource(baseCaller, source, maxDepth - 1, onUnresolvedStackFrame));
             return ret;
         }
         #endregion
@@ -863,11 +917,19 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             m_callStackIntern = new InternTable<CallStackInfo>(estNumCallStacks);
 
             if (frameStartIndex < StackSourceFrameIndex.Start)
+            {
                 frameStartIndex = StackSourceFrameIndex.Start;
+            }
+
             if (callStackStartIndex < StackSourceCallStackIndex.Start)
+            {
                 callStackStartIndex = StackSourceCallStackIndex.Start;
+            }
+
             if (moduleStackStartIndex < StackSourceModuleIndex.Start)
+            {
                 moduleStackStartIndex = StackSourceModuleIndex.Start;
+            }
 
             m_frameStartIndex = frameStartIndex;
             m_callStackStartIndex = callStackStartIndex;
@@ -924,21 +986,34 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 string baseName;
                 if (FrameNameLookup != null)
+                {
                     baseName = FrameNameLookup(baseFrameIndex, fullModulePath);
+                }
                 else
+                {
                     baseName = "Frame " + ((int)baseFrameIndex).ToString();
-                return baseName + " " + frameName;
+                }
+
+                if(!string.IsNullOrEmpty(frameName))
+                {
+                    return baseName + " " + frameName;
+                }
+
+                return baseName;
             }
             var moduleName = m_moduleIntern[m_frameIntern[frameIndexOffset].ModuleIndex - m_moduleStackStartIndex];
             if (moduleName.Length == 0)
+            {
                 return frameName;
+            }
 
             if (!fullModulePath)
             {
                 var lastDirectorySep = moduleName.LastIndexOfAny(s_directorySeparators);
                 if (0 <= lastDirectorySep)
+                {
                     moduleName = moduleName.Substring(lastDirectorySep + 1);
-
+                }
             }
             // Remove a .dll or .exe extension 
             // TODO should we be doing this here?  This feels like a presentation transformation
@@ -989,7 +1064,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             // An invalid module index will be treated as empty.  
             if (moduleIndex == StackSourceModuleIndex.Invalid)
+            {
                 moduleIndex = m_emptyModuleIdx;
+            }
 
             Debug.Assert(frameName != null);
             return m_frameIntern.Intern(new FrameInfo(frameName, moduleIndex)) + m_frameStartIndex;
@@ -1028,15 +1105,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             public FrameInfo(string frameName, StackSourceModuleIndex moduleIndex)
             {
-                this.ModuleIndex = moduleIndex;
-                this.FrameName = frameName;
-                this.BaseFrameIndex = StackSourceFrameIndex.Invalid;
+                ModuleIndex = moduleIndex;
+                FrameName = frameName;
+                BaseFrameIndex = StackSourceFrameIndex.Invalid;
             }
             public FrameInfo(string frameSuffix, StackSourceFrameIndex baseFrame)
             {
-                this.ModuleIndex = StackSourceModuleIndex.Invalid;
-                this.BaseFrameIndex = baseFrame;
-                this.FrameName = frameSuffix;
+                ModuleIndex = StackSourceModuleIndex.Invalid;
+                BaseFrameIndex = baseFrame;
+                FrameName = frameSuffix;
             }
             // TODO we could make this smaller if we care since BaseFrame and ModuleIndex are never used together.  
             public readonly StackSourceFrameIndex BaseFrameIndex;
@@ -1156,9 +1233,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 {
                     int newsize = _count * 2 + 1;
                     if (newsize <= _count)
+                    {
                         newsize = int.MaxValue;
+                    }
+
                     if (newsize <= _count)          // _count == int.MaxValue;
+                    {
                         throw new OutOfMemoryException();
+                    }
 
                     Resize(newsize); // Simple doubling (geometric growth)
                     targetBucket = BucketNumberFromValue(value);

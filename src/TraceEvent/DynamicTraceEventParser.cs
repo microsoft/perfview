@@ -1,8 +1,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 using FastSerialization;
-using Microsoft.Diagnostics.Tracing.EventPipe;
-using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Compatibility;
+using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
@@ -52,6 +51,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             registeredParser.NewEventDefinition = OnNewEventDefintion;
             // make an eventPipeTraceEventParser to resolve EventPipe events
             eventPipeTraceEventParser = new EventPipeTraceEventParser(source, dontRegister: true);
+            eventPipeTraceEventParser.NewEventDefinition = OnNewEventDefintion;
         }
 
         /// <summary>
@@ -101,7 +101,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // Raise the event that says we found a new provider.   
             var newProviderCallback = DynamicProviderAdded;
             if (newProviderCallback != null)
+            {
                 newProviderCallback(providerManifest);
+            }
 
             // Debug.WriteLine("callback count = " + ((source is ETWTraceEventSource) ? ((ETWTraceEventSource)source).CallbackCount() : -1));
             // Trace.WriteLine("Dynamic finished registering " + providerManifest.Name);
@@ -115,6 +117,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Directory.CreateDirectory(directoryPath);
             foreach (var providerManifest in DynamicProviders)
             {
+                
                 var filePath = Path.Combine(directoryPath, providerManifest.Name + ".manifest.xml");
                 providerManifest.WriteToFile(filePath);
             }
@@ -155,21 +158,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public event Action<ProviderManifest> DynamicProviderAdded;
 
-#if false 
-        public event Action<EventCounterTraceData> EventCounter
-        {
-            add
-            {
-                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                // RegisterTemplate(new EventCounterTraceData(value, 0xFFFD, 0xFFFE, "EventSource", Guid.Empty, 253, "EventCounter", ProviderGuid, ProviderName));
-            }
-            remove
-            {
-                // source.UnregisterEventTemplate(value, 15, ProviderGuid);
-            }
-        }
-#endif
-
         #region private
         /// <summary>
         /// override
@@ -183,14 +171,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Called on unhandled events to look for manifests.    Returns true if we added a new manifest (which may have updated the lookup table)
         /// </summary>
-        bool CheckForDynamicManifest(TraceEvent data)
+        private bool CheckForDynamicManifest(TraceEvent data)
         {
             if (data.ID != ManifestEventID)
+            {
                 return false;
+            }
 
             // We also are expecting only these tasks and opcodes.  
             if (data.Opcode != (TraceEventOpcode)0xFE || data.Task != (TraceEventTask)0xFFFE)
+            {
                 return false;
+            }
+
+            // Starting with .NET 6, the manifest is written into the event stream, which results in
+            // duplicate event dispatch.  To avoid this, filter out the Microsoft-Windows-DotNETRuntime provider
+            // if it is present in the event stream.
+            if (data.ProviderGuid == ClrTraceEventParser.ProviderGuid)
+            {
+                return false;
+            }
 
             // Look up our information. 
             List<PartialManifestInfo> partialManifestsForGuid;
@@ -228,7 +228,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 // Throw away empty lists or lists that are old
                 var nowUtc = DateTime.UtcNow;
                 if (partialManifestsForGuid.Count == 0 || partialManifestsForGuid.TrueForAll(e => (nowUtc - e.StartedUtc).TotalSeconds > 10))
+                {
                     partialManifests.Remove(data.ProviderGuid);
+                }
+
                 AddDynamicProvider(provider, true);
                 return true;  // I should have added a manifest event, so re-lookup the event 
             }
@@ -242,7 +245,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             // Normally state is setup in the constructor, but call can be invoked before the constructor has finished, 
             if (state == null)
+            {
                 state = (DynamicTraceEventParserState)StateObject;
+            }
 
             foreach (var provider in state.providers.Values)
             {
@@ -252,7 +257,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     {
                         var response = eventsToObserve(template.ProviderName, template.EventName);
                         if (response != EventFilterResponse.AcceptEvent)
+                        {
                             return response;
+                        }
                     }
 
                     // We should only return a particular template at most once.   
@@ -262,7 +269,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     // Since we will Enumerate all the events the registeredParser knows
                     // about below, we filter out any duplicates here. 
                     if (!registeredParser.HasDefinitionForTemplate(template))
+                    {
                         callback(template);
+                    }
+
                     return EventFilterResponse.AcceptEvent;
                 }, true);
             }
@@ -278,34 +288,42 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             internal PartialManifestInfo() { StartedUtc = DateTime.UtcNow; }
 
             internal DateTime StartedUtc;    // When we started
-            byte[][] Chunks;
-            int ChunksLeft;
+            private byte[][] Chunks;
+            private int ChunksLeft;
             internal int ProcessID;          // The process and thread ID that is emitting this manifest (acts as a stream ID)
             internal int ThreadID;           // The process and thread ID that is emitting this manifest (acts as a stream ID)
 
-            ProviderManifest provider;
-            byte majorVersion;
-            byte minorVersion;
-            ManifestEnvelope.ManifestFormats format;
+            private ProviderManifest provider;
+            private byte majorVersion;
+            private byte minorVersion;
+            private ManifestEnvelope.ManifestFormats format;
 
             internal unsafe ProviderManifest AddChunk(TraceEvent data)
             {
                 if (provider != null)
+                {
                     goto Fail;
+                }
 
                 if (data.EventDataLength <= sizeof(ManifestEnvelope) || data.GetByteAt(3) != 0x5B)  // magic number 
+                {
                     goto Fail;
+                }
 
                 ushort totalChunks = (ushort)data.GetInt16At(4);
                 ushort chunkNum = (ushort)data.GetInt16At(6);
                 if (chunkNum >= totalChunks || totalChunks == 0)
+                {
                     goto Fail;
+                }
 
                 if (Chunks == null)
                 {
                     // To allow for resyncing at 0, otherwise we fail aggressively. 
                     if (chunkNum != 0)
+                    {
                         goto Fail;
+                    }
 
                     format = (ManifestEnvelope.ManifestFormats)data.GetByteAt(0);
                     majorVersion = (byte)data.GetByteAt(1);
@@ -318,17 +336,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     // Chunks have to agree with the format and version information. 
                     if (format != (ManifestEnvelope.ManifestFormats)data.GetByteAt(0) ||
                         majorVersion != data.GetByteAt(1) || minorVersion != data.GetByteAt(2))
+                    {
                         goto Fail;
+                    }
                 }
 
                 if (Chunks.Length <= chunkNum || Chunks[chunkNum] != null)
+                {
                     goto Fail;
+                }
 
                 byte[] chunk = new byte[data.EventDataLength - 8];
                 Chunks[chunkNum] = data.EventData(chunk, 0, 8, chunk.Length);
                 --ChunksLeft;
                 if (ChunksLeft > 0)
+                {
                     return null;
+                }
 
                 // OK we have a complete set of chunks
                 byte[] serializedData = Chunks[0];
@@ -336,7 +360,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     int totalLength = 0;
                     for (int i = 0; i < Chunks.Length; i++)
+                    {
                         totalLength += Chunks[i].Length;
+                    }
 
                     // Concatenate all the arrays. 
                     serializedData = new byte[totalLength];
@@ -349,18 +375,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
                 Chunks = null;
                 // string str = Encoding.UTF8.GetString(serializedData);
-                provider = new ProviderManifest(serializedData, format, majorVersion, minorVersion, 
+                provider = new ProviderManifest(serializedData, format, majorVersion, minorVersion,
                     "Event at " + data.TimeStampRelativeMSec.ToString("f3") + " MSec");
                 provider.ISDynamic = true;
                 return provider;
 
-                Fail:
+            Fail:
                 Chunks = null;
                 return null;
             }
         }
 
-        DynamicTraceEventParserState state;
+        private DynamicTraceEventParserState state;
         private Dictionary<Guid, List<PartialManifestInfo>> partialManifests;
 
         // It is not intuitive that self-describing events (which are arguably 'dynamic') are resolved by 
@@ -368,115 +394,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         // are resolved by dynamic manifest and some are self-describing.     To avoid these issues DynamicTraceEventParsers
         // be able to handle both (it can resolve anything a RegisteredTraceEventParser can).  This 
         // RegisteredTraceEventParser is how this gets accomplished.   
-        RegisteredTraceEventParser registeredParser;
+        private RegisteredTraceEventParser registeredParser;
 
         // It is enabling DynamicTraceEventParsers to handle the EventSource events from EventPipe.
-        EventPipeTraceEventParser eventPipeTraceEventParser;
+        private EventPipeTraceEventParser eventPipeTraceEventParser;
 
         #endregion
     }
-
-#if false 
-    public sealed class EventCounterTraceData : TraceEvent
-    {
-        public int DataCount { get { return GetInt32At(0); } }
-        public double Data(int index) { return GetDoubleAt(4 + index * 8); }
-        public int NamesCount { get { return GetInt32At(4 + 8 * DataCount); } }
-        public string Names(int index) { return GetUnicodeStringAt(OffsetForIndexInNamesArray(index)); }
-
-    #region Private
-        internal EventCounterTraceData(Action<EventCounterTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.Action = action;
-            m_lastIdx = 0xFFFF; // Invalidate the cache
-        }
-        protected internal override void Dispatch()
-        {
-            m_lastIdx = 0xFFFF; // Invalidate the cache
-            Action(this);
-        }
-        protected internal override Delegate Target
-        {
-            get { return Action; }
-            set { Action = (Action<EventCounterTraceData>)value; }
-        }
-        protected internal override void Validate()
-        {
-            m_lastIdx = 0xFFFF; // Invalidate the cache     
-            Debug.Assert(!(Version == 0 && EventDataLength != OffsetForIndexInNamesArray(NamesCount)));
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "DataCount", DataCount);
-            XmlAttrib(sb, "NamesCount", NamesCount);
-            sb.AppendLine(">");
-            for (int i = 0; i < DataCount; i++)
-            {
-                string name = "";
-                if (i < NamesCount)
-                    name = Names(i);
-                sb.Append("  ").AppendLine(name).Append("=").Append(Data(i)).AppendLine();
-            }
-            sb.Append("</Event>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "DataCount", "NamesCount" };
-                return payloadNames;
-            }
-        }
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return DataCount;
-                case 1:
-                    return NamesCount;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private int OffsetForIndexInNamesArray(int targetIdx)
-        {
-            Debug.Assert(targetIdx <= NamesCount);
-            int idx = m_lastIdx;
-            int offset = m_lastOffset;
-            if (targetIdx < idx)
-            {
-                idx = 0;
-                offset = 8 + 8 * DataCount;
-            }
-
-            while (idx < targetIdx)
-            {
-                offset = SkipUnicodeString(offset);
-                idx++;
-            }
-            Debug.Assert(offset <= EventDataLength);
-            m_lastIdx = (ushort)idx;
-            m_lastOffset = (ushort)offset;
-            Debug.Assert(idx == targetIdx);
-            Debug.Assert(m_lastIdx == targetIdx && m_lastOffset == offset);     // No truncation
-            return offset;
-        }
-        private ushort m_lastIdx;
-        private ushort m_lastOffset;
-
-        private event Action<EventCounterTraceData> Action;
-
-    #endregion
-    }
-#endif
 
     #region internal classes
     /// <summary>
@@ -503,7 +427,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         protected internal override void Dispatch()
         {
             if (m_target != null)
+            {
                 m_target(this);
+            }
         }
         /// <summary>
         /// Implements TraceEvent interface
@@ -521,7 +447,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
 #if DEBUG
                 // Confirm that the serialization 'adds up'
-                var computedSize = SkipToField(payloadFetches, payloadFetches.Length, 0, EventDataLength);
+                var computedSize = SkipToField(payloadFetches, payloadFetches.Length, 0, EventDataLength, false);
                 Debug.Assert(computedSize <= this.EventDataLength);
                 if ((int)ID != 0xFFFE) // If it is not a manifest event
                 {
@@ -531,13 +457,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 #endif
                 int offset = payloadFetches[index].Offset;
                 if (offset == ushort.MaxValue)
-                    offset = SkipToField(payloadFetches, index, 0, EventDataLength);
+                {
+                    offset = SkipToField(payloadFetches, index, 0, EventDataLength, true);
+                }
 
                 // Fields that are simply not present, (perfectly) we simply return null for.  
                 if (offset == EventDataLength)
+                {
                     return null;
+                }
 
-                // If we 
                 return GetPayloadValueAt(ref payloadFetches[index], offset, EventDataLength);
             }
             catch (Exception e)
@@ -549,13 +478,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private object GetPayloadValueAt(ref PayloadFetch payloadFetch, int offset, int payloadLength)
         {
             if (payloadLength <= offset)
+            {
                 throw new ArgumentOutOfRangeException("Payload size exceeds buffer size.");
+            }
 
             // Is this a struct field? 
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
             if (classInfo != null)
             {
-                var ret = new StructValue();
+                var ret = new StructValue(classInfo.FieldFetches.Length);
 
                 for (int i = 0; i < classInfo.FieldFetches.Length; i++)
                 {
@@ -570,14 +501,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 var arrayCount = GetCountForArray(payloadFetch, arrayInfo, ref offset);
 
-                // TODO this is very inefficient for blitable types.   Optimize that.  
+                // TODO this is very inefficient for blitable types. Optimize that.
                 var elementType = arrayInfo.Element.Type;
+
+                // Byte array short-circuit.
+                if (elementType == typeof(byte))
+                {
+                    return GetByteArrayAt(offset, arrayCount);
+                }
+
                 var ret = Array.CreateInstance(elementType, arrayCount);
                 for (int i = 0; i < arrayCount; i++)
                 {
                     object value = GetPayloadValueAt(ref arrayInfo.Element, offset, payloadLength);
                     if (value.GetType() != elementType)
+                    {
                         value = ((IConvertible)value).ToType(elementType, null);
+                    }
+
                     ret.SetValue(value, i);
                     offset = OffsetOfNextField(ref arrayInfo.Element, offset, payloadLength);
                 }
@@ -586,24 +527,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             Type type = payloadFetch.Type;
             if (type == null)
+            {
                 return "[CANT PARSE]";
+            }
 
             if ((uint)ushort.MaxValue < (uint)offset)
+            {
                 return "[CANT PARSE OFFSET]";
+            }
 
-            // CONSIDER:  The code below insures that if you have fields that are
+            // CONSIDER:  The code below ensures that if you have fields that are
             // 'off the end' of a data that you return the default value.  That
             // allows the parser to gracefully handle old events that have fewer
             // fields but does NOT guarantee we don't read past the end of the 
             // buffer in all cases (if you have corrupt/mismatched data).   The
-            // code below does insure this but is more expensive.   For now I have
+            // code below does ensure this but is more expensive.   For now I have
             // chosen the cheaper solution.   
             //
             // if ((uint)EventDataLength < OffsetOfNextField(offset, index))
             //     return GetDefaultValueByType(payloadFetches[index].type);
 
             if ((uint)EventDataLength <= (uint)offset)
+            {
                 return GetDefaultValueByType(type);
+            }
 
             switch (Type.GetTypeCode(type))
             {
@@ -617,9 +564,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             if (IsNullTerminated(size))
                             {
                                 if (isAnsi)
+                                {
                                     return GetUTF8StringAt(offset);
+                                }
                                 else
+                                {
                                     return GetUnicodeStringAt(offset);
+                                }
                             }
                             else if (IsCountedSize(size))
                             {
@@ -635,10 +586,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     offset += 2;        // skip size;
                                 }
                                 if (unicodeByteCountString)
+                                {
                                     size /= 2;     // Unicode string with BYTE count.   Element count is half that.  
+                                }
                             }
                             else
+                            {
                                 return "[CANT PARSE STRING]";
+                            }
                         }
                         else if (size > 0x8000)     // What is this? looks like a hack.  
                         {
@@ -646,9 +601,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             isAnsi = true;
                         }
                         if (isAnsi)
+                        {
                             return GetFixedAnsiStringAt(size, offset);
+                        }
                         else
+                        {
                             return GetFixedUnicodeStringAt(size, offset);
+                        }
                     }
                 case TypeCode.Boolean:
                     return GetByteAt(offset) != 0;
@@ -678,16 +637,40 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     if (type == typeof(IntPtr))
                     {
                         if (PointerSize == 4)
+                        {
                             return (Address)GetInt32At(offset);
+                        }
                         else
+                        {
                             return (Address)GetInt64At(offset);
+                        }
                     }
                     else if (type == typeof(Guid))
+                    {
                         return GetGuidAt(offset);
+                    }
                     else if (type == typeof(DateTime))
+                    {
+                        if (payloadFetch.Size == 16)
+                        {
+                            int currentOffset = offset;
+                            int year = GetInt16At(currentOffset);
+                            int month = GetInt16At(currentOffset += 2);
+                            int dayOfWeek = GetInt16At(currentOffset += 2);
+                            int day = GetInt16At(currentOffset += 2);
+                            int hour = GetInt16At(currentOffset += 2);
+                            int minute = GetInt16At(currentOffset += 2);
+                            int second = GetInt16At(currentOffset += 2);
+                            int milliseconds = GetInt16At(currentOffset);
+
+                            return new DateTime(year, month, day, hour, minute, second, milliseconds, DateTimeKind.Utc);
+                        }
                         return DateTime.FromFileTime(GetInt64At(offset));
+                    }
                     else
+                    {
                         return "[UNSUPPORTED TYPE]";
+                    }
             }
         }
 
@@ -697,6 +680,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         internal class StructValue : IDictionary<string, object>
         {
+            internal StructValue(int capacity = 0)
+            {
+                m_values = new List<KeyValuePair<string, object>>(capacity);
+            }
             public IEnumerator<KeyValuePair<string, object>> GetEnumerator() { return m_values.GetEnumerator(); }
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return m_values.GetEnumerator(); }
             public bool IsReadOnly { get { return true; } }
@@ -705,8 +692,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 get
                 {
                     foreach (var keyValue in m_values)
+                    {
                         if (key == keyValue.Key)
+                        {
                             return keyValue.Value;
+                        }
+                    }
+
                     return null;
                 }
                 set { throw new NotImplementedException(); }
@@ -733,7 +725,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return WriteAsJSon(new StringBuilder(), this).ToString();
             }
 
-            static StringBuilder WriteAsJSon(StringBuilder sb, object value)
+            private static StringBuilder WriteAsJSon(StringBuilder sb, object value)
             {
                 var asStructValue = value as StructValue;
                 if (asStructValue != null)
@@ -743,10 +735,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     foreach (var keyvalue in asStructValue)
                     {
                         if (!first)
+                        {
                             sb.Append(", ");
+                        }
                         else
+                        {
                             first = false;
-                        sb.Append(keyvalue.Key).Append(":");
+                        }
+
+                        sb.Append("\"");
+                        Quote(sb, keyvalue.Key);
+                        sb.Append("\":");
                         WriteAsJSon(sb, keyvalue.Value);
                     }
                     sb.Append(" }");
@@ -761,9 +760,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     for (int i = 0; i < asArray.Length; i++)
                     {
                         if (!first)
+                        {
                             sb.Append(", ");
+                        }
                         else
+                        {
                             first = false;
+                        }
+
                         WriteAsJSon(sb, asArray.GetValue(i));
                     }
                     sb.Append(" ]");
@@ -793,13 +797,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             ///  Uses C style conventions to quote a string 'value' and append to the string builder 'sb'.
             ///  Thus all \ are turned into \\ and all " into \"
             /// </summary>
-            static void Quote(StringBuilder output, string value)
+            private static void Quote(StringBuilder output, string value)
             {
                 for (int i = 0; i < value.Length; i++)
                 {
                     var c = value[i];
                     if (c == '\\' || c == '"')
+                    {
                         output.Append('\\');
+                    }
+
                     output.Append(c);
                 }
             }
@@ -817,7 +824,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex) { throw new NotImplementedException(); }
             public bool Remove(KeyValuePair<string, object> item) { throw new NotImplementedException(); }
 
-            List<KeyValuePair<string, object>> m_values = new List<KeyValuePair<string, object>>();
+            private List<KeyValuePair<string, object>> m_values;
             #endregion
         }
 
@@ -825,9 +832,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private object GetDefaultValueByType(Type type)
         {
             if (type == typeof(string))     // Activator.CreateInstance does not work on strings.  
+            {
                 return String.Empty;
+            }
             else
+            {
                 return Activator.CreateInstance(type);
+            }
         }
 
         /// <summary>
@@ -841,7 +852,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 object value = PayloadValue(index);
                 if (value == null)
+                {
                     return "";
+                }
 
                 long asLong = (long)((IConvertible)value).ToInt64(formatProvider);
                 if (map is SortedDictionary<long, string>)
@@ -851,11 +864,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     foreach (var keyValue in map)
                     {
                         if (asLong == 0)
+                        {
                             break;
+                        }
+
                         if ((keyValue.Key & asLong) != 0)
                         {
                             if (sb.Length != 0)
+                            {
                                 sb.Append('|');
+                            }
+
                             sb.Append(keyValue.Value);
                             asLong &= ~keyValue.Key;
                         }
@@ -863,15 +882,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     if (asLong != 0)
                     {
                         if (sb.Length != 0)
+                        {
                             sb.Append('|');
+                        }
+
                         sb.Append("0x");
                         if (asLong == (int)asLong)
+                        {
                             sb.Append(((int)asLong).ToString("x", formatProvider));
+                        }
                         else
+                        {
                             sb.Append(asLong.ToString("x", formatProvider));
+                        }
                     }
                     else if (sb.Length == 0)
+                    {
                         sb.Append('0');
+                    }
+
                     return sb.ToString();
                 }
                 else
@@ -879,7 +908,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     // It is a value map, just look up the value
                     string ret;
                     if (map.TryGetValue(asLong, out ret))
+                    {
                         return ret;
+                    }
                 }
             }
 
@@ -889,24 +920,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Implements TraceEvent interface
         /// </summary>
-        internal protected override Delegate Target
+        protected internal override Delegate Target
         {
             get { return m_target; }
             set
             {
-                Debug.Assert(m_target == null);
+                // value can be set to null when cloning and converting to a template for live session dispatch
+                Debug.Assert(m_target == null || value == null);
                 m_target = (Action<TraceEvent>)value;
             }
         }
 
+        private static readonly Regex paramReplacer = new Regex(@"%(\d+)", RegexOptions.Compiled);
+
         public override string GetFormattedMessage(IFormatProvider formatProvider)
         {
             if (MessageFormat == null)
+            {
                 return base.GetFormattedMessage(formatProvider);
+            }
 
             // TODO is this error handling OK?  
             // Replace all %N with the string value for that parameter.  
-            return Regex.Replace(MessageFormat, @"%(\d+)", delegate (Match m)
+            return paramReplacer.Replace(MessageFormat, delegate (Match m)
             {
                 int targetIndex = int.Parse(m.Groups[1].Value) - 1;
 
@@ -925,59 +961,105 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             object obj = PayloadValue(fixedIndex);
                             string asString = obj as string;
                             if (asString != null)
+                            {
                                 return asString.Length.ToString();
+                            }
+
                             Array asArray = obj as Array;
                             if (asArray != null)
+                            {
                                 return asArray.Length.ToString();
+                            }
+
                             return ""; // give up and return an empty string.  
                         }
                         index++;        // skip the removed field.  
                     }
                     if (index == targetIndex)
+                    {
                         return PayloadString(fixedIndex, formatProvider);
+                    }
+
                     index++;
                 }
                 return "<<BadFieldIdx>>";
             });
         }
         #endregion
+
         #region private
-        private int SkipToField(PayloadFetch[] payloadFetches, int index, int startOffset, int payloadLength)
+        private int SkipToField(PayloadFetch[] payloadFetches, int targetFieldIdx, int startOffset, int payloadLength, bool useCache)
         {
-            // search backwards for the the first field that has a fixed offset. 
-            int offset = 0;
-            int cur = index;
-            while (0 < cur)
+            int fieldOffset;
+            int fieldIdx;
+
+            // First find a valid fieldIdx, fieldOffset pair
+            if (useCache && cachedEventId == EventIndex && cachedFieldIdx <= targetFieldIdx && startOffset == 0)
             {
-                --cur;
-                if (payloadFetches[cur].Offset != ushort.MaxValue)
+                // We fetched a previous field, great, start from there.  
+                fieldOffset = cachedFieldOffset;
+                fieldIdx = cachedFieldIdx;
+            }
+            else
+            {
+                // no cached value, search backwards for the first field that has a fixed offset. 
+                fieldOffset = 0;
+                fieldIdx = targetFieldIdx;
+                while (0 < fieldIdx)
                 {
-                    offset = payloadFetches[cur].Offset;
-                    break;
+                    --fieldIdx;
+                    if (payloadFetches[fieldIdx].Offset != ushort.MaxValue)
+                    {
+                        fieldOffset = payloadFetches[fieldIdx].Offset;
+                        break;
+                    }
                 }
+                fieldOffset += startOffset;
             }
 
-            offset += startOffset;
             // If we try to skip t fields that are not present, we simply stop at the end of the buffer.  
-            if (payloadLength <= offset)
-                return payloadLength;
-
-            // TODO it probably does pay to remember the offsets in a particular instance, since otherwise the
-            // algorithm is N*N
-            while (cur < index)
+            if (payloadLength <= fieldOffset)
             {
-                offset = OffsetOfNextField(ref payloadFetches[cur], offset, payloadLength);
-
-                // If we try to skip t fields that are not present, we simply stop at the end of the buffer.  
-                if (offset == payloadLength)
-                    return payloadLength;
-
-                // however if we truely go past the end of the buffer, somethign went wrong and we wnat to signal that. 
-                if (payloadLength < offset)
-                    throw new ArgumentOutOfRangeException("Payload size exceeds buffer size.");
-                cur++;
+                return payloadLength;
             }
-            return offset;
+
+            // This can be N*N but because of our cache, it is not in the common case when you fetch
+            // fields in order.   
+            while (fieldIdx < targetFieldIdx)
+            {
+                fieldOffset = OffsetOfNextField(ref payloadFetches[fieldIdx], fieldOffset, payloadLength);
+
+                // If we try to skip to fields that are not present, we simply stop at the end of the buffer.  
+                if (fieldOffset == payloadLength)
+                {
+                    return payloadLength;
+                }
+
+                // however if we truly go past the end of the buffer, something went wrong and we want to signal that. 
+                if (payloadLength < fieldOffset)
+                {
+                    throw new ArgumentOutOfRangeException("Payload size exceeds buffer size.");
+                }
+
+                fieldIdx++;
+            }
+
+            // Remember our answer since can start there for the next field efficiently.  
+            if (useCache && startOffset == 0)
+            {
+#if DEBUG
+                // If we computed the result using the cache,  compute it again without the cache and we should get the same answer.  
+                if (cachedEventId == this.EventIndex)
+                {
+                    cachedEventId = EventIndex.Invalid;
+                    Debug.Assert(fieldOffset == SkipToField(payloadFetches, targetFieldIdx, startOffset, payloadLength, true));
+                }
+#endif
+                cachedFieldOffset = fieldOffset;
+                cachedFieldIdx = targetFieldIdx;
+                cachedEventId = EventIndex;
+            }
+            return fieldOffset;
         }
 
         /// <summary>
@@ -1015,7 +1097,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
             if (0x10000 <= arrayCount)
+            {
                 throw new ArgumentOutOfRangeException();
+            }
+
             return arrayCount;
         }
 
@@ -1023,21 +1108,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
             if (classInfo != null)
-                return SkipToField(classInfo.FieldFetches, classInfo.FieldFetches.Length, offset, payloadLength);
+            {
+                return SkipToField(classInfo.FieldFetches, classInfo.FieldFetches.Length, offset, payloadLength, false);
+            }
 
             // TODO cache this when you parse the value so that you don't need to do it twice.  Right now it is pretty inefficient. 
             PayloadFetchArrayInfo arrayInfo = payloadFetch.Array;
             if (arrayInfo != null)
             {
                 if (payloadLength <= offset)
+                {
                     throw new ArgumentOutOfRangeException();
+                }
+
                 var arrayCount = GetCountForArray(payloadFetch, arrayInfo, ref offset);
 
                 if (arrayInfo.Element.Array == null && arrayInfo.Element.Class == null && arrayInfo.Element.Size < SPECIAL_SIZES)
+                {
                     return offset + arrayCount * arrayInfo.Element.Size;
+                }
 
                 for (ushort i = 0; i < arrayCount; i++)
+                {
                     offset = OffsetOfNextField(ref arrayInfo.Element, offset, payloadLength);
+                }
 
                 return offset;
             }
@@ -1046,11 +1140,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (size >= SPECIAL_SIZES)
             {
                 if (size == NULL_TERMINATED)
+                {
                     return SkipUnicodeString(offset);
+                }
                 else if (size == (NULL_TERMINATED | IS_ANSI))
+                {
                     return SkipUTF8String(offset);
+                }
                 else if (size == POINTER_SIZE)
+                {
                     return offset + PointerSize;
+                }
                 else if (IsCountedSize(size) && payloadFetch.Type == typeof(string))
                 {
                     int elemSize;
@@ -1065,14 +1165,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         offset += 2;        // skip size;
                     }
                     if ((size & IS_ANSI) == 0 && (size & ELEM_COUNT) != 0)
+                    {
                         elemSize *= 2;     // Counted (not byte counted) unicode string. chars are 2 wide. 
+                    }
+
                     return offset + elemSize;
                 }
                 else
+                {
                     return ushort.MaxValue;     // Something sure to fail 
+                }
             }
             else
+            {
                 return offset + size;
+            }
         }
 
         internal static ushort SizeOfType(Type type)
@@ -1099,9 +1206,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return 8;
                 default:
                     if (type == typeof(Guid))
+                    {
                         return 16;
+                    }
+
                     if (type == typeof(IntPtr))
+                    {
                         return POINTER_SIZE;
+                    }
+
                     throw new Exception("Unsupported type " + type.Name); // TODO 
             }
         }
@@ -1120,7 +1233,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         // These are special sizes 
         // sizes from 0xFFF0 through 0xFFFF are variations of VAR_SIZE
-        internal const ushort COUNTED_SIZE = 0xFFF0;   // The size is variable.  Size preceeded the data, bits above tell more.   
+        internal const ushort COUNTED_SIZE = 0xFFF0;   // The size is variable.  Size preceded the data, bits above tell more.   
 
         // Size 0xFFEF is NULL_TERMINATED | IS_ANSI
         internal const ushort NULL_TERMINATED = 0xFFEE; // value is a null terminated string.   
@@ -1136,10 +1249,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             public PayloadFetch(ushort offset, ushort size, Type type, IDictionary<long, string> map = null)
             {
-                this.Offset = offset;
-                this.Size = size;
-                this.Type = type;
-                this.info = map;
+                Offset = offset;
+                Size = size;
+                Type = type;
+                info = map;
             }
 
             /// <summary>
@@ -1149,8 +1262,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             public PayloadFetch(ushort offset, RegisteredTraceEventParser.TdhInputType inType, int outType)
             {
-                this.Offset = offset;
-                this.info = null;
+                Offset = offset;
+                info = null;
 
                 switch (inType)
                 {
@@ -1298,7 +1411,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 get
                 {
                     if (info == null)
+                    {
                         return null;
+                    }
+
                     var ret = info as IDictionary<long, string>;
                     if (ret == null)
                     {
@@ -1307,7 +1423,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         {
                             ret = asLazyMap();      // resolve it.  
                             if (ret != null)
+                            {
                                 info = ret;         // If it resolves, remember the resolution for next time.  
+                            }
                         }
                     }
                     return ret;
@@ -1341,21 +1459,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 StringWriter sw = new StringWriter();
                 sw.Write("<PayloadFetch Size=\"{0}\" Offset=\"{1}\" Type=\"{2}\"", Size, Offset, Type != null ? Type.Name : "");
                 if (Map != null)
+                {
                     sw.Write("HasMap=\"true\"/>");
+                }
                 else if (Array != null || Class != null)
                 {
                     sw.WriteLine(">");
                     if (Array != null)
+                    {
                         sw.WriteLine(Array.ToString());
+                    }
                     else if (Class != null)
                     {
                         for (int i = 0; i < Class.FieldFetches.Length; i++)
+                        {
                             sw.WriteLine("<Field Name=\"{0}\">{1}</Field>", Class.FieldNames[i], Class.FieldFetches[i].ToString());
+                        }
                     }
                     sw.WriteLine("<PayloadFetch>");
                 }
                 else
+                {
                     sw.WriteLine("/>");
+                }
+
                 return sw.ToString();
             }
             public void ToStream(Serializer serializer)
@@ -1363,18 +1490,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 serializer.Write((short)Offset);
                 serializer.Write((short)Size);
                 if (Type == null)
+                {
                     serializer.Write((string)null);
+                }
                 else
+                {
                     serializer.Write(Type.FullName);
+                }
 
                 var map = Map;
                 if (map != null)
                 {
                     var asSortedList = map as SortedDictionary<long, string>;
                     if (asSortedList != null)
+                    {
                         serializer.Write((byte)1);
+                    }
                     else
+                    {
                         serializer.Write((byte)2);
+                    }
 
                     serializer.Write(map.Count);
                     foreach (var keyValue in map)
@@ -1390,11 +1525,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                     serializer.Write(classInfo.FieldNames.Length);
                     foreach (var name in classInfo.FieldNames)
+                    {
                         serializer.Write(name);
+                    }
 
                     serializer.Write(classInfo.FieldFetches.Length);
                     for (int i = 0; i < classInfo.FieldFetches.Length; i++)
+                    {
                         classInfo.FieldFetches[i].ToStream(serializer);
+                    }
                 }
                 else if (Array != null)
                 {
@@ -1404,7 +1543,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     arrayInfo.Element.ToStream(serializer);
                 }
                 else
+                {
                     serializer.Write((byte)0);
+                }
             }
             public void FromStream(Deserializer deserializer)
             {
@@ -1412,7 +1553,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 Size = (ushort)deserializer.ReadInt16();
                 var typeName = deserializer.ReadString();
                 if (typeName != null)
+                {
                     Type = Type.GetType(typeName);
+                }
 
                 var fetchType = deserializer.ReadByte();
                 if (fetchType == 1 || fetchType == 2)
@@ -1420,9 +1563,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     IDictionary<long, string> map = null;
                     int mapCount = deserializer.ReadInt();
                     if (fetchType == 1)
+                    {
                         map = new SortedDictionary<long, string>();
+                    }
                     else
+                    {
                         map = new Dictionary<long, string>(mapCount);
+                    }
 
                     for (int j = 0; j < mapCount; j++)
                     {
@@ -1439,12 +1586,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     var fieldNamesCount = deserializer.ReadInt();
                     classInfo.FieldNames = new string[fieldNamesCount];
                     for (int i = 0; i < fieldNamesCount; i++)
+                    {
                         classInfo.FieldNames[i] = deserializer.ReadString();
+                    }
 
                     var fieldFetchCount = deserializer.ReadInt();
                     classInfo.FieldFetches = new DynamicTraceEventData.PayloadFetch[fieldFetchCount];
                     for (int i = 0; i < fieldFetchCount; i++)
+                    {
                         classInfo.FieldFetches[i].FromStream(deserializer);
+                    }
+
                     info = classInfo;
                 }
                 else if (fetchType == 4)  // Array
@@ -1455,7 +1607,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     info = arrayInfo;
                 }
                 else if (fetchType != 0)
+                {
                     Debug.Assert(false, "Unknown fetch type");
+                }
             }
 
             private object info;        // different things for enums, structs, or arrays.  
@@ -1498,11 +1652,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             serializer.Write(payloadNames.Length);
             foreach (var payloadName in payloadNames)
+            {
                 serializer.Write(payloadName);
+            }
 
             serializer.Write(payloadFetches.Length);
             foreach (var payloadFetch in payloadFetches)
+            {
                 payloadFetch.ToStream(serializer);
+            }
         }
         public void FromStream(Deserializer deserializer)
         {
@@ -1522,17 +1680,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             deserializer.Read(out count);
             payloadNames = new string[count];
             for (int i = 0; i < count; i++)
+            {
                 deserializer.Read(out payloadNames[i]);
+            }
+
             deserializer.Read(out count);
             payloadFetches = new PayloadFetch[count];
             for (int i = 0; i < count; i++)
+            {
                 payloadFetches[i].FromStream(deserializer);
+            }
         }
 
         // Fields
         internal PayloadFetch[] payloadFetches;
         internal string MessageFormat; // This is in ETW conventions (%N)
         internal bool registeredWithTraceEventSource;
+
+        // These are used to improve the performance of SkipToField.  
+        private EventIndex cachedEventId;
+        private int cachedFieldIdx;
+        private int cachedFieldOffset;
         #endregion
     }
 
@@ -1561,14 +1729,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             // The length of the manifest chunk is useful, so we expose it as an explict 'field' 
             if (index == 6)
+            {
                 return EventDataLength;
+            }
+
             return base.PayloadValue(index);
         }
 
         public override string PayloadString(int index, IFormatProvider formatProvider = null)
         {
             if (index == 6)
+            {
                 return PayloadValue(index).ToString();
+            }
+
             return base.PayloadString(index, formatProvider);
         }
 
@@ -1594,10 +1768,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return sb;
             }
             else
+            {
                 return base.ToXml(sb);
+            }
         }
         #region private
-        ProviderManifest manifest;
+        private ProviderManifest manifest;
         #endregion
     }
 
@@ -1606,7 +1782,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     /// serialized to a log file.  It does NOT include information about what events are chosen but DOES contain
     /// any other necessary information that came from the ETL data file.  
     /// </summary>
-    class DynamicTraceEventParserState : IFastSerializable
+    internal class DynamicTraceEventParserState : IFastSerializable
     {
         public DynamicTraceEventParserState() { providers = new Dictionary<Guid, ProviderManifest>(); }
 
@@ -1616,7 +1792,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             serializer.Write(providers.Count);
             foreach (ProviderManifest provider in providers.Values)
+            {
                 serializer.Write(provider);
+            }
         }
 
         void IFastSerializable.FromStream(Deserializer deserializer)
@@ -1689,7 +1867,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public void WriteToFile(string filePath)
         {
             using (var stream = File.Create(filePath))
+            {
                 WriteToStream(stream);
+            }
         }
 
         /// <summary>
@@ -1699,16 +1879,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// The name of the ETW provider
         /// </summary>
-        public string Name { get { if (!inited) Init(); return name; } }
+        public string Name { get { if (!inited) { Init(); } return name; } }
         /// <summary>
         /// The GUID that uniquey identifies the ETW provider
         /// </summary>
-        public Guid Guid { get { if (!inited) Init(); return guid; } }
+        public Guid Guid { get { if (!inited) { Init(); } return guid; } }
         /// <summary>
         /// The version is defined as the sum of all the version numbers of event version numbers + the number of events defined. 
         /// This has the property that if you follow correct versioning protocol (all versions for a linear sequence where a new  
-        /// versions is only modifies is predecessor by adding new events or INCREASEING the version numbers of existing events) 
+        /// versions is only modifies is predecessor by adding new events or INCREASING the version numbers of existing events) 
         /// then the version number defined below will always strictly increase.   
+        ///
+        /// It turns out that .NET Core removed some events from the TplEtwProvider.   To allow removal of truly old events
+        /// we also add 100* the largest event ID defined to the version number.  That way if you add new events, even if you
+        /// removes some (less than 100) it will consider your 'better'.   
         /// </summary>
         public int Version
         {
@@ -1719,20 +1903,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     try
                     {
                         var verReader = ManifestReader;
-                        while (
-                            verReader.Read())
+                        var maxEventId = 0;
+                        while (verReader.Read())
                         {
                             if (verReader.NodeType != XmlNodeType.Element)
                                 continue;
+
                             if (verReader.Name == "event")
                             {
                                 version++;
                                 string ver = verReader.GetAttribute("version");
-                                int intVer;
-                                if (ver != null && int.TryParse(ver, out intVer))
+                                if (ver != null && int.TryParse(ver, out int intVer))
                                     version += intVer;
+
+                                string id = verReader.GetAttribute("value");
+                                if (id != null && int.TryParse(id, out int intId) && intId > maxEventId)
+                                    maxEventId = intId;
                             }
                         }
+
+                        version += maxEventId * 100;
                     }
                     catch (Exception e)
                     {
@@ -1752,8 +1942,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         /// <summary>
         /// Returns true if the current manifest is better to use than 'otherManifest'   A manifest is
-        /// better if it has a larger version nubmer OR, they have the same version number and it is
-        /// physically larger (we assume what happend is people added more properties but did not
+        /// better if it has a larger version number OR, they have the same version number and it is
+        /// physically larger (we assume what happened is people added more properties but did not
         /// update the version field appropriately).  
         /// </summary>
         public bool BetterThan(ProviderManifest otherManifest)
@@ -1762,7 +1952,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             int otherVer = otherManifest.Version;
 
             if (ver != otherVer)
+            {
                 return (ver > otherVer);
+            }
 
             return serializedManifest.Length > otherManifest.serializedManifest.Length;
         }
@@ -1809,23 +2001,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         internal void ParseProviderEvents(Func<DynamicTraceEventData, EventFilterResponse> callback, bool noThrowOnError)
         {
             if (error != null)
+            {
                 goto THROW;
+            }
+
             Init();
             try
             {
-                version = 0;
-                Dictionary<string, int> opcodes = new Dictionary<string, int>();
-                opcodes.Add("win:Info", 0);
-                opcodes.Add("win:Start", 1);
-                opcodes.Add("win:Stop", 2);
-                opcodes.Add("win:DC_Start", 3);
-                opcodes.Add("win:DC_Stop", 4);
-                opcodes.Add("win:Extension", 5);
-                opcodes.Add("win:Reply", 6);
-                opcodes.Add("win:Resume", 7);
-                opcodes.Add("win:Suspend", 8);
-                opcodes.Add("win:Send", 9);
-                opcodes.Add("win:Receive", 240);
+                Dictionary<string, int> opcodes = new Dictionary<string, int>(11)
+                {
+                    {"win:Info", 0},
+                    {"win:Start", 1},
+                    {"win:Stop", 2},
+                    {"win:DC_Start", 3},
+                    {"win:DC_Stop", 4},
+                    {"win:Extension", 5},
+                    {"win:Reply", 6},
+                    {"win:Resume", 7},
+                    {"win:Suspend", 8},
+                    {"win:Send", 9},
+                    {"win:Receive", 240}
+                };
                 Dictionary<string, TaskInfo> tasks = new Dictionary<string, TaskInfo>();
                 Dictionary<string, TemplateInfo> templates = new Dictionary<string, TemplateInfo>();
                 Dictionary<string, IDictionary<long, string>> maps = null;
@@ -1838,10 +2034,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 while (reader.Read())
                 {
                     if (reader.NodeType != XmlNodeType.EndElement && reader.Name == "events")
+                    {
                         inEventsElement = false;
+                    }
 
                     if (reader.NodeType != XmlNodeType.Element)
+                    {
                         continue;
+                    }
+
                     try
                     {
                         // TODO I currently require opcodes,and tasks BEFORE events BEFORE templates.  
@@ -1856,16 +2057,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     // Only look at event elements under the 'events' element.   This avoids 
                                     // perfTrack elements being considered.  
                                     if (!inEventsElement)
+                                    {
                                         continue;
+                                    }
 
                                     int taskNum = 0;
                                     Guid taskGuid = Guid.Empty;
-
-                                    version++;
-                                    string ver = reader.GetAttribute("version");
-                                    int intVer;
-                                    if (ver != null && int.TryParse(ver, out intVer))
-                                        version += intVer;
 
                                     int eventID = int.Parse(reader.GetAttribute("value"));
                                     int opcode = 0;
@@ -1876,7 +2073,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                         // Strip off any namespace prefix.  TODO is this a good idea?
                                         int colon = opcodeName.IndexOf(':');
                                         if (colon >= 0)
+                                        {
                                             opcodeName = opcodeName.Substring(colon + 1);
+                                        }
                                     }
                                     else
                                     {
@@ -1901,7 +2100,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                         // in a pinch.   
                                         string symbolName = reader.GetAttribute("symbol");
                                         if (symbolName != null && opcodeName == "")
+                                        {
                                             taskName = symbolName;
+                                        }
                                     }
 
                                     DynamicTraceEventData eventTemplate = new DynamicTraceEventData(
@@ -1932,7 +2133,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     info.id = int.Parse(reader.GetAttribute("value"));
                                     string guidString = reader.GetAttribute("eventGUID");
                                     if (guidString != null)
+                                    {
                                         info.guid = new Guid(guidString);
+                                    }
+
                                     tasks[reader.GetAttribute("name")] = info;
                                 }
                                 break;
@@ -1942,7 +2146,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             case "bitMap":
                                 map = new SortedDictionary<long, string>();    // Bitmaps stored as sorted dictionaries
                                 goto DoMap;
-                                DoMap:
+                            DoMap:
                                 string name = reader.GetAttribute("name");
                                 using (var mapValues = reader.ReadSubtree())
                                 {
@@ -1957,17 +2161,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                                 // This is a work-around because some manifests have a 0x with no number afterward.  
                                                 key = 0;
                                                 if (keyStr.Length > 2)
+                                                {
                                                     key = long.Parse(keyStr.Substring(2), System.Globalization.NumberStyles.AllowHexSpecifier);
+                                                }
                                             }
                                             else
+                                            {
                                                 key = long.Parse(keyStr);
+                                            }
+
                                             string value = reader.GetAttribute("message");
                                             map[key] = value;
                                         }
                                     }
                                 }
                                 if (maps == null)
+                                {
                                     maps = new Dictionary<string, IDictionary<long, string>>();
+                                }
+
                                 maps[name] = map;
                                 break;
                             case "resources":
@@ -1976,14 +2188,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     {
                                         string desiredCulture = System.Globalization.CultureInfo.CurrentCulture.Name;
                                         if (cultureBeingRead != null && string.Compare(cultureBeingRead, desiredCulture, StringComparison.OrdinalIgnoreCase) == 0)
+                                        {
                                             alreadyReadMyCulture = true;
+                                        }
+
                                         cultureBeingRead = reader.GetAttribute("culture");
                                     }
                                 }
                                 break;
                             case "string":
                                 if (!alreadyReadMyCulture)
+                                {
                                     strings[reader.GetAttribute("id")] = reader.GetAttribute("value");
+                                }
+
                                 break;
                         }
                     }
@@ -2006,7 +2224,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             {
                                 string newValue;
                                 if (strings.TryGetValue(m.Groups[1].Value, out newValue))
+                                {
                                     amap[keyValue.Key] = newValue;
+                                }
                             }
                         }
                     }
@@ -2040,12 +2260,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         event_.MessageFormat = null;
                         Match m = Regex.Match(message, @"^\$\(string\.(.*)\)$");
                         if (m.Success)
+                        {
                             strings.TryGetValue(m.Groups[1].Value, out event_.MessageFormat);
+                        }
                     }
 
                     Debug.Assert(event_.Source == null);
                     if (callback(event_) == EventFilterResponse.RejectProvider)
+                    {
                         return;
+                    }
                 }
                 // Log the manifest event definition as well.  
                 callback(new DynamicManifestTraceEventData(null, this));
@@ -2053,14 +2277,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             catch (Exception e)
             {
                 // TODO FIX NOW, log this!
-                Trace.WriteLine("Error parsing the manifest for the provider " + (this.name ?? "UNKNOWN") + " " + e.ToString());
+                Trace.WriteLine("Error parsing the manifest for the provider " + (name ?? "UNKNOWN") + " " + e.ToString());
                 version = -1;
                 error = e;
             }
 
-            THROW:
+        THROW:
             if (!noThrowOnError && error != null)
+            {
                 throw new ApplicationException("Error parsing the manifest for the provider " + (this.name ?? "UNKNOWN"), error);
+            }
         }
 
         private class EventInfo
@@ -2107,17 +2333,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     ushort size = DynamicTraceEventData.SizeOfType(type);
                     // Strings are weird in that they are encoded multiple ways.  
                     if (type == typeof(string) && inType == "win:AnsiString")
+                    {
                         size = DynamicTraceEventData.NULL_TERMINATED | DynamicTraceEventData.IS_ANSI;
+                    }
 
                     var fieldName = reader.GetAttribute("name");
                     IDictionary<long, string> map = null;
                     string mapName = reader.GetAttribute("map");
                     if (mapName != null && maps != null)
+                    {
                         maps.TryGetValue(mapName, out map);
+                    }
+
                     var fieldFetch = new DynamicTraceEventData.PayloadFetch(offset, size, type, map);
                     if (inType == "win:Binary")
                     {
-                        // Check to insure that the length field is the preceding field. 
+                        // Check to ensure that the length field is the preceding field. 
                         int prevFieldIdx = ret.payloadNames.Count - 1;
                         string lengthStr = reader.GetAttribute("length");
                         if (lengthStr != null && 0 <= prevFieldIdx &&
@@ -2126,7 +2357,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         {
                             // Remove the previous field, since it was just there to encode the length of the blob.   
                             if (offset != ushort.MaxValue)
+                            {
                                 offset -= 4;
+                            }
+
                             ret.payloadNames.RemoveAt(prevFieldIdx);
                             ret.payloadFetches.RemoveAt(prevFieldIdx);
 
@@ -2147,9 +2381,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     {
                         Debug.Assert(size != 0);
                         if (size < DynamicTraceEventData.SPECIAL_SIZES)
+                        {
                             offset += size;
+                        }
                         else
+                        {
                             offset = ushort.MaxValue;
+                        }
                     }
                 }
             }
@@ -2217,10 +2455,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             serializer.Write(id);
             int count = 0;
             if (serializedManifest != null)
+            {
                 count = serializedManifest.Length;
+            }
+
             serializer.Write(count);
             for (int i = 0; i < count; i++)
+            {
                 serializer.Write(serializedManifest[i]);
+            }
         }
 
         void IFastSerializable.FromStream(Deserializer deserializer)
@@ -2232,7 +2475,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             int count = deserializer.ReadInt();
             serializedManifest = new byte[count];
             for (int i = 0; i < count; i++)
+            {
                 serializedManifest[i] = deserializer.ReadByte();
+            }
+
             Init();
         }
 
@@ -2248,7 +2494,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 while (reader.Read())
                 {
                     if (reader.NodeType != XmlNodeType.Element)
+                    {
                         continue;
+                    }
 
                     if (reader.Name == "provider")
                     {
@@ -2260,7 +2508,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
 
                 if (name == null)
+                {
                     throw new Exception("No provider element found in manifest");
+                }
             }
             catch (Exception e)
             {
@@ -2276,7 +2526,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private byte[] serializedManifest;
         private byte majorVersion;
         private byte minorVersion;
-        ManifestEnvelope.ManifestFormats format;
+        private ManifestEnvelope.ManifestFormats format;
         private string id;      // simply identifies where this manifest came from (e.g. a file, or event)
         private Guid guid;
         private string name;

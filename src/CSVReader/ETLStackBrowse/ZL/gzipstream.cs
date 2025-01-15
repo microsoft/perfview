@@ -1,13 +1,12 @@
 ﻿namespace System.IO.Compression2
 {
     using System.IO;
-    using System.Diagnostics;
     using System.Security.Permissions;
 
     public class GZipStream : Stream
     {
         private DeflateStream deflateStream;
-        CompressionMode mode;
+        private CompressionMode mode;
 
         public GZipStream(Stream stream, CompressionMode mode)
             : this(stream, mode, false)
@@ -20,11 +19,13 @@
 
             deflateStream = new DeflateStream(stream, mode, leaveOpen);
 
-            if (mode == CompressionMode.Compress) {
+            if (mode == CompressionMode.Compress)
+            {
                 IFileFormatWriter writeCommand = new GZipFormatter();
                 deflateStream.SetFileFormatWriter(writeCommand);
             }
-            else {
+            else
+            {
                 IFileFormatReader readCommand = new GZipDecoder();
                 deflateStream.SetFileFormatReader(readCommand);
             }
@@ -34,11 +35,13 @@
         {
             deflateStream.Recycle();
 
-            if (mode == CompressionMode.Compress) {
+            if (mode == CompressionMode.Compress)
+            {
                 IFileFormatWriter writeCommand = new GZipFormatter();
                 deflateStream.SetFileFormatWriter(writeCommand);
             }
-            else {
+            else
+            {
                 IFileFormatReader readCommand = new GZipDecoder();
                 deflateStream.SetFileFormatReader(readCommand);
             }
@@ -48,7 +51,8 @@
         {
             get
             {
-                if (deflateStream == null) {
+                if (deflateStream == null)
+                {
                     return false;
                 }
 
@@ -60,7 +64,8 @@
         {
             get
             {
-                if (deflateStream == null) {
+                if (deflateStream == null)
+                {
                     return false;
                 }
 
@@ -72,7 +77,8 @@
         {
             get
             {
-                if (deflateStream == null) {
+                if (deflateStream == null)
+                {
                     return false;
                 }
 
@@ -103,7 +109,8 @@
 
         public override void Flush()
         {
-            if (deflateStream == null) {
+            if (deflateStream == null)
+            {
                 throw new ObjectDisposedException(null, "ObjectDisposed_StreamClosed");
             }
             deflateStream.Flush();
@@ -123,7 +130,8 @@
         [HostProtection(ExternalThreading = true)]
         public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
-            if (deflateStream == null) {
+            if (deflateStream == null)
+            {
                 throw new InvalidOperationException("ObjectDisposed_StreamClosed");
             }
             return deflateStream.BeginRead(array, offset, count, asyncCallback, asyncState);
@@ -131,7 +139,8 @@
 
         public override int EndRead(IAsyncResult asyncResult)
         {
-            if (deflateStream == null) {
+            if (deflateStream == null)
+            {
                 throw new InvalidOperationException("ObjectDisposed_StreamClosed");
             }
             return deflateStream.EndRead(asyncResult);
@@ -140,7 +149,8 @@
         [HostProtection(ExternalThreading = true)]
         public override IAsyncResult BeginWrite(byte[] array, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
-            if (deflateStream == null) {
+            if (deflateStream == null)
+            {
                 throw new InvalidOperationException("ObjectDisposed_StreamClosed");
             }
             return deflateStream.BeginWrite(array, offset, count, asyncCallback, asyncState);
@@ -148,14 +158,16 @@
 
         public override void EndWrite(IAsyncResult asyncResult)
         {
-            if (deflateStream == null) {
+            if (deflateStream == null)
+            {
                 throw new InvalidOperationException("ObjectDisposed_StreamClosed");
             }
             deflateStream.EndWrite(asyncResult);
         }
         public override int Read(byte[] array, int offset, int count)
         {
-            if (deflateStream == null) {
+            if (deflateStream == null)
+            {
                 throw new ObjectDisposedException(null, "ObjectDisposed_StreamClosed");
             }
 
@@ -164,7 +176,8 @@
 
         public override void Write(byte[] array, int offset, int count)
         {
-            if (deflateStream == null) {
+            if (deflateStream == null)
+            {
                 throw new ObjectDisposedException(null, "ObjectDisposed_StreamClosed");
             }
 
@@ -173,13 +186,16 @@
 
         protected override void Dispose(bool disposing)
         {
-            try {
-                if (disposing && deflateStream != null) {
+            try
+            {
+                if (disposing && deflateStream != null)
+                {
                     deflateStream.Close();
                 }
                 deflateStream = null;
             }
-            finally {
+            finally
+            {
                 base.Dispose(disposing);
             }
         }
@@ -188,10 +204,12 @@
         {
             get
             {
-                if (deflateStream != null) {
+                if (deflateStream != null)
+                {
                     return deflateStream.BaseStream;
                 }
-                else {
+                else
+                {
                     return null;
                 }
             }

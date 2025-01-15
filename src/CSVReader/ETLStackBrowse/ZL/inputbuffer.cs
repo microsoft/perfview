@@ -7,7 +7,7 @@
     // Normally we get bits from 'bitBuffer' field and bitsInBuffer stores
     // the number of bits available in 'BitBuffer'.
     // When we used up the bits in bitBuffer, we will try to get byte from
-    // the byte array and copy the byte to appropiate position in bitBuffer.
+    // the byte array and copy the byte to appropriate position in bitBuffer.
     //
     // The byte array is not reused. We will go from 'start' to 'end'. 
     // When we reach the end, most read operations will return -1, 
@@ -57,16 +57,20 @@
             Debug.Assert(0 < count && count <= 16, "count is invalid.");
 
             // manual inlining to improve perf
-            if (bitsInBuffer < count) {
-                if (NeedsInput()) {
+            if (bitsInBuffer < count)
+            {
+                if (NeedsInput())
+                {
                     return false;
                 }
                 // insert a byte to bitbuffer
                 bitBuffer |= (uint)buffer[start++] << bitsInBuffer;
                 bitsInBuffer += 8;
 
-                if (bitsInBuffer < count) {
-                    if (NeedsInput()) {
+                if (bitsInBuffer < count)
+                {
+                    if (NeedsInput())
+                    {
                         return false;
                     }
                     // insert a byte to bitbuffer
@@ -85,19 +89,24 @@
         // see how many bits are available. 
         public uint TryLoad16Bits()
         {
-            if (bitsInBuffer < 8) {
-                if (start < end) {
+            if (bitsInBuffer < 8)
+            {
+                if (start < end)
+                {
                     bitBuffer |= (uint)buffer[start++] << bitsInBuffer;
                     bitsInBuffer += 8;
                 }
 
-                if (start < end) {
+                if (start < end)
+                {
                     bitBuffer |= (uint)buffer[start++] << bitsInBuffer;
                     bitsInBuffer += 8;
                 }
             }
-            else if (bitsInBuffer < 16) {
-                if (start < end) {
+            else if (bitsInBuffer < 16)
+            {
+                if (start < end)
+                {
                     bitBuffer |= (uint)buffer[start++] << bitsInBuffer;
                     bitsInBuffer += 8;
                 }
@@ -116,7 +125,8 @@
         {
             Debug.Assert(0 < count && count <= 16, "count is invalid.");
 
-            if (!EnsureBitsAvailable(count)) {
+            if (!EnsureBitsAvailable(count))
+            {
                 return -1;
             }
 
@@ -141,7 +151,8 @@
 
             // Copy the bytes in bitBuffer first.
             int bytesFromBitBuffer = 0;
-            while (bitsInBuffer > 0 && length > 0) {
+            while (bitsInBuffer > 0 && length > 0)
+            {
                 output[offset++] = (byte)bitBuffer;
                 bitBuffer >>= 8;
                 bitsInBuffer -= 8;
@@ -149,12 +160,14 @@
                 bytesFromBitBuffer++;
             }
 
-            if (length == 0) {
+            if (length == 0)
+            {
                 return bytesFromBitBuffer;
             }
 
             int avail = end - start;
-            if (length > avail) {
+            if (length > avail)
+            {
                 length = avail;
             }
 

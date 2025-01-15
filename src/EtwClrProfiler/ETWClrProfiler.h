@@ -19,36 +19,44 @@ extern "C" {
 #endif
 
 //
-// Allow Diasabling of code generation
+// Allow disabling of code generation
 //
 #ifndef MCGEN_DISABLE_PROVIDER_CODE_GENERATION
 #if  !defined(McGenDebug)
 #define McGenDebug(a,b)
-#endif 
+#endif
+#ifndef MCGEN_EVENT_ENABLED
+#define MCGEN_EVENT_ENABLED(EventName) EventEnabled##EventName()
+#endif
 
 
 #if !defined(MCGEN_TRACE_CONTEXT_DEF)
 #define MCGEN_TRACE_CONTEXT_DEF
 typedef struct _MCGEN_TRACE_CONTEXT
 {
-    TRACEHANDLE     RegistrationHandle;
-    TRACEHANDLE     Logger;
-    ULONGLONG       MatchAnyKeyword;
-    ULONGLONG       MatchAllKeyword;
-    ULONG           Flags;
-    ULONG           IsEnabled;
-    UCHAR           Level; 
-    UCHAR           Reserve;
+    TRACEHANDLE            RegistrationHandle;
+    TRACEHANDLE            Logger;
+    ULONGLONG              MatchAnyKeyword;
+    ULONGLONG              MatchAllKeyword;
+    ULONG                  Flags;
+    ULONG                  IsEnabled;
+    UCHAR                  Level;
+    UCHAR                  Reserve;
+    USHORT                 EnableBitsCount;
+    PULONG                 EnableBitMask;
+    const ULONGLONG*       EnableKeyWords;
+    const UCHAR*           EnableLevel;
 } MCGEN_TRACE_CONTEXT, *PMCGEN_TRACE_CONTEXT;
 #endif
 
-#if !defined(MCGEN_EVENT_ENABLED_DEF)
-#define MCGEN_EVENT_ENABLED_DEF
+#if !defined(MCGEN_LEVEL_KEYWORD_ENABLED_DEF)
+#define MCGEN_LEVEL_KEYWORD_ENABLED_DEF
 FORCEINLINE
 BOOLEAN
-McGenEventEnabled(
-    __in PMCGEN_TRACE_CONTEXT EnableInfo,
-    __in PCEVENT_DESCRIPTOR EventDescriptor
+McGenLevelKeywordEnabled(
+    _In_ PMCGEN_TRACE_CONTEXT EnableInfo,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG Keyword
     )
 {
     //
@@ -58,21 +66,36 @@ McGenEventEnabled(
     // all levels are enabled.
     //
 
-    if ((EventDescriptor->Level <= EnableInfo->Level) || // This also covers the case of Level == 0.
+    if ((Level <= EnableInfo->Level) || // This also covers the case of Level == 0.
         (EnableInfo->Level == 0)) {
 
         //
         // Check if Keyword is enabled
         //
 
-        if ((EventDescriptor->Keyword == (ULONGLONG)0) ||
-            ((EventDescriptor->Keyword & EnableInfo->MatchAnyKeyword) &&
-             ((EventDescriptor->Keyword & EnableInfo->MatchAllKeyword) == EnableInfo->MatchAllKeyword))) {
+        if ((Keyword == (ULONGLONG)0) ||
+            ((Keyword & EnableInfo->MatchAnyKeyword) &&
+             ((Keyword & EnableInfo->MatchAllKeyword) == EnableInfo->MatchAllKeyword))) {
             return TRUE;
         }
     }
 
     return FALSE;
+
+}
+#endif
+
+#if !defined(MCGEN_EVENT_ENABLED_DEF)
+#define MCGEN_EVENT_ENABLED_DEF
+FORCEINLINE
+BOOLEAN
+McGenEventEnabled(
+    _In_ PMCGEN_TRACE_CONTEXT EnableInfo,
+    _In_ PCEVENT_DESCRIPTOR EventDescriptor
+    )
+{
+
+    return McGenLevelKeywordEnabled(EnableInfo, EventDescriptor->Level, EventDescriptor->Keyword);
 
 }
 #endif
@@ -85,6 +108,16 @@ McGenEventEnabled(
 #define MCGEN_ENABLE_CHECK(Context, Descriptor) (Context.IsEnabled &&  McGenEventEnabled(&Context, &Descriptor))
 #endif
 
+#ifndef MCGEN_EVENTWRITE_UM
+#define MCGEN_EVENTWRITE_UM EventWrite
+#endif
+#ifndef MCGEN_EVENTREGISTER_UM
+#define MCGEN_EVENTREGISTER_UM EventRegister
+#endif
+#ifndef MCGEN_EVENTUNREGISTER_UM
+#define MCGEN_EVENTUNREGISTER_UM EventUnregister
+#endif
+
 #if !defined(MCGEN_CONTROL_CALLBACK)
 #define MCGEN_CONTROL_CALLBACK
 
@@ -92,38 +125,38 @@ DECLSPEC_NOINLINE __inline
 VOID
 __stdcall
 McGenControlCallbackV2(
-    __in LPCGUID SourceId,
-    __in ULONG ControlCode,
-    __in UCHAR Level,
-    __in ULONGLONG MatchAnyKeyword,
-    __in ULONGLONG MatchAllKeyword,
-    __in_opt PEVENT_FILTER_DESCRIPTOR FilterData,
-    __in_opt PVOID CallbackContext
+    _In_ LPCGUID SourceId,
+    _In_ ULONG ControlCode,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ PEVENT_FILTER_DESCRIPTOR FilterData,
+    _Inout_opt_ PVOID CallbackContext
     )
 /*++
 
 Routine Description:
 
-    This is the notification callback for Vista.
+    This is the notification callback for Windows Vista and later.
 
 Arguments:
 
-    SourceId - The GUID that identifies the session that enabled the provider. 
+    SourceId - The GUID that identifies the session that enabled the provider.
 
-    ControlCode - The parameter indicates whether the provider 
+    ControlCode - The parameter indicates whether the provider
                   is being enabled or disabled.
 
     Level - The level at which the event is enabled.
 
-    MatchAnyKeyword - The bitmask of keywords that the provider uses to 
+    MatchAnyKeyword - The bitmask of keywords that the provider uses to
                       determine the category of events that it writes.
 
-    MatchAllKeyword - This bitmask additionally restricts the category 
-                      of events that the provider writes. 
+    MatchAllKeyword - This bitmask additionally restricts the category
+                      of events that the provider writes.
 
     FilterData - The provider-defined data.
 
-    CallbackContext - The context of the callback that is defined when the provider 
+    CallbackContext - The context of the callback that is defined when the provider
                       called EtwRegister to register itself.
 
 Remarks:
@@ -133,6 +166,7 @@ Remarks:
 --*/
 {
     PMCGEN_TRACE_CONTEXT Ctx = (PMCGEN_TRACE_CONTEXT)CallbackContext;
+    ULONG Ix;
 #ifndef MCGEN_PRIVATE_ENABLE_CALLBACK_V2
     UNREFERENCED_PARAMETER(SourceId);
     UNREFERENCED_PARAMETER(FilterData);
@@ -149,6 +183,14 @@ Remarks:
             Ctx->MatchAnyKeyword = MatchAnyKeyword;
             Ctx->MatchAllKeyword = MatchAllKeyword;
             Ctx->IsEnabled = EVENT_CONTROL_CODE_ENABLE_PROVIDER;
+
+            for (Ix = 0; Ix < Ctx->EnableBitsCount; Ix += 1) {
+                if (McGenLevelKeywordEnabled(Ctx, Ctx->EnableLevel[Ix], Ctx->EnableKeyWords[Ix]) != FALSE) {
+                    Ctx->EnableBitMask[Ix >> 5] |= (1 << (Ix % 32));
+                } else {
+                    Ctx->EnableBitMask[Ix >> 5] &= ~(1 << (Ix % 32));
+                }
+            }
             break;
 
         case EVENT_CONTROL_CODE_DISABLE_PROVIDER:
@@ -156,8 +198,11 @@ Remarks:
             Ctx->Level = 0;
             Ctx->MatchAnyKeyword = 0;
             Ctx->MatchAllKeyword = 0;
+            if (Ctx->EnableBitsCount > 0) {
+                RtlZeroMemory(Ctx->EnableBitMask, (((Ctx->EnableBitsCount - 1) / 32) + 1) * sizeof(ULONG));
+            }
             break;
- 
+
         default:
             break;
     }
@@ -176,12 +221,55 @@ Remarks:
         CallbackContext
         );
 #endif
-   
+
     return;
 }
 
 #endif
+
+#ifndef McGenEventWriteUM_def
+#define McGenEventWriteUM_def
+DECLSPEC_NOINLINE __inline
+ULONG __stdcall
+McGenEventWriteUM(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_range_(1, 128) ULONG EventDataCount,
+    _Inout_updates_(EventDataCount) EVENT_DATA_DESCRIPTOR* EventData
+    )
+{
+    const USHORT UNALIGNED* Traits;
+    UCHAR DisallowedChannel;
+    ULONGLONG DescriptorCopy[2]; // ULONGLONG to suppress unnecessary cookie.
+
+    Traits = (const USHORT UNALIGNED*)(UINT_PTR)Context->Logger;
+
+    if (Traits == NULL) {
+        EventDataCount -= 1;
+        EventData += 1;
+        if (EventDataCount == 0) {
+            EventData = NULL;
+        }
+        DisallowedChannel = 12; // WINEVENT_CHANNEL_PROVIDERMETADATA
+    } else {
+        EventData[0].Ptr = (ULONG_PTR)Traits;
+        EventData[0].Size = *Traits;
+        EventData[0].Reserved = 2; // EVENT_DATA_DESCRIPTOR_TYPE_PROVIDER_METADATA
+        DisallowedChannel = 0;
+    }
+
+    if (Descriptor->Channel == DisallowedChannel) {
+        *(EVENT_DESCRIPTOR*)DescriptorCopy = *Descriptor;
+        ((EVENT_DESCRIPTOR*)DescriptorCopy)->Channel = (UCHAR)((Traits == NULL) ? 0 : 12);
+        Descriptor = (EVENT_DESCRIPTOR*)DescriptorCopy;
+    }
+
+    return MCGEN_EVENTWRITE_UM(Context->RegistrationHandle, Descriptor, EventDataCount, EventData);
+}
+#endif // McGenEventWriteUM_def
+
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION
+
 //+
 // Provider ETWClrProfiler Event Count 19
 //+
@@ -217,6 +305,7 @@ EXTERN_C __declspec(selectany) const GUID ETWClrProfiler = {0x6652970f, 0x1756, 
 #define GCAllocSampledKeyword 0x8
 #define CallKeyword 0x10
 #define CallSampledKeyword 0x20
+#define DisableInliningKeyword 0x40
 
 //
 // Event Descriptors
@@ -261,27 +350,30 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR SendManifestEvent = {0xfff
 #define SendManifestEvent_value 0xfffe
 
 //
-// Note on Generate Code from Manifest Windows Vista and above
+// Note on Generate Code from Manifest for Windows Vista and above
 //
-//Structures :  are handled as a size and pointer pairs. The macro for the event will have an extra 
+//Structures :  are handled as a size and pointer pairs. The macro for the event will have an extra
 //parameter for the size in bytes of the structure. Make sure that your structures have no extra padding.
 //
-//Strings: There are several cases that can be described in the manifest. For array of variable length 
-//strings, the generated code will take the count of characters for the whole array as an input parameter. 
+//Strings: There are several cases that can be described in the manifest. For array of variable length
+//strings, the generated code will take the count of characters for the whole array as an input parameter.
 //
-//SID No support for array of SIDs, the macro will take a pointer to the SID and use appropriate 
+//SID No support for array of SIDs, the macro will take a pointer to the SID and use appropriate
 //GetLengthSid function to get the length.
 //
 
 //
-// Allow Diasabling of code generation
+// Allow disabling of code generation
 //
 #ifndef MCGEN_DISABLE_PROVIDER_CODE_GENERATION
 
 //
-// Globals 
+// Globals
 //
 
+#ifndef ETWClrProfiler_Traits
+#define ETWClrProfiler_Traits NULL
+#endif
 #ifndef _ClassDefinitionFlags_def
 #define _ClassDefinitionFlags_def
 typedef enum _ClassDefinitionFlags
@@ -289,31 +381,44 @@ typedef enum _ClassDefinitionFlags
 }ClassDefinitionFlags;
 #endif
 
-EXTERN_C __declspec(selectany) REGHANDLE ETWClrProfilerHandle = (REGHANDLE)0;
 
-EXTERN_C __declspec(selectany) MCGEN_TRACE_CONTEXT ETWClrProfiler_Context = {0};
+//
+// Event Enablement Bits
+//
+
+EXTERN_C __declspec(selectany) DECLSPEC_CACHEALIGN ULONG ETWClrProfilerEnableBits[1];
+EXTERN_C __declspec(selectany) const ULONGLONG ETWClrProfilerKeywords[10] = {0xf, 0xc, 0xd, 0xe, 0x2, 0x80000000000f, 0x80000000000f, 0x8, 0x30, 0x80000000000f};
+EXTERN_C __declspec(selectany) const UCHAR ETWClrProfilerLevels[10] = {4, 5, 4, 4, 5, 3, 2, 5, 5, 0};
+EXTERN_C __declspec(selectany) MCGEN_TRACE_CONTEXT ETWClrProfiler_Context = {0, (ULONG_PTR)ETWClrProfiler_Traits, 0, 0, 0, 0, 0, 0, 10, ETWClrProfilerEnableBits, ETWClrProfilerKeywords, ETWClrProfilerLevels};
+
+#define ETWClrProfilerHandle (ETWClrProfiler_Context.RegistrationHandle)
 
 #if !defined(McGenEventRegisterUnregister)
 #define McGenEventRegisterUnregister
+#pragma warning(push)
+#pragma warning(disable:6103)
 DECLSPEC_NOINLINE __inline
 ULONG __stdcall
 McGenEventRegister(
-    __in LPCGUID ProviderId,
-    __in_opt PENABLECALLBACK EnableCallback,
-    __in_opt PVOID CallbackContext,
-    __out PREGHANDLE RegHandle
+    _In_ LPCGUID ProviderId,
+    _In_opt_ PENABLECALLBACK EnableCallback,
+    _In_opt_ PVOID CallbackContext,
+    _Inout_ PREGHANDLE RegHandle
     )
 /*++
 
 Routine Description:
 
-    This function register the provider with ETW USER mode
+    This function registers the provider with ETW USER mode.
 
 Arguments:
-    ProviderId      - Provider Id to be register with ETW
-    EnableCallback  - Callback to be used 
-    CallbackContext - Context for this provider 
-    RegHandle       - Pointer to Registration handle
+    ProviderId - Provider ID to register with ETW.
+
+    EnableCallback - Callback to be used.
+
+    CallbackContext - Context for this provider.
+
+    RegHandle - Pointer to registration handle.
 
 Remarks:
 
@@ -324,22 +429,23 @@ Remarks:
     ULONG Error;
 
 
-    if(*RegHandle) {
+    if (*RegHandle) {
         //
         // already registered
         //
         return ERROR_SUCCESS;
     }
 
-    Error = EventRegister( ProviderId, EnableCallback, CallbackContext, RegHandle); 
+    Error = MCGEN_EVENTREGISTER_UM( ProviderId, EnableCallback, CallbackContext, RegHandle);
 
     return Error;
 }
+#pragma warning(pop)
 
 
 DECLSPEC_NOINLINE __inline
 ULONG __stdcall
-McGenEventUnregister(__inout PREGHANDLE RegHandle)
+McGenEventUnregister(_Inout_ PREGHANDLE RegHandle)
 /*++
 
 Routine Description:
@@ -349,7 +455,7 @@ Routine Description:
 Arguments:
             RegHandle this is the pointer to the provider context
 Remarks:
-            If Provider has not register RegHandle = NULL,
+            If provider has not been registered, RegHandle == NULL,
             return ERROR_SUCCESS
 --*/
 {
@@ -363,176 +469,290 @@ Remarks:
         return ERROR_SUCCESS;
     }
 
-    Error = EventUnregister(*RegHandle); 
+    Error = MCGEN_EVENTUNREGISTER_UM(*RegHandle);
     *RegHandle = (REGHANDLE)0;
-    
+
     return Error;
 }
 #endif
 //
-// Register with ETW Vista +
+// Register with ETW (Vista or later) using provider GUID determined from manifest
 //
 #ifndef EventRegisterETWClrProfiler
-#define EventRegisterETWClrProfiler() McGenEventRegister(&ETWClrProfiler, McGenControlCallbackV2, &ETWClrProfiler_Context, &ETWClrProfilerHandle) 
+#define EventRegisterETWClrProfiler() McGenEventRegister(&ETWClrProfiler, McGenControlCallbackV2, &ETWClrProfiler_Context, &ETWClrProfilerHandle)
 #endif
 
 //
-// UnRegister with ETW
+// Unregister with ETW
 //
 #ifndef EventUnregisterETWClrProfiler
-#define EventUnregisterETWClrProfiler() McGenEventUnregister(&ETWClrProfilerHandle) 
+#define EventUnregisterETWClrProfiler() McGenEventUnregister(&ETWClrProfilerHandle)
 #endif
+
+//
+// Enablement check macro for ClassIDDefintionEvent
+//
+
+#define EventEnabledClassIDDefintionEvent() ((ETWClrProfilerEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for ClassIDDefintionEvent
 //
 #define EventWriteClassIDDefintionEvent(ClassID, Token, Flags, ModuleID, Name)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, ClassIDDefintionEvent) ?\
-        Template_xqqxz(ETWClrProfilerHandle, &ClassIDDefintionEvent, ClassID, Token, Flags, ModuleID, Name)\
+        MCGEN_EVENT_ENABLED(ClassIDDefintionEvent) ?\
+        McTemplateU0xqqxz(&ETWClrProfiler_Context, &ClassIDDefintionEvent, ClassID, Token, Flags, ModuleID, Name)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ModuleIDDefintionEvent
+//
+
+#define EventEnabledModuleIDDefintionEvent() ((ETWClrProfilerEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for ModuleIDDefintionEvent
 //
 #define EventWriteModuleIDDefintionEvent(ModuleID, AssemblyID, Path)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, ModuleIDDefintionEvent) ?\
-        Template_xxz(ETWClrProfilerHandle, &ModuleIDDefintionEvent, ModuleID, AssemblyID, Path)\
+        MCGEN_EVENT_ENABLED(ModuleIDDefintionEvent) ?\
+        McTemplateU0xxz(&ETWClrProfiler_Context, &ModuleIDDefintionEvent, ModuleID, AssemblyID, Path)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ObjectAllocatedEvent
+//
+
+#define EventEnabledObjectAllocatedEvent() ((ETWClrProfilerEnableBits[0] & 0x00000002) != 0)
 
 //
 // Event Macro for ObjectAllocatedEvent
 //
 #define EventWriteObjectAllocatedEvent(ObjectID, ClassID, Size, RepresentativeSize)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, ObjectAllocatedEvent) ?\
-        Template_xxxx(ETWClrProfilerHandle, &ObjectAllocatedEvent, ObjectID, ClassID, Size, RepresentativeSize)\
+        MCGEN_EVENT_ENABLED(ObjectAllocatedEvent) ?\
+        McTemplateU0xxxx(&ETWClrProfiler_Context, &ObjectAllocatedEvent, ObjectID, ClassID, Size, RepresentativeSize)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for FinalizeableObjectQueuedEvent
+//
+
+#define EventEnabledFinalizeableObjectQueuedEvent() ((ETWClrProfilerEnableBits[0] & 0x00000004) != 0)
 
 //
 // Event Macro for FinalizeableObjectQueuedEvent
 //
 #define EventWriteFinalizeableObjectQueuedEvent(ObjectID, ClassID)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, FinalizeableObjectQueuedEvent) ?\
-        Template_xx(ETWClrProfilerHandle, &FinalizeableObjectQueuedEvent, ObjectID, ClassID)\
+        MCGEN_EVENT_ENABLED(FinalizeableObjectQueuedEvent) ?\
+        McTemplateU0xx(&ETWClrProfiler_Context, &FinalizeableObjectQueuedEvent, ObjectID, ClassID)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for HandleCreatedEvent
+//
+
+#define EventEnabledHandleCreatedEvent() ((ETWClrProfilerEnableBits[0] & 0x00000008) != 0)
 
 //
 // Event Macro for HandleCreatedEvent
 //
 #define EventWriteHandleCreatedEvent(HandleID, InitialObjectID)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, HandleCreatedEvent) ?\
-        Template_xx(ETWClrProfilerHandle, &HandleCreatedEvent, HandleID, InitialObjectID)\
+        MCGEN_EVENT_ENABLED(HandleCreatedEvent) ?\
+        McTemplateU0xx(&ETWClrProfiler_Context, &HandleCreatedEvent, HandleID, InitialObjectID)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for HandleDestroyedEvent
+//
+
+#define EventEnabledHandleDestroyedEvent() ((ETWClrProfilerEnableBits[0] & 0x00000008) != 0)
 
 //
 // Event Macro for HandleDestroyedEvent
 //
 #define EventWriteHandleDestroyedEvent(HandleID)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, HandleDestroyedEvent) ?\
-        Template_x(ETWClrProfilerHandle, &HandleDestroyedEvent, HandleID)\
+        MCGEN_EVENT_ENABLED(HandleDestroyedEvent) ?\
+        McTemplateU0x(&ETWClrProfiler_Context, &HandleDestroyedEvent, HandleID)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for RootReferencesEvent
+//
+
+#define EventEnabledRootReferencesEvent() ((ETWClrProfilerEnableBits[0] & 0x00000010) != 0)
 
 //
 // Event Macro for RootReferencesEvent
 //
 #define EventWriteRootReferencesEvent(Count, ObjectIDs, GCRootKinds, GCRootFlags, RootIDs)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, RootReferencesEvent) ?\
-        Template_qPR0QR0QR0PR0(ETWClrProfilerHandle, &RootReferencesEvent, Count, ObjectIDs, GCRootKinds, GCRootFlags, RootIDs)\
+        MCGEN_EVENT_ENABLED(RootReferencesEvent) ?\
+        McTemplateU0qPR0QR0QR0PR0(&ETWClrProfiler_Context, &RootReferencesEvent, Count, ObjectIDs, GCRootKinds, GCRootFlags, RootIDs)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ObjectReferencesEvent
+//
+
+#define EventEnabledObjectReferencesEvent() ((ETWClrProfilerEnableBits[0] & 0x00000010) != 0)
 
 //
 // Event Macro for ObjectReferencesEvent
 //
 #define EventWriteObjectReferencesEvent(ObjectID, ClassID, Size, ObjectRefCount, ObjectRefs)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, ObjectReferencesEvent) ?\
-        Template_xxxqPR3(ETWClrProfilerHandle, &ObjectReferencesEvent, ObjectID, ClassID, Size, ObjectRefCount, ObjectRefs)\
+        MCGEN_EVENT_ENABLED(ObjectReferencesEvent) ?\
+        McTemplateU0xxxqPR3(&ETWClrProfiler_Context, &ObjectReferencesEvent, ObjectID, ClassID, Size, ObjectRefCount, ObjectRefs)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for GCStartEvent
+//
+
+#define EventEnabledGCStartEvent() ((ETWClrProfilerEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for GCStartEvent
 //
 #define EventWriteGCStartEvent(GCID, Generation, Induced)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, GCStartEvent) ?\
-        Template_ddt(ETWClrProfilerHandle, &GCStartEvent, GCID, Generation, Induced)\
+        MCGEN_EVENT_ENABLED(GCStartEvent) ?\
+        McTemplateU0ddt(&ETWClrProfiler_Context, &GCStartEvent, GCID, Generation, Induced)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for GCStopEvent
+//
+
+#define EventEnabledGCStopEvent() ((ETWClrProfilerEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for GCStopEvent
 //
 #define EventWriteGCStopEvent(GCID)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, GCStopEvent) ?\
-        Template_d(ETWClrProfilerHandle, &GCStopEvent, GCID)\
+        MCGEN_EVENT_ENABLED(GCStopEvent) ?\
+        McTemplateU0d(&ETWClrProfiler_Context, &GCStopEvent, GCID)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ObjectsMovedEvent
+//
+
+#define EventEnabledObjectsMovedEvent() ((ETWClrProfilerEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for ObjectsMovedEvent
 //
 #define EventWriteObjectsMovedEvent(Count, RangeBases, TargetBases, Lengths)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, ObjectsMovedEvent) ?\
-        Template_qPR0PR0QR0(ETWClrProfilerHandle, &ObjectsMovedEvent, Count, RangeBases, TargetBases, Lengths)\
+        MCGEN_EVENT_ENABLED(ObjectsMovedEvent) ?\
+        McTemplateU0qPR0PR0QR0(&ETWClrProfiler_Context, &ObjectsMovedEvent, Count, RangeBases, TargetBases, Lengths)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ObjectsSurvivedEvent
+//
+
+#define EventEnabledObjectsSurvivedEvent() ((ETWClrProfilerEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for ObjectsSurvivedEvent
 //
 #define EventWriteObjectsSurvivedEvent(Count, RangeBases, Lengths)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, ObjectsSurvivedEvent) ?\
-        Template_qPR0QR0(ETWClrProfilerHandle, &ObjectsSurvivedEvent, Count, RangeBases, Lengths)\
+        MCGEN_EVENT_ENABLED(ObjectsSurvivedEvent) ?\
+        McTemplateU0qPR0QR0(&ETWClrProfiler_Context, &ObjectsSurvivedEvent, Count, RangeBases, Lengths)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for CaptureStateStart
+//
+
+#define EventEnabledCaptureStateStart() ((ETWClrProfilerEnableBits[0] & 0x00000020) != 0)
 
 //
 // Event Macro for CaptureStateStart
 //
 #define EventWriteCaptureStateStart()\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, CaptureStateStart) ?\
-        TemplateEventDescriptor(ETWClrProfilerHandle, &CaptureStateStart)\
+        MCGEN_EVENT_ENABLED(CaptureStateStart) ?\
+        McTemplateU0(&ETWClrProfiler_Context, &CaptureStateStart)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for CaptureStateStop
+//
+
+#define EventEnabledCaptureStateStop() ((ETWClrProfilerEnableBits[0] & 0x00000020) != 0)
 
 //
 // Event Macro for CaptureStateStop
 //
 #define EventWriteCaptureStateStop()\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, CaptureStateStop) ?\
-        TemplateEventDescriptor(ETWClrProfilerHandle, &CaptureStateStop)\
+        MCGEN_EVENT_ENABLED(CaptureStateStop) ?\
+        McTemplateU0(&ETWClrProfiler_Context, &CaptureStateStop)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ProfilerError
+//
+
+#define EventEnabledProfilerError() ((ETWClrProfilerEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for ProfilerError
 //
 #define EventWriteProfilerError(ErrorCode, Message)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, ProfilerError) ?\
-        Template_xz(ETWClrProfilerHandle, &ProfilerError, ErrorCode, Message)\
+        MCGEN_EVENT_ENABLED(ProfilerError) ?\
+        McTemplateU0xz(&ETWClrProfiler_Context, &ProfilerError, ErrorCode, Message)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ProfilerShutdown
+//
+
+#define EventEnabledProfilerShutdown() ((ETWClrProfilerEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for ProfilerShutdown
 //
 #define EventWriteProfilerShutdown()\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, ProfilerShutdown) ?\
-        TemplateEventDescriptor(ETWClrProfilerHandle, &ProfilerShutdown)\
+        MCGEN_EVENT_ENABLED(ProfilerShutdown) ?\
+        McTemplateU0(&ETWClrProfiler_Context, &ProfilerShutdown)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for SamplingRateChange
+//
+
+#define EventEnabledSamplingRateChange() ((ETWClrProfilerEnableBits[0] & 0x00000080) != 0)
 
 //
 // Event Macro for SamplingRateChange
 //
 #define EventWriteSamplingRateChange(ClassID, ClassName, MSecDelta, MinAllocPerMSec, NewAllocPerMSec, AllocPerMSec, SampleRate)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, SamplingRateChange) ?\
-        Template_xzddffd(ETWClrProfilerHandle, &SamplingRateChange, ClassID, ClassName, MSecDelta, MinAllocPerMSec, NewAllocPerMSec, AllocPerMSec, SampleRate)\
+        MCGEN_EVENT_ENABLED(SamplingRateChange) ?\
+        McTemplateU0xzddffd(&ETWClrProfiler_Context, &SamplingRateChange, ClassID, ClassName, MSecDelta, MinAllocPerMSec, NewAllocPerMSec, AllocPerMSec, SampleRate)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for CallEnterEvent
+//
+
+#define EventEnabledCallEnterEvent() ((ETWClrProfilerEnableBits[0] & 0x00000100) != 0)
 
 //
 // Event Macro for CallEnterEvent
 //
-#define EventWriteCallEnterEvent(FunctionID)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, CallEnterEvent) ?\
-        Template_x(ETWClrProfilerHandle, &CallEnterEvent, FunctionID)\
+#define EventWriteCallEnterEvent(FunctionID, SampleRate)\
+        MCGEN_EVENT_ENABLED(CallEnterEvent) ?\
+        McTemplateU0xq(&ETWClrProfiler_Context, &CallEnterEvent, FunctionID, SampleRate)\
         : ERROR_SUCCESS\
+
+//
+// Enablement check macro for SendManifestEvent
+//
+
+#define EventEnabledSendManifestEvent() ((ETWClrProfilerEnableBits[0] & 0x00000200) != 0)
 
 //
 // Event Macro for SendManifestEvent
 //
 #define EventWriteSendManifestEvent(Format, MajorVersion, MinorVersion, Magic, TotalChunks, ChunkNumger, Data)\
-        MCGEN_ENABLE_CHECK(ETWClrProfiler_Context, SendManifestEvent) ?\
-        Template_cccchhs(ETWClrProfilerHandle, &SendManifestEvent, Format, MajorVersion, MinorVersion, Magic, TotalChunks, ChunkNumger, Data)\
+        MCGEN_EVENT_ENABLED(SendManifestEvent) ?\
+        McTemplateU0cccchhs(&ETWClrProfiler_Context, &SendManifestEvent, Format, MajorVersion, MinorVersion, Magic, TotalChunks, ChunkNumger, Data)\
         : ERROR_SUCCESS\
 
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION
@@ -544,469 +764,497 @@ Remarks:
 #ifndef MCGEN_DISABLE_PROVIDER_CODE_GENERATION
 
 //
-// Template Functions 
+// Template Functions
 //
 //
 //Template from manifest : ClassIDDefintionArgs
 //
-#ifndef Template_xqqxz_def
-#define Template_xqqxz_def
+#ifndef McTemplateU0xqqxz_def
+#define McTemplateU0xqqxz_def
 ETW_INLINE
 ULONG
-Template_xqqxz(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in unsigned __int64  ClassID,
-    __in const unsigned int  Token,
-    __in const unsigned int  Flags,
-    __in unsigned __int64  ModuleID,
-    __in_opt PCWSTR  Name
+McTemplateU0xqqxz(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ unsigned __int64  _Arg0,
+    _In_ const unsigned int  _Arg1,
+    _In_ const unsigned int  _Arg2,
+    _In_ unsigned __int64  _Arg3,
+    _In_opt_ PCWSTR  _Arg4
     )
 {
-#define ARGUMENT_COUNT_xqqxz 5
+#define McTemplateU0xqqxz_ARGCOUNT 5
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_xqqxz];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0xqqxz_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &ClassID, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[1], &Token, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[2],&_Arg1, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[2], &Flags, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[3],&_Arg2, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[3], &ModuleID, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[4],&_Arg3, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[4], 
-                        (Name != NULL) ? Name : L"NULL",
-                        (Name != NULL) ? (ULONG)((wcslen(Name) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+    EventDataDescCreate(&EventData[5],
+                        (_Arg4 != NULL) ? _Arg4 : L"NULL",
+                        (_Arg4 != NULL) ? (ULONG)((wcslen(_Arg4) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_xqqxz, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0xqqxz_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : ModuleIDDefintionArgs
 //
-#ifndef Template_xxz_def
-#define Template_xxz_def
+#ifndef McTemplateU0xxz_def
+#define McTemplateU0xxz_def
 ETW_INLINE
 ULONG
-Template_xxz(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in unsigned __int64  ModuleID,
-    __in unsigned __int64  AssemblyID,
-    __in_opt PCWSTR  Path
+McTemplateU0xxz(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ unsigned __int64  _Arg0,
+    _In_ unsigned __int64  _Arg1,
+    _In_opt_ PCWSTR  _Arg2
     )
 {
-#define ARGUMENT_COUNT_xxz 3
+#define McTemplateU0xxz_ARGCOUNT 3
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_xxz];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0xxz_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &ModuleID, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[1], &AssemblyID, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[2],&_Arg1, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[2], 
-                        (Path != NULL) ? Path : L"NULL",
-                        (Path != NULL) ? (ULONG)((wcslen(Path) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+    EventDataDescCreate(&EventData[3],
+                        (_Arg2 != NULL) ? _Arg2 : L"NULL",
+                        (_Arg2 != NULL) ? (ULONG)((wcslen(_Arg2) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_xxz, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0xxz_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : ObjectAllocatedArgs
 //
-#ifndef Template_xxxx_def
-#define Template_xxxx_def
+#ifndef McTemplateU0xxxx_def
+#define McTemplateU0xxxx_def
 ETW_INLINE
 ULONG
-Template_xxxx(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in unsigned __int64  ObjectID,
-    __in unsigned __int64  ClassID,
-    __in unsigned __int64  Size,
-    __in unsigned __int64  RepresentativeSize
+McTemplateU0xxxx(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ unsigned __int64  _Arg0,
+    _In_ unsigned __int64  _Arg1,
+    _In_ unsigned __int64  _Arg2,
+    _In_ unsigned __int64  _Arg3
     )
 {
-#define ARGUMENT_COUNT_xxxx 4
+#define McTemplateU0xxxx_ARGCOUNT 4
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_xxxx];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0xxxx_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &ObjectID, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[1], &ClassID, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[2],&_Arg1, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[2], &Size, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[3],&_Arg2, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[3], &RepresentativeSize, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[4],&_Arg3, sizeof(unsigned __int64)  );
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_xxxx, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0xxxx_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : FinalizeableObjectQueuedArgs
 //
-#ifndef Template_xx_def
-#define Template_xx_def
+#ifndef McTemplateU0xx_def
+#define McTemplateU0xx_def
 ETW_INLINE
 ULONG
-Template_xx(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in unsigned __int64  ObjectID,
-    __in unsigned __int64  ClassID
+McTemplateU0xx(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ unsigned __int64  _Arg0,
+    _In_ unsigned __int64  _Arg1
     )
 {
-#define ARGUMENT_COUNT_xx 2
+#define McTemplateU0xx_ARGCOUNT 2
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_xx];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0xx_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &ObjectID, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[1], &ClassID, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[2],&_Arg1, sizeof(unsigned __int64)  );
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_xx, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0xx_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : HandleDestroyedArgs
 //
-#ifndef Template_x_def
-#define Template_x_def
+#ifndef McTemplateU0x_def
+#define McTemplateU0x_def
 ETW_INLINE
 ULONG
-Template_x(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in unsigned __int64  HandleID
+McTemplateU0x(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ unsigned __int64  _Arg0
     )
 {
-#define ARGUMENT_COUNT_x 1
+#define McTemplateU0x_ARGCOUNT 1
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_x];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0x_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &HandleID, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(unsigned __int64)  );
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_x, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0x_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : RootReferencesArgs
 //
-#ifndef Template_qPR0QR0QR0PR0_def
-#define Template_qPR0QR0QR0PR0_def
+#ifndef McTemplateU0qPR0QR0QR0PR0_def
+#define McTemplateU0qPR0QR0QR0PR0_def
 ETW_INLINE
 ULONG
-Template_qPR0QR0QR0PR0(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in const unsigned int  Count,
-    __in_ecount(Count) const void * *ObjectIDs,
-    __in_ecount(Count) const unsigned int *GCRootKinds,
-    __in_ecount(Count) const unsigned int *GCRootFlags,
-    __in_ecount(Count) const void * *RootIDs
+McTemplateU0qPR0QR0QR0PR0(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ const unsigned int  _Arg0,
+    _In_reads_(_Arg0) const void * *_Arg1,
+    _In_reads_(_Arg0) const unsigned int *_Arg2,
+    _In_reads_(_Arg0) const unsigned int *_Arg3,
+    _In_reads_(_Arg0) const void * *_Arg4
     )
 {
-#define ARGUMENT_COUNT_qPR0QR0QR0PR0 5
+#define McTemplateU0qPR0QR0QR0PR0_ARGCOUNT 5
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_qPR0QR0QR0PR0];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0qPR0QR0QR0PR0_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &Count, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[1],  ObjectIDs, sizeof(PVOID)*Count);
+    EventDataDescCreate(&EventData[2], _Arg1, sizeof(PVOID)*_Arg0);
 
-    EventDataDescCreate(&EventData[2],  GCRootKinds, sizeof(const unsigned int)*Count);
+    EventDataDescCreate(&EventData[3], _Arg2, sizeof(const unsigned int)*_Arg0);
 
-    EventDataDescCreate(&EventData[3],  GCRootFlags, sizeof(const unsigned int)*Count);
+    EventDataDescCreate(&EventData[4], _Arg3, sizeof(const unsigned int)*_Arg0);
 
-    EventDataDescCreate(&EventData[4],  RootIDs, sizeof(PVOID)*Count);
+    EventDataDescCreate(&EventData[5], _Arg4, sizeof(PVOID)*_Arg0);
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_qPR0QR0QR0PR0, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0qPR0QR0QR0PR0_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : ObjectReferencesArgs
 //
-#ifndef Template_xxxqPR3_def
-#define Template_xxxqPR3_def
+#ifndef McTemplateU0xxxqPR3_def
+#define McTemplateU0xxxqPR3_def
 ETW_INLINE
 ULONG
-Template_xxxqPR3(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in unsigned __int64  ObjectID,
-    __in unsigned __int64  ClassID,
-    __in unsigned __int64  Size,
-    __in const unsigned int  ObjectRefCount,
-    __in_ecount(ObjectRefCount) const void * *ObjectRefs
+McTemplateU0xxxqPR3(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ unsigned __int64  _Arg0,
+    _In_ unsigned __int64  _Arg1,
+    _In_ unsigned __int64  _Arg2,
+    _In_ const unsigned int  _Arg3,
+    _In_reads_(_Arg3) const void * *_Arg4
     )
 {
-#define ARGUMENT_COUNT_xxxqPR3 5
+#define McTemplateU0xxxqPR3_ARGCOUNT 5
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_xxxqPR3];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0xxxqPR3_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &ObjectID, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[1], &ClassID, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[2],&_Arg1, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[2], &Size, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[3],&_Arg2, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[3], &ObjectRefCount, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[4],&_Arg3, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[4],  ObjectRefs, sizeof(PVOID)*ObjectRefCount);
+    EventDataDescCreate(&EventData[5], _Arg4, sizeof(PVOID)*_Arg3);
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_xxxqPR3, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0xxxqPR3_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : GCStartArgs
 //
-#ifndef Template_ddt_def
-#define Template_ddt_def
+#ifndef McTemplateU0ddt_def
+#define McTemplateU0ddt_def
 ETW_INLINE
 ULONG
-Template_ddt(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in const signed int  GCID,
-    __in const signed int  Generation,
-    __in const BOOL  Induced
+McTemplateU0ddt(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ const signed int  _Arg0,
+    _In_ const signed int  _Arg1,
+    _In_ const BOOL  _Arg2
     )
 {
-#define ARGUMENT_COUNT_ddt 3
+#define McTemplateU0ddt_ARGCOUNT 3
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_ddt];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0ddt_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &GCID, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(const signed int)  );
 
-    EventDataDescCreate(&EventData[1], &Generation, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[2],&_Arg1, sizeof(const signed int)  );
 
-    EventDataDescCreate(&EventData[2], &Induced, sizeof(const BOOL)  );
+    EventDataDescCreate(&EventData[3],&_Arg2, sizeof(const BOOL)  );
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_ddt, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0ddt_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : GCStopArgs
 //
-#ifndef Template_d_def
-#define Template_d_def
+#ifndef McTemplateU0d_def
+#define McTemplateU0d_def
 ETW_INLINE
 ULONG
-Template_d(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in const signed int  GCID
+McTemplateU0d(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ const signed int  _Arg0
     )
 {
-#define ARGUMENT_COUNT_d 1
+#define McTemplateU0d_ARGCOUNT 1
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_d];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0d_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &GCID, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(const signed int)  );
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_d, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0d_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : ObjectsMovedArgs
 //
-#ifndef Template_qPR0PR0QR0_def
-#define Template_qPR0PR0QR0_def
+#ifndef McTemplateU0qPR0PR0QR0_def
+#define McTemplateU0qPR0PR0QR0_def
 ETW_INLINE
 ULONG
-Template_qPR0PR0QR0(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in const unsigned int  Count,
-    __in_ecount(Count) const void * *RangeBases,
-    __in_ecount(Count) const void * *TargetBases,
-    __in_ecount(Count) const unsigned int *Lengths
+McTemplateU0qPR0PR0QR0(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ const unsigned int  _Arg0,
+    _In_reads_(_Arg0) const void * *_Arg1,
+    _In_reads_(_Arg0) const void * *_Arg2,
+    _In_reads_(_Arg0) const unsigned int *_Arg3
     )
 {
-#define ARGUMENT_COUNT_qPR0PR0QR0 4
+#define McTemplateU0qPR0PR0QR0_ARGCOUNT 4
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_qPR0PR0QR0];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0qPR0PR0QR0_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &Count, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[1],  RangeBases, sizeof(PVOID)*Count);
+    EventDataDescCreate(&EventData[2], _Arg1, sizeof(PVOID)*_Arg0);
 
-    EventDataDescCreate(&EventData[2],  TargetBases, sizeof(PVOID)*Count);
+    EventDataDescCreate(&EventData[3], _Arg2, sizeof(PVOID)*_Arg0);
 
-    EventDataDescCreate(&EventData[3],  Lengths, sizeof(const unsigned int)*Count);
+    EventDataDescCreate(&EventData[4], _Arg3, sizeof(const unsigned int)*_Arg0);
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_qPR0PR0QR0, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0qPR0PR0QR0_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : ObjectsSurvivedArgs
 //
-#ifndef Template_qPR0QR0_def
-#define Template_qPR0QR0_def
+#ifndef McTemplateU0qPR0QR0_def
+#define McTemplateU0qPR0QR0_def
 ETW_INLINE
 ULONG
-Template_qPR0QR0(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in const unsigned int  Count,
-    __in_ecount(Count) const void * *RangeBases,
-    __in_ecount(Count) const unsigned int *Lengths
+McTemplateU0qPR0QR0(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ const unsigned int  _Arg0,
+    _In_reads_(_Arg0) const void * *_Arg1,
+    _In_reads_(_Arg0) const unsigned int *_Arg2
     )
 {
-#define ARGUMENT_COUNT_qPR0QR0 3
+#define McTemplateU0qPR0QR0_ARGCOUNT 3
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_qPR0QR0];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0qPR0QR0_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &Count, sizeof(const unsigned int)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(const unsigned int)  );
 
-    EventDataDescCreate(&EventData[1],  RangeBases, sizeof(PVOID)*Count);
+    EventDataDescCreate(&EventData[2], _Arg1, sizeof(PVOID)*_Arg0);
 
-    EventDataDescCreate(&EventData[2],  Lengths, sizeof(const unsigned int)*Count);
+    EventDataDescCreate(&EventData[3], _Arg2, sizeof(const unsigned int)*_Arg0);
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_qPR0QR0, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0qPR0QR0_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : (null)
 //
-#ifndef TemplateEventDescriptor_def
-#define TemplateEventDescriptor_def
-
-
+#ifndef McTemplateU0_def
+#define McTemplateU0_def
 ETW_INLINE
 ULONG
-TemplateEventDescriptor(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor
+McTemplateU0(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor
     )
 {
-    return EventWrite(RegHandle, Descriptor, 0, NULL);
+#define McTemplateU0_ARGCOUNT 0
+
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0_ARGCOUNT + 1];
+
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : ProfilerErrorArgs
 //
-#ifndef Template_xz_def
-#define Template_xz_def
+#ifndef McTemplateU0xz_def
+#define McTemplateU0xz_def
 ETW_INLINE
 ULONG
-Template_xz(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in unsigned __int64  ErrorCode,
-    __in_opt PCWSTR  Message
+McTemplateU0xz(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ unsigned __int64  _Arg0,
+    _In_opt_ PCWSTR  _Arg1
     )
 {
-#define ARGUMENT_COUNT_xz 2
+#define McTemplateU0xz_ARGCOUNT 2
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_xz];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0xz_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &ErrorCode, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[1], 
-                        (Message != NULL) ? Message : L"NULL",
-                        (Message != NULL) ? (ULONG)((wcslen(Message) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+    EventDataDescCreate(&EventData[2],
+                        (_Arg1 != NULL) ? _Arg1 : L"NULL",
+                        (_Arg1 != NULL) ? (ULONG)((wcslen(_Arg1) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_xz, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0xz_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : SamplingRateChangeArgs
 //
-#ifndef Template_xzddffd_def
-#define Template_xzddffd_def
+#ifndef McTemplateU0xzddffd_def
+#define McTemplateU0xzddffd_def
 ETW_INLINE
 ULONG
-Template_xzddffd(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in unsigned __int64  ClassID,
-    __in_opt PCWSTR  ClassName,
-    __in const signed int  MSecDelta,
-    __in const signed int  MinAllocPerMSec,
-    __in const float  NewAllocPerMSec,
-    __in const float  AllocPerMSec,
-    __in const signed int  SampleRate
+McTemplateU0xzddffd(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ unsigned __int64  _Arg0,
+    _In_opt_ PCWSTR  _Arg1,
+    _In_ const signed int  _Arg2,
+    _In_ const signed int  _Arg3,
+    _In_ const float  _Arg4,
+    _In_ const float  _Arg5,
+    _In_ const signed int  _Arg6
     )
 {
-#define ARGUMENT_COUNT_xzddffd 7
+#define McTemplateU0xzddffd_ARGCOUNT 7
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_xzddffd];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0xzddffd_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &ClassID, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(unsigned __int64)  );
 
-    EventDataDescCreate(&EventData[1], 
-                        (ClassName != NULL) ? ClassName : L"NULL",
-                        (ClassName != NULL) ? (ULONG)((wcslen(ClassName) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+    EventDataDescCreate(&EventData[2],
+                        (_Arg1 != NULL) ? _Arg1 : L"NULL",
+                        (_Arg1 != NULL) ? (ULONG)((wcslen(_Arg1) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
 
-    EventDataDescCreate(&EventData[2], &MSecDelta, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[3],&_Arg2, sizeof(const signed int)  );
 
-    EventDataDescCreate(&EventData[3], &MinAllocPerMSec, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[4],&_Arg3, sizeof(const signed int)  );
 
-    EventDataDescCreate(&EventData[4], &NewAllocPerMSec, sizeof(const float)  );
+    EventDataDescCreate(&EventData[5],&_Arg4, sizeof(const float)  );
 
-    EventDataDescCreate(&EventData[5], &AllocPerMSec, sizeof(const float)  );
+    EventDataDescCreate(&EventData[6],&_Arg5, sizeof(const float)  );
 
-    EventDataDescCreate(&EventData[6], &SampleRate, sizeof(const signed int)  );
+    EventDataDescCreate(&EventData[7],&_Arg6, sizeof(const signed int)  );
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_xzddffd, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0xzddffd_ARGCOUNT + 1, EventData);
+}
+#endif
+
+//
+//Template from manifest : CallEnterArgs
+//
+#ifndef McTemplateU0xq_def
+#define McTemplateU0xq_def
+ETW_INLINE
+ULONG
+McTemplateU0xq(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ unsigned __int64  _Arg0,
+    _In_ const unsigned int  _Arg1
+    )
+{
+#define McTemplateU0xq_ARGCOUNT 2
+
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0xq_ARGCOUNT + 1];
+
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(unsigned __int64)  );
+
+    EventDataDescCreate(&EventData[2],&_Arg1, sizeof(const unsigned int)  );
+
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0xq_ARGCOUNT + 1, EventData);
 }
 #endif
 
 //
 //Template from manifest : SendManifestArgs
 //
-#ifndef Template_cccchhs_def
-#define Template_cccchhs_def
+#ifndef McTemplateU0cccchhs_def
+#define McTemplateU0cccchhs_def
 ETW_INLINE
 ULONG
-Template_cccchhs(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in const UCHAR  Format,
-    __in const UCHAR  MajorVersion,
-    __in const UCHAR  MinorVersion,
-    __in const UCHAR  Magic,
-    __in const unsigned short  TotalChunks,
-    __in const unsigned short  ChunkNumger,
-    __in_opt LPCSTR  Data
+McTemplateU0cccchhs(
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ const UCHAR  _Arg0,
+    _In_ const UCHAR  _Arg1,
+    _In_ const UCHAR  _Arg2,
+    _In_ const UCHAR  _Arg3,
+    _In_ const unsigned short  _Arg4,
+    _In_ const unsigned short  _Arg5,
+    _In_opt_ LPCSTR  _Arg6
     )
 {
-#define ARGUMENT_COUNT_cccchhs 7
+#define McTemplateU0cccchhs_ARGCOUNT 7
 
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_cccchhs];
+    EVENT_DATA_DESCRIPTOR EventData[McTemplateU0cccchhs_ARGCOUNT + 1];
 
-    EventDataDescCreate(&EventData[0], &Format, sizeof(const UCHAR)  );
+    EventDataDescCreate(&EventData[1],&_Arg0, sizeof(const UCHAR)  );
 
-    EventDataDescCreate(&EventData[1], &MajorVersion, sizeof(const UCHAR)  );
+    EventDataDescCreate(&EventData[2],&_Arg1, sizeof(const UCHAR)  );
 
-    EventDataDescCreate(&EventData[2], &MinorVersion, sizeof(const UCHAR)  );
+    EventDataDescCreate(&EventData[3],&_Arg2, sizeof(const UCHAR)  );
 
-    EventDataDescCreate(&EventData[3], &Magic, sizeof(const UCHAR)  );
+    EventDataDescCreate(&EventData[4],&_Arg3, sizeof(const UCHAR)  );
 
-    EventDataDescCreate(&EventData[4], &TotalChunks, sizeof(const unsigned short)  );
+    EventDataDescCreate(&EventData[5],&_Arg4, sizeof(const unsigned short)  );
 
-    EventDataDescCreate(&EventData[5], &ChunkNumger, sizeof(const unsigned short)  );
+    EventDataDescCreate(&EventData[6],&_Arg5, sizeof(const unsigned short)  );
 
-    EventDataDescCreate(&EventData[6], 
-                        (Data != NULL) ? Data : "NULL",
-                        (Data != NULL) ? (ULONG)((strlen(Data) + 1) * sizeof(CHAR)) : (ULONG)sizeof("NULL"));
+    EventDataDescCreate(&EventData[7],
+                        (_Arg6 != NULL) ? _Arg6 : "NULL",
+                        (_Arg6 != NULL) ? (ULONG)((strlen(_Arg6) + 1) * sizeof(CHAR)) : (ULONG)sizeof("NULL"));
 
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_cccchhs, EventData);
+    return McGenEventWriteUM(Context, Descriptor, McTemplateU0cccchhs_ARGCOUNT + 1, EventData);
 }
 #endif
 

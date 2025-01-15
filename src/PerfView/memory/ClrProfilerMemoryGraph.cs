@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
-using ClrProfiler;
+﻿using ClrProfiler;
 using FastSerialization;
-using Microsoft.Diagnostics.Tracing.Parsers;
+using System.Collections.Generic;
 using Address = System.UInt64;
 
 namespace Graphs
@@ -37,7 +35,10 @@ namespace Graphs
             {
                 var profilerType = m_clrProfilerParser.GetTypeById((ProfilerTypeID)profilerTypeId);
                 if (profilerType == null)
+                {
                     continue;
+                }
+
                 var module = profilerType.Module;
                 if (module != null && profilerTypeId < m_profilerTypeToNodeType.Count)
                 {
@@ -51,7 +52,7 @@ namespace Graphs
             }
 
             // Now we have module information, process the defer local and static processing
-            foreach(var deferedRoot in m_deferedRoots)
+            foreach (var deferedRoot in m_deferedRoots)
             {
                 ProfilerType profilerType = m_clrProfilerParser.GetTypeById(deferedRoot.typeID);
                 var appDomainNode = m_rootNode.FindOrCreateChild("[appdomain " + deferedRoot.appDomainName + "]");
@@ -111,11 +112,12 @@ namespace Graphs
 
             // Unfortunately we don't know the module name until late in the trace, so 
             // we have to defer the work until then.  So just remember what we needs to do. 
-            m_deferedRoots.Add(new DeferedRoot {
+            m_deferedRoots.Add(new DeferedRoot
+            {
                 name = fieldName,
                 nodeIndex = GetNodeIndex(objectAddress),
                 typeID = typeID,
-                prefix =  threadID == 0 ? "static" : "threadStatic",
+                prefix = threadID == 0 ? "static" : "threadStatic",
                 appDomainName = appDomainName,
             });
         }
@@ -137,15 +139,21 @@ namespace Graphs
             // There may be more than one heap dump in the trace (if CLRProfiler collected it).
             // For now we simply choose the last by starting over if we see another heap dump
             if (m_seenObjects)
+            {
                 Clear();
+            }
 
             m_hasGCRootInfo = true;
             if (objectAddress == 0)
+            {
                 return;
+            }
 
             // Ignore weak references as they are not keeping things alive. 
             if ((rootFlags & GcRootFlags.WeakRef) != 0)
+            {
                 return;
+            }
 
             // TODO we can do better by looking at flags.  
             m_rootNodeForUnknownRoot.AddChild(GetNodeIndex(objectAddress));
@@ -155,15 +163,21 @@ namespace Graphs
             // SOS does not generate GCRoot information, so we fall back to using the roots passed to use on HeapDump
             // in that case.   Otherwise we use the information gathered from the GCRoots (ClrProfiler)
             if (m_hasGCRootInfo)
+            {
                 return;
+            }
 
             // There may be more than one heap dump in the trace (if CLRProfiler collected it).
             // For now we simply choose the last by starting over if we see another heap dump
             if (m_seenObjects)
+            {
                 Clear();
+            }
 
             foreach (var root in roots)
+            {
                 m_rootNodeForUnknownRoot.AddChild(GetNodeIndex(root));
+            }
         }
 
         private void OnObjectDescription(Address objectAddress, ProfilerTypeID typeId, uint size, List<Address> pointsTo)
@@ -171,9 +185,12 @@ namespace Graphs
             var nodeIndex = GetNodeIndex(objectAddress);
             m_tempChildren.Clear();
             for (int i = 0; i < pointsTo.Count; i++)
+            {
                 m_tempChildren.Add(GetNodeIndex(pointsTo[i]));
+            }
+
             var typeIndex = GetNodeTypeIndex(typeId);
-            this.SetNode(nodeIndex, typeIndex, (int)size, m_tempChildren);
+            SetNode(nodeIndex, typeIndex, (int)size, m_tempChildren);
         }
         private NodeTypeIndex GetNodeTypeIndex(ProfilerTypeID typeId)
         {
@@ -186,10 +203,14 @@ namespace Graphs
                 int newSize = typeIdasInt + 100;
                 m_profilerTypeToNodeType.Count = newSize;
                 for (int i = prevSize; i < newSize; i++)
+                {
                     m_profilerTypeToNodeType[i] = NodeTypeIndex.Invalid;
+                }
             }
             else
+            {
                 ret = m_profilerTypeToNodeType[typeIdasInt];
+            }
 
             if (ret == NodeTypeIndex.Invalid)
             {
@@ -203,7 +224,7 @@ namespace Graphs
             return ret;
         }
 
-        class DeferedRoot
+        private class DeferedRoot
         {
             public string name;
             public ProfilerTypeID typeID;
@@ -222,77 +243,17 @@ namespace Graphs
         private bool m_hasGCRootInfo;
         private MemoryNodeBuilder m_rootNode;
         private MemoryNodeBuilder m_rootNodeForUnknownRoot;
-        List<DeferedRoot> m_deferedRoots;
+        private List<DeferedRoot> m_deferedRoots;
 
-        // TODO decide if this is worth it 
-#if false
-    /// <summary>
-    /// AddressDictionary is a optimized Dictionary<Address, NodeIndex>.   It expect its caller
-    /// to be able to reload all the key-value pairs at any time.  AddressDictionary indicates
-    /// it wants this by calling the reload() delegate.   It uses this whenever it needs to rehash
-    /// 
-    /// By forcing the caller to be ablet to do this, AddressDictionary does not need to store the
-    /// key of the key-value pairs, which saves memory.   As a result AddressDictionary is very lean
-    /// (roughly 4 bytes per entry * 1/HashLoadFactor).  
-    /// </summary>
-    class AddressDictionary
-    {
-        public AddressDictionary(int size, MemoryGraph graph)
-        {
-            m_hashArray = new NodeIndex[size];
-            m_collisions = new Dictionary<Address, NodeIndex>(size / 20 + 1);
-            m_graph = graph;
-        }
-        public bool TryGetValue(Address key, out NodeIndex value)
-        {
-            int hash = ((int)((ulong)key / 16)) % m_hashArray.Length;
-            value = m_hashArray[hash];
-            if ((uint) value < (uint) m_graph.m_nodeAddresses.Count && m_graph.m_nodeAddresses[(int) value] == key)
-                return true;
-            return m_collisions.TryGetValue(key, out value);
-        }
-        public void Add(Address key, NodeIndex value)
-        {
-            // We go until 60 % fill factor
-            if (m_count / 10 > m_hashArray.Length / 8)
-            {
-                // Clear the Address to NodeIndex table.
-                m_collisions.Clear();
-
-                var newLen = m_hashArray.Length * 2;
-                if (m_hashArray.Length > 10000000)
-                    newLen = m_hashArray.Length * 3 / 2;
-                m_hashArray = new NodeIndex[newLen];
-                m_count = 0;
-
-                // Reload all the values.  
-                for (int i = 0; i < m_graph.m_nodeAddresses.Count-1; i++) // -1 is because we have already increased the count
-                    m_graph.m_addressToNodeIndex.Add(m_graph.m_nodeAddresses[i], (NodeIndex)i);
-            }
-            m_count++;
-            int hash = ((int)((ulong)key / 16)) % m_hashArray.Length;
-            var hashVal = m_hashArray[hash];
-            if (hashVal == 0 && value != 0)
-                m_hashArray[hash] = value;
-            else
-                m_collisions.Add(key, value);
-        }
-
-        #region private
-        MemoryGraph m_graph;
-        NodeIndex[] m_hashArray;
-        Dictionary<Address, NodeIndex> m_collisions;
-        int m_count;
-        #endregion
-    }
-#endif
         void IFastSerializable.ToStream(Serializer serializer)
         {
             base.ToStream(serializer);
             // Write out the Memory addresses of each object 
             serializer.Write(m_nodeAddresses.Count);
             for (int i = 0; i < m_nodeAddresses.Count; i++)
+            {
                 serializer.Write((long)m_nodeAddresses[i]);
+            }
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -301,10 +262,11 @@ namespace Graphs
             m_nodeAddresses.Clear();
             int addressCount = deserializer.ReadInt();
             for (int i = 0; i < addressCount; i++)
+            {
                 m_nodeAddresses.Add((Address)deserializer.ReadInt64());
+            }
         }
 
         #endregion
     }
 }
-        

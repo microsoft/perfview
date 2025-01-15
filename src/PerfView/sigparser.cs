@@ -119,7 +119,7 @@ namespace PerfView
                 if (sigTemp.GetByte(out elemType))
                 {
                     etype = elemType;
-                    this.CopyFrom(sigTemp);
+                    CopyFrom(sigTemp);
                     return true;
                 }
             }
@@ -208,12 +208,15 @@ namespace PerfView
             SigParser sigTemp = new SigParser(this);
 
             if (!sigTemp.SkipAnyVASentinel())
+            {
                 return false;
+            }
 
             byte bElementType = 0;
             if (!sigTemp.GetByte(out bElementType))
+            {
                 return false;
-
+            }
 
             switch (bElementType)
             {
@@ -276,9 +279,13 @@ namespace PerfView
         private bool AtSentinel()
         {
             if (_len > 0)
+            {
                 return _sig[_offs] == ELEMENT_TYPE_SENTINEL;
+            }
             else
+            {
                 return false;
+            }
         }
 
         public bool GetToken(out int token)
@@ -298,12 +305,15 @@ namespace PerfView
             SigParser sigTemp = new SigParser(this);
 
             if (!sigTemp.SkipAnyVASentinel())
+            {
                 return false;
+            }
 
             byte bElementType = 0;
             if (!sigTemp.PeekByte(out bElementType))
+            {
                 return false;
-
+            }
 
             while ((ELEMENT_TYPE_CMOD_REQD == bElementType) || (ELEMENT_TYPE_CMOD_OPT == bElementType))
             {
@@ -311,10 +321,14 @@ namespace PerfView
 
                 int token;
                 if (!sigTemp.GetToken(out token))
+                {
                     return false;
+                }
 
                 if (!sigTemp.PeekByte(out bElementType))
+                {
                     return false;
+                }
             }
 
             // Following custom modifiers must be an element type value which is less than ELEMENT_TYPE_MAX, or one of the other element types
@@ -338,13 +352,16 @@ namespace PerfView
         {
             SigParser sigTemp = new SigParser(this);
             if (!sigTemp.SkipAnyVASentinel())
+            {
                 return false;
-
+            }
 
             byte bElementType = 0;
 
             if (!sigTemp.PeekByte(out bElementType))
+            {
                 return false;
+            }
 
             while (ELEMENT_TYPE_CMOD_REQD == bElementType ||
                    ELEMENT_TYPE_CMOD_OPT == bElementType ||
@@ -355,10 +372,14 @@ namespace PerfView
 
                 int token;
                 if (!sigTemp.GetToken(out token))
+                {
                     return false;
+                }
 
                 if (!sigTemp.PeekByte(out bElementType))
+                {
                     return false;
+                }
             }
 
             // Following custom modifiers must be an element type value which is less than ELEMENT_TYPE_MAX, or one of the other element types
@@ -382,10 +403,14 @@ namespace PerfView
         {
             byte bElementType = 0;
             if (!PeekByte(out bElementType))
+            {
                 return false;
+            }
 
             if (bElementType == ELEMENT_TYPE_SENTINEL)
+            {
                 SkipBytes(1);
+            }
 
             return true;
         }// SkipAnyVASentinel
@@ -401,7 +426,9 @@ namespace PerfView
         {
             int typ;
             if (!GetElemType(out typ))
+            {
                 return false;
+            }
 
             int tmp;
             if (!IsPrimitive(typ))
@@ -414,7 +441,10 @@ namespace PerfView
                     case ELEMENT_TYPE_VAR:
                     case ELEMENT_TYPE_MVAR:
                         if (!GetData(out tmp))
+                        {
                             return false;
+                        }
+
                         break;
 
                     case ELEMENT_TYPE_OBJECT:
@@ -427,46 +457,72 @@ namespace PerfView
                     case ELEMENT_TYPE_PINNED:
                     case ELEMENT_TYPE_SZARRAY:
                         if (!SkipExactlyOne())
+                        {
                             return false;
+                        }
+
                         break;
 
                     case ELEMENT_TYPE_VALUETYPE:
                     case ELEMENT_TYPE_CLASS:
                         if (!GetToken(out tmp))
+                        {
                             return false;
+                        }
+
                         break;
 
                     case ELEMENT_TYPE_FNPTR:
                         if (!SkipSignature())
+                        {
                             return false;
+                        }
+
                         break;
 
                     case ELEMENT_TYPE_ARRAY:
                         // Skip element type
                         if (!SkipExactlyOne())
+                        {
                             return false;
+                        }
 
                         // Get rank;
                         int rank;
                         if (!GetData(out rank))
+                        {
                             return false;
+                        }
 
                         if (rank > 0)
                         {
                             int sizes;
                             if (!GetData(out sizes))
+                            {
                                 return false;
+                            }
 
                             while (sizes-- != 0)
+                            {
                                 if (!GetData(out tmp))
+                                {
                                     return false;
+                                }
+                            }
 
                             int bounds;
                             if (!GetData(out bounds))
+                            {
                                 return false;
+                            }
+
                             while (bounds-- != 0)
+                            {
                                 if (!GetData(out tmp))
+                                {
                                     return false;
+                                }
+                            }
                         }
                         break;
 
@@ -476,22 +532,32 @@ namespace PerfView
 
                     case ELEMENT_TYPE_INTERNAL:
                         if (!GetData(out tmp))
+                        {
                             return false;
+                        }
+
                         break;
 
                     case ELEMENT_TYPE_GENERICINST:
                         // Skip generic type
                         if (!SkipExactlyOne())
+                        {
                             return false;
+                        }
 
                         // Get number of parameters
                         int argCnt;
                         if (!GetData(out argCnt))
+                        {
                             return false;
+                        }
 
                         // Skip the parameters
                         while (argCnt-- != 0)
+                        {
                             SkipExactlyOne();
+                        }
+
                         break;
                 }
             }
@@ -506,7 +572,9 @@ namespace PerfView
             // Skip calling convention
             int uCallConv, tmp;
             if (!GetCallingConvInfo(out uCallConv))
+            {
                 return false;
+            }
 
             if ((uCallConv == IMAGE_CEE_CS_CALLCONV_FIELD) ||
                 (uCallConv == IMAGE_CEE_CS_CALLCONV_LOCAL_SIG))
@@ -516,16 +584,24 @@ namespace PerfView
 
             // Skip type parameter count
             if ((uCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC) == IMAGE_CEE_CS_CALLCONV_GENERIC)
+            {
                 if (!GetData(out tmp))
+                {
                     return false;
+                }
+            }
 
             // Get arg count;
             if (!GetData(out pcArgs))
+            {
                 return false;
+            }
 
             // Skip return type;
             if (!SkipExactlyOne())
+            {
                 return false;
+            }
 
             return true;
         } // SigParser::SkipMethodHeaderSignature
@@ -535,13 +611,19 @@ namespace PerfView
         {
             int args;
             if (!SkipMethodHeaderSignature(out args))
+            {
                 return false;
+            }
 
 
             // Skip args.
             while (args-- > 0)
+            {
                 if (!SkipExactlyOne())
+                {
                     return false;
+                }
+            }
 
             return false;
         }
@@ -549,7 +631,9 @@ namespace PerfView
         private bool UncompressToken(out int token, out int size)
         {
             if (!UncompressData(out token, out size))
+            {
                 return false;
+            }
 
             var tkType = s_tkCorEncodeToken[token & 3];
             token = (token >> 2) | tkType;
@@ -568,7 +652,9 @@ namespace PerfView
             pDataLen = 0;
 
             if (_len <= 0)
+            {
                 return false;
+            }
 
             byte byte0 = GetSig(0);
 
@@ -665,7 +751,7 @@ namespace PerfView
         private const int mdtName = 0x71000000;       //
         private const int mdtBaseType = 0x72000000;       // Leave this on the high end value. This does not correspond to metadata table
 
-        private readonly static int[] s_tkCorEncodeToken = new int[] { mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType };
+        private static readonly int[] s_tkCorEncodeToken = new int[] { mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType };
 
         private const int IMAGE_CEE_CS_CALLCONV_DEFAULT = 0x0;
 

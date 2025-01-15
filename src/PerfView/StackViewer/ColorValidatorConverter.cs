@@ -4,7 +4,7 @@ using System.Windows.Data;
 
 namespace PerfView.StackViewer
 {
-    class ColorValidatorConverter: IValueConverter
+    internal class ColorValidatorConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {

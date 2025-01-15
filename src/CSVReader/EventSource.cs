@@ -1,9 +1,8 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace EventSources
 {
@@ -68,6 +67,10 @@ namespace EventSources
         /// Optionally you can provide a list of columns available.  
         /// </summary>
         public virtual ICollection<string> AllColumnNames(List<string> eventNames) { return null; }
+        /// <summary>
+        /// An optional filter query expression tree that'll be used to filter different events. 
+        /// </summary>
+        public FilterQueryExpressionTree FilterQueryExpressionTree { get; set; } = null;
 
         /// <summary>
         /// The number of fields that are NOT put in the 'rest' column.  Defaults to 4
@@ -92,12 +95,15 @@ namespace EventSources
 
         /// <summary>
         /// Utility function that takes a specification for columns (which can include *) and the raw list of
-        /// all possible columns and returns the list that match the specification. 
+        /// all possible columns and returns the list that match the specification. This function also extracts the event filter query and creates a FilterQueryExpressionTree.
         /// </summary>
         public static List<string> ParseColumns(string columnSpec, ICollection<string> columnNames)
         {
             if (string.IsNullOrWhiteSpace(columnSpec))
+            {
                 return null;
+            }
+
             var ret = new List<string>();
             var regex = new Regex(@"\s*(\S+)\s*");
             var index = 0;
@@ -112,17 +118,27 @@ namespace EventSources
                     {
                         // If it was already specified, leave it out
                         for (int i = 0; i < startCount; i++)
+                        {
                             if (ret[i] == colName)
+                            {
                                 goto Next;
+                            }
+                        }
+
                         ret.Add(colName);
-                    Next: ;
+                        Next:;
                     }
                 }
                 else
+                {
                     ret.Add(name);
+                }
+
                 index += match.Groups[0].Length;
                 if (index == columnSpec.Length)
+                {
                     break;
+                }
             }
             return ret;
         }
@@ -142,7 +158,7 @@ namespace EventSources
         /// <summary>
         /// The names of the fields in this record
         /// </summary>
-        public virtual string[] FieldNames { get { return null; } } 
+        public virtual string[] FieldNames { get { return null; } }
         // TODO FIX NOW should be abstract, get CSV and ETW subclasses to implement
         /// <summary>
         /// This fetches fields from the record.  The index corresponds to the FieldNames array.
@@ -157,13 +173,19 @@ namespace EventSources
         /// <summary>
         /// Displays fields as key-value pairs.  
         /// </summary>
-        public virtual string Rest { get { return m_displayFields[5]; } set { m_displayFields[5] = value; } }
+        public virtual string Rest { get { return m_displayFields[11]; } set { m_displayFields[11] = value; } }
         // The properties are for binding in the GUI.   
         // set property is a hack to allow selection in the GUI (which wants two way binding for that case)
         public string DisplayField1 { get { return m_displayFields[0]; } set { } }
         public string DisplayField2 { get { return m_displayFields[1]; } set { } }
         public string DisplayField3 { get { return m_displayFields[2]; } set { } }
         public string DisplayField4 { get { return m_displayFields[3]; } set { } }
+        public string DisplayField5 { get { return m_displayFields[4]; } set { } }
+        public string DisplayField6 { get { return m_displayFields[5]; } set { } }
+        public string DisplayField7 { get { return m_displayFields[6]; } set { } }
+        public string DisplayField8 { get { return m_displayFields[7]; } set { } }
+        public string DisplayField9 { get { return m_displayFields[8]; } set { } }
+        public string DisplayField10 { get { return m_displayFields[9]; } set { } }
 
         // returns true of 'pattern' matches the display fields.  
         public virtual bool Matches(Regex pattern)
@@ -177,8 +199,11 @@ namespace EventSources
         protected void SetDisplayFields(EventSource source)
         {
             if (m_displayFields == null)
-                m_displayFields = new string[5];
-            Debug.Assert(m_displayFields.Length == 5);
+            {
+                m_displayFields = new string[11];
+            }
+
+            Debug.Assert(m_displayFields.Length == 11);
             // TODO FIX NOW NOT DONE 
         }
 
@@ -189,10 +214,10 @@ namespace EventSources
         protected internal string[] m_displayFields;
         protected EventRecord(int numNonRestFields)
         {
-            Debug.Assert(numNonRestFields >= 4 || numNonRestFields == 0);
+            Debug.Assert(numNonRestFields >= 10 || numNonRestFields == 0);
             m_displayFields = new string[numNonRestFields];
         }
-        protected EventRecord() {}
+        protected EventRecord() { }
         #endregion
     }
 }

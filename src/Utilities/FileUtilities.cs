@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.Utilities
 {
@@ -17,7 +18,7 @@ namespace Microsoft.Diagnostics.Utilities
     /// <summary>
     /// General purpose utilities dealing with archiveFile system files. 
     /// </summary>
-#if UTILITIES_PUBLIC 
+#if UTILITIES_PUBLIC
     public 
 #endif
     static class FileUtilities
@@ -57,10 +58,15 @@ namespace Microsoft.Diagnostics.Utilities
             {
                 string dir = Path.GetDirectoryName(fileSpec);
                 if (dir.Length == 0)
+                {
                     dir = ".";
+                }
+
                 string file = Path.GetFileName(fileSpec);
                 foreach (string fileName in DirectoryUtilities.GetFiles(dir, file, searchOpt))
+                {
                     yield return fileName;
+                }
             }
         }
 
@@ -79,10 +85,14 @@ namespace Microsoft.Diagnostics.Utilities
         public static bool ForceDelete(string fileName)
         {
             if (Directory.Exists(fileName))
+            {
                 return DirectoryUtilities.Clean(fileName) != 0;
+            }
 
             if (!File.Exists(fileName))
+            {
                 return true;
+            }
 
             // First move the archiveFile out of the way, so that even if it is locked
             // The original archiveFile is still gone.  
@@ -96,7 +106,10 @@ namespace Microsoft.Diagnostics.Utilities
                 {
                     fileToDelete = fileName + "." + i.ToString() + ".deleting";
                     if (!File.Exists(fileToDelete))
+                    {
                         break;
+                    }
+
                     tryToDeleteOtherFiles = true;
                 }
                 try
@@ -108,14 +121,21 @@ namespace Microsoft.Diagnostics.Utilities
                     fileToDelete = fileName;
                 }
             }
-            bool ret = TryDelete(fileToDelete);
-            if (tryToDeleteOtherFiles)
+
+            bool ret = false;
+            try
             {
-                // delete any old *.deleting files that may have been left around 
-                string deletePattern = Path.GetFileName(fileName) + @".*.deleting";
-                foreach (string deleteingFile in Directory.GetFiles(Path.GetDirectoryName(fileName), deletePattern))
-                    TryDelete(deleteingFile);
-            }
+                ret = TryDelete(fileToDelete);
+                if (tryToDeleteOtherFiles)
+                {
+                    // delete any old *.deleting files that may have been left around 
+                    string deletePattern = Path.GetFileName(fileName) + @".*.deleting";
+                    foreach (string deleteingFile in Directory.GetFiles(Path.GetDirectoryName(fileName), deletePattern))
+                    {
+                        TryDelete(deleteingFile);
+                    }
+                }
+            } catch { };
             return ret;
         }
 
@@ -126,7 +146,10 @@ namespace Microsoft.Diagnostics.Utilities
         {
             bool ret = false;
             if (!File.Exists(fileName))
+            {
                 return true;
+            }
+
             try
             {
                 FileAttributes attribs = File.GetAttributes(fileName);
@@ -176,10 +199,17 @@ namespace Microsoft.Diagnostics.Utilities
                     int count1 = file1.Read(buffer1, 0, buffer1.Length);
                     int count2 = file2.Read(buffer2, 0, buffer2.Length);
                     if (count1 != count2)
+                    {
                         return false;
+                    }
+
                     for (int i = 0; i < count1; i++)
+                    {
                         if (buffer1[i] != buffer2[i])
+                        {
                             return false;
+                        }
+                    }
                 }
             }
             return true;
@@ -197,7 +227,7 @@ namespace Microsoft.Diagnostics.Utilities
         /// <summary>
         /// Given a path and a superdirectory path relativeToDirectory compute the relative path (the path from) relativeToDirectory
         /// </summary>
-        static public string PathRelativeTo(string path, string relativeToDirectory)
+        public static string PathRelativeTo(string path, string relativeToDirectory)
         {
             Debug.Assert(!relativeToDirectory.EndsWith("\\"));
 
@@ -211,7 +241,10 @@ namespace Microsoft.Diagnostics.Utilities
                 if (i >= fullCurrentDirectory.Length)
                 {
                     if (cFullPath == '\\')
+                    {
                         commonToSlashIndex = i;
+                    }
+
                     break;
                 }
                 char cCurrentDirectory = fullCurrentDirectory[i];
@@ -219,41 +252,87 @@ namespace Microsoft.Diagnostics.Utilities
                 if (cCurrentDirectory != cFullPath)
                 {
                     if (char.IsLower(cCurrentDirectory))
+                    {
                         cCurrentDirectory = (char)(cCurrentDirectory - (char)('a' - 'A'));
+                    }
+
                     if (char.IsLower(cFullPath))
+                    {
                         cFullPath = (char)(cFullPath - (char)('a' - 'A'));
+                    }
+
                     if (cCurrentDirectory != cFullPath)
+                    {
                         break;
+                    }
                 }
 
                 if (cCurrentDirectory == '\\')
+                {
                     commonToSlashIndex = i;
+                }
             }
 
             // There is no common prefix between the two paths, we give up.
             if (commonToSlashIndex < 0)
+            {
                 return path;
+            }
 
             string returnVal = "";
             int nextSlash = commonToSlashIndex;
             for (; ; )
             {
                 if (nextSlash >= fullCurrentDirectory.Length)
+                {
                     break;
+                }
+
                 if (returnVal.Length > 0)
+                {
                     returnVal += "\\";
+                }
+
                 returnVal += @"..";
                 if (nextSlash + 1 == fullCurrentDirectory.Length)
+                {
                     break;
+                }
+
                 nextSlash = fullCurrentDirectory.IndexOf('\\', nextSlash + 1);
                 if (nextSlash < 0)
+                {
                     break;
+                }
             }
 
             string rest = fullPath.Substring(commonToSlashIndex + 1);
             returnVal = Path.Combine(returnVal, rest);
             Debug.Assert(string.Compare(Path.GetFullPath(Path.Combine(relativeToDirectory, returnVal)), fullPath, StringComparison.OrdinalIgnoreCase) == 0);
             return returnVal;
+        }
+
+        /// <summary>
+        /// Returns the file name and extension of the specified path string.
+        /// Path.GetFileName will not trim the file name from a Windows path 
+        /// when running on Unix because `\` is a legal file char on Unix.
+        /// See the Remarks section in the docs: https://learn.microsoft.com/en-us/dotnet/api/system.io.path.getfilename
+        /// This method ignores that logic and provides the string after the last '\' when running on non-Windows platform and Path.GetFileName returns the same string.
+        /// </summary>
+        public static string GetPlatformIndependentFileName(string path)
+        {
+            var fileName = Path.GetFileName(path);
+#if !NETFRAMEWORK
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && string.Equals(path, fileName, StringComparison.Ordinal))
+            {
+                var lastSeparatorIdx = path.LastIndexOf('\\');
+                if (lastSeparatorIdx != -1)
+                {
+                    return path.Substring(lastSeparatorIdx + 1);
+                }
+            }
+#endif
+            return fileName;
         }
     }
 }

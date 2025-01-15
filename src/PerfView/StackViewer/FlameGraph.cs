@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing.Stacks;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Microsoft.Diagnostics.Tracing.Stacks;
 
 namespace PerfView
 {
@@ -23,7 +23,7 @@ namespace PerfView
             public FlameBox(CallTreeNode node, double width, double height, double x, double y)
             {
                 Node = node;
-                TooltipText = $"Method: {node.DisplayName} ({node.InclusiveCount} inclusive samples, {node.InclusiveMetricPercent:F}%)";
+                TooltipText = $"Method: {node.DisplayName} ({node.InclusiveCount} inclusive samples, {node.InclusiveMetricPercent:F}%){(node.InclusiveCount < 0 ? " (Memory gain)" : string.Empty)}";
                 Width = width;
                 Height = height;
                 X = x;
@@ -47,7 +47,7 @@ namespace PerfView
         {
             double maxDepth = GetMaxDepth(callTree.Root);
             double boxHeight = maxHeight / maxDepth;
-            double pixelsPerIncusiveSample = maxWidth / callTree.Root.InclusiveMetric;
+            double pixelsPerIncusiveSample = maxWidth / Math.Abs(callTree.Root.InclusiveMetric);
 
             var rootBox = new FlameBox(callTree.Root, maxWidth, boxHeight, 0, maxHeight - boxHeight);
             yield return rootBox;
@@ -61,23 +61,25 @@ namespace PerfView
                 var parentBox = current.ParentBox;
                 var currentNode = current.Node;
 
-                double nextBoxX = (parentBox.Width - (currentNode.Callees.Sum(child => child.InclusiveMetric) * pixelsPerIncusiveSample)) / 2.0; // centering the starting point
+                double nextBoxX = (parentBox.Width - (currentNode.Callees.Sum(child => Math.Abs(child.InclusiveMetric)) * pixelsPerIncusiveSample)) / 2.0; // centering the starting point
 
                 foreach (var child in currentNode.Callees)
                 {
-                    double childBoxWidth = child.InclusiveMetric * pixelsPerIncusiveSample;
+                    double childBoxWidth = Math.Abs(child.InclusiveMetric) * pixelsPerIncusiveSample;
 
                     var childBox = new FlameBox(child, childBoxWidth, boxHeight, parentBox.X + nextBoxX, parentBox.Y - boxHeight);
                     nextBoxX += childBoxWidth;
 
                     if (child.Callees != null)
+                    {
                         nodesToVisit.Enqueue(new FlamePair(childBox, child));
+                    }
 
                     yield return childBox;
                 }
             }
         }
-        
+
         public static void Export(Canvas flameGraphCanvas, string filePath)
         {
             var rectangle = new Rect(flameGraphCanvas.RenderSize);
@@ -88,7 +90,9 @@ namespace PerfView
             pngEncoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
 
             using (var file = System.IO.File.Create(filePath))
+            {
                 pngEncoder.Save(file);
+            }
         }
 
         private static double GetMaxDepth(CallTreeNode callTree)
@@ -96,8 +100,12 @@ namespace PerfView
             double deepest = 0;
 
             if (callTree.Callees != null)
+            {
                 foreach (var callee in callTree.Callees)
+                {
                     deepest = Math.Max(deepest, GetMaxDepth(callee));
+                }
+            }
 
             return deepest + 1;
         }

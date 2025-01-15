@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 /// <summary>
 /// Things that really should be in System.Array but aren't
@@ -29,10 +27,16 @@ public static class ArrayUtil
     {
         T[] ret = new T[array.Length - count];
         if (index > 0)
+        {
             Array.Copy(array, ret, index);
+        }
+
         int tailCount = ret.Length - index;
         if (tailCount > 0)
+        {
             Array.Copy(array, index + count, ret, index, tailCount);
+        }
+
         return ret;
     }
     /// <summary>
