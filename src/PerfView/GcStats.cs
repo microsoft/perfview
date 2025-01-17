@@ -550,7 +550,7 @@ namespace Stats
                                     return;
                                 }
 
-                                writer.Write(" {0}=\"{1:n3}", type, mt.MarkTimes[(int)type]);
+                                writer.Write(" {0} =\"{1:n3}", type, mt.MarkTimes[(int)type]);
                                 if (mt.MarkPromoted != null)
                                 {
                                     writer.Write("({0})", mt.MarkPromoted[(int)type]);
