@@ -3177,36 +3177,31 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             {
                 foreach (KeyValuePair<int, MarkInfo> item in PerHeapMarkTimes)
                 {
-                    if (item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] == 0.0)
+                    List<(MarkRootType, double)> perRootMarkTime = new List<(MarkRootType, double)>();
+
+                    // Accumulate all the times that have a corresponding mark event.
+                    for (int i = 0; i < item.Value.MarkTimes.Length; i++)
                     {
-                        item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] = StartRelativeMSec;
+                        if (item.Value.MarkTimes[i] != -1)
+                        {
+                            perRootMarkTime.Add(((MarkRootType)i, item.Value.MarkTimes[i]));
+                        }
                     }
 
-                    if (item.Value.MarkTimes[(int)MarkRootType.MarkOverflow] > StartRelativeMSec)
+                    // Sort the perRootMarkTime so we can accumulate the times.
+                    var orderedMarkTimes = perRootMarkTime.OrderBy(x => x.Item2);
+                    for (int orderedDataIdx = 0; orderedDataIdx < orderedMarkTimes.Count(); orderedDataIdx++)
                     {
-                        if (item.Value.MarkTimes[(int)MarkRootType.MarkOlder] == 0.0)
+                        var orderedItem = orderedMarkTimes.ElementAt(orderedDataIdx);
+                        if (orderedDataIdx == 0)
                         {
-                            item.Value.MarkTimes[(int)MarkRootType.MarkOverflow] -= item.Value.MarkTimes[(int)MarkRootType.MarkOlder];
+                            item.Value.MarkTimes[(int)orderedItem.Item1] = orderedItem.Item2 - StartRelativeMSec;
                         }
                         else
                         {
-                            item.Value.MarkTimes[(int)MarkRootType.MarkOverflow] -= item.Value.MarkTimes[(int)MarkRootType.MarkHandles];
+                            item.Value.MarkTimes[(int)orderedItem.Item1] = orderedItem.Item2 - orderedMarkTimes.ElementAt(orderedDataIdx - 1).Item2;
                         }
                     }
-
-                    if (Generation == 2)
-                    {
-                        item.Value.MarkTimes[(int)MarkRootType.MarkOlder] = 0;
-                    }
-                    else
-                    {
-                        item.Value.MarkTimes[(int)MarkRootType.MarkOlder] -= item.Value.MarkTimes[(int)MarkRootType.MarkHandles];
-                    }
-
-                    item.Value.MarkTimes[(int)MarkRootType.MarkHandles] -= item.Value.MarkTimes[(int)MarkRootType.MarkFQ];
-                    item.Value.MarkTimes[(int)MarkRootType.MarkFQ] -= item.Value.MarkTimes[(int)MarkRootType.MarkStack];
-                    item.Value.MarkTimes[(int)MarkRootType.MarkStack] -= item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef];
-                    item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] -= StartRelativeMSec;
                 }
             }
             fMarkTimesConverted = true;
@@ -3702,9 +3697,19 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public MarkInfo(bool initPromoted = true)
         {
             MarkTimes = new double[(int)MarkRootType.MarkMax];
+
+            for (int i = 0; i < MarkTimes.Length; i++)
+            {
+                MarkTimes[i] = -1;
+            }
+
             if (initPromoted)
             {
                 MarkPromoted = new long[(int)MarkRootType.MarkMax];
+                for (int i = 0; i < MarkPromoted.Length; i++)
+                {
+                    MarkPromoted[i] = -1;
+                }
             }
         }
     };
