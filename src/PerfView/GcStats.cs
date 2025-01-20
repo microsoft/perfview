@@ -567,14 +567,7 @@ namespace Stats
                             WriteDetailsAboutMarkRootType(MarkRootType.MarkNewFQ);
                             WriteDetailsAboutMarkRootType(MarkRootType.MarkSteal);
                             WriteDetailsAboutMarkRootType(MarkRootType.MarkBGCRoots);
-
-                            // Condition: if !Gen2
-                            if (gc.Generation != 2)
-                            {
-                                writer.Write("\"");
-                                WriteDetailsAboutMarkRootType(MarkRootType.MarkOlder);
-                                writer.Write("\"");
-                            }
+                            WriteDetailsAboutMarkRootType(MarkRootType.MarkOlder);
                         }
                         if (gc.LOHCompactInfos.Count > 0)
                         {
