@@ -543,32 +543,34 @@ namespace Stats
 
                         if (mt != null)
                         {
-                            void WriteDetailsAboutMarkRootType(MarkRootType type)
+                            void WriteMarkRootTypeInfo(MarkRootType type)
                             {
-                                if (mt.MarkTimes[(int)type] == -1)
+                                int markRootIndex = (int)type;
+
+                                if (markRootIndex >= mt.MarkTimes.Length)
                                 {
                                     return;
                                 }
 
-                                writer.Write(" {0} =\"{1:n3}", type, mt.MarkTimes[(int)type]);
+                                if (mt.MarkTimes[markRootIndex] == -1)
+                                {
+                                    return;
+                                }
+
+                                writer.Write(" {0} =\"{1:n3}", type, mt.MarkTimes[markRootIndex]);
                                 if (mt.MarkPromoted != null)
                                 {
-                                    writer.Write("({0})", mt.MarkPromoted[(int)type]);
+                                    writer.Write("({0})", mt.MarkPromoted[markRootIndex]);
                                 }
                                 writer.Write("\"");
                             }
 
-                            WriteDetailsAboutMarkRootType(MarkRootType.MarkStack);
-                            WriteDetailsAboutMarkRootType(MarkRootType.MarkFQ);
-                            WriteDetailsAboutMarkRootType(MarkRootType.MarkHandles);
-                            WriteDetailsAboutMarkRootType(MarkRootType.MarkSizedRef);
-                            WriteDetailsAboutMarkRootType(MarkRootType.MarkOverflow);
-                            WriteDetailsAboutMarkRootType(MarkRootType.MarkDependentHandles);
-                            WriteDetailsAboutMarkRootType(MarkRootType.MarkNewFQ);
-                            WriteDetailsAboutMarkRootType(MarkRootType.MarkSteal);
-                            WriteDetailsAboutMarkRootType(MarkRootType.MarkBGCRoots);
-                            WriteDetailsAboutMarkRootType(MarkRootType.MarkOlder);
+                            foreach (MarkRootType markRootType in Enum.GetValues(typeof(MarkRootType)))
+                            {
+                                WriteMarkRootTypeInfo(markRootType);
+                            }
                         }
+
                         if (gc.LOHCompactInfos.Count > 0)
                         {
                             GCLOHCompactInfo lohCompactInfo = gc.LOHCompactInfos[HeapNum];

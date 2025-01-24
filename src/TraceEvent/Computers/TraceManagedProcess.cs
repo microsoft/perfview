@@ -3175,10 +3175,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
             if (PerHeapMarkTimes != null)
             {
+                List<(MarkRootType, double)> perRootMarkTime = new List<(MarkRootType, double)>((int)MarkRootType.MarkMax);
+
                 foreach (KeyValuePair<int, MarkInfo> item in PerHeapMarkTimes)
                 {
-                    List<(MarkRootType, double)> perRootMarkTime = new List<(MarkRootType, double)>();
-
                     // Accumulate all the times that have a corresponding mark event.
                     for (int i = 0; i < item.Value.MarkTimes.Length; i++)
                     {
@@ -3188,22 +3188,27 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                         }
                     }
 
-                    // Sort the perRootMarkTime so we can accumulate the times.
-                    var orderedMarkTimes = perRootMarkTime.OrderBy(x => x.Item2);
-                    for (int orderedDataIdx = 0; orderedDataIdx < orderedMarkTimes.Count(); orderedDataIdx++)
+                    // Sort the perRootMarkTime in place so we can accumulate the times.
+                    perRootMarkTime.Sort((first, second) => first.Item2.CompareTo(second.Item2));
+
+                    for (int orderedDataIdx = 0; orderedDataIdx < perRootMarkTime.Count; orderedDataIdx++)
                     {
-                        var orderedItem = orderedMarkTimes.ElementAt(orderedDataIdx);
+                        var orderedItem = perRootMarkTime[orderedDataIdx];
                         if (orderedDataIdx == 0)
                         {
                             item.Value.MarkTimes[(int)orderedItem.Item1] = orderedItem.Item2 - StartRelativeMSec;
                         }
                         else
                         {
-                            item.Value.MarkTimes[(int)orderedItem.Item1] = orderedItem.Item2 - orderedMarkTimes.ElementAt(orderedDataIdx - 1).Item2;
+                            var prevItem = perRootMarkTime[orderedDataIdx - 1];
+                            item.Value.MarkTimes[(int)orderedItem.Item1] = orderedItem.Item2 - prevItem.Item2;
                         }
                     }
+
+                    perRootMarkTime.Clear();
                 }
             }
+
             fMarkTimesConverted = true;
         }
 
