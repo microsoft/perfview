@@ -138,6 +138,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     m_FileName = null;
                     m_CircularBufferMB = m_BufferSizeMB;
                 }
+                if ((properties->LogFileMode & TraceEventNativeMethods.EVENT_TRACE_FILE_MODE_SEQUENTIAL) != 0)
+                {
+                    m_MaximumFileMB = (int)properties->MaximumFileSize;
+                }
                 if ((properties->LogFileMode & TraceEventNativeMethods.EVENT_TRACE_NO_PER_PROCESSOR_BUFFERING) != 0)
                 {
                     m_NoPerProcessBuffering = true;
@@ -1164,7 +1168,12 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
                 if (m_MultiFileMB != 0)
                 {
-                    throw new InvalidOperationException("Cannot specify both CircularBufferMB and MultiFileMB.");
+                    throw new InvalidOperationException("Cannot specify more than one of CircularBufferMB, MultiFileMB, and MaximumFileMB.");
+                }
+
+                if (m_MaximumFileMB != 0)
+                {
+                    throw new InvalidOperationException("Cannot specify more than one of CircularBufferMB, MultiFileMB, and MaximumFileMB.");
                 }
 
                 m_CircularBufferMB = value;
@@ -1197,7 +1206,12 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
                 if (m_CircularBufferMB != 0)
                 {
-                    throw new InvalidOperationException("Cannot specify both CircularBufferMB and MultiFileMB.");
+                    throw new InvalidOperationException("Cannot specify more than one of CircularBufferMB, MultiFileMB, and MaximumFileMB.");
+                }
+
+                if (m_MaximumFileMB != 0)
+                {
+                    throw new InvalidOperationException("Cannot specify more than one of CircularBufferMB, MultiFileMB, and MaximumFileMB.");
                 }
 
                 if (!m_FileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
@@ -1222,6 +1236,50 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 m_MultiFileMB = value;
             }
         }
+
+        /// <summary>
+        /// Cause the as a set of files with a given maximum size.   The file name must end in .ETL and the
+        /// output is then a series of files of the form *NNN.ETL (That is it adds a number just before the
+        /// .etl suffix).   If you make your file name *.user.etl then the output will be *.user1.etl, *.user2.etl ...
+        /// And the MergeInPlace command below will merge them all nicely.
+        ///
+        /// You can have more control over this by using a normal sequential file but use the SetFileName()
+        /// method to redirect the data to new files as needed.
+        /// </summary>
+        public int MaximumFileMB
+        {
+            get { return m_MaximumFileMB; }
+            set
+            {
+                if (IsActive)
+                {
+                    throw new InvalidOperationException("Property can't be changed after a provider has started.");
+                }
+
+                if (m_FileName == null)
+                {
+                    throw new InvalidOperationException("MultiFile is only allowed on sessions with files.");
+                }
+
+                if (m_CircularBufferMB != 0)
+                {
+                    throw new InvalidOperationException("Cannot specify more than one of CircularBufferMB, MultiFileMB, and MaximumFileMB.");
+                }
+
+                if (m_MultiFileMB != 0)
+                {
+                    throw new InvalidOperationException("Cannot specify more than one of CircularBufferMB, MultiFileMB, and MaximumFileMB.");
+                }
+
+                if (!m_FileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("FileName must have .etl suffix");
+                }
+
+                m_MaximumFileMB = value;
+            }
+        }
+
         /// <summary>
         /// Sets the size of the buffer the operating system should reserve to avoid lost packets.   Starts out
         /// as a very generous 64MB for files.  If events are lost, this can be increased, but keep in mind that
@@ -2400,6 +2458,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 else
                 {
                     properties->LogFileMode |= TraceEventNativeMethods.EVENT_TRACE_FILE_MODE_SEQUENTIAL;
+                    properties->MaximumFileSize = (uint)m_MaximumFileMB;
                 }
 
                 if (m_FileName.Length > MaxNameSize - 1)
@@ -2557,6 +2616,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         private int m_BufferQuantumKB;
         private int m_CircularBufferMB;
         private int m_MultiFileMB;
+        private int m_MaximumFileMB;
         private bool m_IsPrivateLogger;
         private bool m_IsPrivateInProcLogger;
 
