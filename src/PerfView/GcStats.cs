@@ -515,6 +515,7 @@ namespace Stats
                 {
                     if (gc.TimingInfo[(int)TraceGC.TimingType.MarkRoot].HasValue) { writer.Write(" MarkRoot=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkRoot].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization].HasValue) { writer.Write(" MarkScanFinalization=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.MarkShortWeak].HasValue) { writer.Write(" MarkShortWeak=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkShortWeak].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak].HasValue) { writer.Write(" MarkLongWeak=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.Plan].HasValue) { writer.Write(" Plan=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Plan].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.Relocate].HasValue) { writer.Write(" Relocate=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Relocate].Value); }
@@ -542,44 +543,34 @@ namespace Stats
 
                         if (mt != null)
                         {
-                            writer.Write(" MarkStack =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkStack]);
-                            if (mt.MarkPromoted != null)
+                            void WriteMarkRootTypeInfo(MarkRootType type)
                             {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkStack]);
-                            }
+                                int markRootIndex = (int)type;
 
-                            writer.Write("\" MarkFQ =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkFQ]);
-                            if (mt.MarkPromoted != null)
-                            {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkFQ]);
-                            }
-
-                            writer.Write("\" MarkHandles =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkHandles]);
-                            if (mt.MarkPromoted != null)
-                            {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkHandles]);
-                            }
-
-                            writer.Write("\"");
-                            if (gc.Generation != 2)
-                            {
-                                writer.Write(" MarkOldGen =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOlder]);
-                                if (mt.MarkPromoted != null)
+                                if (markRootIndex >= mt.MarkTimes.Length)
                                 {
-                                    writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOlder]);
+                                    return;
                                 }
 
+                                if (mt.MarkTimes[markRootIndex] == -1)
+                                {
+                                    return;
+                                }
+
+                                writer.Write(" {0} =\"{1:n3}", type, mt.MarkTimes[markRootIndex]);
+                                if (mt.MarkPromoted != null)
+                                {
+                                    writer.Write("({0})", mt.MarkPromoted[markRootIndex]);
+                                }
                                 writer.Write("\"");
                             }
-                            if (mt.MarkTimes[(int)MarkRootType.MarkOverflow] != 0.0)
+
+                            foreach (MarkRootType markRootType in Enum.GetValues(typeof(MarkRootType)))
                             {
-                                writer.Write(" MarkOverflow =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOverflow]);
-                                if (mt.MarkPromoted != null)
-                                {
-                                    writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOverflow]);
-                                }
+                                WriteMarkRootTypeInfo(markRootType);
                             }
                         }
+
                         if (gc.LOHCompactInfos.Count > 0)
                         {
                             GCLOHCompactInfo lohCompactInfo = gc.LOHCompactInfos[HeapNum];
