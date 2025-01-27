@@ -1,0 +1,39 @@
+name: 'Stale: Label and Close Issues'
+on:
+  schedule:
+    - cron: '23 2,14 * * *' # Twice daily at 19 minutes after the hour (random/uncommon time)
+
+  workflow_dispatch:
+    # Manual triggering through the GitHub UI, API, or CLI
+    inputs:
+      daysBeforeStale:
+        required: true
+        default: "365"
+      daysBeforeClose:
+        required: true
+        default: "30"
+      operationsPerRun:
+        required: true
+        default: "4000"
+
+permissions:
+  actions: write # For managing the operation state cache
+  issues: write
+
+jobs:
+  stale:
+    if: github.repository_owner == 'microsoft' # Do not run on forks
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9 # https://github.com/actions/stale/blob/v9/README.md
+        with:
+          ascending: true # Process the oldest issues first
+          stale-issue-label: 'stale'
+          stale-issue-message: "Due to lack of recent activity, this issue has been labeled as 'stale'. It will be closed if no further activity occurs within 30 more days. Any new comment will remove the label."
+          close-issue-message: "This issue will now be closed since it has been labeled 'stale' without activity for 30 days."
+          days-before-stale: ${{ fromJson(inputs.daysBeforeStale || 2192) }} # Default to 6 years if not specified as input
+          days-before-close: ${{ fromJson(inputs.daysBeforeClose || 30  ) }} # Default to 30 days if not specified as input
+          days-before-pr-stale: -1 # Do not label PRs as 'stale'
+          days-before-pr-close: -1 # Do not close PRs labeled as 'stale'
+          operations-per-run: ${{ fromJson(inputs.operationsPerRun || 4000 )}}
