@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Microsoft.Diagnostics.Tracing.Stacks;
 using PerfView.Utilities;
 using static PerfView.FlameGraph;
 
@@ -22,6 +23,7 @@ namespace PerfView
         private List<Visual> visuals = new List<Visual>();
         private FlameBoxesMap flameBoxesMap = new FlameBoxesMap();
         private ToolTip tooltip = new ToolTip() { FontSize = 20.0 };
+        private CallTreeNode selectedNode;
         private ScaleTransform scaleTransform = new ScaleTransform(1.0f, 1.0f, 0.0f, 0.0f);
         private Cursor cursor;
 
@@ -29,6 +31,7 @@ namespace PerfView
         {
             MouseMove += OnMouseMove;
             MouseLeave += OnMouseLeave;
+            MouseRightButtonDown += (s, e) => selectedNode = flameBoxesMap.Find(e.MouseDevice.GetPosition(this)).Node;
             PreviewMouseWheel += OnPreviewMouseWheel;
             MouseLeftButtonDown += OnMouseLeftButtonDown;
             MouseLeftButtonUp += OnMouseLeftButtonUp;
@@ -37,6 +40,8 @@ namespace PerfView
         }
 
         public bool IsEmpty => visuals.Count == 0;
+
+        public CallTreeNodeBase SelectedNode => selectedNode;
 
         protected override int VisualChildrenCount => visuals.Count;
 
@@ -102,7 +107,7 @@ namespace PerfView
             if (!IsEmpty && e.LeftButton == MouseButtonState.Released)
             {
                 var position = scaleTransform.Inverse.Transform(Mouse.GetPosition(this));
-                var tooltipText = flameBoxesMap.Find(position);
+                var tooltipText = flameBoxesMap.Find(position).TooltipText;
                 if (tooltipText != null)
                 {
                     ShowTooltip(tooltipText);
@@ -295,7 +300,7 @@ namespace PerfView
                 }
             }
 
-            internal string Find(Point point)
+            internal FlameBox Find(Point point)
             {
                 foreach (var rowData in boxesMap)
                 {
@@ -323,14 +328,14 @@ namespace PerfView
 
                         if (rowData.Value[mid].X <= point.X && point.X <= (rowData.Value[mid].X + rowData.Value[mid].Width))
                         {
-                            return rowData.Value[mid].TooltipText;
+                            return rowData.Value[mid];
                         }
 
-                        return null;
+                        return default(FlameBox);
                     }
                 }
 
-                return null;
+                return default(FlameBox);
             }
 
             private static int CompareByX(FlameBox left, FlameBox right) => left.X.CompareTo(right.X);
