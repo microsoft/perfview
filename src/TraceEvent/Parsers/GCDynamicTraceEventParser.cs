@@ -368,11 +368,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         public long GCIndex { get { return BitConverter.ToInt64(DataField, 2); } }
         public long AllocSize { get { return BitConverter.ToInt64(DataField, 10); } }
         public short Reason { get { return BitConverter.ToInt16(DataField, 18); } }
-        public short FailToGetMemory { get { return BitConverter.ToInt16(DataField, 20); } }
+        public short FailureGetMemory { get { return BitConverter.ToInt16(DataField, 20); } }
         public long Size { get { return BitConverter.ToInt64(DataField, 22); } }
-        public short IsLOH { get { return BitConverter.ToInt16(DataField, 30); } }
-        public int MemoryLoad { get { return BitConverter.ToInt32(DataField, 32); } }
-        public long AvailablePageFileMB { get { return BitConverter.ToInt64(DataField, 36); } }
+        public bool IsLOH { get { return BitConverter.ToBoolean(DataField, 30); } }
+        public int MemoryLoad { get { return BitConverter.ToInt32(DataField, 31); } }
+        public long AvailablePageFileMB { get { return BitConverter.ToInt64(DataField, 35); } }
 
         internal override TraceEventID ID => TraceEventID.Illegal - 12;
 
@@ -389,7 +389,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
             {
                 if (_payloadNames == null)
                 {
-                    _payloadNames = new string[] { "Version", "GCIndex", "AllocSize", "Reason", "FailToGetMemory", "Size", "IsLOH", "MemoryLoad", "AvailablePageFileMB" };
+                    _payloadNames = new string[] { "Version", "GCIndex", "AllocSize", "Reason", "FailureGetMemory", "Size", "IsLOH", "MemoryLoad", "AvailablePageFileMB" };
                 }
 
                 return _payloadNames;
@@ -404,7 +404,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
                 yield return new KeyValuePair<string, object>("GCIndex", GCIndex);
                 yield return new KeyValuePair<string, object>("AllocSize", AllocSize);
                 yield return new KeyValuePair<string, object>("Reason", Reason);
-                yield return new KeyValuePair<string, object>("FailToGetMemory", FailToGetMemory);
+                yield return new KeyValuePair<string, object>("FailureGetMemory", FailureGetMemory);
                 yield return new KeyValuePair<string, object>("Size", Size);
                 yield return new KeyValuePair<string, object>("IsLOH", IsLOH);
                 yield return new KeyValuePair<string, object>("MemoryLoad", MemoryLoad);
@@ -425,7 +425,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
                 case 3:
                     return Reason;
                 case 4:
-                    return FailToGetMemory;
+                    return FailureGetMemory;
                 case 5:
                     return Size;
                 case 6:
@@ -441,14 +441,36 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         }
     }
 
+    public enum FailureGetMemory
+    {
+        NoFailure = 0,
+        ReserveSegment = 1,
+        CommitSegmentBeg = 2,
+        CommitEphSegment = 3,
+        GrowTable = 4,
+        CommitTable = 5,
+        CommitHeap = 6
+    };
+
+    public enum OOMReason
+    {
+        NoFailure = 0,
+        Budget = 1,
+        CantCommit = 2,
+        CantReserve = 3,
+        LOH = 4,
+        LowMemory = 5,
+        UnproductiveFullGC = 6
+    }
+
     public sealed class OOMDetails
     {
         public long GCIndex { get; internal set; }
         public long AllocSize { get; internal set; }
-        public short Reason { get; internal set; }
-        public short FailToGetMemory { get; internal set; }
+        public OOMReason Reason { get; internal set; }
+        public FailureGetMemory FailureToGetMemory { get; internal set; }
         public long Size { get; internal set; }
-        public short IsLOH { get; internal set; }
+        public bool IsLOH { get; internal set; }
         public int MemoryLoad { get; internal set; }
         public long AvailablePageFileMB { get; internal set; }
     }

@@ -1744,6 +1744,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     m_stats.MaxSizePeakMB = Math.Max(m_stats.MaxSizePeakMB, _gc.HeapSizePeakMB);
                     m_stats.MaxAllocRateMBSec = Math.Max(m_stats.MaxAllocRateMBSec, _gc.AllocRateMBSec);
                     m_stats.MaxSuspendDurationMSec = Math.Max(m_stats.MaxSuspendDurationMSec, _gc.SuspendDurationMSec);
+
+                    foreach (var oom in _gc.OOMDetails)
+                    {
+                        m_stats.OOMDetails.Add(oom);
+                    }
                 }
 
                 m_prvcount = m_gcs.Count;
@@ -4690,6 +4695,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Indicator if PerHeapHistories is present
         /// </summary>
         public bool HasDetailedGCInfo;
+        /// <summary>
+        /// OOMs detected in the trace.
+        /// </summary>
+        public List<OOMDetails> OOMDetails = new List<OOMDetails>();
 
         #region private
 
@@ -5004,12 +5013,20 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         internal static void ProcessOOMEvent(TraceLoadedDotNetRuntime proc, OOMDetailsTraceEvent oomDetailsTrace)
         {
             TraceGC _event = GetLastGC(proc);
-            _event.OOMDetails.Add(new OOMDetails
+            if (_event != null)
             {
-                GCIndex = oomDetailsTrace.GCIndex,
-                //Allocated = oomDetailsTrace.Allocated,
-                Size = oomDetailsTrace.Size,
-            });
+                _event.OOMDetails.Add(new OOMDetails
+                {
+                    GCIndex = oomDetailsTrace.GCIndex,
+                    Reason = (OOMReason)oomDetailsTrace.Reason,
+                    AllocSize = oomDetailsTrace.AllocSize,
+                    FailureToGetMemory = (FailureGetMemory)oomDetailsTrace.FailureGetMemory,
+                    Size = oomDetailsTrace.Size,
+                    IsLOH = oomDetailsTrace.IsLOH,
+                    MemoryLoad = oomDetailsTrace.MemoryLoad,
+                    AvailablePageFileMB = oomDetailsTrace.AvailablePageFileMB,
+                });
+            }
         }
 
         internal static void ProcessGCDynamicEvent(TraceLoadedDotNetRuntime proc, GCDynamicTraceEvent gcDynamic)
