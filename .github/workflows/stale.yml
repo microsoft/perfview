@@ -2,6 +2,7 @@ name: 'Stale: Label and Close Issues'
 on:
   schedule:
     - cron: '23 2,14 * * *' # Twice daily at 23 minutes after the hour (random/uncommon time)
+  workflow_dispatch: # Allows manual triggering
 
 permissions:
   actions: write # For managing the operation state cache
