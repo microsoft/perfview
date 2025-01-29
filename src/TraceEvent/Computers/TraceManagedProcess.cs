@@ -3039,12 +3039,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             Debug.Assert(HeapIndex < gc.PerHeapHistories.Count);
 
+            // If the gen data isn't available for the specific PerHeapHistory, we can't calculate.
+            if (ValidGenData(gc.PerHeapHistories, gen) == false)
+            {
+                return 0;
+            }
+
             long prevObjSize = 0;
             if (gc.Index > 0)
             {
                 // If the previous GC has that heap get its size.
                 var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
-                if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count && perHeapGenData[0].GenData.Length > (int)gen)
+                if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
                 {
                     prevObjSize = perHeapGenData[HeapIndex].GenData[(int)gen].ObjSizeAfter;
                     // Note that for gen3 or gen4 we need to do something extra as its after data may not be updated if the last
