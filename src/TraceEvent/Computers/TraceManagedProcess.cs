@@ -15,7 +15,6 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Utilities;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -3040,7 +3039,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Debug.Assert(HeapIndex < gc.PerHeapHistories.Count);
 
             // If the gen data isn't available for the specific PerHeapHistory, we can't calculate.
-            if (ValidGenData(gc.PerHeapHistories, gen) == false)
+            if (!ValidGenData(gc.PerHeapHistories, gen))
             {
                 return 0;
             }
