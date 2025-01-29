@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -3551,14 +3552,31 @@ namespace PerfView
                                                             // when we do the method rundown below.  
 
                         // Enable rundown provider. (we don't do the loader events since we have done them above
-                        EnableUserProvider(clrRundownSession, "CLRRundown", ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
-                            (ulong)(rundownKeywords & ~ClrRundownTraceEventParser.Keywords.Loader), options);
-
-                        // For V2.0 runtimes you activate the main provider so we do that too.  
-                        if (!parsedArgs.NoV2Rundown)
+                        try
                         {
-                            EnableUserProvider(clrRundownSession, "Clr", ClrTraceEventParser.ProviderGuid,
-                                TraceEventLevel.Verbose, (ulong)rundownKeywords, options);
+                            EnableUserProvider(clrRundownSession, "CLRRundown", ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
+                                (ulong)(rundownKeywords & ~ClrRundownTraceEventParser.Keywords.Loader), options);
+
+                            // For V2.0 runtimes you activate the main provider so we do that too.
+                            if (!parsedArgs.NoV2Rundown)
+                            {
+                                EnableUserProvider(clrRundownSession, "Clr", ClrTraceEventParser.ProviderGuid,
+                                    TraceEventLevel.Verbose, (ulong)rundownKeywords, options);
+                            }
+                        }
+                        catch (COMException ex)
+                        {
+                            // "The instance name passed was not recognized as valid by a WMI data provider."
+                            // This can happen during rundown when RundownMaxMB is set very low and the first enable provider call fills up the file.
+                            // Any further calls to enable providers will fail with this error because the session is stopped automatically.
+                            if (ex.HResult == unchecked((int)0x80071069) && parsedArgs.RundownMaxMB >= 0)
+                            {
+                                LogFile.WriteLine("Ignoring rundown command failure because the rundown session is size-constrained, and the session has already reached its max size.");
+                            }
+                            else
+                            {
+                                throw;
+                            }
                         }
                     }
 
