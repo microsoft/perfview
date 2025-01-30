@@ -2946,7 +2946,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         // Per generation stats.
         internal static double GetGenSizeBeforeMB(List<TraceGC> GCs, TraceGC gc, Gens gen)
         {
-            if (gc.PerHeapHistories != null && gc.PerHeapHistories.Count > 0 && gc.PerHeapHistories[0].GenData.Length > (int)gen)
+            if (ValidGenData(gc.PerHeapHistories, gen))
             {
                 double ret = 0.0;
                 for (int HeapIndex = 0; HeapIndex < gc.PerHeapHistories.Count; HeapIndex++)
@@ -3101,7 +3101,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 {
                     // If the prevous GC has that heap get its size.
                     var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
-                    if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count && perHeapGenData[HeapIndex].GenData.Length > (int)gen)
+                    if (ValidGenData(perHeapGenData, gen))
                     {
                         return perHeapGenData[HeapIndex].GenData[(int)gen].Budget;
                     }
