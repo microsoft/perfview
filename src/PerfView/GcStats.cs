@@ -2,14 +2,18 @@
 using Microsoft.Diagnostics.Tracing.Analysis;
 using Microsoft.Diagnostics.Tracing.Analysis.GC;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Windows.Forms;
 using Utilities;
 
 namespace Stats
@@ -219,6 +223,85 @@ namespace Stats
                     writer.WriteLine("<P><I>Only showing {0} of {1} rows.</I></P>", resultsToShow, runtime.GC.Stats().FinalizedObjects.Count);
                 }
                 writer.WriteLine("<P><A HREF=\"command:excelFinalization/{0}\">View the full list</A> in Excel.<P>", stats.ProcessID);
+            }
+
+
+            if (runtime.GC.Stats().OOMDetails.Count > 0)
+            {
+                string InterpretOOMReason(OOMReason reason)
+                {
+                    switch (reason)
+                    {
+                        case OOMReason.Budget:
+                        case OOMReason.CantReserve: 
+                            return "OOM was due to an internal .Net error, likely a bug in the GC";
+                        case OOMReason.CantCommit:
+                            return "Didn't have enough memory to commit";
+                        case OOMReason.LOH:
+                            return "Didn't have enough memory to allocate an LOH segment";
+                        case OOMReason.LowMemory:
+                            return "Low on memory during GC";
+                        case OOMReason.UnproductiveFullGC:
+                            return "Could not do a full GC";
+                        default:
+                            return reason.ToString(); // shouldn't happen, we handle all cases above
+                    }
+                }
+
+                string InterpretFailureGetMemory(FailureGetMemory fgm)
+                {
+                    switch (fgm)
+                    {
+                        case FailureGetMemory.ReserveSegment:
+                            return "Failed to reserve memory";
+                        case FailureGetMemory.CommitSegmentBeg:
+                            return "Didn't have enough memory to commit beginning of the segment";
+                        case FailureGetMemory.CommitEphSegment:
+                            return "Didn't have enough memory to commit the new ephemeral segment";
+                        case FailureGetMemory.GrowTable:
+                            return "Didn't have enough memory to grow the internal GC data structures";
+                        case FailureGetMemory.CommitTable:
+                            return "Didn't have enough memory to commit the internal GC data structures";
+                        case FailureGetMemory.CommitHeap:
+                            return "Didn't have enough memory to commit the heap.";
+                        default:
+                            return fgm.ToString();
+                    }
+                }
+
+                void WriteOOMHeader()
+                {
+                    writer.WriteLine(@"<TR>
+                                        <TH>GC Index</TH>
+                                        <TH>Reason</TH>
+                                        <TH>Failure Get Memory Reason</TH>
+                                        <TH>Is LOH</TH>
+                                        <TH>Available Page Memory (MB)</TH>
+                                        <TH>Memory Load (%)</TH>
+                                       </TR>");
+                }
+
+                void WriteOOMRow(OOMDetails oomDetails)
+                {
+                    writer.WriteLine("<TR>" +
+                        $"<TD Align=\"Center\">{oomDetails.GCIndex}</TD>" +
+                        $"<TD Align=\"Center\">{InterpretOOMReason(oomDetails.Reason)}</TD>" +
+                        $"<TD Align=\"Center\">{InterpretFailureGetMemory(oomDetails.FailureToGetMemory)}</TD>" +
+                        $"<TD Align=\"Center\">{oomDetails.IsLOH}</TD>" +
+                        $"<TD Align=\"Center\">{oomDetails.AvailablePageFileMB}</TD>" +
+                        $"<TD Align=\"Center\">{oomDetails.MemoryLoad}</TD>" +
+                        "</TR>");
+                }
+
+                writer.WriteLine("<HR/>");
+                writer.WriteLine($"<H4><A Name=\"OOM_{stats.ProcessID}\">OOM Details for {stats.ProcessID,5}: {stats.Name}<A></H4>");
+                writer.WriteLine("<Center><Table Border=\"1\">");
+                WriteOOMHeader();
+                foreach (var oomDetails in runtime.GC.Stats().OOMDetails)
+                {
+                    WriteOOMRow(oomDetails);
+                }
+                writer.WriteLine("</Table></Center>");
             }
 
             writer.WriteLine("<HR/><HR/><BR/><BR/>");
