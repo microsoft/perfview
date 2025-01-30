@@ -1979,7 +1979,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Amount of memory allocated since last GC.  Requires GCAllocationTicks enabled.  The
         /// data is split into small and large heaps
         /// </summary>
-        public double[] AllocedSinceLastGCBasedOnAllocTickMB = { 0.0, 0.0 };// Set in HeapStats
+        public double[] AllocedSinceLastGCBasedOnAllocTickMB = { 0.0, 0.0, 0.0 };// Set in HeapStats
         /// <summary>
         /// Number of heaps.  -1 is the default
         /// </summary>
@@ -2156,6 +2156,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             double retSurvRate = double.NaN;
 
+            if (!ValidGenData(PerHeapHistories, gen))
+            {
+                return retSurvRate;
+            }
+
             long SurvRate = 0;
 
             if (gen == Gens.GenLargeObj || gen == Gens.GenPinObj)
@@ -2170,15 +2175,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return retSurvRate;
             }
 
-            if (PerHeapHistories != null && PerHeapHistories.Count > 0)
+            for (int i = 0; i < PerHeapHistories.Count; i++)
             {
-                for (int i = 0; i < PerHeapHistories.Count; i++)
-                {
-                    SurvRate += PerHeapHistories[i].GenData[(int)gen].SurvRate;
-                }
-
-                SurvRate /= PerHeapHistories.Count;
+                SurvRate += PerHeapHistories[i].GenData[(int)gen].SurvRate;
             }
+
+            SurvRate /= PerHeapHistories.Count;
 
             retSurvRate = SurvRate;
 
@@ -2219,6 +2221,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Debug.Assert(false);
             return double.NaN;
         }
+
+
         /// <summary>
         /// Heap fragmentation by generation (mb)
         /// </summary>
@@ -2226,7 +2230,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public double GenFragmentationMB(Gens gen)
         {
-            if (PerHeapHistories == null)
+            if (!ValidGenData(PerHeapHistories, gen))
             {
                 return double.NaN;
             }
@@ -2255,7 +2259,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public double GenInMB(Gens gen)
         {
-            if (PerHeapHistories == null)
+            if (!ValidGenData(PerHeapHistories, gen))
             {
                 return double.NaN;
             }
@@ -2275,7 +2279,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public double GenOutMB(Gens gen)
         {
-            if (PerHeapHistories == null)
+            if (!ValidGenData(PerHeapHistories, gen))
             {
                 return double.NaN;
             }
@@ -2334,7 +2338,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public double GenBudgetMB(Gens gen)
         {
-            if (PerHeapHistories == null)
+            if (!ValidGenData(PerHeapHistories, gen))
             {
                 return double.NaN;
             }
@@ -2354,7 +2358,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public double GenObjSizeAfterMB(Gens gen)
         {
-            if (PerHeapHistories == null)
+            if (!ValidGenData(PerHeapHistories, gen))
             {
                 return double.NaN;
             }
@@ -2413,6 +2417,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return _PerHeapCondemnedReasons;
             }
         }
+
+        internal static bool ValidGenData(List<GCPerHeapHistory> perHeapHistories, Gens gen)
+            => !(perHeapHistories == null || perHeapHistories.Count == 0 || perHeapHistories[0].GenData.Length <= (int)gen);
 
         public enum TimingType
         {
@@ -2939,7 +2946,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         // Per generation stats.
         internal static double GetGenSizeBeforeMB(List<TraceGC> GCs, TraceGC gc, Gens gen)
         {
-            if (gc.PerHeapHistories != null && gc.PerHeapHistories.Count > 0)
+            if (ValidGenData(gc.PerHeapHistories, gen))
             {
                 double ret = 0.0;
                 for (int HeapIndex = 0; HeapIndex < gc.PerHeapHistories.Count; HeapIndex++)
@@ -2953,7 +2960,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return ret;
             }
 
-            // When we don't have perheap history we can only estimate for gen0 and gen3.
+            // When we don't have perheap history we can only estimate for gen0, gen3 and gen4.
             double Gen0SizeBeforeMB = 0;
             if (gen == Gens.Gen0)
             {
@@ -3031,6 +3038,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             Debug.Assert(HeapIndex < gc.PerHeapHistories.Count);
 
+            // If the gen data isn't available for the specific PerHeapHistory, we can't calculate.
+            if (!ValidGenData(gc.PerHeapHistories, gen))
+            {
+                return 0;
+            }
+
             long prevObjSize = 0;
             if (gc.Index > 0)
             {
@@ -3048,6 +3061,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     }
                 }
             }
+
             GCPerHeapHistoryGenData currentGenData = gc.PerHeapHistories[HeapIndex].GenData[(int)gen];
             double Allocated;
 
@@ -3087,7 +3101,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 {
                     // If the prevous GC has that heap get its size.
                     var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
-                    if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
+                    if (ValidGenData(perHeapGenData, gen))
                     {
                         return perHeapGenData[HeapIndex].GenData[(int)gen].Budget;
                     }
