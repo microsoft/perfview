@@ -6,14 +6,11 @@ using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Security;
 using System.Text;
 using System.Threading;
-using System.Windows.Forms;
 using Utilities;
 
 namespace Stats
@@ -288,7 +285,7 @@ namespace Stats
                         $"<TD Align=\"Center\">{InterpretOOMReason(oomDetails.Reason)}</TD>" +
                         $"<TD Align=\"Center\">{InterpretFailureGetMemory(oomDetails.FailureToGetMemory)}</TD>" +
                         $"<TD Align=\"Center\">{oomDetails.IsLOH}</TD>" +
-                        $"<TD Align=\"Center\">{oomDetails.AvailablePageFileMB}</TD>" +
+                        $"<TD Align=\"Center\">{oomDetails.AvailablePageFileMB.ToString("N0")}</TD>" +
                         $"<TD Align=\"Center\">{oomDetails.MemoryLoad}</TD>" +
                         "</TR>");
                 }
