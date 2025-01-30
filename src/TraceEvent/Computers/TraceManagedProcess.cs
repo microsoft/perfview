@@ -1979,7 +1979,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Amount of memory allocated since last GC.  Requires GCAllocationTicks enabled.  The
         /// data is split into small and large heaps
         /// </summary>
-        public double[] AllocedSinceLastGCBasedOnAllocTickMB = { 0.0, 0.0 };// Set in HeapStats
+        public double[] AllocedSinceLastGCBasedOnAllocTickMB = { 0.0, 0.0, 0.0 };// Set in HeapStats
         /// <summary>
         /// Number of heaps.  -1 is the default
         /// </summary>
