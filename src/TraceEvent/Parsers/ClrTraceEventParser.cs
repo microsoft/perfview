@@ -10396,11 +10396,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     [Flags]
     public enum GCSettingsFlags : int
     {
-        GCSettingsConcurrent =      0x00000001,
-        GCSettingsLargePages =      0x00000002,
-        GCSettingsFrozenSegs =      0x00000004,
-        GCSettingsHardLimitConfig = 0x00000008,
-        GCSettingsNoAffinitize =    0x00000010,
+        GCSettingsConcurrent       = 0x00000001,
+        GCSettingsLargePages       = 0x00000002,
+        GCSettingsFrozenSegs       = 0x00000004,
+        GCSettingsHardLimitConfig  = 0x00000008,
+        GCSettingsNoAffinitize     = 0x00000010,
+        GCSettingsDynamicHeapCount = 0x00000020,
     };
 
     public sealed class GCSettingsRundownTraceData : TraceEvent
