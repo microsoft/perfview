@@ -977,6 +977,14 @@ namespace Microsoft.Diagnostics.Tracing
             // [SecuritySafeCritical]
             get { return (eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_CLASSIC_HEADER) != 0; }
         }
+        /// <summary>
+        /// Returns true if this event is from the TraceMessage function (typically indicates from a WPP provider)
+        /// </summary>
+        public bool IsTraceMessage
+        {
+            // [SecuritySafeCritical]
+            get { return (eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_TRACE_MESSAGE) != 0; }
+        }
 
         /// <summary>
         /// The ID of the container that emitted the event, if available.
@@ -1341,10 +1349,30 @@ namespace Microsoft.Diagnostics.Tracing
         /// <para>This method is more expensive than copy out all the event data from the TraceEvent instance
         /// to a type of your construction.</para>
         /// </summary>
-        public virtual unsafe TraceEvent Clone()
+        public virtual TraceEvent Clone()
         {
-            TraceEvent ret = (TraceEvent)MemberwiseClone();     // Clone myself. 
-            ret.next = null;                                    // the clone is not in any linked list.  
+            return Clone(false);
+        }
+
+        internal unsafe TraceEvent Clone(bool toTemplate)
+        {
+            TraceEvent ret = (TraceEvent)MemberwiseClone();     // Clone myself.
+            ret.next = null;                                    // the clone is not in any linked list.
+
+            if (toTemplate)
+            {
+                // We are cloning to a template, so we don't need to clone the data.
+                ret.eventRecord = null;
+                ret.myBuffer = IntPtr.Zero;
+                ret.instanceContainerID = null;
+
+                // Also zero out the dispatch-related fields.
+                ret.traceEventSource = null;
+                ret.Target = null;
+
+                return ret;
+            }
+
             if (eventRecord != null)
             {
                 int userDataLength = (EventDataLength + 3) / 4 * 4;            // DWORD align
@@ -2012,15 +2040,6 @@ namespace Microsoft.Diagnostics.Tracing
         /// Parsers with state are reasonably rare, the main examples are KernelTraceEventParser and ClrTraceEventParser.    
         /// </summary>
         protected internal virtual void SetState(object state) { }
-
-        protected internal TraceEvent CloneToTemplate()
-        {
-            TraceEvent ret = Clone();
-            ret.traceEventSource = null;
-            ret.eventRecord = null;
-            ret.Target = null;
-            return ret;
-        }
 
         #endregion
         #region Private
@@ -3663,6 +3682,7 @@ namespace Microsoft.Diagnostics.Tracing
 
 #if DEBUG                   // ASSERT we found the event using the mechanism we expected to use.
                         Debug.Assert(((eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_CLASSIC_HEADER) != 0) == curTemplate.lookupAsClassic);
+                        Debug.Assert(((eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_TRACE_MESSAGE) != 0) == curTemplate.lookupAsWPP);
                         if (curTemplate.lookupAsClassic)
                         {
                             Debug.Assert(curTemplate.taskGuid == eventRecord->EventHeader.ProviderId);
@@ -3710,6 +3730,7 @@ namespace Microsoft.Diagnostics.Tracing
             unhandledEventTemplate.userData = eventRecord->UserData;
             unhandledEventTemplate.eventIndex = currentID;
             unhandledEventTemplate.lookupAsClassic = unhandledEventTemplate.IsClassicProvider;
+            unhandledEventTemplate.lookupAsWPP = unhandledEventTemplate.IsTraceMessage;
             if ((((int)currentID) & 0xFFFF) == 0)       // Every 64K events allow Thread.Interrupt.  
             {
                 System.Threading.Thread.Sleep(0);

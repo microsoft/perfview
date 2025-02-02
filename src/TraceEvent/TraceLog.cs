@@ -783,7 +783,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
                 if (toSend.containsSelfDescribingMetadata)
                 {
-                    var template = toSend.CloneToTemplate();
+                    var template = toSend.Clone(true);
                     realTimeSource.Dynamic.OnNewEventDefintion(template, true);
                     return true;
                 }
