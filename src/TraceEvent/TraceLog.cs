@@ -749,6 +749,25 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             rawEventSourceToConvert = source;
             SetupCallbacks(rawEventSourceToConvert);
             rawEventSourceToConvert.unhandledEventTemplate.traceEventSource = this;       // Make everything point to the log as its source.
+
+            // Self describing metadata doesn't make it to realTimeSource because TraceLog overwrites the event's extended data.
+            // To address this, we use the event from the raw source, which contains the metadata,
+            // and convert it to a template that can be registered with realTimeSource.
+            realTimeSource.RegisterUnhandledEventImpl(te =>
+            {
+                var toSend = realTimeEvent;
+                if (toSend == null)
+                {
+                    return false;
+                }
+                if (toSend.containsSelfDescribingMetadata)
+                {
+                    var template = toSend.CloneToTemplate();
+                    realTimeSource.Dynamic.OnNewEventDefintion(template, true);
+                    return true;
+                }
+                return false;
+            });
         }
 
         private unsafe void onAllEventsRealTime(TraceEvent data)
@@ -813,24 +832,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         private unsafe void DispatchClonedEvent(TraceEvent toSend)
         {
-            // Self describing metadata doesn't make it to realTimeSource because TraceLog overwrites the event's extended data.
-            // To address this, we use the event from the raw source, which contains the metadata,
-            // and convert it to a template that can be registered with realTimeSource.
-            realTimeSource.RegisterUnhandledEventImpl(te =>
+            realTimeEvent = toSend;
+            TraceEvent eventInRealTimeSource = null;
+            try
             {
-                if (toSend.containsSelfDescribingMetadata)
-                {
-                    var template = toSend.CloneToTemplate();
-                    realTimeSource.Dynamic.OnNewEventDefintion(template, true);
-                    return true;
-                }
-                return false;
-            });
-            TraceEvent eventInRealTimeSource = realTimeSource.Lookup(toSend.eventRecord);
-            eventInRealTimeSource.userData = toSend.userData;
-            eventInRealTimeSource.eventIndex = toSend.eventIndex;           // Lookup assigns the EventIndex, but we want to keep the original.
-            eventInRealTimeSource.myBuffer = toSend.myBuffer;
-            realTimeSource.Dispatch(eventInRealTimeSource);
+                eventInRealTimeSource = realTimeSource.Lookup(toSend.eventRecord);
+                eventInRealTimeSource.userData = toSend.userData;
+                eventInRealTimeSource.eventIndex = toSend.eventIndex;           // Lookup assigns the EventIndex, but we want to keep the original.
+                eventInRealTimeSource.myBuffer = toSend.myBuffer;
+                realTimeSource.Dispatch(eventInRealTimeSource);
+            }
+            finally
+            {
+                realTimeEvent = null;
+            }
 
             // Optimization, remove 'toSend' from the finalization queue.
             Debug.Assert(toSend.myBuffer != IntPtr.Zero);
@@ -4445,6 +4460,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal TraceLogEventSource realTimeSource;               // used to call back in real time case.
         private Queue<QueueEntry> realTimeQueue;                   // We have to wait a bit to hook up stacks, so we put real time entries in the queue
+        private TraceEvent realTimeEvent;                          // The current event being processed.
 
         // These can ONLY be accessed by the thread calling RealTimeEventSource.Process();
         private Timer realTimeFlushTimer;                          // Ensures the queue gets flushed even if there are no incoming events.
