@@ -154,11 +154,32 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session)
         {
+            return CreateFromTraceEventSession(session, 1000);
+        }
+
+        /// <summary>
+        /// From a TraceEventSession, create a real time TraceLog Event Source.   Like a ETWTraceEventSource a TraceLogEventSource
+        /// will deliver events in real time.   However an TraceLogEventSource has an underlying Tracelog (which you can access with
+        /// the .Log Property) which lets you get at aggregated information (Processes, threads, images loaded, and perhaps most
+        /// importantly TraceEvent.CallStack() will work.  Thus you can get real time stacks from events).
+        ///
+        /// Note that in order for native stacks to resolve symbolically, you need to have some Kernel events turned on (Image, and Process)
+        /// and only windows 8 has a session that allows both kernel and user mode events simultaneously.   Thus this is most useful
+        /// on Win 8 systems.
+        /// </summary>
+        /// <param name="minDispatchDelayMSec">The delay in milliseconds between when an event is received in TraceLog and when it is dispatched to the real time event source.</param>
+        public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session, int minDispatchDelayMSec)
+        {
+            if (minDispatchDelayMSec < 10)
+            {
+                throw new ArgumentOutOfRangeException(nameof(minDispatchDelayMSec), "The minimum dispatch delay is too small.");
+            }
+
             var traceLog = new TraceLog(session.Source);
             traceLog.pointerSize = ETWTraceEventSource.GetOSPointerSize();
 
             traceLog.realTimeQueue = new Queue<QueueEntry>();
-            traceLog.realTimeFlushTimer = new Timer(_ => traceLog.FlushRealTimeEvents(1000), null, 1000, 1000);
+            traceLog.realTimeFlushTimer = new Timer(_ => traceLog.FlushRealTimeEvents(minDispatchDelayMSec), null, minDispatchDelayMSec, minDispatchDelayMSec);
             traceLog.rawEventSourceToConvert.AllEvents += traceLog.onAllEventsRealTime;
 
             // See if we are on Win7 and have a separate kernel session associated with 'session'
