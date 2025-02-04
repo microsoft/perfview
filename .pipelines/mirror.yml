@@ -60,9 +60,9 @@ extends:
               artifactFeeds: 'DevDiv/PerfView-Mirror'
 
           - task: UsePythonVersion@0
-            displayName: 'Use Python 3.11.x'
+            displayName: 'Use Python 3.11'
             inputs:
-              versionSpec: 3.11.x
+              versionSpec: '3.11'
 
           - task: CmdLine@1
             displayName: 'Update pip to latest'
