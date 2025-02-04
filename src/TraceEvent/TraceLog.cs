@@ -167,19 +167,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// and only windows 8 has a session that allows both kernel and user mode events simultaneously.   Thus this is most useful
         /// on Win 8 systems.
         /// </summary>
-        /// <param name="realTimeDelayMSec">The delay in milliseconds between when an event is received in TraceLog and when it is dispatched to the real time event source.</param>
-        public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session, int realTimeDelayMSec)
+        /// <param name="minDispatchDelayMSec">The delay in milliseconds between when an event is received in TraceLog and when it is dispatched to the real time event source.</param>
+        public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session, int minDispatchDelayMSec)
         {
-            if (realTimeDelayMSec < 10)
+            if (minDispatchDelayMSec < 10)
             {
-                throw new ArgumentOutOfRangeException(nameof(realTimeDelayMSec), "The real time delay is too small.");
+                throw new ArgumentOutOfRangeException(nameof(minDispatchDelayMSec), "The minimum dispatch delay is too small.");
             }
 
             var traceLog = new TraceLog(session.Source);
             traceLog.pointerSize = ETWTraceEventSource.GetOSPointerSize();
 
             traceLog.realTimeQueue = new Queue<QueueEntry>();
-            traceLog.realTimeFlushTimer = new Timer(_ => traceLog.FlushRealTimeEvents(realTimeDelayMSec), null, realTimeDelayMSec, realTimeDelayMSec);
+            traceLog.realTimeFlushTimer = new Timer(_ => traceLog.FlushRealTimeEvents(minDispatchDelayMSec), null, minDispatchDelayMSec, minDispatchDelayMSec);
             traceLog.rawEventSourceToConvert.AllEvents += traceLog.onAllEventsRealTime;
 
             // See if we are on Win7 and have a separate kernel session associated with 'session'
