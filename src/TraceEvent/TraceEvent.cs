@@ -542,13 +542,16 @@ namespace Microsoft.Diagnostics.Tracing
         internal virtual int LastChanceGetProcessID(TraceEvent data) { return -1; }
         internal virtual unsafe Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
-            var extendedData = eventRecord->ExtendedData;
-            Debug.Assert((ulong)extendedData > 0x10000);          // Make sure this looks like a pointer.  
-            for (int i = 0; i < eventRecord->ExtendedDataCount; i++)
+            if (eventRecord->ExtendedDataCount != 0)
             {
-                if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
+                var extendedData = eventRecord->ExtendedData;
+                Debug.Assert((ulong)extendedData > 0x10000);          // Make sure this looks like a pointer.  
+                for (int i = 0; i < eventRecord->ExtendedDataCount; i++)
                 {
-                    return *((Guid*)extendedData[i].DataPtr);
+                    if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
+                    {
+                        return *((Guid*)extendedData[i].DataPtr);
+                    }
                 }
             }
 
