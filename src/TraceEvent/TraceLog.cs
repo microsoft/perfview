@@ -213,7 +213,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // rundown events and shut down immediately and feed this as an additional session to the TraceLog.
                 // Note: it doesn't matter what the actual provider is, just that we request rundown in the constructor.
                 using (var rundownSession = rundownDiagnosticsClient.StartEventPipeSession(
-                    new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long)ClrTraceEventParser.Keywords.Default),
+                    rundownConfiguration.m_providers,
                     requestRundown: true
                 ))
                 {
@@ -230,8 +230,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public class EventPipeRundownConfiguration
         {
             internal readonly DiagnosticsClient m_client;
+            internal readonly IEnumerable<EventPipeProvider> m_providers;
 
-            private EventPipeRundownConfiguration(DiagnosticsClient client) { m_client = client; }
+            private EventPipeRundownConfiguration(DiagnosticsClient client, IEnumerable<EventPipeProvider> providers)
+            {
+                m_client = client;
+                m_providers = providers;
+            }
 
             /// <summary>
             /// No rundown will be requested, thus it may be impossible to symbolicate events. This is OK, if you don't
@@ -239,7 +244,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             /// </summary>
             public static EventPipeRundownConfiguration None()
             {
-                return new EventPipeRundownConfiguration(null);
+                return new EventPipeRundownConfiguration(null, null);
             }
 
             /// <summary>
@@ -247,9 +252,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             /// create an additional short-lived diagnostics session to load all module/method information up to that
             /// point.
             /// </summary>
-            public static EventPipeRundownConfiguration Enable(DiagnosticsClient client)
+            public static EventPipeRundownConfiguration Enable(DiagnosticsClient client, IEnumerable<EventPipeProvider> providers = null)
             {
-                return new EventPipeRundownConfiguration(client);
+                if (providers == null)
+            {
+                    providers = new[]{
+                        new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long)ClrTraceEventParser.Keywords.Default)
+                    };
+                }
+                return new EventPipeRundownConfiguration(client, providers);
             }
         }
 
