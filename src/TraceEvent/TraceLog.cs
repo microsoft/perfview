@@ -255,7 +255,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             public static EventPipeRundownConfiguration Enable(DiagnosticsClient client, IEnumerable<EventPipeProvider> providers = null)
             {
                 if (providers == null)
-            {
+                {
                     providers = new[]{
                         new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long)ClrTraceEventParser.Keywords.Default)
                     };
