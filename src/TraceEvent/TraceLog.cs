@@ -867,17 +867,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 lock (realTimeQueue)
                 {
-                    if (!isFlushingRealTimeEvents)
+                    isFlushingRealTimeEvents = true;
+                    try
                     {
-                        isFlushingRealTimeEvents = true;
-                        try
-                        {
-                            FlushRealTimeEventsNoLock(minimumAgeMs);
-                        }
-                        finally
-                        {
-                            isFlushingRealTimeEvents = false;
-                        }
+                        FlushRealTimeEventsNoLock(minimumAgeMs);
+                    }
+                    finally
+                    {
+                        isFlushingRealTimeEvents = false;
                     }
                 }
             }
