@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -213,7 +214,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // rundown events and shut down immediately and feed this as an additional session to the TraceLog.
                 // Note: it doesn't matter what the actual provider is, just that we request rundown in the constructor.
                 using (var rundownSession = rundownDiagnosticsClient.StartEventPipeSession(
-                    rundownConfiguration.m_providers,
+                    rundownConfiguration.m_providers?.AsEnumerable() ?? new[]{
+                        new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long)ClrTraceEventParser.Keywords.Default)
+                    },
                     requestRundown: true
                 ))
                 {
@@ -230,12 +233,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public class EventPipeRundownConfiguration
         {
             internal readonly DiagnosticsClient m_client;
-            internal readonly IEnumerable<EventPipeProvider> m_providers;
+            internal List<EventPipeProvider> m_providers;
 
-            private EventPipeRundownConfiguration(DiagnosticsClient client, IEnumerable<EventPipeProvider> providers)
+            private EventPipeRundownConfiguration(DiagnosticsClient client)
             {
                 m_client = client;
-                m_providers = providers;
             }
 
             /// <summary>
@@ -244,7 +246,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             /// </summary>
             public static EventPipeRundownConfiguration None()
             {
-                return new EventPipeRundownConfiguration(null, null);
+                return new EventPipeRundownConfiguration(null);
             }
 
             /// <summary>
@@ -252,15 +254,18 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             /// create an additional short-lived diagnostics session to load all module/method information up to that
             /// point.
             /// </summary>
-            public static EventPipeRundownConfiguration Enable(DiagnosticsClient client, IEnumerable<EventPipeProvider> providers = null)
+            public static EventPipeRundownConfiguration Enable(DiagnosticsClient client)
             {
-                if (providers == null)
+                return new EventPipeRundownConfiguration(client);
+            }
+
+            public void AddProvider(EventPipeProvider provider)
+            {
+                if (m_providers == null)
                 {
-                    providers = new[]{
-                        new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long)ClrTraceEventParser.Keywords.Default)
-                    };
+                    m_providers = new List<EventPipeProvider>();
                 }
-                return new EventPipeRundownConfiguration(client, providers);
+                m_providers.Add(provider);
             }
         }
 
