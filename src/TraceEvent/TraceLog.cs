@@ -235,10 +235,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             internal readonly DiagnosticsClient m_client;
             internal List<EventPipeProvider> m_providers;
 
-            private EventPipeRundownConfiguration(DiagnosticsClient client)
-            {
-                m_client = client;
-            }
+            private EventPipeRundownConfiguration(DiagnosticsClient client) { m_client = client; }
 
             /// <summary>
             /// No rundown will be requested, thus it may be impossible to symbolicate events. This is OK, if you don't
