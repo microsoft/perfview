@@ -882,47 +882,65 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         internal void FlushRealTimeEvents(int minimumAgeMs = 0)
         {
-            lock (realTimeQueue)
+            // we need to guard our data structures from concurrent access.  TraceLog data
+            // is modified by this code as well as code in FlushRealTimeEvents.
+            if (!isFlushingRealTimeEvents)
             {
-                var nowTicks = Environment.TickCount;
-                // TODO review.
-                while (realTimeQueue.Count > 0)
+                lock (realTimeQueue)
                 {
-                    QueueEntry entry = realTimeQueue.Peek();
-                    // If it has been in the queue less than 1 second, we we wait until next time) & 3FFFFFF does wrap around subtraction.
-                    if (minimumAgeMs > 0 && ((nowTicks - entry.enqueueTick) & 0x3FFFFFFF) < minimumAgeMs)
+                    isFlushingRealTimeEvents = true;
+                    try
                     {
-                        break;
+                        FlushRealTimeEventsNoLock(minimumAgeMs);
                     }
-
-                    DispatchClonedEvent(entry.data);
-                    realTimeQueue.Dequeue();
+                    finally
+                    {
+                        isFlushingRealTimeEvents = false;
+                    }
                 }
+            }
+        }
 
-                // Try to keep our memory under control by removing old data.
-                // Lots of data structures in TraceLog can grow over time.
-                // However currently we only trim three, all CAN grow on every event (so they grow most quickly of all data structures)
-                // and we know they are not needed after dispatched the events they are for.
-
-                // To keep overhead reasonable, we assume the worst case (every event has an entry) and we allow the tables to grow
-                // to 3X what is needed, and then we slide down the 1X of entries we need.
-                // We could be more accurate, but this at least keeps THESE arrays under control.
-                int MaxEventCountBeforeReset = Math.Max(realTimeQueue.Count * 3, 1000);
-
-                if (eventsToStacks.Count > MaxEventCountBeforeReset)
+        private void FlushRealTimeEventsNoLock(int minimumAgeMs)
+        {
+            var nowTicks = Environment.TickCount;
+            // TODO review.
+            while (realTimeQueue.Count > 0)
+            {
+                QueueEntry entry = realTimeQueue.Peek();
+                // If it has been in the queue less than 1 second, we we wait until next time) & 3FFFFFF does wrap around subtraction.
+                if (minimumAgeMs > 0 && ((nowTicks - entry.enqueueTick) & 0x3FFFFFFF) < minimumAgeMs)
                 {
-                    RemoveAllButLastEntries(ref eventsToStacks, realTimeQueue.Count);
+                    break;
                 }
 
-                if (eventsToCodeAddresses.Count > MaxEventCountBeforeReset)
-                {
-                    RemoveAllButLastEntries(ref eventsToCodeAddresses, realTimeQueue.Count);
-                }
+                DispatchClonedEvent(entry.data);
+                realTimeQueue.Dequeue();
+            }
 
-                if (cswitchBlockingEventsToStacks.Count > MaxEventCountBeforeReset)
-                {
-                    RemoveAllButLastEntries(ref cswitchBlockingEventsToStacks, realTimeQueue.Count);
-                }
+            // Try to keep our memory under control by removing old data.
+            // Lots of data structures in TraceLog can grow over time.
+            // However currently we only trim three, all CAN grow on every event (so they grow most quickly of all data structures)
+            // and we know they are not needed after dispatched the events they are for.
+
+            // To keep overhead reasonable, we assume the worst case (every event has an entry) and we allow the tables to grow
+            // to 3X what is needed, and then we slide down the 1X of entries we need.
+            // We could be more accurate, but this at least keeps THESE arrays under control.
+            int MaxEventCountBeforeReset = Math.Max(realTimeQueue.Count * 3, 1000);
+
+            if (eventsToStacks.Count > MaxEventCountBeforeReset)
+            {
+                RemoveAllButLastEntries(ref eventsToStacks, realTimeQueue.Count);
+            }
+
+            if (eventsToCodeAddresses.Count > MaxEventCountBeforeReset)
+            {
+                RemoveAllButLastEntries(ref eventsToCodeAddresses, realTimeQueue.Count);
+            }
+
+            if (cswitchBlockingEventsToStacks.Count > MaxEventCountBeforeReset)
+            {
+                RemoveAllButLastEntries(ref cswitchBlockingEventsToStacks, realTimeQueue.Count);
             }
         }
 
@@ -4482,6 +4500,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal TraceLogEventSource realTimeSource;               // used to call back in real time case.
         private Queue<QueueEntry> realTimeQueue;                   // We have to wait a bit to hook up stacks, so we put real time entries in the queue
         private TraceEvent realTimeEvent;                          // The current event being processed.
+        private bool isFlushingRealTimeEvents;                     // Are we in the middle of dispatching the real time events.
 
         // These can ONLY be accessed by the thread calling RealTimeEventSource.Process();
         private Timer realTimeFlushTimer;                          // Ensures the queue gets flushed even if there are no incoming events.
