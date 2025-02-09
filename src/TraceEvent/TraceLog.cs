@@ -256,6 +256,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 return new EventPipeRundownConfiguration(client);
             }
 
+            /// <summary>
+            /// Adds a provider to use when initializing the rundown session.
+            /// The first call resets the list, removing the default provider (CLR).
+            /// You can use this if you need to tune the event level, keywords, etc.
+            /// </summary>
             public void AddProvider(EventPipeProvider provider)
             {
                 if (m_providers == null)
