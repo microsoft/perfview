@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -234,7 +235,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // rundown events and shut down immediately and feed this as an additional session to the TraceLog.
                 // Note: it doesn't matter what the actual provider is, just that we request rundown in the constructor.
                 using (var rundownSession = rundownDiagnosticsClient.StartEventPipeSession(
-                    new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long)ClrTraceEventParser.Keywords.Default),
+                    rundownConfiguration.m_providers?.AsEnumerable() ?? new[]{
+                        new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long)ClrTraceEventParser.Keywords.Default)
+                    },
                     requestRundown: true
                 ))
                 {
@@ -251,6 +254,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public class EventPipeRundownConfiguration
         {
             internal readonly DiagnosticsClient m_client;
+            internal List<EventPipeProvider> m_providers;
 
             private EventPipeRundownConfiguration(DiagnosticsClient client) { m_client = client; }
 
@@ -271,6 +275,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             public static EventPipeRundownConfiguration Enable(DiagnosticsClient client)
             {
                 return new EventPipeRundownConfiguration(client);
+            }
+
+            /// <summary>
+            /// Adds a provider to use when initializing the rundown session.
+            /// The first call resets the list, removing the default provider (CLR).
+            /// You can use this if you need to tune the event level, keywords, etc.
+            /// </summary>
+            public void AddProvider(EventPipeProvider provider)
+            {
+                if (m_providers == null)
+                {
+                    m_providers = new List<EventPipeProvider>();
+                }
+                m_providers.Add(provider);
             }
         }
 
