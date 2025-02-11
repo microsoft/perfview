@@ -218,6 +218,9 @@ OptionalMetadata format is:
     - string MessageTemplate         // varuint length-prefixed UTF8 string (no null terminator)
   - if Kind==Description
     - string Description             // varuint length-prefixed UTF8 string (no null terminator)
+  - if Kind==KeyValue
+    - string Key                     // varuint length-prefixed UTF8 string (no null terminator)
+    - string Value                   // varuint length-prefixed UTF8 string (no null terminator)
   - if Kind & LengthPrefixed != 0    // An extensibility mechanism so future versions of the file format can add new kinds of optional metadata
     - varuint Size                   // Encodes the size of the optional metadata element, not including Kind and Size fields
                                      // The reader should skip Size bytes of data after the Size field to get to the next optional metadata element
@@ -230,6 +233,7 @@ enum OptionalMetadataKind
   KeywordLevelVersion = 3,
   MessageTemplate = 4,
   Description = 5,
+  KeyValue = 6,
   LengthPrefixed = 127
 }
 ```
