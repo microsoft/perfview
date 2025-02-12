@@ -134,11 +134,60 @@ The SequencePoint block in V5 has a list of (ThreadId,SequenceNumber) tuples. Al
 
 #### Updated semantics for Trace fields
 
-The TraceBlock has a ProcessId field that was historically set to the ID of the process being traced. When doing a trace that may contain more than one process this field should be set to zero.
-
 The TraceBlock PointerSize field represents the machine pointer size for traces that may contain more than one process. For processes whose bitness is smaller than the machine bitness (such as when using an emulator), memory addresses should be zero extended to the machine pointer size.
 
-The ExpectedCPUSamplingRate field has been unused for a long time. Writers are recommended to set its value to zero and readers are recommended to ignore it.
+## New TraceBlock Metadata
+
+### Motivation
+
+Its useful for trace authors to include some descriptive information about the trace such as a machine name, environment name, or sampling rates. Rather than try to anticipate every piece of data that might be useful we wanted to add a simple open-ended mechanism to append key-value data to a trace.
+
+### Changes
+
+#### Updated TraceBlock
+
+In V5 the Trace Object is defined:
+
+- SyncTimeUTC:
+ - Year - short
+ - Month - short
+ - DayOfWeek - short
+ - Day - short
+ - Hour - short
+ - Minute - short
+ - Second - short
+ - Millisecond - short
+- SyncTimeQPC - long
+- QPCFrequency - long
+- PointerSize - int
+- ProcessId - int
+- NumberOfProcessors - int
+- ExpectedCPUSamplingRate - int
+
+In V6 the format is:
+
+- SyncTimeUTC:
+ - Year - short
+ - Month - short
+ - DayOfWeek - short
+ - Day - short
+ - Hour - short
+ - Minute - short
+ - Second - short
+ - Millisecond - short
+- SyncTimeQPC - long
+- QPCFrequency - long
+- PointerSize - int
+- KeyValueCount - int
+- A sequence of KeyValueCount entries, each of which is:
+  - key - string      // varuint prefixed UTF8 string
+  - value - string    // varuint prefixed UTF8 string
+
+For the three fields that were removed, they can be optionally encoded as key/value pairs where the key names are:
+
+- NumberOfProcessors -> "HardwareThreadCount"
+- ProcessId -> "ProcessId"
+- ExpectedCPUSamplngRate -> "ExpectedCPUSamplingRate"
 
 ## Updated type metadata and additional payload field types
 
