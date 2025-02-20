@@ -661,7 +661,7 @@ namespace TraceEventTests
         public void ParseMinimalTraceV6()
         {
             EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6();
+            writer.WriteHeadersV6OrGreater();
             writer.WriteEndBlock();
             MemoryStream stream = new MemoryStream(writer.ToArray());
 
@@ -669,7 +669,97 @@ namespace TraceEventTests
             // the metadata.
             EventPipeEventSource source = new EventPipeEventSource(stream);
             source.Process();
-            Assert.Equal(source.FileFormatVersionNumber, 6);
+            Assert.Equal(6, source.FileFormatVersionNumber);
+        }
+
+        [Fact]
+        public void ThrowsExceptionOnUnsupportedMajorVersion()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater(new Dictionary<string, string>(), 7, 0);
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+
+            // Confirm we can parse the event payloads even though the parameters were not described in
+            // the metadata.
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            try
+            {
+                source.Process();
+                Assert.Fail("Expected an UnsupportedFormatVersionException");
+            }
+            catch (UnsupportedFormatVersionException e)
+            {
+                Assert.Equal(7, e.RequestedVersion);
+                Assert.Equal(6, e.MaxSupportedVersion);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail($"Expected an UnsupportedFormatVersionException but got {e}");
+            }
+        }
+
+        [Fact]
+        public void ParseV6TraceBlockStandardFields()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            source.Process();
+            Assert.Equal(new DateTime(2025, 2, 3, 4, 5, 6), source._syncTimeUTC);
+            Assert.Equal(1_000_000, source._syncTimeQPC);
+            Assert.Equal(1_000, source._QPCFreq);
+            Assert.Equal(8, source.PointerSize);
+            Assert.Equal(0, source._processId);
+            Assert.Equal(0, source.NumberOfProcessors);
+        }
+
+        [Fact]
+        public void ParseV6TraceBlockKeyValuePairs()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater(new Dictionary<string, string>()
+            {
+                { "ProcessId", "1234" },
+                { "HardwareThreadCount", "16" },
+                { "ExpectedCPUSamplingRate", "1790" },
+                { "CpuSpeedMHz", "3000" },
+                { "Ponies", "LotsAndLots!" }
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            source.Process();
+            Assert.Equal(1234, source._processId);
+            Assert.Equal(16, source.NumberOfProcessors);
+            Assert.Equal(1790, source._expectedCPUSamplingRate);
+            Assert.Collection(source.HeaderKeyValuePairs,
+                kvp =>
+                {
+                    Assert.Equal("ProcessId", kvp.Key);
+                    Assert.Equal("1234", kvp.Value);
+                },
+                kvp =>
+                {
+                    Assert.Equal("HardwareThreadCount", kvp.Key);
+                    Assert.Equal("16", kvp.Value);
+                },
+                kvp =>
+                {
+                    Assert.Equal("ExpectedCPUSamplingRate", kvp.Key);
+                    Assert.Equal("1790", kvp.Value);
+                },
+                kvp =>
+                {
+                    Assert.Equal("CpuSpeedMHz", kvp.Key);
+                    Assert.Equal("3000", kvp.Value);
+                },
+                kvp =>
+                {
+                    Assert.Equal("Ponies", kvp.Key);
+                    Assert.Equal("LotsAndLots!", kvp.Value);
+                });
         }
     }
 
@@ -778,14 +868,14 @@ namespace TraceEventTests
             WriteTraceObjectV5(_writer);
         }
 
-        public void WriteHeadersV6(Dictionary<string,string> keyValues = null)
+        public void WriteHeadersV6OrGreater(Dictionary<string,string> keyValues = null, int majorVersion = 6, int minorVersion = 0)
         {
             if(keyValues == null)
             {
                 keyValues = new Dictionary<string, string>();
             }
-            WriteNetTraceHeaderV6(_writer);
-            WriteTraceBlockV6(_writer, keyValues);
+            WriteNetTraceHeaderV6OrGreater(_writer, majorVersion, minorVersion);
+            WriteTraceBlockV6OrGreater(_writer, keyValues);
         }
 
         public void WriteMetadataBlock(params EventMetadata[] metadataBlobs)
@@ -813,12 +903,12 @@ namespace TraceEventTests
             writer.Write(Encoding.UTF8.GetBytes("Nettrace"));
         }
 
-        public static void WriteNetTraceHeaderV6(BinaryWriter writer)
+        public static void WriteNetTraceHeaderV6OrGreater(BinaryWriter writer, int majorVersion, int minorVersion)
         {
             writer.Write(Encoding.UTF8.GetBytes("Nettrace"));
             writer.Write(0); // reserved
-            writer.Write(6); // major version
-            writer.Write(0); // minor version
+            writer.Write(majorVersion);
+            writer.Write(minorVersion);
         }
 
         public static void WriteFastSerializationHeader(BinaryWriter writer)
@@ -841,12 +931,12 @@ namespace TraceEventTests
                 val >>= 7;
                 if (val == 0)
                 {
-                    writer.Write((byte)(low7 & 0x80));
+                    writer.Write(low7);
                     break;
                 }
                 else
                 {
-                    writer.Write(low7);
+                    writer.Write((byte)(low7 & 0x80));
                 }
             }
         }
@@ -911,11 +1001,11 @@ namespace TraceEventTests
             });
         }
 
-        public static void WriteTraceBlockV6(BinaryWriter writer, Dictionary<string,string> keyValues)
+        public static void WriteTraceBlockV6OrGreater(BinaryWriter writer, Dictionary<string,string> keyValues)
         {
             WriteBlock(writer, 1 /* BlockKind.Trace */, () =>
             {
-                DateTime now = DateTime.Now;
+                DateTime now = new DateTime(2025, 2, 3, 4, 5, 6);
                 writer.Write((short)now.Year);
                 writer.Write((short)now.Month);
                 writer.Write((short)now.DayOfWeek);

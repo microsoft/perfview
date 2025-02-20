@@ -65,7 +65,7 @@ namespace Microsoft.Diagnostics.Tracing
             _reader.Read(netTraceMagic, 0, netTraceMagic.Length);
             byte[] expectedMagic = Encoding.UTF8.GetBytes("Nettrace");
             bool isNetTrace = true;
-            bool isFastSerialziation = false;
+            bool isFastSerialization = false;
             if (!netTraceMagic.SequenceEqual(expectedMagic))
             {
                 // The older netperf format didn't have this 'Nettrace' magic on it.
@@ -82,7 +82,7 @@ namespace Microsoft.Diagnostics.Tracing
                 if (reserved != 0)
                 {
                     _reader.Goto(afterNetTraceHeader);
-                    isFastSerialziation = true;
+                    isFastSerialization = true;
                     // the FastSerializationObjectParser will set FileFormatVersionNumber when it parses the TraceBlock
                 }
                 else
@@ -103,13 +103,13 @@ namespace Microsoft.Diagnostics.Tracing
                 }
             }
 
-            if (isFastSerialziation)
+            if (isFastSerialization)
             {
                 _parser = new FastSerializationObjectParser(this, _reader, _fileName, isNetTrace);
             }
             else
             {
-                throw new NotImplementedException("NetTrace v6+ parsing goes here");
+                _parser = new NetTraceBlockParser(this, _reader);
             }
 
             _parser.ParseTraceBlock();
@@ -119,6 +119,8 @@ namespace Microsoft.Diagnostics.Tracing
         {
             return base.QPCTimeToDateTimeUTC(QPCTime).ToLocalTime();
         }
+
+        public Dictionary<string, string> HeaderKeyValuePairs { get; } = new Dictionary<string, string>();
 
         #region private
         // I put these in the private section because they are overrides, and thus don't ADD to the API.
@@ -203,6 +205,46 @@ namespace Microsoft.Diagnostics.Tracing
             _processId = reader.ReadInt32();
             numberOfProcessors = reader.ReadInt32();
             _expectedCPUSamplingRate = reader.ReadInt32();
+        }
+
+        internal void ReadTraceBlockV6OrGreater(SpanReader reader)
+        {
+            short year = reader.ReadInt16();
+            short month = reader.ReadInt16();
+            short dayOfWeek = reader.ReadInt16();
+            short day = reader.ReadInt16();
+            short hour = reader.ReadInt16();
+            short minute = reader.ReadInt16();
+            short second = reader.ReadInt16();
+            short milliseconds = reader.ReadInt16();
+            _syncTimeUTC = new DateTime(year, month, day, hour, minute, second, milliseconds, DateTimeKind.Utc);
+            _syncTimeQPC = reader.ReadInt64();
+            _QPCFreq = reader.ReadInt64();
+
+            sessionStartTimeQPC = _syncTimeQPC;
+            pointerSize = reader.ReadInt32();
+
+            int keyValuePairs = reader.ReadInt32();
+            for (int i = 0; i < keyValuePairs; i++)
+            {
+                string key = reader.ReadVarUIntUTF8String();
+                string value = reader.ReadVarUIntUTF8String();
+                HeaderKeyValuePairs[key] = value;
+
+                // check for well-known key names
+                if(key == "HardwareThreadCount" && int.TryParse(value, out int intVal))
+                {
+                    numberOfProcessors = intVal;
+                }
+                else if(key == "ProcessId" && int.TryParse(value, out int intVal2))
+                {
+                    _processId = intVal2;
+                }
+                else if (key == "ExpectedCPUSamplingRate" && int.TryParse(value, out int intVal3))
+                {
+                    _expectedCPUSamplingRate = intVal3;
+                }
+            }
         }
 
         internal void ReadEventBlockV4OrGreater(PinnedStreamReader reader, StreamLabel startBlockLabel, StreamLabel endBlockLabel)
@@ -905,7 +947,6 @@ namespace Microsoft.Diagnostics.Tracing
         internal int _expectedCPUSamplingRate;
         private PinnedStreamReader _reader;
         private string _fileName;
-        private Action _initParser;
         private bool _isStreaming;
         #endregion
     }
@@ -931,6 +972,92 @@ internal interface IBlockParser : IDisposable
     {
         void ParseTraceBlock();
         void ParseRemainder();
+    }
+
+    internal class NetTraceBlockParser : IBlockParser
+    {
+        PinnedStreamReader _reader;
+        EventPipeEventSource _source;
+
+        public NetTraceBlockParser(EventPipeEventSource source, PinnedStreamReader reader)
+        {
+            _reader = reader;
+            _source = source;
+        }
+
+        public void ParseTraceBlock()
+        {
+            BlockHeader header = ReadBlockHeader();
+            if (header.Kind != BlockKind.Trace)
+            {
+                throw new FormatException($"Expected Trace block, but got Kind={header.Kind} at stream offset 0x{_reader.Current.Add(-4):x}");
+            }
+            StreamLabel startOfBlock = _reader.Current;
+            byte[] blockBytes = new byte[header.Length];
+            _reader.Read(blockBytes, 0, blockBytes.Length);
+            _source.ReadTraceBlockV6OrGreater(new SpanReader(blockBytes,(long)_reader.Current));
+        }
+
+        public void ParseRemainder()
+        { 
+            while(true)
+            {
+                BlockHeader header = ReadBlockHeader();
+                StreamLabel startOfNextBlock = _reader.Current.Add(header.Length);
+                switch (header.Kind)
+                {
+                    case BlockKind.Event:
+                        _source.ReadEventBlockV4OrGreater(_reader, _reader.Current, startOfNextBlock);
+                        break;
+                    case BlockKind.Metadata:
+                        _source.ReadMetadataBlockV5OrLess(_reader, _reader.Current, startOfNextBlock);
+                        break;
+                    case BlockKind.SequencePoint:
+                        _source.ReadSequencePointBlockV5OrLess(_reader, _reader.Current, startOfNextBlock);
+                        break;
+                    case BlockKind.StackBlock:
+                        _source.ReadStackBlock(_reader, _reader.Current, startOfNextBlock);
+                        break;
+                    case BlockKind.EndOfStream:
+                        return;
+                    default:
+                        throw new FormatException($"Unexpected block Kind={header.Kind} at stream offset 0x{_reader.Current.Add(-4):x}");
+                }
+                _reader.Goto(startOfNextBlock);
+            }
+        }
+
+        public void Dispose()
+        {
+            _reader?.Dispose();
+        }
+
+        private BlockHeader ReadBlockHeader()
+        {
+            int headerInt = _reader.ReadInt32();
+            BlockHeader header = new BlockHeader()
+            {
+                Kind = (BlockKind)(headerInt >> 24),
+                Length = headerInt & 0xFFFFFF
+            };
+            return header;
+        }
+
+        struct BlockHeader
+        {
+            public BlockKind Kind;
+            public int Length;
+        }
+
+        enum BlockKind
+        {
+            EndOfStream = 0,
+            Trace = 1,
+            Event = 2,
+            Metadata = 3,
+            SequencePoint = 4,
+            StackBlock = 5
+        }
     }
 
     internal class FastSerializationObjectParser : IBlockParser, IFastSerializable, IFastSerializableVersion
