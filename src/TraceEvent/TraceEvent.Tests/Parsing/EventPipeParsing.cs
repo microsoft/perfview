@@ -540,7 +540,7 @@ namespace TraceEventTests
             // Serialize an EventPipe stream containing the parameterless metadata for
             // DiagnosticSourceEventSource events...
             EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeaders();
+            writer.WriteHeadersV5();
             writer.WriteMetadataBlock(
                 new EventMetadata(1, "Microsoft-Diagnostics-DiagnosticSource", "Event", 3),
                 new EventMetadata(2, "Microsoft-Diagnostics-DiagnosticSource", "Activity1Start", 4),
@@ -656,6 +656,21 @@ namespace TraceEventTests
                 Assert.Fail($"The event statistics doesn't match {Path.GetFullPath(baselineFile)}. It's saved in {Path.GetFullPath(eventStatisticsFile)}.");
             }
         }
+
+        [Fact]
+        public void ParseMinimalTraceV6()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6();
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+
+            // Confirm we can parse the event payloads even though the parameters were not described in
+            // the metadata.
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            source.Process();
+            Assert.Equal(source.FileFormatVersionNumber, 6);
+        }
     }
 
 
@@ -756,11 +771,21 @@ namespace TraceEventTests
             return (_writer.BaseStream as MemoryStream).ToArray();
         }
 
-        public void WriteHeaders()
+        public void WriteHeadersV5()
         {
-            WriteNetTraceHeader(_writer);
+            WriteNetTraceHeaderV5(_writer);
             WriteFastSerializationHeader(_writer);
-            WriteTraceObject(_writer);
+            WriteTraceObjectV5(_writer);
+        }
+
+        public void WriteHeadersV6(Dictionary<string,string> keyValues = null)
+        {
+            if(keyValues == null)
+            {
+                keyValues = new Dictionary<string, string>();
+            }
+            WriteNetTraceHeaderV6(_writer);
+            WriteTraceBlockV6(_writer, keyValues);
         }
 
         public void WriteMetadataBlock(params EventMetadata[] metadataBlobs)
@@ -778,9 +803,22 @@ namespace TraceEventTests
             WriteEndObject(_writer);
         }
 
-        public static void WriteNetTraceHeader(BinaryWriter writer)
+        public void WriteEndBlock()
+        {
+            WriteBlock(_writer, 0 /* BLockKind.EndOfStream */, () => { });
+        }
+
+        public static void WriteNetTraceHeaderV5(BinaryWriter writer)
         {
             writer.Write(Encoding.UTF8.GetBytes("Nettrace"));
+        }
+
+        public static void WriteNetTraceHeaderV6(BinaryWriter writer)
+        {
+            writer.Write(Encoding.UTF8.GetBytes("Nettrace"));
+            writer.Write(0); // reserved
+            writer.Write(6); // major version
+            writer.Write(0); // minor version
         }
 
         public static void WriteFastSerializationHeader(BinaryWriter writer)
@@ -794,6 +832,33 @@ namespace TraceEventTests
             writer.Write(Encoding.UTF8.GetBytes(val));
         }
 
+
+        public static void WriteVarUint(BinaryWriter writer, ulong val)
+        {
+            while (true)
+            {
+                byte low7 = (byte)(val & 0x7F);
+                val >>= 7;
+                if (val == 0)
+                {
+                    writer.Write((byte)(low7 & 0x80));
+                    break;
+                }
+                else
+                {
+                    writer.Write(low7);
+                }
+            }
+        }
+
+        public static void WriteVarUintString(BinaryWriter writer, string val)
+        {
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(val);
+            WriteVarUint(writer, (ulong)utf8Bytes.Length);
+            writer.Write(utf8Bytes);
+        }
+
+        // used in versions <= 5
         public static void WriteObject(BinaryWriter writer, string name, int version, int minVersion,
     Action writePayload)
         {
@@ -808,7 +873,23 @@ namespace TraceEventTests
             writer.Write((byte)6); // end object
         }
 
-        public static void WriteTraceObject(BinaryWriter writer)
+        // Used in versions >= 6
+        public static void WriteBlock(BinaryWriter writer, byte blockKind, Action writePayload)
+        {
+            long blockHeaderPos = writer.BaseStream.Position;
+            writer.Write((uint)0);
+            writePayload();
+            long endBlockPos = writer.BaseStream.Position;
+
+            // backup and fill in the block header now that the length is known
+            writer.Seek((int)blockHeaderPos, SeekOrigin.Begin);
+            uint size = (uint)(endBlockPos - blockHeaderPos - 4);
+            uint header = size | ((uint)blockKind << 24);
+            writer.Write(header);
+            writer.Seek((int)endBlockPos, SeekOrigin.Begin);
+        }
+
+        public static void WriteTraceObjectV5(BinaryWriter writer)
         {
             WriteObject(writer, "Trace", 4, 4, () =>
             {
@@ -827,6 +908,31 @@ namespace TraceEventTests
                 writer.Write(1); // pid
                 writer.Write(4); // num procs
                 writer.Write(1000); // sampling rate
+            });
+        }
+
+        public static void WriteTraceBlockV6(BinaryWriter writer, Dictionary<string,string> keyValues)
+        {
+            WriteBlock(writer, 1 /* BlockKind.Trace */, () =>
+            {
+                DateTime now = DateTime.Now;
+                writer.Write((short)now.Year);
+                writer.Write((short)now.Month);
+                writer.Write((short)now.DayOfWeek);
+                writer.Write((short)now.Day);
+                writer.Write((short)now.Hour);
+                writer.Write((short)now.Minute);
+                writer.Write((short)now.Second);
+                writer.Write((short)now.Millisecond);
+                writer.Write((long)1_000_000);         // syncTimeQPC
+                writer.Write((long)1000);              // qpcFreq
+                writer.Write(8);                       // pointer size
+                writer.Write(keyValues.Count);
+                foreach(var kv in keyValues)
+                {
+                    WriteVarUintString(writer, kv.Key);
+                    WriteVarUintString(writer, kv.Value);
+                }
             });
         }
 
@@ -991,9 +1097,9 @@ namespace TraceEventTests
         {
             MemoryStream ms = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(ms);
-            EventPipeWriter.WriteNetTraceHeader(writer);
+            EventPipeWriter.WriteNetTraceHeaderV5(writer);
             EventPipeWriter.WriteFastSerializationHeader(writer);
-            EventPipeWriter.WriteTraceObject(writer);
+            EventPipeWriter.WriteTraceObjectV5(writer);
             EventPipeWriter.WriteMetadataBlock(writer,
                 new EventMetadata(1, "Provider", "Event", 1));
             ms.Position = 0;

@@ -26,7 +26,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// events have a name some basic information (process, thread, timestamp, activity
     /// ID) and user defined field names and values of various types.
     /// </summary>
-    public unsafe class EventPipeEventSource : TraceEventDispatcher, IFastSerializable, IFastSerializableVersion
+    public unsafe class EventPipeEventSource : TraceEventDispatcher
     {
         public EventPipeEventSource(string fileName) : this(new PinnedStreamReader(fileName, SerializationSettings.Default.WithStreamLabelWidth(StreamLabelWidth.FourBytes), 0x20000), fileName, false)
         {
@@ -39,57 +39,80 @@ namespace Microsoft.Diagnostics.Tracing
 
         private EventPipeEventSource(PinnedStreamReader streamReader, string name, bool isStreaming)
         {
-            _deserializerIntializer = () =>
-            {
-                StreamLabel start = streamReader.Current;
-                byte[] netTraceMagic = new byte[8];
-                streamReader.Read(netTraceMagic, 0, netTraceMagic.Length);
-                byte[] expectedMagic = Encoding.UTF8.GetBytes("Nettrace");
-                bool isNetTrace = true;
-                if (!netTraceMagic.SequenceEqual(expectedMagic))
-                {
-                    // The older netperf format didn't have this 'Nettrace' magic on it.
-                    streamReader.Goto(start);
-                    isNetTrace = false;
-                }
-
-                var deserializer = new Deserializer(streamReader, name);
-
-#if SUPPORT_V1_V2
-                // This is only here for V2 and V1.  V3+ should use the name EventTrace, it can be removed when we drop support.
-                deserializer.RegisterFactory("Microsoft.DotNet.Runtime.EventPipeFile", delegate { return this; });
-#endif
-                deserializer.RegisterFactory("Trace", delegate { return this; });
-                deserializer.RegisterFactory("EventBlock", delegate { return new EventPipeEventBlock(this); });
-                deserializer.RegisterFactory("MetadataBlock", delegate { return new EventPipeMetadataBlock(this); });
-                deserializer.RegisterFactory("SPBlock", delegate { return new EventPipeSequencePointBlock(this); });
-                deserializer.RegisterFactory("StackBlock", delegate { return new EventPipeStackBlock(this); });
-
-                var entryObj = deserializer.GetEntryObject(); // this call invokes FromStream and reads header data
-
-                if ((FileFormatVersionNumber >= 4) != isNetTrace)
-                {
-                    //NetTrace header should be present iff the version is >= 4
-                    throw new SerializationException("Invalid NetTrace file format version");
-                }
-
-                // Because we told the deserialize to use 'this' when creating a EventPipeFile, we
-                // expect the entry object to be 'this'.
-                Debug.Assert(entryObj == this);
-
-                return deserializer;
-            };
-
+            _reader = streamReader;
+            _fileName = name;
+            _isStreaming = isStreaming;
             osVersion = new Version("0.0.0.0");
             cpuSpeedMHz = 10;
 
+            // when streaming we defer parsing the headers until the call to Process()
             if (!isStreaming)
-                _deserializer = _deserializerIntializer();
+                ParseHeaders();
 
             EventCache = new EventCache();
             EventCache.OnEvent += EventCache_OnEvent;
             EventCache.OnEventsDropped += EventCache_OnEventsDropped;
             StackCache = new StackCache();
+        }
+
+        const int MaxSupportedMajorVersion = 6;
+
+        // Parses the stream headers + TraceBlock and inits the right _parser implementation depending on file format version.
+        private void ParseHeaders()
+        {
+            StreamLabel start = _reader.Current;
+            byte[] netTraceMagic = new byte[8];
+            _reader.Read(netTraceMagic, 0, netTraceMagic.Length);
+            byte[] expectedMagic = Encoding.UTF8.GetBytes("Nettrace");
+            bool isNetTrace = true;
+            bool isFastSerialziation = false;
+            if (!netTraceMagic.SequenceEqual(expectedMagic))
+            {
+                // The older netperf format didn't have this 'Nettrace' magic on it.
+                _reader.Goto(start);
+                isNetTrace = false;
+            }
+
+            if (isNetTrace)
+            {
+                // After the NetTrace header is either a reserved 4 byte zero field: version >= 6
+                // or the FastSerialization header: version <= 5
+                StreamLabel afterNetTraceHeader = _reader.Current;
+                int reserved = _reader.ReadInt32();
+                if (reserved != 0)
+                {
+                    _reader.Goto(afterNetTraceHeader);
+                    isFastSerialziation = true;
+                    // the FastSerializationObjectParser will set FileFormatVersionNumber when it parses the TraceBlock
+                }
+                else
+                {
+                    int major = _reader.ReadInt32();
+                    if (major < 6)
+                    {
+                        throw new FormatException($"Invalid NetTrace versioning header");
+                    }
+                    else if (major > MaxSupportedMajorVersion)
+                    {
+                        throw new UnsupportedFormatVersionException(major, MaxSupportedMajorVersion);
+                    }
+                    // we don't use minor version for anything yet. Minor version bumps are for non-breaking changes so this reader
+                    // should be compatible regardless of the minor version.
+                    int minor = _reader.ReadInt32();
+                    FileFormatVersionNumber = major;
+                }
+            }
+
+            if (isFastSerialziation)
+            {
+                _parser = new FastSerializationObjectParser(this, _reader, _fileName, isNetTrace);
+            }
+            else
+            {
+                throw new NotImplementedException("NetTrace v6+ parsing goes here");
+            }
+
+            _parser.ParseTraceBlock();
         }
 
         public DateTime QPCTimeToTimeStamp(long QPCTime)
@@ -102,30 +125,6 @@ namespace Microsoft.Diagnostics.Tracing
         public override int EventsLost => _eventsLost;
 
         /// <summary>
-        /// This is the version number reader and writer (although we don't don't have a writer at the moment)
-        /// It MUST be updated (as well as MinimumReaderVersion), if breaking changes have been made.
-        /// If your changes are forward compatible (old readers can still read the new format) you
-        /// don't have to update the version number but it is useful to do so (while keeping MinimumReaderVersion unchanged)
-        /// so that readers can quickly determine what new content is available.
-        /// </summary>
-        public int Version => 5;
-
-        /// <summary>
-        /// This field is only used for writers, and this code does not have writers so it is not used.
-        /// It should be set to Version unless changes since the last version are forward compatible
-        /// (old readers can still read this format), in which case this should be unchanged.
-        /// </summary>
-        public int MinimumReaderVersion => Version;
-
-        /// <summary>
-        /// This is the smallest version that the deserializer here can read.   Currently
-        /// we are careful about backward compat so our deserializer can read anything that
-        /// has ever been produced.   We may change this when we believe old writers basically
-        /// no longer exist (and we can remove that support code).
-        /// </summary>
-        public int MinimumVersionCanRead => 0;
-
-        /// <summary>
         /// Called after headers are deserialized. This is especially useful in a streaming scenario
         /// because the headers are only read after Process() is called.
         /// </summary>
@@ -133,9 +132,9 @@ namespace Microsoft.Diagnostics.Tracing
 
         protected override void Dispose(bool disposing)
         {
-            if (_deserializer != null)
+            if (_parser != null)
             {
-                _deserializer.Dispose();
+                _parser.Dispose();
             }
 
             base.Dispose(disposing);
@@ -143,58 +142,109 @@ namespace Microsoft.Diagnostics.Tracing
 
         public override bool Process()
         {
-            if (_deserializer is null)
+            // If we are streaming we defer header parsing until now, otherwise we do it in the constructor
+            if (_isStreaming)
             {
-                Debug.Assert(_deserializerIntializer != null);
-                _deserializer = _deserializerIntializer?.Invoke();
-                Debug.Assert(_deserializer != null);
+                ParseHeaders();
             }
 
             HeadersDeserialized?.Invoke();
-
-            if (FileFormatVersionNumber >= 3)
-            {
-                // loop through the stream until we hit a null object.  Deserialization of
-                // EventPipeEventBlocks will cause dispatch to happen.
-                // ReadObject uses registered factories and recognizes types by names, then derserializes them with FromStream
-                while (_deserializer.ReadObject() != null)
-                { }
-
-                if(FileFormatVersionNumber >= 4)
-                {
-                    // Ensure all events have been sorted and dispatched
-                    EventCache.Flush();
-                }
-            }
-#if SUPPORT_V1_V2
-            else
-            {
-                PinnedStreamReader deserializerReader = (PinnedStreamReader)_deserializer.Reader;
-                while (deserializerReader.Current < _endOfEventStream)
-                {
-                    TraceEventNativeMethods.EVENT_RECORD* eventRecord = ReadEvent(deserializerReader, false);
-                    if (eventRecord != null)
-                    {
-                        // in the code below we set sessionEndTimeQPC to be the timestamp of the last event.
-                        // Thus the new timestamp should be later, and not more than 1 day later.
-                        Debug.Assert(sessionEndTimeQPC <= eventRecord->EventHeader.TimeStamp);
-                        Debug.Assert(sessionEndTimeQPC == 0 || eventRecord->EventHeader.TimeStamp - sessionEndTimeQPC < _QPCFreq * 24 * 3600);
-
-                        var traceEvent = Lookup(eventRecord);
-                        Dispatch(traceEvent);
-                        sessionEndTimeQPC = eventRecord->EventHeader.TimeStamp;
-                    }
-                }
-            }
-#endif
+            _parser.ParseRemainder();
             return true;
         }
 
-        internal int FileFormatVersionNumber { get; private set; }
+        internal int FileFormatVersionNumber { get; set; }
         internal EventCache EventCache { get; private set; }
         internal StackCache StackCache { get; private set; }
 
         internal override string ProcessName(int processID, long timeQPC) => string.Format("Process({0})", processID);
+
+
+#if SUPPORT_V1_V2
+        internal void ReadTraceObjectV1To2(IStreamReader reader)
+        {
+            // The start time is stored as a SystemTime which is a bunch of shorts, convert to DateTime.
+            short year = reader.ReadInt16();
+            short month = reader.ReadInt16();
+            short dayOfWeek = reader.ReadInt16();
+            short day = reader.ReadInt16();
+            short hour = reader.ReadInt16();
+            short minute = reader.ReadInt16();
+            short second = reader.ReadInt16();
+            short milliseconds = reader.ReadInt16();
+            _syncTimeUTC = new DateTime(year, month, day, hour, minute, second, milliseconds, DateTimeKind.Utc);
+            _syncTimeQPC = reader.ReadInt64();
+            _QPCFreq = reader.ReadInt64();
+
+            sessionStartTimeQPC = _syncTimeQPC;
+            _processId = 0; // V1 && V2 tests expect 0 for process Id
+            pointerSize = 8; // V1 EventPipe only supports Linux which is x64 only.
+            numberOfProcessors = 1;
+        }
+#endif
+
+        internal void ReadTraceObjectV3To5(IStreamReader reader)
+        {
+            // The start time is stored as a SystemTime which is a bunch of shorts, convert to DateTime.
+            short year = reader.ReadInt16();
+            short month = reader.ReadInt16();
+            short dayOfWeek = reader.ReadInt16();
+            short day = reader.ReadInt16();
+            short hour = reader.ReadInt16();
+            short minute = reader.ReadInt16();
+            short second = reader.ReadInt16();
+            short milliseconds = reader.ReadInt16();
+            _syncTimeUTC = new DateTime(year, month, day, hour, minute, second, milliseconds, DateTimeKind.Utc);
+            _syncTimeQPC = reader.ReadInt64();
+            _QPCFreq = reader.ReadInt64();
+
+            sessionStartTimeQPC = _syncTimeQPC;
+            pointerSize = reader.ReadInt32();
+            _processId = reader.ReadInt32();
+            numberOfProcessors = reader.ReadInt32();
+            _expectedCPUSamplingRate = reader.ReadInt32();
+        }
+
+        internal void ReadEventBlockV4OrGreater(PinnedStreamReader reader, StreamLabel startBlockLabel, StreamLabel endBlockLabel)
+        {
+            ResetCompressedHeader();
+            int blockLength = (int)endBlockLabel.Sub(startBlockLabel);
+            byte[] eventBlockBytes = new byte[blockLength];
+            reader.Read(eventBlockBytes, 0, eventBlockBytes.Length);
+            EventCache.ProcessEventBlock(eventBlockBytes);
+        }
+
+        internal void ReadMetadataBlockV5OrLess(PinnedStreamReader reader, StreamLabel startBlockLabel, StreamLabel endBlockLabel)
+        {
+            ResetCompressedHeader();
+            short headerSize = reader.ReadInt16();
+            Debug.Assert(headerSize >= 20);
+            short flags = reader.ReadInt16();
+            long minTimeStamp = reader.ReadInt64();
+            long maxTimeStamp = reader.ReadInt64();
+
+            reader.Goto(startBlockLabel.Add(headerSize));
+            while (reader.Current < endBlockLabel)
+            {
+                ReadAndDispatchEvent(reader, (flags & (short)EventBlockFlags.HeaderCompression) != 0);
+            }
+        }
+
+        internal void ReadSequencePointBlockV5OrLess(PinnedStreamReader reader, StreamLabel startBlockLabel, StreamLabel endBlockLabel)
+        {
+            byte[] blockBytes = new byte[endBlockLabel.Sub(startBlockLabel)];
+            reader.Read(blockBytes, 0, blockBytes.Length);
+            EventCache.ProcessSequencePointBlock(blockBytes);
+            StackCache.Flush();
+        }
+
+        internal void ReadStackBlock(PinnedStreamReader reader, StreamLabel startBlockLabel, StreamLabel endBlockLabel)
+        {
+            int blockLength = (int)endBlockLabel.Sub(startBlockLabel);
+            byte[] stackBlockBytes = new byte[blockLength];
+            reader.Read(stackBlockBytes, 0, stackBlockBytes.Length);
+            StackCache.ProcessStackBlock(stackBlockBytes);
+        }
 
         internal void ReadAndDispatchEvent(PinnedStreamReader reader, bool useHeaderCompression)
         {
@@ -257,7 +307,7 @@ namespace Microsoft.Diagnostics.Tracing
             else // if (FileFormatVersionNumber == 4)
             {
                 EventPipeEventHeader.ReadFromFormatV4(headerPtr, useHeaderCompression, ref eventData);
-                if(eventData.MetaDataId != 0 && StackCache.TryGetStack(eventData.StackId, out int stackBytesSize, out IntPtr stackBytes))
+                if (eventData.MetaDataId != 0 && StackCache.TryGetStack(eventData.StackId, out int stackBytesSize, out IntPtr stackBytes))
                 {
                     eventData.StackBytesSize = stackBytesSize;
                     eventData.StackBytes = stackBytes;
@@ -348,7 +398,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         private static EventPipeMetaDataVersion GetMetaDataVersion(int fileFormatVersion)
         {
-            switch(fileFormatVersion)
+            switch (fileFormatVersion)
             {
                 case 1:
                     return EventPipeMetaDataVersion.LegacyV1;
@@ -374,7 +424,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal override unsafe Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
-            if(FileFormatVersionNumber >= 4)
+            if (FileFormatVersionNumber >= 4)
             {
                 return _relatedActivityId;
             }
@@ -383,51 +433,6 @@ namespace Microsoft.Diagnostics.Tracing
                 // Recover the EventPipeEventHeader from the payload pointer and then fetch from the header.
                 return EventPipeEventHeader.GetRelatedActivityID((byte*)eventRecord->UserData);
             }
-        }
-
-        public void ToStream(Serializer serializer) => throw new InvalidOperationException("We dont ever serialize one of these in managed code so we don't need to implement ToSTream");
-
-        public void FromStream(Deserializer deserializer)
-        {
-            FileFormatVersionNumber = deserializer.VersionBeingRead;
-
-#if SUPPORT_V1_V2
-            if (deserializer.VersionBeingRead < 3)
-            {
-                ForwardReference reference = deserializer.ReadForwardReference();
-                _endOfEventStream = deserializer.ResolveForwardReference(reference, preserveCurrent: true);
-            }
-#endif
-            // The start time is stored as a SystemTime which is a bunch of shorts, convert to DateTime.
-            short year = deserializer.ReadInt16();
-            short month = deserializer.ReadInt16();
-            short dayOfWeek = deserializer.ReadInt16();
-            short day = deserializer.ReadInt16();
-            short hour = deserializer.ReadInt16();
-            short minute = deserializer.ReadInt16();
-            short second = deserializer.ReadInt16();
-            short milliseconds = deserializer.ReadInt16();
-            _syncTimeUTC = new DateTime(year, month, day, hour, minute, second, milliseconds, DateTimeKind.Utc);
-            deserializer.Read(out _syncTimeQPC);
-            deserializer.Read(out _QPCFreq);
-
-            sessionStartTimeQPC = _syncTimeQPC;
-
-            if (3 <= deserializer.VersionBeingRead)
-            {
-                deserializer.Read(out pointerSize);
-                deserializer.Read(out _processId);
-                deserializer.Read(out numberOfProcessors);
-                deserializer.Read(out _expectedCPUSamplingRate);
-            }
-#if SUPPORT_V1_V2
-            else
-            {
-                _processId = 0; // V1 && V2 tests expect 0 for process Id
-                pointerSize = 8; // V1 EventPipe only supports Linux which is x64 only.
-                numberOfProcessors = 1;
-            }
-#endif
         }
 
         private void EventCache_OnEvent(ref EventPipeEventHeader header)
@@ -631,7 +636,7 @@ namespace Microsoft.Diagnostics.Tracing
             return null;
         }
 
-        private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(PinnedStreamReader reader, int numFields, StreamLabel metadataBlobEnd, 
+        private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(PinnedStreamReader reader, int numFields, StreamLabel metadataBlobEnd,
             NetTraceFieldLayoutVersion fieldLayoutVersion)
         {
             string[] fieldNames = new string[numFields];
@@ -888,11 +893,9 @@ namespace Microsoft.Diagnostics.Tracing
         // Array isn't part of TypeCode either
         internal const TypeCode ArrayTypeCode = (TypeCode)19;
 
-#if SUPPORT_V1_V2
-        private StreamLabel _endOfEventStream;
-#endif
+
         private Dictionary<int, EventPipeEventMetaDataHeader> _eventMetadataDictionary = new Dictionary<int, EventPipeEventMetaDataHeader>();
-        private Deserializer _deserializer;
+        private IBlockParser _parser;
         private Dictionary<TraceEvent, DynamicTraceEventData> _metadataTemplates =
             new Dictionary<TraceEvent, DynamicTraceEventData>(new ExternalTraceEventParserState.TraceEventComparer());
         private EventPipeEventHeader _compressedHeader;
@@ -900,151 +903,285 @@ namespace Microsoft.Diagnostics.Tracing
         private Guid _relatedActivityId;
         internal int _processId;
         internal int _expectedCPUSamplingRate;
-        private Func<Deserializer> _deserializerIntializer;
+        private PinnedStreamReader _reader;
+        private string _fileName;
+        private Action _initParser;
+        private bool _isStreaming;
         #endregion
     }
 
-    #region private classes
 
-    /// <summary>
-    /// The Nettrace format is divided up into various blocks - this is a base class that handles the common
-    /// aspects for all of them.
-    /// </summary>
-    internal abstract class EventPipeBlock : IFastSerializable, IFastSerializableVersion
+    public class UnsupportedFormatVersionException : FormatException
     {
-        public EventPipeBlock(EventPipeEventSource source) => _source = source;
-
-        // _startEventData and _endEventData have already been initialized before this is invoked
-        // to help identify the bounds. The reader is positioned at _startEventData
-        protected abstract void ReadBlockContents(PinnedStreamReader reader);
-
-        public unsafe void FromStream(Deserializer deserializer)
+        public UnsupportedFormatVersionException(int requestedVersion, int maxSupportedVersion) : base($"File format version {requestedVersion} is unsupported. The maximum supported version is {maxSupportedVersion}")
         {
-            // blockSizeInBytes does not include padding bytes to ensure alignment.
-            var blockSizeInBytes = deserializer.ReadInt();
-
-            // after the block size comes eventual padding, we just need to skip it by jumping to the nearest aligned address
-            if ((long)deserializer.Current % 4 != 0)
-            {
-                var nearestAlignedAddress = deserializer.Current.Add((int)(4 - ((long)deserializer.Current % 4)));
-                deserializer.Goto(nearestAlignedAddress);
-            }
-
-            _startEventData = deserializer.Current;
-            _endEventData = _startEventData.Add(blockSizeInBytes);
-
-            PinnedStreamReader deserializerReader = (PinnedStreamReader)deserializer.Reader;
-            ReadBlockContents(deserializerReader);
-            deserializerReader.Goto(_endEventData); // go to the end of block, in case some padding was not skipped yet
+            MaxSupportedVersion = maxSupportedVersion;
+            RequestedVersion = requestedVersion;
         }
 
-        public void ToStream(Serializer serializer) => throw new InvalidOperationException();
+        public int MaxSupportedVersion { get; }
+        public int RequestedVersion { get; }
+    }
 
-        protected StreamLabel _startEventData;
-        protected StreamLabel _endEventData;
-        protected EventPipeEventSource _source;
+#region private classes
 
-        public int Version => 2;
+// This interfaces abstracts the logic that parses either the FastSerialization objects used up to version 5
+// or the simplified block format used in version 6 and later.
+internal interface IBlockParser : IDisposable
+    {
+        void ParseTraceBlock();
+        void ParseRemainder();
+    }
 
-        public int MinimumVersionCanRead => Version;
+    internal class FastSerializationObjectParser : IBlockParser, IFastSerializable, IFastSerializableVersion
+    {
 
-        public int MinimumReaderVersion => 0;
+        EventPipeEventSource _source;
+        Deserializer _deserializer;
+        bool _isNetTrace;
+#if SUPPORT_V1_V2
+        StreamLabel _endOfEventStream;
+#endif
+
+        public FastSerializationObjectParser(EventPipeEventSource source, PinnedStreamReader streamReader, string fileName, bool isNetTrace)
+        {
+            _source = source;
+            _deserializer = new Deserializer(streamReader, fileName);
+            _isNetTrace = isNetTrace;
+#if SUPPORT_V1_V2
+            // This is only here for V2 and V1.  V3+ should use the name EventTrace, it can be removed when we drop support.
+            _deserializer.RegisterFactory("Microsoft.DotNet.Runtime.EventPipeFile", delegate { return this; });
+#endif
+            _deserializer.RegisterFactory("Trace", delegate { return this; });
+            _deserializer.RegisterFactory("EventBlock", delegate { return new EventPipeEventBlock(_source); });
+            _deserializer.RegisterFactory("MetadataBlock", delegate { return new EventPipeMetadataBlock(_source); });
+            _deserializer.RegisterFactory("SPBlock", delegate { return new EventPipeSequencePointBlock(_source); });
+            _deserializer.RegisterFactory("StackBlock", delegate { return new EventPipeStackBlock(_source); });
+        }
+
+
+        public void ParseTraceBlock()
+        {
+            var entryObj = _deserializer.GetEntryObject(); // this call invokes FromStream and reads header data
+            if ((_source.FileFormatVersionNumber >= 4) != _isNetTrace)
+            {
+                //NetTrace header should be present iff the version is >= 4
+                throw new SerializationException("Invalid NetTrace file format version");
+            }
+            // Because we told the deserialize to use 'this' when creating a EventPipeFile, we
+            // expect the entry object to be 'this'.
+            Debug.Assert(entryObj == this);
+        }
+
+        unsafe public void ParseRemainder()
+        {
+            if (_source.FileFormatVersionNumber >= 3)
+            {
+                // loop through the stream until we hit a null object.  Deserialization of
+                // EventPipeEventBlocks will cause dispatch to happen.
+                // ReadObject uses registered factories and recognizes types by names, then derserializes them with FromStream
+                while (_deserializer.ReadObject() != null)
+                { }
+
+                if (_source.FileFormatVersionNumber >= 4)
+                {
+                    // Ensure all events have been sorted and dispatched
+                    _source.EventCache.Flush();
+                }
+            }
+#if SUPPORT_V1_V2
+            else
+            {
+                PinnedStreamReader deserializerReader = (PinnedStreamReader)_deserializer.Reader;
+                while (deserializerReader.Current < _endOfEventStream)
+                {
+                    TraceEventNativeMethods.EVENT_RECORD* eventRecord = _source.ReadEvent(deserializerReader, false);
+                    if (eventRecord != null)
+                    {
+                        // in the code below we set sessionEndTimeQPC to be the timestamp of the last event.
+                        // Thus the new timestamp should be later, and not more than 1 day later.
+                        Debug.Assert(_source.sessionEndTimeQPC <= eventRecord->EventHeader.TimeStamp);
+                        Debug.Assert(_source.sessionEndTimeQPC == 0 || eventRecord->EventHeader.TimeStamp - _source.sessionEndTimeQPC < _source._QPCFreq * 24 * 3600);
+
+                        var traceEvent = _source.Lookup(eventRecord);
+                        _source.Dispatch(traceEvent);
+                        _source.sessionEndTimeQPC = eventRecord->EventHeader.TimeStamp;
+                    }
+                }
+            }
+#endif
+        }
+
+        public void ToStream(Serializer serializer) => throw new InvalidOperationException("We dont ever serialize one of these in managed code so we don't need to implement ToSTream");
+
+        public void FromStream(Deserializer deserializer)
+        {
+            _source.FileFormatVersionNumber = deserializer.VersionBeingRead;
+
+#if SUPPORT_V1_V2
+            if (deserializer.VersionBeingRead < 3)
+            {
+                ForwardReference reference = deserializer.ReadForwardReference();
+                _endOfEventStream = deserializer.ResolveForwardReference(reference, preserveCurrent: true);
+                _source.ReadTraceObjectV1To2(deserializer.Reader);
+            }
+#endif
+            else
+            {
+                _source.ReadTraceObjectV3To5(deserializer.Reader);
+            }
+        }
+
+        public void Dispose()
+        {
+            _deserializer?.Dispose();
+        }
+
+        /// <summary>
+        /// This is the version number reader and writer (although we don't don't have a writer at the moment)
+        /// It MUST be updated (as well as MinimumReaderVersion), if breaking changes have been made.
+        /// If your changes are forward compatible (old readers can still read the new format) you
+        /// don't have to update the version number but it is useful to do so (while keeping MinimumReaderVersion unchanged)
+        /// so that readers can quickly determine what new content is available.
+        /// </summary>
+        public int Version => 5;
+
+        /// <summary>
+        /// This field is only used for writers, and this code does not have writers so it is not used.
+        /// It should be set to Version unless changes since the last version are forward compatible
+        /// (old readers can still read this format), in which case this should be unchanged.
+        /// </summary>
+        public int MinimumReaderVersion => Version;
+
+        /// <summary>
+        /// This is the smallest version that the deserializer here can read.   Currently
+        /// we are careful about backward compat so our deserializer can read anything that
+        /// has ever been produced.   We may change this when we believe old writers basically
+        /// no longer exist (and we can remove that support code).
+        /// </summary>
+        public int MinimumVersionCanRead => 0;
+
+        /// <summary>
+        /// The Nettrace format is divided up into various blocks - this is a base class that handles the common
+        /// aspects for all of them.
+        /// </summary>
+        internal abstract class EventPipeBlock : IFastSerializable, IFastSerializableVersion
+        {
+            public EventPipeBlock(EventPipeEventSource source) => _source = source;
+
+            // _startEventData and _endEventData have already been initialized before this is invoked
+            // to help identify the bounds. The reader is positioned at _startEventData
+            protected abstract void ReadBlockContents(PinnedStreamReader reader);
+
+            public unsafe void FromStream(Deserializer deserializer)
+            {
+                // blockSizeInBytes does not include padding bytes to ensure alignment.
+                var blockSizeInBytes = deserializer.ReadInt();
+
+                // after the block size comes eventual padding, we just need to skip it by jumping to the nearest aligned address
+                if ((long)deserializer.Current % 4 != 0)
+                {
+                    var nearestAlignedAddress = deserializer.Current.Add((int)(4 - ((long)deserializer.Current % 4)));
+                    deserializer.Goto(nearestAlignedAddress);
+                }
+
+                _startEventData = deserializer.Current;
+                _endEventData = _startEventData.Add(blockSizeInBytes);
+
+                PinnedStreamReader deserializerReader = (PinnedStreamReader)deserializer.Reader;
+                ReadBlockContents(deserializerReader);
+                deserializerReader.Goto(_endEventData); // go to the end of block, in case some padding was not skipped yet
+            }
+
+            public void ToStream(Serializer serializer) => throw new InvalidOperationException();
+
+            protected StreamLabel _startEventData;
+            protected StreamLabel _endEventData;
+            protected EventPipeEventSource _source;
+
+            public int Version => 2;
+
+            public int MinimumVersionCanRead => Version;
+
+            public int MinimumReaderVersion => 0;
+        }
+
+        /// <summary>
+        /// An EVentPipeEventBlock represents a block of events.   It basically only has
+        /// one field, which is the size in bytes of the block.  But when its FromStream
+        /// is called, it will perform the callbacks for the events (thus deserializing
+        /// it performs dispatch).
+        /// </summary>
+        internal class EventPipeEventBlock : EventPipeBlock
+        {
+            public EventPipeEventBlock(EventPipeEventSource source) : base(source) { }
+
+            protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
+            {
+                if (_source.FileFormatVersionNumber >= 4)
+                {
+                    _source.ReadEventBlockV4OrGreater(reader, _startEventData, _endEventData);
+                }
+                else
+                {
+                    //NetPerf file had the events fully sorted so we can dispatch directly
+                    while (reader.Current < _endEventData)
+                    {
+                        _source.ReadAndDispatchEvent(reader, false);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// A block of metadata carrying events. These 'events' aren't dispatched by EventPipeEventSource - they carry
+        /// the metadata that allows the payloads of non-metadata events to be decoded.
+        /// </summary>
+        internal class EventPipeMetadataBlock : EventPipeBlock
+        {
+            public EventPipeMetadataBlock(EventPipeEventSource source) : base(source) { }
+
+            protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
+            {
+                _source.ReadMetadataBlockV5OrLess(reader, _startEventData, _endEventData);
+            }
+        }
+
+        /// <summary>
+        /// An EventPipeSequencePointBlock represents a stream divider that contains
+        /// updates for all thread event sequence numbers, indicates that all queued
+        /// events can be sorted and dispatched, and that all cached events/stacks can
+        /// be flushed.
+        /// </summary>
+        internal class EventPipeSequencePointBlock : EventPipeBlock
+        {
+            public EventPipeSequencePointBlock(EventPipeEventSource source) : base(source) { }
+
+            protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
+            {
+                _source.ReadSequencePointBlockV5OrLess(reader, _startEventData, _endEventData);
+            }
+        }
+
+        /// <summary>
+        /// An EventPipeStackBlock represents a block of interned stacks. Events refer
+        /// to stacks by an id.
+        /// </summary>
+        internal class EventPipeStackBlock : EventPipeBlock
+        {
+            public EventPipeStackBlock(EventPipeEventSource source) : base(source) { }
+
+            protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
+            {
+                _source.ReadStackBlock(reader, _startEventData, _endEventData);
+            }
+        }
     }
 
     internal enum EventBlockFlags : short
     {
         Uncompressed = 0,
         HeaderCompression = 1
-    }
-
-    /// <summary>
-    /// An EVentPipeEventBlock represents a block of events.   It basically only has
-    /// one field, which is the size in bytes of the block.  But when its FromStream
-    /// is called, it will perform the callbacks for the events (thus deserializing
-    /// it performs dispatch).
-    /// </summary>
-    internal class EventPipeEventBlock : EventPipeBlock
-    {
-        public EventPipeEventBlock(EventPipeEventSource source) : base(source) { }
-
-        protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
-        {
-            if(_source.FileFormatVersionNumber >= 4)
-            {
-                _source.ResetCompressedHeader();
-                byte[] eventBlockBytes = new byte[_endEventData.Sub(_startEventData)];
-                reader.Read(eventBlockBytes, 0, eventBlockBytes.Length);
-                _source.EventCache.ProcessEventBlock(eventBlockBytes);
-            }
-            else
-            {
-                //NetPerf file had the events fully sorted so we can dispatch directly
-                while (reader.Current < _endEventData)
-                {
-                    _source.ReadAndDispatchEvent(reader, false);
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// A block of metadata carrying events. These 'events' aren't dispatched by EventPipeEventSource - they carry
-    /// the metadata that allows the payloads of non-metadata events to be decoded.
-    /// </summary>
-    internal class EventPipeMetadataBlock : EventPipeBlock
-    {
-        public EventPipeMetadataBlock(EventPipeEventSource source) : base(source) { }
-
-        protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
-        {
-            _source.ResetCompressedHeader();
-            short headerSize = reader.ReadInt16();
-            Debug.Assert(headerSize >= 20);
-            short flags = reader.ReadInt16();
-            long minTimeStamp = reader.ReadInt64();
-            long maxTimeStamp = reader.ReadInt64();
-
-            reader.Goto(_startEventData.Add(headerSize));
-            while (reader.Current < _endEventData)
-            {
-                _source.ReadAndDispatchEvent(reader, (flags & (short)EventBlockFlags.HeaderCompression) != 0);
-            }
-        }
-    }
-
-    /// <summary>
-    /// An EventPipeSequencePointBlock represents a stream divider that contains
-    /// updates for all thread event sequence numbers, indicates that all queued
-    /// events can be sorted and dispatched, and that all cached events/stacks can
-    /// be flushed.
-    /// </summary>
-    internal class EventPipeSequencePointBlock : EventPipeBlock
-    {
-        public EventPipeSequencePointBlock(EventPipeEventSource source) : base(source) { }
-
-        protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
-        {
-            byte[] blockBytes = new byte[_endEventData.Sub(_startEventData)];
-            reader.Read(blockBytes, 0, blockBytes.Length);
-            _source.EventCache.ProcessSequencePointBlock(blockBytes);
-            _source.StackCache.Flush();
-        }
-    }
-
-    /// <summary>
-    /// An EventPipeStackBlock represents a block of interned stacks. Events refer
-    /// to stacks by an id.
-    /// </summary>
-    internal class EventPipeStackBlock : EventPipeBlock
-    {
-        public EventPipeStackBlock(EventPipeEventSource source) : base(source) { }
-
-        protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
-        {
-            byte[] stackBlockBytes = new byte[_endEventData.Sub(_startEventData)];
-            reader.Read(stackBlockBytes, 0, stackBlockBytes.Length);
-            _source.StackCache.ProcessStackBlock(stackBlockBytes);
-        }
     }
 
     internal enum EventPipeMetaDataVersion
