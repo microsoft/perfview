@@ -6017,7 +6017,7 @@ table {
                                     {
                                         const int numBuckets = 20;
                                         int bucket = (int)(normalizeDistance * numBuckets);
-                                        int bucketSizeInPages = module.ModuleFile.ImageSize / (numBuckets * 4096);
+                                        int bucketSizeInPages = (int)(module.ModuleFile.ImageSize / (numBuckets * 4096));
                                         string bucketName = "Image Bucket " + bucket + " Size " + bucketSizeInPages + " Pages";
                                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(bucketName), stackIndex);
                                     }
@@ -9433,6 +9433,7 @@ table {
             bool hasAspNetCoreHosting = false;
             bool hasContention = false;
             bool hasWaitHandle = false;
+            bool hasUniversalSystem = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -9486,6 +9487,10 @@ table {
                     {
                         hasWaitHandle = true;
                     }
+                    else if (eventStats.ProviderGuid == UniversalSystemTraceEventParser.ProviderGuid)
+                    {
+                        hasUniversalSystem = true;
+                    }
                 }
             }
 
@@ -9495,6 +9500,11 @@ table {
 
             if (m_traceLog != null)
             {
+                if (hasUniversalSystem)
+                {
+                    m_Children.Add(new PerfViewProcesses(this));
+                }
+
                 m_Children.Add(new PerfViewEventSource(this));
                 m_Children.Add(new PerfViewEventStats(this));
 
