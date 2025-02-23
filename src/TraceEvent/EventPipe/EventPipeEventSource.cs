@@ -444,6 +444,8 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             Debug.Assert(reader.Current == metaDataEnd);
+
+            metadata.ApplyTransforms();
             return metadata;
         }
 
@@ -562,15 +564,11 @@ namespace Microsoft.Diagnostics.Tracing
 
             if (classInfo == null)
             {
-                classInfo = CheckForWellKnownEventFields(metadata);
-                if (classInfo == null)
+                classInfo = new DynamicTraceEventData.PayloadFetchClassInfo()
                 {
-                    classInfo = new DynamicTraceEventData.PayloadFetchClassInfo()
-                    {
-                        FieldNames = new string[0],
-                        FieldFetches = new DynamicTraceEventData.PayloadFetch[0]
-                    };
-                }
+                    FieldNames = new string[0],
+                    FieldFetches = new DynamicTraceEventData.PayloadFetch[0]
+                };
             }
 
             metadata.ParameterNames = classInfo.FieldNames;
@@ -579,94 +577,12 @@ namespace Microsoft.Diagnostics.Tracing
 
         private DynamicTraceEventData CreateTemplate(NetTraceMetadata metadata)
         {
-            string opcodeName = ((TraceEventOpcode)metadata.Opcode).ToString();
-            int opcode = metadata.Opcode;
-            if (opcode == 0)
-            {
-                GetOpcodeFromEventName(metadata.EventName, out opcode, out opcodeName);
-            }
-            string eventName = FilterOpcodeNameFromEventName(metadata.EventName, opcode);
-            DynamicTraceEventData template = new DynamicTraceEventData(null, metadata.EventId, 0, eventName, Guid.Empty, opcode, null, metadata.ProviderId, metadata.ProviderName);
+            DynamicTraceEventData template = new DynamicTraceEventData(null, metadata.EventId, 0, metadata.EventName, Guid.Empty, metadata.Opcode, null, metadata.ProviderId, metadata.ProviderName);
             template.opcode = (TraceEventOpcode)metadata.Opcode;
             template.opcodeName = template.opcode.ToString();
             template.payloadNames = metadata.ParameterNames;
             template.payloadFetches = metadata.ParameterTypes;
             return template;
-        }
-
-        private string FilterOpcodeNameFromEventName(string eventName, int opcode)
-        {
-            // If the event has an opcode associated and the opcode name is also specified, we should
-            // remove the opcode name from the event's name. Otherwise the events will show up with
-            // duplicate opcode names (i.e. RequestStart/Start)
-            if (opcode == (int)TraceEventOpcode.Start && eventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
-            {
-                return eventName.Remove(eventName.Length - 5, 5);
-            }
-            else if (opcode == (int)TraceEventOpcode.Stop && eventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
-            {
-                return eventName.Remove(eventName.Length - 4, 4);
-            }
-            return eventName;
-        }
-
-        // The NetPerf and NetTrace V1 file formats were incapable of representing some event parameter types that EventSource and ETW support.
-        // This works around that issue without requiring a runtime or format update for well-known EventSources that used the indescribable types.
-        private DynamicTraceEventData.PayloadFetchClassInfo CheckForWellKnownEventFields(NetTraceMetadata eventMetaDataHeader)
-        {
-            if (eventMetaDataHeader.ProviderName == "Microsoft-Diagnostics-DiagnosticSource")
-            {
-                string eventName = eventMetaDataHeader.EventName;
-
-                if (eventName == "Event" ||
-                   eventName == "Activity1Start" ||
-                   eventName == "Activity1Stop" ||
-                   eventName == "Activity2Start" ||
-                   eventName == "Activity2Stop" ||
-                   eventName == "RecursiveActivity1Start" ||
-                   eventName == "RecursiveActivity1Stop")
-                {
-                    DynamicTraceEventData.PayloadFetch[] fieldFetches = new DynamicTraceEventData.PayloadFetch[3];
-                    string[] fieldNames = new string[3];
-                    fieldFetches[0].Type = typeof(string);
-                    fieldFetches[0].Size = DynamicTraceEventData.NULL_TERMINATED;
-                    fieldFetches[0].Offset = 0;
-                    fieldNames[0] = "SourceName";
-
-                    fieldFetches[1].Type = typeof(string);
-                    fieldFetches[1].Size = DynamicTraceEventData.NULL_TERMINATED;
-                    fieldFetches[1].Offset = ushort.MaxValue;
-                    fieldNames[1] = "EventName";
-
-                    DynamicTraceEventData.PayloadFetch[] keyValuePairFieldFetches = new DynamicTraceEventData.PayloadFetch[2];
-                    string[] keyValuePairFieldNames = new string[2];
-                    keyValuePairFieldFetches[0].Type = typeof(string);
-                    keyValuePairFieldFetches[0].Size = DynamicTraceEventData.NULL_TERMINATED;
-                    keyValuePairFieldFetches[0].Offset = 0;
-                    keyValuePairFieldNames[0] = "Key";
-                    keyValuePairFieldFetches[1].Type = typeof(string);
-                    keyValuePairFieldFetches[1].Size = DynamicTraceEventData.NULL_TERMINATED;
-                    keyValuePairFieldFetches[1].Offset = ushort.MaxValue;
-                    keyValuePairFieldNames[1] = "Value";
-                    DynamicTraceEventData.PayloadFetchClassInfo keyValuePairClassInfo = new DynamicTraceEventData.PayloadFetchClassInfo()
-                    {
-                        FieldFetches = keyValuePairFieldFetches,
-                        FieldNames = keyValuePairFieldNames
-                    };
-                    DynamicTraceEventData.PayloadFetch argumentElementFetch = DynamicTraceEventData.PayloadFetch.StructPayloadFetch(0, keyValuePairClassInfo);
-                    ushort fetchSize = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.ELEM_COUNT;
-                    fieldFetches[2] = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(ushort.MaxValue, argumentElementFetch, fetchSize);
-                    fieldNames[2] = "Arguments";
-
-                    return new DynamicTraceEventData.PayloadFetchClassInfo()
-                    {
-                        FieldFetches = fieldFetches,
-                        FieldNames = fieldNames
-                    };
-                }
-            }
-
-            return null;
         }
 
         private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(PinnedStreamReader reader, int numFields, StreamLabel metadataBlobEnd,
@@ -898,27 +814,7 @@ namespace Microsoft.Diagnostics.Tracing
             return payloadFetch;
         }
 
-        private static void GetOpcodeFromEventName(string eventName, out int opcode, out string opcodeName)
-        {
-            opcode = 0;
-            opcodeName = null;
-            // If this EventName suggests that it has an Opcode, then we must remove the opcode name from its name
-            // Otherwise the events will show up with duplicate opcode names (i.e. RequestStart/Start)
-
-            if (eventName != null)
-            {
-                if (eventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
-                {
-                    opcode = (int)TraceEventOpcode.Start;
-                    opcodeName = nameof(TraceEventOpcode.Start);
-                }
-                else if (eventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
-                {
-                    opcode = (int)TraceEventOpcode.Stop;
-                    opcodeName = nameof(TraceEventOpcode.Stop);
-                }
-            }
-        }
+        
 
         // Guid is not part of TypeCode (yet), we decided to use 17 to represent it, as it's the "free slot"
         // see https://github.com/dotnet/coreclr/issues/16105#issuecomment-361749750 for more
@@ -1489,7 +1385,6 @@ internal interface IBlockParser : IDisposable
         {
             MetaDataId = reader.ReadInt32();
             ProviderName = reader.ReadNullTerminatedUnicodeString();
-            ProviderId = GetProviderGuidFromProviderName(ProviderName);
             ReadMetadataCommon(reader);
         }
 
@@ -1497,21 +1392,6 @@ internal interface IBlockParser : IDisposable
         {
             EventId = (ushort)reader.ReadInt32();
             EventName = reader.ReadNullTerminatedUnicodeString();
-
-            // Deduce the opcode from the name.
-            if (EventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
-            {
-                Opcode = (byte)TraceEventOpcode.Start;
-            }
-            else if (EventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
-            {
-                Opcode = (byte)TraceEventOpcode.Stop;
-            }
-            if(EventName == "")
-            {
-                EventName = null; //TraceEvent expects empty name to be canonicalized as null rather than ""
-            }
-
             Keywords = (ulong)reader.ReadInt64();
             EventVersion = (byte)reader.ReadInt32();
             Level = (byte)reader.ReadInt32();
@@ -1532,7 +1412,6 @@ internal interface IBlockParser : IDisposable
             else
             {
                 ProviderName = reader.ReadNullTerminatedUnicodeString();
-                ProviderId = GetProviderGuidFromProviderName(ProviderName);
             }
 
             EventId = (ushort)reader.ReadInt32();
@@ -1554,6 +1433,34 @@ internal interface IBlockParser : IDisposable
             {
                 *ptr++ = 0;
                 --length;
+            }
+        }
+
+        // After metadata has been read we do a set of baked in transforms.
+        public void ApplyTransforms()
+        {
+            //TraceEvent expects empty name to be canonicalized as null rather than ""
+            if (EventName == "")
+            {
+                EventName = null; 
+            }
+
+            if(ProviderId == Guid.Empty)
+            {
+                ProviderId = GetProviderGuidFromProviderName(ProviderName);
+            }
+
+            // Older format versions weren't able to represent the parameter types for some important events.  This works around that issue
+            // by creating metadata on the fly for well-known EventSources.
+            // This transform expects event names that have not yet been modified by ExtractImpliedOpcode()
+            if (ParameterNames.Length == 0 && ParameterTypes.Length == 0)
+            {
+                PopulateWellKnownEventParameters();
+            }
+            
+            if (Opcode == 0)
+            {
+                ExtractImpliedOpcode();
             }
         }
 
@@ -1599,6 +1506,82 @@ internal interface IBlockParser : IDisposable
             else
             {
                 return TraceEventProviders.GetEventSourceGuidFromName(name);
+            }
+        }
+
+        // The NetPerf and NetTrace V1 file formats were incapable of representing some event parameter types that EventSource and ETW support.
+        // This works around that issue without requiring a runtime or format update for well-known EventSources that used the indescribable types.
+        private void PopulateWellKnownEventParameters()
+        {
+            if (ProviderName == "Microsoft-Diagnostics-DiagnosticSource")
+            {
+                string eventName = EventName;
+
+                if (eventName == "Event" ||
+                   eventName == "Activity1Start" ||
+                   eventName == "Activity1Stop" ||
+                   eventName == "Activity2Start" ||
+                   eventName == "Activity2Stop" ||
+                   eventName == "RecursiveActivity1Start" ||
+                   eventName == "RecursiveActivity1Stop")
+                {
+                    DynamicTraceEventData.PayloadFetch[] fieldFetches = new DynamicTraceEventData.PayloadFetch[3];
+                    string[] fieldNames = new string[3];
+                    fieldFetches[0].Type = typeof(string);
+                    fieldFetches[0].Size = DynamicTraceEventData.NULL_TERMINATED;
+                    fieldFetches[0].Offset = 0;
+                    fieldNames[0] = "SourceName";
+
+                    fieldFetches[1].Type = typeof(string);
+                    fieldFetches[1].Size = DynamicTraceEventData.NULL_TERMINATED;
+                    fieldFetches[1].Offset = ushort.MaxValue;
+                    fieldNames[1] = "EventName";
+
+                    DynamicTraceEventData.PayloadFetch[] keyValuePairFieldFetches = new DynamicTraceEventData.PayloadFetch[2];
+                    string[] keyValuePairFieldNames = new string[2];
+                    keyValuePairFieldFetches[0].Type = typeof(string);
+                    keyValuePairFieldFetches[0].Size = DynamicTraceEventData.NULL_TERMINATED;
+                    keyValuePairFieldFetches[0].Offset = 0;
+                    keyValuePairFieldNames[0] = "Key";
+                    keyValuePairFieldFetches[1].Type = typeof(string);
+                    keyValuePairFieldFetches[1].Size = DynamicTraceEventData.NULL_TERMINATED;
+                    keyValuePairFieldFetches[1].Offset = ushort.MaxValue;
+                    keyValuePairFieldNames[1] = "Value";
+                    DynamicTraceEventData.PayloadFetchClassInfo keyValuePairClassInfo = new DynamicTraceEventData.PayloadFetchClassInfo()
+                    {
+                        FieldFetches = keyValuePairFieldFetches,
+                        FieldNames = keyValuePairFieldNames
+                    };
+                    DynamicTraceEventData.PayloadFetch argumentElementFetch = DynamicTraceEventData.PayloadFetch.StructPayloadFetch(0, keyValuePairClassInfo);
+                    ushort fetchSize = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.ELEM_COUNT;
+                    fieldFetches[2] = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(ushort.MaxValue, argumentElementFetch, fetchSize);
+                    fieldNames[2] = "Arguments";
+
+
+                    ParameterTypes = fieldFetches;
+                    ParameterNames = fieldNames;
+                }
+            }
+        }
+
+        /// <summary>
+        /// If the event doesn't have an explicit Opcode and the event name ends with "Start" or "Stop",
+        /// then we strip the "Start" or "Stop" from the event name and set the Opcode accordingly.
+        /// </summary>
+        private void ExtractImpliedOpcode()
+        {
+            if (EventName != null)
+            {
+                if (EventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
+                {
+                    Opcode = (int)TraceEventOpcode.Start;
+                    EventName = EventName.Substring(0, EventName.Length - 5);
+                }
+                else if (EventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
+                {
+                    Opcode = (int)TraceEventOpcode.Stop;
+                    EventName = EventName.Substring(0, EventName.Length - 4);
+                }
             }
         }
 
