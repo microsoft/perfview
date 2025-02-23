@@ -389,7 +389,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // Read in the header (The header does not include payload parameter information)
                 var metadata = new NetTraceMetadata(PointerSize, _processId);
-                metadata.ParseHeader(reader, payloadSize, GetMetaDataVersion(FileFormatVersionNumber));
+                metadata.ParseHeader(reader, payloadSize, FileFormatVersionNumber);
 
                 // If the metadata contains no parameter metadata, don't attempt to read it.
                 if (reader.Current == metaDataEnd)
@@ -439,19 +439,6 @@ namespace Microsoft.Diagnostics.Tracing
             reader.Goto(eventDataEnd);
 
             return ret;
-        }
-
-        private static EventPipeMetaDataVersion GetMetaDataVersion(int fileFormatVersion)
-        {
-            switch (fileFormatVersion)
-            {
-                case 1:
-                    return EventPipeMetaDataVersion.LegacyV1;
-                case 2:
-                    return EventPipeMetaDataVersion.LegacyV2;
-                default:
-                    return EventPipeMetaDataVersion.NetTrace;
-            }
         }
 
         private TraceEventNativeMethods.EVENT_RECORD* ConvertEventHeaderToRecord(ref EventPipeEventHeader eventData)
@@ -1309,13 +1296,6 @@ internal interface IBlockParser : IDisposable
         HeaderCompression = 1
     }
 
-    internal enum EventPipeMetaDataVersion
-    {
-        LegacyV1 = 1, // Used by NetPerf version 1
-        LegacyV2 = 2, // Used by NetPerf version 2
-        NetTrace = 3, // Used by NetPerf (version 3) and NetTrace (version 4+)
-    }
-
     internal enum NetTraceFieldLayoutVersion
     {
         V1 = 1, // Used by V1 parameter blobs
@@ -1379,16 +1359,16 @@ internal interface IBlockParser : IDisposable
             }
         }
 
-        public void ParseHeader(PinnedStreamReader reader, int length, EventPipeMetaDataVersion encodingVersion)
+        public void ParseHeader(PinnedStreamReader reader, int length, int fileFormatVersion)
         {
-            if (encodingVersion >= EventPipeMetaDataVersion.NetTrace)
+            if (fileFormatVersion >= 3)
             {
                 ReadNetTraceMetadata(reader);
             }
 #if SUPPORT_V1_V2
             else
             {
-                ReadObsoleteEventMetaData(reader, encodingVersion);
+                ReadObsoleteEventMetaData(reader, fileFormatVersion);
             }
 #endif
         }
@@ -1532,14 +1512,14 @@ internal interface IBlockParser : IDisposable
         }
 
 #if SUPPORT_V1_V2
-        private void ReadObsoleteEventMetaData(PinnedStreamReader reader, EventPipeMetaDataVersion metaDataVersion)
+        private void ReadObsoleteEventMetaData(PinnedStreamReader reader, int fileFormatVersion)
         {
-            Debug.Assert((int)metaDataVersion <= (int)EventPipeMetaDataVersion.LegacyV2);
+            Debug.Assert(fileFormatVersion <= 2);
 
             // Old versions use the stream offset as the MetaData ID, but the reader has advanced to the payload so undo it.
-            MetaDataId = ((int)reader.Current) - EventPipeEventHeader.GetHeaderSize((int)metaDataVersion);
+            MetaDataId = ((int)reader.Current) - EventPipeEventHeader.GetHeaderSize(fileFormatVersion);
 
-            if (metaDataVersion == EventPipeMetaDataVersion.LegacyV1)
+            if (fileFormatVersion == 1)
             {
                 ProviderId = reader.ReadGuid();
             }
