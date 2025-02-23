@@ -19,6 +19,8 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         public ReadOnlySpan<byte> RemainingBytes => _buffer;
         public long StreamOffset => _spanEndStreamOffset - _buffer.Length;
 
+        public sbyte ReadInt8() => Read<sbyte>();
+        public byte ReadUInt8() => Read<byte>();
         public short ReadInt16() => Read<short>();
         public ushort ReadUInt16() => Read<ushort>();
         public int ReadInt32() => Read<int>();
@@ -38,6 +40,37 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 ThrowFormatException<T>();
             }
             return value;
+        }
+
+        public ref readonly T ReadRef<T>() where T : struct
+        {
+            
+            if (_buffer.Length >= Unsafe.SizeOf<T>())
+            {
+                ref readonly T ret = ref MemoryMarshal.Cast<byte, T>(_buffer)[0];
+                _buffer = _buffer.Slice(Unsafe.SizeOf<T>());
+                return ref ret;
+            }
+            else
+            {
+                ThrowFormatException<T>();
+                throw new Exception(); // unreachable
+            }
+        }
+
+        public ReadOnlySpan<byte> ReadBytes(int length)
+        {
+            if(_buffer.Length >= length)
+            {
+                ReadOnlySpan<byte> ret = _buffer.Slice(0,length);
+                _buffer = _buffer.Slice(length);
+                return ret;
+            }
+            else
+            {
+                ThrowFormatException(_buffer.Length, $"byte[{length}]");
+                return default; // unreachable
+            }
         }
 
         public uint ReadVarUInt32()

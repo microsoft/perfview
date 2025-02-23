@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -65,7 +66,7 @@ namespace Microsoft.Diagnostics.Tracing
             _reader.Read(netTraceMagic, 0, netTraceMagic.Length);
             byte[] expectedMagic = Encoding.UTF8.GetBytes("Nettrace");
             bool isNetTrace = true;
-            bool isFastSerialization = false;
+            bool isFastSerialization = true;
             if (!netTraceMagic.SequenceEqual(expectedMagic))
             {
                 // The older netperf format didn't have this 'Nettrace' magic on it.
@@ -82,7 +83,6 @@ namespace Microsoft.Diagnostics.Tracing
                 if (reserved != 0)
                 {
                     _reader.Goto(afterNetTraceHeader);
-                    isFastSerialization = true;
                     // the FastSerializationObjectParser will set FileFormatVersionNumber when it parses the TraceBlock
                 }
                 else
@@ -100,6 +100,7 @@ namespace Microsoft.Diagnostics.Tracing
                     // should be compatible regardless of the minor version.
                     int minor = _reader.ReadInt32();
                     FileFormatVersionNumber = major;
+                    isFastSerialization = false;
                 }
             }
 
@@ -253,7 +254,7 @@ namespace Microsoft.Diagnostics.Tracing
             int blockLength = (int)endBlockLabel.Sub(startBlockLabel);
             byte[] eventBlockBytes = new byte[blockLength];
             reader.Read(eventBlockBytes, 0, eventBlockBytes.Length);
-            EventCache.ProcessEventBlock(eventBlockBytes);
+            EventCache.ProcessEventBlock(eventBlockBytes, (long)startBlockLabel);
         }
 
         internal void ReadMetadataBlockV5OrLess(PinnedStreamReader reader, StreamLabel startBlockLabel, StreamLabel endBlockLabel)
@@ -314,7 +315,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal void ResetCompressedHeader()
         {
-            _compressedHeader = new EventPipeEventHeader();
+            _eventHeader = new EventPipeEventHeader();
         }
 
         internal TraceEventNativeMethods.EVENT_RECORD* ReadEvent(PinnedStreamReader reader, bool useHeaderCompression)
@@ -326,8 +327,10 @@ namespace Microsoft.Diagnostics.Tracing
                 // The header uses a variable size encoding, but it is certainly smaller than 100 bytes
                 const int maxHeaderSize = 100;
                 headerPtr = reader.GetPointer(maxHeaderSize);
-                ReadEventHeader(headerPtr, useHeaderCompression, ref _compressedHeader);
-                return ReadEvent(_compressedHeader, reader);
+                ReadOnlySpan<byte> headerSpan = new ReadOnlySpan<byte>(headerPtr, maxHeaderSize);
+                SpanReader headerReader = new SpanReader(headerSpan, (long)reader.Current);
+                ReadEventHeader(ref headerReader, useHeaderCompression, ref _eventHeader);
+                return ReadEvent(_eventHeader, reader);
             }
             else
             {
@@ -335,20 +338,22 @@ namespace Microsoft.Diagnostics.Tracing
                 int totalSize = EventPipeEventHeader.GetTotalEventSize(headerPtr, FileFormatVersionNumber);
                 headerPtr = reader.GetPointer(totalSize); // now we now the real size and get read entire event
                 EventPipeEventHeader eventData = new EventPipeEventHeader();
-                ReadEventHeader(headerPtr, useHeaderCompression, ref eventData);
+                ReadOnlySpan<byte> eventSpan = new ReadOnlySpan<byte>(headerPtr, totalSize);
+                SpanReader headerReader = new SpanReader(eventSpan, (long)reader.Current);
+                ReadEventHeader(ref headerReader, useHeaderCompression, ref eventData);
                 return ReadEvent(eventData, reader);
             }
         }
 
-        void ReadEventHeader(byte* headerPtr, bool useHeaderCompression, ref EventPipeEventHeader eventData)
+        void ReadEventHeader(ref SpanReader reader, bool useHeaderCompression, ref EventPipeEventHeader eventData)
         {
             if (FileFormatVersionNumber <= 3)
             {
-                EventPipeEventHeader.ReadFromFormatV3(headerPtr, ref eventData);
+                EventPipeEventHeader.ReadFromFormatV3(ref reader, ref eventData);
             }
             else // if (FileFormatVersionNumber == 4)
             {
-                EventPipeEventHeader.ReadFromFormatV4(headerPtr, useHeaderCompression, ref eventData);
+                EventPipeEventHeader.ReadFromFormatV4(ref reader, useHeaderCompression, ref eventData);
                 if (eventData.MetaDataId != 0 && StackCache.TryGetStack(eventData.StackId, out int stackBytesSize, out IntPtr stackBytes))
                 {
                     eventData.StackBytesSize = stackBytesSize;
@@ -940,7 +945,7 @@ namespace Microsoft.Diagnostics.Tracing
         private IBlockParser _parser;
         private Dictionary<TraceEvent, DynamicTraceEventData> _metadataTemplates =
             new Dictionary<TraceEvent, DynamicTraceEventData>(new ExternalTraceEventParserState.TraceEventComparer());
-        private EventPipeEventHeader _compressedHeader;
+        private EventPipeEventHeader _eventHeader;
         private int _eventsLost;
         private Guid _relatedActivityId;
         internal int _processId;
@@ -1673,25 +1678,30 @@ internal interface IBlockParser : IDisposable
             public Guid ActivityID;
             public Guid RelatedActivityID;
             public int PayloadSize;         // size in bytes of the user defined payload data.
-            public fixed byte Payload[4];   // Actually of variable size.  4 is used to avoid potential alignment issues.   This 4 also appears in HeaderSize below.
         }
 
-        public static void ReadFromFormatV3(byte* headerPtr, ref EventPipeEventHeader header)
+        public static void ReadFromFormatV3(ref SpanReader reader, ref EventPipeEventHeader header)
         {
-            LayoutV3* pLayout = (LayoutV3*)headerPtr;
-            header.EventSize = pLayout->EventSize;
-            header.MetaDataId = pLayout->MetaDataId;
-            header.ThreadId = pLayout->ThreadId;
+            ref readonly LayoutV3 layout = ref reader.ReadRef<LayoutV3>();
+            header.EventSize = layout.EventSize;
+            header.MetaDataId = layout.MetaDataId;
+            header.ThreadId = layout.ThreadId;
             header.CaptureThreadId = -1;
             header.CaptureProcNumber = -1;
-            header.TimeStamp = pLayout->TimeStamp;
-            header.ActivityID = pLayout->ActivityID;
-            header.RelatedActivityID = pLayout->RelatedActivityID;
-            header.PayloadSize = pLayout->PayloadSize;
-            header.Payload = (IntPtr)pLayout->Payload;
-            header.StackBytesSize = *((int*)(&pLayout->Payload[pLayout->PayloadSize]));
-            header.StackBytes = (IntPtr)(&pLayout->Payload[pLayout->PayloadSize + 4]);
-            header.HeaderSize = (sizeof(LayoutV3) - 4);
+            header.TimeStamp = layout.TimeStamp;
+            header.ActivityID = layout.ActivityID;
+            header.RelatedActivityID = layout.RelatedActivityID;
+            header.PayloadSize = layout.PayloadSize;
+
+            // these pointer conversions only work because the reader is backed by pinned memory
+            header.Payload = (IntPtr)Unsafe.AsPointer<byte>(ref MemoryMarshal.GetReference(reader.RemainingBytes));
+
+            // we want to peak ahead and read some data in the stack part of the event without advancing the reader's cursor
+            SpanReader eventReader = reader;
+            eventReader.ReadBytes(layout.PayloadSize);
+            header.StackBytesSize = eventReader.ReadInt32();
+            header.StackBytes = (IntPtr)Unsafe.AsPointer<byte>(ref MemoryMarshal.GetReference(eventReader.RemainingBytes));
+            header.HeaderSize = sizeof(LayoutV3);
             int totalSize = header.EventSize + 4;
             header.TotalNonHeaderSize = totalSize - header.HeaderSize;
         }
@@ -1710,7 +1720,6 @@ internal interface IBlockParser : IDisposable
             public Guid ActivityID;
             public Guid RelatedActivityID;
             public int PayloadSize;         // size in bytes of the user defined payload data.
-            public fixed byte Payload[4];   // Actually of variable size.  4 is used to avoid potential alignment issues.   This 4 also appears in HeaderSize below.
         }
 
         enum CompressedHeaderFlags
@@ -1725,82 +1734,41 @@ internal interface IBlockParser : IDisposable
             DataLength = 1 << 7
         }
 
-        static uint ReadVarUInt32(ref byte* pCursor)
-        {
-            uint val = 0;
-            int shift = 0;
-            byte b;
-            do
-            {
-                if (shift == 5 * 7)
-                {
-                    Debug.Assert(false, "VarUInt32 is too long");
-                    return val;
-                }
-                b = *pCursor;
-                pCursor++;
-                val |= (uint)(b & 0x7f) << shift;
-                shift += 7;
-            } while ((b & 0x80) != 0);
-            return val;
-        }
-
-        static ulong ReadVarUInt64(ref byte* pCursor)
-        {
-            ulong val = 0;
-            int shift = 0;
-            byte b;
-            do
-            {
-                if (shift == 10 * 7)
-                {
-                    Debug.Assert(false, "VarUInt64 is too long");
-                    return val;
-                }
-                b = *pCursor;
-                pCursor++;
-                val |= (ulong)(b & 0x7f) << shift;
-                shift += 7;
-            } while ((b & 0x80) != 0);
-            return val;
-        }
-
-        public static void ReadFromFormatV4(byte* headerPtr, bool useHeaderCompresion, ref EventPipeEventHeader header)
+        public static void ReadFromFormatV4(ref SpanReader reader, bool useHeaderCompresion, ref EventPipeEventHeader header)
         {
             if (!useHeaderCompresion)
             {
-                LayoutV4* pLayout = (LayoutV4*)headerPtr;
-                header.EventSize = pLayout->EventSize;
-                header.MetaDataId = pLayout->MetaDataId & 0x7FFF_FFFF;
-                header.IsSorted = ((uint)pLayout->MetaDataId & 0x8000_0000) == 0;
-                header.SequenceNumber = pLayout->SequenceNumber;
-                header.ThreadId = pLayout->ThreadId;
-                header.CaptureThreadId = pLayout->CaptureThreadId;
-                header.CaptureProcNumber = pLayout->CaptureProcNumber;
-                header.StackId = pLayout->StackId;
-                header.TimeStamp = pLayout->TimeStamp;
-                header.ActivityID = pLayout->ActivityID;
-                header.RelatedActivityID = pLayout->RelatedActivityID;
-                header.PayloadSize = pLayout->PayloadSize;
-                header.Payload = (IntPtr)pLayout->Payload;
-                header.HeaderSize = (sizeof(LayoutV4) - 4);
-                int totalSize = header.EventSize + 4;
-                header.TotalNonHeaderSize = totalSize - header.HeaderSize;
+                ref readonly LayoutV4 layout = ref reader.ReadRef<LayoutV4>();
+                header.EventSize = layout.EventSize;
+                header.MetaDataId = layout.MetaDataId & 0x7FFF_FFFF;
+                header.IsSorted = ((uint)layout.MetaDataId & 0x8000_0000) == 0;
+                header.SequenceNumber = layout.SequenceNumber;
+                header.ThreadId = layout.ThreadId;
+                header.CaptureThreadId = layout.CaptureThreadId;
+                header.CaptureProcNumber = layout.CaptureProcNumber;
+                header.StackId = layout.StackId;
+                header.TimeStamp = layout.TimeStamp;
+                header.ActivityID = layout.ActivityID;
+                header.RelatedActivityID = layout.RelatedActivityID;
+                header.PayloadSize = layout.PayloadSize;
+                // these pointer conversions only work because the reader is backed by pinned memory
+                header.Payload = (IntPtr)Unsafe.AsPointer<byte>(ref MemoryMarshal.GetReference(reader.RemainingBytes));
+                header.HeaderSize = sizeof(LayoutV4);
+                header.TotalNonHeaderSize = header.PayloadSize;
             }
             else
             {
-                byte* headerStart = headerPtr;
-                byte flags = *headerPtr;
-                headerPtr++;
+                long startOffset = reader.StreamOffset;
+                byte flags = reader.ReadUInt8();
                 if((flags & (byte)CompressedHeaderFlags.MetadataId) != 0)
                 {
-                    header.MetaDataId = (int)ReadVarUInt32(ref headerPtr);
+                    header.MetaDataId = (int)reader.ReadVarUInt32();
                 }
                 if ((flags & (byte)CompressedHeaderFlags.CaptureThreadAndSequence) != 0)
                 {
-                    header.SequenceNumber += (int)ReadVarUInt32(ref headerPtr) + 1;
-                    header.CaptureThreadId = (long)ReadVarUInt64(ref headerPtr);
-                    header.CaptureProcNumber = (int)ReadVarUInt32(ref headerPtr);
+                    header.SequenceNumber += (int)reader.ReadVarUInt32() + 1;
+                    header.CaptureThreadId = (long)reader.ReadVarUInt64();
+                    header.CaptureProcNumber = (int)reader.ReadVarUInt32();
                 }
                 else
                 {
@@ -1811,32 +1779,31 @@ internal interface IBlockParser : IDisposable
                 }
                 if ((flags & (byte)CompressedHeaderFlags.ThreadId) != 0)
                 {
-                    header.ThreadId = (int)ReadVarUInt64(ref headerPtr);
+                    header.ThreadId = (long)reader.ReadVarUInt64(); ;
                 }
                 if ((flags & (byte)CompressedHeaderFlags.StackId) != 0)
                 {
-                    header.StackId = (int)ReadVarUInt32(ref headerPtr);
+                    header.StackId = (int)reader.ReadVarUInt32();
                 }
-                ulong timestampDelta = ReadVarUInt64(ref headerPtr);
+                ulong timestampDelta = reader.ReadVarUInt64(); ;
                 header.TimeStamp += (long)timestampDelta;
                 if ((flags & (byte)CompressedHeaderFlags.ActivityId) != 0)
                 {
-                    header.ActivityID = *(Guid*)headerPtr;
-                    headerPtr += sizeof(Guid);
+                    header.ActivityID = reader.Read<Guid>();
                 }
                 if ((flags & (byte)CompressedHeaderFlags.RelatedActivityId) != 0)
                 {
-                    header.RelatedActivityID = *(Guid*)headerPtr;
-                    headerPtr += sizeof(Guid);
+                    header.RelatedActivityID = reader.Read<Guid>();
                 }
                 header.IsSorted = (flags & (byte)CompressedHeaderFlags.Sorted) != 0;
                 if ((flags & (byte)CompressedHeaderFlags.DataLength) != 0)
                 {
-                    header.PayloadSize = (int)ReadVarUInt32(ref headerPtr);
+                    header.PayloadSize = (int)reader.ReadVarUInt32();
                 }
-                header.Payload = (IntPtr)headerPtr;
+                header.HeaderSize = (int)(reader.StreamOffset - startOffset);
 
-                header.HeaderSize = (int)(headerPtr - headerStart);
+                // this only works because the span is backed by pinned memory
+                header.Payload = (IntPtr)Unsafe.AsPointer<byte>(ref MemoryMarshal.GetReference(reader.RemainingBytes));
                 header.TotalNonHeaderSize = header.PayloadSize;
             }
 

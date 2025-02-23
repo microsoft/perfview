@@ -15,31 +15,32 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         public event ParseBufferItemFunction OnEvent;
         public event Action<int> OnEventsDropped;
 
-        public unsafe void ProcessEventBlock(byte[] eventBlockData)
+        public void ProcessEventBlock(byte[] eventBlockData, long streamOffset)
         {
+            PinnedBuffer buffer = new PinnedBuffer(eventBlockData);
+            SpanReader reader = new SpanReader(eventBlockData, streamOffset);
+
             // parse the header
-            if(eventBlockData.Length < 20)
+            if (eventBlockData.Length < 20)
             {
-                Debug.Assert(false, "Expected EventBlock of at least 20 bytes");
-                return;
+                throw new FormatException("Expected EventBlock of at least 20 bytes");
             }
-            ushort headerSize = BitConverter.ToUInt16(eventBlockData, 0);
+            ushort headerSize = reader.ReadUInt16();
             if(headerSize < 20 || headerSize > eventBlockData.Length)
             {
-                Debug.Assert(false, "Invalid EventBlock header size");
-                return;
+                throw new FormatException("Invalid EventBlock header size");
             }
-            ushort flags = BitConverter.ToUInt16(eventBlockData, 2);
+            ushort flags = reader.ReadUInt16();
             bool useHeaderCompression = (flags & (ushort)EventBlockFlags.HeaderCompression) != 0;
 
+            // skip the rest of the header
+            reader.ReadBytes(headerSize - 4);
+
             // parse the events
-            PinnedBuffer buffer = new PinnedBuffer(eventBlockData);
-            byte* cursor = (byte*)buffer.PinningHandle.AddrOfPinnedObject();
-            byte* end = cursor + eventBlockData.Length;
-            cursor += headerSize;
             EventMarker eventMarker = new EventMarker(buffer);
             long timestamp = 0;
-            EventPipeEventHeader.ReadFromFormatV4(cursor, useHeaderCompression, ref eventMarker.Header);
+            SpanReader tempReader = reader;
+            EventPipeEventHeader.ReadFromFormatV4(ref tempReader, useHeaderCompression, ref eventMarker.Header);
             if (!_threads.TryGetValue(eventMarker.Header.CaptureThreadId, out EventCacheThread thread))
             {
                 thread = new EventCacheThread();
@@ -47,9 +48,9 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 AddThread(eventMarker.Header.CaptureThreadId, thread);
             }
             eventMarker = new EventMarker(buffer);
-            while (cursor < end)
+            while (reader.RemainingBytes.Length > 0)
             {
-                EventPipeEventHeader.ReadFromFormatV4(cursor, useHeaderCompression, ref eventMarker.Header);
+                EventPipeEventHeader.ReadFromFormatV4(ref reader, useHeaderCompression, ref eventMarker.Header);
                 bool isSortedEvent = eventMarker.Header.IsSorted;
                 timestamp = eventMarker.Header.TimeStamp;
                 int sequenceNumber = eventMarker.Header.SequenceNumber;
@@ -91,7 +92,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
                 }
 
-                cursor += eventMarker.Header.TotalNonHeaderSize + eventMarker.Header.HeaderSize;
+                reader.ReadBytes(eventMarker.Header.PayloadSize);
                 EventMarker lastEvent = eventMarker;
                 eventMarker = new EventMarker(buffer);
                 eventMarker.Header = lastEvent.Header;
