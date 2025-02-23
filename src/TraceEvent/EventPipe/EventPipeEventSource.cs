@@ -259,17 +259,26 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal void ReadMetadataBlockV5OrLess(PinnedStreamReader reader, StreamLabel startBlockLabel, StreamLabel endBlockLabel)
         {
-            ResetCompressedHeader();
-            short headerSize = reader.ReadInt16();
-            Debug.Assert(headerSize >= 20);
-            short flags = reader.ReadInt16();
-            long minTimeStamp = reader.ReadInt64();
-            long maxTimeStamp = reader.ReadInt64();
+            int blockLength = (int)endBlockLabel.Sub(startBlockLabel);
+            byte[] metadataBlockBytes = new byte[blockLength];
+            reader.Read(metadataBlockBytes, 0, metadataBlockBytes.Length);
+            SpanReader metadataReader = new SpanReader(metadataBlockBytes, (long)startBlockLabel);
 
-            reader.Goto(startBlockLabel.Add(headerSize));
-            while (reader.Current < endBlockLabel)
+            short headerSize = metadataReader.ReadInt16();
+            if(headerSize < 20)
             {
-                ReadAndDispatchEvent(reader, (flags & (short)EventBlockFlags.HeaderCompression) != 0);
+                throw new FormatException($"Invalid metadata header size {headerSize}");
+            }
+            SpanReader headerReader = new SpanReader(metadataReader.ReadBytes(headerSize-2), (long)startBlockLabel+2);
+            short flags = headerReader.ReadInt16();
+
+            EventPipeEventHeader eventHeader = new EventPipeEventHeader();
+            while (metadataReader.RemainingBytes.Length > 0)
+            {
+                ReadEventHeader(ref metadataReader, (flags & (short)EventBlockFlags.HeaderCompression) != 0, ref eventHeader);
+                long streamOffset = metadataReader.StreamOffset;
+                SpanReader payloadReader = new SpanReader(metadataReader.ReadBytes(eventHeader.PayloadSize), streamOffset);
+                ReadAndCacheMetadata(ref payloadReader);
             }
         }
 
@@ -381,17 +390,9 @@ namespace Microsoft.Diagnostics.Tracing
             if (eventData.IsMetadata())
             {
                 int payloadSize = eventData.PayloadSize;
-                // Note that this skip invalidates the eventData pointer, so it is important to pull any fields out we need first.
                 reader.Skip(eventData.HeaderSize);
-
                 SpanReader metadataReader = new SpanReader(new ReadOnlySpan<byte>(reader.GetPointer(payloadSize), payloadSize), (long)reader.Current);
-                NetTraceMetadata metadata = ReadMetadata(ref metadataReader);
-
-                DynamicTraceEventData eventTemplate = CreateTemplate(metadata);
-                _eventMetadataDictionary.Add(metadata.MetaDataId, metadata);
-                _metadataTemplates[eventTemplate] = eventTemplate;
-
-                Debug.Assert(eventData.StackBytesSize == 0, "Meta-data events should always have a empty stack");
+                ReadAndCacheMetadata(ref metadataReader);
             }
             else
             {
@@ -401,6 +402,19 @@ namespace Microsoft.Diagnostics.Tracing
             reader.Goto(eventDataEnd);
 
             return ret;
+        }
+
+        /// <summary>
+        /// Read the metadata payload and cache it for later use.
+        /// </summary>
+        /// <param name="reader">The reader should be exactly long enough for one metadata blob</param>
+        private void ReadAndCacheMetadata(ref SpanReader reader)
+        {
+            NetTraceMetadata metadata = ReadMetadata(ref reader);
+            Debug.Assert(reader.RemainingBytes.Length == 0);
+            DynamicTraceEventData eventTemplate = CreateTemplate(metadata);
+            _eventMetadataDictionary.Add(metadata.MetaDataId, metadata);
+            _metadataTemplates[eventTemplate] = eventTemplate;
         }
 
         private NetTraceMetadata ReadMetadata(ref SpanReader reader)
