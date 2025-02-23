@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -129,6 +130,22 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             string result = Encoding.UTF8.GetString(textBytes);
             _buffer = _buffer.Slice(length);
             return result;
+        }
+
+        public string ReadNullTerminatedUTF16String()
+        {
+            ReadOnlySpan<char> charBuffer = MemoryMarshal.Cast<byte, char>(_buffer);
+            for(int i = 0; i < charBuffer.Length; i++)
+            {
+                if (charBuffer[i] == 0)
+                {
+                    string ret = new string(charBuffer.Slice(0, i).ToArray());
+                    _buffer = _buffer.Slice((i + 1) * 2);
+                    return ret;
+                }
+            }
+            ThrowFormatException(_buffer.Length, "NullTerminatedUTF16String");
+            return null; // unreachable
         }
 
         private void ThrowFormatException<T>()

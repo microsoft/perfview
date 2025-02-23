@@ -384,7 +384,8 @@ namespace Microsoft.Diagnostics.Tracing
                 // Note that this skip invalidates the eventData pointer, so it is important to pull any fields out we need first.
                 reader.Skip(eventData.HeaderSize);
 
-                NetTraceMetadata metadata = ReadMetadata(reader, payloadSize);
+                SpanReader metadataReader = new SpanReader(new ReadOnlySpan<byte>(reader.GetPointer(payloadSize), payloadSize), (long)reader.Current);
+                NetTraceMetadata metadata = ReadMetadata(ref metadataReader);
 
                 DynamicTraceEventData eventTemplate = CreateTemplate(metadata);
                 _eventMetadataDictionary.Add(metadata.MetaDataId, metadata);
@@ -402,48 +403,41 @@ namespace Microsoft.Diagnostics.Tracing
             return ret;
         }
 
-        private NetTraceMetadata ReadMetadata(PinnedStreamReader reader, int payloadSize)
+        private NetTraceMetadata ReadMetadata(ref SpanReader reader)
         {
-            StreamLabel metadataV1Start = reader.Current;
-            StreamLabel metaDataEnd = reader.Current.Add(payloadSize);
-
             // Read in the header (The header does not include payload parameter information)
             var metadata = new NetTraceMetadata(PointerSize, _processId);
-            metadata.ParseHeader(reader, payloadSize, FileFormatVersionNumber);
+            metadata.ParseHeader(ref reader, FileFormatVersionNumber);
 
             // If the metadata contains no parameter metadata, don't attempt to read it.
-            if (reader.Current == metaDataEnd)
+            if (reader.RemainingBytes.Length == 0)
             {
                 metadata.InitDefaultParameters();
             }
             else
             {
-                ParseEventParameters(metadata, reader, metaDataEnd, NetTraceFieldLayoutVersion.V1);
+                ParseEventParameters(metadata, ref reader, NetTraceFieldLayoutVersion.V1);
             }
 
-            while (reader.Current < metaDataEnd)
+            while (reader.RemainingBytes.Length > 0)
             {
                 // If we've already parsed the V1 metadata and there's more left to decode,
                 // then we have some tags to read
                 int tagLength = reader.ReadInt32();
-                EventPipeMetadataTag tag = (EventPipeMetadataTag)reader.ReadByte();
-                StreamLabel tagEndLabel = reader.Current.Add(tagLength);
+                EventPipeMetadataTag tag = (EventPipeMetadataTag)reader.ReadUInt8();
+                long offset = reader.StreamOffset;
+                SpanReader tagReader = new SpanReader(reader.ReadBytes(tagLength), offset);
 
                 if (tag == EventPipeMetadataTag.ParameterPayloadV2)
                 {
-                    ParseEventParameters(metadata, reader, tagEndLabel, NetTraceFieldLayoutVersion.V2);
+                    ParseEventParameters(metadata, ref tagReader, NetTraceFieldLayoutVersion.V2);
                 }
                 else if (tag == EventPipeMetadataTag.Opcode)
                 {
                     Debug.Assert(tagLength == 1);
-                    metadata.Opcode = reader.ReadByte();
+                    metadata.Opcode = tagReader.ReadUInt8();
                 }
-
-                // Skip any remaining bytes or unknown tags
-                reader.Goto(tagEndLabel);
             }
-
-            Debug.Assert(reader.Current == metaDataEnd);
 
             metadata.ApplyTransforms();
             return metadata;
@@ -538,13 +532,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// event, create a new  DynamicTraceEventData that knows how to parse that event.
         /// ReaderForParameters.Current is advanced past the parameter information.
         /// </summary>
-        private void ParseEventParameters(NetTraceMetadata metadata, PinnedStreamReader readerForParameters,
-            StreamLabel metadataBlobEnd, NetTraceFieldLayoutVersion fieldLayoutVersion)
+        private void ParseEventParameters(NetTraceMetadata metadata, ref SpanReader reader, NetTraceFieldLayoutVersion fieldLayoutVersion)
         {
             DynamicTraceEventData.PayloadFetchClassInfo classInfo = null;
 
             // Read the count of event payload fields.
-            int fieldCount = readerForParameters.ReadInt32();
+            int fieldCount = reader.ReadInt32();
             Debug.Assert(0 <= fieldCount && fieldCount < 0x4000);
 
             if (fieldCount > 0)
@@ -552,7 +545,7 @@ namespace Microsoft.Diagnostics.Tracing
                 try
                 {
                     // Recursively parse the metadata, building up a list of payload names and payload field fetch objects.
-                    classInfo = ParseFields(readerForParameters, fieldCount, metadataBlobEnd, fieldLayoutVersion);
+                    classInfo = ParseFields(ref reader, fieldCount, fieldLayoutVersion);
                 }
                 catch (FormatException)
                 {
@@ -585,8 +578,7 @@ namespace Microsoft.Diagnostics.Tracing
             return template;
         }
 
-        private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(PinnedStreamReader reader, int numFields, StreamLabel metadataBlobEnd,
-            NetTraceFieldLayoutVersion fieldLayoutVersion)
+        private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(ref SpanReader reader, int numFields, NetTraceFieldLayoutVersion fieldLayoutVersion)
         {
             string[] fieldNames = new string[numFields];
             DynamicTraceEventData.PayloadFetch[] fieldFetches = new DynamicTraceEventData.PayloadFetch[numFields];
@@ -594,28 +586,20 @@ namespace Microsoft.Diagnostics.Tracing
             ushort offset = 0;
             for (int fieldIndex = 0; fieldIndex < numFields; fieldIndex++)
             {
-                StreamLabel fieldEnd = metadataBlobEnd;
                 string fieldName = "<unknown_field>";
+                DynamicTraceEventData.PayloadFetch payloadFetch;
                 if (fieldLayoutVersion >= NetTraceFieldLayoutVersion.V2)
                 {
-                    StreamLabel fieldStart = reader.Current;
-                    int fieldLength = reader.ReadInt32();
-                    fieldEnd = fieldStart.Add(fieldLength);
-                    Debug.Assert(fieldEnd <= metadataBlobEnd);
-
-                    fieldName = reader.ReadNullTerminatedUnicodeString();
+                    long fieldLength = reader.ReadInt32();
+                    long streamOffset = reader.StreamOffset;
+                    SpanReader fieldReader = new SpanReader(reader.ReadBytes((int)fieldLength - 4), streamOffset + 4);
+                    fieldName = fieldReader.ReadNullTerminatedUTF16String();
+                    payloadFetch = ParseType(ref fieldReader, offset, fieldName, fieldLayoutVersion);
                 }
-
-                DynamicTraceEventData.PayloadFetch payloadFetch = ParseType(reader, offset, fieldEnd, fieldName, fieldLayoutVersion);
-
-                if (fieldLayoutVersion <= NetTraceFieldLayoutVersion.V1)
+                else
                 {
-                    // Read the string name of the event payload field.
-                    // The older format put the name after the type signature rather
-                    // than before it. This is a bit worse for diagnostics because
-                    // we won't have the name available to associate with any failure
-                    // reading the type signature above.
-                    fieldName = reader.ReadNullTerminatedUnicodeString();
+                    payloadFetch = ParseType(ref reader, offset, fieldName, fieldLayoutVersion);
+                    fieldName = reader.ReadNullTerminatedUTF16String();
                 }
 
                 fieldNames[fieldIndex] = fieldName;
@@ -632,13 +616,6 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // Save the current payload fetch.
                 fieldFetches[fieldIndex] = payloadFetch;
-
-                if (fieldLayoutVersion >= NetTraceFieldLayoutVersion.V2)
-                {
-                    // skip over any data that a later version of the format may append
-                    Debug.Assert(reader.Current <= fieldEnd);
-                    reader.Goto(fieldEnd);
-                }
             }
 
             return new DynamicTraceEventData.PayloadFetchClassInfo()
@@ -649,13 +626,11 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         private DynamicTraceEventData.PayloadFetch ParseType(
-            PinnedStreamReader reader,
+            ref SpanReader reader,
             ushort offset,
-            StreamLabel fieldEnd,
             string fieldName,
             NetTraceFieldLayoutVersion fieldLayoutVersion)
         {
-            Debug.Assert(reader.Current < fieldEnd);
             DynamicTraceEventData.PayloadFetch payloadFetch = new DynamicTraceEventData.PayloadFetch();
 
             // Read the TypeCode for the current field.
@@ -783,7 +758,7 @@ namespace Microsoft.Diagnostics.Tracing
                         // Read the number of fields in the struct.  Each of these fields could be an embedded struct,
                         // but these embedded structs are still counted as single fields.  They will be expanded when they are handled.
                         int structFieldCount = reader.ReadInt32();
-                        DynamicTraceEventData.PayloadFetchClassInfo embeddedStructClassInfo = ParseFields(reader, structFieldCount, fieldEnd, fieldLayoutVersion);
+                        DynamicTraceEventData.PayloadFetchClassInfo embeddedStructClassInfo = ParseFields(ref reader, structFieldCount, fieldLayoutVersion);
                         if (embeddedStructClassInfo == null)
                         {
                             throw new FormatException($"Field {fieldName}: Unable to parse metadata for embedded struct");
@@ -799,7 +774,7 @@ namespace Microsoft.Diagnostics.Tracing
                             throw new FormatException($"EventPipeEventSource.ArrayTypeCode is not a valid type code in V1 field metadata.");
                         }
 
-                        DynamicTraceEventData.PayloadFetch elementType = ParseType(reader, 0, fieldEnd, fieldName, fieldLayoutVersion);
+                        DynamicTraceEventData.PayloadFetch elementType = ParseType(ref reader, 0, fieldName, fieldLayoutVersion);
                         // This fetchSize marks the array as being prefixed with an unsigned 16 bit count of elements
                         ushort fetchSize = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.ELEM_COUNT;
                         payloadFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(offset, elementType, fetchSize);
@@ -1261,16 +1236,16 @@ internal interface IBlockParser : IDisposable
             }
         }
 
-        public void ParseHeader(PinnedStreamReader reader, int length, int fileFormatVersion)
+        public void ParseHeader(ref SpanReader reader, int fileFormatVersion)
         {
             if (fileFormatVersion >= 3)
             {
-                ReadNetTraceMetadata(reader);
+                ReadNetTraceMetadata(ref reader);
             }
 #if SUPPORT_V1_V2
             else
             {
-                ReadObsoleteEventMetaData(reader, fileFormatVersion);
+                ReadObsoleteEventMetaData(ref reader, fileFormatVersion);
             }
 #endif
         }
@@ -1381,37 +1356,37 @@ internal interface IBlockParser : IDisposable
         /// <summary>
         /// Reads the meta data for information specific to one event.
         /// </summary>
-        private void ReadNetTraceMetadata(PinnedStreamReader reader)
+        private void ReadNetTraceMetadata(ref SpanReader reader)
         {
             MetaDataId = reader.ReadInt32();
-            ProviderName = reader.ReadNullTerminatedUnicodeString();
-            ReadMetadataCommon(reader);
+            ProviderName = reader.ReadNullTerminatedUTF16String();
+            ReadMetadataCommon(ref reader);
         }
 
-        private void ReadMetadataCommon(PinnedStreamReader reader)
+        private void ReadMetadataCommon(ref SpanReader reader)
         {
             EventId = (ushort)reader.ReadInt32();
-            EventName = reader.ReadNullTerminatedUnicodeString();
+            EventName = reader.ReadNullTerminatedUTF16String();
             Keywords = (ulong)reader.ReadInt64();
             EventVersion = (byte)reader.ReadInt32();
             Level = (byte)reader.ReadInt32();
         }
 
 #if SUPPORT_V1_V2
-        private void ReadObsoleteEventMetaData(PinnedStreamReader reader, int fileFormatVersion)
+        private void ReadObsoleteEventMetaData(ref SpanReader reader, int fileFormatVersion)
         {
             Debug.Assert(fileFormatVersion <= 2);
 
             // Old versions use the stream offset as the MetaData ID, but the reader has advanced to the payload so undo it.
-            MetaDataId = ((int)reader.Current) - EventPipeEventHeader.GetHeaderSize(fileFormatVersion);
+            MetaDataId = ((int)reader.StreamOffset) - EventPipeEventHeader.GetHeaderSize(fileFormatVersion);
 
             if (fileFormatVersion == 1)
             {
-                ProviderId = reader.ReadGuid();
+                ProviderId = reader.Read<Guid>();
             }
             else
             {
-                ProviderName = reader.ReadNullTerminatedUnicodeString();
+                ProviderName = reader.ReadNullTerminatedUTF16String();
             }
 
             EventId = (ushort)reader.ReadInt32();
@@ -1419,7 +1394,7 @@ internal interface IBlockParser : IDisposable
             int metadataLength = reader.ReadInt32();
             if (0 < metadataLength)
             {
-                ReadMetadataCommon(reader);
+                ReadMetadataCommon(ref reader);
             }
         }
 #endif
