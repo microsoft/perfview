@@ -12,6 +12,11 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
     internal class EventCache
     {
+        public EventCache(EventPipeEventSource source)
+        {
+            _source = source;
+        }
+
         public event ParseBufferItemFunction OnEvent;
         public event Action<int> OnEventsDropped;
 
@@ -40,7 +45,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             EventMarker eventMarker = new EventMarker(buffer);
             long timestamp = 0;
             SpanReader tempReader = reader;
-            EventPipeEventHeader.ReadFromFormatV4(ref tempReader, useHeaderCompression, ref eventMarker.Header);
+            _source.ReadEventHeader(ref tempReader, useHeaderCompression, ref eventMarker.Header);
             if (!_threads.TryGetValue(eventMarker.Header.CaptureThreadId, out EventCacheThread thread))
             {
                 thread = new EventCacheThread();
@@ -50,7 +55,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             eventMarker = new EventMarker(buffer);
             while (reader.RemainingBytes.Length > 0)
             {
-                EventPipeEventHeader.ReadFromFormatV4(ref reader, useHeaderCompression, ref eventMarker.Header);
+                _source.ReadEventHeader(ref reader, useHeaderCompression, ref eventMarker.Header);
                 bool isSortedEvent = eventMarker.Header.IsSorted;
                 timestamp = eventMarker.Header.TimeStamp;
                 int sequenceNumber = eventMarker.Header.SequenceNumber;
@@ -244,6 +249,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             _threads[captureThreadId] = thread;
         }
 
+        EventPipeEventSource _source;
         Dictionary<long, EventCacheThread> _threads = new Dictionary<long, EventCacheThread>();
     }
 

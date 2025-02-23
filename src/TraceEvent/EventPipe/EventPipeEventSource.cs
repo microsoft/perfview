@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -50,7 +51,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (!isStreaming)
                 ParseHeaders();
 
-            EventCache = new EventCache();
+            EventCache = new EventCache(this);
             EventCache.OnEvent += EventCache_OnEvent;
             EventCache.OnEventsDropped += EventCache_OnEventsDropped;
             StackCache = new StackCache();
@@ -248,28 +249,30 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        internal void ReadEventBlockV4OrGreater(PinnedStreamReader reader, StreamLabel startBlockLabel, StreamLabel endBlockLabel)
+        internal void ReadEventBlockV3OrLess(byte[] blockBytes, long startBlockStreamOffset)
         {
-            ResetCompressedHeader();
-            int blockLength = (int)endBlockLabel.Sub(startBlockLabel);
-            byte[] eventBlockBytes = new byte[blockLength];
-            reader.Read(eventBlockBytes, 0, eventBlockBytes.Length);
-            EventCache.ProcessEventBlock(eventBlockBytes, (long)startBlockLabel);
+            SpanReader eventBlockReader = new SpanReader(blockBytes, startBlockStreamOffset);
+            while (eventBlockReader.RemainingBytes.Length > 0)
+            {
+                ReadAndProcessEvent(ref eventBlockReader);
+            }
         }
 
-        internal void ReadMetadataBlockV5OrLess(PinnedStreamReader reader, StreamLabel startBlockLabel, StreamLabel endBlockLabel)
+        internal void ReadEventBlockV4OrGreater(byte[] blockBytes, long startBlockStreamOffset)
         {
-            int blockLength = (int)endBlockLabel.Sub(startBlockLabel);
-            byte[] metadataBlockBytes = new byte[blockLength];
-            reader.Read(metadataBlockBytes, 0, metadataBlockBytes.Length);
-            SpanReader metadataReader = new SpanReader(metadataBlockBytes, (long)startBlockLabel);
+            EventCache.ProcessEventBlock(blockBytes, startBlockStreamOffset);
+        }
+
+        internal void ReadMetadataBlockV5OrLess(byte[] blockBytes, long startBlockStreamOffset)
+        {
+            SpanReader metadataReader = new SpanReader(blockBytes, (long)startBlockStreamOffset);
 
             short headerSize = metadataReader.ReadInt16();
             if(headerSize < 20)
             {
                 throw new FormatException($"Invalid metadata header size {headerSize}");
             }
-            SpanReader headerReader = new SpanReader(metadataReader.ReadBytes(headerSize-2), (long)startBlockLabel+2);
+            SpanReader headerReader = new SpanReader(metadataReader.ReadBytes(headerSize-2), (long)startBlockStreamOffset + 2);
             short flags = headerReader.ReadInt16();
 
             EventPipeEventHeader eventHeader = new EventPipeEventHeader();
@@ -282,28 +285,72 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        internal void ReadSequencePointBlockV5OrLess(PinnedStreamReader reader, StreamLabel startBlockLabel, StreamLabel endBlockLabel)
+        internal void ReadSequencePointBlockV5OrLess(byte[] blockBytes, long startBlockStreamOffset)
         {
-            byte[] blockBytes = new byte[endBlockLabel.Sub(startBlockLabel)];
-            reader.Read(blockBytes, 0, blockBytes.Length);
             EventCache.ProcessSequencePointBlock(blockBytes);
             StackCache.Flush();
         }
 
-        internal void ReadStackBlock(PinnedStreamReader reader, StreamLabel startBlockLabel, StreamLabel endBlockLabel)
+        internal void ReadStackBlock(byte[] blockBytes, long startBlockStreamOffset)
         {
-            int blockLength = (int)endBlockLabel.Sub(startBlockLabel);
-            byte[] stackBlockBytes = new byte[blockLength];
-            reader.Read(stackBlockBytes, 0, stackBlockBytes.Length);
-            StackCache.ProcessStackBlock(stackBlockBytes);
+            StackCache.ProcessStackBlock(blockBytes);
         }
 
-        internal void ReadAndDispatchEvent(PinnedStreamReader reader, bool useHeaderCompression)
+#if SUPPORT_V1_V2
+        /// <summary>
+        /// Parses one event from the stream. If it is a metadata event it is cached for later use.
+        /// If it is a regular event it is dispatched to the registered event handlers.
+        /// </summary>
+        internal void ReadAndProcessEvent(PinnedStreamReader reader)
         {
-            DispatchEventRecord(ReadEvent(reader, useHeaderCompression));
+            Debug.Assert(FileFormatVersionNumber <= 2);
+            byte* headerPtr = reader.GetPointer(EventPipeEventHeader.GetHeaderSize(FileFormatVersionNumber));
+            int totalSize = EventPipeEventHeader.GetTotalEventSize(headerPtr, FileFormatVersionNumber);
+            headerPtr = reader.GetPointer(totalSize); // now we now the real size and get read entire event
+            ReadOnlySpan<byte> eventSpan = new ReadOnlySpan<byte>(headerPtr, totalSize);
+            SpanReader eventReader = new SpanReader(eventSpan, (long)reader.Current);
+            ReadAndProcessEvent(ref eventReader);
+        }
+#endif
+
+        /// <summary>
+        /// Parses one event from the stream. If it is a metadata event it is cached for later use.
+        /// If it is a regular event it is dispatched to the registered event handlers.
+        /// </summary>
+        private void ReadAndProcessEvent(ref SpanReader reader)
+        {
+            Debug.Assert(FileFormatVersionNumber <= 3);
+            EventPipeEventHeader header = new EventPipeEventHeader();
+            ReadEventHeader(ref reader, false, ref header);
+            ReadAndProcessEvent(ref reader, header);
         }
 
-        internal void DispatchEventRecord(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
+        /// <summary>
+        /// Parses one event from the stream. If it is a metadata event it is cached for later use.
+        /// If it is a regular event it is dispatched to the registered event handlers.
+        /// The event header has already been parsed and the reader should be positioned at the start of the event payload.
+        /// </summary>
+        private void ReadAndProcessEvent(ref SpanReader reader, EventPipeEventHeader eventHeader)
+        {
+            Debug.Assert(FileFormatVersionNumber <= 3);
+            long offset = reader.StreamOffset;
+            SpanReader payloadReader = new SpanReader(reader.ReadBytes(eventHeader.PayloadSize), offset);
+            if (eventHeader.IsMetadata())
+            {
+                ReadAndCacheMetadata(ref payloadReader);
+            }
+            else
+            {
+                DispatchEventRecord(ConvertEventHeaderToRecord(ref eventHeader));
+            }
+            if(eventHeader.PayloadSize < eventHeader.TotalNonHeaderSize)
+            {
+                // In V3 format and earlier there was a trailing stack trace after the event payload that we need to skip.
+                reader.ReadBytes(eventHeader.TotalNonHeaderSize - eventHeader.PayloadSize);
+            }
+        }
+
+        private void DispatchEventRecord(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             if (eventRecord != null)
             {
@@ -322,45 +369,13 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        internal void ResetCompressedHeader()
-        {
-            _eventHeader = new EventPipeEventHeader();
-        }
-
-        internal TraceEventNativeMethods.EVENT_RECORD* ReadEvent(PinnedStreamReader reader, bool useHeaderCompression)
-        {
-            byte* headerPtr = null;
-
-            if (useHeaderCompression)
-            {
-                // The header uses a variable size encoding, but it is certainly smaller than 100 bytes
-                const int maxHeaderSize = 100;
-                headerPtr = reader.GetPointer(maxHeaderSize);
-                ReadOnlySpan<byte> headerSpan = new ReadOnlySpan<byte>(headerPtr, maxHeaderSize);
-                SpanReader headerReader = new SpanReader(headerSpan, (long)reader.Current);
-                ReadEventHeader(ref headerReader, useHeaderCompression, ref _eventHeader);
-                return ReadEvent(_eventHeader, reader);
-            }
-            else
-            {
-                headerPtr = reader.GetPointer(EventPipeEventHeader.GetHeaderSize(FileFormatVersionNumber));
-                int totalSize = EventPipeEventHeader.GetTotalEventSize(headerPtr, FileFormatVersionNumber);
-                headerPtr = reader.GetPointer(totalSize); // now we now the real size and get read entire event
-                EventPipeEventHeader eventData = new EventPipeEventHeader();
-                ReadOnlySpan<byte> eventSpan = new ReadOnlySpan<byte>(headerPtr, totalSize);
-                SpanReader headerReader = new SpanReader(eventSpan, (long)reader.Current);
-                ReadEventHeader(ref headerReader, useHeaderCompression, ref eventData);
-                return ReadEvent(eventData, reader);
-            }
-        }
-
-        void ReadEventHeader(ref SpanReader reader, bool useHeaderCompression, ref EventPipeEventHeader eventData)
+        internal void ReadEventHeader(ref SpanReader reader, bool useHeaderCompression, ref EventPipeEventHeader eventData)
         {
             if (FileFormatVersionNumber <= 3)
             {
                 EventPipeEventHeader.ReadFromFormatV3(ref reader, ref eventData);
             }
-            else // if (FileFormatVersionNumber == 4)
+            else // if (FileFormatVersionNumber >= 4)
             {
                 EventPipeEventHeader.ReadFromFormatV4(ref reader, useHeaderCompression, ref eventData);
                 if (eventData.MetaDataId != 0 && StackCache.TryGetStack(eventData.StackId, out int stackBytesSize, out IntPtr stackBytes))
@@ -378,30 +393,6 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(FileFormatVersionNumber != 3 ||
                 ((long)eventData.Payload % 4 == 0 && eventData.TotalNonHeaderSize % 4 == 0)); // ensure 4 byte alignment
             Debug.Assert(0 <= eventData.StackBytesSize && eventData.StackBytesSize <= 800);
-        }
-
-
-        private TraceEventNativeMethods.EVENT_RECORD* ReadEvent(EventPipeEventHeader eventData, PinnedStreamReader reader)
-        {
-            StreamLabel headerStart = reader.Current;
-            StreamLabel eventDataEnd = headerStart.Add(eventData.HeaderSize + eventData.TotalNonHeaderSize);
-
-            TraceEventNativeMethods.EVENT_RECORD* ret = null;
-            if (eventData.IsMetadata())
-            {
-                int payloadSize = eventData.PayloadSize;
-                reader.Skip(eventData.HeaderSize);
-                SpanReader metadataReader = new SpanReader(new ReadOnlySpan<byte>(reader.GetPointer(payloadSize), payloadSize), (long)reader.Current);
-                ReadAndCacheMetadata(ref metadataReader);
-            }
-            else
-            {
-                ret = ConvertEventHeaderToRecord(ref eventData);
-            }
-
-            reader.Goto(eventDataEnd);
-
-            return ret;
         }
 
         /// <summary>
@@ -485,11 +476,6 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void EventCache_OnEvent(ref EventPipeEventHeader header)
         {
-            if (header.MetaDataId != 0 && StackCache.TryGetStack(header.StackId, out int stackBytesSize, out IntPtr stackBytes))
-            {
-                header.StackBytesSize = stackBytesSize;
-                header.StackBytes = stackBytes;
-            }
             _relatedActivityId = header.RelatedActivityID;
             TraceEventNativeMethods.EVENT_RECORD* eventRecord = ConvertEventHeaderToRecord(ref header);
             ValidateStackFields(header, eventRecord);
@@ -816,7 +802,6 @@ namespace Microsoft.Diagnostics.Tracing
         private IBlockParser _parser;
         private Dictionary<TraceEvent, DynamicTraceEventData> _metadataTemplates =
             new Dictionary<TraceEvent, DynamicTraceEventData>(new ExternalTraceEventParserState.TraceEventComparer());
-        private EventPipeEventHeader _eventHeader;
         private int _eventsLost;
         private Guid _relatedActivityId;
         internal int _processId;
@@ -879,27 +864,28 @@ internal interface IBlockParser : IDisposable
             while(true)
             {
                 BlockHeader header = ReadBlockHeader();
-                StreamLabel startOfNextBlock = _reader.Current.Add(header.Length);
+                long blockStartOffset = (long)_reader.Current;
+                byte[] blockBytes = new byte[header.Length];
+                _reader.Read(blockBytes, 0, blockBytes.Length);
                 switch (header.Kind)
                 {
                     case BlockKind.Event:
-                        _source.ReadEventBlockV4OrGreater(_reader, _reader.Current, startOfNextBlock);
+                        _source.ReadEventBlockV4OrGreater(blockBytes, blockStartOffset);
                         break;
                     case BlockKind.Metadata:
-                        _source.ReadMetadataBlockV5OrLess(_reader, _reader.Current, startOfNextBlock);
+                        _source.ReadMetadataBlockV5OrLess(blockBytes, blockStartOffset);
                         break;
                     case BlockKind.SequencePoint:
-                        _source.ReadSequencePointBlockV5OrLess(_reader, _reader.Current, startOfNextBlock);
+                        _source.ReadSequencePointBlockV5OrLess(blockBytes, blockStartOffset);
                         break;
                     case BlockKind.StackBlock:
-                        _source.ReadStackBlock(_reader, _reader.Current, startOfNextBlock);
+                        _source.ReadStackBlock(blockBytes, blockStartOffset);
                         break;
                     case BlockKind.EndOfStream:
                         return;
                     default:
                         throw new FormatException($"Unexpected block Kind={header.Kind} at stream offset 0x{_reader.Current.Add(-4):x}");
                 }
-                _reader.Goto(startOfNextBlock);
             }
         }
 
@@ -998,18 +984,7 @@ internal interface IBlockParser : IDisposable
                 PinnedStreamReader deserializerReader = (PinnedStreamReader)_deserializer.Reader;
                 while (deserializerReader.Current < _endOfEventStream)
                 {
-                    TraceEventNativeMethods.EVENT_RECORD* eventRecord = _source.ReadEvent(deserializerReader, false);
-                    if (eventRecord != null)
-                    {
-                        // in the code below we set sessionEndTimeQPC to be the timestamp of the last event.
-                        // Thus the new timestamp should be later, and not more than 1 day later.
-                        Debug.Assert(_source.sessionEndTimeQPC <= eventRecord->EventHeader.TimeStamp);
-                        Debug.Assert(_source.sessionEndTimeQPC == 0 || eventRecord->EventHeader.TimeStamp - _source.sessionEndTimeQPC < _source._QPCFreq * 24 * 3600);
-
-                        var traceEvent = _source.Lookup(eventRecord);
-                        _source.Dispatch(traceEvent);
-                        _source.sessionEndTimeQPC = eventRecord->EventHeader.TimeStamp;
-                    }
+                    _source.ReadAndProcessEvent(deserializerReader);
                 }
             }
 #endif
@@ -1072,9 +1047,7 @@ internal interface IBlockParser : IDisposable
         {
             public EventPipeBlock(EventPipeEventSource source) => _source = source;
 
-            // _startEventData and _endEventData have already been initialized before this is invoked
-            // to help identify the bounds. The reader is positioned at _startEventData
-            protected abstract void ReadBlockContents(PinnedStreamReader reader);
+            protected abstract void ReadBlockContents(byte[] blockBytes, long blockStartStreamOffset);
 
             public unsafe void FromStream(Deserializer deserializer)
             {
@@ -1092,8 +1065,10 @@ internal interface IBlockParser : IDisposable
                 _endEventData = _startEventData.Add(blockSizeInBytes);
 
                 PinnedStreamReader deserializerReader = (PinnedStreamReader)deserializer.Reader;
-                ReadBlockContents(deserializerReader);
-                deserializerReader.Goto(_endEventData); // go to the end of block, in case some padding was not skipped yet
+                int blockLength = (int)_endEventData.Sub(_startEventData);
+                byte[] blockBytes = new byte[blockLength];
+                deserializerReader.Read(blockBytes, 0, blockBytes.Length);
+                ReadBlockContents(blockBytes, (long)_startEventData);
             }
 
             public void ToStream(Serializer serializer) => throw new InvalidOperationException();
@@ -1110,28 +1085,23 @@ internal interface IBlockParser : IDisposable
         }
 
         /// <summary>
-        /// An EVentPipeEventBlock represents a block of events.   It basically only has
-        /// one field, which is the size in bytes of the block.  But when its FromStream
-        /// is called, it will perform the callbacks for the events (thus deserializing
-        /// it performs dispatch).
+        /// An EventPipeEventBlock represents a block of events. In V3 and earlier, this block contains
+        /// a mixture of real events and metadata carrying events. In V4 onwards it contains only real events
+        /// and metadata was moved to a separate block.
         /// </summary>
         internal class EventPipeEventBlock : EventPipeBlock
         {
             public EventPipeEventBlock(EventPipeEventSource source) : base(source) { }
 
-            protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
+            protected override void ReadBlockContents(byte[] blockBytes, long blockStartStreamOffset)
             {
                 if (_source.FileFormatVersionNumber >= 4)
                 {
-                    _source.ReadEventBlockV4OrGreater(reader, _startEventData, _endEventData);
+                    _source.ReadEventBlockV4OrGreater(blockBytes, blockStartStreamOffset);
                 }
                 else
                 {
-                    //NetPerf file had the events fully sorted so we can dispatch directly
-                    while (reader.Current < _endEventData)
-                    {
-                        _source.ReadAndDispatchEvent(reader, false);
-                    }
+                    _source.ReadEventBlockV3OrLess(blockBytes, blockStartStreamOffset);
                 }
             }
         }
@@ -1144,9 +1114,9 @@ internal interface IBlockParser : IDisposable
         {
             public EventPipeMetadataBlock(EventPipeEventSource source) : base(source) { }
 
-            protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
+            protected override void ReadBlockContents(byte[] blockBytes, long blockStartStreamOffset)
             {
-                _source.ReadMetadataBlockV5OrLess(reader, _startEventData, _endEventData);
+                _source.ReadMetadataBlockV5OrLess(blockBytes, blockStartStreamOffset);
             }
         }
 
@@ -1160,9 +1130,9 @@ internal interface IBlockParser : IDisposable
         {
             public EventPipeSequencePointBlock(EventPipeEventSource source) : base(source) { }
 
-            protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
+            protected override void ReadBlockContents(byte[] blockBytes, long blockStartStreamOffset)
             {
-                _source.ReadSequencePointBlockV5OrLess(reader, _startEventData, _endEventData);
+                _source.ReadSequencePointBlockV5OrLess(blockBytes, blockStartStreamOffset);
             }
         }
 
@@ -1174,9 +1144,9 @@ internal interface IBlockParser : IDisposable
         {
             public EventPipeStackBlock(EventPipeEventSource source) : base(source) { }
 
-            protected unsafe override void ReadBlockContents(PinnedStreamReader reader)
+            protected override void ReadBlockContents(byte[] blockBytes, long blockStartStreamOffset)
             {
-                _source.ReadStackBlock(reader, _startEventData, _endEventData);
+                _source.ReadStackBlock(blockBytes, blockStartStreamOffset);
             }
         }
     }
