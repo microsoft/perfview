@@ -1508,11 +1508,11 @@ internal interface IBlockParser : IDisposable
         public bool ContainsParameterMetadata { get; private set; }
         public string ProviderName { get; internal set; }
         public string EventName { get; private set; }
-        public Guid ProviderId { get { return _eventRecord->EventHeader.ProviderId; } }
-        public int EventId { get { return _eventRecord->EventHeader.Id; } }
-        public int EventVersion { get { return _eventRecord->EventHeader.Version; } }
-        public ulong Keywords { get { return _eventRecord->EventHeader.Keyword; } }
-        public int Level { get { return _eventRecord->EventHeader.Level; } }
+        public Guid ProviderId { get { return _eventRecord->EventHeader.ProviderId; } private set { _eventRecord->EventHeader.ProviderId = value; } }
+        public int EventId { get { return _eventRecord->EventHeader.Id; } private set { _eventRecord->EventHeader.Id = (ushort)value; } }
+        public int EventVersion { get { return _eventRecord->EventHeader.Version; } private set { _eventRecord->EventHeader.Version = (byte)value; } }
+        public ulong Keywords { get { return _eventRecord->EventHeader.Keyword; } private set { _eventRecord->EventHeader.Keyword = value; } }
+        public int Level { get { return _eventRecord->EventHeader.Level; } private set { _eventRecord->EventHeader.Level = (byte)value; } }
         public EventPipeMetaDataVersion EncodingVersion { get; internal set; }
         public byte Opcode { get { return _eventRecord->EventHeader.Opcode; } internal set { _eventRecord->EventHeader.Opcode = (byte)value; } }
 
@@ -1523,40 +1523,32 @@ internal interface IBlockParser : IDisposable
         {
             MetaDataId = reader.ReadInt32();
             ProviderName = reader.ReadNullTerminatedUnicodeString();
-            _eventRecord->EventHeader.ProviderId = GetProviderGuidFromProviderName(ProviderName);
+            ProviderId = GetProviderGuidFromProviderName(ProviderName);
             ReadMetadataCommon(reader);
         }
 
         private void ReadMetadataCommon(PinnedStreamReader reader)
         {
-            int eventId = (ushort)reader.ReadInt32();
-            _eventRecord->EventHeader.Id = (ushort)eventId;
-            Debug.Assert(_eventRecord->EventHeader.Id == eventId);  // No truncation
-
+            EventId = (ushort)reader.ReadInt32();
             EventName = reader.ReadNullTerminatedUnicodeString();
 
             // Deduce the opcode from the name.
             if (EventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
             {
-                _eventRecord->EventHeader.Opcode = (byte)TraceEventOpcode.Start;
+                Opcode = (byte)TraceEventOpcode.Start;
             }
             else if (EventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
             {
-                _eventRecord->EventHeader.Opcode = (byte)TraceEventOpcode.Stop;
+                Opcode = (byte)TraceEventOpcode.Stop;
             }
             if(EventName == "")
             {
                 EventName = null; //TraceEvent expects empty name to be canonicalized as null rather than ""
             }
 
-            _eventRecord->EventHeader.Keyword = (ulong)reader.ReadInt64();
-
-            int version = reader.ReadInt32();
-            _eventRecord->EventHeader.Version = (byte)version;
-            Debug.Assert(_eventRecord->EventHeader.Version == version);  // No truncation
-
-            _eventRecord->EventHeader.Level = (byte)reader.ReadInt32();
-            Debug.Assert(_eventRecord->EventHeader.Level <= 5);
+            Keywords = (ulong)reader.ReadInt64();
+            EventVersion = (byte)reader.ReadInt32();
+            Level = (byte)reader.ReadInt32();
         }
 
 #if SUPPORT_V1_V2
@@ -1569,22 +1561,16 @@ internal interface IBlockParser : IDisposable
 
             if (metaDataVersion == EventPipeMetaDataVersion.LegacyV1)
             {
-                _eventRecord->EventHeader.ProviderId = reader.ReadGuid();
+                ProviderId = reader.ReadGuid();
             }
             else
             {
                 ProviderName = reader.ReadNullTerminatedUnicodeString();
-                _eventRecord->EventHeader.ProviderId = GetProviderGuidFromProviderName(ProviderName);
+                ProviderId = GetProviderGuidFromProviderName(ProviderName);
             }
 
-            var eventId = (ushort)reader.ReadInt32();
-            _eventRecord->EventHeader.Id = eventId;
-            Debug.Assert(_eventRecord->EventHeader.Id == eventId);  // No truncation
-
-            var version = reader.ReadInt32();
-            _eventRecord->EventHeader.Version = (byte)version;
-            Debug.Assert(_eventRecord->EventHeader.Version == version);  // No truncation
-
+            EventId = (ushort)reader.ReadInt32();
+            EventVersion = (byte)reader.ReadInt32();
             int metadataLength = reader.ReadInt32();
             if (0 < metadataLength)
             {
