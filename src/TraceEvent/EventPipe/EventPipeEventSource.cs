@@ -384,46 +384,7 @@ namespace Microsoft.Diagnostics.Tracing
                 // Note that this skip invalidates the eventData pointer, so it is important to pull any fields out we need first.
                 reader.Skip(eventData.HeaderSize);
 
-                StreamLabel metadataV1Start = reader.Current;
-                StreamLabel metaDataEnd = reader.Current.Add(payloadSize);
-
-                // Read in the header (The header does not include payload parameter information)
-                var metadata = new NetTraceMetadata(PointerSize, _processId);
-                metadata.ParseHeader(reader, payloadSize, FileFormatVersionNumber);
-
-                // If the metadata contains no parameter metadata, don't attempt to read it.
-                if (reader.Current == metaDataEnd)
-                {
-                    metadata.InitDefaultParameters();
-                }
-                else
-                {
-                    ParseEventParameters(metadata, reader, metaDataEnd, NetTraceFieldLayoutVersion.V1);
-                }
-
-                while (reader.Current < metaDataEnd)
-                {
-                    // If we've already parsed the V1 metadata and there's more left to decode,
-                    // then we have some tags to read
-                    int tagLength = reader.ReadInt32();
-                    EventPipeMetadataTag tag = (EventPipeMetadataTag)reader.ReadByte();
-                    StreamLabel tagEndLabel = reader.Current.Add(tagLength);
-
-                    if (tag == EventPipeMetadataTag.ParameterPayloadV2)
-                    {
-                        ParseEventParameters(metadata, reader, tagEndLabel, NetTraceFieldLayoutVersion.V2);
-                    }
-                    else if (tag == EventPipeMetadataTag.Opcode)
-                    {
-                        Debug.Assert(tagLength == 1);
-                        metadata.Opcode = reader.ReadByte();
-                    }
-
-                    // Skip any remaining bytes or unknown tags
-                    reader.Goto(tagEndLabel);
-                }
-
-                Debug.Assert(reader.Current == metaDataEnd);
+                NetTraceMetadata metadata = ReadMetadata(reader, payloadSize);
 
                 DynamicTraceEventData eventTemplate = CreateTemplate(metadata);
                 _eventMetadataDictionary.Add(metadata.MetaDataId, metadata);
@@ -439,6 +400,51 @@ namespace Microsoft.Diagnostics.Tracing
             reader.Goto(eventDataEnd);
 
             return ret;
+        }
+
+        private NetTraceMetadata ReadMetadata(PinnedStreamReader reader, int payloadSize)
+        {
+            StreamLabel metadataV1Start = reader.Current;
+            StreamLabel metaDataEnd = reader.Current.Add(payloadSize);
+
+            // Read in the header (The header does not include payload parameter information)
+            var metadata = new NetTraceMetadata(PointerSize, _processId);
+            metadata.ParseHeader(reader, payloadSize, FileFormatVersionNumber);
+
+            // If the metadata contains no parameter metadata, don't attempt to read it.
+            if (reader.Current == metaDataEnd)
+            {
+                metadata.InitDefaultParameters();
+            }
+            else
+            {
+                ParseEventParameters(metadata, reader, metaDataEnd, NetTraceFieldLayoutVersion.V1);
+            }
+
+            while (reader.Current < metaDataEnd)
+            {
+                // If we've already parsed the V1 metadata and there's more left to decode,
+                // then we have some tags to read
+                int tagLength = reader.ReadInt32();
+                EventPipeMetadataTag tag = (EventPipeMetadataTag)reader.ReadByte();
+                StreamLabel tagEndLabel = reader.Current.Add(tagLength);
+
+                if (tag == EventPipeMetadataTag.ParameterPayloadV2)
+                {
+                    ParseEventParameters(metadata, reader, tagEndLabel, NetTraceFieldLayoutVersion.V2);
+                }
+                else if (tag == EventPipeMetadataTag.Opcode)
+                {
+                    Debug.Assert(tagLength == 1);
+                    metadata.Opcode = reader.ReadByte();
+                }
+
+                // Skip any remaining bytes or unknown tags
+                reader.Goto(tagEndLabel);
+            }
+
+            Debug.Assert(reader.Current == metaDataEnd);
+            return metadata;
         }
 
         private TraceEventNativeMethods.EVENT_RECORD* ConvertEventHeaderToRecord(ref EventPipeEventHeader eventData)
