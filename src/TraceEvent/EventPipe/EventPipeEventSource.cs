@@ -388,19 +388,17 @@ namespace Microsoft.Diagnostics.Tracing
                 StreamLabel metaDataEnd = reader.Current.Add(payloadSize);
 
                 // Read in the header (The header does not include payload parameter information)
-                var metaDataHeader = new EventPipeEventMetaDataHeader(reader, payloadSize,
-                    GetMetaDataVersion(FileFormatVersionNumber), PointerSize, _processId);
-
-                DynamicTraceEventData eventTemplate = CreateTemplate(metaDataHeader);
+                var metadata = new NetTraceMetadata(PointerSize, _processId);
+                metadata.ParseHeader(reader, payloadSize, GetMetaDataVersion(FileFormatVersionNumber));
 
                 // If the metadata contains no parameter metadata, don't attempt to read it.
-                if (!metaDataHeader.ContainsParameterMetadata)
+                if (reader.Current == metaDataEnd)
                 {
-                    CreateDefaultParameters(eventTemplate);
+                    metadata.InitDefaultParameters();
                 }
                 else
                 {
-                    ParseEventParameters(eventTemplate, metaDataHeader, reader, metaDataEnd, NetTraceFieldLayoutVersion.V1);
+                    ParseEventParameters(metadata, reader, metaDataEnd, NetTraceFieldLayoutVersion.V1);
                 }
 
                 while (reader.Current < metaDataEnd)
@@ -413,13 +411,12 @@ namespace Microsoft.Diagnostics.Tracing
 
                     if (tag == EventPipeMetadataTag.ParameterPayloadV2)
                     {
-                        ParseEventParameters(eventTemplate, metaDataHeader, reader, tagEndLabel, NetTraceFieldLayoutVersion.V2);
+                        ParseEventParameters(metadata, reader, tagEndLabel, NetTraceFieldLayoutVersion.V2);
                     }
                     else if (tag == EventPipeMetadataTag.Opcode)
                     {
                         Debug.Assert(tagLength == 1);
-                        metaDataHeader.Opcode = reader.ReadByte();
-                        SetOpcode(eventTemplate, metaDataHeader.Opcode);
+                        metadata.Opcode = reader.ReadByte();
                     }
 
                     // Skip any remaining bytes or unknown tags
@@ -428,7 +425,8 @@ namespace Microsoft.Diagnostics.Tracing
 
                 Debug.Assert(reader.Current == metaDataEnd);
 
-                _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataHeader);
+                DynamicTraceEventData eventTemplate = CreateTemplate(metadata);
+                _eventMetadataDictionary.Add(metadata.MetaDataId, metadata);
                 _metadataTemplates[eventTemplate] = eventTemplate;
 
                 Debug.Assert(eventData.StackBytesSize == 0, "Meta-data events should always have a empty stack");
@@ -545,7 +543,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// event, create a new  DynamicTraceEventData that knows how to parse that event.
         /// ReaderForParameters.Current is advanced past the parameter information.
         /// </summary>
-        private void ParseEventParameters(DynamicTraceEventData template, EventPipeEventMetaDataHeader eventMetaDataHeader, PinnedStreamReader readerForParameters,
+        private void ParseEventParameters(NetTraceMetadata metadata, PinnedStreamReader readerForParameters,
             StreamLabel metadataBlobEnd, NetTraceFieldLayoutVersion fieldLayoutVersion)
         {
             DynamicTraceEventData.PayloadFetchClassInfo classInfo = null;
@@ -571,7 +569,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             if (classInfo == null)
             {
-                classInfo = CheckForWellKnownEventFields(eventMetaDataHeader);
+                classInfo = CheckForWellKnownEventFields(metadata);
                 if (classInfo == null)
                 {
                     classInfo = new DynamicTraceEventData.PayloadFetchClassInfo()
@@ -582,29 +580,24 @@ namespace Microsoft.Diagnostics.Tracing
                 }
             }
 
-            template.payloadNames = classInfo.FieldNames;
-            template.payloadFetches = classInfo.FieldFetches;
-
-            return;
+            metadata.ParameterNames = classInfo.FieldNames;
+            metadata.ParameterTypes = classInfo.FieldFetches;
         }
 
-        private void SetOpcode(DynamicTraceEventData template, int opcode)
+        private DynamicTraceEventData CreateTemplate(NetTraceMetadata metadata)
         {
-            template.opcode = (TraceEventOpcode)opcode;
-            template.opcodeName = template.opcode.ToString();
-        }
-
-        private DynamicTraceEventData CreateTemplate(EventPipeEventMetaDataHeader eventMetaDataHeader)
-        {
-            string opcodeName = ((TraceEventOpcode)eventMetaDataHeader.Opcode).ToString();
-            int opcode = eventMetaDataHeader.Opcode;
+            string opcodeName = ((TraceEventOpcode)metadata.Opcode).ToString();
+            int opcode = metadata.Opcode;
             if (opcode == 0)
             {
-                GetOpcodeFromEventName(eventMetaDataHeader.EventName, out opcode, out opcodeName);
+                GetOpcodeFromEventName(metadata.EventName, out opcode, out opcodeName);
             }
-            string eventName = FilterOpcodeNameFromEventName(eventMetaDataHeader.EventName, opcode);
-            DynamicTraceEventData template = new DynamicTraceEventData(null, eventMetaDataHeader.EventId, 0, eventName, Guid.Empty, opcode, null, eventMetaDataHeader.ProviderId, eventMetaDataHeader.ProviderName);
-            SetOpcode(template, eventMetaDataHeader.Opcode);
+            string eventName = FilterOpcodeNameFromEventName(metadata.EventName, opcode);
+            DynamicTraceEventData template = new DynamicTraceEventData(null, metadata.EventId, 0, eventName, Guid.Empty, opcode, null, metadata.ProviderId, metadata.ProviderName);
+            template.opcode = (TraceEventOpcode)metadata.Opcode;
+            template.opcodeName = template.opcode.ToString();
+            template.payloadNames = metadata.ParameterNames;
+            template.payloadFetches = metadata.ParameterTypes;
             return template;
         }
 
@@ -626,7 +619,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         // The NetPerf and NetTrace V1 file formats were incapable of representing some event parameter types that EventSource and ETW support.
         // This works around that issue without requiring a runtime or format update for well-known EventSources that used the indescribable types.
-        private DynamicTraceEventData.PayloadFetchClassInfo CheckForWellKnownEventFields(EventPipeEventMetaDataHeader eventMetaDataHeader)
+        private DynamicTraceEventData.PayloadFetchClassInfo CheckForWellKnownEventFields(NetTraceMetadata eventMetaDataHeader)
         {
             if (eventMetaDataHeader.ProviderName == "Microsoft-Diagnostics-DiagnosticSource")
             {
@@ -941,7 +934,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal const TypeCode ArrayTypeCode = (TypeCode)19;
 
 
-        private Dictionary<int, EventPipeEventMetaDataHeader> _eventMetadataDictionary = new Dictionary<int, EventPipeEventMetaDataHeader>();
+        private Dictionary<int, NetTraceMetadata> _eventMetadataDictionary = new Dictionary<int, NetTraceMetadata>();
         private IBlockParser _parser;
         private Dictionary<TraceEvent, DynamicTraceEventData> _metadataTemplates =
             new Dictionary<TraceEvent, DynamicTraceEventData>(new ExternalTraceEventParserState.TraceEventComparer());
@@ -1338,35 +1331,23 @@ internal interface IBlockParser : IDisposable
     /// <summary>
     /// Private utility class.
     ///
-    /// An EventPipeEventMetaDataHeader holds the information that can be shared among all
-    /// instances of an EventPipe event from a particular provider.   Thus it contains
-    /// things like the event name, provider, It however does NOT contain the data
-    /// about the event parameters (the names of the fields and their types), That is
-    /// why this is a meta-data header and not all the meta-data.
+    /// An EventPipeEventMetaData holds the information that can be shared among all
+    /// instances of a NetTrace event from a particular provider.   Thus it contains
+    /// things like the event name, provider, parameter names and types.
     ///
     /// This class has two main functions
-    ///    1. The constructor takes a PinnedStreamReader and decodes the serialized metadata
-    ///       so you can access the data conveniently (but it does not decode the parameter info)
-    ///    2. It remembers a EVENT_RECORD structure (from ETW) that contains this data)
+    ///    1. It has parsing functions to read the metadata from the serialized stream.
+    ///    2. It remembers a EVENT_RECORD structure (from ETW) that contains this data
     ///       and has a function GetEventRecordForEventData which converts from a
     ///       EventPipeEventHeader (the raw serialized data) to a EVENT_RECORD (which
-    ///       is what TraceEvent needs to look up the event an pass it up the stack.
+    ///       is what TraceEvent needs to look up the event an pass it up the stack).
     /// </summary>
-    internal unsafe class EventPipeEventMetaDataHeader
+    internal unsafe class NetTraceMetadata
     {
         /// <summary>
-        /// Creates a new MetaData instance from the serialized data at the current position of 'reader'
-        /// of length 'length'.   This typically points at the PAYLOAD AREA of a meta-data events)
-        /// 'fileFormatVersionNumber' is the version number of the file as a whole
-        /// (since that affects the parsing of this data) and 'processID' is the process ID for the
-        /// whole stream (since it needs to be put into the EVENT_RECORD.
-        ///
-        /// When this constructor returns the reader has read up to the serialized information about
-        /// the parameters.  We do this because this code does not know the best representation for
-        /// this parameter information and so it just lets other code handle it.
+        /// 'processID' is the process ID for the whole stream (since it needs to be put into the EVENT_RECORD.
         /// </summary>
-        public EventPipeEventMetaDataHeader(PinnedStreamReader reader, int length, EventPipeMetaDataVersion encodingVersion,
-                                            int pointerSize, int processId, int metadataId = 0, string providerName = null)
+        public NetTraceMetadata(int pointerSize, int processId)
         {
             // Get the event record and fill in fields that we can without deserializing anything.
             _eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
@@ -1382,31 +1363,9 @@ internal interface IBlockParser : IDisposable
             }
 
             _eventRecord->EventHeader.ProcessId = processId;
-            EncodingVersion = encodingVersion;
-
-            // Calculate the position of the end of the metadata blob.
-            StreamLabel metadataEndLabel = reader.Current.Add(length);
-
-            // Read the metaData
-            if (encodingVersion >= EventPipeMetaDataVersion.NetTrace)
-            {
-                ReadNetTraceMetadata(reader);
-            }
-#if SUPPORT_V1_V2
-            else
-            {
-                ReadObsoleteEventMetaData(reader, encodingVersion);
-            }
-#endif
-
-            // Check for parameter metadata so that it can be consumed by the parser.
-            if (reader.Current < metadataEndLabel)
-            {
-                ContainsParameterMetadata = true;
-            }
         }
 
-        ~EventPipeEventMetaDataHeader()
+        ~NetTraceMetadata()
         {
             if (_eventRecord != null)
             {
@@ -1418,6 +1377,26 @@ internal interface IBlockParser : IDisposable
                 Marshal.FreeHGlobal((IntPtr)_eventRecord);
                 _eventRecord = null;
             }
+        }
+
+        public void ParseHeader(PinnedStreamReader reader, int length, EventPipeMetaDataVersion encodingVersion)
+        {
+            if (encodingVersion >= EventPipeMetaDataVersion.NetTrace)
+            {
+                ReadNetTraceMetadata(reader);
+            }
+#if SUPPORT_V1_V2
+            else
+            {
+                ReadObsoleteEventMetaData(reader, encodingVersion);
+            }
+#endif
+        }
+
+        public void InitDefaultParameters()
+        {
+            ParameterNames = new string[0];
+            ParameterTypes = new DynamicTraceEventData.PayloadFetch[0];
         }
 
         /// <summary>
@@ -1505,7 +1484,6 @@ internal interface IBlockParser : IDisposable
         /// It is what is matched up with EventPipeEventHeader.MetaDataId
         /// </summary>
         public int MetaDataId { get; internal set; }
-        public bool ContainsParameterMetadata { get; private set; }
         public string ProviderName { get; internal set; }
         public string EventName { get; private set; }
         public Guid ProviderId { get { return _eventRecord->EventHeader.ProviderId; } private set { _eventRecord->EventHeader.ProviderId = value; } }
@@ -1513,8 +1491,10 @@ internal interface IBlockParser : IDisposable
         public int EventVersion { get { return _eventRecord->EventHeader.Version; } private set { _eventRecord->EventHeader.Version = (byte)value; } }
         public ulong Keywords { get { return _eventRecord->EventHeader.Keyword; } private set { _eventRecord->EventHeader.Keyword = value; } }
         public int Level { get { return _eventRecord->EventHeader.Level; } private set { _eventRecord->EventHeader.Level = (byte)value; } }
-        public EventPipeMetaDataVersion EncodingVersion { get; internal set; }
         public byte Opcode { get { return _eventRecord->EventHeader.Opcode; } internal set { _eventRecord->EventHeader.Opcode = (byte)value; } }
+
+        public DynamicTraceEventData.PayloadFetch[] ParameterTypes { get; internal set; }
+        public string[] ParameterNames { get; internal set; }
 
         /// <summary>
         /// Reads the meta data for information specific to one event.
