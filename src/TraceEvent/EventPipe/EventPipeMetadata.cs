@@ -288,7 +288,7 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     long fieldLength = reader.ReadInt32();
                     long streamOffset = reader.StreamOffset;
-                    SpanReader fieldReader = new SpanReader(reader.ReadBytes((int)fieldLength - 4), streamOffset + 4);
+                    SpanReader fieldReader = new SpanReader(reader.ReadBytes((int)fieldLength - 4), streamOffset);
                     fieldName = fieldReader.ReadNullTerminatedUTF16String();
                     payloadFetch = ParseType(ref fieldReader, offset, fieldName, fieldLayoutVersion);
                 }

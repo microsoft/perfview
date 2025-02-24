@@ -541,7 +541,7 @@ namespace TraceEventTests
             // DiagnosticSourceEventSource events...
             EventPipeWriter writer = new EventPipeWriter();
             writer.WriteHeadersV5();
-            writer.WriteMetadataBlock(
+            writer.WriteMetadataBlockV5OrLess(
                 new EventMetadata(1, "Microsoft-Diagnostics-DiagnosticSource", "Event", 3),
                 new EventMetadata(2, "Microsoft-Diagnostics-DiagnosticSource", "Activity1Start", 4),
                 new EventMetadata(3, "Microsoft-Diagnostics-DiagnosticSource", "Activity1Stop", 5),
@@ -572,7 +572,7 @@ namespace TraceEventTests
                     // write one of each of the 7 well-known DiagnosticSourceEventSource events.
                     for (int metadataId = 1; metadataId <= 7; metadataId++)
                     {
-                        EventPipeWriter.WriteEventBlob(w, metadataId, sequenceNumber++, payloadBytes);
+                        w.WriteEventBlob(metadataId, sequenceNumber++, payloadBytes);
                     }
                 });
             writer.WriteEndObject();
@@ -655,6 +655,161 @@ namespace TraceEventTests
                 Output.WriteLine($"To Diff: windiff {baselineFile} {eventStatisticsFile}");
                 Assert.Fail($"The event statistics doesn't match {Path.GetFullPath(baselineFile)}. It's saved in {Path.GetFullPath(eventStatisticsFile)}.");
             }
+        }
+
+        // In the V5 format the event block and metadata block both have a variable size header. Readers are expected to skip over extra content if it is present.
+        [Fact]
+        public void SkipExtraBlockHeaderSpaceV5()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV5();
+            writer.WriteBlockV5OrLess("MetadataBlock", w =>
+            {
+                // header
+                w.Write((short)28); // header size
+                w.Write((short)0); // flags
+                w.Write((long)0);  // min timestamp
+                w.Write((long)0);  // max timestamp
+                w.Write((int)99);   // extra bytes
+                w.Write((int)99);   // extra bytes
+                w.WriteMetadataEventBlobV5OrLess(new EventMetadata(1, "TestProvider", "TestEvent", 15));
+                w.WriteMetadataEventBlobV5OrLess(new EventMetadata(2, "TestProvider", "TestEvent2", 16));
+            });
+            writer.WriteBlockV5OrLess("EventBlock", w =>
+            {
+                // header
+                w.Write((short)28); // header size
+                w.Write((short)0);  // flags
+                w.Write((long)0);   // min timestamp
+                w.Write((long)0);   // max timestamp
+                w.Write((int)99);   // extra bytes
+                w.Write((int)99);   // extra bytes
+                w.WriteEventBlob(2, 1, new byte[0]);
+            });
+            writer.WriteEndObject();
+
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                Assert.Equal("TestEvent2", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+                eventCount++;
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        // In the V5 format each trailing metadata tag has a variable size. Readers are expected to skip over extra content if it is present.
+        [Fact]
+        public void SkipExtraMetadataTagSpaceV5()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV5();
+            writer.WriteMetadataBlockV5OrLess( w =>
+            {
+                w.WriteMetadataEventBlobV5OrLess(payloadWriter =>
+                {
+                    payloadWriter.WriteV5InitialMetadataBlob(1, "TestProvider", "TestEvent1", 15);
+                    payloadWriter.WriteV5MetadataParameterList();
+                    payloadWriter.WriteV5MetadataTagBytes(1, tagWriter => // An opcode tag with extra bytes
+                    {
+                        tagWriter.Write((int)0);
+                        tagWriter.Write((int)99);
+                    });
+                });
+                w.WriteMetadataEventBlobV5OrLess(payloadWriter =>
+                {
+                    payloadWriter.WriteV5InitialMetadataBlob(2, "TestProvider", "TestEvent2", 16);
+                    payloadWriter.WriteV5MetadataParameterList();
+                    payloadWriter.WriteV5MetadataTagBytes(2, tagWriter => // A V2 param list tag with extra bytes
+                    {
+                        tagWriter.WriteV5MetadataParameterList();
+                        tagWriter.Write((int)99);
+                    });
+                    payloadWriter.WriteV5MetadataTagBytes(3, tagWriter => // An unknown tag with some bytes
+                    {
+                        tagWriter.Write((int)99);
+                        tagWriter.Write((int)99);
+                    });
+                });
+                w.WriteMetadataEventBlobV5OrLess(payloadWriter =>
+                {
+                    payloadWriter.WriteV5InitialMetadataBlob(3, "TestProvider", "TestEvent3", 17);
+                    payloadWriter.WriteV5MetadataParameterList();
+                });
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 1, new byte[0]);
+                w.WriteEventBlob(2, 2, new byte[0]);
+                w.WriteEventBlob(3, 3, new byte[0]);
+            });
+            writer.WriteEndObject();
+
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal($"TestEvent{eventCount}", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+            };
+            source.Process();
+            Assert.Equal(3, eventCount);
+        }
+
+        // In the V5 format each parameter metadata has a variable size. Readers are expected to skip over extra content if it is present.
+        [Fact]
+        public void SkipExtraMetadataParameterSpaceV5()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV5();
+            writer.WriteMetadataBlockV5OrLess(w =>
+            {
+                w.WriteMetadataEventBlobV5OrLess(payloadWriter =>
+                {
+                    payloadWriter.WriteV5InitialMetadataBlob(1, "TestProvider", "TestEvent1", 15);
+                    payloadWriter.WriteV5MetadataParameterList();
+                    payloadWriter.WriteV5MetadataV2ParamTag(fieldCount: 2, paramsWriter =>
+                    {
+                        paramsWriter.WriteFieldLayoutV2MetadataParameter("Param1", paramWriter =>
+                        {
+                            paramWriter.Write((int)TypeCode.Int32);
+                            paramWriter.Write((long)199); // extra bytes on the type that should be skipped
+                        });
+                        paramsWriter.WriteFieldLayoutV2MetadataParameter("Param2", paramWriter =>
+                        {
+                            paramWriter.Write((int)TypeCode.Int16);
+                            paramWriter.Write((byte)199); // extra bytes on the type that should be skipped
+                        });
+                    });
+                });
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 1, new byte[] { 12, 0, 0, 0, 17, 0});
+            });
+            writer.WriteEndObject();
+
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal($"TestEvent1", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+                Assert.Equal(2, e.PayloadNames.Length);
+                Assert.Equal("Param1", e.PayloadNames[0]);
+                Assert.Equal("Param2", e.PayloadNames[1]);
+                Assert.Equal(12, e.PayloadValue(0));
+                Assert.Equal(17, e.PayloadValue(1));
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
         }
 
         [Fact]
@@ -801,7 +956,7 @@ namespace TraceEventTests
     }
 
 
-    class EventMetadata
+    public class EventMetadata
     {
         public EventMetadata(int metadataId, string providerName, string eventName, int eventId)
         {
@@ -817,7 +972,7 @@ namespace TraceEventTests
         public int EventId { get; set; }
     }
 
-    class EventPayloadWriter
+    public class EventPayloadWriter
     {
         BinaryWriter _writer = new BinaryWriter(new MemoryStream());
 
@@ -863,9 +1018,9 @@ namespace TraceEventTests
 
         public void WriteHeadersV5()
         {
-            WriteNetTraceHeaderV5(_writer);
-            WriteFastSerializationHeader(_writer);
-            WriteTraceObjectV5(_writer);
+            _writer.WriteNetTraceHeaderV5();
+            _writer.WriteFastSerializationHeader();
+            _writer.WriteTraceObjectV5();
         }
 
         public void WriteHeadersV6OrGreater(Dictionary<string,string> keyValues = null, int majorVersion = 6, int minorVersion = 0)
@@ -874,36 +1029,50 @@ namespace TraceEventTests
             {
                 keyValues = new Dictionary<string, string>();
             }
-            WriteNetTraceHeaderV6OrGreater(_writer, majorVersion, minorVersion);
-            WriteTraceBlockV6OrGreater(_writer, keyValues);
+            _writer.WriteNetTraceHeaderV6OrGreater(majorVersion, minorVersion);
+            _writer.WriteTraceBlockV6OrGreater(keyValues);
         }
 
-        public void WriteMetadataBlock(params EventMetadata[] metadataBlobs)
+        public void WriteMetadataBlockV5OrLess(params EventMetadata[] metadataBlobs)
         {
-            WriteMetadataBlock(_writer, metadataBlobs);
+            _writer.WriteMetadataBlockV5OrLess(metadataBlobs);
+        }
+
+        public void WriteMetadataBlockV5OrLess(Action<BinaryWriter> writeMetadataEventBlobs)
+        {
+            _writer.WriteMetadataBlockV5OrLess(writeMetadataEventBlobs);
         }
 
         public void WriteEventBlock(Action<BinaryWriter> writeEventBlobs)
         {
-            WriteEventBlock(_writer, writeEventBlobs);
+            _writer.WriteEventBlock(writeEventBlobs);
         }
 
         public void WriteEndObject()
         {
-            WriteEndObject(_writer);
+            _writer.WriteEndObject();
         }
 
         public void WriteEndBlock()
         {
-            WriteBlock(_writer, 0 /* BLockKind.EndOfStream */, () => { });
+            _writer.WriteBlockV6(0 /* BLockKind.EndOfStream */, () => { });
         }
 
-        public static void WriteNetTraceHeaderV5(BinaryWriter writer)
+        public void WriteBlockV5OrLess(string name, Action<BinaryWriter> writeBlockData, long previousBytesWritten = 0)
+        {
+            _writer.WriteBlockV5OrLess(name, writeBlockData, previousBytesWritten);
+        }
+
+    }
+
+    public static class BinaryWriterExtensions
+    {
+        public static void WriteNetTraceHeaderV5(this BinaryWriter writer)
         {
             writer.Write(Encoding.UTF8.GetBytes("Nettrace"));
         }
 
-        public static void WriteNetTraceHeaderV6OrGreater(BinaryWriter writer, int majorVersion, int minorVersion)
+        public static void WriteNetTraceHeaderV6OrGreater(this BinaryWriter writer, int majorVersion, int minorVersion)
         {
             writer.Write(Encoding.UTF8.GetBytes("Nettrace"));
             writer.Write(0); // reserved
@@ -911,19 +1080,25 @@ namespace TraceEventTests
             writer.Write(minorVersion);
         }
 
-        public static void WriteFastSerializationHeader(BinaryWriter writer)
+        public static void WriteFastSerializationHeader(this BinaryWriter writer)
         {
-            WriteString(writer, "!FastSerialization.1");
+            WriteInt32PrefixedUTF8String(writer, "!FastSerialization.1");
         }
 
-        public static void WriteString(BinaryWriter writer, string val)
+        public static void WriteInt32PrefixedUTF8String(this BinaryWriter writer, string val)
         {
             writer.Write(val.Length);
             writer.Write(Encoding.UTF8.GetBytes(val));
         }
 
+        public static void WriteNullTerminatedUTF16String(this BinaryWriter writer, string val)
+        {
+            writer.Write(Encoding.Unicode.GetBytes(val));
+            writer.Write((short)0);
+        }
 
-        public static void WriteVarUint(BinaryWriter writer, ulong val)
+
+        public static void WriteVarUint(this BinaryWriter writer, ulong val)
         {
             while (true)
             {
@@ -941,7 +1116,7 @@ namespace TraceEventTests
             }
         }
 
-        public static void WriteVarUintString(BinaryWriter writer, string val)
+        public static void WriteVarUintPrefixedUTF8String(this BinaryWriter writer, string val)
         {
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(val);
             WriteVarUint(writer, (ulong)utf8Bytes.Length);
@@ -949,7 +1124,7 @@ namespace TraceEventTests
         }
 
         // used in versions <= 5
-        public static void WriteObject(BinaryWriter writer, string name, int version, int minVersion,
+        public static void WriteObject(this BinaryWriter writer, string name, int version, int minVersion,
     Action writePayload)
         {
             writer.Write((byte)5); // begin private object
@@ -957,14 +1132,14 @@ namespace TraceEventTests
             writer.Write((byte)1); // type of type
             writer.Write(version);
             writer.Write(minVersion);
-            WriteString(writer, name);
+            WriteInt32PrefixedUTF8String(writer, name);
             writer.Write((byte)6); // end object
             writePayload();
             writer.Write((byte)6); // end object
         }
 
         // Used in versions >= 6
-        public static void WriteBlock(BinaryWriter writer, byte blockKind, Action writePayload)
+        public static void WriteBlockV6(this BinaryWriter writer, byte blockKind, Action writePayload)
         {
             long blockHeaderPos = writer.BaseStream.Position;
             writer.Write((uint)0);
@@ -979,7 +1154,7 @@ namespace TraceEventTests
             writer.Seek((int)endBlockPos, SeekOrigin.Begin);
         }
 
-        public static void WriteTraceObjectV5(BinaryWriter writer)
+        public static void WriteTraceObjectV5(this BinaryWriter writer)
         {
             WriteObject(writer, "Trace", 4, 4, () =>
             {
@@ -1001,9 +1176,9 @@ namespace TraceEventTests
             });
         }
 
-        public static void WriteTraceBlockV6OrGreater(BinaryWriter writer, Dictionary<string,string> keyValues)
+        public static void WriteTraceBlockV6OrGreater(this BinaryWriter writer, Dictionary<string,string> keyValues)
         {
-            WriteBlock(writer, 1 /* BlockKind.Trace */, () =>
+            WriteBlockV6(writer, 1 /* BlockKind.Trace */, () =>
             {
                 DateTime now = new DateTime(2025, 2, 3, 4, 5, 6);
                 writer.Write((short)now.Year);
@@ -1020,8 +1195,8 @@ namespace TraceEventTests
                 writer.Write(keyValues.Count);
                 foreach(var kv in keyValues)
                 {
-                    WriteVarUintString(writer, kv.Key);
-                    WriteVarUintString(writer, kv.Value);
+                    WriteVarUintPrefixedUTF8String(writer, kv.Key);
+                    WriteVarUintPrefixedUTF8String(writer, kv.Value);
                 }
             });
         }
@@ -1038,7 +1213,7 @@ namespace TraceEventTests
             }
         }
 
-        public static void WriteBlock(BinaryWriter writer, string name, Action<BinaryWriter> writeBlockData,
+        public static void WriteBlockV5OrLess(this BinaryWriter writer, string name, Action<BinaryWriter> writeBlockData,
             long previousBytesWritten = 0)
         {
             Debug.WriteLine($"Starting block {name} position: {writer.BaseStream.Position + previousBytesWritten}");
@@ -1053,9 +1228,9 @@ namespace TraceEventTests
             });
         }
 
-        public static void WriteMetadataBlock(BinaryWriter writer, Action<BinaryWriter> writeMetadataEventBlobs, long previousBytesWritten = 0)
+        public static void WriteMetadataBlockV5OrLess(this BinaryWriter writer, Action<BinaryWriter> writeMetadataEventBlobs, long previousBytesWritten = 0)
         {
-            WriteBlock(writer, "MetadataBlock", w =>
+            WriteBlockV5OrLess(writer, "MetadataBlock", w =>
             {
                 // header
                 w.Write((short)20); // header size
@@ -1067,60 +1242,101 @@ namespace TraceEventTests
             previousBytesWritten);
         }
 
-        public static void WriteMetadataBlock(BinaryWriter writer, EventMetadata[] metadataBlobs, long previousBytesWritten = 0)
+        public static void WriteMetadataBlockV5OrLess(this BinaryWriter writer, EventMetadata[] metadataBlobs, long previousBytesWritten = 0)
         {
-            WriteMetadataBlock(writer,
+            WriteMetadataBlockV5OrLess(writer,
                 w =>
                 {
                     foreach (EventMetadata blob in metadataBlobs)
                     {
-                        WriteMetadataEventBlob(w, blob);
+                        WriteMetadataEventBlobV5OrLess(w, blob);
                     }
                 },
                 previousBytesWritten);
         }
 
-        public static void WriteMetadataBlock(BinaryWriter writer, params EventMetadata[] metadataBlobs)
+        public static void WriteMetadataBlockV5OrLess(this BinaryWriter writer, params EventMetadata[] metadataBlobs)
         {
-            WriteMetadataBlock(writer, metadataBlobs, 0);
+            WriteMetadataBlockV5OrLess(writer, metadataBlobs, 0);
         }
 
-        public static void WriteMetadataEventBlob(BinaryWriter writer, EventMetadata eventMetadataBlob)
+        public static void WriteMetadataEventBlobV5OrLess(this BinaryWriter writer, EventMetadata eventMetadataBlob)
         {
-            MemoryStream payload = new MemoryStream();
-            BinaryWriter payloadWriter = new BinaryWriter(payload);
-            payloadWriter.Write(eventMetadataBlob.MetadataId);           // metadata id
-            payloadWriter.Write(Encoding.Unicode.GetBytes(eventMetadataBlob.ProviderName));  // provider name
-            payloadWriter.Write((short)0);                               // null terminator
-            payloadWriter.Write(eventMetadataBlob.EventId);              // event id
-            payloadWriter.Write(Encoding.Unicode.GetBytes(eventMetadataBlob.EventName)); // event name
-            payloadWriter.Write((short)0);                               // null terminator
-            payloadWriter.Write((long)0);                                // keywords
-            payloadWriter.Write(1);                                      // version
-            payloadWriter.Write(5);                                      // level
-            payloadWriter.Write(0);                                      // fieldcount
-
-            MemoryStream eventBlob = new MemoryStream();
-            BinaryWriter eventWriter = new BinaryWriter(eventBlob);
-            eventWriter.Write(0);                                        // metadata id
-            eventWriter.Write(0);                                        // sequence number
-            eventWriter.Write((long)999);                                // thread id
-            eventWriter.Write((long)999);                                // capture thread id
-            eventWriter.Write(1);                                        // proc number
-            eventWriter.Write(0);                                        // stack id
-            eventWriter.Write((long)123456789);                          // timestamp
-            eventWriter.Write(Guid.Empty.ToByteArray());                 // activity id
-            eventWriter.Write(Guid.Empty.ToByteArray());                 // related activity id
-            eventWriter.Write((int)payload.Length);                      // payload size
-            eventWriter.Write(payload.GetBuffer(), 0, (int)payload.Length);
-
-            writer.Write((int)eventBlob.Length);
-            writer.Write(eventBlob.GetBuffer(), 0, (int)eventBlob.Length);
+            writer.WriteMetadataEventBlobV5OrLess(w =>
+            {
+                w.WriteV5InitialMetadataBlob(eventMetadataBlob.MetadataId, eventMetadataBlob.ProviderName, eventMetadataBlob.EventName, eventMetadataBlob.EventId);
+                w.WriteV5MetadataParameterList();
+            });
         }
 
-        public static void WriteEventBlock(BinaryWriter writer, Action<BinaryWriter> writeEventBlobs, long previousBytesWritten = 0)
+        public static void WriteMetadataEventBlobV5OrLess(this BinaryWriter writer, Action<BinaryWriter> writeMetadataEventPayload)
         {
-            WriteBlock(writer, "EventBlock", w =>
+            writer.WriteEventBlob(metadataId: 0, sequenceNumber: 0, w =>
+            {
+                writeMetadataEventPayload(w);
+            });
+        }
+
+        public static void WriteV5InitialMetadataBlob(this BinaryWriter writer, int metadataId, string providerName, string eventName, int eventId)
+        {
+            writer.Write(metadataId);                             // metadata id
+            writer.WriteNullTerminatedUTF16String(providerName);  // provider name
+            writer.Write(eventId);                                // event id
+            writer.WriteNullTerminatedUTF16String(eventName);     // event name
+            writer.Write((long)0);                                // keywords
+            writer.Write(1);                                      // version
+            writer.Write(5);                                      // level
+        }
+
+        public static void WriteV5MetadataParameterList(this BinaryWriter writer)
+        {
+            writer.Write(0); // fieldcount
+        }
+
+        public static void WriteV5MetadataParameterList(this BinaryWriter writer, int fieldCount, Action<BinaryWriter> writeParameters)
+        {
+            writer.Write(fieldCount);
+            writeParameters(writer);
+        }
+
+        /// <summary>
+        /// The V2 here refers to fieldLayout V2, which is used in the V2Params tag area of the V5 format
+        /// </summary>
+        public static void WriteFieldLayoutV2MetadataParameter(this BinaryWriter writer, string parameterName, Action<BinaryWriter> writeType)
+        {
+            MemoryStream parameterBlob = new MemoryStream();
+            BinaryWriter parameterWriter = new BinaryWriter(parameterBlob);
+            parameterWriter.WriteNullTerminatedUTF16String(parameterName);
+            writeType(parameterWriter);
+            int payloadSize = (int)parameterBlob.Length;                   
+
+            writer.Write((int)(payloadSize + 4));                              // parameter size includes the leading size field
+            writer.Write(parameterBlob.GetBuffer(), 0, payloadSize);
+        }
+
+        public static void WriteV5MetadataTagBytes(this BinaryWriter writer, byte tag, Action<BinaryWriter> writeTagPayload)
+        {
+            MemoryStream payloadBlob = new MemoryStream();
+            BinaryWriter payloadWriter = new BinaryWriter(payloadBlob);
+            writeTagPayload(payloadWriter);
+            int payloadSize = (int)payloadBlob.Length;
+
+            writer.Write((int)payloadSize);
+            writer.Write((byte)tag);
+            writer.Write(payloadBlob.GetBuffer(), 0, payloadSize);
+        }
+
+        public static void WriteV5MetadataV2ParamTag(this BinaryWriter writer, int fieldCount, Action<BinaryWriter> writeFields)
+        {
+            WriteV5MetadataTagBytes(writer, 2 /* V2ParamTag */, w =>
+            {
+                w.WriteV5MetadataParameterList(fieldCount, writeFields);
+            });
+        }
+
+        public static void WriteEventBlock(this BinaryWriter writer, Action<BinaryWriter> writeEventBlobs, long previousBytesWritten = 0)
+        {
+            WriteBlockV5OrLess(writer, "EventBlock", w =>
             {
                 // header
                 w.Write((short)20); // header size
@@ -1132,8 +1348,13 @@ namespace TraceEventTests
             previousBytesWritten);
         }
 
-        public static void WriteEventBlob(BinaryWriter writer, int metadataId, int sequenceNumber, int payloadSize, Action<BinaryWriter> writeEventPayload)
+        public static void WriteEventBlob(this BinaryWriter writer, int metadataId, int sequenceNumber, Action<BinaryWriter> writeEventPayload)
         {
+            MemoryStream payloadBlob = new MemoryStream();
+            BinaryWriter payloadWriter = new BinaryWriter(payloadBlob);
+            writeEventPayload(payloadWriter);
+            int payloadSize = (int)payloadBlob.Length;
+
             MemoryStream eventBlob = new MemoryStream();
             BinaryWriter eventWriter = new BinaryWriter(eventBlob);
             eventWriter.Write(metadataId);                               // metadata id
@@ -1149,18 +1370,15 @@ namespace TraceEventTests
 
             writer.Write((int)eventBlob.Length + payloadSize);
             writer.Write(eventBlob.GetBuffer(), 0, (int)eventBlob.Length);
-            long beforePayloadPosition = writer.BaseStream.Position;
-            writeEventPayload(writer);
-            long afterPayloadPosition = writer.BaseStream.Position;
-            Debug.Assert(afterPayloadPosition - beforePayloadPosition == payloadSize);
+            writer.Write(payloadBlob.GetBuffer(), 0, payloadSize);
         }
 
-        public static void WriteEventBlob(BinaryWriter writer, int metadataId, int sequenceNumber, byte[] payloadBytes)
+        public static void WriteEventBlob(this BinaryWriter writer, int metadataId, int sequenceNumber, byte[] payloadBytes)
         {
-            WriteEventBlob(writer, metadataId, sequenceNumber, payloadBytes.Length, w => w.Write(payloadBytes));
+            WriteEventBlob(writer, metadataId, sequenceNumber, w => w.Write(payloadBytes));
         }
 
-        public static void WriteEndObject(BinaryWriter writer)
+        public static void WriteEndObject(this BinaryWriter writer)
         {
             writer.Write(1); // null tag
         }
@@ -1187,11 +1405,10 @@ namespace TraceEventTests
         {
             MemoryStream ms = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(ms);
-            EventPipeWriter.WriteNetTraceHeaderV5(writer);
-            EventPipeWriter.WriteFastSerializationHeader(writer);
-            EventPipeWriter.WriteTraceObjectV5(writer);
-            EventPipeWriter.WriteMetadataBlock(writer,
-                new EventMetadata(1, "Provider", "Event", 1));
+            writer.WriteNetTraceHeaderV5();
+            writer.WriteFastSerializationHeader();
+            writer.WriteTraceObjectV5();
+            writer.WriteMetadataBlockV5OrLess(new EventMetadata(1, "Provider", "Event", 1));
             ms.Position = 0;
             return ms;
         }
@@ -1204,19 +1421,19 @@ namespace TraceEventTests
             BinaryWriter writer = new BinaryWriter(ms);
             if (_bytesWritten > _minSize)
             {
-                EventPipeWriter.WriteEndObject(writer);
+                writer.WriteEndObject();
             }
             else
             {
                 // 20 blocks, each with 20 events in them
                 for (int i = 0; i < 20; i++)
                 {
-                    EventPipeWriter.WriteEventBlock(writer,
+                    writer.WriteEventBlock(
                         w =>
                         {
                             for (int j = 0; j < 20; j++)
                             {
-                                EventPipeWriter.WriteEventBlob(w, 1, _sequenceNumber++, payloadSize, WriteEventPayload);
+                                w.WriteEventBlob(1, _sequenceNumber++, WriteEventPayload);
                             }
                         },
                         _bytesWritten);

@@ -437,7 +437,6 @@ namespace Microsoft.Diagnostics.Tracing
                 }
                 else if (tag == EventPipeMetadataTag.Opcode)
                 {
-                    Debug.Assert(tagLength == 1);
                     metadata.Opcode = tagReader.ReadUInt8();
                 }
             }
