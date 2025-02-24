@@ -111,7 +111,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             else
             {
-                _parser = new NetTraceBlockParser(this, _reader);
+                _parser = new V6BlockParser(this, _reader);
             }
 
             _parser.ParseTraceBlock();
@@ -401,17 +401,17 @@ namespace Microsoft.Diagnostics.Tracing
         /// <param name="reader">The reader should be exactly long enough for one metadata blob</param>
         private void ReadAndCacheMetadata(ref SpanReader reader)
         {
-            NetTraceMetadata metadata = ReadMetadata(ref reader);
+            EventPipeMetadata metadata = ReadMetadata(ref reader);
             Debug.Assert(reader.RemainingBytes.Length == 0);
             DynamicTraceEventData eventTemplate = CreateTemplate(metadata);
             _eventMetadataDictionary.Add(metadata.MetaDataId, metadata);
             _metadataTemplates[eventTemplate] = eventTemplate;
         }
 
-        private NetTraceMetadata ReadMetadata(ref SpanReader reader)
+        private EventPipeMetadata ReadMetadata(ref SpanReader reader)
         {
             // Read in the header (The header does not include payload parameter information)
-            var metadata = new NetTraceMetadata(PointerSize, _processId);
+            var metadata = new EventPipeMetadata(PointerSize, _processId);
             metadata.ParseHeader(ref reader, FileFormatVersionNumber);
 
             // If the metadata contains no parameter metadata, don't attempt to read it.
@@ -421,7 +421,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             else
             {
-                ParseEventParameters(metadata, ref reader, NetTraceFieldLayoutVersion.V1);
+                ParseEventParameters(metadata, ref reader, EventPipeFieldLayoutVersion.V1);
             }
 
             while (reader.RemainingBytes.Length > 0)
@@ -435,7 +435,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 if (tag == EventPipeMetadataTag.ParameterPayloadV2)
                 {
-                    ParseEventParameters(metadata, ref tagReader, NetTraceFieldLayoutVersion.V2);
+                    ParseEventParameters(metadata, ref tagReader, EventPipeFieldLayoutVersion.V2);
                 }
                 else if (tag == EventPipeMetadataTag.Opcode)
                 {
@@ -532,7 +532,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// event, create a new  DynamicTraceEventData that knows how to parse that event.
         /// ReaderForParameters.Current is advanced past the parameter information.
         /// </summary>
-        private void ParseEventParameters(NetTraceMetadata metadata, ref SpanReader reader, NetTraceFieldLayoutVersion fieldLayoutVersion)
+        private void ParseEventParameters(EventPipeMetadata metadata, ref SpanReader reader, EventPipeFieldLayoutVersion fieldLayoutVersion)
         {
             DynamicTraceEventData.PayloadFetchClassInfo classInfo = null;
 
@@ -568,7 +568,7 @@ namespace Microsoft.Diagnostics.Tracing
             metadata.ParameterTypes = classInfo.FieldFetches;
         }
 
-        private DynamicTraceEventData CreateTemplate(NetTraceMetadata metadata)
+        private DynamicTraceEventData CreateTemplate(EventPipeMetadata metadata)
         {
             DynamicTraceEventData template = new DynamicTraceEventData(null, metadata.EventId, 0, metadata.EventName, Guid.Empty, metadata.Opcode, null, metadata.ProviderId, metadata.ProviderName);
             template.opcode = (TraceEventOpcode)metadata.Opcode;
@@ -578,7 +578,7 @@ namespace Microsoft.Diagnostics.Tracing
             return template;
         }
 
-        private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(ref SpanReader reader, int numFields, NetTraceFieldLayoutVersion fieldLayoutVersion)
+        private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(ref SpanReader reader, int numFields, EventPipeFieldLayoutVersion fieldLayoutVersion)
         {
             string[] fieldNames = new string[numFields];
             DynamicTraceEventData.PayloadFetch[] fieldFetches = new DynamicTraceEventData.PayloadFetch[numFields];
@@ -588,7 +588,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 string fieldName = "<unknown_field>";
                 DynamicTraceEventData.PayloadFetch payloadFetch;
-                if (fieldLayoutVersion >= NetTraceFieldLayoutVersion.V2)
+                if (fieldLayoutVersion >= EventPipeFieldLayoutVersion.V2)
                 {
                     long fieldLength = reader.ReadInt32();
                     long streamOffset = reader.StreamOffset;
@@ -629,7 +629,7 @@ namespace Microsoft.Diagnostics.Tracing
             ref SpanReader reader,
             ushort offset,
             string fieldName,
-            NetTraceFieldLayoutVersion fieldLayoutVersion)
+            EventPipeFieldLayoutVersion fieldLayoutVersion)
         {
             DynamicTraceEventData.PayloadFetch payloadFetch = new DynamicTraceEventData.PayloadFetch();
 
@@ -769,7 +769,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 case EventPipeEventSource.ArrayTypeCode:
                     {
-                        if (fieldLayoutVersion == NetTraceFieldLayoutVersion.V1)
+                        if (fieldLayoutVersion == EventPipeFieldLayoutVersion.V1)
                         {
                             throw new FormatException($"EventPipeEventSource.ArrayTypeCode is not a valid type code in V1 field metadata.");
                         }
@@ -798,7 +798,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal const TypeCode ArrayTypeCode = (TypeCode)19;
 
 
-        private Dictionary<int, NetTraceMetadata> _eventMetadataDictionary = new Dictionary<int, NetTraceMetadata>();
+        private Dictionary<int, EventPipeMetadata> _eventMetadataDictionary = new Dictionary<int, EventPipeMetadata>();
         private IBlockParser _parser;
         private Dictionary<TraceEvent, DynamicTraceEventData> _metadataTemplates =
             new Dictionary<TraceEvent, DynamicTraceEventData>(new ExternalTraceEventParserState.TraceEventComparer());
@@ -835,12 +835,12 @@ internal interface IBlockParser : IDisposable
         void ParseRemainder();
     }
 
-    internal class NetTraceBlockParser : IBlockParser
+    internal class V6BlockParser : IBlockParser
     {
         PinnedStreamReader _reader;
         EventPipeEventSource _source;
 
-        public NetTraceBlockParser(EventPipeEventSource source, PinnedStreamReader reader)
+        public V6BlockParser(EventPipeEventSource source, PinnedStreamReader reader)
         {
             _reader = reader;
             _source = source;
@@ -1157,7 +1157,7 @@ internal interface IBlockParser : IDisposable
         HeaderCompression = 1
     }
 
-    internal enum NetTraceFieldLayoutVersion
+    internal enum EventPipeFieldLayoutVersion
     {
         V1 = 1, // Used by V1 parameter blobs
         V2 = 2 // Use by V2 parameter blobs
@@ -1183,12 +1183,12 @@ internal interface IBlockParser : IDisposable
     ///       EventPipeEventHeader (the raw serialized data) to a EVENT_RECORD (which
     ///       is what TraceEvent needs to look up the event an pass it up the stack).
     /// </summary>
-    internal unsafe class NetTraceMetadata
+    internal unsafe class EventPipeMetadata
     {
         /// <summary>
         /// 'processID' is the process ID for the whole stream (since it needs to be put into the EVENT_RECORD.
         /// </summary>
-        public NetTraceMetadata(int pointerSize, int processId)
+        public EventPipeMetadata(int pointerSize, int processId)
         {
             // Get the event record and fill in fields that we can without deserializing anything.
             _eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
@@ -1206,7 +1206,7 @@ internal interface IBlockParser : IDisposable
             _eventRecord->EventHeader.ProcessId = processId;
         }
 
-        ~NetTraceMetadata()
+        ~EventPipeMetadata()
         {
             if (_eventRecord != null)
             {
