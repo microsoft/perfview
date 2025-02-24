@@ -614,7 +614,7 @@ internal interface IBlockParser : IDisposable
                     case BlockKind.EndOfStream:
                         return;
                     default:
-                        throw new FormatException($"Unexpected block Kind={header.Kind} at stream offset 0x{_reader.Current.Add(-4):x}");
+                        break; // ignore unknown block types so that the file format can be extended in the future
                 }
             }
         }

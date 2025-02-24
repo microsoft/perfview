@@ -854,6 +854,18 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void MinorVersionIncrementsAreSupported()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater(new Dictionary<string, string>(), majorVersion:6, minorVersion:25);
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            source.Process();
+            Assert.Equal(6, source.FileFormatVersionNumber);
+        }
+
+        [Fact]
         public void ParseV6TraceBlockStandardFields()
         {
             EventPipeWriter writer = new EventPipeWriter();
@@ -915,6 +927,26 @@ namespace TraceEventTests
                     Assert.Equal("Ponies", kvp.Key);
                     Assert.Equal("LotsAndLots!", kvp.Value);
                 });
+        }
+
+        // In the V6 format readers are expected to skip over any block types they don't recognize. This allows future extensibility.
+        [Fact]
+        public void UnrecognizedBlockTypesAreSkipped()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteBlockV6(99, w => 
+            {
+                w.Write((int)22);
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+
+            // Confirm we can parse the event payloads even though the parameters were not described in
+            // the metadata.
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            source.Process();
+            Assert.Equal(6, source.FileFormatVersionNumber);
         }
     }
 
@@ -1055,12 +1087,17 @@ namespace TraceEventTests
 
         public void WriteEndBlock()
         {
-            _writer.WriteBlockV6(0 /* BLockKind.EndOfStream */, () => { });
+            _writer.WriteBlockV6(0 /* BLockKind.EndOfStream */, w => { });
         }
 
         public void WriteBlockV5OrLess(string name, Action<BinaryWriter> writeBlockData, long previousBytesWritten = 0)
         {
             _writer.WriteBlockV5OrLess(name, writeBlockData, previousBytesWritten);
+        }
+
+        public void WriteBlockV6(byte blockKind, Action<BinaryWriter> writePayload)
+        {
+            _writer.WriteBlockV6(blockKind, writePayload);
         }
 
     }
@@ -1139,11 +1176,11 @@ namespace TraceEventTests
         }
 
         // Used in versions >= 6
-        public static void WriteBlockV6(this BinaryWriter writer, byte blockKind, Action writePayload)
+        public static void WriteBlockV6(this BinaryWriter writer, byte blockKind, Action<BinaryWriter> writePayload)
         {
             long blockHeaderPos = writer.BaseStream.Position;
             writer.Write((uint)0);
-            writePayload();
+            writePayload(writer);
             long endBlockPos = writer.BaseStream.Position;
 
             // backup and fill in the block header now that the length is known
@@ -1178,25 +1215,25 @@ namespace TraceEventTests
 
         public static void WriteTraceBlockV6OrGreater(this BinaryWriter writer, Dictionary<string,string> keyValues)
         {
-            WriteBlockV6(writer, 1 /* BlockKind.Trace */, () =>
+            WriteBlockV6(writer, 1 /* BlockKind.Trace */, w =>
             {
                 DateTime now = new DateTime(2025, 2, 3, 4, 5, 6);
-                writer.Write((short)now.Year);
-                writer.Write((short)now.Month);
-                writer.Write((short)now.DayOfWeek);
-                writer.Write((short)now.Day);
-                writer.Write((short)now.Hour);
-                writer.Write((short)now.Minute);
-                writer.Write((short)now.Second);
-                writer.Write((short)now.Millisecond);
-                writer.Write((long)1_000_000);         // syncTimeQPC
-                writer.Write((long)1000);              // qpcFreq
-                writer.Write(8);                       // pointer size
-                writer.Write(keyValues.Count);
+                w.Write((short)now.Year);
+                w.Write((short)now.Month);
+                w.Write((short)now.DayOfWeek);
+                w.Write((short)now.Day);
+                w.Write((short)now.Hour);
+                w.Write((short)now.Minute);
+                w.Write((short)now.Second);
+                w.Write((short)now.Millisecond);
+                w.Write((long)1_000_000);         // syncTimeQPC
+                w.Write((long)1000);              // qpcFreq
+                w.Write(8);                       // pointer size
+                w.Write(keyValues.Count);
                 foreach(var kv in keyValues)
                 {
-                    WriteVarUintPrefixedUTF8String(writer, kv.Key);
-                    WriteVarUintPrefixedUTF8String(writer, kv.Value);
+                    w.WriteVarUintPrefixedUTF8String(kv.Key);
+                    w.WriteVarUintPrefixedUTF8String(kv.Value);
                 }
             });
         }
