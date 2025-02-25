@@ -1197,6 +1197,11 @@ namespace Microsoft.Diagnostics.Tracing
                 _eventRecord->ExtendedDataCount = 0;
             }
 
+            // Make sure that if StackId == 0 (no stack), the event record doesn't point at stack data.
+            Debug.Assert(eventData.StackId == 0 ?
+                (_eventRecord->ExtendedDataCount == 0 && _eventRecord->ExtendedData == null) :
+                (_eventRecord->ExtendedDataCount == 1 && _eventRecord->ExtendedData != null));
+
             return _eventRecord;
         }
 
@@ -1545,6 +1550,11 @@ namespace Microsoft.Diagnostics.Tracing
                 header.HeaderSize = (int)(headerPtr - headerStart);
                 header.TotalNonHeaderSize = header.PayloadSize;
             }
+
+            // These fields aren't read from the file itself, but must be reset on each read
+            // to ensure that events that don't have a stack are handled properly.
+            header.StackBytesSize = 0;
+            header.StackBytes = IntPtr.Zero;
         }
 
         private int EventSize;          // Size bytes of this header and the payload and stacks if any.  does NOT encode the size of the EventSize field itself.
