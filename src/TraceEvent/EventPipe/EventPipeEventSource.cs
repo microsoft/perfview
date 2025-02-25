@@ -438,7 +438,10 @@ namespace Microsoft.Diagnostics.Tracing
                 header.StackBytes = stackBytes;
             }
             _relatedActivityId = header.RelatedActivityID;
-            DispatchEventRecord(ConvertEventHeaderToRecord(ref header));
+            TraceEventNativeMethods.EVENT_RECORD* eventRecord = ConvertEventHeaderToRecord(ref header);
+            ValidateStackFields(header, eventRecord);
+
+            DispatchEventRecord(eventRecord);
         }
 
         private void EventCache_OnEventsDropped(int droppedEventCount)
@@ -447,6 +450,33 @@ namespace Microsoft.Diagnostics.Tracing
             _eventsLost = (int)Math.Min(totalLostEvents, int.MaxValue);
         }
 
+        [Conditional("DEBUG")]
+        private void ValidateStackFields(EventPipeEventHeader header, TraceEventNativeMethods.EVENT_RECORD* eventRecord)
+        {
+            if (header.MetaDataId != 0 &&
+                StackCache.TryGetStack(header.StackId, out int stackBytesSize, out IntPtr stackBytes) &&
+                stackBytesSize != 0 && stackBytes != IntPtr.Zero) // Sometimes the values in the StackCache are zeros.
+            {
+                // .NET Core emits stacks for some events that we don't need and so they are excised out before we get here.
+                if (_eventMetadataDictionary.TryGetValue(header.MetaDataId, out EventPipeEventMetaDataHeader metadataHeader) &&
+                    (metadataHeader.ProviderId == ClrRundownTraceEventParser.ProviderGuid ||
+                    (metadataHeader.ProviderId == ClrTraceEventParser.ProviderGuid && (140 <= metadataHeader.EventId && metadataHeader.EventId <= 144 || metadataHeader.EventId == 190))))
+                {
+                    // Don't check the value of eventRecord->ExtendedData.
+                    // Only one is allocated per metadata entry, and it is still specified even if there is no stack for a unique instance of the event.
+                    // TraceEvent is OK with this because it looks first at the value of ExtendedDataCount and will bail if ExtendedDataCount == 0.
+                    Debug.Assert(eventRecord->ExtendedDataCount == 0);
+                }
+                else
+                {
+                    Debug.Assert(eventRecord->ExtendedDataCount == 1);
+                }
+            }
+            else
+            {
+                Debug.Assert(eventRecord->ExtendedDataCount == 0);
+            }
+        }
         internal bool TryGetTemplateFromMetadata(TraceEvent unhandledEvent, out DynamicTraceEventData template)
         {
             return _metadataTemplates.TryGetValue(unhandledEvent, out template);
@@ -1196,11 +1226,6 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 _eventRecord->ExtendedDataCount = 0;
             }
-
-            // Make sure that if StackId == 0 (no stack), the event record doesn't point at stack data.
-            Debug.Assert(eventData.StackId == 0 ?
-                (_eventRecord->ExtendedDataCount == 0 && _eventRecord->ExtendedData == null) :
-                (_eventRecord->ExtendedDataCount == 1 && _eventRecord->ExtendedData != null));
 
             return _eventRecord;
         }
