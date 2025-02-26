@@ -566,7 +566,7 @@ namespace TraceEventTests
             byte[] payloadBytes = payload.ToArray();
 
             int sequenceNumber = 1;
-            writer.WriteEventBlock(
+            writer.WriteEventBlockV5OrLess(
                 w =>
                 {
                     // write one of each of the 7 well-known DiagnosticSourceEventSource events.
@@ -740,7 +740,7 @@ namespace TraceEventTests
                     payloadWriter.WriteV5MetadataParameterList();
                 });
             });
-            writer.WriteEventBlock(w =>
+            writer.WriteEventBlockV5OrLess(w =>
             {
                 w.WriteEventBlob(1, 1, new byte[0]);
                 w.WriteEventBlob(2, 2, new byte[0]);
@@ -788,7 +788,7 @@ namespace TraceEventTests
                     });
                 });
             });
-            writer.WriteEventBlock(w =>
+            writer.WriteEventBlockV5OrLess(w =>
             {
                 w.WriteEventBlob(1, 1, new byte[] { 12, 0, 0, 0, 17, 0});
             });
@@ -948,6 +948,210 @@ namespace TraceEventTests
             source.Process();
             Assert.Equal(6, source.FileFormatVersionNumber);
         }
+
+        [Fact]
+        public void ParseV6Metadata()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                                     new MetadataParameter("Param1", MetadataTypeCode.Int16),
+                                                     new MetadataParameter("Param2", MetadataTypeCode.Boolean)),
+                                                 new EventMetadata(2, "TestProvider", "TestEvent2", 16),
+                                                 new EventMetadata(3, "TestProvider", "TestEvent3", 17));
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 1, new byte[] { 12, 0, 1, 0, 0, 0});
+                w.WriteEventBlob(2, 2, new byte[0]);
+                w.WriteEventBlob(3, 3, new byte[0]);
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal($"TestEvent{eventCount}", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+                if(eventCount == 1)
+                {
+                    Assert.Equal(2, e.PayloadNames.Length);
+                    Assert.Equal("Param1", e.PayloadNames[0]);
+                    Assert.Equal("Param2", e.PayloadNames[1]);
+                    Assert.Equal(12, e.PayloadValue(0));
+                    Assert.Equal(true, e.PayloadValue(1));
+                }
+            };
+            source.Process();
+            Assert.Equal(3, eventCount);
+        }
+    
+
+        [Fact]
+        public void ParseV6MetadataArrayParam()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                                     new MetadataParameter("Param1", new ArrayMetadataType(new MetadataType(MetadataTypeCode.Int16))),
+                                                     new MetadataParameter("Param2", MetadataTypeCode.Boolean)));
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 1, new byte[] { 2, 0, 12, 0, 19, 0, 1, 0, 0, 0 });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal($"TestEvent1", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+                Assert.Equal(2, e.PayloadNames.Length);
+                Assert.Equal("Param1", e.PayloadNames[0]);
+                Assert.Equal("Param2", e.PayloadNames[1]);
+                short[] a = (short[])e.PayloadValue(0);
+                Assert.Equal(2, a.Length);
+                Assert.Equal(12, a[0]);
+                Assert.Equal(19, a[1]);
+                Assert.Equal(true, e.PayloadValue(1));
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact]
+        public void ParseV6MetadataObjectParam()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                                     new MetadataParameter("Param1", new ObjectMetadataType(
+                                                         new MetadataParameter("NestedParam1", MetadataTypeCode.Int32),
+                                                         new MetadataParameter("NestedParam2", MetadataTypeCode.Byte))),
+                                                     new MetadataParameter("Param2", MetadataTypeCode.Boolean)));
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 1, new byte[] { 3, 0, 0, 0, 19, 1, 0, 0, 0 });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal($"TestEvent1", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+                Assert.Equal(2, e.PayloadNames.Length);
+                Assert.Equal("Param1", e.PayloadNames[0]);
+                Assert.Equal("Param2", e.PayloadNames[1]);
+                var o = (DynamicTraceEventData.StructValue)e.PayloadValue(0);
+                Assert.Equal(2, o.Count);
+                Assert.Equal(3, o["NestedParam1"]);
+                Assert.Equal((byte)19, o["NestedParam2"]);
+                Assert.Equal(true, e.PayloadValue(1));
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact]
+        public void ParseV6OptionalMetadata()
+        {
+            Guid testGuid = Guid.Parse("CA0A7B93-622D-42C9-AFF8-7A09FDA2E30C");
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15)
+            {
+                OpCode = 20,
+                Keywords = 0x00ff00ff00ff00ff,
+                Level = 4,
+                Version = 22,
+                MessageTemplate = "Thing happened param1={param1} param2={param2}",
+                Description = "Yet another test event",
+                Attributes =
+                {
+                    { "Animal", "Pony"},
+                    { "Color", "Red" }
+                },
+                ProviderId = testGuid
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            source.Process();
+
+            Assert.True(source.TryGetMetadata(1, out EventPipeMetadata metadata));
+            Assert.Equal(20, metadata.Opcode);
+            Assert.Equal((ulong)0x00ff00ff00ff00ff, metadata.Keywords);
+            Assert.Equal(4, metadata.Level);
+            Assert.Equal(22, metadata.EventVersion);
+            Assert.Equal("Thing happened param1={param1} param2={param2}", metadata.MessageTemplate);
+            Assert.Equal("Yet another test event", metadata.Description);
+            Assert.Equal(2, metadata.Attributes.Count);
+            Assert.Equal("Pony", metadata.Attributes["Animal"]);
+            Assert.Equal("Red", metadata.Attributes["Color"]);
+            Assert.Equal(testGuid, metadata.ProviderId);
+        }
+
+        // Ensure that we can add extra bytes into the metadata encoding everywhere the format says we should be allowed to
+        [Fact]
+        public void SkipExtraMetadataSpaceV6()
+        {
+            Guid testGuid = Guid.Parse("CA0A7B93-622D-42C9-AFF8-7A09FDA2E30C");
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteBlockV6(3 /* Metadata */, blockWriter =>
+            {
+                // Add a metadata block header with some extra bytes
+                blockWriter.Write((UInt16)17);
+                for (int i = 0; i < 17; i++) blockWriter.Write((byte)i);
+
+                blockWriter.WriteMetadataBlobV6OrGreater(metadataWriter =>
+                {
+                    metadataWriter.WriteV6InitialMetadataBlob(1, "TestProvider", "TestEvent", 15);
+                    metadataWriter.WriteV6MetadataParameterList(2, parametersWriter =>
+                    {
+                        parametersWriter.WriteV6MetadataParameter("Param1", p1Writer =>
+                        {
+                            p1Writer.WriteV6MetadataType(new MetadataType(MetadataTypeCode.Int16));
+                            p1Writer.Write(99); // extra bytes after the type are allowed
+                        });
+                        parametersWriter.WriteV6MetadataParameter("Param2", p2Writer =>
+                        {
+                            p2Writer.WriteV6MetadataType(new MetadataType(MetadataTypeCode.UInt32));
+                            p2Writer.Write(0); // extra bytes after the type are allowed
+                            p2Writer.Write(-14);
+                        });
+                    });
+                    metadataWriter.WriteV6OptionalMetadataList(3, optionalMetadataWriter =>
+                    {
+                        // extra optional metadata should be skipped as long as it is length-prefixed
+                        optionalMetadataWriter.WriteV6OptionalMetadataLengthPrefixed(128, new byte[] { 0, 0, 17, 92, 4 });
+                        optionalMetadataWriter.WriteV6OptionalMetadataLengthPrefixed(200, new byte[] { 72 });
+                        optionalMetadataWriter.WriteV6OptionalMetadataDescription("Food!");
+                    });
+                    // extra bytes after the optional metadata are allowed
+                    metadataWriter.Write(100);
+                });
+                blockWriter.WriteMetadataBlobV6OrGreater(new EventMetadata(2, "TestProvider", "TestEvent2", 16));
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            source.Process();
+
+            Assert.True(source.TryGetMetadata(1, out EventPipeMetadata metadata));
+            Assert.Equal("Food!", metadata.Description);
+            Assert.Equal(2, metadata.ParameterNames.Length);
+            Assert.Equal("Param1", metadata.ParameterNames[0]);
+            Assert.Equal("Param2", metadata.ParameterNames[1]);
+            Assert.True(source.TryGetMetadata(2, out EventPipeMetadata metadata2));
+            Assert.Equal("TestEvent2", metadata2.EventName);
+        }
     }
 
 
@@ -990,18 +1194,100 @@ namespace TraceEventTests
 
     public class EventMetadata
     {
-        public EventMetadata(int metadataId, string providerName, string eventName, int eventId)
+        public EventMetadata(int metadataId, string providerName, string eventName, int eventId, params MetadataParameter[] parameters)
         {
             MetadataId = metadataId;
             ProviderName = providerName;
             EventName = eventName;
             EventId = eventId;
+            Parameters = parameters;
         }
 
         public int MetadataId { get; set; }
         public string ProviderName { get; set; }
         public string EventName { get; set; }
         public int EventId { get; set; }
+        public MetadataParameter[] Parameters { get; set; }
+
+        // V6 Optional metadata
+        public byte OpCode { get; set; }
+        public string Description { get; set; }
+        public string MessageTemplate { get; set; }
+        public Guid ProviderId { get; set; }
+        public long Keywords { get; set; }
+        public byte Level { get; set; }
+        public byte Version { get; set; }
+        public Dictionary<string, string> Attributes { get; set; } = new Dictionary<string, string>();
+        
+    }
+
+    public class MetadataParameter
+    {
+        public MetadataParameter(string name, MetadataType type)
+        {
+            Name = name;
+            Type = type;
+        }
+        public MetadataParameter(string name, MetadataTypeCode typeCode)
+        {
+            Name = name;
+            Type = new MetadataType(typeCode);
+        }
+        public string Name { get; set; }
+        public MetadataType Type { get; set; }
+    }
+
+    public class MetadataType
+    {
+        public MetadataType(MetadataTypeCode typeCode)
+        {
+            TypeCode = typeCode;
+        }
+        public MetadataTypeCode TypeCode { get; set; }
+    }
+
+    public class ArrayMetadataType : MetadataType
+    {
+        public ArrayMetadataType(MetadataType elementType) : base(MetadataTypeCode.Array)
+        {
+            ElementType = elementType;
+        }
+        public MetadataType ElementType { get; set; }
+    }
+
+    public class ObjectMetadataType : MetadataType
+    {
+        public ObjectMetadataType(params MetadataParameter[] parameters) : base(MetadataTypeCode.Object)
+        {
+            Parameters = parameters;
+        }
+        public MetadataParameter[] Parameters { get; set; }
+    }
+
+    public enum MetadataTypeCode
+    {
+        Object = 1,                        // Concatenate together all of the encoded fields
+        Boolean = 3,                       // A 4-byte LE integer with value 0=false and 1=true.  
+        Char = 4,                          // a 2-byte UTF16 encoded character
+        SByte = 5,                         // 1-byte signed integer
+        Byte = 6,                          // 1-byte unsigned integer
+        Int16 = 7,                         // 2-byte signed LE integer
+        UInt16 = 8,                        // 2-byte unsigned LE integer
+        Int32 = 9,                         // 4-byte signed LE integer
+        UInt32 = 10,                       // 4-byte unsigned LE integer
+        Int64 = 11,                        // 8-byte signed LE integer
+        UInt64 = 12,                       // 8-byte unsigned LE integer
+        Single = 13,                       // 4-byte single-precision IEEE754 floating point value
+        Double = 14,                       // 8-byte double-precision IEEE754 floating point value
+        DateTime = 16,                     // Encoded as 8 concatenated Int16s representing year, month, dayOfWeek, day, hour, minute, second, and milliseconds.
+        Guid = 17,                         // A 16-byte guid encoded as the concatenation of an Int32, 2 Int16s, and 8 Uint8s
+        NullTerminatedUTF16String = 18,    // A string encoded with UTF16 characters and a 2-byte null terminator
+        Array = 19,                        // New in V5 optional params: a UInt16 length-prefixed variable-sized array. Elements are encoded depending on the ElementType.
+        VarInt = 20,                       // New in V6: variable-length signed integer with zig-zag encoding (defined the same as in Protobuf)
+        VarUInt = 21,                      // New in V6: variable-length unsigned integer (defined the same as in Protobuf)
+        LengthPrefixedUTF16String = 22,    // New in V6: A string encoded with UTF16 characters and a UInt16 element count prefix. No null-terminator.
+        LengthPrefixedUTF8String = 23,     // New in V6: A string encoded with UTF8 characters and a Uint16 length prefix. No null-terminator.
+        VarLengthPrefixedUtf8String = 24,  // New in V6: A string encoded with UTF8 characters and a VarUInt length prefix. No null-terminator.
     }
 
     public class EventPayloadWriter
@@ -1065,6 +1351,16 @@ namespace TraceEventTests
             _writer.WriteTraceBlockV6OrGreater(keyValues);
         }
 
+        public void WriteMetadataBlockV6OrGreater(params EventMetadata[] metadataBlobs)
+        {
+            _writer.WriteMetadataBlockV6OrGreater(metadataBlobs);
+        }
+
+        public void WriteMetadataBlockV6OrGreater(Action<BinaryWriter> writeMetadataBlobs)
+        {
+            _writer.WriteMetadataBlockV6OrGreater(writeMetadataBlobs);
+        }
+
         public void WriteMetadataBlockV5OrLess(params EventMetadata[] metadataBlobs)
         {
             _writer.WriteMetadataBlockV5OrLess(metadataBlobs);
@@ -1075,9 +1371,14 @@ namespace TraceEventTests
             _writer.WriteMetadataBlockV5OrLess(writeMetadataEventBlobs);
         }
 
-        public void WriteEventBlock(Action<BinaryWriter> writeEventBlobs)
+        public void WriteEventBlockV5OrLess(Action<BinaryWriter> writeEventBlobs)
         {
-            _writer.WriteEventBlock(writeEventBlobs);
+            _writer.WriteEventBlockV5OrLess(writeEventBlobs);
+        }
+
+        public void WriteEventBlockV6OrGreater(Action<BinaryWriter> writeEventBlobs)
+        {
+            _writer.WriteEventBlockV6OrGreater(writeEventBlobs);
         }
 
         public void WriteEndObject()
@@ -1087,7 +1388,7 @@ namespace TraceEventTests
 
         public void WriteEndBlock()
         {
-            _writer.WriteBlockV6(0 /* BLockKind.EndOfStream */, w => { });
+            _writer.WriteBlockV6OrGreater(0 /* BLockKind.EndOfStream */, w => { });
         }
 
         public void WriteBlockV5OrLess(string name, Action<BinaryWriter> writeBlockData, long previousBytesWritten = 0)
@@ -1097,7 +1398,7 @@ namespace TraceEventTests
 
         public void WriteBlockV6(byte blockKind, Action<BinaryWriter> writePayload)
         {
-            _writer.WriteBlockV6(blockKind, writePayload);
+            _writer.WriteBlockV6OrGreater(blockKind, writePayload);
         }
 
     }
@@ -1135,7 +1436,7 @@ namespace TraceEventTests
         }
 
 
-        public static void WriteVarUint(this BinaryWriter writer, ulong val)
+        public static void WriteVarUInt(this BinaryWriter writer, ulong val)
         {
             while (true)
             {
@@ -1153,11 +1454,16 @@ namespace TraceEventTests
             }
         }
 
-        public static void WriteVarUintPrefixedUTF8String(this BinaryWriter writer, string val)
+        public static void WriteVarUIntPrefixedUTF8String(this BinaryWriter writer, string val)
         {
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(val);
-            WriteVarUint(writer, (ulong)utf8Bytes.Length);
+            WriteVarUInt(writer, (ulong)utf8Bytes.Length);
             writer.Write(utf8Bytes);
+        }
+
+        public static void Write(this BinaryWriter writer, Guid val)
+        {
+            writer.Write(val.ToByteArray());
         }
 
         // used in versions <= 5
@@ -1175,8 +1481,7 @@ namespace TraceEventTests
             writer.Write((byte)6); // end object
         }
 
-        // Used in versions >= 6
-        public static void WriteBlockV6(this BinaryWriter writer, byte blockKind, Action<BinaryWriter> writePayload)
+        public static void WriteBlockV6OrGreater(this BinaryWriter writer, byte blockKind, Action<BinaryWriter> writePayload)
         {
             long blockHeaderPos = writer.BaseStream.Position;
             writer.Write((uint)0);
@@ -1215,7 +1520,7 @@ namespace TraceEventTests
 
         public static void WriteTraceBlockV6OrGreater(this BinaryWriter writer, Dictionary<string,string> keyValues)
         {
-            WriteBlockV6(writer, 1 /* BlockKind.Trace */, w =>
+            WriteBlockV6OrGreater(writer, 1 /* BlockKind.Trace */, w =>
             {
                 DateTime now = new DateTime(2025, 2, 3, 4, 5, 6);
                 w.Write((short)now.Year);
@@ -1232,8 +1537,8 @@ namespace TraceEventTests
                 w.Write(keyValues.Count);
                 foreach(var kv in keyValues)
                 {
-                    w.WriteVarUintPrefixedUTF8String(kv.Key);
-                    w.WriteVarUintPrefixedUTF8String(kv.Value);
+                    w.WriteVarUIntPrefixedUTF8String(kv.Key);
+                    w.WriteVarUIntPrefixedUTF8String(kv.Value);
                 }
             });
         }
@@ -1263,6 +1568,194 @@ namespace TraceEventTests
                 Align(writer, previousBytesWritten);
                 writer.Write(block.GetBuffer(), 0, (int)block.Length);
             });
+        }
+
+        public static void WriteMetadataBlockV6OrGreater(this BinaryWriter writer, params EventMetadata[] metadataBlobs)
+        {
+            WriteMetadataBlockV6OrGreater(writer, w =>
+            {
+                foreach (EventMetadata metadata in metadataBlobs)
+                {
+                    w.WriteMetadataBlobV6OrGreater(metadata);
+                }
+            });
+        }
+
+        public static void WriteMetadataBlockV6OrGreater(this BinaryWriter writer, Action<BinaryWriter> writeMetadataBlobs)
+        {
+            WriteBlockV6OrGreater(writer, 3 /* Metadata */, w =>
+            {
+                w.Write((UInt16)0);    // header size
+                writeMetadataBlobs(w);
+            });
+        }
+
+        public static void WriteMetadataBlobV6OrGreater(this BinaryWriter writer, EventMetadata metadata)
+        {
+            writer.WriteMetadataBlobV6OrGreater(w =>
+            {
+                w.WriteV6InitialMetadataBlob(metadata.MetadataId, metadata.ProviderName, metadata.EventName, metadata.EventId);
+                w.WriteV6MetadataParameterList(metadata.Parameters);
+                w.WriteV6OptionalMetadataList(metadata);
+            });
+        }
+
+        public static void WriteMetadataBlobV6OrGreater(this BinaryWriter writer, Action<BinaryWriter> writeMetadataPayload)
+        {
+            MemoryStream payloadBlob = new MemoryStream();
+            BinaryWriter payloadWriter = new BinaryWriter(payloadBlob);
+            writeMetadataPayload(payloadWriter);
+            writer.Write((UInt16)payloadBlob.Length);
+            writer.Write(payloadBlob.GetBuffer(), 0, (int)payloadBlob.Length);
+        }
+
+        public static void WriteV6InitialMetadataBlob(this BinaryWriter writer, int metadataId, string providerName, string eventName, int eventId)
+        {
+            writer.WriteVarUInt((uint)metadataId);                // metadata id
+            writer.WriteVarUIntPrefixedUTF8String(providerName);  // provider name
+            writer.WriteVarUInt((uint)eventId);                   // event id
+            writer.WriteVarUIntPrefixedUTF8String(eventName);     // event name
+        }
+
+        public static void WriteV6MetadataParameterList(this BinaryWriter writer, params MetadataParameter[] parameters)
+        {
+            writer.WriteV6MetadataParameterList(parameters.Length, w =>
+            {
+                foreach (var parameter in parameters)
+                {
+                    w.WriteV6MetadataParameter(parameter);
+                }
+            });
+        }
+
+        public static void WriteV6MetadataParameterList(this BinaryWriter writer, int parameterCount, Action<BinaryWriter> writeParameters)
+        {
+            writer.Write((UInt16)parameterCount);
+            writeParameters(writer);
+        }
+
+        public static void WriteV6MetadataParameter(this BinaryWriter writer, MetadataParameter parameter)
+        {
+            writer.WriteV6MetadataParameter(parameter.Name, w => { w.WriteV6MetadataType(parameter.Type); });
+        }
+
+        public static void WriteV6MetadataParameter(this BinaryWriter writer, string parameterName, Action<BinaryWriter> writeType)
+        {
+            MemoryStream paramStream = new MemoryStream();
+            BinaryWriter paramWriter = new BinaryWriter(paramStream);
+            paramWriter.WriteVarUIntPrefixedUTF8String(parameterName);
+            writeType(paramWriter);
+
+            writer.Write((UInt16)paramStream.Length);
+            writer.Write(paramStream.GetBuffer(), 0, (int)paramStream.Length);
+        }
+
+        public static void WriteV6MetadataType(this BinaryWriter writer, MetadataType type)
+        {
+            writer.Write((byte)type.TypeCode);
+            if(type.TypeCode == MetadataTypeCode.Array)
+            {
+                writer.WriteV6MetadataType((type as ArrayMetadataType).ElementType);
+            }
+            else if(type.TypeCode == MetadataTypeCode.Object)
+            {
+                writer.WriteV6MetadataParameterList((type as ObjectMetadataType).Parameters);
+            }
+        }
+
+        public static void WriteV6OptionalMetadataList(this BinaryWriter writer, EventMetadata metadata)
+        {
+            int count = 0;
+            if (metadata.OpCode != 0) count++;
+            if (metadata.Keywords != 0 ||
+                metadata.Level != 0 ||
+                metadata.Version != 0) count++;
+            if (metadata.MessageTemplate != null) count++;
+            if (metadata.Description != null) count++;
+            count += metadata.Attributes.Count;
+            if (metadata.ProviderId != default) count++;
+
+            writer.WriteV6OptionalMetadataList(count, w =>
+            {
+                if (metadata.OpCode != 0)
+                {
+                    w.WriteV6OptionalMetadataOpcode(metadata.OpCode);
+                }
+                if (metadata.Keywords != 0 || metadata.Level != 0 || metadata.Version != 0)
+                {
+                    w.WriteV6OptionalMetadataKeywordLevelVersion(metadata.Keywords, metadata.Level, metadata.Version);
+                }
+                if (metadata.MessageTemplate != null)
+                {
+                    w.WriteV6OptionalMetadataMessageTemplate(metadata.MessageTemplate);
+                }
+                if (metadata.Description != null)
+                {
+                    w.WriteV6OptionalMetadataDescription(metadata.Description);
+                }
+                foreach (var kv in metadata.Attributes)
+                {
+                    w.WriteV6OptionalMetadataAttribute(kv.Key, kv.Value);
+                }
+                if (metadata.ProviderId != default)
+                {
+                    w.WriteV6OptionalMetadataProviderGuid(metadata.ProviderId);
+                }
+            });
+        }
+
+        public static void WriteV6OptionalMetadataList(this BinaryWriter writer, int countOptionalElements, Action<BinaryWriter> writeOptionalMetadata)
+        {
+            writer.Write((UInt16)countOptionalElements);
+            writeOptionalMetadata(writer);
+        }
+
+        public static void WriteV6OptionalMetadataOpcode(this BinaryWriter writer, byte opcode)
+        {
+            writer.Write((byte)1);       // OptionalMetadataKind.Opcode
+            writer.Write((byte)opcode);
+        }
+
+        public static void WriteV6OptionalMetadataKeywordLevelVersion(this BinaryWriter writer, long keyword, byte level, byte version)
+        {
+            writer.Write((byte)3);       // OptionalMetadataKind.KeywordLevelVersion
+            writer.Write(keyword);
+            writer.Write(level);
+            writer.Write(version);
+        }
+
+        public static void WriteV6OptionalMetadataMessageTemplate(this BinaryWriter writer, string template)
+        {
+            writer.Write((byte)4);       // OptionalMetadataKind.MessageTemplate
+            writer.WriteVarUIntPrefixedUTF8String(template);
+        }
+
+        public static void WriteV6OptionalMetadataDescription(this BinaryWriter writer, string description)
+        {
+            writer.Write((byte)5);       // OptionalMetadataKind.Description
+            writer.WriteVarUIntPrefixedUTF8String(description);
+        }
+
+        public static void WriteV6OptionalMetadataAttribute(this BinaryWriter writer, string key, string value)
+        {
+            writer.Write((byte)6);       // OptionalMetadataKind.KeyValuePair
+            writer.WriteVarUIntPrefixedUTF8String(key);
+            writer.WriteVarUIntPrefixedUTF8String(value);
+        }
+
+        public static void WriteV6OptionalMetadataProviderGuid(this BinaryWriter writer, Guid providerId)
+        {
+            writer.Write((byte)7);       // OptionalMetadataKind.ProviderGuid
+            writer.Write(providerId);
+        }
+
+        public static void WriteV6OptionalMetadataLengthPrefixed(this BinaryWriter writer, byte optionalMetadataKind, byte[] optionalMetadata)
+        {
+            // length prefixed optional metadata must have the high bit set
+            Debug.Assert((optionalMetadataKind & 128) != 0);
+            writer.Write(optionalMetadataKind);
+            writer.Write((UInt16)optionalMetadata.Length);
+            writer.Write(optionalMetadata);
         }
 
         public static void WriteMetadataBlockV5OrLess(this BinaryWriter writer, Action<BinaryWriter> writeMetadataEventBlobs, long previousBytesWritten = 0)
@@ -1371,7 +1864,20 @@ namespace TraceEventTests
             });
         }
 
-        public static void WriteEventBlock(this BinaryWriter writer, Action<BinaryWriter> writeEventBlobs, long previousBytesWritten = 0)
+        public static void WriteEventBlockV6OrGreater(this BinaryWriter writer, Action<BinaryWriter> writeEventBlobs)
+        {
+            WriteBlockV6OrGreater(writer, 2 /* Event */, w =>
+            {
+                // header
+                w.Write((short)20); // header size
+                w.Write((short)0);  // flags
+                w.Write((long)0);   // min timestamp
+                w.Write((long)0);   // max timestamp
+                writeEventBlobs(w);
+            });
+        }
+
+        public static void WriteEventBlockV5OrLess(this BinaryWriter writer, Action<BinaryWriter> writeEventBlobs, long previousBytesWritten = 0)
         {
             WriteBlockV5OrLess(writer, "EventBlock", w =>
             {
@@ -1465,7 +1971,7 @@ namespace TraceEventTests
                 // 20 blocks, each with 20 events in them
                 for (int i = 0; i < 20; i++)
                 {
-                    writer.WriteEventBlock(
+                    writer.WriteEventBlockV5OrLess(
                         w =>
                         {
                             for (int j = 0; j < 20; j++)

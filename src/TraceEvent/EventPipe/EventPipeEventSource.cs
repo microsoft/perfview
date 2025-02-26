@@ -261,6 +261,17 @@ namespace Microsoft.Diagnostics.Tracing
             EventCache.ProcessEventBlock(blockBytes, startBlockStreamOffset);
         }
 
+        internal void ReadMetadataBlockV6OrGreater(byte[] blockBytes, long startBlockStreamOffset)
+        {
+            SpanReader reader = new SpanReader(blockBytes, (long)startBlockStreamOffset);
+            int headerSize = reader.ReadUInt16();
+            reader.ReadBytes(headerSize);
+            while(reader.RemainingBytes.Length > 0)
+            {
+                ReadAndCacheMetadataV6OrGreater(ref reader);
+            }
+        }
+
         internal void ReadMetadataBlockV5OrLess(byte[] blockBytes, long startBlockStreamOffset)
         {
             SpanReader metadataReader = new SpanReader(blockBytes, (long)startBlockStreamOffset);
@@ -279,7 +290,7 @@ namespace Microsoft.Diagnostics.Tracing
                 ReadEventHeader(ref metadataReader, (flags & (short)EventBlockFlags.HeaderCompression) != 0, ref eventHeader);
                 long streamOffset = metadataReader.StreamOffset;
                 SpanReader payloadReader = new SpanReader(metadataReader.ReadBytes(eventHeader.PayloadSize), streamOffset);
-                ReadAndCacheMetadata(ref payloadReader);
+                ReadAndCacheMetadataV5OrLower(ref payloadReader);
             }
         }
 
@@ -335,7 +346,7 @@ namespace Microsoft.Diagnostics.Tracing
             SpanReader payloadReader = new SpanReader(reader.ReadBytes(eventHeader.PayloadSize), offset);
             if (eventHeader.IsMetadata())
             {
-                ReadAndCacheMetadata(ref payloadReader);
+                ReadAndCacheMetadataV5OrLower(ref payloadReader);
             }
             else
             {
@@ -397,53 +408,30 @@ namespace Microsoft.Diagnostics.Tracing
         /// Read the metadata payload and cache it for later use.
         /// </summary>
         /// <param name="reader">The reader should be exactly long enough for one metadata blob</param>
-        private void ReadAndCacheMetadata(ref SpanReader reader)
+        private void ReadAndCacheMetadataV5OrLower(ref SpanReader reader)
         {
-            EventPipeMetadata metadata = ReadMetadata(ref reader);
+            EventPipeMetadata metadata = EventPipeMetadata.ReadV5OrLower(ref reader, PointerSize, _processId, FileFormatVersionNumber);
             Debug.Assert(reader.RemainingBytes.Length == 0);
+            CacheMetadata(metadata);
+        }
+
+        /// <summary>
+        /// Read the metadata payload and cache it for later use.
+        /// </summary>
+        private void ReadAndCacheMetadataV6OrGreater(ref SpanReader reader)
+        {
+            EventPipeMetadata metadata = EventPipeMetadata.ReadV6OrGreater(ref reader, PointerSize);
+            CacheMetadata(metadata);
+        }
+
+        private void CacheMetadata(EventPipeMetadata metadata)
+        {
             DynamicTraceEventData eventTemplate = CreateTemplate(metadata);
             _eventMetadataDictionary.Add(metadata.MetaDataId, metadata);
             _metadataTemplates[eventTemplate] = eventTemplate;
         }
 
-        private EventPipeMetadata ReadMetadata(ref SpanReader reader)
-        {
-            // Read in the header (The header does not include payload parameter information)
-            var metadata = new EventPipeMetadata(PointerSize, _processId);
-            metadata.ParseHeader(ref reader, FileFormatVersionNumber);
-
-            // If the metadata contains no parameter metadata, don't attempt to read it.
-            if (reader.RemainingBytes.Length == 0)
-            {
-                metadata.InitDefaultParameters();
-            }
-            else
-            {
-                metadata.ParseEventParameters(ref reader, EventPipeFieldLayoutVersion.V1);
-            }
-
-            while (reader.RemainingBytes.Length > 0)
-            {
-                // If we've already parsed the V1 metadata and there's more left to decode,
-                // then we have some tags to read
-                int tagLength = reader.ReadInt32();
-                EventPipeMetadataTag tag = (EventPipeMetadataTag)reader.ReadUInt8();
-                long offset = reader.StreamOffset;
-                SpanReader tagReader = new SpanReader(reader.ReadBytes(tagLength), offset);
-
-                if (tag == EventPipeMetadataTag.ParameterPayloadV2)
-                {
-                    metadata.ParseEventParameters(ref tagReader, EventPipeFieldLayoutVersion.V2);
-                }
-                else if (tag == EventPipeMetadataTag.Opcode)
-                {
-                    metadata.Opcode = tagReader.ReadUInt8();
-                }
-            }
-
-            metadata.ApplyTransforms();
-            return metadata;
-        }
+        internal bool TryGetMetadata(int metadataId, out EventPipeMetadata metadata) =>  _eventMetadataDictionary.TryGetValue(metadataId, out metadata);
 
         private TraceEventNativeMethods.EVENT_RECORD* ConvertEventHeaderToRecord(ref EventPipeEventHeader eventData)
         {
@@ -603,7 +591,7 @@ internal interface IBlockParser : IDisposable
                         _source.ReadEventBlockV4OrGreater(blockBytes, blockStartOffset);
                         break;
                     case BlockKind.Metadata:
-                        _source.ReadMetadataBlockV5OrLess(blockBytes, blockStartOffset);
+                        _source.ReadMetadataBlockV6OrGreater(blockBytes, blockStartOffset);
                         break;
                     case BlockKind.SequencePoint:
                         _source.ReadSequencePointBlockV5OrLess(blockBytes, blockStartOffset);

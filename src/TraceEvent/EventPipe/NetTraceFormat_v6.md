@@ -202,21 +202,26 @@ Last, we are taking the opportunity to simplify the metadata encoding format. Cu
 
 In V5 the MetadataBlock reused the format of the EventBlock but many of the fields were unused. V6 uses an updated streamlined format:
 
-- uint16 Count
-- Concatenated sequence of Count MetadataBlobs, each of which is:
+- uint16 HeaderSize           // The size of the header, not including this HeaderSize field
+  - Undefined header          // An optional sequence of HeaderSize bytes that are not interpreted by the reader. This is useful for future extensibility.
+- Concatenated sequence of MetadataBlobs, each of which is:
+  - uint16 Size;              // The size of the metadata blob in bytes not including the Size field 
   - varuint MetaDataId;       // The Meta-Data ID that is being defined.
   - string ProviderName;      // varuint length-prefixed UTF8 string (no null terminator)
   - varuint EventId;          // A small number that uniquely represents this Event within this provider.  
   - string EventName;         // varuint length-prefixed length prefixed UTF8 string (no null terminator)
   - FieldDescriptions;        // a list of the payload field names and types - described below
   - OptionalMetadata;         // a list of optional metadata properties that can be attached to an event - described below
+  - Undefined;                // An optional sequence of bytes that are not interpreted by the reader. This is useful for future extensibility. Size is inferred from the Size field.
 
 FieldDescriptions format is:
 
-- varuint Count
+- uint16 Count
 - Contenated sequence of Count field descriptions, each of which is:
-  - Type;                     // The type of a field - described below
+  - uint16 FieldSize;         // The size of the field description in bytes not including the FieldSize field
   - string FieldName;         // varuint length-prefixed UTF8 string (no null terminator)
+  - Type;                     // The type of a field - described below
+  - Undefined;                // An optional sequence of bytes that are not interpreted by the reader. This is useful for future extensibility. Size is inferred from the FieldSize field.
 
 Type format is:
 
@@ -247,14 +252,14 @@ enum TypeCode
   VarInt = 20,                       // New in V6: variable-length signed integer with zig-zag encoding (defined the same as in Protobuf)
   VarUInt = 21,                      // New in V6: variable-length unsigned integer (defined the same as in Protobuf)
   LengthPrefixedUTF16String = 22,    // New in V6: A string encoded with UTF16 characters and a UInt16 element count prefix. No null-terminator.
-  LengthPrefixedUTF8String = 23,     // New in V6: A string encoded with UTF8 characters and a Uint16 length prefix. No null-terminator.
+  LengthPrefixedUTF8String = 23,     // New in V6: A string encoded with UTF8 characters and a UInt16 length prefix. No null-terminator.
   VarLengthPrefixedUtf8String = 24,  // New in V6: A string encoded with UTF8 characters and a Varuint length prefix. No null-terminator.
 }
 ```
 
 OptionalMetadata format is:
 
-- varuint Count 
+- uint16 Count 
 - Concatenated sequence of Count optional metadata elements, each of which is:
   - uint8 Kind;                      // Discriminates which kind of optional metadata will follow
   - if Kind==OpCode
@@ -270,9 +275,11 @@ OptionalMetadata format is:
   - if Kind==KeyValue
     - string Key                     // varuint length-prefixed UTF8 string (no null terminator)
     - string Value                   // varuint length-prefixed UTF8 string (no null terminator)
+  - if Kind==ProviderGuid
+    - Guid ProviderGuid              // A 16-byte guid
   - if Kind & LengthPrefixed != 0    // An extensibility mechanism so future versions of the file format can add new kinds of optional metadata
-    - varuint Size                   // Encodes the size of the optional metadata element, not including Kind and Size fields
-                                     // The reader should skip Size bytes of data after the Size field to get to the next optional metadata element
+    - uint16 Size                    // Encodes the size of the optional metadata element, not including Kind and Size fields
+    - Undefined                      // The reader should skip Size bytes of data after the Size field to get to the next optional metadata element
 
 ```
 enum OptionalMetadataKind
@@ -283,6 +290,7 @@ enum OptionalMetadataKind
   MessageTemplate = 4,
   Description = 5,
   KeyValue = 6,
-  LengthPrefixed = 127
+  ProviderGuid = 7,
+  LengthPrefixed = 128
 }
 ```
