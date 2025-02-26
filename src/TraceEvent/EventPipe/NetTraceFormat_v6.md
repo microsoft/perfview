@@ -250,10 +250,9 @@ enum TypeCode
   NullTerminatedUTF16String = 18,    // A string encoded with UTF16 characters and a 2-byte null terminator
   Array = 19,                        // a UInt16 length-prefixed variable-sized array. Elements are encoded depending on the ElementType.
   VarInt = 20,                       // New in V6: variable-length signed integer with zig-zag encoding (defined the same as in Protobuf)
-  VarUInt = 21,                      // New in V6: variable-length unsigned integer (defined the same as in Protobuf)
+  VarUInt = 21,                      // New in V6: variable-length unsigned integer (ULEB128)
   LengthPrefixedUTF16String = 22,    // New in V6: A string encoded with UTF16 characters and a UInt16 element count prefix. No null-terminator.
   LengthPrefixedUTF8String = 23,     // New in V6: A string encoded with UTF8 characters and a UInt16 length prefix. No null-terminator.
-  VarLengthPrefixedUtf8String = 24,  // New in V6: A string encoded with UTF8 characters and a Varuint length prefix. No null-terminator.
 }
 ```
 

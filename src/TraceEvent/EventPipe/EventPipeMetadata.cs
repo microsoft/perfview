@@ -5,6 +5,7 @@ using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.Tracing
@@ -570,6 +571,50 @@ namespace Microsoft.Diagnostics.Tracing
                         payloadFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(offset, elementType, fetchSize);
                         break;
                     }
+                case EventPipeTypeCode.VarInt:
+                    {
+                        if (fieldLayoutVersion < EventPipeFieldLayoutVersion.FileFormatV6OrGreater)
+                        {
+                            throw new FormatException($"VarInt is not a valid type code for this metadata.");
+                        }
+                        payloadFetch.Type = typeof(long);
+                        payloadFetch.Size = DynamicTraceEventData.VARINT;
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case EventPipeTypeCode.VarUInt:
+                    {
+                        if (fieldLayoutVersion < EventPipeFieldLayoutVersion.FileFormatV6OrGreater)
+                        {
+                            throw new FormatException($"VarUInt is not a valid type code for this metadata.");
+                        }
+                        payloadFetch.Type = typeof(ulong);
+                        payloadFetch.Size = DynamicTraceEventData.VARINT;
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case EventPipeTypeCode.LengthPrefixedUTF16String:
+                    {
+                        if (fieldLayoutVersion < EventPipeFieldLayoutVersion.FileFormatV6OrGreater)
+                        {
+                            throw new FormatException($"LengthPrefixedUTF8String is not a valid type code for this metadata.");
+                        }
+                        payloadFetch.Type = typeof(string);
+                        payloadFetch.Size = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.ELEM_COUNT;
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
+                case EventPipeTypeCode.LengthPrefixedUTF8String:
+                    {
+                        if (fieldLayoutVersion < EventPipeFieldLayoutVersion.FileFormatV6OrGreater)
+                        {
+                            throw new FormatException($"LengthPrefixedUTF8String is not a valid type code for this metadata.");
+                        }
+                        payloadFetch.Type = typeof(string);
+                        payloadFetch.Size = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.IS_ANSI | DynamicTraceEventData.ELEM_COUNT;
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
                 default:
                     {
                         throw new FormatException($"Field {fieldName}: Typecode {typeCode} is not supported.");
@@ -599,11 +644,10 @@ namespace Microsoft.Diagnostics.Tracing
             Guid = 17,                         // A 16-byte guid encoded as the concatenation of an Int32, 2 Int16s, and 8 Uint8s
             NullTerminatedUTF16String = 18,    // A string encoded with UTF16 characters and a 2-byte null terminator
             Array = 19,                        // New in V5 optional params: a UInt16 length-prefixed variable-sized array. Elements are encoded depending on the ElementType.
-            VarInt = 20,                       // New in V6: variable-length signed integer with zig-zag encoding (defined the same as in Protobuf)
-            VarUInt = 21,                      // New in V6: variable-length unsigned integer (defined the same as in Protobuf)
+            VarInt = 20,                       // New in V6: variable-length signed integer with zig-zag encoding (same as protobuf)
+            VarUInt = 21,                      // New in V6: variable-length unsigned integer (ULEB128)
             LengthPrefixedUTF16String = 22,    // New in V6: A string encoded with UTF16 characters and a UInt16 element count prefix. No null-terminator.
-            LengthPrefixedUTF8String = 23,     // New in V6: A string encoded with UTF8 characters and a Uint16 length prefix. No null-terminator.
-            VarLengthPrefixedUtf8String = 24,  // New in V6: A string encoded with UTF8 characters and a VarUInt length prefix. No null-terminator.
+            LengthPrefixedUTF8String = 23,     // New in V6: A string encoded with UTF8 characters and a UInt16 length prefix. No null-terminator.
         }
 
         private void ParseOptionalMetadataV6OrGreater(ref SpanReader reader)

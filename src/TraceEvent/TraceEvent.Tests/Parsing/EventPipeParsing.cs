@@ -551,8 +551,8 @@ namespace TraceEventTests
                 new EventMetadata(7, "Microsoft-Diagnostics-DiagnosticSource", "RecursiveActivity1Stop", 9));
 
             EventPayloadWriter payload = new EventPayloadWriter();
-            payload.Write("FakeProviderName");
-            payload.Write("FakeEventName");
+            payload.WriteNullTerminatedUTF16String("FakeProviderName");
+            payload.WriteNullTerminatedUTF16String("FakeEventName");
             payload.WriteArray(new KeyValuePair<string, string>[]
             {
                 new KeyValuePair<string,string>("key1", "val1"),
@@ -560,8 +560,8 @@ namespace TraceEventTests
             },
             kv =>
             {
-                payload.Write(kv.Key);
-                payload.Write(kv.Value);
+                payload.WriteNullTerminatedUTF16String(kv.Key);
+                payload.WriteNullTerminatedUTF16String(kv.Value);
             });
             byte[] payloadBytes = payload.ToArray();
 
@@ -1152,6 +1152,169 @@ namespace TraceEventTests
             Assert.True(source.TryGetMetadata(2, out EventPipeMetadata metadata2));
             Assert.Equal("TestEvent2", metadata2.EventName);
         }
+
+        [Fact]
+        public void ParseV6LengthPrefixedStrings()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                                     new MetadataParameter("String1", MetadataTypeCode.LengthPrefixedUTF16String),
+                                                     new MetadataParameter("String2", MetadataTypeCode.LengthPrefixedUTF8String),
+                                                     new MetadataParameter("IntParam", MetadataTypeCode.Int32)));
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 1, p =>
+                {
+                    p.WriteLengthPrefixedUTF16String("Howdy");
+                    p.WriteLengthPrefixedUTF8String("Yuck");
+                    p.Write((int)12);
+                });
+                w.WriteEventBlob(1, 2, p =>
+                {
+                    p.WriteLengthPrefixedUTF16String("");
+                    p.WriteLengthPrefixedUTF8String("");
+                    p.Write((int)17);
+                });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal($"TestEvent1", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+                Assert.Equal(3, e.PayloadNames.Length);
+                Assert.Equal("String1", e.PayloadNames[0]);
+                Assert.Equal("String2", e.PayloadNames[1]);
+                Assert.Equal("IntParam", e.PayloadNames[2]);
+                if(eventCount == 1)
+                {
+                    Assert.Equal("Howdy", e.PayloadValue(0));
+                    Assert.Equal("Yuck", e.PayloadValue(1));
+                    Assert.Equal(12, e.PayloadValue(2));
+                }
+                else if(eventCount == 2)
+                {
+                    Assert.Equal("", e.PayloadValue(0));
+                    Assert.Equal("", e.PayloadValue(1));
+                    Assert.Equal(17, e.PayloadValue(2));
+                }
+            };
+            source.Process();
+            Assert.Equal(2, eventCount);
+        }
+
+
+        [Fact]
+        public void ParseV6VarInts()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                                     new MetadataParameter("VarInt1", MetadataTypeCode.VarInt),
+                                                     new MetadataParameter("VarInt2", MetadataTypeCode.VarInt)));
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(2, "TestProvider", "TestEvent2", 16,
+                                                     new MetadataParameter("VarUInt1", MetadataTypeCode.VarUInt),
+                                                     new MetadataParameter("VarUInt2", MetadataTypeCode.VarUInt)));
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 1, p =>
+                {
+                    p.WriteVarInt(long.MinValue);
+                    p.WriteVarInt(long.MaxValue);
+                });
+                w.WriteEventBlob(1, 2, p =>
+                {
+                    p.WriteVarInt(0);
+                    p.WriteVarInt(-17982);
+                });
+                w.WriteEventBlob(2, 3, p =>
+                {
+                    p.WriteVarUInt(ulong.MinValue);
+                    p.WriteVarUInt(ulong.MaxValue);
+                });
+                w.WriteEventBlob(2, 4, p =>
+                {
+                    p.WriteVarUInt(0);
+                    p.WriteVarUInt(17982);
+                });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                if (eventCount == 1)
+                {
+                    // reading the payloads out of order forces the parser to recompute the offsets from scratch instead of using a cache
+                    Assert.Equal(long.MaxValue, e.PayloadValue(1));
+                    Assert.Equal(long.MinValue, e.PayloadValue(0));
+                }
+                else if (eventCount == 2)
+                {
+                    Assert.Equal((long)0, e.PayloadValue(0));
+                    Assert.Equal((long)-17982, e.PayloadValue(1));
+                }
+                else if (eventCount == 3)
+                {
+                    Assert.Equal(ulong.MaxValue, e.PayloadValue(1));
+                    Assert.Equal(ulong.MinValue, e.PayloadValue(0));
+                }
+                else if (eventCount == 4)
+                {
+                    Assert.Equal((ulong)0, e.PayloadValue(0));
+                    Assert.Equal((ulong)17982, e.PayloadValue(1));
+                }
+            };
+            source.Process();
+            Assert.Equal(4, eventCount);
+        }
+
+        // Ensure that the new string and varint types still work properly nested inside a struct
+        [Fact]
+        public void ParseV6NestedVarIntsAndStrings()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                                     new MetadataParameter("VarInt", MetadataTypeCode.VarInt),
+                                                     new MetadataParameter("Struct", new ObjectMetadataType(
+                                                         new MetadataParameter("UTF8String", MetadataTypeCode.LengthPrefixedUTF8String),
+                                                         new MetadataParameter("VarInt", MetadataTypeCode.VarInt),
+                                                         new MetadataParameter("UTF16String", MetadataTypeCode.LengthPrefixedUTF16String),
+                                                         new MetadataParameter("VarUInt", MetadataTypeCode.VarUInt)))));
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 1, p =>
+                {
+                    p.WriteVarInt(long.MinValue);
+                    p.WriteLengthPrefixedUTF8String("UTF8");
+                    p.WriteVarInt(long.MaxValue);
+                    p.WriteLengthPrefixedUTF16String("UTF16");
+                    p.WriteVarUInt(ulong.MaxValue);
+                });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                var o = (DynamicTraceEventData.StructValue)e.PayloadValue(1);
+                Assert.Equal(ulong.MaxValue, (ulong)o["VarUInt"]);
+                Assert.Equal("UTF16", (string)o["UTF16String"]);
+                Assert.Equal(long.MaxValue, (long)o["VarInt"]);
+                Assert.Equal("UTF8", (string)o["UTF8String"]);
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
     }
 
 
@@ -1284,17 +1447,16 @@ namespace TraceEventTests
         NullTerminatedUTF16String = 18,    // A string encoded with UTF16 characters and a 2-byte null terminator
         Array = 19,                        // New in V5 optional params: a UInt16 length-prefixed variable-sized array. Elements are encoded depending on the ElementType.
         VarInt = 20,                       // New in V6: variable-length signed integer with zig-zag encoding (defined the same as in Protobuf)
-        VarUInt = 21,                      // New in V6: variable-length unsigned integer (defined the same as in Protobuf)
+        VarUInt = 21,                      // New in V6: variable-length unsigned integer (ULEB128)
         LengthPrefixedUTF16String = 22,    // New in V6: A string encoded with UTF16 characters and a UInt16 element count prefix. No null-terminator.
         LengthPrefixedUTF8String = 23,     // New in V6: A string encoded with UTF8 characters and a Uint16 length prefix. No null-terminator.
-        VarLengthPrefixedUtf8String = 24,  // New in V6: A string encoded with UTF8 characters and a VarUInt length prefix. No null-terminator.
     }
 
     public class EventPayloadWriter
     {
         BinaryWriter _writer = new BinaryWriter(new MemoryStream());
 
-        public void Write(string arg)
+        public void WriteNullTerminatedUTF16String(string arg)
         {
             _writer.Write(Encoding.Unicode.GetBytes(arg));
             _writer.Write((ushort)0);
@@ -1435,6 +1597,20 @@ namespace TraceEventTests
             writer.Write((short)0);
         }
 
+        public static void WriteLengthPrefixedUTF16String(this BinaryWriter writer, string val)
+        {
+            byte[] utf16Bytes = Encoding.Unicode.GetBytes(val);
+            writer.Write((ushort)val.Length);
+            writer.Write(utf16Bytes);
+        }
+
+        public static void WriteLengthPrefixedUTF8String(this BinaryWriter writer, string val)
+        {
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(val);
+            writer.Write((ushort)utf8Bytes.Length);
+            writer.Write(utf8Bytes);
+        }
+
 
         public static void WriteVarUInt(this BinaryWriter writer, ulong val)
         {
@@ -1449,8 +1625,20 @@ namespace TraceEventTests
                 }
                 else
                 {
-                    writer.Write((byte)(low7 & 0x80));
+                    writer.Write((byte)(low7 | 0x80));
                 }
+            }
+        }
+
+        public static void WriteVarInt(this BinaryWriter writer, long val)
+        {
+            if(val < 0)
+            {
+                writer.WriteVarUInt((ulong)(~val << 1) | 0x1);
+            }
+            else
+            {
+                writer.WriteVarUInt((ulong)(val << 1));
             }
         }
 
