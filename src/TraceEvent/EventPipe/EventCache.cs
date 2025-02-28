@@ -12,9 +12,10 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
     internal class EventCache
     {
-        public EventCache(EventPipeEventSource source)
+        public EventCache(EventPipeEventSource source, ThreadCache threads)
         {
             _source = source;
+            _threads = threads;
         }
 
         public event ParseBufferItemFunction OnEvent;
@@ -46,12 +47,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             long timestamp = 0;
             SpanReader tempReader = reader;
             _source.ReadEventHeader(ref tempReader, useHeaderCompression, ref eventMarker.Header);
-            if (!_threads.TryGetValue(eventMarker.Header.CaptureThreadId, out EventCacheThread thread))
-            {
-                thread = new EventCacheThread();
-                thread.SequenceNumber = eventMarker.Header.SequenceNumber - 1;
-                AddThread(eventMarker.Header.CaptureThreadId, thread);
-            }
+            EventPipeThread thread = _threads.GetOrAddThread(eventMarker.Header.CaptureThreadIndexOrId, eventMarker.Header.SequenceNumber - 1);
             eventMarker = new EventMarker(buffer);
             while (reader.RemainingBytes.Length > 0)
             {
@@ -64,26 +60,10 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                     thread.LastCachedEventTimestamp = timestamp;
 
                     // sorted events are the only time the captureThreadId should change
-                    long captureThreadId = eventMarker.Header.CaptureThreadId;
-                    if (!_threads.TryGetValue(captureThreadId, out thread))
-                    {
-                        thread = new EventCacheThread();
-                        thread.SequenceNumber = sequenceNumber - 1;
-                        AddThread(captureThreadId, thread);
-                    }
+                    long captureThreadId = eventMarker.Header.CaptureThreadIndexOrId;
+                    thread = _threads.GetOrAddThread(captureThreadId, sequenceNumber - 1);
                 }
-
-                int droppedEvents = (int)Math.Min(int.MaxValue, sequenceNumber - thread.SequenceNumber - 1);
-                if(droppedEvents > 0)
-                {
-                    OnEventsDropped?.Invoke(droppedEvents);
-                }
-                else
-                {
-                    // When a thread id is recycled the sequenceNumber can abruptly reset to 1 which
-                    // makes droppedEvents go negative
-                    Debug.Assert(droppedEvents == 0 || sequenceNumber == 1);
-                }
+                NotifyDroppedEventsIfNeeded(thread.SequenceNumber, sequenceNumber - 1);
                 thread.SequenceNumber = sequenceNumber;
 
                 if(isSortedEvent)
@@ -122,43 +102,20 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 return;
             }
             SortAndDispatch(timestamp);
-            foreach(EventCacheThread thread in _threads.Values)
+            foreach(EventPipeThread thread in _threads.Values)
             {
                 Debug.Assert(thread.Events.Count == 0, "There shouldn't be any pending events after a sequence point");
                 thread.Events.Clear();
                 thread.Events.TrimExcess();
             }
+            CheckForPendingThreadRemoval();
 
             int cursor = SizeOfTimestampAndThreadCount;
             for(int i = 0; i < threadCount; i++)
             {
                 long captureThreadId = BitConverter.ToInt64(sequencePointBytes, cursor);
                 int sequenceNumber = BitConverter.ToInt32(sequencePointBytes, cursor + 8);
-                if (!_threads.TryGetValue(captureThreadId, out EventCacheThread thread))
-                {
-                    if(sequenceNumber > 0)
-                    {
-                        OnEventsDropped?.Invoke(sequenceNumber);
-                    }
-                    thread = new EventCacheThread();
-                    thread.SequenceNumber = sequenceNumber;
-                    AddThread(captureThreadId, thread);
-                }
-                else
-                {
-                    int droppedEvents = unchecked(sequenceNumber - thread.SequenceNumber);
-                    if (droppedEvents > 0)
-                    {
-                        OnEventsDropped?.Invoke(droppedEvents);
-                    }
-                    else
-                    {
-                        // When a thread id is recycled the sequenceNumber can abruptly reset to 1 which
-                        // makes droppedEvents go negative
-                        Debug.Assert(droppedEvents == 0 || sequenceNumber == 1);
-                    }
-                    thread.SequenceNumber = sequenceNumber;
-                }
+                CheckpointThread(captureThreadId, sequenceNumber);
                 cursor += SizeOfThreadIdAndSequenceNumber;
             }
         }
@@ -170,6 +127,18 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         public void Flush()
         {
             SortAndDispatch(long.MaxValue);
+            CheckForPendingThreadRemoval();
+        }
+
+        private void CheckForPendingThreadRemoval()
+        {
+            foreach (var thread in _threads.Values)
+            {
+                if (thread.RemovalPending && thread.Events.Count == 0)
+                {
+                    _threads.RemoveThread(thread.ThreadId);
+                }
+            }
         }
 
         private unsafe void SortAndDispatch(long stopTimestamp)
@@ -209,7 +178,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             // from the cache or memory usage will grow unbounded. AddThread handles the
             // the thread objects but the storage for the queue elements also does not shrink
             // below the high water mark unless we free it explicitly.
-            foreach(Queue<EventMarker> q in threadQueues)
+            foreach (Queue<EventMarker> q in threadQueues)
             {
                 if(q.Count == 0)
                 {
@@ -218,46 +187,46 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             }
         }
 
-        private void AddThread(long captureThreadId, EventCacheThread thread)
+        public void CheckpointThreadAndPendRemoval(long threadIndex, int sequenceNumber)
         {
-            // To ensure we don't have unbounded growth we evict old threads to make room
-            // for new ones. Evicted threads can always be re-added later if they log again
-            // but there are two consequences:
-            // a) We won't detect lost events on that thread after eviction
-            // b) If the thread still had events pending dispatch they will be lost
-            // We pick the thread that has gone the longest since it last logged an event
-            // under the presumption that it is probably dead, has no events, and won't
-            // log again.
-            //
-            // In the future if we had explicit thread death notification events we could keep
-            // this cache leaner.
-            if(_threads.Count >= 5000)
+            EventPipeThread thread = _threads.GetThread(threadIndex);
+            CheckpointThread(thread, sequenceNumber);
+            thread.RemovalPending = true;
+        }
+
+        public void CheckpointThread(long threadIndex, int sequenceNumber)
+        {
+            EventPipeThread thread = _threads.GetOrAddThread(threadIndex, sequenceNumber);
+            CheckpointThread(thread, sequenceNumber);
+        }
+
+        private void CheckpointThread(EventPipeThread thread, int sequenceNumber)
+        {
+            NotifyDroppedEventsIfNeeded(thread.SequenceNumber, sequenceNumber);
+            thread.SequenceNumber = sequenceNumber;
+        }
+
+        private void NotifyDroppedEventsIfNeeded(int sequenceNumber, int expectedSequenceNumber)
+        {
+            // Either events were dropped or the sequence number was reset because the thread ID was recycled.
+            // V6 format never recycles thread indexes but prior formats do. We assume heuristically that if an event or sequence
+            // point implies the last sequenceNumber was zero then the thread was recycled.
+            if (_source.FileFormatVersionNumber >= 6 || sequenceNumber != 0)
             {
-                long oldestThreadCaptureId = -1;
-                long smallestTimestamp = long.MaxValue;
-                foreach(var kv in _threads)
+                int droppedEvents = unchecked(sequenceNumber - expectedSequenceNumber);
+                if (droppedEvents < 0)
                 {
-                    if(kv.Value.LastCachedEventTimestamp < smallestTimestamp)
-                    {
-                        smallestTimestamp = kv.Value.LastCachedEventTimestamp;
-                        oldestThreadCaptureId = kv.Key;
-                    }
+                    droppedEvents = int.MaxValue;
                 }
-                Debug.Assert(oldestThreadCaptureId != -1);
-                _threads.Remove(oldestThreadCaptureId);
+                if (droppedEvents > 0)
+                {
+                    OnEventsDropped?.Invoke(droppedEvents);
+                }
             }
-            _threads[captureThreadId] = thread;
         }
 
         EventPipeEventSource _source;
-        Dictionary<long, EventCacheThread> _threads = new Dictionary<long, EventCacheThread>();
-    }
-
-    internal class EventCacheThread
-    {
-        public Queue<EventMarker> Events = new Queue<EventMarker>();
-        public int SequenceNumber;
-        public long LastCachedEventTimestamp;
+        ThreadCache _threads;
     }
 
     internal class EventMarker

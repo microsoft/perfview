@@ -572,7 +572,7 @@ namespace TraceEventTests
                     // write one of each of the 7 well-known DiagnosticSourceEventSource events.
                     for (int metadataId = 1; metadataId <= 7; metadataId++)
                     {
-                        w.WriteEventBlob(metadataId, sequenceNumber++, payloadBytes);
+                        w.WriteEventBlob(metadataId, 999, sequenceNumber++, payloadBytes);
                     }
                 });
             writer.WriteEndObject();
@@ -684,7 +684,7 @@ namespace TraceEventTests
                 w.Write((long)0);   // max timestamp
                 w.Write((int)99);   // extra bytes
                 w.Write((int)99);   // extra bytes
-                w.WriteEventBlob(2, 1, new byte[0]);
+                w.WriteEventBlob(2, 999, 1, new byte[0]);
             });
             writer.WriteEndObject();
 
@@ -742,9 +742,9 @@ namespace TraceEventTests
             });
             writer.WriteEventBlockV5OrLess(w =>
             {
-                w.WriteEventBlob(1, 1, new byte[0]);
-                w.WriteEventBlob(2, 2, new byte[0]);
-                w.WriteEventBlob(3, 3, new byte[0]);
+                w.WriteEventBlob(1, 999, 1, new byte[0]);
+                w.WriteEventBlob(2, 999, 2, new byte[0]);
+                w.WriteEventBlob(3, 999, 3, new byte[0]);
             });
             writer.WriteEndObject();
 
@@ -790,7 +790,7 @@ namespace TraceEventTests
             });
             writer.WriteEventBlockV5OrLess(w =>
             {
-                w.WriteEventBlob(1, 1, new byte[] { 12, 0, 0, 0, 17, 0});
+                w.WriteEventBlob(1, 999, 1, new byte[] { 12, 0, 0, 0, 17, 0});
             });
             writer.WriteEndObject();
 
@@ -931,7 +931,7 @@ namespace TraceEventTests
 
         // In the V6 format readers are expected to skip over any block types they don't recognize. This allows future extensibility.
         [Fact]
-        public void UnrecognizedBlockTypesAreSkipped()
+        public void V6UnrecognizedBlockTypesAreSkipped()
         {
             EventPipeWriter writer = new EventPipeWriter();
             writer.WriteHeadersV6OrGreater();
@@ -959,11 +959,15 @@ namespace TraceEventTests
                                                      new MetadataParameter("Param2", MetadataTypeCode.Boolean)),
                                                  new EventMetadata(2, "TestProvider", "TestEvent2", 16),
                                                  new EventMetadata(3, "TestProvider", "TestEvent3", 17));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
             writer.WriteEventBlockV6OrGreater(w =>
             {
-                w.WriteEventBlob(1, 1, new byte[] { 12, 0, 1, 0, 0, 0});
-                w.WriteEventBlob(2, 2, new byte[0]);
-                w.WriteEventBlob(3, 3, new byte[0]);
+                w.WriteEventBlob(1, 999, 1, new byte[] { 12, 0, 1, 0, 0, 0});
+                w.WriteEventBlob(2, 999, 2, new byte[0]);
+                w.WriteEventBlob(3, 999, 3, new byte[0]);
             });
             writer.WriteEndBlock();
             MemoryStream stream = new MemoryStream(writer.ToArray());
@@ -996,9 +1000,13 @@ namespace TraceEventTests
             writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
                                                      new MetadataParameter("Param1", new ArrayMetadataType(new MetadataType(MetadataTypeCode.Int16))),
                                                      new MetadataParameter("Param2", MetadataTypeCode.Boolean)));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
             writer.WriteEventBlockV6OrGreater(w =>
             {
-                w.WriteEventBlob(1, 1, new byte[] { 2, 0, 12, 0, 19, 0, 1, 0, 0, 0 });
+                w.WriteEventBlob(1, 999, 1, new byte[] { 2, 0, 12, 0, 19, 0, 1, 0, 0, 0 });
             });
             writer.WriteEndBlock();
             MemoryStream stream = new MemoryStream(writer.ToArray());
@@ -1032,9 +1040,13 @@ namespace TraceEventTests
                                                          new MetadataParameter("NestedParam1", MetadataTypeCode.Int32),
                                                          new MetadataParameter("NestedParam2", MetadataTypeCode.Byte))),
                                                      new MetadataParameter("Param2", MetadataTypeCode.Boolean)));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
             writer.WriteEventBlockV6OrGreater(w =>
             {
-                w.WriteEventBlob(1, 1, new byte[] { 3, 0, 0, 0, 19, 1, 0, 0, 0 });
+                w.WriteEventBlob(1, 999, 1, new byte[] { 3, 0, 0, 0, 19, 1, 0, 0, 0 });
             });
             writer.WriteEndBlock();
             MemoryStream stream = new MemoryStream(writer.ToArray());
@@ -1162,15 +1174,19 @@ namespace TraceEventTests
                                                      new MetadataParameter("String1", MetadataTypeCode.LengthPrefixedUTF16String),
                                                      new MetadataParameter("String2", MetadataTypeCode.LengthPrefixedUTF8String),
                                                      new MetadataParameter("IntParam", MetadataTypeCode.Int32)));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId:15, processId:10);
+            });
             writer.WriteEventBlockV6OrGreater(w =>
             {
-                w.WriteEventBlob(1, 1, p =>
+                w.WriteEventBlob(1, 999, 1, p =>
                 {
                     p.WriteLengthPrefixedUTF16String("Howdy");
                     p.WriteLengthPrefixedUTF8String("Yuck");
                     p.Write((int)12);
                 });
-                w.WriteEventBlob(1, 2, p =>
+                w.WriteEventBlob(1, 999, 2, p =>
                 {
                     p.WriteLengthPrefixedUTF16String("");
                     p.WriteLengthPrefixedUTF8String("");
@@ -1215,28 +1231,32 @@ namespace TraceEventTests
             writer.WriteHeadersV6OrGreater();
             writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
                                                      new MetadataParameter("VarInt1", MetadataTypeCode.VarInt),
-                                                     new MetadataParameter("VarInt2", MetadataTypeCode.VarInt)));
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(2, "TestProvider", "TestEvent2", 16,
+                                                     new MetadataParameter("VarInt2", MetadataTypeCode.VarInt)),
+                                                 new EventMetadata(2, "TestProvider", "TestEvent2", 16,
                                                      new MetadataParameter("VarUInt1", MetadataTypeCode.VarUInt),
                                                      new MetadataParameter("VarUInt2", MetadataTypeCode.VarUInt)));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
             writer.WriteEventBlockV6OrGreater(w =>
             {
-                w.WriteEventBlob(1, 1, p =>
+                w.WriteEventBlob(1, 999, 1, p =>
                 {
                     p.WriteVarInt(long.MinValue);
                     p.WriteVarInt(long.MaxValue);
                 });
-                w.WriteEventBlob(1, 2, p =>
+                w.WriteEventBlob(1, 999, 2, p =>
                 {
                     p.WriteVarInt(0);
                     p.WriteVarInt(-17982);
                 });
-                w.WriteEventBlob(2, 3, p =>
+                w.WriteEventBlob(2, 999, 3, p =>
                 {
                     p.WriteVarUInt(ulong.MinValue);
                     p.WriteVarUInt(ulong.MaxValue);
                 });
-                w.WriteEventBlob(2, 4, p =>
+                w.WriteEventBlob(2, 999, 4, p =>
                 {
                     p.WriteVarUInt(0);
                     p.WriteVarUInt(17982);
@@ -1288,9 +1308,13 @@ namespace TraceEventTests
                                                          new MetadataParameter("VarInt", MetadataTypeCode.VarInt),
                                                          new MetadataParameter("UTF16String", MetadataTypeCode.LengthPrefixedUTF16String),
                                                          new MetadataParameter("VarUInt", MetadataTypeCode.VarUInt)))));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
             writer.WriteEventBlockV6OrGreater(w =>
             {
-                w.WriteEventBlob(1, 1, p =>
+                w.WriteEventBlob(1, 999, 1, p =>
                 {
                     p.WriteVarInt(long.MinValue);
                     p.WriteLengthPrefixedUTF8String("UTF8");
@@ -1311,6 +1335,271 @@ namespace TraceEventTests
                 Assert.Equal("UTF16", (string)o["UTF16String"]);
                 Assert.Equal(long.MaxValue, (long)o["VarInt"]);
                 Assert.Equal("UTF8", (string)o["UTF8String"]);
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact]
+        public void V6MissingThreadBlockThrowsException()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p => {});
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            Assert.Throws<FormatException>(() => source.Process());
+        }
+
+        [Fact]
+        public void V6MismatchedRemoveThreadBlockThrowsException()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p => { });
+            });
+            writer.WriteRemoveThreadBlock(w =>
+            {
+                w.WriteRemoveThreadEntry(900, 0);
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            Assert.Throws<FormatException>(() => source.Process());
+        }
+
+        [Fact]
+        public void V6RefAfterRemoveThreadBlockThrowsException()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteRemoveThreadBlock(w =>
+            {
+                w.WriteRemoveThreadEntry(999, 0);
+            });
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p => { });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            Assert.Throws<FormatException>(() => source.Process());
+        }
+
+        [Fact]
+        public void V6DoubleRemoveThreadBlockThrowsException()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p => { });
+            });
+            writer.WriteRemoveThreadBlock(w =>
+            {
+                w.WriteRemoveThreadEntry(999, 0);
+            });
+            writer.WriteRemoveThreadBlock(w =>
+            {
+                w.WriteRemoveThreadEntry(999, 0);
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            Assert.Throws<FormatException>(() => source.Process());
+        }
+
+        [Fact]
+        public void V6ParseSimpleThreadBlock()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(998, threadId:5, processId:7);
+                w.WriteThreadEntry(999, threadId:12, processId:84);
+            });
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p => { });
+                w.WriteEventBlob(1, 998, 1, p => { });
+                w.WriteEventBlob(1, 999, 2, p => { });
+            });
+            writer.WriteRemoveThreadBlock(w =>
+            {
+                w.WriteRemoveThreadEntry(998, 1);
+                w.WriteRemoveThreadEntry(999, 2);
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                if(eventCount == 2)
+                {
+                    Assert.Equal(5, e.ThreadID);
+                    Assert.Equal(7, e.ProcessID);
+                }
+                else
+                {
+                    Assert.Equal(12, e.ThreadID);
+                    Assert.Equal(84, e.ProcessID);
+                }
+            };
+            source.Process();
+            Assert.Equal(3, eventCount);
+        }
+
+        [Fact]
+        public void V6ParseMultipleThreadBlocks()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(998, threadId: 5, processId: 7);
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
+            });
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p => { });
+                w.WriteEventBlob(1, 998, 1, p => { });
+                w.WriteEventBlob(1, 999, 2, p => { });
+            });
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(1000, threadId: 22, processId: 7);
+            });
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 1000, 1, p => { });
+                w.WriteEventBlob(1, 1000, 2, p => { });
+                w.WriteEventBlob(1, 999, 3, p => { });
+            });
+            writer.WriteRemoveThreadBlock(w =>
+            {
+                w.WriteRemoveThreadEntry(999, 3);
+            });
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(1001, threadId: 79, processId: 7);
+            });
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 1000, 3, p => { });
+                w.WriteEventBlob(1, 1001, 1, p => { });
+            });
+            writer.WriteRemoveThreadBlock(w =>
+            {
+                w.WriteRemoveThreadEntry(998, 1);
+                w.WriteRemoveThreadEntry(1000, 3);
+                w.WriteRemoveThreadEntry(1001, 1);
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                switch(eventCount)
+                {
+                    case 1:
+                    case 3:
+                    case 6:
+                        {
+                            Assert.Equal(12, e.ThreadID);
+                            Assert.Equal(84, e.ProcessID);
+                            break;
+                        }
+                    case 2:
+                        {
+                            Assert.Equal(5, e.ThreadID);
+                            Assert.Equal(7, e.ProcessID);
+                            break;
+                        }
+                    case 4:
+                    case 5:
+                    case 7:
+                        {
+                            Assert.Equal(22, e.ThreadID);
+                            Assert.Equal(7, e.ProcessID);
+                            break;
+                        }
+                    case 8:
+                        {
+                            Assert.Equal(79, e.ThreadID);
+                            Assert.Equal(7, e.ProcessID);
+                            break;
+                        }
+                }
+            };
+            source.Process();
+            Assert.Equal(8, eventCount);
+        }
+
+        [Fact]
+        public void V6ParseOptionalThreadData()
+        {
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, t =>
+                {
+                    t.WriteThreadEntryName("ThreadName");
+                    t.WriteThreadEntryProcessId(124);
+                    t.WriteThreadEntryKeyValue("Key1", "Value1");
+                    t.WriteThreadEntryThreadId(123);
+                    t.WriteThreadEntryKeyValue("Key2", "Value2");
+                });
+            });
+            writer.WriteEventBlockV6OrGreater(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p => { });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                source.TryGetThread(999, out EventPipeThread thread);
+                Assert.NotNull(thread);
+                Assert.Equal("ThreadName", thread.Name);
+                Assert.Equal(124, thread.ProcessId);
+                Assert.Equal(123, thread.ThreadId);
+                Assert.Equal("Value1", thread.Attributes["Key1"]);
+                Assert.Equal("Value2", thread.Attributes["Key2"]);
             };
             source.Process();
             Assert.Equal(1, eventCount);
@@ -1543,6 +1832,16 @@ namespace TraceEventTests
             _writer.WriteEventBlockV6OrGreater(writeEventBlobs);
         }
 
+        public void WriteThreadBlock(Action<BinaryWriter> writeThreadEntries)
+        {
+            _writer.WriteThreadBlock(writeThreadEntries);
+        }
+
+        public void WriteRemoveThreadBlock(Action<BinaryWriter> writeThreadEntries)
+        {
+            _writer.WriteRemoveThreadBlock(writeThreadEntries);
+        }
+
         public void WriteEndObject()
         {
             _writer.WriteEndObject();
@@ -1562,6 +1861,21 @@ namespace TraceEventTests
         {
             _writer.WriteBlockV6OrGreater(blockKind, writePayload);
         }
+
+    }
+
+    public class WriteEventOptions
+    {
+        public int MetadataId { get; set; }
+        public long ThreadIndexOrId { get; set; }
+        public long CaptureThreadIndexOrId { get; set; }
+        public int SequenceNumber { get; set; }
+        public int ProcNumber { get; set; } = 1;
+        public int StackId { get; set; }
+        public long Timestamp { get; set; } = 123456789;
+        public Guid ActivityId { get; set; }
+        public Guid RelatedActivityId { get; set; }
+        public bool IsSorted { get; set; }
 
     }
 
@@ -1989,7 +2303,7 @@ namespace TraceEventTests
 
         public static void WriteMetadataEventBlobV5OrLess(this BinaryWriter writer, Action<BinaryWriter> writeMetadataEventPayload)
         {
-            writer.WriteEventBlob(metadataId: 0, sequenceNumber: 0, w =>
+            writer.WriteEventBlob(metadataId: 0, threadIndex:0, sequenceNumber: 0, w =>
             {
                 writeMetadataEventPayload(w);
             });
@@ -2079,7 +2393,14 @@ namespace TraceEventTests
             previousBytesWritten);
         }
 
-        public static void WriteEventBlob(this BinaryWriter writer, int metadataId, int sequenceNumber, Action<BinaryWriter> writeEventPayload)
+        
+
+        public static void WriteEventBlob(this BinaryWriter writer, int metadataId, long threadIndex, int sequenceNumber, Action<BinaryWriter> writeEventPayload)
+        {
+            writer.WriteEventBlob(new WriteEventOptions { MetadataId = metadataId, CaptureThreadIndexOrId = threadIndex, ThreadIndexOrId = threadIndex, SequenceNumber = sequenceNumber }, writeEventPayload);
+        }
+
+        public static void WriteEventBlob(this BinaryWriter writer, WriteEventOptions options, Action<BinaryWriter> writeEventPayload)
         {
             MemoryStream payloadBlob = new MemoryStream();
             BinaryWriter payloadWriter = new BinaryWriter(payloadBlob);
@@ -2088,25 +2409,88 @@ namespace TraceEventTests
 
             MemoryStream eventBlob = new MemoryStream();
             BinaryWriter eventWriter = new BinaryWriter(eventBlob);
-            eventWriter.Write(metadataId);                               // metadata id
-            eventWriter.Write(sequenceNumber);                           // sequence number
-            eventWriter.Write((long)999);                                // thread id
-            eventWriter.Write((long)999);                                // capture thread id
-            eventWriter.Write(1);                                        // proc number
-            eventWriter.Write(0);                                        // stack id
-            eventWriter.Write((long)123456789);                          // timestamp
-            eventWriter.Write(Guid.Empty.ToByteArray());                 // activity id
-            eventWriter.Write(Guid.Empty.ToByteArray());                 // related activity id
-            eventWriter.Write(payloadSize);                              // payload size
+            eventWriter.Write(options.MetadataId | (int)(options.IsSorted ? 0 : 0x80000000));
+            eventWriter.Write(options.SequenceNumber);
+            eventWriter.Write(options.ThreadIndexOrId);
+            eventWriter.Write(options.CaptureThreadIndexOrId);
+            eventWriter.Write(options.ProcNumber);
+            eventWriter.Write(options.StackId);
+            eventWriter.Write(options.Timestamp);
+            eventWriter.Write(options.ActivityId.ToByteArray());
+            eventWriter.Write(options.RelatedActivityId.ToByteArray());
+            eventWriter.Write(payloadSize);
 
             writer.Write((int)eventBlob.Length + payloadSize);
             writer.Write(eventBlob.GetBuffer(), 0, (int)eventBlob.Length);
             writer.Write(payloadBlob.GetBuffer(), 0, payloadSize);
         }
 
-        public static void WriteEventBlob(this BinaryWriter writer, int metadataId, int sequenceNumber, byte[] payloadBytes)
+        public static void WriteEventBlob(this BinaryWriter writer, int metadataId, long threadIndex, int sequenceNumber, byte[] payloadBytes)
         {
-            WriteEventBlob(writer, metadataId, sequenceNumber, w => w.Write(payloadBytes));
+            WriteEventBlob(writer, metadataId, threadIndex, sequenceNumber, w => w.Write(payloadBytes));
+        }
+
+        public static void WriteThreadBlock(this BinaryWriter writer, Action<BinaryWriter> writeThreadEntries)
+        {
+            writer.WriteBlockV6OrGreater(6 /* Thread */, writeThreadEntries);
+        }
+
+        public static void WriteThreadEntry(this BinaryWriter writer, long threadIndex, int threadId, int processId)
+        {
+            writer.WriteThreadEntry(threadIndex, w =>
+            {
+                w.WriteThreadEntryThreadId(threadId);
+                w.WriteThreadEntryProcessId(processId);
+            });
+        }
+
+        public static void WriteThreadEntry(this BinaryWriter writer, long threadIndex, Action<BinaryWriter> writeThreadOptionalData)
+        {
+            MemoryStream threadEntry = new MemoryStream();
+            BinaryWriter threadWriter = new BinaryWriter(threadEntry);
+            threadWriter.WriteVarUInt((ulong)threadIndex);
+            writeThreadOptionalData(threadWriter);
+
+            writer.Write((ushort)threadEntry.Length);
+            writer.Write(threadEntry.GetBuffer(), 0, (int)threadEntry.Length);
+        }
+
+        public static void WriteThreadEntryName(this BinaryWriter writer, string name)
+        {
+            writer.Write((byte)1 /* Name */);
+            writer.WriteVarUIntPrefixedUTF8String(name);
+        }
+
+        public static void WriteThreadEntryProcessId(this BinaryWriter writer, long processId)
+        {
+            writer.Write((byte)2 /* OSProcessId */);
+            writer.WriteVarUInt((ulong)processId);
+        }
+
+        public static void WriteThreadEntryThreadId(this BinaryWriter writer, long threadId)
+        {
+            writer.Write((byte)3 /* ThreadId */);
+            writer.WriteVarUInt((ulong)threadId);
+        }
+
+        public static void WriteThreadEntryKeyValue(this BinaryWriter writer, string key, string value)
+        {
+            writer.Write((byte)4 /* KeyValue */);
+            writer.WriteVarUIntPrefixedUTF8String(key);
+            writer.WriteVarUIntPrefixedUTF8String(value);
+        }
+
+        public static void WriteRemoveThreadBlock(this BinaryWriter writer, Action<BinaryWriter> writeThreadEntries)
+        {
+            writer.WriteBlockV6OrGreater(7 /* RemoveThread */, writeThreadEntries);
+        }
+
+        
+
+        public static void WriteRemoveThreadEntry(this BinaryWriter writer, long threadIndex, int sequenceNumber)
+        {
+            writer.WriteVarUInt((ulong)threadIndex);
+            writer.WriteVarUInt((uint)sequenceNumber);
         }
 
         public static void WriteEndObject(this BinaryWriter writer)
@@ -2164,7 +2548,7 @@ namespace TraceEventTests
                         {
                             for (int j = 0; j < 20; j++)
                             {
-                                w.WriteEventBlob(1, _sequenceNumber++, WriteEventPayload);
+                                w.WriteEventBlob(1, 999, _sequenceNumber++, WriteEventPayload);
                             }
                         },
                         _bytesWritten);

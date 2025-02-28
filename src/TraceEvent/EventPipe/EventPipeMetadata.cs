@@ -169,7 +169,8 @@ namespace Microsoft.Diagnostics.Tracing
             // Note: ThreadId isn't 32 bit on all of our platforms but ETW EVENT_RECORD* only has room for a 32 bit
             // ID. We'll need to refactor up the stack if we want to expose a bigger ID.
             _eventRecord->EventHeader.ThreadId = unchecked((int)eventData.ThreadId);
-            if (eventData.ThreadId == eventData.CaptureThreadId && eventData.CaptureProcNumber != -1)
+            _eventRecord->EventHeader.ProcessId = unchecked((int)eventData.ProcessId);
+            if (eventData.ThreadIndexOrId == eventData.CaptureThreadIndexOrId && eventData.CaptureProcNumber != -1)
             {
                 // Its not clear how the caller is supposed to distinguish between events that we know were on
                 // processor 0 vs. lacking information about what processor number the thread is on and

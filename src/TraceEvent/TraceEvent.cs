@@ -1897,6 +1897,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// Returns a signed variable length integer serialized at 'offset' in the payload bytes.
         /// The value is first decoded as a ULEB128, then the LSB is extracted and treated as a sign bit.
         /// This often referred to as ZigZag encoding.
+        /// </summary>
         protected internal long GetVarIntAt(int offset)
         {
             return TraceEventRawReaders.ReadVarInt(DataStart, offset, EventDataLength);

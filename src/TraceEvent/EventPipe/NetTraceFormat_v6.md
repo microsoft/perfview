@@ -112,23 +112,47 @@ Up to V5 the format was always designed to trace a single process only. Now we'd
 
 ### Changes
 
-#### New ThreadBlock
+#### New ThreadBlock and RemoveThreadBlock
 
-A new top-level block, BlockHeader.Kind=6, contains a set of thread id/process id tuples referenced by index. This allows many events to refer the same (thread id, process id) without needing to repeatedly encode the same pair of potentially large IDs.
+Two new top-level blocks, ThreadBlock and RemoveThreadBlock.
 
-The content of a thread block is:
+ThreadBlock, BlockHeader.Kind=6, contains a set of thread id/process id tuples referenced by index. This allows many events to refer the same (thread id, process id) without needing to repeatedly encode the same pair of potentially large IDs.
 
-- Count - uint16
-- Concatenated sequence of Count entries, each of which is
+The content of an Thread block is:
+
+- Concatenated sequence of entries, each of which is:
+  - EntrySize - uint16    // The size of the entry in bytes not including the EntrySize field
   - Index - varuint
-  - ThreadId - varuint
-  - ProcessId - varuint
+  - zero or more OptionalThreadInfo entries each of which is:
+    - Kind - uint8
+    - if(Kind == Name (1))
+      - Name - string    // varuint prefixed UTF8 string
+    - if(Kind == OSProcessId (2))
+      - Id - varuint
+    - if(Kind == OSThreadId (3))
+      - Id - varuint
+    - if(Kind == KeyValue (4))
+      - Key - string 	// varuint prefixed UTF8 string
+      - Value - string 	// varuint prefixed UTF8 string
 
-When referencing a ThreadBlock entry by index, the reference must occur no later in the stream than the content of the next SequencePoint block and no earlier than ThreadBlock itself. 
+RemoveThreadBlock, BlockHeader.Kind=7, contains a set of (threadIndex, sequenceNumber) tuples. The RemoveThreadBlock explicitly removes thread indexes from the active set of threads so a parser no longer needs to track them. It also provides the
+final sequenceNumber for events emitted by each thread to determine if any events were dropped from the stream.
+
+The content of a RemoveThread block is:
+
+- Concatenated sequence of entries, each of which is:
+  - Index - varuint
+  - SequenceNumber - varuint
+
+It is valid to reference a thread index any time after the Thread block which introduces it and prior to the RemoveThread block that removes it.
+
+Ideally an OS thread would have exactly one thread index for its lifetime but it is allowable to give the same OS thread multiple indices if the event writer is unable to track the thread's identity. If there is more than one index mapped to the same OS thread ID then the reader may treat this as the OS recycling the same ID across multiple threads or that the OS isn't guaranteeing unique IDs.
+
+Thread block and RemoveThread block don't have timestamps and are not intended to indicate when the OS created or destroyed a given thread. Its possible for the OS thread to exist long before/after the trace provides an index for it, or it is technically legal for the trace to define indexes for threads the OS has not yet created. If the trace wants to define the time a given thread was created or destroyed that is best done with some agreed upon event inserted into the event stream.
 
 #### Use ThreadIndex in EventBlob headers and SequencePoint blocks
 
-In V5 the EventBlob has two header fields, ThreadId and CaptureThreadId which contained thread ids. In V6 these fields now contain indexes into the ThreadBlock table. The fields are renamed ThreadIndex and CaptureThreadIndex for clarity. Also the compressed header format previously used a flag bit (Flags & 0x4) to indicate if the ThreadId field was different than in the previous entry. Starting in V6 (Flag & 4) is not set, that means ThreadIndex is the same as CaptureThreadIndex. This should result in the bit not being set as frequently and header sizes on average will be a little smaller.
+In V5 the EventBlob has two header fields, ThreadId and CaptureThreadId which contained thread ids. In V6 these fields now contain indexes into the ThreadBlock. The fields are renamed ThreadIndex and CaptureThreadIndex for clarity. Also the compressed header format previously used a flag bit (Flags & 0x4) to indicate if the ThreadId field was different than in the previous entry. Starting in V6 if (Flag & 4) is not set, that means ThreadIndex is the same as CaptureThreadIndex. This should result in the bit not being set as frequently and header sizes on average will be a little smaller.
 
 The SequencePoint block in V5 has a list of (ThreadId,SequenceNumber) tuples. All the ThreadIds in that list are now replaced with indexes into the ThreadBlock table and the field is renamed ThreadIndex.
 
