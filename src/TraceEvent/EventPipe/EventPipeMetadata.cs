@@ -653,58 +653,59 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void ParseOptionalMetadataV6OrGreater(ref SpanReader reader)
         {
-            int count = reader.ReadUInt16();
-            for(int i = 0; i < count; i++)
+            ushort size = reader.ReadUInt16();
+            long streamOffset = reader.StreamOffset;
+            SpanReader optionalMetadataReader = new SpanReader(reader.ReadBytes(size), streamOffset);
+            while(optionalMetadataReader.RemainingBytes.Length > 0)
             {
-                OptionalMetadataKind kind = (OptionalMetadataKind)reader.ReadUInt8();
+                OptionalMetadataKind kind = (OptionalMetadataKind)optionalMetadataReader.ReadUInt8();
                 switch (kind)
                 {
                     case OptionalMetadataKind.OpCode:
                     {
-                        Opcode = reader.ReadUInt8();
+                        Opcode = optionalMetadataReader.ReadUInt8();
                         break;
                     }
-                    case OptionalMetadataKind.KeywordLevelVersion:
+                    case OptionalMetadataKind.Keyword:
                     {
-                        Keywords = reader.ReadUInt64();
-                        Level = reader.ReadUInt8();
-                        EventVersion = reader.ReadUInt8();
+                        Keywords = optionalMetadataReader.ReadUInt64();
                         break;
                     }
                     case OptionalMetadataKind.MessageTemplate:
                     {
-                        MessageTemplate = reader.ReadVarUIntUTF8String();
+                        MessageTemplate = optionalMetadataReader.ReadVarUIntUTF8String();
                         break;
                     }
                     case OptionalMetadataKind.Description:
                     {
-                        Description = reader.ReadVarUIntUTF8String();
+                        Description = optionalMetadataReader.ReadVarUIntUTF8String();
                         break;
                     }
                     case OptionalMetadataKind.KeyValue:
                     {
-                        string key = reader.ReadVarUIntUTF8String();
-                        string value = reader.ReadVarUIntUTF8String();
+                        string key = optionalMetadataReader.ReadVarUIntUTF8String();
+                        string value = optionalMetadataReader.ReadVarUIntUTF8String();
                         Attributes[key] = value;
                         break;
                     }
                     case OptionalMetadataKind.ProviderGuid:
                     {
-                        ProviderId = reader.Read<Guid>();
+                        ProviderId = optionalMetadataReader.Read<Guid>();
+                        break;
+                    }
+                    case OptionalMetadataKind.Level:
+                    {
+                        Level = optionalMetadataReader.ReadUInt8();
+                        break;
+                    }
+                    case OptionalMetadataKind.Version:
+                    {
+                        EventVersion = optionalMetadataReader.ReadUInt8();
                         break;
                     }
                     default:
                     {
-                        if((kind & OptionalMetadataKind.LengthPrefixed) != 0)
-                        {
-                            int length = reader.ReadUInt16();
-                            reader.ReadBytes(length);
-                        }
-                        else
-                        {
-                            throw new FormatException($"Unknown optional metadata kind {kind}");
-                        }
-                        break;
+                        throw new FormatException($"Unknown optional metadata kind {kind}");
                     }
                 }
             }
@@ -714,12 +715,13 @@ namespace Microsoft.Diagnostics.Tracing
         {
             OpCode = 1,
             // 2 is no longer used. In format V5 it was V2Params
-            KeywordLevelVersion = 3,
+            Keyword = 3,
             MessageTemplate = 4,
             Description = 5,
             KeyValue = 6,
             ProviderGuid = 7,
-            LengthPrefixed = 128
+            Level = 8,
+            Version = 9
         }
 
         // this is a memset implementation.  Note that we often use the trick of assigning a pointer to a struct to *ptr = default(Type);

@@ -1139,11 +1139,8 @@ namespace TraceEventTests
                             p2Writer.Write(-14);
                         });
                     });
-                    metadataWriter.WriteV6OptionalMetadataList(3, optionalMetadataWriter =>
+                    metadataWriter.WriteV6OptionalMetadataList(optionalMetadataWriter =>
                     {
-                        // extra optional metadata should be skipped as long as it is length-prefixed
-                        optionalMetadataWriter.WriteV6OptionalMetadataLengthPrefixed(128, new byte[] { 0, 0, 17, 92, 4 });
-                        optionalMetadataWriter.WriteV6OptionalMetadataLengthPrefixed(200, new byte[] { 72 });
                         optionalMetadataWriter.WriteV6OptionalMetadataDescription("Food!");
                     });
                     // extra bytes after the optional metadata are allowed
@@ -2167,25 +2164,15 @@ namespace TraceEventTests
 
         public static void WriteV6OptionalMetadataList(this BinaryWriter writer, EventMetadata metadata)
         {
-            int count = 0;
-            if (metadata.OpCode != 0) count++;
-            if (metadata.Keywords != 0 ||
-                metadata.Level != 0 ||
-                metadata.Version != 0) count++;
-            if (metadata.MessageTemplate != null) count++;
-            if (metadata.Description != null) count++;
-            count += metadata.Attributes.Count;
-            if (metadata.ProviderId != default) count++;
-
-            writer.WriteV6OptionalMetadataList(count, w =>
+            writer.WriteV6OptionalMetadataList(w =>
             {
                 if (metadata.OpCode != 0)
                 {
                     w.WriteV6OptionalMetadataOpcode(metadata.OpCode);
                 }
-                if (metadata.Keywords != 0 || metadata.Level != 0 || metadata.Version != 0)
+                if (metadata.Keywords != 0)
                 {
-                    w.WriteV6OptionalMetadataKeywordLevelVersion(metadata.Keywords, metadata.Level, metadata.Version);
+                    w.WriteV6OptionalMetadataKeyword(metadata.Keywords);
                 }
                 if (metadata.MessageTemplate != null)
                 {
@@ -2203,13 +2190,25 @@ namespace TraceEventTests
                 {
                     w.WriteV6OptionalMetadataProviderGuid(metadata.ProviderId);
                 }
+                if (metadata.Level != 0)
+                {
+                    w.WriteV6OptionalMetadataLevel(metadata.Level);
+                }
+                if (metadata.Version != 0)
+                {
+                    w.WriteV6OptionalMetadataVersion(metadata.Version);
+                }
             });
         }
 
-        public static void WriteV6OptionalMetadataList(this BinaryWriter writer, int countOptionalElements, Action<BinaryWriter> writeOptionalMetadata)
+        public static void WriteV6OptionalMetadataList(this BinaryWriter writer, Action<BinaryWriter> writeOptionalMetadata)
         {
-            writer.Write((UInt16)countOptionalElements);
-            writeOptionalMetadata(writer);
+            MemoryStream optionalMetadata = new MemoryStream();
+            BinaryWriter optionalMetadataWriter = new BinaryWriter(optionalMetadata);
+            writeOptionalMetadata(optionalMetadataWriter);
+
+            writer.Write((ushort)optionalMetadata.Length);
+            writer.Write(optionalMetadata.GetBuffer(), 0, (int)optionalMetadata.Length);
         }
 
         public static void WriteV6OptionalMetadataOpcode(this BinaryWriter writer, byte opcode)
@@ -2218,12 +2217,10 @@ namespace TraceEventTests
             writer.Write((byte)opcode);
         }
 
-        public static void WriteV6OptionalMetadataKeywordLevelVersion(this BinaryWriter writer, long keyword, byte level, byte version)
+        public static void WriteV6OptionalMetadataKeyword(this BinaryWriter writer, long keyword)
         {
-            writer.Write((byte)3);       // OptionalMetadataKind.KeywordLevelVersion
+            writer.Write((byte)3);       // OptionalMetadataKind.Keyword
             writer.Write(keyword);
-            writer.Write(level);
-            writer.Write(version);
         }
 
         public static void WriteV6OptionalMetadataMessageTemplate(this BinaryWriter writer, string template)
@@ -2251,13 +2248,16 @@ namespace TraceEventTests
             writer.Write(providerId);
         }
 
-        public static void WriteV6OptionalMetadataLengthPrefixed(this BinaryWriter writer, byte optionalMetadataKind, byte[] optionalMetadata)
+        public static void WriteV6OptionalMetadataLevel(this BinaryWriter writer, byte level)
         {
-            // length prefixed optional metadata must have the high bit set
-            Debug.Assert((optionalMetadataKind & 128) != 0);
-            writer.Write(optionalMetadataKind);
-            writer.Write((UInt16)optionalMetadata.Length);
-            writer.Write(optionalMetadata);
+            writer.Write((byte)8);       // OptionalMetadataKind.Level
+            writer.Write(level);
+        }
+
+        public static void WriteV6OptionalMetadataVersion(this BinaryWriter writer, byte version)
+        {
+            writer.Write((byte)9);       // OptionalMetadataKind.Version
+            writer.Write(version);
         }
 
         public static void WriteMetadataBlockV5OrLess(this BinaryWriter writer, Action<BinaryWriter> writeMetadataEventBlobs, long previousBytesWritten = 0)

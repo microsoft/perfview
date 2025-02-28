@@ -282,15 +282,13 @@ enum TypeCode
 
 OptionalMetadata format is:
 
-- uint16 Count 
-- Concatenated sequence of Count optional metadata elements, each of which is:
+- uint16 Size 
+- Concatenated sequence of optional metadata elements using Size bytes in total, each of which is:
   - uint8 Kind;                      // Discriminates which kind of optional metadata will follow
   - if Kind==OpCode
     - uint8 OpCode
-  - if Kind==KeywordLevelVersion
+  - if Kind==Keyword
     - uint64 Keywords;               // 64 bit set of groups (keywords) that this event belongs to.
-    - uint8 Level;                   // The verbosity (5 is verbose, 1 is only critical) for the event.
-    - uint8 Version                  // The version number for this event.
   - if Kind==MessageTemplate
     - string MessageTemplate         // varuint length-prefixed UTF8 string (no null terminator)
   - if Kind==Description
@@ -300,20 +298,22 @@ OptionalMetadata format is:
     - string Value                   // varuint length-prefixed UTF8 string (no null terminator)
   - if Kind==ProviderGuid
     - Guid ProviderGuid              // A 16-byte guid
-  - if Kind & LengthPrefixed != 0    // An extensibility mechanism so future versions of the file format can add new kinds of optional metadata
-    - uint16 Size                    // Encodes the size of the optional metadata element, not including Kind and Size fields
-    - Undefined                      // The reader should skip Size bytes of data after the Size field to get to the next optional metadata element
+  - if Kind==Level
+    - uint8 Level                    // The verbosity (5 is verbose, 1 is only critical) for the event.
+  - if Kind==Version
+    - uint8 Version                  // The version number for this event.
 
 ```
 enum OptionalMetadataKind
 {
   OpCode = 1,
   // 2 is no longer used. In format V5 it was V2Params
-  KeywordLevelVersion = 3,
+  Keyword = 3,
   MessageTemplate = 4,
   Description = 5,
   KeyValue = 6,
   ProviderGuid = 7,
-  LengthPrefixed = 128
+  Level = 8,
+  Version = 9
 }
 ```
