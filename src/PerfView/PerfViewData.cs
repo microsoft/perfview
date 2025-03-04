@@ -42,6 +42,8 @@ using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Utilities;
 using Address = System.UInt64;
 using EventSource = EventSources.EventSource;
+using System.Security;
+using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
 
 namespace PerfView
 {
@@ -9434,6 +9436,7 @@ table {
             bool hasContention = false;
             bool hasWaitHandle = false;
             bool hasUniversalSystem = false;
+            bool hasUniversalCPU = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -9491,6 +9494,10 @@ table {
                     {
                         hasUniversalSystem = true;
                     }
+                    else if (eventStats.ProviderGuid == UniversalEventsTraceEventParser.ProviderGuid && eventStats.EventName.StartsWith("cpu"))
+                    {
+                        hasUniversalCPU = true;
+                    }
                 }
             }
 
@@ -9503,6 +9510,11 @@ table {
                 if (hasUniversalSystem)
                 {
                     m_Children.Add(new PerfViewProcesses(this));
+                }
+
+                if (hasUniversalCPU)
+                {
+                    m_Children.Add(new PerfViewStackSource(this, "CPU"));
                 }
 
                 m_Children.Add(new PerfViewEventSource(this));
@@ -9759,6 +9771,26 @@ table {
                         };
                         eventSource.Process();
                         stackSource.DoneAddingSamples();
+
+                        return stackSource;
+                    }
+                case "CPU":
+                    {
+                        var eventLog = GetTraceLog(log);
+                        var eventSource = eventLog.Events.GetSource();
+                        var stackSource = new MutableTraceEventStackSource(eventLog);
+                        var sample = new StackSourceSample(stackSource);
+
+                        var universalEventsParser = new UniversalEventsTraceEventParser(eventSource);
+                        universalEventsParser.cpu += delegate (SampleTraceData data)
+                        {
+                            sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                            sample.Metric = data.Value;
+                            sample.StackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
+                            stackSource.AddSample(sample);
+                            
+                        };
+                        eventSource.Process();
 
                         return stackSource;
                     }
