@@ -319,7 +319,7 @@ namespace PerfView
                             }
                         }
                     }
-
+                    
                     ETWEventRecord eventRecord = null;
                     if (textFilter != null)
                     {
@@ -346,7 +346,8 @@ namespace PerfView
                         eventRecord = emptyEventRecord;
                         eventRecord.m_timeStampRelativeMSec = data.TimeStampRelativeMSec;
                     }
-
+                    
+                    
                     if (eventRecord == null)
                     {
                         eventRecord = new ETWEventRecord(this, data, columnOrder, NonRestFields, durationMSec);
@@ -534,6 +535,7 @@ namespace PerfView
         private Dictionary<string, bool> m_selectedEvents;      // set to true if the event is only present because it is a start for a stop.  
         private bool m_selectedAllEvents;       // This ensures that when a user selects all events he gets everything 
 
+        
         internal class ETWEventRecord : EventRecord
         {
             // Used as the null record (after MaxRet happens). 
@@ -552,7 +554,12 @@ namespace PerfView
 
                 m_timeStampRelativeMSec = data.TimeStampRelativeMSec;
                 m_idx = data.EventIndex;
+                m_payloads = new Payload[data.PayloadNames.Length];
+                for (int i = 0; i < m_payloads.Length; i++)
+                {
 
+                    m_payloads[i] = new Payload(data.PayloadNames[i], data.PayloadString(i));
+                }
                 // Compute the data column 
                 var restString = new StringBuilder();
 
@@ -666,7 +673,8 @@ namespace PerfView
             public DateTime OriginTimeStamp { get { return TimeZoneInfo.ConvertTime(LocalTimeStamp, this.m_source.OriginTimeZone); } }
             public override string Rest { get { return m_asText; } set { } }
             public EventIndex Index { get { return m_idx; } }
-
+            public override Payload[] Payloads { get { return m_payloads; }  }
+            
             #region private
 
             private static readonly Regex specialCharRemover = new Regex(" *[\r\n\t]+ *", RegexOptions.Compiled);
@@ -787,6 +795,7 @@ namespace PerfView
             private string m_asText;
             private EventIndex m_idx;
             private ETWEventSource m_source;        // Lets you get at source information
+            private Payload[] m_payloads;
             #endregion
         }
 
