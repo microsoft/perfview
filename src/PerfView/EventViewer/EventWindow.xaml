@@ -14,6 +14,7 @@
         <Style x:Key="CenterAlign">
             <Setter Property="TextBlock.TextAlignment" Value="Center" />
         </Style>
+        <WPFToolKit:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Window.Resources>
     <DockPanel Background="{DynamicResource BackgroundColour}">
         <DockPanel.CommandBindings>
@@ -221,7 +222,7 @@
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="auto"/>
-                    <RowDefinition Name="MultiLineViewPaneRowDef" Height="*"/>
+                    <RowDefinition Name="MultiLineViewPaneRowDef" Height="0.25*"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0">
                     <Grid.ColumnDefinitions>
@@ -337,7 +338,7 @@
                     </WPFToolKit:DataGrid.Columns>
                 </WPFToolKit:DataGrid>
                 <GridSplitter Grid.Row="2" Height="3" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
-                <WPFToolKit:DataGrid x:Name="MultiLineView" Grid.Row="3" AutoGenerateColumns="False" AlternatingRowBackground="{DynamicResource AlternateRowBackground}"  >
+                <WPFToolKit:DataGrid x:Name="MultiLineView" Grid.Row="3" AutoGenerateColumns="False" WPFToolKit:ScrollViewer.CanContentScroll="False" AlternatingRowBackground="{DynamicResource AlternateRowBackground}" >
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Payload Name" Binding="{Binding PayloadName, Mode=OneWay}" Width="*"/>
                         <DataGridTextColumn Header="Payload" Binding="{Binding PayloadValue, Mode=OneWay}" Width="3*" >
@@ -350,6 +351,8 @@
                         </DataGridTextColumn>
                     </DataGrid.Columns>
                 </WPFToolKit:DataGrid>
+                <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="3" Text="Press F2 to hide/unhide" 
+                           Visibility="{Binding Items.IsEmpty, Converter={StaticResource BooleanToVisibilityConverter}, ElementName=MultiLineView}"/>
             </Grid>
         </Grid>
     </DockPanel>

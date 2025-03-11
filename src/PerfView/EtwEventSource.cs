@@ -554,12 +554,8 @@ namespace PerfView
 
                 m_timeStampRelativeMSec = data.TimeStampRelativeMSec;
                 m_idx = data.EventIndex;
-                m_payloads = new Payload[data.PayloadNames.Length];
-                for (int i = 0; i < m_payloads.Length; i++)
-                {
-
-                    m_payloads[i] = new Payload(data.PayloadNames[i], data.PayloadString(i));
-                }
+                m_payloads = new List<Payload>();
+                
                 // Compute the data column 
                 var restString = new StringBuilder();
 
@@ -567,21 +563,21 @@ namespace PerfView
                 var hasStack = data.CallStackIndex() != CallStackIndex.Invalid;
                 if (hasStack)
                 {
-                    AddField("HasStack", hasStack.ToString(), columnOrder, restString);
+                    AddField("HasStack", hasStack.ToString(), columnOrder, restString, m_payloads);
                 }
 
                 var asCSwitch = data as CSwitchTraceData;
                 if (asCSwitch != null)
                 {
-                    AddField("HasBlockingStack", (asCSwitch.BlockingStack() != CallStackIndex.Invalid).ToString(), columnOrder, restString);
+                    AddField("HasBlockingStack", (asCSwitch.BlockingStack() != CallStackIndex.Invalid).ToString(), columnOrder, restString, m_payloads);
                 }
 
-                AddField("ThreadID", data.ThreadID.ToString("n0"), columnOrder, restString);
-                AddField("ProcessorNumber", data.ProcessorNumber.ToString(), columnOrder, restString);
+                AddField("ThreadID", data.ThreadID.ToString("n0"), columnOrder, restString, m_payloads);
+                AddField("ProcessorNumber", data.ProcessorNumber.ToString(), columnOrder, restString, m_payloads);
 
                 if (0 < durationMSec)
                 {
-                    AddField("DURATION_MSEC", durationMSec.ToString("n3"), columnOrder, restString);
+                    AddField("DURATION_MSEC", durationMSec.ToString("n3"), columnOrder, restString, m_payloads);
                 }
 
                 var payloadNames = data.PayloadNames;
@@ -590,28 +586,28 @@ namespace PerfView
                     // WPP events look classic and use the EventID as their discriminator
                     if (data.IsClassicProvider && data.ID != 0)
                     {
-                        AddField("EventID", ((int)data.ID).ToString(), columnOrder, restString);
+                        AddField("EventID", ((int)data.ID).ToString(), columnOrder, restString, m_payloads);
                     }
 
-                    AddField("DataLength", data.EventDataLength.ToString(), columnOrder, restString);
+                    AddField("DataLength", data.EventDataLength.ToString(), columnOrder, restString, m_payloads);
                 }
 
                 try
                 {
                     for (int i = 0; i < payloadNames.Length; i++)
                     {
-                        AddField(payloadNames[i], data.PayloadString(i), columnOrder, restString);
+                        AddField(payloadNames[i], data.PayloadString(i), columnOrder, restString, m_payloads);
                     }
                 }
                 catch (Exception e)
                 {
-                    AddField("ErrorParsingFields", e.Message, columnOrder, restString);
+                    AddField("ErrorParsingFields", e.Message, columnOrder, restString, m_payloads);
                 }
 
                 var message = data.FormattedMessage;
                 if (message != null)
                 {
-                    AddField("FormattedMessage", message, columnOrder, restString);
+                    AddField("FormattedMessage", message, columnOrder, restString, m_payloads);
                 }
 
                 if (source.m_needsComputers)
@@ -628,7 +624,7 @@ namespace PerfView
                                 id = "^" + id;              // Indicates it is at the start of the task. 
                             }
 
-                            AddField("ActivityInfo", id, columnOrder, restString);
+                            AddField("ActivityInfo", id, columnOrder, restString, m_payloads    );
                         }
 
                         var startStopActivity = source.m_startStopActivityComputer.GetCurrentStartStopActivity(thread, data);
@@ -641,7 +637,7 @@ namespace PerfView
                                 parentName = startStopActivity.Creator.Name;
                             }
 
-                            AddField("StartStopActivity", name + "/P=" + parentName, columnOrder, restString);
+                            AddField("StartStopActivity", name + "/P=" + parentName, columnOrder, restString, m_payloads);
                         }
                     }
                 }
@@ -649,18 +645,18 @@ namespace PerfView
                 // We pass 0 as the process ID for creating the activityID because we want uniform syntax.  
                 if (data.ActivityID != Guid.Empty)
                 {
-                    AddField("ActivityID", StartStopActivityComputer.ActivityPathString(data.ActivityID), columnOrder, restString);
+                    AddField("ActivityID", StartStopActivityComputer.ActivityPathString(data.ActivityID), columnOrder, restString, m_payloads);
                 }
 
                 Guid relatedActivityID = data.RelatedActivityID;
                 if (relatedActivityID != Guid.Empty)
                 {
-                    AddField("RelatedActivityID", StartStopActivityComputer.ActivityPathString(data.RelatedActivityID), columnOrder, restString);
+                    AddField("RelatedActivityID", StartStopActivityComputer.ActivityPathString(data.RelatedActivityID), columnOrder, restString, m_payloads);
                 }
 
                 if(data.ContainerID != null)
                 {
-                    AddField("ContainerID", data.ContainerID, columnOrder, restString);
+                    AddField("ContainerID", data.ContainerID, columnOrder, restString, m_payloads);
                 }
 
                 m_asText = restString.ToString();
@@ -673,7 +669,7 @@ namespace PerfView
             public DateTime OriginTimeStamp { get { return TimeZoneInfo.ConvertTime(LocalTimeStamp, this.m_source.OriginTimeZone); } }
             public override string Rest { get { return m_asText; } set { } }
             public EventIndex Index { get { return m_idx; } }
-            public override Payload[] Payloads { get { return m_payloads; }  }
+            public override List<Payload> Payloads { get { return m_payloads; }  }
             
             #region private
 
@@ -683,12 +679,15 @@ namespace PerfView
             /// Adds 'fieldName' with value 'fieldValue' to the output.  It either goes into a column (based on columnOrder) or it goes into
             /// 'rest' as a fieldName="fieldValue" string.   It also updates 'columnSums' for the fieldValue for any in a true column 
             /// </summary>
-            private void AddField(string fieldName, string fieldValue, Dictionary<string, int> columnOrder, StringBuilder restString)
+            private void AddField(string fieldName, string fieldValue, Dictionary<string, int> columnOrder, StringBuilder restString, List<Payload> payloadsList)
             {
                 if (fieldValue == null)
                 {
                     fieldValue = "";
                 }
+
+                payloadsList.Add(new Payload(fieldName, fieldValue));
+
                 // If the field value has to many newlines in it, the GUI gets confused because the text block is larger than
                 // the vertical size.   WPF may fix this at some point, but in the mean time this is a work around. 
                 fieldValue = specialCharRemover.Replace(fieldValue, " ");
@@ -795,7 +794,7 @@ namespace PerfView
             private string m_asText;
             private EventIndex m_idx;
             private ETWEventSource m_source;        // Lets you get at source information
-            private Payload[] m_payloads;
+            private List<Payload> m_payloads;
             #endregion
         }
 

@@ -171,7 +171,7 @@ namespace EventSources
         public abstract string EventName { get; }
         public abstract string ProcessName { get; }
         public abstract double TimeStampRelatveMSec { get; }
-        public abstract Payload[] Payloads { get;  }
+        public abstract List<Payload> Payloads { get;  }
         
         // TODO FIX NOW should be abstract, get CSV and ETW subclasses to implement
         /// <summary>
