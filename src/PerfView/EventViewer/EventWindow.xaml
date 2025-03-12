@@ -338,7 +338,7 @@
                     </WPFToolKit:DataGrid.Columns>
                 </WPFToolKit:DataGrid>
                 <GridSplitter Grid.Row="2" Height="3" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
-                <WPFToolKit:DataGrid x:Name="MultiLineView" Grid.Row="3" AutoGenerateColumns="False" WPFToolKit:ScrollViewer.CanContentScroll="False" AlternatingRowBackground="{DynamicResource AlternateRowBackground}" >
+                <WPFToolKit:DataGrid x:Name="MultiLineView" Grid.Row="3" AutoGenerateColumns="False" WPFToolKit:ScrollViewer.CanContentScroll="False" AlternatingRowBackground="{DynamicResource AlternateRowBackground}" AutomationProperties.Name="Multi-Line View" >
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Payload Name" Binding="{Binding PayloadName, Mode=OneWay}" Width="*"/>
                         <DataGridTextColumn Header="Payload" Binding="{Binding PayloadValue, Mode=OneWay}" Width="3*" >
