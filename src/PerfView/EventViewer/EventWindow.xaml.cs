@@ -1841,7 +1841,7 @@ namespace PerfView
 
             m_maxColumnInSelection = null;
 
-            if (!cells.IsNullOrEmpty())
+            if (cells != null && cells.Count > 0)
             {
                 var selectedRecord = cells[0].Item as EventRecord;
 
