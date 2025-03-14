@@ -14,9 +14,11 @@
         <Style x:Key="CenterAlign">
             <Setter Property="TextBlock.TextAlignment" Value="Center" />
         </Style>
+        <WPFToolKit:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Window.Resources>
     <DockPanel Background="{DynamicResource BackgroundColour}">
         <DockPanel.CommandBindings>
+            <CommandBinding Command="{x:Static src:EventWindow.ToggleMultiLineViewPaneCommand}" Executed="DoToggleMultiLineViewPane" />
             <CommandBinding Command="{x:Static src:EventWindow.UsersGuideCommand}" Executed="DoHyperlinkHelp"/>
             <CommandBinding Command="Help" Executed="DoHyperlinkHelp" />
             <CommandBinding Command="{x:Static src:EventWindow.UpdateCommand}" Executed="DoUpdate"/>
@@ -85,7 +87,7 @@
                     <MenuItem Header="_Show Local Time" IsCheckable="True" IsChecked="False" Checked="DoUseLocalTime" Unchecked="DoUseOriginTime"/>
                 </MenuItem>
                 <MenuItem Header="_Help">
-                        <MenuItem Header="_Help on Event Viewer" Command="Help" CommandParameter="EventViewerQuickStart" />
+                    <MenuItem Header="_Help on Event Viewer" Command="Help" CommandParameter="EventViewerQuickStart" />
                     <MenuItem Header="_Users Guide" Command="{x:Static src:EventWindow.UsersGuideCommand}" CommandParameter="UsersGuide"/>
                 </MenuItem>
             </Menu>
@@ -219,6 +221,8 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Name="MultiLineViewPaneRowDef" Height="0.25*"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0">
                     <Grid.ColumnDefinitions>
@@ -333,6 +337,22 @@
                         Width="Auto" />
                     </WPFToolKit:DataGrid.Columns>
                 </WPFToolKit:DataGrid>
+                <GridSplitter Grid.Row="2" Height="3" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+                <WPFToolKit:DataGrid x:Name="MultiLineView" Grid.Row="3" AutoGenerateColumns="False" WPFToolKit:ScrollViewer.CanContentScroll="False" AlternatingRowBackground="{DynamicResource AlternateRowBackground}" AutomationProperties.Name="Multi-Line View" >
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Payload Name" Binding="{Binding PayloadName, Mode=OneWay}" Width="*"/>
+                        <DataGridTextColumn Header="Payload" Binding="{Binding PayloadValue, Mode=OneWay}" Width="3*" >
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap"/>
+                                    <Setter Property="FontFamily" Value="Consolas" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </WPFToolKit:DataGrid>
+                <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="3" Text="Press F2 to hide/unhide" 
+                           Visibility="{Binding Items.IsEmpty, Converter={StaticResource BooleanToVisibilityConverter}, ElementName=MultiLineView}"/>
             </Grid>
         </Grid>
     </DockPanel>

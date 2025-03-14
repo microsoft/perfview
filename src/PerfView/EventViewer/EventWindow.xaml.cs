@@ -3,6 +3,7 @@ using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.TraceUtilities.FilterQueryExpression;
 using Microsoft.Diagnostics.Utilities;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,6 +11,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -55,7 +57,6 @@ namespace PerfView
             {
                 selection.Add(item);
             }
-
             Update();
         }
         public EventWindow(Window parent, PerfViewEventSource data)
@@ -164,6 +165,8 @@ namespace PerfView
                 var lcv = (ListCollectionView)CollectionViewSource.GetDefaultView(Grid.ItemsSource);
                 lcv.CustomSort = new LogicalGridDataComparer<EventRecord>(e.Column.SortMemberPath, direction);
             };
+
+            MultiLineViewPaneHidden = (App.UserConfigData["MultiLineViewPaneHidden"] == "true");
         }
 
         public PerfViewEventSource DataSource { get; private set; }
@@ -237,6 +240,33 @@ namespace PerfView
                 m_source.NonRestFields = savedNonRestFields;
             }
         }
+        public bool MultiLineViewPaneHidden
+        {
+            get { return m_MultiLineViewPaneHidden; }
+            set
+            {
+                if (value == m_MultiLineViewPaneHidden)
+                {
+                    return;
+                }
+
+                if (value)
+                {
+                    App.UserConfigData["MultiLineViewPaneHidden"] = "true";
+                    m_MultiLineViewPaneHidden = true;
+                    MultiLineViewPaneRowDef.MaxHeight = 0;
+                }
+                else
+                {
+                    App.UserConfigData["MultiLineViewPaneHidden"] = "false";
+                    m_MultiLineViewPaneHidden = false;
+                    MultiLineViewPaneRowDef.MaxHeight = Double.PositiveInfinity;
+
+                }
+            }
+        }
+
+        private bool m_MultiLineViewPaneHidden;
         public void SaveDataToXmlFile(string xmlFileName)
         {
             // Sadly, streamWriter does not have a way of setting the IFormatProvider property
@@ -773,6 +803,11 @@ namespace PerfView
             newEventViewer.Show();
             Update();
         }
+
+        private void DoToggleMultiLineViewPane(object sender, ExecutedRoutedEventArgs e)
+        {
+            MultiLineViewPaneHidden = !MultiLineViewPaneHidden;
+        }
         private void DoColumnsToDisplayListClick(object sender, RoutedEventArgs e)
         {
             if (EventTypes.SelectedItems.Count == 0)
@@ -1093,7 +1128,7 @@ namespace PerfView
             {
                 string modifiedPat = FilterQueryUtilities.TryExtractFilterQueryExpression(pat, out tree);
             }
-            catch(FilterQueryExpressionParsingException exp)
+            catch (FilterQueryExpressionParsingException exp)
             {
                 StatusBar.LogError(exp.Message);
                 return false;
@@ -1151,7 +1186,7 @@ namespace PerfView
                     // Before parsing the "Rest" column, grab everything displayed from the ColumnsToDisplay.
                     if (m_source.ColumnsToDisplay != null)
                     {
-                        for(int displayFieldIdx = 0; displayFieldIdx < m_source.ColumnsToDisplay.Count; displayFieldIdx++)
+                        for (int displayFieldIdx = 0; displayFieldIdx < m_source.ColumnsToDisplay.Count; displayFieldIdx++)
                         {
                             data[m_source.ColumnsToDisplay[displayFieldIdx]] = item.DisplayFields[displayFieldIdx];
                         }
@@ -1170,7 +1205,7 @@ namespace PerfView
                     // Parse Rest if the above steps fail.
                     if (!string.IsNullOrEmpty(item.Rest))
                     {
-                        foreach(var r in item.Rest.Split(FilterQueryUtilities.SpaceSeparator, StringSplitOptions.RemoveEmptyEntries))
+                        foreach (var r in item.Rest.Split(FilterQueryUtilities.SpaceSeparator, StringSplitOptions.RemoveEmptyEntries))
                         {
                             // Format of Rest: Property0=Value0 Property1=Value1
                             var splitOnEquals = r.Trim().Split('=');
@@ -1313,7 +1348,7 @@ namespace PerfView
                 StatusBar.LogError(fqepEx.Message);
                 m_source.FilterQueryExpressionTree = null;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 StatusBar.LogError(ex.Message);
                 m_source.FilterQueryExpressionTree = null;
@@ -1571,6 +1606,8 @@ namespace PerfView
         }
 
         #region commandDefintions
+        public static RoutedUICommand ToggleMultiLineViewPaneCommand = new RoutedUICommand("Toggle Multi-line view Pane", "ToggleMultiLineViewPane", typeof(StackWindow),
+            new InputGestureCollection() { new KeyGesture(Key.F2) });
         public static RoutedUICommand UsersGuideCommand = new RoutedUICommand("UsersGuide", "UsersGuide", typeof(EventWindow));
         public static RoutedUICommand UpdateCommand = new RoutedUICommand("Update", "Update", typeof(EventWindow),
             new InputGestureCollection() { new KeyGesture(Key.F5) });
@@ -1641,7 +1678,6 @@ namespace PerfView
             m_clipboardRangeEnd = "";
 
             var dataGrid = sender as DataGrid;
-
             var cells = dataGrid.SelectedCells;
             bool seenHexValue = false;
             StatusBar.Status = "";
@@ -1804,6 +1840,17 @@ namespace PerfView
             }
 
             m_maxColumnInSelection = null;
+
+            if (cells != null && cells.Count > 0)
+            {
+                var selectedRecord = cells[0].Item as EventRecord;
+
+                if (selectedRecord != null)
+                {
+                    MultiLineView.ItemsSource = selectedRecord.Payloads;
+                }
+            }
+
         }
 
         /// <summary>

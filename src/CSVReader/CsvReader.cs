@@ -525,6 +525,7 @@ namespace CSVReader
         public override double TimeStampRelatveMSec { get { return m_TimeStampRelativeMSec; } }
         public override string ProcessName { get { return m_ProcessName; } }
         public override string Rest { get { return m_Data; } set { } }
+        public override List<Payload> Payloads => throw new NotImplementedException();
         #region private
         internal CsvEventRecord(ByteWindow window, CsvEventSource source, string[] colNames, Dictionary<string, int> columnOrder, double[] columnSums) : base(4)
         {
