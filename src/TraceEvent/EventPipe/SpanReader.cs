@@ -114,6 +114,12 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             return val;
         }
 
+        public long ReadVarInt64()
+        {
+            ulong zigzag = ReadVarUInt64();
+            return (long)(zigzag >> 1) ^ -(long)(zigzag & 1);
+        }
+
         public string ReadVarUIntUTF8String()
         {
             int initialLength = _buffer.Length;

@@ -572,7 +572,7 @@ namespace TraceEventTests
                     // write one of each of the 7 well-known DiagnosticSourceEventSource events.
                     for (int metadataId = 1; metadataId <= 7; metadataId++)
                     {
-                        w.WriteEventBlob(metadataId, 999, sequenceNumber++, payloadBytes);
+                        w.WriteEventBlobV4Or5(metadataId, 999, sequenceNumber++, payloadBytes);
                     }
                 });
             writer.WriteEndObject();
@@ -684,7 +684,7 @@ namespace TraceEventTests
                 w.Write((long)0);   // max timestamp
                 w.Write((int)99);   // extra bytes
                 w.Write((int)99);   // extra bytes
-                w.WriteEventBlob(2, 999, 1, new byte[0]);
+                w.WriteEventBlobV4Or5(2, 999, 1, new byte[0]);
             });
             writer.WriteEndObject();
 
@@ -742,9 +742,9 @@ namespace TraceEventTests
             });
             writer.WriteEventBlockV5OrLess(w =>
             {
-                w.WriteEventBlob(1, 999, 1, new byte[0]);
-                w.WriteEventBlob(2, 999, 2, new byte[0]);
-                w.WriteEventBlob(3, 999, 3, new byte[0]);
+                w.WriteEventBlobV4Or5(1, 999, 1, new byte[0]);
+                w.WriteEventBlobV4Or5(2, 999, 2, new byte[0]);
+                w.WriteEventBlobV4Or5(3, 999, 3, new byte[0]);
             });
             writer.WriteEndObject();
 
@@ -790,7 +790,7 @@ namespace TraceEventTests
             });
             writer.WriteEventBlockV5OrLess(w =>
             {
-                w.WriteEventBlob(1, 999, 1, new byte[] { 12, 0, 0, 0, 17, 0});
+                w.WriteEventBlobV4Or5(1, 999, 1, new byte[] { 12, 0, 0, 0, 17, 0});
             });
             writer.WriteEndObject();
 
@@ -845,7 +845,6 @@ namespace TraceEventTests
             catch (UnsupportedFormatVersionException e)
             {
                 Assert.Equal(7, e.RequestedVersion);
-                Assert.Equal(6, e.MaxSupportedVersion);
             }
             catch (Exception e)
             {
@@ -1601,6 +1600,220 @@ namespace TraceEventTests
             source.Process();
             Assert.Equal(1, eventCount);
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void V6ParseEventLabelLists(bool useCompressedEventHeaders)
+        {
+            // these are arbitrary random constants
+            Guid activityId1 = new Guid("26F353D1-C0C8-45C1-A0CF-7C29EAE6DC7F");
+            Guid relatedActivityId1 = new Guid("E1D6B9EB-84F8-4908-8FA7-FA63D5F02849");
+            Guid activityId2 = new Guid("0BBEAA1B-35B4-4FF3-BA34-283EBE589A9A");
+            Guid relatedActivityId2 = new Guid("AF148B25-6675-4AD8-ADB8-C247F8FB6AFA");
+            Guid traceId = new Guid("7C0D2E78-70A5-4233-A0AD-ACCFD3E1EF6E");
+            ulong spanId = 0x123456789abcdef0;
+
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
+            });
+            writer.WriteLabelListBlock(99, 2, w =>
+            {
+                w.WriteV6LabelListActivityIdLabel(activityId1);
+                w.WriteV6LabelListRelatedActivityIdLabel(relatedActivityId1, isLastLabel: true);
+                w.WriteV6LabelListNameValueStringLabel("Key1", "Value1");
+                w.WriteV6LabelListNameValueVarIntLabel("Key2", 123, isLastLabel: true);
+            });
+            writer.WriteLabelListBlock(7, 2, w =>
+            {
+                w.WriteV6LabelListNameValueStringLabel("Key3", "Value3");
+                w.WriteV6LabelListActivityIdLabel(activityId2);
+                w.WriteV6LabelListRelatedActivityIdLabel(relatedActivityId2, isLastLabel: true);
+                w.WriteV6LabelListTraceIdLabel(traceId.ToByteArray());
+                w.WriteV6LabelListSpanIdLabel(spanId, isLastLabel: true);
+            });
+            writer.WriteEventBlockV6OrGreater(useCompressedEventHeaders, w =>
+            {
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 1, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 7 }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 2, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 8 }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 3, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 99 }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 4, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 100 }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 5, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 0 }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 6, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 7 }, p => { });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                if (eventCount == 1 || eventCount == 6)
+                {
+                    Assert.Equal(activityId2, e.ActivityID);
+                    Assert.Equal(relatedActivityId2, e.RelatedActivityID);
+                    LabelList labels = source.GetLastLabelList();
+                    KeyValuePair<string, object>[] labelArray = labels.AllLabels.ToArray();
+                    Assert.Equal(3, labelArray.Length);
+                    Assert.Equal("ActivityId", labelArray[0].Key);
+                    Assert.Equal(activityId2.ToString(), labelArray[0].Value);
+                    Assert.Equal("RelatedActivityId", labelArray[1].Key);
+                    Assert.Equal(relatedActivityId2.ToString(), labelArray[1].Value);
+                    Assert.Equal("Key3", labelArray[2].Key);
+                    Assert.Equal("Value3", labelArray[2].Value);
+                    Assert.Equal(activityId2, labels.ActivityId);
+                    Assert.Equal(relatedActivityId2, labels.RelatedActivityId);
+                }
+                else if (eventCount == 2)
+                {
+                    Assert.Equal(Guid.Empty, e.ActivityID);
+                    Assert.Equal(Guid.Empty, e.RelatedActivityID);
+                    LabelList labels = source.GetLastLabelList();
+                    KeyValuePair<string, object>[] labelArray = labels.AllLabels.ToArray();
+                    Assert.Equal(2, labelArray.Length);
+                    Assert.Equal("TraceId", labelArray[0].Key);
+                    Assert.Equal(traceId.ToString(), labelArray[0].Value);
+                    Assert.Equal(traceId, labels.TraceId);
+                    Assert.Equal(spanId, labels.SpanId);
+                }
+                else if (eventCount == 3)
+                {
+                    Assert.Equal(activityId1, e.ActivityID);
+                    Assert.Equal(relatedActivityId1, e.RelatedActivityID);
+                    LabelList labels = source.GetLastLabelList();
+                    KeyValuePair<string, object>[] labelArray = labels.AllLabels.ToArray();
+                    Assert.Equal(2, labelArray.Length);
+                    Assert.Equal("ActivityId", labelArray[0].Key);
+                    Assert.Equal(activityId1.ToString(), labelArray[0].Value);
+                    Assert.Equal("RelatedActivityId", labelArray[1].Key);
+                    Assert.Equal(relatedActivityId1.ToString(), labelArray[1].Value);
+                    Assert.Equal(activityId1, labels.ActivityId);
+                    Assert.Equal(relatedActivityId1, labels.RelatedActivityId);
+                }
+                else if (eventCount == 4)
+                {
+                    Assert.Equal(Guid.Empty, e.ActivityID);
+                    Assert.Equal(Guid.Empty, e.RelatedActivityID);
+                    LabelList labels = source.GetLastLabelList();
+                    KeyValuePair<string, object>[] labelArray = labels.AllLabels.ToArray();
+                    Assert.Equal(2, labelArray.Length);
+                    Assert.Equal("Key1", labelArray[0].Key);
+                    Assert.Equal("Value1", labelArray[0].Value);
+                    Assert.Equal("Key2", labelArray[1].Key);
+                    Assert.Equal(123, (long)labelArray[1].Value);
+                }
+                else if (eventCount == 5)
+                {
+                    Assert.Equal(Guid.Empty, e.ActivityID);
+                    Assert.Equal(Guid.Empty, e.RelatedActivityID);
+                    LabelList labels = source.GetLastLabelList();
+                    Assert.Empty(labels.AllLabels);
+                }
+            };
+            source.Process();
+            Assert.Equal(6, eventCount);
+        }
+    
+
+        [Fact]
+        public void ParseV6CompressedEventHeaders()
+        {
+            // these are arbitrary random constants
+            Guid activityId1 = new Guid("26F353D1-C0C8-45C1-A0CF-7C29EAE6DC7F");
+            Guid activityId2 = new Guid("0BBEAA1B-35B4-4FF3-BA34-283EBE589A9A");
+
+            EventPipeWriter writer = new EventPipeWriter();
+            writer.WriteHeadersV6OrGreater();
+            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15),
+                                                 new EventMetadata(2, "TestProvider", "TestEvent2", 16));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
+                w.WriteThreadEntry(1000, threadId: 13, processId: 84);
+                w.WriteThreadEntry(1001, threadId: 14, processId: 84);
+            });
+            writer.WriteLabelListBlock(99, 2, w =>
+            {
+                w.WriteV6LabelListActivityIdLabel(activityId1, isLastLabel: true);
+                w.WriteV6LabelListActivityIdLabel(activityId2, isLastLabel: true);
+            });
+            writer.WriteEventBlockV6OrGreater(true, w =>
+            {
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 1, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 100, Timestamp = 10_000, IsSorted = false }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 2, ThreadIndexOrId = 1000, CaptureThreadIndexOrId = 999, LabelListId = 99, Timestamp = 10_500, IsSorted = false }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 2, SequenceNumber = 3, ThreadIndexOrId = 1000, CaptureThreadIndexOrId = 1000, LabelListId = 99, Timestamp = 11_123, IsSorted = true }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 2, SequenceNumber = 4, ThreadIndexOrId = 1000, CaptureThreadIndexOrId = 1000, LabelListId = 99, Timestamp = 17_000, IsSorted = false }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 2, SequenceNumber = 5, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 0, Timestamp = 15_000, IsSorted = true }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 2, SequenceNumber = 6, ThreadIndexOrId = 1001, CaptureThreadIndexOrId = 1000, LabelListId = 0, Timestamp = 20_000, IsSorted = true }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 2, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 1001, LabelListId = 100, Timestamp = 22_000, IsSorted = true }, p => { });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+#pragma warning disable CS0618 // TimeStampQPC is obsolete
+                if (eventCount == 1)
+                {
+                    Assert.Equal("TestEvent1", e.EventName);
+                    Assert.Equal(12, e.ThreadID);
+                    Assert.Equal(activityId2, e.ActivityID);
+                    Assert.Equal(10_000, e.TimeStampQPC);
+
+                }
+                else if (eventCount == 2)
+                {
+                    Assert.Equal("TestEvent1", e.EventName);
+                    Assert.Equal(13, e.ThreadID);
+                    Assert.Equal(activityId1, e.ActivityID);
+                    Assert.Equal(10_500, e.TimeStampQPC);
+                }
+                else if (eventCount == 3)
+                {
+                    Assert.Equal("TestEvent2", e.EventName);
+                    Assert.Equal(13, e.ThreadID);
+                    Assert.Equal(activityId1, e.ActivityID);
+                    Assert.Equal(11_123, e.TimeStampQPC);
+                }
+                else if (eventCount == 4)
+                {
+                    Assert.Equal("TestEvent2", e.EventName);
+                    Assert.Equal(12, e.ThreadID);
+                    Assert.Equal(Guid.Empty, e.ActivityID);
+                    Assert.Equal(15_000, e.TimeStampQPC);
+                }
+                else if (eventCount == 5)
+                {
+                    Assert.Equal("TestEvent2", e.EventName);
+                    Assert.Equal(13, e.ThreadID);
+                    Assert.Equal(activityId1, e.ActivityID);
+                    Assert.Equal(17_000, e.TimeStampQPC);
+                }
+                else if (eventCount == 6)
+                {
+                    Assert.Equal("TestEvent2", e.EventName);
+                    Assert.Equal(14, e.ThreadID);
+                    Assert.Equal(Guid.Empty, e.ActivityID);
+                    Assert.Equal(20_000, e.TimeStampQPC);
+                }
+                else if (eventCount == 7)
+                {
+                    Assert.Equal("TestEvent1", e.EventName);
+                    Assert.Equal(12, e.ThreadID);
+                    Assert.Equal(activityId2, e.ActivityID);
+                    Assert.Equal(22_000, e.TimeStampQPC);
+                }
+#pragma warning restore CS0618 // Type or member is obsolete
+            };
+            source.Process();
+            Assert.Equal(7, eventCount);
+        }
     }
 
 
@@ -1824,9 +2037,16 @@ namespace TraceEventTests
             _writer.WriteEventBlockV5OrLess(writeEventBlobs);
         }
 
-        public void WriteEventBlockV6OrGreater(Action<BinaryWriter> writeEventBlobs)
+        public void WriteEventBlockV6OrGreater(Action<V6EventBlockWriter> writeEventBlobs) => WriteEventBlockV6OrGreater(false, writeEventBlobs);
+
+        public void WriteEventBlockV6OrGreater(bool useCompressedHeader, Action<V6EventBlockWriter> writeEventBlobs)
         {
-            _writer.WriteEventBlockV6OrGreater(writeEventBlobs);
+            WriteBlockV6(2 /* Event */, w =>
+            {
+                V6EventBlockWriter blockWriter = new V6EventBlockWriter(w, useCompressedHeader);
+                blockWriter.WriteHeader();
+                writeEventBlobs(blockWriter);
+            });
         }
 
         public void WriteThreadBlock(Action<BinaryWriter> writeThreadEntries)
@@ -1837,6 +2057,11 @@ namespace TraceEventTests
         public void WriteRemoveThreadBlock(Action<BinaryWriter> writeThreadEntries)
         {
             _writer.WriteRemoveThreadBlock(writeThreadEntries);
+        }
+
+        public void WriteLabelListBlock(int firstIndex, int count, Action<BinaryWriter> writeLabelListEntries)
+        {
+            _writer.WriteV6LabelListBlock(firstIndex, count, writeLabelListEntries);
         }
 
         public void WriteEndObject()
@@ -1867,9 +2092,10 @@ namespace TraceEventTests
         public long ThreadIndexOrId { get; set; }
         public long CaptureThreadIndexOrId { get; set; }
         public int SequenceNumber { get; set; }
-        public int ProcNumber { get; set; } = 1;
+        public int ProcNumber { get; set; }
         public int StackId { get; set; }
-        public long Timestamp { get; set; } = 123456789;
+        public long Timestamp { get; set; }
+        public int LabelListId { get; set; }
         public Guid ActivityId { get; set; }
         public Guid RelatedActivityId { get; set; }
         public bool IsSorted { get; set; }
@@ -2303,7 +2529,7 @@ namespace TraceEventTests
 
         public static void WriteMetadataEventBlobV5OrLess(this BinaryWriter writer, Action<BinaryWriter> writeMetadataEventPayload)
         {
-            writer.WriteEventBlob(metadataId: 0, threadIndex:0, sequenceNumber: 0, w =>
+            writer.WriteEventBlobV4Or5(metadataId: 0, threadIndex:0, sequenceNumber: 0, w =>
             {
                 writeMetadataEventPayload(w);
             });
@@ -2366,16 +2592,82 @@ namespace TraceEventTests
             });
         }
 
-        public static void WriteEventBlockV6OrGreater(this BinaryWriter writer, Action<BinaryWriter> writeEventBlobs)
+        public static void WriteV6LabelListActivityIdLabel(this BinaryWriter writer, Guid activityId, bool isLastLabel = false)
         {
-            WriteBlockV6OrGreater(writer, 2 /* Event */, w =>
+            byte kind = 1; // ActivityId
+            if (isLastLabel)
             {
-                // header
-                w.Write((short)20); // header size
-                w.Write((short)0);  // flags
-                w.Write((long)0);   // min timestamp
-                w.Write((long)0);   // max timestamp
-                writeEventBlobs(w);
+                kind |= 0x80;
+            }
+            writer.Write(kind);
+            writer.Write(activityId);
+        }
+
+        public static void WriteV6LabelListRelatedActivityIdLabel(this BinaryWriter writer, Guid relatedActivityId, bool isLastLabel = false)
+        {
+            byte kind = 2; // RelatedActivityId
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            writer.Write(kind);
+            writer.Write(relatedActivityId);
+        }
+
+        public static void WriteV6LabelListTraceIdLabel(this BinaryWriter writer, byte[] traceId, bool isLastLabel = false)
+        {
+            Debug.Assert(traceId.Length == 16);
+            byte kind = 3; // TraceId
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            writer.Write(kind);
+            writer.Write(traceId);
+        }
+
+        public static void WriteV6LabelListSpanIdLabel(this BinaryWriter writer, ulong spanId, bool isLastLabel = false)
+        {
+            byte kind = 4; // SpanId
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            writer.Write(kind);
+            writer.Write(spanId);
+        }
+
+        public static void WriteV6LabelListNameValueStringLabel(this BinaryWriter writer, string name, string value, bool isLastLabel = false)
+        {
+            byte kind = 5; // NameValueString
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            writer.Write(kind);
+            writer.WriteVarUIntPrefixedUTF8String(name);
+            writer.WriteVarUIntPrefixedUTF8String(value);
+        }
+
+        public static void WriteV6LabelListNameValueVarIntLabel(this BinaryWriter writer, string name, long value, bool isLastLabel = false)
+        {
+            byte kind = 6; // NameValueVarint
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            writer.Write(kind);
+            writer.WriteVarUIntPrefixedUTF8String(name);
+            writer.WriteVarInt(value);
+        }
+
+        public static void WriteV6LabelListBlock(this BinaryWriter writer, int firstIndex, int count, Action<BinaryWriter> writeLabelLists)
+        {
+            WriteBlockV6OrGreater(writer, 8 /* BlockKind.LabelList */, w =>
+            {
+                w.Write(firstIndex);
+                w.Write(count);
+                writeLabelLists(w);
             });
         }
 
@@ -2393,14 +2685,18 @@ namespace TraceEventTests
             previousBytesWritten);
         }
 
-        
 
-        public static void WriteEventBlob(this BinaryWriter writer, int metadataId, long threadIndex, int sequenceNumber, Action<BinaryWriter> writeEventPayload)
+        public static void WriteEventBlobV4Or5(this BinaryWriter writer, int metadataId, long threadIndex, int sequenceNumber, byte[] payloadBytes)
         {
-            writer.WriteEventBlob(new WriteEventOptions { MetadataId = metadataId, CaptureThreadIndexOrId = threadIndex, ThreadIndexOrId = threadIndex, SequenceNumber = sequenceNumber }, writeEventPayload);
+            WriteEventBlobV4Or5(writer, metadataId, threadIndex, sequenceNumber, w => w.Write(payloadBytes));
         }
 
-        public static void WriteEventBlob(this BinaryWriter writer, WriteEventOptions options, Action<BinaryWriter> writeEventPayload)
+        public static void WriteEventBlobV4Or5(this BinaryWriter writer, int metadataId, long threadIndex, int sequenceNumber, Action<BinaryWriter> writeEventPayload)
+        {
+            writer.WriteEventBlobV4Or5(new WriteEventOptions { MetadataId = metadataId, CaptureThreadIndexOrId = threadIndex, ThreadIndexOrId = threadIndex, SequenceNumber = sequenceNumber }, writeEventPayload);
+        }
+
+        public static void WriteEventBlobV4Or5(this BinaryWriter writer, WriteEventOptions options, Action<BinaryWriter> writeEventPayload)
         {
             MemoryStream payloadBlob = new MemoryStream();
             BinaryWriter payloadWriter = new BinaryWriter(payloadBlob);
@@ -2423,11 +2719,6 @@ namespace TraceEventTests
             writer.Write((int)eventBlob.Length + payloadSize);
             writer.Write(eventBlob.GetBuffer(), 0, (int)eventBlob.Length);
             writer.Write(payloadBlob.GetBuffer(), 0, payloadSize);
-        }
-
-        public static void WriteEventBlob(this BinaryWriter writer, int metadataId, long threadIndex, int sequenceNumber, byte[] payloadBytes)
-        {
-            WriteEventBlob(writer, metadataId, threadIndex, sequenceNumber, w => w.Write(payloadBytes));
         }
 
         public static void WriteThreadBlock(this BinaryWriter writer, Action<BinaryWriter> writeThreadEntries)
@@ -2499,6 +2790,141 @@ namespace TraceEventTests
         }
     }
 
+    class V6EventBlockWriter
+    {
+        BinaryWriter _writer;
+        bool _useCompressedHeaders;
+        WriteEventOptions _lastEventOptions = new WriteEventOptions();
+        int _lastPayloadLength;
+
+        public V6EventBlockWriter(BinaryWriter writer, bool useCompressedHeaders)
+        {
+            _writer = writer;
+            _useCompressedHeaders = useCompressedHeaders;
+        }
+
+        public void WriteHeader(long minTimestamp = 0, long maxTimestamp = 0)
+        {
+            _writer.Write((short)20);                               // header size
+            _writer.Write((short)(_useCompressedHeaders ? 1 : 0));  // flags
+            _writer.Write(minTimestamp);
+            _writer.Write(maxTimestamp);
+        }
+
+        public void WriteEventBlob(int metadataId, long threadIndex, int sequenceNumber, byte[] payloadBytes)
+        {
+            WriteEventBlob(metadataId, threadIndex, sequenceNumber, w => w.Write(payloadBytes));
+        }
+
+        public void WriteEventBlob(int metadataId, long threadIndex, int sequenceNumber, Action<BinaryWriter> writeEventPayload)
+        {
+            WriteEventBlob(new WriteEventOptions { MetadataId = metadataId, CaptureThreadIndexOrId = threadIndex, ThreadIndexOrId = threadIndex, SequenceNumber = sequenceNumber }, writeEventPayload);
+        }
+
+        public void WriteEventBlob(WriteEventOptions options, Action<BinaryWriter> writeEventPayload)
+        {
+            MemoryStream payloadBlob = new MemoryStream();
+            BinaryWriter payloadWriter = new BinaryWriter(payloadBlob);
+            writeEventPayload(payloadWriter);
+            int payloadSize = (int)payloadBlob.Length;
+            WriteEventHeader(options, payloadSize);
+            _writer.Write(payloadBlob.GetBuffer(), 0, payloadSize);
+        }
+
+        public void WriteEventHeader(WriteEventOptions options, int payloadLength)
+        {
+            if(_useCompressedHeaders)
+            {
+                WriteCompressedEventHeader(options, payloadLength);
+            }
+            else
+            {
+                WriteUncompressedEventHeader(options, payloadLength);
+            }
+        }
+
+        public void WriteUncompressedEventHeader(WriteEventOptions options, int payloadLength)
+        {
+            _writer.Write(48 /* header size not including this field */ + payloadLength);
+            _writer.Write(options.MetadataId | (int)(options.IsSorted ? 0 : 0x80000000));
+            _writer.Write(options.SequenceNumber);
+            _writer.Write(options.ThreadIndexOrId);
+            _writer.Write(options.CaptureThreadIndexOrId);
+            _writer.Write(options.ProcNumber);
+            _writer.Write(options.StackId);
+            _writer.Write(options.Timestamp);
+            _writer.Write(options.LabelListId);
+            _writer.Write(payloadLength);
+        }
+
+        public void WriteCompressedEventHeader(WriteEventOptions options, int payloadLength)
+        {
+            byte header = 0;
+            if (options.MetadataId != _lastEventOptions.MetadataId)
+            {
+                header |= 0x01;
+            }
+            if (options.CaptureThreadIndexOrId != _lastEventOptions.CaptureThreadIndexOrId ||
+                options.SequenceNumber != _lastEventOptions.SequenceNumber + 1 ||
+                options.ProcNumber != _lastEventOptions.ProcNumber)
+            {
+                header |= 0x02;
+            }
+            if (options.ThreadIndexOrId != options.CaptureThreadIndexOrId)
+            {
+                header |= 0x04;
+            }
+            if (options.StackId != _lastEventOptions.StackId)
+            {
+                header |= 0x08;
+            }
+            if (options.LabelListId != _lastEventOptions.LabelListId)
+            {
+                header |= 0x10;
+            }
+            if (options.IsSorted)
+            {
+                header |= 0x40;
+            }
+            if( (payloadLength != _lastPayloadLength))
+            {
+                header |= 0x80;
+            }
+            _writer.Write(header);
+            if ((header & 0x01) != 0)
+            {
+                _writer.WriteVarUInt((ulong)options.MetadataId);
+            }
+            if ((header & 0x02) != 0)
+            {
+                // the cast to uint here is deliberate to force underflow to wrap up to 2^32 rather than 2^64
+                _writer.WriteVarUInt((uint)(options.SequenceNumber - _lastEventOptions.SequenceNumber - 1));
+                _writer.WriteVarUInt((ulong)options.CaptureThreadIndexOrId);
+                _writer.WriteVarUInt((ulong)options.ProcNumber);
+            }
+            if ((header & 0x04) != 0)
+            {
+                _writer.WriteVarUInt((ulong)options.ThreadIndexOrId);
+            }
+            if ((header & 0x08) != 0)
+            {
+                _writer.WriteVarUInt((ulong)options.StackId);
+            }
+            _writer.WriteVarUInt((ulong)(options.Timestamp - _lastEventOptions.Timestamp));
+
+            if ((header & 0x10) != 0)
+            {
+                _writer.WriteVarUInt((ulong)options.LabelListId);
+            }
+            if ((header & 0x80) != 0)
+            {
+                _writer.WriteVarUInt((ulong)payloadLength);
+            }
+            _lastEventOptions = options;
+            _lastPayloadLength = payloadLength;
+        }
+    }
+
     class MockHugeStream : Stream
     {
         // the events are big to make the stream grow fast
@@ -2548,7 +2974,7 @@ namespace TraceEventTests
                         {
                             for (int j = 0; j < 20; j++)
                             {
-                                w.WriteEventBlob(1, 999, _sequenceNumber++, WriteEventPayload);
+                                w.WriteEventBlobV4Or5(1, 999, _sequenceNumber++, WriteEventPayload);
                             }
                         },
                         _bytesWritten);

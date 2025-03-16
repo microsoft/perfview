@@ -108,6 +108,10 @@ namespace Microsoft.Diagnostics.Tracing
             // Get the event record and fill in fields that we can without deserializing anything.
             _eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
             ClearMemory(_eventRecord, sizeof(TraceEventNativeMethods.EVENT_RECORD));
+            _extendedDataBuffer = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)Marshal.AllocHGlobal(2*sizeof(TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM));
+            ClearMemory(_extendedDataBuffer, 2 * sizeof(TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM));
+            _relatedActivityBuffer = (Guid*)Marshal.AllocHGlobal(sizeof(Guid));
+            ClearMemory(_relatedActivityBuffer, sizeof(Guid));
 
             if (pointerSize == 4)
             {
@@ -123,16 +127,12 @@ namespace Microsoft.Diagnostics.Tracing
 
         ~EventPipeMetadata()
         {
-            if (_eventRecord != null)
-            {
-                if (_extendedDataBuffer != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(_extendedDataBuffer);
-                }
-
-                Marshal.FreeHGlobal((IntPtr)_eventRecord);
-                _eventRecord = null;
-            }
+            Marshal.FreeHGlobal((IntPtr)_extendedDataBuffer);
+            _extendedDataBuffer = null;
+            Marshal.FreeHGlobal((IntPtr)_relatedActivityBuffer);
+            _relatedActivityBuffer = null;
+            Marshal.FreeHGlobal((IntPtr)_eventRecord);
+            _eventRecord = null;
         }
 
         public void ParseHeader(ref SpanReader reader, int fileFormatVersion)
@@ -200,36 +200,46 @@ namespace Microsoft.Diagnostics.Tracing
                 stackBytesSize = 0;
             }
 
-            if (0 < stackBytesSize)
+            if (0 == stackBytesSize && eventData.RelatedActivityID == Guid.Empty)
             {
-                // Lazy allocation (destructor frees it).
-                if (_extendedDataBuffer == IntPtr.Zero)
-                {
-                    _extendedDataBuffer = Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM));
-                }
-
-                _eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)_extendedDataBuffer;
-
-                if ((_eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER) != 0)
-                {
-                    _eventRecord->ExtendedData->ExtType = TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_STACK_TRACE32;
-                }
-                else
-                {
-                    _eventRecord->ExtendedData->ExtType = TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_STACK_TRACE64;
-                }
-
-                // DataPtr should point at a EVENT_EXTENDED_ITEM_STACK_TRACE*.  These have a ulong MatchID field which is NOT USED before the stack data.
-                // Since that field is not used, I can backup the pointer by 8 bytes and synthesize a EVENT_EXTENDED_ITEM_STACK_TRACE from the raw buffer
-                // of stack data without having to copy.
-                _eventRecord->ExtendedData->DataSize = (ushort)(stackBytesSize + 8);
-                _eventRecord->ExtendedData->DataPtr = (ulong)(eventData.StackBytes - 8);
-
-                _eventRecord->ExtendedDataCount = 1;        // Mark that we have the stack data.
+                _eventRecord->ExtendedData = null;
+                _eventRecord->ExtendedDataCount = 0;
             }
             else
             {
-                _eventRecord->ExtendedDataCount = 0;
+                ushort extendedDataCount = 0;
+                TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM* curExtendedBufferPtr = _extendedDataBuffer;
+                _eventRecord->ExtendedData = _extendedDataBuffer;
+                
+                if (stackBytesSize > 0)
+                {
+                    if ((_eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER) != 0)
+                    {
+                        curExtendedBufferPtr->ExtType = TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_STACK_TRACE32;
+                    }
+                    else
+                    {
+                        curExtendedBufferPtr->ExtType = TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_STACK_TRACE64;
+                    }
+
+                    // DataPtr should point at a EVENT_EXTENDED_ITEM_STACK_TRACE*.  These have a ulong MatchID field which is NOT USED before the stack data.
+                    // Since that field is not used, I can backup the pointer by 8 bytes and synthesize a EVENT_EXTENDED_ITEM_STACK_TRACE from the raw buffer
+                    // of stack data without having to copy.
+                    curExtendedBufferPtr->DataSize = (ushort)(stackBytesSize + 8);
+                    curExtendedBufferPtr->DataPtr = (ulong)(eventData.StackBytes - 8);
+                    curExtendedBufferPtr++;
+                    extendedDataCount++;
+                }
+                if (eventData.RelatedActivityID != Guid.Empty)
+                {
+                    curExtendedBufferPtr->ExtType = TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID;
+                    curExtendedBufferPtr->DataSize = (ushort)sizeof(Guid);
+                    curExtendedBufferPtr->DataPtr = (ulong)_relatedActivityBuffer;
+                    *_relatedActivityBuffer = eventData.RelatedActivityID;
+                    curExtendedBufferPtr++;
+                    extendedDataCount++;
+                }
+                _eventRecord->ExtendedDataCount = extendedDataCount;
             }
 
             return _eventRecord;
@@ -886,6 +896,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         private TraceEventNativeMethods.EVENT_RECORD* _eventRecord;
-        private IntPtr _extendedDataBuffer;
+        private TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM* _extendedDataBuffer;
+        private Guid* _relatedActivityBuffer;
     }
 }

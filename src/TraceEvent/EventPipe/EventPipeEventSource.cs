@@ -94,7 +94,7 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                     else if (major > MaxSupportedMajorVersion)
                     {
-                        throw new UnsupportedFormatVersionException(major, MaxSupportedMajorVersion);
+                        throw new UnsupportedFormatVersionException(major);
                     }
                     // we don't use minor version for anything yet. Minor version bumps are for non-breaking changes so this reader
                     // should be compatible regardless of the minor version.
@@ -123,6 +123,7 @@ namespace Microsoft.Diagnostics.Tracing
             EventCache.OnEvent += EventCache_OnEvent;
             EventCache.OnEventsDropped += EventCache_OnEventsDropped;
             StackCache = new StackCache();
+            LabelListCache = new LabelListCache();
         }
 
         public DateTime QPCTimeToTimeStamp(long QPCTime)
@@ -168,6 +169,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal int FileFormatVersionNumber { get; set; }
         internal EventCache EventCache { get; private set; }
         internal StackCache StackCache { get; private set; }
+        internal LabelListCache LabelListCache { get; private set; }
 
         internal override string ProcessName(int processID, long timeQPC) => string.Format("Process({0})", processID);
 
@@ -304,15 +306,21 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        internal void ReadSequencePointBlockV5OrLess(byte[] blockBytes, long startBlockStreamOffset)
+        internal void ReadSequencePointBlock(byte[] blockBytes, long startBlockStreamOffset)
         {
             EventCache.ProcessSequencePointBlock(blockBytes);
             StackCache.Flush();
+            LabelListCache.Flush();
         }
 
         internal void ReadStackBlock(byte[] blockBytes, long startBlockStreamOffset)
         {
             StackCache.ProcessStackBlock(blockBytes);
+        }
+
+        internal void ReadLabelListBlock(byte[] blockBytes, long startBlockStreamOffset)
+        {
+            LabelListCache.ProcessLabelListBlock(blockBytes, startBlockStreamOffset);
         }
 
         enum ThreadInfoKind
@@ -482,6 +490,9 @@ namespace Microsoft.Diagnostics.Tracing
                 EventPipeThread thread = _threadCache.GetThread(eventData.ThreadIndexOrId);
                 eventData.ProcessId = thread.ProcessId;
                 eventData.ThreadId = thread.ThreadId;
+                LabelList labelList = LabelListCache.GetLabelList(eventData.LabelListId);
+                eventData.ActivityID = labelList.ActivityId.HasValue ? labelList.ActivityId.Value : Guid.Empty;
+                eventData.RelatedActivityID = labelList.RelatedActivityId.HasValue ? labelList.RelatedActivityId.Value : Guid.Empty;
             }
 
             // Basic sanity checks.  Are the timestamps and sizes sane.
@@ -541,7 +552,19 @@ namespace Microsoft.Diagnostics.Tracing
         {
             if (FileFormatVersionNumber >= 4)
             {
-                return _relatedActivityId;
+                if (eventRecord->ExtendedDataCount != 0)
+                {
+                    var extendedData = eventRecord->ExtendedData;
+                    for (int i = 0; i < eventRecord->ExtendedDataCount; i++)
+                    {
+                        if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
+                        {
+                            return *((Guid*)extendedData[i].DataPtr);
+                        }
+                    }
+                }
+
+                return Guid.Empty;
             }
             else
             {
@@ -550,12 +573,18 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
+        // Expose data on the last parsed event label lists for testing purposes
+        // If we want to get non-ActivityId info out through TraceEvent we'll need a proper API for this
+        internal LabelList GetLastLabelList()
+        {
+            return LabelListCache.GetLabelList(_lastLabelListId);
+        }
+
         private void EventCache_OnEvent(ref EventPipeEventHeader header)
         {
-            _relatedActivityId = header.RelatedActivityID;
+            _lastLabelListId = header.LabelListId;
             TraceEventNativeMethods.EVENT_RECORD* eventRecord = ConvertEventHeaderToRecord(ref header);
             ValidateStackFields(header, eventRecord);
-
             DispatchEventRecord(eventRecord);
         }
 
@@ -612,7 +641,7 @@ namespace Microsoft.Diagnostics.Tracing
         private Dictionary<TraceEvent, DynamicTraceEventData> _metadataTemplates =
             new Dictionary<TraceEvent, DynamicTraceEventData>(new ExternalTraceEventParserState.TraceEventComparer());
         private int _eventsLost;
-        private Guid _relatedActivityId;
+        private int _lastLabelListId;
         internal int _processId;
         internal int _expectedCPUSamplingRate;
         private PinnedStreamReader _reader;
@@ -625,13 +654,11 @@ namespace Microsoft.Diagnostics.Tracing
 
     public class UnsupportedFormatVersionException : FormatException
     {
-        public UnsupportedFormatVersionException(int requestedVersion, int maxSupportedVersion) : base($"File format version {requestedVersion} is unsupported. The maximum supported version is {maxSupportedVersion}")
+        public UnsupportedFormatVersionException(int requestedVersion) : base($"NetTrace file format version {requestedVersion} is unsupported.")
         {
-            MaxSupportedVersion = maxSupportedVersion;
             RequestedVersion = requestedVersion;
         }
 
-        public int MaxSupportedVersion { get; }
         public int RequestedVersion { get; }
     }
 
@@ -686,7 +713,7 @@ internal interface IBlockParser : IDisposable
                         _source.ReadMetadataBlockV6OrGreater(blockBytes, blockStartOffset);
                         break;
                     case BlockKind.SequencePoint:
-                        _source.ReadSequencePointBlockV5OrLess(blockBytes, blockStartOffset);
+                        _source.ReadSequencePointBlock(blockBytes, blockStartOffset);
                         break;
                     case BlockKind.StackBlock:
                         _source.ReadStackBlock(blockBytes, blockStartOffset);
@@ -696,6 +723,9 @@ internal interface IBlockParser : IDisposable
                         break;
                     case BlockKind.RemoveThread:
                         _source.ReadRemoveThreadBlock(blockBytes, blockStartOffset);
+                        break;
+                    case BlockKind.LabelList:
+                        _source.ReadLabelListBlock(blockBytes, blockStartOffset);
                         break;
                     case BlockKind.EndOfStream:
                         _source.EventCache.Flush();
@@ -737,7 +767,8 @@ internal interface IBlockParser : IDisposable
             SequencePoint = 4,
             StackBlock = 5,
             Thread = 6,
-            RemoveThread = 7
+            RemoveThread = 7,
+            LabelList = 8
         }
     }
 
@@ -951,7 +982,7 @@ internal interface IBlockParser : IDisposable
 
             protected override void ReadBlockContents(byte[] blockBytes, long blockStartStreamOffset)
             {
-                _source.ReadSequencePointBlockV5OrLess(blockBytes, blockStartStreamOffset);
+                _source.ReadSequencePointBlock(blockBytes, blockStartStreamOffset);
             }
         }
 
@@ -1050,6 +1081,7 @@ internal interface IBlockParser : IDisposable
             CaptureThreadAndSequence = 1 << 1,
             ThreadId = 1 << 2,
             StackId = 1 << 3,
+            LabelListId = 1 << 4,
             ActivityId = 1 << 4,
             RelatedActivityId = 1 << 5,
             Sorted = 1 << 6,
@@ -1146,8 +1178,7 @@ internal interface IBlockParser : IDisposable
             public int CaptureProcNumber;
             public int StackId;
             public long TimeStamp;
-            public Guid ActivityID;
-            public Guid RelatedActivityID;
+            public int LabelListId;
             public int PayloadSize;         // size in bytes of the user defined payload data.
         }
 
@@ -1165,8 +1196,7 @@ internal interface IBlockParser : IDisposable
                 header.CaptureProcNumber = layout.CaptureProcNumber;
                 header.StackId = layout.StackId;
                 header.TimeStamp = layout.TimeStamp;
-                header.ActivityID = layout.ActivityID;
-                header.RelatedActivityID = layout.RelatedActivityID;
+                header.LabelListId = layout.LabelListId;
                 header.PayloadSize = layout.PayloadSize;
                 // these pointer conversions only work because the reader is backed by pinned memory
                 header.Payload = (IntPtr)Unsafe.AsPointer<byte>(ref MemoryMarshal.GetReference(reader.RemainingBytes));
@@ -1208,13 +1238,9 @@ internal interface IBlockParser : IDisposable
                 }
                 ulong timestampDelta = reader.ReadVarUInt64(); ;
                 header.TimeStamp += (long)timestampDelta;
-                if ((flags & (byte)CompressedHeaderFlags.ActivityId) != 0)
+                if ((flags & (byte)CompressedHeaderFlags.LabelListId) != 0)
                 {
-                    header.ActivityID = reader.Read<Guid>();
-                }
-                if ((flags & (byte)CompressedHeaderFlags.RelatedActivityId) != 0)
-                {
-                    header.RelatedActivityID = reader.Read<Guid>();
+                    header.LabelListId = (int)reader.ReadVarUInt32();
                 }
                 header.IsSorted = (flags & (byte)CompressedHeaderFlags.Sorted) != 0;
                 if ((flags & (byte)CompressedHeaderFlags.DataLength) != 0)
@@ -1238,6 +1264,7 @@ internal interface IBlockParser : IDisposable
         public long ThreadId;
         public long ProcessId;
         public long TimeStamp;
+        public int LabelListId;
         public Guid ActivityID;
         public Guid RelatedActivityID;
         public bool IsSorted;

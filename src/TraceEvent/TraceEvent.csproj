@@ -146,6 +146,7 @@
       <Visible>False</Visible>
     </None>
     <None Include="EventPipe\EventPipeFormat.md" />
+    <None Include="EventPipe\NetTraceFormat_v6.md" />
 
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.nuspec" />
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.props" />

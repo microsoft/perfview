@@ -317,3 +317,59 @@ enum OptionalMetadataKind
   Version = 9
 }
 ```
+
+## Extended support for event labels
+
+### Motivation
+
+In V5 every event had a fixed set of fields that could be encoded in the header + the payload area fields were specific to the event type.
+There was no way to add new optional fields that are independent of the event type such as new correlation identifiers or other types of ambient enrichment data.
+In particular OpenTelemetry has embraced the W3C TraceContext standard for distributed tracing and I'd like to be able to use that as a common correlation identifier in the future.
+
+### Changes
+
+#### New LabelListBlock
+
+A new top-level block, LabelListBlock, BlockHeader.Kind=8, contains a set of key-value pairs that can be referenced by index within the EventHeader. This allows many events to refer to the same key-value pairs without needing to repeatedly encode them.
+
+The content of a LabelListBlock is:
+
+- firstIndex - uint32  // The index of the first entry in the block. Each successive entry is implicitly indexed by the previous entry's index + 1.
+- count - uint32       // The number of entries in the block.
+- Concatenated sequence of label_lists, each of which is:
+  - one or more Label entries each of which is:
+    - Kind - uint8
+    - if(Kind & 0x7F == 1)
+      - ActivityId - Guid
+    - if(Kind & 0x7F == 2)
+      - RelatedActivityId - Guid
+    - if(Kind & 0x7F == 3)
+      - TraceId - byte[16]
+    - if(Kind & 0x7F == 4)
+      - SpanId - uint64
+    - if(Kind & 0x7F == 5)
+      - Key - string       // varuint prefixed UTF8 string
+      - Value - string     // varuint prefixed UTF8 string
+    - if(Kind & 0x7F == 6)
+      - Key - string       // varuint prefixed UTF8 string
+      - Value - varint
+
+If the high bit of the Kind field is set that demarcates that this is the last label in a label list and the next label is part of the next list.
+
+Similar to StackBlock, references to a row in the LabelListBlock are only valid in the file after the LabelListBlock that defines it and before the next SequencePoint block.
+This prevents the reader from needing a lookup table that grows indefinitely with file length or requiring the reader to search the entire file to resolve a given label list index.
+
+#### Updated EventHeader
+
+In the uncompressed header, the V5 format has two fields ActivityId and RelatedActivityId. In the V6 format those fields are replaced by a new uint32 LabelListIndex field.
+If the field value is zero that means an empty list of labels, otherwise it is a reference into the LabelList table.
+
+In the compressed header, the V5 format has a flags field and two flag bits that determine whether the ActivityId/RelatedActivityId fields are present:
+ActivityId = 1 << 4
+RelatedActivityId = 1 << 5
+
+In the V6 format the (1 << 4) bit is repurposed and (1 << 5) bit should be left zero, reserved for future use. If bit (1<<4) is not set then LabelListIndex is unchanged from its
+value in the previous event, or zero if it is the first event in the block. If the (1<<4) bit is set then there is a varuint encoded LabelListIndex field following the timestamp delta.
+
+This encoding is intended to make it extremely space efficient to have a run of events which all have the same label list. Only changes to the label list between events
+consume extra bytes in the EventHeader.
