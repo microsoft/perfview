@@ -969,6 +969,7 @@ namespace PerfView
             }
             CpuCountersListBox.ItemsSource = cpuCounterSpecs;
             CpuCountersPopup.IsOpen = true;
+            Keyboard.Focus(CpuCountersListBox);
         }
         private void DoCpuCountersListBoxKey(object sender, KeyEventArgs e)
         {
@@ -983,6 +984,7 @@ namespace PerfView
             else if (e.Key == Key.Escape)
             {
                 CpuCountersPopup.IsOpen = false;
+                Keyboard.Focus(CpuCountersTextBox);
             }
         }
         private void DoCpuCountersListBoxDoubleClick(object sender, MouseButtonEventArgs e)
@@ -1000,6 +1002,7 @@ namespace PerfView
                 sep = " ";
             }
             CpuCountersTextBox.Text = CpuCounters;
+            Keyboard.Focus(CpuCountersTextBox);
         }
 
         private static string MergeProvider(string providerList, string additionalProvider, string providerKeys, string providerLevel)

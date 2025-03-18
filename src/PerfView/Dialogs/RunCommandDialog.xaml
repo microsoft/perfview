@@ -42,14 +42,14 @@
             </RichTextBox.Document>
         </RichTextBox>
         <!-- CommandToRun section for running specific process -->
-        <TextBlock Grid.Row="1" Grid.Column="0" x:Name="CommandToRunLabel" Margin="5,0" VerticalAlignment="Center" KeyboardNavigation.IsTabStop="False" ToolTip="The command line of the process to run while collecting data.">
+        <TextBlock Grid.Row="1" Grid.Column="0" x:Name="CommandToRunLabel" Margin="5,0" VerticalAlignment="Center" ToolTip="The command line of the process to run while collecting data.">
                 <Hyperlink Command="Help" CommandParameter="CommandToRunTextBox">Command:</Hyperlink>
         </TextBlock>
         <controls:HistoryComboBox Grid.Row="1" Margin="0,5,0,0"  Grid.Column="1" x:Name="CommandToRunTextBox" VerticalAlignment="Center" KeyDown="CommandToRunKeyDown" AutomationProperties.Name="Command to run" />
 
         <!-- FocusProcess section for Collect command-->
         <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal">
-            <TextBlock Name="FocusProcessLabel" Margin="5,0" VerticalAlignment="Center" KeyboardNavigation.IsTabStop="False" ToolTip="Name or PID of the process to collect user-mode events for.">
+            <TextBlock Name="FocusProcessLabel" Margin="5,0" VerticalAlignment="Center" ToolTip="Name or PID of the process to collect user-mode events for.">
                 <Hyperlink Command="Help" CommandParameter="FocusProcessTextBox">Focus process:</Hyperlink>
             </TextBlock>
             <CheckBox Name="FocusProcessCheckBox" VerticalAlignment="Center" Margin="1,2,2,0" Click="FocusProcessCheckBoxClicked" IsChecked="false" AutomationProperties.Name="Focus process" />
@@ -57,14 +57,14 @@
         <TextBox Grid.Row="1" Margin="0,5,0,0"  Grid.Column="1" x:Name="FocusProcessTextBox" VerticalAlignment="Center" />
 
         <!-- Data file name row -->
-        <TextBlock Grid.Row="2" Grid.Column="0" Margin="5,0" VerticalAlignment="Center" KeyboardNavigation.IsTabStop="False" ToolTip="The name of the data file to create." >
+        <TextBlock Grid.Row="2" Grid.Column="0" Margin="5,0" VerticalAlignment="Center" ToolTip="The name of the data file to create." >
             <Hyperlink Command="Help" CommandParameter="DataFileNameTextBox">Data File:</Hyperlink>
         </TextBlock>
         <TextBox  Grid.Row="2" Grid.Column="1"  Name="DataFileNameTextBox" VerticalAlignment="Center" KeyDown="DataFileKeyDown" AutomationProperties.Name="Data File" />
         <Button Grid.Row="2" Grid.Column="2" Content="..."  Width="25" Margin="5,5"
                 VerticalAlignment="Center" Click="DataFileButtonClick" ToolTip="Click to select the file name in a file chooser dialog." />
 
-        <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="5,0" KeyboardNavigation.IsTabStop="False" ToolTip="The directory in which the command is run.">
+        <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="5,0" ToolTip="The directory in which the command is run.">
                 <Hyperlink Command="Help" CommandParameter="CurrentDirTextBox">Current Dir:</Hyperlink>
         </TextBlock>
         <TextBox  Grid.Row="3" Grid.Column="1"  Name="CurrentDirTextBox" VerticalAlignment="Center" AutomationProperties.Name="Current Directory" />
@@ -89,29 +89,29 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,2,0" KeyboardNavigation.IsTabStop="False" ToolTip="Use this option if you wish to analyze on another machine.">
+            <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,2,0" ToolTip="Use this option if you wish to analyze on another machine.">
                 <Hyperlink Command="Help" CommandParameter="ZipCheckBox">Zip:</Hyperlink>
             </TextBlock>
             <CheckBox Grid.Column="1" Name="ZipCheckBox" VerticalAlignment="Center" Margin="0,0,10,0" Click="ZipCheckBoxClicked" AutomationProperties.Name="Zip" />
 
-            <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="5,0,2,0" KeyboardNavigation.IsTabStop="False" ToolTip="After this size (in megabytes) old events are thown away to keep file size under control" >
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="5,0,2,0" ToolTip="After this size (in megabytes) old events are thown away to keep file size under control" >
                         <Hyperlink Command="Help" CommandParameter="CircularTextBox">Circular<LineBreak/>MB:</Hyperlink>
             </TextBlock>
 
             <TextBox Grid.Column="3" Name="CircularTextBox" VerticalAlignment="Center" Width="35" Margin="5,0" AutomationProperties.Name="Circular Buffer Size in Megabytes"/>
 
-            <TextBlock Grid.Column="4" VerticalAlignment="Center" Margin="5,0,2,0" KeyboardNavigation.IsTabStop="False" ToolTip="If checked will merge data into a single file, implied by Zip.">
+            <TextBlock Grid.Column="4" VerticalAlignment="Center" Margin="5,0,2,0" ToolTip="If checked will merge data into a single file, implied by Zip.">
                 <Hyperlink Command="Help" CommandParameter="MergeCheckBox">Merge:</Hyperlink>
             </TextBlock>
             <CheckBox Grid.Column="5" Name="MergeCheckBox" VerticalAlignment="Center" Click="MergeCheckBoxClicked" Margin="0,0,10,0" AutomationProperties.Name="Merge"/>
 
-            <TextBlock  Grid.Column="6" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,2,5,2" KeyboardNavigation.IsTabStop="False"
+            <TextBlock  Grid.Column="6" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,2,5,2"
                                ToolTip="Needed for Thread Time views.  Fire an event (and stack trace) every time the processor switch from one thread to another." >
                     <Hyperlink Command="Help" CommandParameter="ThreadTimeCheckbox">Thread<LineBreak/>Time:</Hyperlink>
             </TextBlock>
             <CheckBox Grid.Column="7" Name="ThreadTimeCheckbox" VerticalAlignment="Center" AutomationProperties.Name="Thread Time" />
 
-            <TextBlock Grid.Column="8" VerticalAlignment="Center" Margin="5,0,2,0" KeyboardNavigation.IsTabStop="False" ToolTip="This text is attached to the Mark event when the 'Mark' button is pressed." >
+            <TextBlock Grid.Column="8" VerticalAlignment="Center" Margin="5,0,2,0" ToolTip="This text is attached to the Mark event when the 'Mark' button is pressed." >
                 <Hyperlink Command="Help" CommandParameter="MarkTextBox">Mark Text:</Hyperlink>
             </TextBlock>
             <TextBox Grid.Column="9" Name="MarkTextBox" VerticalAlignment="Center" Width="150" Margin="5,0" KeyDown="MarkTextKeyDown" AutomationProperties.Name="Mark Text" />
@@ -407,7 +407,7 @@
                             ToolTip="Click to browse the available ETW providers."/>
                     <TextBlock  Grid.Column="3" Margin="2,0,10,0" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12
                                 ">
-                        <Hyperlink Command="Help" CommandParameter="ProviderBrowser">?</Hyperlink>
+                        <Hyperlink Command="Help" CommandParameter="ProviderBrowser" AutomationProperties.Name="Help with Provider Browser">?</Hyperlink>
                     </TextBlock>
                 </Grid>
 

@@ -2,6 +2,7 @@ using Microsoft.Diagnostics.Tracing.Analysis.GC;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System;
 using System.Collections.Generic;
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Automation;
@@ -380,6 +381,7 @@ namespace PerfView
             m_grid.MouseRightButtonUp += MouseRightButtonUp;
             m_grid.AutoGenerateColumns = false;
             m_grid.IsReadOnly = true;
+            m_grid.ColumnHeaderStyle = Toolbox.FocusableDataGridColumnHeaderStyle(m_grid.ColumnHeaderStyle);
 
             // Columns
             m_grid.AddColumn(Toolbox.CreateTextBlock("GCIndex ", "GCIndex", OnHelp), "Number", true, Toolbox.CountFormatN0);

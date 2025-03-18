@@ -1165,6 +1165,7 @@ namespace PerfView
                 m_metricGrid.Background = Brushes.LightGray;
                 m_metricGrid.AutoGenerateColumns = false;
                 m_metricGrid.IsReadOnly = true;
+                m_metricGrid.ColumnHeaderStyle = Toolbox.FocusableDataGridColumnHeaderStyle(m_metricGrid.ColumnHeaderStyle);
 
                 m_metricGrid.AddColumn("Metric", "Name", false);
                 m_metricGrid.AddColumn("Value", "Value", true);

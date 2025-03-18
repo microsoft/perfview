@@ -160,6 +160,7 @@ namespace PerfView
 
             m_grid.AutoGenerateColumns = false;
             m_grid.IsReadOnly = true;
+            m_grid.ColumnHeaderStyle = Toolbox.FocusableDataGridColumnHeaderStyle(m_grid.ColumnHeaderStyle);
 
             AllocTickConverter converter = new AllocTickConverter(traceLog);
 

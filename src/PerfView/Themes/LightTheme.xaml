@@ -42,11 +42,11 @@ SOFTWARE.
     <SolidColorBrush x:Key="ControlDefaultForeground" Color="#FF040404" />
     <SolidColorBrush x:Key="ControlMOSelectForeground" Color="#FF040404" />
 
-    <SolidColorBrush x:Key="ControlDarkerBackground" Color="#FFC7C7C7" />
+    <SolidColorBrush x:Key="ControlDarkerBackground" Color="#FFE7E7E7" />
     <SolidColorBrush x:Key="ControlDarkerBorderBrush" Color="#FFBEBEBE" />
-    <SolidColorBrush x:Key="ControlDefaultBackground" Color="#FFE1E1E1" />
+    <SolidColorBrush x:Key="ControlDefaultBackground" Color="#FFF3F3F3" />
     <SolidColorBrush x:Key="ControlDefaultBorderBrush" Color="#FFAFAFAF" />
-    <SolidColorBrush x:Key="ControlBrightDefaultBackground" Color="#FFCDCDCD" />
+    <SolidColorBrush x:Key="ControlBrightDefaultBackground" Color="#FFF0F0F0" />
     <SolidColorBrush x:Key="ControlBrightDefaultBorderBrush" Color="#FFAFAFAF" />
     <SolidColorBrush x:Key="ControlDisabledBackground" Color="#FFB4B4B4" />
     <SolidColorBrush x:Key="ControlDisabledBorderBrush" Color="#FF8C8C8C" />
@@ -73,7 +73,8 @@ SOFTWARE.
 
     <!-- Custom Window style (unaffected by win32 style stuff) -->
     <Style x:Key="CustomWindowStyle" TargetType="{x:Type Window}">
-        <!-- Leave empty, keep default style -->
+        <!-- Better for rendering small text -->
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
     </Style>
 
 </ResourceDictionary>

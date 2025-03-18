@@ -25,7 +25,7 @@
             <RichTextBox.Document>
                 <FlowDocument>
                     <Paragraph>
-                        This dialog give options for collecting Memory (GC Heap) data.   Typically simply typing a few characters
+                        This dialog gives options for collecting Memory (GC Heap) data.   Typically simply typing a few characters
                         of the process name in the Filter text box and hitting &lt;Enter&gt; is enough.  See
                         <Hyperlink Command="Help" CommandParameter="CollectingDataGCHeap">Collecting GC Heap Data.</Hyperlink> and
                         <Hyperlink Command="Help" CommandParameter="UnderstandingPerfDataGCHeap">Understanding GC Heap Data.</Hyperlink>
@@ -65,7 +65,7 @@
                 <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,0,0" ToolTip="Only processes that match this RegEx filter pattern are displayed.">
                     <Hyperlink Command="Help" CommandParameter="ProcessFilterTextBox">Filter:</Hyperlink>
                 </TextBlock>
-                <TextBox KeyboardNavigation.TabIndex="0" VerticalAlignment="Center" Grid.Column="1" Width="100" Margin="5,0,0,0"  Name="FilterTextBox" TextChanged="FilterTextChanged" PreviewKeyDown="FilterTextKeyDown" AutomationProperties.Name="Process Filter"/>
+                <TextBox VerticalAlignment="Center" Grid.Column="1" Width="100" Margin="5,0,0,0"  Name="FilterTextBox" TextChanged="FilterTextChanged" PreviewKeyDown="FilterTextKeyDown" AutomationProperties.Name="Process Filter"/>
 
                 <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="5,0,0,0" ToolTip="Normally only processed with GC heaps are displayed.  Checking this shows all processes.">
                     <Hyperlink Command="Help" CommandParameter="AllProcsCheckBox">All Procs:</Hyperlink>
@@ -77,7 +77,7 @@
                     <Hyperlink Click="ElevateToAdminClick">Elevate to Admin</Hyperlink> to see all processes.
                 </TextBlock>
             </Grid>
-            <ListBox KeyboardNavigation.TabIndex="1" Margin="5,28,5,12" MinHeight="80" Name="Processes" MouseDoubleClick="ProcessesMouseDoubleClick" SelectionChanged="Processes_SelectionChanged" FontFamily="Courier New" Grid.RowSpan="2" AutomationProperties.Name="Processes">
+            <ListBox Margin="5,28,5,12" MinHeight="80" Name="Processes" MouseDoubleClick="ProcessesMouseDoubleClick" SelectionChanged="Processes_SelectionChanged" FontFamily="Courier New" Grid.RowSpan="2" AutomationProperties.Name="Processes">
                 <ListBox.ItemContainerStyle>
                     <Style TargetType="ListBoxItem">
                         <Setter Property="AutomationProperties.Name" Value="{Binding ShortDescription}" />

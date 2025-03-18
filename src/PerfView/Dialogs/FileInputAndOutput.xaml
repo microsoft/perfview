@@ -56,7 +56,7 @@
 
         <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" FlowDirection="RightToLeft">
             <Button Margin="10,5,10,5" Width="80" Content="OK" Click="OKClicked"/>
-            <Button Margin="10,5,10,5" KeyboardNavigation.IsTabStop="False" Width="80" Content="Cancel" Click="CancelClicked"/>
+            <Button Margin="10,5,10,5" Width="80" Content="Cancel" Click="CancelClicked"/>
         </StackPanel>
     </Grid>
 </src:WindowBase>

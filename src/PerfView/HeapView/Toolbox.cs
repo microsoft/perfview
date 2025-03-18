@@ -450,6 +450,15 @@ namespace PerfView
             return s;
         }
 
+        internal static Style FocusableDataGridColumnHeaderStyle(Style baseStyle)
+        {
+            Style columnHeaderStyle = new Style();
+            columnHeaderStyle.BasedOn = baseStyle;
+            columnHeaderStyle.TargetType = typeof(DataGridColumnHeader);
+            columnHeaderStyle.Setters.Add(new Setter(DataGridColumnHeader.FocusableProperty, true));
+            return columnHeaderStyle;
+        }
+
         /// <summary>
         /// Add Button column to DataGrid
         /// </summary>

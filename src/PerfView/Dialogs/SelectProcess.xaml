@@ -8,6 +8,11 @@
     <Window.CommandBindings>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp" />
     </Window.CommandBindings>
+    <Window.Resources>
+        <Style x:Key="ColumnHeaderStyle" TargetType="{x:Type WPFToolKit:DataGridColumnHeader}">
+            <Setter Property="Focusable" Value="True" />
+        </Style>
+    </Window.Resources>
     <DockPanel>
         <RichTextBox DockPanel.Dock="Top" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True">
             <RichTextBox.Document>
@@ -56,7 +61,8 @@
               Background="{DynamicResource BackgroundColour}"
               AutoGenerateColumns="False"
               MouseDoubleClick="OKClicked"
-              IsReadOnly="True">
+              IsReadOnly="True"
+              ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}">
                 <WPFToolKit:DataGrid.Resources>
                     <Style x:Key="RightAlign">
                         <Setter Property="TextBlock.TextAlignment" Value="Right"/>

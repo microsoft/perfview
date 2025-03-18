@@ -14,6 +14,9 @@
         <Style x:Key="CenterAlign">
             <Setter Property="TextBlock.TextAlignment" Value="Center" />
         </Style>
+        <Style x:Key="ColumnHeaderStyle" TargetType="{x:Type WPFToolKit:DataGridColumnHeader}">
+            <Setter Property="Focusable" Value="True" />
+        </Style>
     </Window.Resources>
     <DockPanel Background="{DynamicResource BackgroundColour}">
         <DockPanel.CommandBindings>
@@ -109,7 +112,7 @@
             <StackPanel Orientation="Horizontal">
                 <Button Margin="3,2,3,2" FontSize="9" Click="DoUpdate" ToolTip="Update main window using current filter parameters (F5).">Update</Button>
                 <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
-                    <Hyperlink Command="Help" CommandParameter="StartTextBox" KeyboardNavigation.IsTabStop="False">Start:</Hyperlink>
+                    <Hyperlink Command="Help" CommandParameter="StartTextBox">Start:</Hyperlink>
                 </TextBlock>
                 <controls:HistoryComboBox  x:Name="StartTextBox" Width="90" Enter="DoUpdate" AutomationProperties.Name="Start Time">
                     <controls:HistoryComboBox.ToolTip>
@@ -117,7 +120,7 @@
                     </controls:HistoryComboBox.ToolTip>
                 </controls:HistoryComboBox>
                 <TextBlock VerticalAlignment="Center" Margin="10,0,1,0">
-                    <Hyperlink Command="Help" CommandParameter="EndTextBox" KeyboardNavigation.IsTabStop="False">End:</Hyperlink>
+                    <Hyperlink Command="Help" CommandParameter="EndTextBox">End:</Hyperlink>
                 </TextBlock>
                 <controls:HistoryComboBox x:Name="EndTextBox" Width="90" Enter="DoUpdate" AutomationProperties.Name="End Time">
                     <controls:HistoryComboBox.ToolTip>
@@ -125,7 +128,7 @@
                     </controls:HistoryComboBox.ToolTip>
                 </controls:HistoryComboBox>
                 <TextBlock VerticalAlignment="Center" Margin="10,0,1,0">
-                    <Hyperlink Command="Help" CommandParameter="MaxRetTextBox" KeyboardNavigation.IsTabStop="False">MaxRet:</Hyperlink>
+                    <Hyperlink Command="Help" CommandParameter="MaxRetTextBox">MaxRet:</Hyperlink>
                 </TextBlock>
                 <controls:HistoryComboBox x:Name="MaxRetTextBox" Width="80" Enter="DoUpdate"  AutomationProperties.Name="Max Records Returned">
                     <controls:HistoryComboBox.ToolTip>
@@ -134,7 +137,7 @@
                 </controls:HistoryComboBox>
             </StackPanel>
             <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="20,0,1,0">
-                    <Hyperlink Command="Help" CommandParameter="FindTextBox" KeyboardNavigation.IsTabStop="False">Find:</Hyperlink>
+                    <Hyperlink Command="Help" CommandParameter="FindTextBox">Find:</Hyperlink>
             </TextBlock>
             <controls:HistoryComboBox x:Name="FindTextBox" Grid.Column="2" MinWidth="100" Enter="DoFindEnter" AutomationProperties.Name="Find">
                 <controls:HistoryComboBox.ToolTip>
@@ -153,7 +156,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="20,0,1,0">
-                    <Hyperlink Command="Help" CommandParameter="ProcessFilterTextBox" KeyboardNavigation.IsTabStop="False">Process Filter:</Hyperlink>
+                    <Hyperlink Command="Help" CommandParameter="ProcessFilterTextBox">Process Filter:</Hyperlink>
             </TextBlock>
             <controls:HistoryComboBox Grid.Column="1" Margin="0,3,0,3" x:Name="ProcessFilterTextBox" Enter="DoUpdate" AutomationProperties.Name="Process Filter" >
                 <controls:HistoryComboBox.ToolTip>
@@ -161,7 +164,7 @@
                 </controls:HistoryComboBox.ToolTip>
             </controls:HistoryComboBox>
             <TextBlock Grid.Column="2"  VerticalAlignment="Center" Margin="10,0,1,0">
-                    <Hyperlink Command="Help" CommandParameter="TextFilterTextBox" KeyboardNavigation.IsTabStop="False">Text Filter:</Hyperlink>
+                    <Hyperlink Command="Help" CommandParameter="TextFilterTextBox">Text Filter:</Hyperlink>
             </TextBlock>
             <controls:HistoryComboBox Grid.Column="3" Margin="0,3,0,3" x:Name="TextFilterTextBox" Enter="DoUpdate" AutomationProperties.Name="Text Filter">
                 <controls:HistoryComboBox.ToolTip>
@@ -169,7 +172,7 @@
                 </controls:HistoryComboBox.ToolTip>
             </controls:HistoryComboBox>
             <TextBlock Grid.Column="4" VerticalAlignment="Center" Margin="10,0,1,0">
-                    <Hyperlink Command="Help" CommandParameter="ColumnsToDisplayTextBox" KeyboardNavigation.IsTabStop="False">Columns To Display:</Hyperlink>
+                    <Hyperlink Command="Help" CommandParameter="ColumnsToDisplayTextBox">Columns To Display:</Hyperlink>
             </TextBlock>
             <Button Grid.Column="5" Name="ListButton" Margin="3,3,3,3" Content="Cols" Click="DoColumnsToDisplayListClick"
                     ToolTip="Displays a list you can shift click and ctrl-click to select columns to display." />
@@ -240,7 +243,8 @@
                     SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
                     SelectedCellsChanged="SelectedCellsChanged"
                     AlternatingRowBackground="{DynamicResource AlternateRowBackground}" 
-                    AutomationProperties.Name="Events Table">
+                    AutomationProperties.Name="Events Table"
+                    ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}">
                     <WPFToolKit:DataGrid.Columns>
                         <WPFToolKit:DataGridTextColumn
                         x:Name="EventNameColumn"
