@@ -145,6 +145,24 @@ namespace EventSources
     }
 
     /// <summary>
+    /// A Payload object represents the Rest string from EventRecord as Object to make working 
+    /// with the values inside easier
+    /// </summary>
+    public class Payload
+    {
+        public Payload(string payloadName, string payload)
+        {
+            m_payloadName = payloadName;
+            m_payload = payload;
+        }
+
+        public string PayloadName { get { return m_payloadName; } set { } }
+        public string PayloadValue { get { return m_payload; } set { } }
+
+        private string m_payloadName;
+        private string m_payload;
+    }
+    /// <summary>
     /// An EventRecord is a abstraction that is returned by the EventSource.Events API.   It represents
     /// a single event and is everything the GUI needs to display the event in the GUI.   
     /// </summary>
@@ -153,7 +171,8 @@ namespace EventSources
         public abstract string EventName { get; }
         public abstract string ProcessName { get; }
         public abstract double TimeStampRelatveMSec { get; }
-
+        public abstract List<Payload> Payloads { get;  }
+        
         // TODO FIX NOW should be abstract, get CSV and ETW subclasses to implement
         /// <summary>
         /// The names of the fields in this record
@@ -186,7 +205,7 @@ namespace EventSources
         public string DisplayField8 { get { return m_displayFields[7]; } set { } }
         public string DisplayField9 { get { return m_displayFields[8]; } set { } }
         public string DisplayField10 { get { return m_displayFields[9]; } set { } }
-
+        
         // returns true of 'pattern' matches the display fields.  
         public virtual bool Matches(Regex pattern)
         {
