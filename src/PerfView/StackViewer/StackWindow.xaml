@@ -226,19 +226,19 @@
                 </MenuItem>
             </Menu>
             <Rectangle Grid.Column="1" Grid.ColumnSpan="10" Fill="{DynamicResource ControlDefaultBackground}"/>
-            <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0">
+            <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="StackViewerQuickStart">Stack View Help (F1)</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0">
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="UnderstandingPerfData">Understanding Perf Data</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0">
+            <TextBlock Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="StartingAnAnalysis">Starting an Analysis</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0">
+            <TextBlock Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="StackViewerTroubleshooting">Troubleshooting</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="5" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0">
+            <TextBlock Grid.Column="5" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="StackViewerTips">Tips</Hyperlink>
             </TextBlock>
         </Grid>
