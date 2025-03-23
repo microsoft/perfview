@@ -707,7 +707,7 @@ namespace TraceEventTests
         {
             EventPipeWriterV5 writer = new EventPipeWriterV5();
             writer.WriteHeaders();
-            writer.WriteMetadataBlock( w =>
+            writer.WriteMetadataBlock(w =>
             {
                 w.WriteMetadataEventBlobV5OrLess(payloadWriter =>
                 {
@@ -790,7 +790,7 @@ namespace TraceEventTests
             });
             writer.WriteEventBlock(w =>
             {
-                w.WriteEventBlobV4Or5(1, 999, 1, new byte[] { 12, 0, 0, 0, 17, 0});
+                w.WriteEventBlobV4Or5(1, 999, 1, new byte[] { 12, 0, 0, 0, 17, 0 });
             });
             writer.WriteEndObject();
 
@@ -856,7 +856,7 @@ namespace TraceEventTests
         public void MinorVersionIncrementsAreSupported()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
-            writer.WriteHeaders(new Dictionary<string, string>(), majorVersion:6, minorVersion:25);
+            writer.WriteHeaders(new Dictionary<string, string>(), majorVersion: 6, minorVersion: 25);
             writer.WriteEndBlock();
             MemoryStream stream = new MemoryStream(writer.ToArray());
             EventPipeEventSource source = new EventPipeEventSource(stream);
@@ -934,7 +934,7 @@ namespace TraceEventTests
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
             writer.WriteHeaders();
-            writer.WriteBlock(99, w => 
+            writer.WriteBlock(99, w =>
             {
                 w.Write((int)22);
             });
@@ -964,7 +964,7 @@ namespace TraceEventTests
             });
             writer.WriteEventBlock(w =>
             {
-                w.WriteEventBlob(1, 999, 1, new byte[] { 12, 0, 1, 0, 0, 0});
+                w.WriteEventBlob(1, 999, 1, new byte[] { 12, 0, 1, 0, 0, 0 });
                 w.WriteEventBlob(2, 999, 2, new byte[0]);
                 w.WriteEventBlob(3, 999, 3, new byte[0]);
             });
@@ -977,7 +977,7 @@ namespace TraceEventTests
                 eventCount++;
                 Assert.Equal($"TestEvent{eventCount}", e.EventName);
                 Assert.Equal("TestProvider", e.ProviderName);
-                if(eventCount == 1)
+                if (eventCount == 1)
                 {
                     Assert.Equal(2, e.PayloadNames.Length);
                     Assert.Equal("Param1", e.PayloadNames[0]);
@@ -989,7 +989,7 @@ namespace TraceEventTests
             source.Process();
             Assert.Equal(3, eventCount);
         }
-    
+
 
         [Fact]
         public void ParseV6MetadataArrayParam()
@@ -1172,7 +1172,7 @@ namespace TraceEventTests
                                           new MetadataParameter("IntParam", MetadataTypeCode.Int32)));
             writer.WriteThreadBlock(w =>
             {
-                w.WriteThreadEntry(999, threadId:15, processId:10);
+                w.WriteThreadEntry(999, threadId: 15, processId: 10);
             });
             writer.WriteEventBlock(w =>
             {
@@ -1202,13 +1202,13 @@ namespace TraceEventTests
                 Assert.Equal("String1", e.PayloadNames[0]);
                 Assert.Equal("String2", e.PayloadNames[1]);
                 Assert.Equal("IntParam", e.PayloadNames[2]);
-                if(eventCount == 1)
+                if (eventCount == 1)
                 {
                     Assert.Equal("Howdy", e.PayloadValue(0));
                     Assert.Equal("Yuck", e.PayloadValue(1));
                     Assert.Equal(12, e.PayloadValue(2));
                 }
-                else if(eventCount == 2)
+                else if (eventCount == 2)
                 {
                     Assert.Equal("", e.PayloadValue(0));
                     Assert.Equal("", e.PayloadValue(1));
@@ -1344,7 +1344,7 @@ namespace TraceEventTests
             writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
             writer.WriteEventBlock(w =>
             {
-                w.WriteEventBlob(1, 999, 1, p => {});
+                w.WriteEventBlob(1, 999, 1, p => { });
             });
             writer.WriteEndBlock();
             MemoryStream stream = new MemoryStream(writer.ToArray());
@@ -1436,8 +1436,8 @@ namespace TraceEventTests
             writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
             writer.WriteThreadBlock(w =>
             {
-                w.WriteThreadEntry(998, threadId:5, processId:7);
-                w.WriteThreadEntry(999, threadId:12, processId:84);
+                w.WriteThreadEntry(998, threadId: 5, processId: 7);
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
             });
             writer.WriteEventBlock(w =>
             {
@@ -1457,7 +1457,7 @@ namespace TraceEventTests
             source.Dynamic.All += e =>
             {
                 eventCount++;
-                if(eventCount == 2)
+                if (eventCount == 2)
                 {
                     Assert.Equal(5, e.ThreadID);
                     Assert.Equal(7, e.ProcessID);
@@ -1525,7 +1525,7 @@ namespace TraceEventTests
             source.Dynamic.All += e =>
             {
                 eventCount++;
-                switch(eventCount)
+                switch (eventCount)
                 {
                     case 1:
                     case 3:
@@ -1717,7 +1717,7 @@ namespace TraceEventTests
             source.Process();
             Assert.Equal(6, eventCount);
         }
-    
+
 
         [Fact]
         public void ParseV6CompressedEventHeaders()
@@ -1813,6 +1813,110 @@ namespace TraceEventTests
             };
             source.Process();
             Assert.Equal(7, eventCount);
+        }
+
+        [Fact]
+        public void V6SequencePointDoesNotFlushThreadsByDefault()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
+            });
+            writer.WriteSequencePointBlock(0, resetThreadIndicies: false);
+            writer.WriteEventBlock(true, w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p => { });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal("TestEvent1", e.EventName);
+                Assert.Equal(12, e.ThreadID);
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact]
+        public void V6RedefinedThreadIndexThrowsFormatException()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
+            });
+            writer.WriteSequencePointBlock(0, resetThreadIndicies: false);
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 15, processId: 84);
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+
+            Assert.Throws<FormatException>(() => source.Process());
+        }
+
+        [Fact]
+        public void V6SequencePointCanFlushThreadsOnDemand()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
+            });
+            writer.WriteSequencePointBlock(0, resetThreadIndicies: true);
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 15, processId: 84);
+            });
+            writer.WriteEventBlock(true, w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p => { });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal("TestEvent1", e.EventName);
+                Assert.Equal(15, e.ThreadID);
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact]
+        public void V6SequencePointDetectsDroppedEvents()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
+            });
+            writer.WriteSequencePointBlock(0, resetThreadIndicies: true, new V6ThreadSequencePoint(999, 5));
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            source.Process();
+            Assert.Equal(5, source.EventsLost);
         }
     }
 
@@ -2032,6 +2136,17 @@ namespace TraceEventTests
         }
     }
 
+    public struct V6ThreadSequencePoint
+    {
+        public V6ThreadSequencePoint(ulong threadIndex, uint sequenceNumber)
+        {
+            ThreadIndex = threadIndex;
+            SequenceNumber = sequenceNumber;
+        }
+        public ulong ThreadIndex;
+        public uint SequenceNumber;
+    }
+
     class EventPipeWriterV6 : EventPipeWriter
     {
         public override void WriteHeaders() => WriteHeaders(null, 6, 0);
@@ -2076,6 +2191,21 @@ namespace TraceEventTests
         public void WriteRemoveThreadBlock(Action<BinaryWriter> writeThreadEntries)
         {
             _writer.WriteRemoveThreadBlock(writeThreadEntries);
+        }
+
+        public void WriteSequencePointBlock(long timestamp, bool resetThreadIndicies, params V6ThreadSequencePoint[] sequencePoints)
+        {
+            WriteBlock(4 /* BlockKind.SequencePoint */, w =>
+            {
+                w.Write(timestamp);
+                w.Write((int)(resetThreadIndicies ? 1 : 0));
+                w.Write(sequencePoints.Length);
+                foreach (var sequencePoint in sequencePoints)
+                {
+                    w.WriteVarUInt(sequencePoint.ThreadIndex);
+                    w.WriteVarUInt(sequencePoint.SequenceNumber);
+                }
+            });
         }
 
         public void WriteLabelListBlock(int firstIndex, int count, Action<BinaryWriter> writeLabelListEntries)

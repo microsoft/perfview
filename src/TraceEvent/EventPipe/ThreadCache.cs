@@ -116,6 +116,19 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
         public void RemoveThread(long threadIndex) => _threads.Remove(threadIndex);
 
+        public void Flush()
+        {
+
+#if DEBUG
+            // we should only be flushing after all events have been processed
+            foreach (var thread in _threads.Values)
+            {
+                Debug.Assert(thread.Events.Count == 0);
+            }
+#endif
+            _threads.Clear();
+        }
+
         bool _isFormatV6OrGreater;
         int _processId;
         Dictionary<long, EventPipeThread> _threads = new Dictionary<long, EventPipeThread>();

@@ -364,17 +364,20 @@ A sequence point is used as a stream checkpoint and serves several purposes.
 
 1. It demarcates time with a TimeStamp. All the events in the stream which occurred prior to this TimeStamp are located before this sequence point in file order. Likewise all events which happened after this timestamp are located afterwards. The TimeStamps on successive Sequence points always increase so if you are interested in an event that happened at a particular point in time you can search the stream to find SequencePoints that occurred beforehand/afterwards and be assured the event will be in that region of the file.
 
-2. It contains a list of every thread that could potentially emit an event at that point in time and a lower bound on the last event sequence number that thread attempted to log. This can be used to detect dropped events. See the section on Sequence numbering for more info.
+2. It contains a list of threads with lower bounds on the last event sequence number that thread attempted to log. This can be used to detect dropped events. There is no requirement for all (or any) threads to be in this list. A writer might omit them if it doesn't care about detecting dropped events or it knows there are no dropped events to detect. See the section on Sequence numbering for more info.
 
-3. The sequence point serves as a barrier for stack and label list references. Events are only allowed to refer to a stack id or label list id if there is no sequence point in between the EventBlock and the StackBlock/LabelListBlock in file order. This simplifies cache management by ensuring only a bounded region of stack and label list blocks need to be kept in memory to resolve references.
+3. The sequence point serves as a barrier for stack references, label list references, and optionally thread references. Events are only allowed to make references if there is no sequence point in between the EventBlock and the StackBlock/LabelListBlock/ThreadBlock in file order. This simplifies cache management by ensuring only a bounded region of blocks need to be kept in memory to resolve references.
 
 A SequencePointBlock payload is encoded:
 
 - TimeStamp uint64
+- Flags - uint32
 - ThreadCount - uint32
 - A sequence of ThreadCount threads, each of which is encoded:
-  - ThreadIndex - uint64
-  - SequenceNumber - uint32
+  - ThreadIndex - varuint64
+  - SequenceNumber - varuint32
+
+If Flags & 1 == 1 then the sequence point also flushes the thread cache. Logically the flush occurs after doing any thread sequence number checks so the reader can still detect dropped events.
 
 ## EndOfStreamBlock
 
@@ -511,7 +514,8 @@ Up to V5 the format was always designed to trace a single process only. Now we'd
 
 1. Added new blocks ThreadBlock and RemoveThreadBlock
 2. Use ThreadIndex (a reference into the ThreadBlock) in EventBlob headers and SequencePoint blocks instead of ThreadIds
-3. The TraceBlock PointerSize field now represents the machine pointer size for traces that may contain more than one process. All stack block IPs should use this pointer size even if they need to be zero-extended.
+3. The SequencePointBlock now includes a flags field to indicate whether the reader's thread cache should also be reset and the thread sequence point list was shifted to variable size integer encoding.
+4. The TraceBlock PointerSize field now represents the machine pointer size for traces that may contain more than one process. All stack block IPs should use this pointer size even if they need to be zero-extended.
 
 #### New TraceBlock Metadata
 

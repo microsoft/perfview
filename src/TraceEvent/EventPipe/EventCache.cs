@@ -85,38 +85,44 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             thread.LastCachedEventTimestamp = timestamp;
         }
 
-        public unsafe void ProcessSequencePointBlock(byte[] sequencePointBytes)
+        public void ProcessSequencePointBlockV5OrLess(byte[] sequencePointBytes, long streamOffset)
         {
-            const int SizeOfTimestampAndThreadCount = 12;
-            const int SizeOfThreadIdAndSequenceNumber = 12;
-            if(sequencePointBytes.Length < SizeOfTimestampAndThreadCount)
+            SpanReader reader = new SpanReader(sequencePointBytes, streamOffset);
+            long timestamp = (long)reader.ReadUInt64();
+            int threadCount = (int)reader.ReadUInt32();
+            Flush(timestamp);
+            TrimEventsAfterSequencePoint();
+            for (int i = 0; i < threadCount; i++)
             {
-                Debug.Assert(false, "Bad sequence point block length");
-                return;
-            }
-            long timestamp = BitConverter.ToInt64(sequencePointBytes, 0);
-            int threadCount = BitConverter.ToInt32(sequencePointBytes, 8);
-            if(sequencePointBytes.Length < SizeOfTimestampAndThreadCount + threadCount*SizeOfThreadIdAndSequenceNumber)
-            {
-                Debug.Assert(false, "Bad sequence point block length");
-                return;
-            }
-            SortAndDispatch(timestamp);
-            foreach(EventPipeThread thread in _threads.Values)
-            {
-                Debug.Assert(thread.Events.Count == 0, "There shouldn't be any pending events after a sequence point");
-                thread.Events.Clear();
-                thread.Events.TrimExcess();
-            }
-            CheckForPendingThreadRemoval();
-
-            int cursor = SizeOfTimestampAndThreadCount;
-            for(int i = 0; i < threadCount; i++)
-            {
-                long captureThreadId = BitConverter.ToInt64(sequencePointBytes, cursor);
-                int sequenceNumber = BitConverter.ToInt32(sequencePointBytes, cursor + 8);
+                long captureThreadId = (long)reader.ReadUInt64();
+                int sequenceNumber = (int)reader.ReadUInt32();
                 CheckpointThread(captureThreadId, sequenceNumber);
-                cursor += SizeOfThreadIdAndSequenceNumber;
+            }
+        }
+
+        enum SequencePointFlags : uint
+        {
+            FlushThreads = 1
+        }
+
+        public void ProcessSequencePointBlockV6OrGreater(byte[] sequencePointBytes, long streamOffset)
+        {
+            SpanReader reader = new SpanReader(sequencePointBytes, streamOffset);
+            long timestamp = (long)reader.ReadUInt64();
+            uint flags = reader.ReadUInt32();
+            int threadCount = (int)reader.ReadUInt32();
+            Flush(timestamp);
+            TrimEventsAfterSequencePoint();
+            for (int i = 0; i < threadCount; i++)
+            {
+                long captureThreadIndex = (long)reader.ReadVarUInt64();
+                int sequenceNumber = (int)reader.ReadVarUInt32();
+                CheckpointThread(captureThreadIndex, sequenceNumber);
+            }
+
+            if((flags & (uint)SequencePointFlags.FlushThreads) != 0)
+            {
+                _threads.Flush();
             }
         }
 
@@ -124,10 +130,22 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         /// After all events have been parsed we could have some straglers that weren't
         /// earlier than any sorted event. Sort and dispatch those now.
         /// </summary>
-        public void Flush()
+        public void Flush() => Flush(long.MaxValue);
+
+        private void Flush(long timestamp)
         {
-            SortAndDispatch(long.MaxValue);
+            SortAndDispatch(timestamp);
             CheckForPendingThreadRemoval();
+        }
+
+        private void TrimEventsAfterSequencePoint()
+        {
+            foreach (EventPipeThread thread in _threads.Values)
+            {
+                Debug.Assert(thread.Events.Count == 0, "There shouldn't be any pending events after a sequence point");
+                thread.Events.Clear();
+                thread.Events.TrimExcess();
+            }
         }
 
         private void CheckForPendingThreadRemoval()
@@ -213,7 +231,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             // point implies the last sequenceNumber was zero then the thread was recycled.
             if (_source.FileFormatVersionNumber >= 6 || sequenceNumber != 0)
             {
-                int droppedEvents = unchecked(sequenceNumber - expectedSequenceNumber);
+                int droppedEvents = unchecked(expectedSequenceNumber - sequenceNumber);
                 if (droppedEvents < 0)
                 {
                     droppedEvents = int.MaxValue;

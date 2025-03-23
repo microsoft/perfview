@@ -307,9 +307,16 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        internal void ReadSequencePointBlock(byte[] blockBytes, long startBlockStreamOffset)
+        internal void ReadSequencePointBlockV5OrLess(byte[] blockBytes, long startBlockStreamOffset)
         {
-            EventCache.ProcessSequencePointBlock(blockBytes);
+            EventCache.ProcessSequencePointBlockV5OrLess(blockBytes, startBlockStreamOffset);
+            StackCache.Flush();
+            LabelListCache.Flush();
+        }
+
+        internal void ReadSequencePointBlockV6OrGreater(byte[] blockBytes, long startBlockStreamOffset)
+        {
+            EventCache.ProcessSequencePointBlockV6OrGreater(blockBytes, startBlockStreamOffset);
             StackCache.Flush();
             LabelListCache.Flush();
         }
@@ -721,7 +728,7 @@ internal interface IBlockParser : IDisposable
                         _source.ReadMetadataBlockV6OrGreater(blockBytes, blockStartOffset);
                         break;
                     case BlockKind.SequencePoint:
-                        _source.ReadSequencePointBlock(blockBytes, blockStartOffset);
+                        _source.ReadSequencePointBlockV6OrGreater(blockBytes, blockStartOffset);
                         break;
                     case BlockKind.StackBlock:
                         _source.ReadStackBlock(blockBytes, blockStartOffset);
@@ -990,7 +997,7 @@ internal interface IBlockParser : IDisposable
 
             protected override void ReadBlockContents(byte[] blockBytes, long blockStartStreamOffset)
             {
-                _source.ReadSequencePointBlock(blockBytes, blockStartStreamOffset);
+                _source.ReadSequencePointBlockV5OrLess(blockBytes, blockStartStreamOffset);
             }
         }
 
