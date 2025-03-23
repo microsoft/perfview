@@ -539,9 +539,9 @@ namespace TraceEventTests
 
             // Serialize an EventPipe stream containing the parameterless metadata for
             // DiagnosticSourceEventSource events...
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV5();
-            writer.WriteMetadataBlockV5OrLess(
+            EventPipeWriterV5 writer = new EventPipeWriterV5();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(
                 new EventMetadata(1, "Microsoft-Diagnostics-DiagnosticSource", "Event", 3),
                 new EventMetadata(2, "Microsoft-Diagnostics-DiagnosticSource", "Activity1Start", 4),
                 new EventMetadata(3, "Microsoft-Diagnostics-DiagnosticSource", "Activity1Stop", 5),
@@ -566,7 +566,7 @@ namespace TraceEventTests
             byte[] payloadBytes = payload.ToArray();
 
             int sequenceNumber = 1;
-            writer.WriteEventBlockV5OrLess(
+            writer.WriteEventBlock(
                 w =>
                 {
                     // write one of each of the 7 well-known DiagnosticSourceEventSource events.
@@ -661,9 +661,9 @@ namespace TraceEventTests
         [Fact]
         public void SkipExtraBlockHeaderSpaceV5()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV5();
-            writer.WriteBlockV5OrLess("MetadataBlock", w =>
+            EventPipeWriterV5 writer = new EventPipeWriterV5();
+            writer.WriteHeaders();
+            writer.WriteBlock("MetadataBlock", w =>
             {
                 // header
                 w.Write((short)28); // header size
@@ -675,7 +675,7 @@ namespace TraceEventTests
                 w.WriteMetadataEventBlobV5OrLess(new EventMetadata(1, "TestProvider", "TestEvent", 15));
                 w.WriteMetadataEventBlobV5OrLess(new EventMetadata(2, "TestProvider", "TestEvent2", 16));
             });
-            writer.WriteBlockV5OrLess("EventBlock", w =>
+            writer.WriteBlock("EventBlock", w =>
             {
                 // header
                 w.Write((short)28); // header size
@@ -705,9 +705,9 @@ namespace TraceEventTests
         [Fact]
         public void SkipExtraMetadataTagSpaceV5()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV5();
-            writer.WriteMetadataBlockV5OrLess( w =>
+            EventPipeWriterV5 writer = new EventPipeWriterV5();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock( w =>
             {
                 w.WriteMetadataEventBlobV5OrLess(payloadWriter =>
                 {
@@ -740,7 +740,7 @@ namespace TraceEventTests
                     payloadWriter.WriteV5MetadataParameterList();
                 });
             });
-            writer.WriteEventBlockV5OrLess(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlobV4Or5(1, 999, 1, new byte[0]);
                 w.WriteEventBlobV4Or5(2, 999, 2, new byte[0]);
@@ -765,9 +765,9 @@ namespace TraceEventTests
         [Fact]
         public void SkipExtraMetadataParameterSpaceV5()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV5();
-            writer.WriteMetadataBlockV5OrLess(w =>
+            EventPipeWriterV5 writer = new EventPipeWriterV5();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(w =>
             {
                 w.WriteMetadataEventBlobV5OrLess(payloadWriter =>
                 {
@@ -788,7 +788,7 @@ namespace TraceEventTests
                     });
                 });
             });
-            writer.WriteEventBlockV5OrLess(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlobV4Or5(1, 999, 1, new byte[] { 12, 0, 0, 0, 17, 0});
             });
@@ -815,8 +815,8 @@ namespace TraceEventTests
         [Fact]
         public void ParseMinimalTraceV6()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
             writer.WriteEndBlock();
             MemoryStream stream = new MemoryStream(writer.ToArray());
 
@@ -830,8 +830,8 @@ namespace TraceEventTests
         [Fact]
         public void ThrowsExceptionOnUnsupportedMajorVersion()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater(new Dictionary<string, string>(), 7, 0);
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders(new Dictionary<string, string>(), 7, 0);
             MemoryStream stream = new MemoryStream(writer.ToArray());
 
             // Confirm we can parse the event payloads even though the parameters were not described in
@@ -855,8 +855,8 @@ namespace TraceEventTests
         [Fact]
         public void MinorVersionIncrementsAreSupported()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater(new Dictionary<string, string>(), majorVersion:6, minorVersion:25);
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders(new Dictionary<string, string>(), majorVersion:6, minorVersion:25);
             writer.WriteEndBlock();
             MemoryStream stream = new MemoryStream(writer.ToArray());
             EventPipeEventSource source = new EventPipeEventSource(stream);
@@ -867,8 +867,8 @@ namespace TraceEventTests
         [Fact]
         public void ParseV6TraceBlockStandardFields()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
             writer.WriteEndBlock();
             MemoryStream stream = new MemoryStream(writer.ToArray());
             EventPipeEventSource source = new EventPipeEventSource(stream);
@@ -884,8 +884,8 @@ namespace TraceEventTests
         [Fact]
         public void ParseV6TraceBlockKeyValuePairs()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater(new Dictionary<string, string>()
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders(new Dictionary<string, string>()
             {
                 { "ProcessId", "1234" },
                 { "HardwareThreadCount", "16" },
@@ -932,9 +932,9 @@ namespace TraceEventTests
         [Fact]
         public void V6UnrecognizedBlockTypesAreSkipped()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteBlockV6(99, w => 
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteBlock(99, w => 
             {
                 w.Write((int)22);
             });
@@ -951,18 +951,18 @@ namespace TraceEventTests
         [Fact]
         public void ParseV6Metadata()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
-                                                     new MetadataParameter("Param1", MetadataTypeCode.Int16),
-                                                     new MetadataParameter("Param2", MetadataTypeCode.Boolean)),
-                                                 new EventMetadata(2, "TestProvider", "TestEvent2", 16),
-                                                 new EventMetadata(3, "TestProvider", "TestEvent3", 17));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                          new MetadataParameter("Param1", MetadataTypeCode.Int16),
+                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean)),
+                                      new EventMetadata(2, "TestProvider", "TestEvent2", 16),
+                                      new EventMetadata(3, "TestProvider", "TestEvent3", 17));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, 0, 0);
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 999, 1, new byte[] { 12, 0, 1, 0, 0, 0});
                 w.WriteEventBlob(2, 999, 2, new byte[0]);
@@ -994,16 +994,16 @@ namespace TraceEventTests
         [Fact]
         public void ParseV6MetadataArrayParam()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
-                                                     new MetadataParameter("Param1", new ArrayMetadataType(new MetadataType(MetadataTypeCode.Int16))),
-                                                     new MetadataParameter("Param2", MetadataTypeCode.Boolean)));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                          new MetadataParameter("Param1", new ArrayMetadataType(new MetadataType(MetadataTypeCode.Int16))),
+                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean)));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, 0, 0);
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 999, 1, new byte[] { 2, 0, 12, 0, 19, 0, 1, 0, 0, 0 });
             });
@@ -1032,18 +1032,18 @@ namespace TraceEventTests
         [Fact]
         public void ParseV6MetadataObjectParam()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
-                                                     new MetadataParameter("Param1", new ObjectMetadataType(
-                                                         new MetadataParameter("NestedParam1", MetadataTypeCode.Int32),
-                                                         new MetadataParameter("NestedParam2", MetadataTypeCode.Byte))),
-                                                     new MetadataParameter("Param2", MetadataTypeCode.Boolean)));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                          new MetadataParameter("Param1", new ObjectMetadataType(
+                                              new MetadataParameter("NestedParam1", MetadataTypeCode.Int32),
+                                              new MetadataParameter("NestedParam2", MetadataTypeCode.Byte))),
+                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean)));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, 0, 0);
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 999, 1, new byte[] { 3, 0, 0, 0, 19, 1, 0, 0, 0 });
             });
@@ -1073,9 +1073,9 @@ namespace TraceEventTests
         public void ParseV6OptionalMetadata()
         {
             Guid testGuid = Guid.Parse("CA0A7B93-622D-42C9-AFF8-7A09FDA2E30C");
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15)
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15)
             {
                 OpCode = 20,
                 Keywords = 0x00ff00ff00ff00ff,
@@ -1113,9 +1113,9 @@ namespace TraceEventTests
         public void SkipExtraMetadataSpaceV6()
         {
             Guid testGuid = Guid.Parse("CA0A7B93-622D-42C9-AFF8-7A09FDA2E30C");
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteBlockV6(3 /* Metadata */, blockWriter =>
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteBlock(3 /* Metadata */, blockWriter =>
             {
                 // Add a metadata block header with some extra bytes
                 blockWriter.Write((UInt16)17);
@@ -1164,17 +1164,17 @@ namespace TraceEventTests
         [Fact]
         public void ParseV6LengthPrefixedStrings()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
-                                                     new MetadataParameter("String1", MetadataTypeCode.LengthPrefixedUTF16String),
-                                                     new MetadataParameter("String2", MetadataTypeCode.LengthPrefixedUTF8String),
-                                                     new MetadataParameter("IntParam", MetadataTypeCode.Int32)));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                          new MetadataParameter("String1", MetadataTypeCode.LengthPrefixedUTF16String),
+                                          new MetadataParameter("String2", MetadataTypeCode.LengthPrefixedUTF8String),
+                                          new MetadataParameter("IntParam", MetadataTypeCode.Int32)));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, threadId:15, processId:10);
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 999, 1, p =>
                 {
@@ -1223,19 +1223,19 @@ namespace TraceEventTests
         [Fact]
         public void ParseV6VarInts()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
-                                                     new MetadataParameter("VarInt1", MetadataTypeCode.VarInt),
-                                                     new MetadataParameter("VarInt2", MetadataTypeCode.VarInt)),
-                                                 new EventMetadata(2, "TestProvider", "TestEvent2", 16,
-                                                     new MetadataParameter("VarUInt1", MetadataTypeCode.VarUInt),
-                                                     new MetadataParameter("VarUInt2", MetadataTypeCode.VarUInt)));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                          new MetadataParameter("VarInt1", MetadataTypeCode.VarInt),
+                                          new MetadataParameter("VarInt2", MetadataTypeCode.VarInt)),
+                                      new EventMetadata(2, "TestProvider", "TestEvent2", 16,
+                                          new MetadataParameter("VarUInt1", MetadataTypeCode.VarUInt),
+                                          new MetadataParameter("VarUInt2", MetadataTypeCode.VarUInt)));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, 0, 0);
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 999, 1, p =>
                 {
@@ -1295,20 +1295,20 @@ namespace TraceEventTests
         [Fact]
         public void ParseV6NestedVarIntsAndStrings()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
-                                                     new MetadataParameter("VarInt", MetadataTypeCode.VarInt),
-                                                     new MetadataParameter("Struct", new ObjectMetadataType(
-                                                         new MetadataParameter("UTF8String", MetadataTypeCode.LengthPrefixedUTF8String),
-                                                         new MetadataParameter("VarInt", MetadataTypeCode.VarInt),
-                                                         new MetadataParameter("UTF16String", MetadataTypeCode.LengthPrefixedUTF16String),
-                                                         new MetadataParameter("VarUInt", MetadataTypeCode.VarUInt)))));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                          new MetadataParameter("VarInt", MetadataTypeCode.VarInt),
+                                          new MetadataParameter("Struct", new ObjectMetadataType(
+                                              new MetadataParameter("UTF8String", MetadataTypeCode.LengthPrefixedUTF8String),
+                                              new MetadataParameter("VarInt", MetadataTypeCode.VarInt),
+                                              new MetadataParameter("UTF16String", MetadataTypeCode.LengthPrefixedUTF16String),
+                                              new MetadataParameter("VarUInt", MetadataTypeCode.VarUInt)))));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, 0, 0);
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 999, 1, p =>
                 {
@@ -1339,10 +1339,10 @@ namespace TraceEventTests
         [Fact]
         public void V6MissingThreadBlockThrowsException()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
-            writer.WriteEventBlockV6OrGreater(w =>
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 999, 1, p => {});
             });
@@ -1355,14 +1355,14 @@ namespace TraceEventTests
         [Fact]
         public void V6MismatchedRemoveThreadBlockThrowsException()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, 0, 0);
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 999, 1, p => { });
             });
@@ -1379,9 +1379,9 @@ namespace TraceEventTests
         [Fact]
         public void V6RefAfterRemoveThreadBlockThrowsException()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, 0, 0);
@@ -1390,7 +1390,7 @@ namespace TraceEventTests
             {
                 w.WriteRemoveThreadEntry(999, 0);
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 999, 1, p => { });
             });
@@ -1403,14 +1403,14 @@ namespace TraceEventTests
         [Fact]
         public void V6DoubleRemoveThreadBlockThrowsException()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, 0, 0);
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 999, 1, p => { });
             });
@@ -1431,15 +1431,15 @@ namespace TraceEventTests
         [Fact]
         public void V6ParseSimpleThreadBlock()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(998, threadId:5, processId:7);
                 w.WriteThreadEntry(999, threadId:12, processId:84);
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 999, 1, p => { });
                 w.WriteEventBlob(1, 998, 1, p => { });
@@ -1475,15 +1475,15 @@ namespace TraceEventTests
         [Fact]
         public void V6ParseMultipleThreadBlocks()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(998, threadId: 5, processId: 7);
                 w.WriteThreadEntry(999, threadId: 12, processId: 84);
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 999, 1, p => { });
                 w.WriteEventBlob(1, 998, 1, p => { });
@@ -1493,7 +1493,7 @@ namespace TraceEventTests
             {
                 w.WriteThreadEntry(1000, threadId: 22, processId: 7);
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 1000, 1, p => { });
                 w.WriteEventBlob(1, 1000, 2, p => { });
@@ -1507,7 +1507,7 @@ namespace TraceEventTests
             {
                 w.WriteThreadEntry(1001, threadId: 79, processId: 7);
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 1000, 3, p => { });
                 w.WriteEventBlob(1, 1001, 1, p => { });
@@ -1564,9 +1564,9 @@ namespace TraceEventTests
         [Fact]
         public void V6ParseOptionalThreadData()
         {
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, t =>
@@ -1578,7 +1578,7 @@ namespace TraceEventTests
                     t.WriteThreadEntryKeyValue("Key2", "Value2");
                 });
             });
-            writer.WriteEventBlockV6OrGreater(w =>
+            writer.WriteEventBlock(w =>
             {
                 w.WriteEventBlob(1, 999, 1, p => { });
             });
@@ -1614,9 +1614,9 @@ namespace TraceEventTests
             Guid traceId = new Guid("7C0D2E78-70A5-4233-A0AD-ACCFD3E1EF6E");
             ulong spanId = 0x123456789abcdef0;
 
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, threadId: 12, processId: 84);
@@ -1636,7 +1636,7 @@ namespace TraceEventTests
                 w.WriteV6LabelListTraceIdLabel(traceId.ToByteArray());
                 w.WriteV6LabelListSpanIdLabel(spanId, isLastLabel: true);
             });
-            writer.WriteEventBlockV6OrGreater(useCompressedEventHeaders, w =>
+            writer.WriteEventBlock(useCompressedEventHeaders, w =>
             {
                 w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 1, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 7 }, p => { });
                 w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 2, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 8 }, p => { });
@@ -1726,10 +1726,10 @@ namespace TraceEventTests
             Guid activityId1 = new Guid("26F353D1-C0C8-45C1-A0CF-7C29EAE6DC7F");
             Guid activityId2 = new Guid("0BBEAA1B-35B4-4FF3-BA34-283EBE589A9A");
 
-            EventPipeWriter writer = new EventPipeWriter();
-            writer.WriteHeadersV6OrGreater();
-            writer.WriteMetadataBlockV6OrGreater(new EventMetadata(1, "TestProvider", "TestEvent1", 15),
-                                                 new EventMetadata(2, "TestProvider", "TestEvent2", 16));
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15),
+                                      new EventMetadata(2, "TestProvider", "TestEvent2", 16));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, threadId: 12, processId: 84);
@@ -1741,7 +1741,7 @@ namespace TraceEventTests
                 w.WriteV6LabelListActivityIdLabel(activityId1, isLastLabel: true);
                 w.WriteV6LabelListActivityIdLabel(activityId2, isLastLabel: true);
             });
-            writer.WriteEventBlockV6OrGreater(true, w =>
+            writer.WriteEventBlock(true, w =>
             {
                 w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 1, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 100, Timestamp = 10_000, IsSorted = false }, p => { });
                 w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 2, ThreadIndexOrId = 1000, CaptureThreadIndexOrId = 999, LabelListId = 99, Timestamp = 10_500, IsSorted = false }, p => { });
@@ -1981,9 +1981,9 @@ namespace TraceEventTests
         }
     }
 
-    class EventPipeWriter
+    abstract class EventPipeWriter
     {
-        BinaryWriter _writer;
+        protected BinaryWriter _writer;
 
         public EventPipeWriter()
         {
@@ -1995,14 +1995,48 @@ namespace TraceEventTests
             return (_writer.BaseStream as MemoryStream).ToArray();
         }
 
-        public void WriteHeadersV5()
+        abstract public void WriteHeaders();
+        abstract public void WriteMetadataBlock(params EventMetadata[] metadataBlobs);
+    }
+
+    class EventPipeWriterV5 : EventPipeWriter
+    {
+        public override void WriteHeaders()
         {
             _writer.WriteNetTraceHeaderV5();
             _writer.WriteFastSerializationHeader();
             _writer.WriteTraceObjectV5();
         }
+        public override void WriteMetadataBlock(params EventMetadata[] metadataBlobs)
+        {
+            _writer.WriteMetadataBlockV5OrLess(metadataBlobs);
+        }
+        public void WriteMetadataBlock(Action<BinaryWriter> writeMetadataEventBlobs)
+        {
+            _writer.WriteMetadataBlockV5OrLess(writeMetadataEventBlobs);
+        }
 
-        public void WriteHeadersV6OrGreater(Dictionary<string,string> keyValues = null, int majorVersion = 6, int minorVersion = 0)
+        public void WriteEventBlock(Action<BinaryWriter> writeEventBlobs)
+        {
+            _writer.WriteEventBlockV5OrLess(writeEventBlobs);
+        }
+
+        public void WriteEndObject()
+        {
+            _writer.WriteEndObject();
+        }
+
+        public void WriteBlock(string name, Action<BinaryWriter> writeBlockData, long previousBytesWritten = 0)
+        {
+            _writer.WriteBlockV5OrLess(name, writeBlockData, previousBytesWritten);
+        }
+    }
+
+    class EventPipeWriterV6 : EventPipeWriter
+    {
+        public override void WriteHeaders() => WriteHeaders(null, 6, 0);
+
+        public void WriteHeaders(Dictionary<string,string> keyValues, int majorVersion = 6, int minorVersion = 0)
         {
             if(keyValues == null)
             {
@@ -2012,36 +2046,21 @@ namespace TraceEventTests
             _writer.WriteTraceBlockV6OrGreater(keyValues);
         }
 
-        public void WriteMetadataBlockV6OrGreater(params EventMetadata[] metadataBlobs)
+        public override void WriteMetadataBlock(params EventMetadata[] metadataBlobs)
         {
             _writer.WriteMetadataBlockV6OrGreater(metadataBlobs);
         }
 
-        public void WriteMetadataBlockV6OrGreater(Action<BinaryWriter> writeMetadataBlobs)
+        public void WriteMetadataBlock(Action<BinaryWriter> writeMetadataBlobs)
         {
             _writer.WriteMetadataBlockV6OrGreater(writeMetadataBlobs);
         }
 
-        public void WriteMetadataBlockV5OrLess(params EventMetadata[] metadataBlobs)
-        {
-            _writer.WriteMetadataBlockV5OrLess(metadataBlobs);
-        }
+        public void WriteEventBlock(Action<V6EventBlockWriter> writeEventBlobs) => WriteEventBlock(false, writeEventBlobs);
 
-        public void WriteMetadataBlockV5OrLess(Action<BinaryWriter> writeMetadataEventBlobs)
+        public void WriteEventBlock(bool useCompressedHeader, Action<V6EventBlockWriter> writeEventBlobs)
         {
-            _writer.WriteMetadataBlockV5OrLess(writeMetadataEventBlobs);
-        }
-
-        public void WriteEventBlockV5OrLess(Action<BinaryWriter> writeEventBlobs)
-        {
-            _writer.WriteEventBlockV5OrLess(writeEventBlobs);
-        }
-
-        public void WriteEventBlockV6OrGreater(Action<V6EventBlockWriter> writeEventBlobs) => WriteEventBlockV6OrGreater(false, writeEventBlobs);
-
-        public void WriteEventBlockV6OrGreater(bool useCompressedHeader, Action<V6EventBlockWriter> writeEventBlobs)
-        {
-            WriteBlockV6(2 /* Event */, w =>
+            WriteBlock(2 /* Event */, w =>
             {
                 V6EventBlockWriter blockWriter = new V6EventBlockWriter(w, useCompressedHeader);
                 blockWriter.WriteHeader();
@@ -2064,26 +2083,12 @@ namespace TraceEventTests
             _writer.WriteV6LabelListBlock(firstIndex, count, writeLabelListEntries);
         }
 
-        public void WriteEndObject()
-        {
-            _writer.WriteEndObject();
-        }
+        public void WriteEndBlock() => WriteBlock(0 /* BLockKind.EndOfStream */, w => { });
 
-        public void WriteEndBlock()
-        {
-            _writer.WriteBlockV6OrGreater(0 /* BLockKind.EndOfStream */, w => { });
-        }
-
-        public void WriteBlockV5OrLess(string name, Action<BinaryWriter> writeBlockData, long previousBytesWritten = 0)
-        {
-            _writer.WriteBlockV5OrLess(name, writeBlockData, previousBytesWritten);
-        }
-
-        public void WriteBlockV6(byte blockKind, Action<BinaryWriter> writePayload)
+        public void WriteBlock(byte blockKind, Action<BinaryWriter> writePayload)
         {
             _writer.WriteBlockV6OrGreater(blockKind, writePayload);
         }
-
     }
 
     public class WriteEventOptions
