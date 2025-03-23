@@ -1236,10 +1236,6 @@ internal interface IBlockParser : IDisposable
                 {
                     header.ThreadIndexOrId = (long)reader.ReadVarUInt64(); ;
                 }
-                else
-                {
-                    header.ThreadIndexOrId = header.CaptureThreadIndexOrId;  // this is a new default value in V6. In V4-V5 ThreadId defaulted to previous ThreadId.
-                }
                 if ((flags & (byte)CompressedHeaderFlags.StackId) != 0)
                 {
                     header.StackId = (int)reader.ReadVarUInt32();

@@ -2870,7 +2870,7 @@ namespace TraceEventTests
             {
                 header |= 0x02;
             }
-            if (options.ThreadIndexOrId != options.CaptureThreadIndexOrId)
+            if (options.ThreadIndexOrId != _lastEventOptions.ThreadIndexOrId)
             {
                 header |= 0x04;
             }

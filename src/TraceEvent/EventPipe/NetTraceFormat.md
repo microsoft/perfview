@@ -205,13 +205,13 @@ Compressed events are encoded with a header:
  - in either case increment SequenceNumber by 1
 - CaptureThreadIndex optional varuint64
   - if Flags & 2 the value is read from the stream
-  - otherwise previous CaptureThreadId
+  - otherwise previous CaptureThreadIndex
 - Processor Number optional varuint32
   - if Flags & 2 the value is read from the stream
   - otherwise previous Processor Number
 - ThreadIndex optional varuint64
   - if Flags & 4 the value is read from the stream
-  - otherwise use the CaptureThreadIndex decoded already in this header
+  - otherwise use the previous ThreadIndex
 - StackId optional varuint32
   - if Flags & 8 the value is read from the stream
   - otherwise previous StackId
@@ -539,7 +539,3 @@ In particular OpenTelemetry has embraced the W3C TraceContext standard for distr
 
 1. Adds a new LabelListBlock to store key-value pairs that can be referenced by index within the EventHeader.
 2. Removes the ActivityId and RelatedActivityId fields from the EventHeader and replaces them with a LabelListIndex field. Activity ids can be stored within the LabelList.
-
-#### Updated EventHeader
-
-As a minor size optimization when using compressed headers, the ThreadIndex field now defaults to have the same value as CaptureThreadIndex when it is absent in the header. In V5 the default value was to use the value of ThreadId from the previous event.
