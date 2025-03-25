@@ -21,6 +21,7 @@ namespace PerfView
             m_grid = new DataGrid();
             m_grid.AutoGenerateColumns = false;
             m_grid.IsReadOnly = true;
+            m_grid.ColumnHeaderStyle = Toolbox.FocusableDataGridColumnHeaderStyle(m_grid.ColumnHeaderStyle);
 
             // Columns
             m_grid.AddColumn("Thread", "ThreadID");

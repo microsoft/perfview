@@ -226,19 +226,19 @@
                 </MenuItem>
             </Menu>
             <Rectangle Grid.Column="1" Grid.ColumnSpan="10" Fill="{DynamicResource ControlDefaultBackground}"/>
-            <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0">
+            <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="StackViewerQuickStart">Stack View Help (F1)</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0">
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="UnderstandingPerfData">Understanding Perf Data</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0">
+            <TextBlock Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="StartingAnAnalysis">Starting an Analysis</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0">
+            <TextBlock Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="StackViewerTroubleshooting">Troubleshooting</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="5" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0">
+            <TextBlock Grid.Column="5" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="StackViewerTips">Tips</Hyperlink>
             </TextBlock>
         </Grid>
@@ -281,7 +281,7 @@
                     </controls:HistoryComboBox.ToolTip>
                 </controls:HistoryComboBox>
                 <TextBlock VerticalAlignment="Center" Margin="10,0,1,0">
-                    <Hyperlink Command="Help" CommandParameter="EndTextBox" KeyboardNavigation.IsTabStop="False">End:</Hyperlink>
+                    <Hyperlink Command="Help" CommandParameter="EndTextBox">End:</Hyperlink>
                 </TextBlock>
                 <controls:HistoryComboBox x:Name="EndTextBox" Width="90" Enter="DoUpdate" AutomationProperties.Name="End Time">
                     <controls:HistoryComboBox.ToolTip>
@@ -324,7 +324,7 @@
                 </StackPanel>
             </StackPanel>
             <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="20,0,1,0">
-                        <Hyperlink Command="Help" CommandParameter="FindTextBox" KeyboardNavigation.IsTabStop="False">Find:</Hyperlink>
+                        <Hyperlink Command="Help" CommandParameter="FindTextBox">Find:</Hyperlink>
             </TextBlock>
             <controls:HistoryComboBox x:Name="FindTextBox" Grid.Column="2" MinWidth="100" Enter="DoFindEnter" AutomationProperties.Name="Find">
                 <controls:HistoryComboBox.ToolTip>
@@ -348,7 +348,7 @@
                 <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
-                    <Hyperlink Command="Help" CommandParameter="GroupPatsTextBox" KeyboardNavigation.IsTabStop="False">GroupPats:</Hyperlink>
+                    <Hyperlink Command="Help" CommandParameter="GroupPatsTextBox">GroupPats:</Hyperlink>
             </TextBlock>
             <controls:HistoryComboBox x:Name="GroupRegExTextBox" Grid.Column="1" MinWidth="80" Enter="DoUpdate" AutomationProperties.Name="Group Patterns">
                 <controls:HistoryComboBox.ToolTip>
@@ -365,7 +365,7 @@
                 </controls:HistoryComboBox.ToolTip>
             </controls:HistoryComboBox>
             <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="5,0,1,0">
-                <Hyperlink Command="Help" CommandParameter="FoldPercentTextBox" KeyboardNavigation.IsTabStop="False">Fold%:</Hyperlink>
+                <Hyperlink Command="Help" CommandParameter="FoldPercentTextBox">Fold%:</Hyperlink>
             </TextBlock>
             <controls:HistoryComboBox x:Name="FoldPercentTextBox" Grid.Column="3" MinWidth="42" Enter="DoUpdate" Margin="0,0,5,0" AutomationProperties.Name="Fold Percent">
                 <controls:HistoryComboBox.ToolTip>
@@ -376,7 +376,7 @@
                 </controls:HistoryComboBox.ToolTip>
             </controls:HistoryComboBox>
             <TextBlock Grid.Column="4" VerticalAlignment="Center" Margin="5,0,1,0">
-                <Hyperlink Command="Help" CommandParameter="FoldPatsTextBox" KeyboardNavigation.IsTabStop="False">FoldPats:</Hyperlink>
+                <Hyperlink Command="Help" CommandParameter="FoldPatsTextBox">FoldPats:</Hyperlink>
             </TextBlock>
             <controls:HistoryComboBox x:Name="FoldRegExTextBox" Grid.Column="5" MinWidth="80" Enter="DoUpdate" AutomationProperties.Name="Fold Patterns">
                 <controls:HistoryComboBox.ToolTip>
@@ -389,7 +389,7 @@
                 </controls:HistoryComboBox.ToolTip>
             </controls:HistoryComboBox>
             <TextBlock Grid.Column="6" VerticalAlignment="Center" Margin="10,0,1,0">
-                <Hyperlink Command="Help" CommandParameter="IncPatsTextBox" KeyboardNavigation.IsTabStop="False">IncPats:</Hyperlink>
+                <Hyperlink Command="Help" CommandParameter="IncPatsTextBox">IncPats:</Hyperlink>
             </TextBlock>
             <controls:HistoryComboBox x:Name="IncludeRegExTextBox" Grid.Column="7"  MinWidth="80" Margin="0,0,5,0" Enter="DoUpdate" AutomationProperties.Name="Include Patterns">
                 <controls:HistoryComboBox.ToolTip>
@@ -403,7 +403,7 @@
                 </controls:HistoryComboBox.ToolTip>
             </controls:HistoryComboBox>
             <TextBlock Grid.Column="8" VerticalAlignment="Center" Margin="10,0,1,0">
-                <Hyperlink Command="Help" CommandParameter="ExcPatsTextBox" KeyboardNavigation.IsTabStop="False">ExcPats:</Hyperlink>
+                <Hyperlink Command="Help" CommandParameter="ExcPatsTextBox">ExcPats:</Hyperlink>
             </TextBlock>
             <controls:HistoryComboBox x:Name="ExcludeRegExTextBox" Grid.Column="9" MinWidth="80" Enter="DoUpdate" AutomationProperties.Name="Exclude Patterns">
                 <controls:HistoryComboBox.ToolTip>
@@ -430,7 +430,7 @@
                 <TabItem Name="ByNameTab">
                     <TabItem.Header>
                         <TextBlock>
-                        By Name <Hyperlink Command="Help" CommandParameter="ByNameView">?</Hyperlink>
+                        By Name <Hyperlink Command="Help" CommandParameter="ByNameView" AutomationProperties.Name="Help for By-Name View">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
                     <src:PerfDataGrid x:Name="ByNameDataGrid" Margin="0,0,20,0" MouseDoubleClick="ByName_MouseDoubleClick"/>
@@ -439,7 +439,7 @@
                 <TabItem Name="CallerCalleeTab" >
                     <TabItem.Header>
                         <TextBlock>
-                        Caller-Callee <Hyperlink Command="Help" CommandParameter="CallerCalleeView">?</Hyperlink>
+                        Caller-Callee <Hyperlink Command="Help" CommandParameter="CallerCalleeView" AutomationProperties.Name="Help for Caller-Callee View">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
                     <!-- TODO FIX NOW The margin is a hack.  I don't know why I need it... -->
@@ -449,7 +449,7 @@
                 <TabItem Name="CallTreeTab">
                     <TabItem.Header>
                         <TextBlock>
-                        CallTree <Hyperlink Command="Help" CommandParameter="CallTreeView">?</Hyperlink>
+                        CallTree <Hyperlink Command="Help" CommandParameter="CallTreeView" AutomationProperties.Name="Help for Call-Tree View">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
                     <src:PerfDataGrid x:Name="CallTreeDataGrid" Margin="0,0,20,0"/>
@@ -458,7 +458,7 @@
                 <TabItem Name="CallersTab">
                     <TabItem.Header>
                         <TextBlock>
-                        Callers <Hyperlink Command="Help" CommandParameter="CallersView">?</Hyperlink>
+                        Callers <Hyperlink Command="Help" CommandParameter="CallersView" AutomationProperties.Name="Help for Callers View">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
                     <Grid>
@@ -474,7 +474,7 @@
                 <TabItem Name="CalleesTab">
                     <TabItem.Header>
                         <TextBlock>
-                        Callees <Hyperlink Command="Help" CommandParameter="CalleesView">?</Hyperlink>
+                        Callees <Hyperlink Command="Help" CommandParameter="CalleesView" AutomationProperties.Name="Help for Callees View">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
                     <Grid>
@@ -490,16 +490,16 @@
                 <TabItem Name="FlameGraphTab" GotFocus="FlameGraphTab_GotFocus">
                     <TabItem.Header>
                         <TextBlock>
-                            Flame Graph <Hyperlink Command="Help" CommandParameter="FlameGraphView">?</Hyperlink>
+                            Flame Graph <Hyperlink Command="Help" CommandParameter="FlameGraphView" AutomationProperties.Name="Help for Flame Graph">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
-                    <src:FlameGraphDrawingCanvas x:Name="FlameGraphCanvas" Background="White" ClipToBounds="True" SizeChanged="FlameGraphCanvas_SizeChanged" CurrentFlameBoxChanged="FlameGraphCanvas_CurrentFlameBoxChanged" />
+                    <src:FlameGraphDrawingCanvas x:Name="FlameGraphCanvas" Background="#EEEEEE" ClipToBounds="True" SizeChanged="FlameGraphCanvas_SizeChanged" CurrentFlameBoxChanged="FlameGraphCanvas_CurrentFlameBoxChanged" AutomationProperties.Name="Flame Graph" />
                 </TabItem>
                 <!-- NotesTab -->
                 <TabItem Name="NotesTab" GotFocus="NotesTab_GotFocus" LostFocus="NotesTab_LostFocus">
                     <TabItem.Header>
                         <TextBlock>
-                        Notes <Hyperlink Command="Help" CommandParameter="NotesView">?</Hyperlink>
+                        Notes <Hyperlink Command="Help" CommandParameter="NotesView" AutomationProperties.Name="Help for Notes">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
                     <TextBox Name="NotesTabBody" AcceptsReturn="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" FontFamily="Courier New" FontSize="11" TextChanged="Notes_TextChanged" AutomationProperties.Name="Notes"/>

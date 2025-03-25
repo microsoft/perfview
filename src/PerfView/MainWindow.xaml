@@ -98,17 +98,17 @@
                 <MenuItem Header="Si_ze">
                     <MenuItem Header="_DirectorySize"  Command="{x:Static src:MainWindow.DirectorySizeCommand}" ToolTip="Computes the disk usage (recursively) for a directory.">
                         <MenuItem.Icon>
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="DirectorySize">?</Hyperlink></TextBlock>
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="DirectorySize" AutomationProperties.Name="Help for Directory Size">?</Hyperlink></TextBlock>
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem Name="ImageSizeMenuItem" Visibility="Collapsed" Header="_ImageSize" Command="{x:Static src:MainWindow.ImageSizeCommand}"  ToolTip="Displays the breakdown of what is in a DLL or EXE by symbol. (needs PDB for DLL or EXE).">
                         <MenuItem.Icon>
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="ImageSize">?</Hyperlink></TextBlock>
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="ImageSize" AutomationProperties.Name="Help for Image Size">?</Hyperlink></TextBlock>
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem Name="ILSizeMenuItem" Visibility="Collapsed" Header="ILSize" Command="{x:Static src:MainWindow.ILSizeCommand}"  ToolTip="Displays the breakdown of what is in a DLL or EXE by symbol. (needs PDB for DLL or EXE).">
                         <MenuItem.Icon>
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="ILSize">?</Hyperlink></TextBlock>
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="ILSize" AutomationProperties.Name="Help for IL Size">?</Hyperlink></TextBlock>
                         </MenuItem.Icon>
                     </MenuItem>
                 </MenuItem>
@@ -150,22 +150,22 @@
                 </MenuItem>
             </Menu>
             <Rectangle Grid.Column="1" Grid.ColumnSpan="11" Fill="{DynamicResource ControlDefaultBackground}"/>
-            <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0">
+            <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="MainViewerQuickStart">Main View Help (F1)</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0,0,0">
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0,0,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="Tutorial">Tutorial</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0">
+            <TextBlock Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="MainViewerTroubleshooting">Troubleshooting</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0">
+            <TextBlock Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="FAQ">FAQ</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="5" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0">
+            <TextBlock Grid.Column="5" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="MainViewerTips">Tips</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="6" Name="VideoLink" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="10,0">
+            <TextBlock Grid.Column="6" Name="VideoLink" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="10,0" TextWrapping="Wrap">
                 <Hyperlink Click="DoVideoClick">Videos</Hyperlink>
             </TextBlock>
             <Button Name="WikiButton" Grid.Column="7" Margin="5,1,10,1" Content="Wiki" FontSize="9"

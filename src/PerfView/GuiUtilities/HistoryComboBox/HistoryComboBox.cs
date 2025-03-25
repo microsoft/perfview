@@ -13,9 +13,13 @@ namespace Controls
     /// </summary>
     public partial class HistoryComboBox : ComboBox
     {
+        static HistoryComboBox()
+        {
+            IsEditableProperty.OverrideMetadata(typeof(HistoryComboBox), new FrameworkPropertyMetadata(true));
+        }
+
         public HistoryComboBox()
         {
-            IsEditable = true;
             HistoryLength = 10;
             KeyDown += DoKeyDown;
             GotFocus += DoGotFocus;

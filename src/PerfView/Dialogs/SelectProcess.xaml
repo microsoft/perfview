@@ -8,6 +8,11 @@
     <Window.CommandBindings>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp" />
     </Window.CommandBindings>
+    <Window.Resources>
+        <Style x:Key="ColumnHeaderStyle" TargetType="{x:Type WPFToolKit:DataGridColumnHeader}">
+            <Setter Property="Focusable" Value="True" />
+        </Style>
+    </Window.Resources>
     <DockPanel>
         <RichTextBox DockPanel.Dock="Top" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True">
             <RichTextBox.Document>
@@ -45,10 +50,10 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Button Name="OKButton" Margin="5,4" Grid.Column="1" Width="80" Content="OK" Click="OKClicked" IsDefault="True" />
-            <Button Name="AllProcsButton" Margin="5,4" Grid.Column="3" Width="80" Content="All Procs" Click="AllProcsClicked"
+            <Button Name="OKButton" Margin="5,4" Grid.Column="1" MinWidth="80" Content="OK" Click="OKClicked" IsDefault="True" />
+            <Button Name="AllProcsButton" Margin="5,4" Grid.Column="3" MinWidth="80" Content="All Procs" Click="AllProcsClicked"
                     ToolTip="Investigate all processes"/>
-            <Button Margin="5,4" Grid.Column="5" Width="80" Content="Cancel" Click="CancelClicked" IsCancel="True" />
+            <Button Margin="5,4" Grid.Column="5" MinWidth="80" Content="Cancel" Click="CancelClicked" IsCancel="True" />
         </Grid>
         <Grid PreviewKeyDown="GridKeyDownHander">
             <WPFToolKit:DataGrid Name="Grid"
@@ -56,7 +61,8 @@
               Background="{DynamicResource BackgroundColour}"
               AutoGenerateColumns="False"
               MouseDoubleClick="OKClicked"
-              IsReadOnly="True">
+              IsReadOnly="True"
+              ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}">
                 <WPFToolKit:DataGrid.Resources>
                     <Style x:Key="RightAlign">
                         <Setter Property="TextBlock.TextAlignment" Value="Right"/>

@@ -53,7 +53,7 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
-                    <Hyperlink Command="Help" CommandParameter="Preset" KeyboardNavigation.IsTabStop="False">Name:</Hyperlink>
+                    <Hyperlink Command="Help" CommandParameter="Preset">Name:</Hyperlink>
                 </TextBlock>
                 <TextBox Grid.Row="0" Grid.Column="1" Name="PresetName" Margin="10,2,10,2" HorizontalScrollBarVisibility="Hidden">
                     <TextBox.ToolTip>
@@ -66,7 +66,7 @@
                 </TextBox>
 
                 <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
-                    <Hyperlink Command="Help" CommandParameter="GroupPatsTextBox" KeyboardNavigation.IsTabStop="False">GroupPats:</Hyperlink>
+                    <Hyperlink Command="Help" CommandParameter="GroupPatsTextBox">GroupPats:</Hyperlink>
                 </TextBlock>
                 <TextBox Grid.Row="1" Grid.Column="1" Name="GroupPatsTextBox" Margin="10,2,10,2" HorizontalScrollBarVisibility="Hidden">
                     <TextBox.ToolTip>
@@ -83,7 +83,7 @@
                     </TextBox.ToolTip>
                 </TextBox>
                 <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
-                <Hyperlink Command="Help" CommandParameter="FoldPercentTextBox" KeyboardNavigation.IsTabStop="False">Fold%:</Hyperlink>
+                <Hyperlink Command="Help" CommandParameter="FoldPercentTextBox">Fold%:</Hyperlink>
                 </TextBlock>
                 <TextBox Name="FoldPercentTextBox" Grid.Row="2" Grid.Column="1" Margin="10,2,10,2" HorizontalScrollBarVisibility="Hidden">
                     <TextBox.ToolTip>
@@ -94,7 +94,7 @@
                     </TextBox.ToolTip>
                 </TextBox>
                 <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
-                <Hyperlink Command="Help" CommandParameter="FoldPatsTextBox" KeyboardNavigation.IsTabStop="False">FoldPats:</Hyperlink>
+                <Hyperlink Command="Help" CommandParameter="FoldPatsTextBox">FoldPats:</Hyperlink>
                 </TextBlock>
                 <TextBox Name="FoldRegExTextBox" Grid.Row="3" Grid.Column="1" MinWidth="80" Margin="10,2,10,2" HorizontalScrollBarVisibility="Hidden">
                     <TextBox.ToolTip>
@@ -107,7 +107,7 @@
                     </TextBox.ToolTip>
                 </TextBox>
                 <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Top" Margin="5,0,1,0">
-                <Hyperlink Command="Help" CommandParameter="Preset" KeyboardNavigation.IsTabStop="False">Comment:</Hyperlink>
+                <Hyperlink Command="Help" CommandParameter="Preset">Comment:</Hyperlink>
                 </TextBlock>
                 <TextBox Name="CommentTextBox" Grid.Row="4" Grid.Column="1"  MinWidth="80" Margin="10,2,10,2" HorizontalScrollBarVisibility="Hidden" TextWrapping="Wrap" AcceptsReturn="True" Height="72">
                     <TextBox.ToolTip>

@@ -20,6 +20,9 @@
                 <TextBlock Name="Name" Text="{Binding Name}"/>
             </StackPanel>
         </DataTemplate>
+        <Style x:Key="ColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
+            <Setter Property="Focusable" Value="True" />
+        </Style>
     </UserControl.Resources>
     <DataGrid Name="Grid"
         AutoGenerateColumns="False"
@@ -29,7 +32,8 @@
         SelectedCellsChanged="SelectedCellsChanged"
         CanUserSortColumns="False"
         ClipboardCopyMode="IncludeHeader"
-        Margin="0,0,-23,0" PreparingCellForEdit="Grid_PreparingCellForEdit" >
+        Margin="0,0,-23,0" PreparingCellForEdit="Grid_PreparingCellForEdit"
+        ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}">
         <DataGrid.Columns>
             <DataGridTemplateColumn
                 HeaderStyle="{StaticResource CenterAlign}"
@@ -43,7 +47,7 @@
                 </DataGridTemplateColumn.CellTemplate>
                 <DataGridTemplateColumn.Header>
                     <TextBlock Name="NameColumn">
-                        Name <Hyperlink Click="DoHyperlinkHelp" Tag="NameColumn">?</Hyperlink>
+                        Name <Hyperlink Click="DoHyperlinkHelp" Tag="NameColumn" AutomationProperties.Name="Help for Name Column">?</Hyperlink>
                     </TextBlock>
                 </DataGridTemplateColumn.Header>
             </DataGridTemplateColumn>

@@ -23,6 +23,9 @@
             <Setter Property="FontSize" Value="10"/>
             <Setter Property="IsReadOnly" Value="True"/>
         </Style>
+        <Style x:Key="ColumnHeaderStyle" TargetType="{x:Type WPFToolKit:DataGridColumnHeader}">
+            <Setter Property="Focusable" Value="True" />
+        </Style>
     </UserControl.Resources>
     <WPFToolKit:DataGrid Name="Grid"
         SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
@@ -32,7 +35,8 @@
         CanUserSortColumns="False"
         ClipboardCopyMode="IncludeHeader"
         Margin="0,0,-23,0" PreparingCellForEdit="Grid_PreparingCellForEdit"
-        AutomationProperties.Name="Data Grid">
+        AutomationProperties.Name="Data Grid"
+        ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}">
         <WPFToolKit:DataGrid.Columns>
             <WPFToolKit:DataGridTemplateColumn
                 x:Name="DisplayNameColumn"
@@ -46,7 +50,7 @@
                 </WPFToolKit:DataGridTemplateColumn.CellTemplate>
                 <WPFToolKit:DataGridTemplateColumn.Header>
                     <TextBlock Name="NameColumn">
-                        Name <Hyperlink Click="DoHyperlinkHelp" Tag="NameColumn">?</Hyperlink>
+                        Name <Hyperlink Click="DoHyperlinkHelp" Tag="NameColumn" AutomationProperties.Name="Help with Name Column">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
                                       The name of the method or group (see GroupPat dialog box).
@@ -61,7 +65,7 @@
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="IncPercentColumn">
-                       Inc % <Hyperlink  Click="DoHyperlinkHelp" Tag="IncPercentColumn">?</Hyperlink>
+                       Inc % <Hyperlink  Click="DoHyperlinkHelp" Tag="IncPercentColumn" AutomationProperties.Name="Help with Inclusive Percent Column">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
                                      The % of the total sample metric that occurred in this item or any of its callees.
@@ -76,7 +80,7 @@
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header >
                     <TextBlock Margin="0,0,5,0" Name="IncColumn">
-                        Inc <Hyperlink Click="DoHyperlinkHelp" Tag="IncColumn">?</Hyperlink>
+                        Inc <Hyperlink Click="DoHyperlinkHelp" Tag="IncColumn" AutomationProperties.Name="Help with Inclusive Column">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
                                      The sum of the sample metric that occurred in this item or any of its callees.
@@ -93,7 +97,7 @@
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="IncAvgColumn">
-                        Inc Avg <Hyperlink Click="DoHyperlinkHelp" Tag="IncAvgColumn">?</Hyperlink>
+                        Inc Avg <Hyperlink Click="DoHyperlinkHelp" Tag="IncAvgColumn" AutomationProperties.Name="Help with Inclusive Average Column">?</Hyperlink>
                         <TextBlock.ToolTip>
                             <TextBlock>
                                      The average of the sample metric that occurred in this item or any of its callees.
@@ -109,7 +113,7 @@
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="IncCountColumn">
-                        Inc Ct <Hyperlink Click="DoHyperlinkHelp" Tag="IncCountColumn ">?</Hyperlink>
+                        Inc Ct <Hyperlink Click="DoHyperlinkHelp" Tag="IncCountColumn" AutomationProperties.Name="Help with Inclusive Count Column">?</Hyperlink>
                         <TextBlock.ToolTip>
                             <TextBlock>
                                     The count of the instances in item or its children.
@@ -125,7 +129,7 @@
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="ExcPercentColumn">
-                        Exc % <Hyperlink Click="DoHyperlinkHelp" Tag="ExcPercentColumn">?</Hyperlink>
+                        Exc % <Hyperlink Click="DoHyperlinkHelp" Tag="ExcPercentColumn" AutomationProperties.Name="Help with Exclusive Percent Column">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
                                     The % of the total sample metric that occurred in this item exclusively (not its children, does include folding).
@@ -141,7 +145,7 @@
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="ExcColumn">
-                        Exc <Hyperlink Click="DoHyperlinkHelp" Tag="ExcColumn">?</Hyperlink>
+                        Exc <Hyperlink Click="DoHyperlinkHelp" Tag="ExcColumn" AutomationProperties.Name="Help with Exclusive Column">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
                                     The sum of the sample metric that occurred in this item exclusively (not its children, does include folding).
@@ -157,7 +161,7 @@
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="ExcCountColumn">
-                        Exc Ct <Hyperlink Click="DoHyperlinkHelp" Tag="ExcCountColumn ">?</Hyperlink>
+                        Exc Ct <Hyperlink Click="DoHyperlinkHelp" Tag="ExcCountColumn" AutomationProperties.Name="Help with Exclusive Count Column">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
                                     The count of the instances in item (excluding its children, does include folding)
@@ -173,7 +177,7 @@
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="FoldColumn">
-                        Fold <Hyperlink Click="DoHyperlinkHelp" Tag="FoldColumn">?</Hyperlink>
+                        Fold <Hyperlink Click="DoHyperlinkHelp" Tag="FoldColumn" AutomationProperties.Name="Help with Fold Column">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
                                     The exclusive metric that have been folded into this node (by FoldPat or Fold %).
@@ -189,7 +193,7 @@
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="FoldCountColumn">
-                        Fold Ct <Hyperlink Click="DoHyperlinkHelp" Tag="FoldCountColumn ">?</Hyperlink>
+                        Fold Ct <Hyperlink Click="DoHyperlinkHelp" Tag="FoldCountColumn" AutomationProperties.Name="Help with Fold Count Column">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
                                     The count that have been folded into this node (by FoldPat or Fold %).
@@ -207,7 +211,7 @@
                 EditingElementStyle="{StaticResource HistogramEditCell}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="WhenColumn">
-                    When <Hyperlink Click="DoHyperlinkHelp" Tag="WhenColumn">?</Hyperlink>
+                    When <Hyperlink Click="DoHyperlinkHelp" Tag="WhenColumn" AutomationProperties.Name="Help with When Column">?</Hyperlink>
                     <TextBlock.ToolTip>
                                 <TextBlock TextAlignment="Left">
                                     The time interval (from Start to End) is divided up into 32 buckets.<LineBreak/>
@@ -247,7 +251,7 @@
                 EditingElementStyle="{StaticResource HistogramEditCell}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="WhichColumn">
-                    Which <Hyperlink Click="DoHyperlinkHelp" Tag="WhichColumn">?</Hyperlink>
+                    Which <Hyperlink Click="DoHyperlinkHelp" Tag="WhichColumn" AutomationProperties.Name="Help with Which Column">?</Hyperlink>
                         <TextBlock.ToolTip>
                             <!-- TODO: update this tooltip help -->
                             <TextBlock TextAlignment="Left">
@@ -285,7 +289,7 @@
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="FirstColumn">
-                        First <Hyperlink Click="DoHyperlinkHelp" Tag="FirstColumn">?</Hyperlink>
+                        First <Hyperlink Click="DoHyperlinkHelp" Tag="FirstColumn" AutomationProperties.Name="Help with First Column">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
                                     The time in of the first sample (msec from start of trace).
@@ -301,7 +305,7 @@
                 ElementStyle="{StaticResource RightAlign}">
                 <WPFToolKit:DataGridTextColumn.Header>
                     <TextBlock Margin="0,0,5,0" Name="LastColumn">
-                        Last <Hyperlink Click="DoHyperlinkHelp" Tag="LastColumn">?</Hyperlink>
+                        Last <Hyperlink Click="DoHyperlinkHelp" Tag="LastColumn" AutomationProperties.Name="Help with Last Column">?</Hyperlink>
                         <TextBlock.ToolTip>
                                 <TextBlock>
                                     The time in of the last sample (msec from start of trace).
