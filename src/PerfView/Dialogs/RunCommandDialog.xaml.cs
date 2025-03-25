@@ -941,12 +941,11 @@ namespace PerfView
 
         private void DoExpand(object sender, RoutedEventArgs e)
         {
-            // TODO I am trying to make the expander just grow the window, I do this by forcing the window height
-            // to change.  However this causes double-redraw, and it also requires me to figure out the right constant
-            // to add any time I change what is in the expander.   There is undoubtedly a better way...
             m_originalHeight = (int)Height;
-            Height = m_originalHeight + 180;
+            AdvancedOptionsGrid.Measure(new Size(AdvancedOptionsExpander.ActualWidth, double.PositiveInfinity));
+            Height += AdvancedOptionsGrid.DesiredSize.Height;
         }
+
         private void DoCollapsed(object sender, RoutedEventArgs e)
         {
             Height = m_originalHeight;
