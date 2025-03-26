@@ -490,11 +490,9 @@ namespace Microsoft.Diagnostics.Tracing
             else // if (FileFormatVersionNumber >= 6)
             {
                 EventPipeEventHeader.ReadFromFormatV6(ref reader, useHeaderCompression, ref eventData);
-                if (StackCache.TryGetStack(eventData.StackId, out int stackBytesSize, out IntPtr stackBytes))
-                {
-                    eventData.StackBytesSize = stackBytesSize;
-                    eventData.StackBytes = stackBytes;
-                }
+                StackCache.TryGetStack(eventData.StackId, out int stackBytesSize, out IntPtr stackBytes);
+                eventData.StackBytesSize = stackBytesSize;
+                eventData.StackBytes = stackBytes;
                 EventPipeThread thread = _threadCache.GetThread(eventData.ThreadIndexOrId);
                 eventData.ProcessId = thread.ProcessId;
                 eventData.ThreadId = thread.ThreadId;
@@ -510,7 +508,6 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(0 <= eventData.TotalNonHeaderSize && eventData.TotalNonHeaderSize < 0x20000);  // TODO really should be 64K but BulkSurvivingObjectRanges needs fixing.
             Debug.Assert(FileFormatVersionNumber != 3 ||
                 ((long)eventData.Payload % 4 == 0 && eventData.TotalNonHeaderSize % 4 == 0)); // ensure 4 byte alignment
-            Debug.Assert(0 <= eventData.StackBytesSize && eventData.StackBytesSize <= 800);
         }
 
         /// <summary>
