@@ -626,9 +626,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 case TypeCode.UInt32:
                     return (UInt32)GetInt32At(offset);
                 case TypeCode.Int64:
-                    return GetInt64At(offset);
+                    {
+                        if (payloadFetch.Size == VARINT)
+                        {
+                            return GetVarIntAt(offset);
+                        }
+                        else
+                        {
+                            return GetInt64At(offset);
+                        }
+                    }
                 case TypeCode.UInt64:
-                    return (UInt64)GetInt64At(offset);
+                    {
+                        if (payloadFetch.Size == VARINT)
+                        {
+                            return GetVarUIntAt(offset);
+                        }
+                        else
+                        {
+                            return (UInt64)GetInt64At(offset);
+                        }
+                    }
                 case TypeCode.Single:
                     return GetSingleAt(offset);
                 case TypeCode.Double:
@@ -1171,6 +1189,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                     return offset + elemSize;
                 }
+                else if (size == VARINT)
+                {
+                    return SkipVarInt(offset);
+                }
                 else
                 {
                     return ushort.MaxValue;     // Something sure to fail 
@@ -1238,8 +1260,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         // Size 0xFFEF is NULL_TERMINATED | IS_ANSI
         internal const ushort NULL_TERMINATED = 0xFFEE; // value is a null terminated string.   
 
-        internal const ushort POINTER_SIZE = 0xFFED;        // It is the pointer size of the target machine. 
-        internal const ushort UNKNOWN_SIZE = 0xFFEC;        // Generic unknown.
+        internal const ushort POINTER_SIZE = 0xFFED;        // It is the pointer size of the target machine.
+        internal const ushort VARINT = 0xFFEC;
+        internal const ushort UNKNOWN_SIZE = 0xFFEB;        // Generic unknown.
         internal const ushort SPECIAL_SIZES = UNKNOWN_SIZE; // This is always the smallest size as an unsiged number.    
 
         internal struct PayloadFetch

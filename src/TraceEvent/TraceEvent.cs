@@ -1650,6 +1650,22 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
+        /// Skip a variable sized integer (a ULEB128 with or without ZigZag encoding for a sign bit)
+        /// </summary>
+        internal int SkipVarInt(int offset)
+        {
+            int maxOffset = Math.Min(offset + 10, EventDataLength);
+            for(int i = offset; i < maxOffset; i++)
+            {
+                if(0 == (TraceEventRawReaders.ReadByte(DataStart, i) & 0x80))
+                {
+                    return i + 1;
+                }
+            }
+            return maxOffset;
+        }
+
+        /// <summary>
         /// Trivial helper that allows you to get the Offset of a field independent of 32 vs 64 bit pointer size.
         /// </summary>
         /// <param name="offset">The Offset as it would be on a 32 bit system</param>
@@ -1867,6 +1883,24 @@ namespace Microsoft.Diagnostics.Tracing
         protected internal double GetDoubleAt(int offset)
         {
             return TraceEventRawReaders.ReadDouble(DataStart, offset);
+        }
+
+        /// <summary>
+        /// Returns a ULEB128 that was serialized at 'offset' in the payload bytes
+        /// </summary>
+        protected internal ulong GetVarUIntAt(int offset)
+        {
+            return TraceEventRawReaders.ReadVarUInt(DataStart, offset, EventDataLength);
+        }
+
+        /// <summary>
+        /// Returns a signed variable length integer serialized at 'offset' in the payload bytes.
+        /// The value is first decoded as a ULEB128, then the LSB is extracted and treated as a sign bit.
+        /// This often referred to as ZigZag encoding.
+        /// </summary>
+        protected internal long GetVarIntAt(int offset)
+        {
+            return TraceEventRawReaders.ReadVarInt(DataStart, offset, EventDataLength);
         }
 
         /// <summary>
@@ -4563,6 +4597,34 @@ namespace Microsoft.Diagnostics.Tracing
         {
             return *((byte*)((byte*)pointer.ToPointer() + offset));
         }
+        internal static unsafe ulong ReadVarUInt(IntPtr pointer, int offset, int bufferLength)
+        {
+            Span<byte> bytes = new Span<byte>(pointer.ToPointer(), bufferLength);
+            int maxOffset = Math.Min(offset + 10, bufferLength);
+            ulong val = 0;
+            int shift = 0;
+            byte b;
+            do
+            {
+                if(offset == maxOffset)
+                {
+                    throw new FormatException("Invalid VarUInt");
+                }
+                b = bytes[offset];
+                offset++;
+                val |= (ulong)(b & 0x7f) << shift;
+                shift += 7;
+            } while ((b & 0x80) != 0);
+            return val;
+        }
+
+        internal static unsafe long ReadVarInt(IntPtr pointer, int offset, int bufferLength)
+        {
+            ulong val = ReadVarUInt(pointer, offset, bufferLength);
+            return (val & 0x1) == 0 ? (long)(val >> 1) : (long)~(val >> 1);
+        }
+
+
         internal static unsafe string ReadUnicodeString(IntPtr pointer, int offset, int bufferLength)
         {
             // Really we should be able to count on pointers being null terminated.  However we have had instances
