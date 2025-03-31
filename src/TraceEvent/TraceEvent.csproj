@@ -131,7 +131,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Include="EventPipe\EventPipeFormat.md" />
+    <None Include="EventPipe\NetTraceFormat.md" />
+    <None Include="EventPipe\NetTraceFormat_v5.md" />
     <None Include="EventPipe\EventSerialization.md" />
     <None Include="EventPipe\NetPerfFormat.md" />
   </ItemGroup>
