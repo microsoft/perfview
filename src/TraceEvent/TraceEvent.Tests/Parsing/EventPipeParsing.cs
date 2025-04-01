@@ -812,7 +812,7 @@ namespace TraceEventTests
             Assert.Equal(1, eventCount);
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void ParseMinimalTraceV6()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -852,7 +852,7 @@ namespace TraceEventTests
             }
         }
 
-        [Fact]
+        [Fact(Skip ="NetTrace V6 Support Disabled")]
         public void MinorVersionIncrementsAreSupported()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -864,7 +864,7 @@ namespace TraceEventTests
             Assert.Equal(6, source.FileFormatVersionNumber);
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void ParseV6TraceBlockStandardFields()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -881,7 +881,7 @@ namespace TraceEventTests
             Assert.Equal(0, source.NumberOfProcessors);
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void ParseV6TraceBlockKeyValuePairs()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -929,7 +929,7 @@ namespace TraceEventTests
         }
 
         // In the V6 format readers are expected to skip over any block types they don't recognize. This allows future extensibility.
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void V6UnrecognizedBlockTypesAreSkipped()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -948,7 +948,7 @@ namespace TraceEventTests
             Assert.Equal(6, source.FileFormatVersionNumber);
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void ParseV6Metadata()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -991,7 +991,7 @@ namespace TraceEventTests
         }
 
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void ParseV6MetadataArrayParam()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1029,7 +1029,7 @@ namespace TraceEventTests
             Assert.Equal(1, eventCount);
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void ParseV6MetadataObjectParam()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1069,7 +1069,7 @@ namespace TraceEventTests
             Assert.Equal(1, eventCount);
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void ParseV6OptionalMetadata()
         {
             Guid testGuid = Guid.Parse("CA0A7B93-622D-42C9-AFF8-7A09FDA2E30C");
@@ -1109,7 +1109,7 @@ namespace TraceEventTests
         }
 
         // Ensure that we can add extra bytes into the metadata encoding everywhere the format says we should be allowed to
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void SkipExtraMetadataSpaceV6()
         {
             Guid testGuid = Guid.Parse("CA0A7B93-622D-42C9-AFF8-7A09FDA2E30C");
@@ -1161,7 +1161,7 @@ namespace TraceEventTests
             Assert.Equal("TestEvent2", metadata2.EventName);
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void ParseV6LengthPrefixedStrings()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1220,7 +1220,7 @@ namespace TraceEventTests
         }
 
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void ParseV6VarInts()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1292,7 +1292,7 @@ namespace TraceEventTests
         }
 
         // Ensure that the new string and varint types still work properly nested inside a struct
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void ParseV6NestedVarIntsAndStrings()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1336,7 +1336,7 @@ namespace TraceEventTests
             Assert.Equal(1, eventCount);
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void V6MissingThreadBlockThrowsException()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1352,7 +1352,7 @@ namespace TraceEventTests
             Assert.Throws<FormatException>(() => source.Process());
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void V6MismatchedRemoveThreadBlockThrowsException()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1376,7 +1376,7 @@ namespace TraceEventTests
             Assert.Throws<FormatException>(() => source.Process());
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void V6RefAfterRemoveThreadBlockThrowsException()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1400,7 +1400,7 @@ namespace TraceEventTests
             Assert.Throws<FormatException>(() => source.Process());
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void V6DoubleRemoveThreadBlockThrowsException()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1428,7 +1428,7 @@ namespace TraceEventTests
             Assert.Throws<FormatException>(() => source.Process());
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void V6ParseSimpleThreadBlock()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1472,7 +1472,7 @@ namespace TraceEventTests
             Assert.Equal(3, eventCount);
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void V6ParseMultipleThreadBlocks()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1561,7 +1561,7 @@ namespace TraceEventTests
             Assert.Equal(8, eventCount);
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void V6ParseOptionalThreadData()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1601,7 +1601,7 @@ namespace TraceEventTests
             Assert.Equal(1, eventCount);
         }
 
-        [Theory]
+        [Theory(Skip = "NetTrace V6 Support Disabled")]
         [InlineData(true)]
         [InlineData(false)]
         public void V6ParseEventLabelLists(bool useCompressedEventHeaders)
@@ -1719,7 +1719,7 @@ namespace TraceEventTests
         }
 
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void ParseV6CompressedEventHeaders()
         {
             // these are arbitrary random constants
@@ -1815,7 +1815,7 @@ namespace TraceEventTests
             Assert.Equal(7, eventCount);
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void V6SequencePointDoesNotFlushThreadsByDefault()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1845,7 +1845,7 @@ namespace TraceEventTests
             Assert.Equal(1, eventCount);
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void V6RedefinedThreadIndexThrowsFormatException()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1867,7 +1867,7 @@ namespace TraceEventTests
             Assert.Throws<FormatException>(() => source.Process());
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void V6SequencePointCanFlushThreadsOnDemand()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -1901,7 +1901,7 @@ namespace TraceEventTests
             Assert.Equal(1, eventCount);
         }
 
-        [Fact]
+        [Fact(Skip = "NetTrace V6 Support Disabled")]
         public void V6SequencePointDetectsDroppedEvents()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
