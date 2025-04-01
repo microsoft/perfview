@@ -51,7 +51,7 @@ namespace Microsoft.Diagnostics.Tracing
                 ParseHeadersAndInitCaches();
         }
 
-        const int MaxSupportedMajorVersion = 6;
+        const int MaxSupportedMajorVersion = 5;
 
         private void ParseHeadersAndInitCaches()
         {
