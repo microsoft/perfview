@@ -2165,7 +2165,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 Debug.Assert(_syncTimeQPC != 0);         // We should have set this in the Header event (or on session start if it is read time
 #if DEBUG
-                //Debug.Assert(lastTimeStamp <= data.TimeStampQPC);     // Ensure they are in order
+                Debug.Assert(lastTimeStamp <= data.TimeStampQPC);     // Ensure they are in order
                 lastTimeStamp = data.TimeStampQPC;
 #endif
                 // Show status every 128K events
