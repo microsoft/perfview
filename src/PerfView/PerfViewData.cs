@@ -9405,6 +9405,29 @@ table {
 
         private string m_extraTopStats;
 
+        public override bool SupportsProcesses => m_supportsProcesses;
+
+        private bool m_supportsProcesses;
+
+        public override List<IProcess> GetProcesses(TextWriter log)
+        {
+            var eventLog = GetTraceLog(log);
+            var processes = new List<IProcess>(eventLog.Processes.Count);
+            foreach (var process in eventLog.Processes)
+            {
+                var iprocess = new IProcessForStackSource(process.Name);
+                iprocess.StartTime = process.StartTime;
+                iprocess.EndTime = process.EndTime;
+                iprocess.CPUTimeMSec = process.CPUMSec;
+                iprocess.ParentID = process.ParentID;
+                iprocess.CommandLine = process.CommandLine;
+                iprocess.ProcessID = process.ProcessID;
+                processes.Add(iprocess);
+            }
+            processes.Sort();
+            return processes;
+        }
+
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {
             var traceLog = GetTraceLog(log);
@@ -9493,10 +9516,12 @@ table {
                     else if (eventStats.ProviderGuid == UniversalSystemTraceEventParser.ProviderGuid)
                     {
                         hasUniversalSystem = true;
+                        m_supportsProcesses = true;
                     }
                     else if (eventStats.ProviderGuid == UniversalEventsTraceEventParser.ProviderGuid && eventStats.EventName.StartsWith("cpu"))
                     {
                         hasUniversalCPU = true;
+                        m_supportsProcesses = true;
                     }
                 }
             }

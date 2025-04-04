@@ -22,23 +22,23 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
 
         public void BeforeProcess(TraceLog traceLog, TraceEventDispatcher source)
         {
-            UniversalSystemTraceEventParser universalParser = new UniversalSystemTraceEventParser(source);
-            universalParser.ExistingProcess += delegate (ProcessCreateTraceData data)
+            UniversalSystemTraceEventParser universalSystemParser = new UniversalSystemTraceEventParser(source);
+            universalSystemParser.ExistingProcess += delegate (ProcessCreateTraceData data)
             {
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.Id, data.TimeStampQPC);
                 process.UniversalProcessStart(data);
             };
-            universalParser.ProcessCreate += delegate (ProcessCreateTraceData data)
+            universalSystemParser.ProcessCreate += delegate (ProcessCreateTraceData data)
             {
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.Id, data.TimeStampQPC, isProcessStartEvent: true);
                 process.UniversalProcessStart(data);
             };
-            universalParser.ProcessExit += delegate (ProcessExitTraceData data)
+            universalSystemParser.ProcessExit += delegate (ProcessExitTraceData data)
             {
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessId, data.TimeStampQPC);
                 process.UniversalProcessStop(data);
             };
-            universalParser.ProcessMapping += delegate (ProcessMappingTraceData data)
+            universalSystemParser.ProcessMapping += delegate (ProcessMappingTraceData data)
             {
                 // TODO: All mappings currently get dumped into a single process because CPU and CSwitch events don't have a process or thread associated with them.
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
@@ -46,9 +46,17 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
 
                 _mappingIdToProcesses[data.Id] = process;
             };
-            universalParser.ProcessSymbol += delegate (ProcessSymbolTraceData data)
+            universalSystemParser.ProcessSymbol += delegate (ProcessSymbolTraceData data)
             {
                 _dynamicSymbols.Add((ProcessSymbolTraceData)data.Clone());
+            };
+
+            UniversalEventsTraceEventParser universalEventsParser = new UniversalEventsTraceEventParser(source);
+            universalEventsParser.cpu += delegate(SampleTraceData data)
+            {
+                TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessId, data.TimeStampQPC);
+                TraceThread thread = traceLog.Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
+                thread.cpuSamples++;
             };
         }
 
