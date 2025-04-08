@@ -24,7 +24,8 @@ namespace TraceEventTests
         // The test data is contained in files of the same name, but with a .zip extension.
         // Only the names are returned since the extracted files will be in a different directory.
         public static IEnumerable<object[]> TestEventPipeFiles
-            => TestEventPipeZipFiles.Select(file => new[] { Path.GetFileNameWithoutExtension(file) });
+            => TestEventPipeZipFiles.Where(file => !file.Contains("dotnetcore2.0")) // Exclude the no longer supported formats
+                                    .Select(file => new[] { Path.GetFileNameWithoutExtension(file)});
 
         // Only the subset of data files starting in 2.1 were in a format capable of streaming
         public static IEnumerable<object[]> StreamableTestEventPipeFiles

@@ -59,6 +59,23 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             }
         }
 
+        /// <summary>
+        /// This reader skips ahead length bytes and returns a new reader that can read the skipped bytes
+        /// </summary>
+        public SpanReader CreateChildReader(int length)
+        {
+            long offset = StreamOffset;
+            return new SpanReader(ReadBytes(length), offset);
+        }
+
+        /// <summary>
+        /// Returns a pointer to the start of the span. This is only safe if you know the Span is backed by fixed memory.
+        /// </summary>
+        public unsafe IntPtr UnsafeGetFixedReadPointer()
+        {
+            return (IntPtr)Unsafe.AsPointer<byte>(ref MemoryMarshal.GetReference(RemainingBytes));
+        }
+
         public ReadOnlySpan<byte> ReadBytes(int length)
         {
             if(_buffer.Length >= length)
