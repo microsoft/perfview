@@ -25,22 +25,21 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             UniversalSystemTraceEventParser universalSystemParser = new UniversalSystemTraceEventParser(source);
             universalSystemParser.ExistingProcess += delegate (ProcessCreateTraceData data)
             {
-                TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.Id, data.TimeStampQPC);
+                TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 process.UniversalProcessStart(data);
             };
             universalSystemParser.ProcessCreate += delegate (ProcessCreateTraceData data)
             {
-                TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.Id, data.TimeStampQPC, isProcessStartEvent: true);
+                TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC, isProcessStartEvent: true);
                 process.UniversalProcessStart(data);
             };
             universalSystemParser.ProcessExit += delegate (ProcessExitTraceData data)
             {
-                TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessId, data.TimeStampQPC);
+                TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 process.UniversalProcessStop(data);
             };
             universalSystemParser.ProcessMapping += delegate (ProcessMappingTraceData data)
             {
-                // TODO: All mappings currently get dumped into a single process because CPU and CSwitch events don't have a process or thread associated with them.
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 TraceModuleFile moduleFile = process.LoadedModules.UniversalMapping(data);
 
@@ -54,7 +53,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             UniversalEventsTraceEventParser universalEventsParser = new UniversalEventsTraceEventParser(source);
             universalEventsParser.cpu += delegate(SampleTraceData data)
             {
-                TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessId, data.TimeStampQPC);
+                TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 TraceThread thread = traceLog.Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
                 thread.cpuSamples++;
             };

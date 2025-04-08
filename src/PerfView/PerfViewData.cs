@@ -9532,23 +9532,30 @@ table {
 
             if (m_traceLog != null)
             {
-                if (hasUniversalSystem)
+                if (hasUniversalSystem) // universal
                 {
                     m_Children.Add(new PerfViewProcesses(this));
-                }
 
-                if (hasUniversalCPU)
+                    if (hasUniversalCPU)
+                    {
+                        m_Children.Add(new PerfViewStackSource(this, "CPU"));
+                    }
+                }
+                else // dotnet-trace
                 {
-                    m_Children.Add(new PerfViewStackSource(this, "CPU"));
+                    if (hasAnyStacks)
+                    {
+                        m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities)"));
+                    }
                 }
 
+                // Source agnostic
                 m_Children.Add(new PerfViewEventSource(this));
-                m_Children.Add(new PerfViewEventStats(this));
+                advanced.AddChild(new PerfViewEventStats(this));
 
                 if (hasAnyStacks)
                 {
-                    m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities)"));
-                    m_Children.Add(new PerfViewStackSource(this, "Any"));
+                    advanced.AddChild(new PerfViewStackSource(this, "Any"));
                 }
 
                 if (hasGC)
