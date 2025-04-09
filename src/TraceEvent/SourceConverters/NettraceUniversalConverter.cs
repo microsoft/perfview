@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
     internal sealed class NettraceUniversalConverter
     {
         private List<ProcessSymbolTraceData> _dynamicSymbols = new List<ProcessSymbolTraceData>();
-        private Dictionary<long, TraceProcess> _mappingIdToProcesses = new Dictionary<long, TraceProcess>();
+        private Dictionary<ulong, TraceProcess> _mappingIdToProcesses = new Dictionary<ulong, TraceProcess>();
 
         internal NettraceUniversalConverter()
         {

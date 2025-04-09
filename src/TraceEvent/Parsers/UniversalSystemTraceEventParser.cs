@@ -110,7 +110,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
 {
     public sealed class ProcessCreateTraceData : TraceEvent
     {
-        public long NamespaceId { get { return (long)GetVarUIntAt(0); } }
+        public ulong NamespaceId { get { return GetVarUIntAt(0); } }
 
         public string Name { get { return GetShortUTF8StringAt(SkipVarInt(0)); } }
 
@@ -177,7 +177,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
 
     public sealed class ProcessMappingTraceData : TraceEvent
     {
-        public long Id { get { return (long)GetVarUIntAt(0); } }
+        public ulong Id { get { return GetVarUIntAt(0); } }
 
         public Address StartAddress { get { return GetVarUIntAt(SkipVarInt(0)); } }
 
@@ -187,7 +187,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
 
         public string FileName { get { return GetShortUTF8StringAt(SkipVarInt(SkipVarInt(SkipVarInt(SkipVarInt(0))))); } }
 
-        public long MetadataId { get { return (long)GetVarUIntAt(SkipShortUTF8String(SkipVarInt(SkipVarInt(SkipVarInt(SkipVarInt(0)))))); } }
+        public ulong MetadataId { get { return GetVarUIntAt(SkipShortUTF8String(SkipVarInt(SkipVarInt(SkipVarInt(SkipVarInt(0)))))); } }
 
         #region Private
         internal ProcessMappingTraceData(Action<ProcessMappingTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -259,9 +259,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
 
     public sealed class ProcessSymbolTraceData : TraceEvent
     {
-        public long Id { get { return (long)GetVarUIntAt(0); } }
+        public ulong Id { get { return GetVarUIntAt(0); } }
 
-        public long MappingId { get { return (long)GetVarUIntAt(SkipVarInt(0)); } }
+        public ulong MappingId { get { return GetVarUIntAt(SkipVarInt(0)); } }
 
         public Address StartAddress { get { return GetVarUIntAt(SkipVarInt(SkipVarInt(0))); } }
 
