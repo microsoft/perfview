@@ -422,7 +422,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 // in the code below we set sessionEndTimeQPC to be the timestamp of the last event.
                 // Thus the new timestamp should be later, and not more than 1 day later.
-                //Debug.Assert(sessionEndTimeQPC <= eventRecord->EventHeader.TimeStamp);
+                Debug.Assert(sessionEndTimeQPC <= eventRecord->EventHeader.TimeStamp);
                 Debug.Assert(sessionEndTimeQPC == 0 || eventRecord->EventHeader.TimeStamp - sessionEndTimeQPC < _QPCFreq * 24 * 3600);
 
                 var traceEvent = Lookup(eventRecord);

@@ -42,7 +42,6 @@ using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Utilities;
 using Address = System.UInt64;
 using EventSource = EventSources.EventSource;
-using System.Security;
 using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
 
 namespace PerfView
