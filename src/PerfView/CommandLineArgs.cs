@@ -132,6 +132,7 @@ namespace PerfView
         public bool JITInlining;            // Turn on logging of successful and failed JIT inlining
         public int OSHeapProcess;           // Turn on OS Heap tracing for the process with the given process ID.
         public string OSHeapExe;            // Turn on OS heap tracing for any process with the given EXE
+        public int OSHeapMaxMB;             // Maximum size of the heap ETL file.
 
         public bool NetworkCapture;         // Capture the full packets of every incoming and outgoing  packet
         public bool NetMonCapture;          // Capture a NetMon-only trace as well as a standard ETW trace (implies NetworkCapture)  
@@ -546,6 +547,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("UserCritContention", ref UserCritContention, "Turn on UserCrit contention events.");
             parser.DefineOptionalQualifier("OSHeapProcess", ref OSHeapProcess, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given process ID.");
             parser.DefineOptionalQualifier("OSHeapExe", ref OSHeapExe, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given EXE (only filename WITH extension).");
+            parser.DefineOptionalQualifier("OSHeapMaxMB", ref OSHeapMaxMB, "Approximate maximum size of OS heap ETL file.");
 
             parser.DefineOptionalQualifier("NetworkCapture", ref NetworkCapture, "Captures the full data of every network packet entering or leaving the OS.");
             parser.DefineOptionalQualifier("NetMonCapture", ref NetMonCapture, "Create _netmon.etl file that NetMon.exe can read, along with the standard ETL file.   Implies /NetworkCapture.");

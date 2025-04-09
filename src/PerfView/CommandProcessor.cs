@@ -517,9 +517,15 @@ namespace PerfView
                     // Default is 256Meg and twice whatever the others are
                     heapSession.BufferSizeMB = Math.Max(256, parsedArgs.BufferSizeMB * 2);
 
-                    if (parsedArgs.CircularMB != 0)
+                    if (parsedArgs.CircularMB != 0 && parsedArgs.OSHeapMaxMB == 0)
                     {
-                        LogFile.WriteLine("[Warning: OS Heap provider does not use Circular buffering.]");
+                        LogFile.WriteLine("[Warning: OS Heap provider does not use Circular buffering. Use /OSHeapMaxMB to limit OS heap file size.]");
+                    }
+
+                    if (parsedArgs.OSHeapMaxMB > 0)
+                    {
+                        LogFile.WriteLine($"Maximum OS heap file size is {parsedArgs.OSHeapMaxMB}MB. Use /OSHeapMaxMB to change it.");
+                        heapSession.MaximumFileMB = parsedArgs.OSHeapMaxMB;
                     }
 
                     if (parsedArgs.OSHeapProcess != 0)
@@ -3089,6 +3095,11 @@ namespace PerfView
             if (parsedArgs.OSHeapProcess != 0)
             {
                 cmdLineArgs += " /OSHeapProcess:" + parsedArgs.OSHeapProcess.ToString();
+            }
+
+            if (parsedArgs.OSHeapMaxMB != 0)
+            {
+                cmdLineArgs += " /OSHeapMaxMB:" + parsedArgs.OSHeapMaxMB;
             }
 
             if (parsedArgs.NetworkCapture)
