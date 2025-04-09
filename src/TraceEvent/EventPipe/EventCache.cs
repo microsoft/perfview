@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Tracing.EventPipe
 {
@@ -21,18 +19,13 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         public event ParseBufferItemFunction OnEvent;
         public event Action<int> OnEventsDropped;
 
-        public void ProcessEventBlock(byte[] eventBlockData, long streamOffset)
+        public void ProcessEventBlock(Block block)
         {
-            PinnedBuffer buffer = new PinnedBuffer(eventBlockData);
-            SpanReader reader = new SpanReader(eventBlockData, streamOffset);
+            SpanReader reader = block.Reader;
 
             // parse the header
-            if (eventBlockData.Length < 20)
-            {
-                throw new FormatException("Expected EventBlock of at least 20 bytes");
-            }
             ushort headerSize = reader.ReadUInt16();
-            if(headerSize < 20 || headerSize > eventBlockData.Length)
+            if(headerSize < 20)
             {
                 throw new FormatException("Invalid EventBlock header size");
             }
@@ -43,22 +36,23 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             reader.ReadBytes(headerSize - 4);
 
             // parse the events
-            EventMarker eventMarker = new EventMarker(buffer);
+            EventPipeEventHeader eventHeader = default;
             long timestamp = 0;
+            long maxTimestamp = 0;
+            long lastFlushTimestamp = 0;
             SpanReader tempReader = reader;
-            _source.ReadEventHeader(ref tempReader, useHeaderCompression, ref eventMarker.Header);
-            EventPipeThread thread = _threads.GetOrAddThread(eventMarker.Header.CaptureThreadIndexOrId, eventMarker.Header.SequenceNumber - 1);
-            eventMarker = new EventMarker(buffer);
+            _source.ReadEventHeader(ref tempReader, useHeaderCompression, ref eventHeader);
+            EventPipeThread thread = _threads.GetOrAddThread(eventHeader.CaptureThreadIndexOrId, eventHeader.SequenceNumber - 1);
+            EventMarker eventMarker = new EventMarker();
             while (reader.RemainingBytes.Length > 0)
             {
                 _source.ReadEventHeader(ref reader, useHeaderCompression, ref eventMarker.Header);
                 bool isSortedEvent = eventMarker.Header.IsSorted;
-                timestamp = eventMarker.Header.TimeStamp;
+                thread.LastCachedEventTimestamp = timestamp = eventMarker.Header.TimeStamp;
+                maxTimestamp = Math.Max(maxTimestamp, timestamp);
                 int sequenceNumber = eventMarker.Header.SequenceNumber;
                 if (isSortedEvent)
                 {
-                    thread.LastCachedEventTimestamp = timestamp;
-
                     // sorted events are the only time the captureThreadId should change
                     long captureThreadId = eventMarker.Header.CaptureThreadIndexOrId;
                     thread = _threads.GetOrAddThread(captureThreadId, sequenceNumber - 1);
@@ -68,29 +62,35 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
                 if(isSortedEvent)
                 {
+                    lastFlushTimestamp = timestamp;
                     SortAndDispatch(timestamp);
                     OnEvent?.Invoke(ref eventMarker.Header);
                 }
                 else
                 {
                     thread.Events.Enqueue(eventMarker);
-
                 }
 
                 reader.ReadBytes(eventMarker.Header.PayloadSize);
                 EventMarker lastEvent = eventMarker;
-                eventMarker = new EventMarker(buffer);
+                eventMarker = new EventMarker();
                 eventMarker.Header = lastEvent.Header;
             }
-            thread.LastCachedEventTimestamp = timestamp;
+
+            // We need to keep the buffer around until all events are processed
+            EventBlockBuffer buffer = new EventBlockBuffer(block.TakeOwnership(), maxTimestamp);
+            _buffers.Enqueue(buffer);
+
+            // get rid of old buffers if all their events are older than an event we already flushed
+            FreeOldEventBuffers(lastFlushTimestamp);
         }
 
-        public void ProcessSequencePointBlockV5OrLess(byte[] sequencePointBytes, long streamOffset)
+        public void ProcessSequencePointBlockV5OrLess(Block block)
         {
-            SpanReader reader = new SpanReader(sequencePointBytes, streamOffset);
+            SpanReader reader = block.Reader;
             long timestamp = (long)reader.ReadUInt64();
             int threadCount = (int)reader.ReadUInt32();
-            Flush(timestamp);
+            Flush();
             TrimEventsAfterSequencePoint();
             for (int i = 0; i < threadCount; i++)
             {
@@ -105,13 +105,13 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             FlushThreads = 1
         }
 
-        public void ProcessSequencePointBlockV6OrGreater(byte[] sequencePointBytes, long streamOffset)
+        public void ProcessSequencePointBlockV6OrGreater(Block block)
         {
-            SpanReader reader = new SpanReader(sequencePointBytes, streamOffset);
+            SpanReader reader = block.Reader;
             long timestamp = (long)reader.ReadUInt64();
             uint flags = reader.ReadUInt32();
             int threadCount = (int)reader.ReadUInt32();
-            Flush(timestamp);
+            Flush();
             TrimEventsAfterSequencePoint();
             for (int i = 0; i < threadCount; i++)
             {
@@ -127,14 +127,12 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         }
 
         /// <summary>
-        /// After all events have been parsed we could have some straglers that weren't
-        /// earlier than any sorted event. Sort and dispatch those now.
+        /// Flush all remaining events, free all buffers, and remove any threads that are pending removal.
         /// </summary>
-        public void Flush() => Flush(long.MaxValue);
-
-        private void Flush(long timestamp)
+        public void Flush()
         {
-            SortAndDispatch(timestamp);
+            SortAndDispatch(long.MaxValue);
+            FreeOldEventBuffers(long.MaxValue);
             CheckForPendingThreadRemoval();
         }
 
@@ -188,7 +186,6 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 {
                     EventMarker eventMarker = oldestEventQueue.Dequeue();
                     OnEvent?.Invoke(ref eventMarker.Header);
-                    GC.KeepAlive(eventMarker);
                 }
             }
 
@@ -201,6 +198,23 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 if(q.Count == 0)
                 {
                     q.TrimExcess();
+                }
+            }
+        }
+
+        private void FreeOldEventBuffers(long stopTimestamp)
+        {
+            while (_buffers.Count > 0)
+            {
+                EventBlockBuffer blockBuffer = _buffers.Peek();
+                if (blockBuffer.MaxEventTimestamp < stopTimestamp)
+                {
+                    _buffers.Dequeue();
+                    ((IDisposable)blockBuffer.Buffer).Dispose();
+                }
+                else
+                {
+                    break;
                 }
             }
         }
@@ -243,18 +257,25 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             }
         }
 
+        struct EventBlockBuffer
+        {
+            public EventBlockBuffer(FixedBuffer buffer, long maxTimestamp)
+            {
+                Buffer = buffer;
+                MaxEventTimestamp = maxTimestamp;
+            }
+            public FixedBuffer Buffer;
+            public long MaxEventTimestamp;
+        }
+
         EventPipeEventSource _source;
         ThreadCache _threads;
+        Queue<EventBlockBuffer> _buffers = new Queue<EventBlockBuffer>();
     }
 
     internal class EventMarker
     {
-        public EventMarker(PinnedBuffer buffer)
-        {
-            Buffer = buffer;
-        }
         public EventPipeEventHeader Header;
-        public PinnedBuffer Buffer;
     }
 
     internal class PinnedBuffer

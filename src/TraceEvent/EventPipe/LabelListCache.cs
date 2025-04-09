@@ -112,9 +112,9 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
     {
         Dictionary<int, LabelList> _labelLists = new Dictionary<int, LabelList>();
 
-        public void ProcessLabelListBlock(byte[] labelListBlock, long startBlockStreamOffset)
+        public void ProcessLabelListBlock(Block block)
         {
-            SpanReader reader = new SpanReader(labelListBlock, startBlockStreamOffset);
+            SpanReader reader = block.Reader;
 
             int curIndex = reader.ReadInt32();
             int count = reader.ReadInt32();

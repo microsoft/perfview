@@ -146,7 +146,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Include="EventPipe\EventPipeFormat.md" />
 
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.nuspec" />
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.props" />
