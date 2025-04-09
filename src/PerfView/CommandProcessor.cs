@@ -3097,6 +3097,11 @@ namespace PerfView
                 cmdLineArgs += " /OSHeapProcess:" + parsedArgs.OSHeapProcess.ToString();
             }
 
+            if (parsedArgs.OSHeapMaxMB != 0)
+            {
+                cmdLineArgs += " /OSHeapMaxMB:" + parsedArgs.OSHeapMaxMB;
+            }
+
             if (parsedArgs.NetworkCapture)
             {
                 cmdLineArgs += " /NetworkCapture";

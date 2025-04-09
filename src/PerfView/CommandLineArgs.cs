@@ -547,7 +547,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("UserCritContention", ref UserCritContention, "Turn on UserCrit contention events.");
             parser.DefineOptionalQualifier("OSHeapProcess", ref OSHeapProcess, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given process ID.");
             parser.DefineOptionalQualifier("OSHeapExe", ref OSHeapExe, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given EXE (only filename WITH extension).");
-            parser.DefineOptionalQualifier("HeapMaxMB", ref OSHeapMaxMB, "Approximate maximum size of OS heap etl file.");
+            parser.DefineOptionalQualifier("OSHeapMaxMB", ref OSHeapMaxMB, "Approximate maximum size of OS heap ETL file.");
 
             parser.DefineOptionalQualifier("NetworkCapture", ref NetworkCapture, "Captures the full data of every network packet entering or leaving the OS.");
             parser.DefineOptionalQualifier("NetMonCapture", ref NetMonCapture, "Create _netmon.etl file that NetMon.exe can read, along with the standard ETL file.   Implies /NetworkCapture.");
