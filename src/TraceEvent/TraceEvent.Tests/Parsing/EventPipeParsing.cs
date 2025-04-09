@@ -1942,6 +1942,48 @@ namespace TraceEventTests
             source.Process();
             Assert.Equal(5, source.EventsLost);
         }
+
+        [Fact] //V6
+        public void V6IncompleteTraceThrowsException()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            // deliberately missing writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+
+            // Past versions of TraceEvent threw System.Exception instead of FormatException
+            // Now we are trying to hold this behavior consistent
+            Assert.Throws<FormatException>(() => source.Process()); 
+        }
+
+        [Fact]
+        public void V5IncompleteTraceThrowsException()
+        {
+            EventPipeWriterV5 writer = new EventPipeWriterV5();
+            writer.WriteHeaders();
+            // deliberately missing writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+
+            // Past versions of TraceEvent threw System.Exception instead of FormatException
+            // Now we are trying to hold this behavior consistent
+            Assert.Throws<FormatException>(() => source.Process());
+        }
+
+#if NETCOREAPP
+        [Fact]
+        public void StreamExtensionsUsesFastPath()
+        {
+            Assert.True(StreamExtensions.IsFastSpanReadAvailable);
+        }
+#else
+        [Fact]
+        public void StreamExtensionsDoesNotUseFastPath()
+        {
+            Assert.False(StreamExtensions.IsFastSpanReadAvailable);
+        }
+#endif
     }
 
 

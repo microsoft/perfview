@@ -1,4 +1,3 @@
-using FastSerialization;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
@@ -7,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -180,31 +178,6 @@ namespace Microsoft.Diagnostics.Tracing
         internal LabelListCache LabelListCache { get; private set; }
 
         internal override string ProcessName(int processID, long timeQPC) => string.Format("Process({0})", processID);
-
-
-#if SUPPORT_V1_V2
-        internal void ReadTraceObjectV1To2(Block block)
-        {
-            SpanReader reader = block.Reader;
-            // The start time is stored as a SystemTime which is a bunch of shorts, convert to DateTime.
-            short year = reader.ReadInt16();
-            short month = reader.ReadInt16();
-            short dayOfWeek = reader.ReadInt16();
-            short day = reader.ReadInt16();
-            short hour = reader.ReadInt16();
-            short minute = reader.ReadInt16();
-            short second = reader.ReadInt16();
-            short milliseconds = reader.ReadInt16();
-            _syncTimeUTC = new DateTime(year, month, day, hour, minute, second, milliseconds, DateTimeKind.Utc);
-            _syncTimeQPC = reader.ReadInt64();
-            _QPCFreq = reader.ReadInt64();
-
-            sessionStartTimeQPC = _syncTimeQPC;
-            _processId = 0; // V1 && V2 tests expect 0 for process Id
-            pointerSize = 8; // V1 EventPipe only supports Linux which is x64 only.
-            numberOfProcessors = 1;
-        }
-#endif
 
         internal void ReadTraceObjectV3To5(Block block)
         {
@@ -768,12 +741,12 @@ namespace Microsoft.Diagnostics.Tracing
 
     internal class V6BlockParser : BlockParser
     {
-
         public V6BlockParser(EventPipeEventSource source, RewindableStream stream) : base(source, stream, 4) { }
 
         protected override BlockHeader ReadBlockHeader()
         {
             int headerInt = _stream.Read<int>();
+            // See NetTraceFormat.md#Blocks for the description of the block header format.
             return new BlockHeader((BlockKind)(headerInt >> 24), headerInt & 0xFFFFFF);
         }
 
@@ -817,9 +790,13 @@ namespace Microsoft.Diagnostics.Tracing
                     break; // ignore unknown block types so that the file format can be extended in the future
             }
         }
-
     }
 
+    /// <summary>
+    /// This parses older versions of the format which used the FastSerialization format. However this implementation
+    /// doesn't use the FastSerialization library to implement it. This gives us more control over how the IO and memory
+    /// management is done and keeps the code structurally more similar to how parsing is done V6.
+    /// </summary>
     internal class FastSerializationObjectParser : BlockParser
     {
         bool _isNetTrace;
@@ -866,7 +843,6 @@ namespace Microsoft.Diagnostics.Tracing
             Span<byte> typeName = stackalloc byte[typeLen];
             _stream.Read(typeName);
             AssertTag(FastSerializationTag.EndObject);
-
 
             int blockSize;
             BlockKind type;
@@ -939,8 +915,6 @@ namespace Microsoft.Diagnostics.Tracing
             switch (block.Kind)
             {
                 case BlockKind.Trace:
-
-                    
                     _source.ReadTraceObjectV3To5(block);
                     break;
 
@@ -982,6 +956,8 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
+        // This is a subset of the tags used by the FastSerialization library. Because we no longer take a dependency
+        // on the FastSerialization library I've got this duplicate definition for the specific tags that we use.
         enum FastSerializationTag : byte
         {
             NullReference = 1,

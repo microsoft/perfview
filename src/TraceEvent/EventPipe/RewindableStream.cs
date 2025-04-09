@@ -1,5 +1,4 @@
-﻿using PEFile;
-using System;
+﻿using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
@@ -78,7 +77,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 int read = _stream.Read(buffer.Slice(bytesRead));
                 if (read == 0)
                 {
-                    throw new EndOfStreamException();
+                    throw new FormatException("Read past end of stream.");
                 }
                 bytesRead += read;
                 _cacheStreamOffset += read;
@@ -94,7 +93,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             if (extraBytes.Length + _cacheBytesAvailable > MaxCacheSize)
             {
                 // This should never happen unless there is a bug in the code
-                throw new InvalidOperationException($"Cache overflow");
+                throw new InvalidOperationException("Cache overflow");
             }
             // copy the new data into the cache
             _cacheBytesAvailable += extraBytes.Length;
@@ -113,6 +112,8 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
     internal static class StreamExtensions
     {
         delegate int StreamReadDelegate(Stream stream, Span<byte> buffer);
+
+        internal static bool IsFastSpanReadAvailable => s_streamReadDelegate != SlowStreamRead;
 
         private static readonly StreamReadDelegate s_streamReadDelegate = InitSpanRead();
 
@@ -147,21 +148,6 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         public static int Read(this Stream stream, Span<byte> buffer)
         {
             return s_streamReadDelegate(stream, buffer);
-        }
-
-        public static int ReadAtLeast(this Stream stream, Span<byte> buffer, int minLength)
-        {
-            int bytesRead = 0;
-            while (bytesRead < minLength)
-            {
-                int read = stream.Read(buffer.Slice(bytesRead));
-                if (read == 0)
-                {
-                    throw new EndOfStreamException();
-                }
-                bytesRead += read;
-            }
-            return bytesRead;
         }
     }
 }
