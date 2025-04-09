@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
     internal sealed class NettraceUniversalConverter
     {
         private List<ProcessSymbolTraceData> _dynamicSymbols = new List<ProcessSymbolTraceData>();
-        private Dictionary<int, TraceProcess> _mappingIdToProcesses = new Dictionary<int, TraceProcess>();
+        private Dictionary<long, TraceProcess> _mappingIdToProcesses = new Dictionary<long, TraceProcess>();
 
         internal NettraceUniversalConverter()
         {
@@ -33,7 +33,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC, isProcessStartEvent: true);
                 process.UniversalProcessStart(data);
             };
-            universalSystemParser.ProcessExit += delegate (ProcessExitTraceData data)
+            universalSystemParser.ProcessExit += delegate (EmptyTraceData data)
             {
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 process.UniversalProcessStop(data);

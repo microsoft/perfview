@@ -71,9 +71,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
 {
     public sealed class SampleTraceData : TraceEvent
     {
-
-        public int ProcessId { get { return GetInt32At(0); } }
-        public Address Value { get { return GetAddressAt(4); } }
+        public Address Value { get { return GetVarUIntAt(0); } }
 
         #region Private
         internal SampleTraceData(Action<SampleTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -85,10 +83,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
         {
             Action(this);
         }
-        protected internal override void Validate()
-        {
-            Debug.Assert(!(Version == 0 && EventDataLength != 12));
-        }
+
         protected internal override Delegate Target
         {
             get { return Action; }
@@ -97,7 +92,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
-            XmlAttrib(sb, "ProcessId", ProcessId);
             XmlAttrib(sb, "Value", Value);
             sb.Append("/>");
             return sb;
@@ -108,7 +102,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ProcessId", "Value" };
+                    payloadNames = new string[] { "Value" };
                 return payloadNames;
             }
         }
@@ -118,8 +112,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
             switch (index)
             {
                 case 0:
-                    return ProcessId;
-                case 1:
                     return Value;
                 default:
                     Debug.Assert(false, "Bad field index");

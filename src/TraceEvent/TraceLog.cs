@@ -5951,7 +5951,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             imageFileName = data.Name;
             parentID = -1;
         }
-        internal void UniversalProcessStop(ProcessExitTraceData data)
+        internal void UniversalProcessStop(EmptyTraceData data)
         {
             endTimeQPC = data.TimeStampQPC;
         }
@@ -8489,7 +8489,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         TraceLoadedModule loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
                         module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
                         moduleFileIndex = module.ModuleFile.ModuleFileIndex;
-                        methodIndex = methods.NewMethod(data.Name, moduleFileIndex, data.Id);
+                        methodIndex = methods.NewMethod(data.Name, moduleFileIndex, (int)data.Id);
                         
                         // When universal traces support re-use of address space, we'll need to support it here.
                     }
