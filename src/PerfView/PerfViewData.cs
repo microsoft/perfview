@@ -42,6 +42,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Utilities;
 using Address = System.UInt64;
 using EventSource = EventSources.EventSource;
+using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
 
 namespace PerfView
 {
@@ -6017,7 +6018,7 @@ table {
                                     {
                                         const int numBuckets = 20;
                                         int bucket = (int)(normalizeDistance * numBuckets);
-                                        int bucketSizeInPages = module.ModuleFile.ImageSize / (numBuckets * 4096);
+                                        int bucketSizeInPages = (int)(module.ModuleFile.ImageSize / (numBuckets * 4096));
                                         string bucketName = "Image Bucket " + bucket + " Size " + bucketSizeInPages + " Pages";
                                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(bucketName), stackIndex);
                                     }
@@ -9403,6 +9404,29 @@ table {
 
         private string m_extraTopStats;
 
+        public override bool SupportsProcesses => m_supportsProcesses;
+
+        private bool m_supportsProcesses;
+
+        public override List<IProcess> GetProcesses(TextWriter log)
+        {
+            var eventLog = GetTraceLog(log);
+            var processes = new List<IProcess>(eventLog.Processes.Count);
+            foreach (var process in eventLog.Processes)
+            {
+                var iprocess = new IProcessForStackSource(process.Name);
+                iprocess.StartTime = process.StartTime;
+                iprocess.EndTime = process.EndTime;
+                iprocess.CPUTimeMSec = process.CPUMSec;
+                iprocess.ParentID = process.ParentID;
+                iprocess.CommandLine = process.CommandLine;
+                iprocess.ProcessID = process.ProcessID;
+                processes.Add(iprocess);
+            }
+            processes.Sort();
+            return processes;
+        }
+
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {
             var traceLog = GetTraceLog(log);
@@ -9433,6 +9457,8 @@ table {
             bool hasAspNetCoreHosting = false;
             bool hasContention = false;
             bool hasWaitHandle = false;
+            bool hasUniversalSystem = false;
+            bool hasUniversalCPU = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -9486,6 +9512,16 @@ table {
                     {
                         hasWaitHandle = true;
                     }
+                    else if (eventStats.ProviderGuid == UniversalSystemTraceEventParser.ProviderGuid)
+                    {
+                        hasUniversalSystem = true;
+                        m_supportsProcesses = true;
+                    }
+                    else if (eventStats.ProviderGuid == UniversalEventsTraceEventParser.ProviderGuid && eventStats.EventName.StartsWith("cpu"))
+                    {
+                        hasUniversalCPU = true;
+                        m_supportsProcesses = true;
+                    }
                 }
             }
 
@@ -9495,13 +9531,30 @@ table {
 
             if (m_traceLog != null)
             {
+                if (hasUniversalSystem) // universal
+                {
+                    m_Children.Add(new PerfViewProcesses(this));
+
+                    if (hasUniversalCPU)
+                    {
+                        m_Children.Add(new PerfViewStackSource(this, "CPU"));
+                    }
+                }
+                else // dotnet-trace
+                {
+                    if (hasAnyStacks)
+                    {
+                        m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities)"));
+                    }
+                }
+
+                // Source agnostic
                 m_Children.Add(new PerfViewEventSource(this));
-                m_Children.Add(new PerfViewEventStats(this));
+                advanced.AddChild(new PerfViewEventStats(this));
 
                 if (hasAnyStacks)
                 {
-                    m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities)"));
-                    m_Children.Add(new PerfViewStackSource(this, "Any"));
+                    advanced.AddChild(new PerfViewStackSource(this, "Any"));
                 }
 
                 if (hasGC)
@@ -9749,6 +9802,26 @@ table {
                         };
                         eventSource.Process();
                         stackSource.DoneAddingSamples();
+
+                        return stackSource;
+                    }
+                case "CPU":
+                    {
+                        var eventLog = GetTraceLog(log);
+                        var eventSource = eventLog.Events.GetSource();
+                        var stackSource = new MutableTraceEventStackSource(eventLog);
+                        var sample = new StackSourceSample(stackSource);
+
+                        var universalEventsParser = new UniversalEventsTraceEventParser(eventSource);
+                        universalEventsParser.cpu += delegate (SampleTraceData data)
+                        {
+                            sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                            sample.Metric = data.Value;
+                            sample.StackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
+                            stackSource.AddSample(sample);
+                            
+                        };
+                        eventSource.Process();
 
                         return stackSource;
                     }
