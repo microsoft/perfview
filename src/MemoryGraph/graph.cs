@@ -1070,7 +1070,7 @@ namespace Graphs
         /// <summary>
         /// The size of the image when loaded in memory
         /// </summary>
-        public int Size;
+        public long Size;
         /// <summary>
         /// The time when this image was built (There is a field in the PE header).   May be MinimumValue if unknonwn. 
         /// </summary>

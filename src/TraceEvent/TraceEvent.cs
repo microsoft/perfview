@@ -1584,6 +1584,17 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
+        /// Skip a UTF8 string that is prepended by its size, stored as a 2-byte unsigned integer.
+        /// </summary>
+        /// <returns>Offset just after the string</returns>
+        protected internal int SkipShortUTF8String(int offset)
+        {
+            IntPtr mofData = DataStart;
+            ushort length = (ushort)TraceEventRawReaders.ReadInt16(mofData, offset);
+            return offset + 2 + length; // + 2 for the length field
+        }
+
+        /// <summary>
         /// Skip UTF8 string starting at 'offset' bytes into the payload blob.
         /// </summary>  
         /// <returns>Offset just after the string</returns>
@@ -1684,7 +1695,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// Given an Offset to a null terminated ASCII string in an event blob, return the string that is
-        /// held there.   
+        /// held there.
         /// </summary>
         protected internal string GetUTF8StringAt(int offset)
         {
@@ -1698,6 +1709,24 @@ namespace Microsoft.Diagnostics.Tracing
                 return TraceEventRawReaders.ReadUTF8String(DataStart, offset, EventDataLength);
             }
         }
+
+        /// <summary>
+        /// Given an Offset to a counted UTF8 string in an event blob, return the string that is
+        /// held there.  The string length is pre-pended to the string and is stored in a ushort (unsigned 16-bytes).
+        /// </summary>
+        protected internal string GetShortUTF8StringAt(int offset)
+        {
+            if (offset >= EventDataLength)
+            {
+                Debug.Assert(false, "Read past end of string");
+                return "<<ERROR EOB>>";
+            }
+            else
+            {
+                return TraceEventRawReaders.ReadShortUTF8String(DataStart, offset, EventDataLength);
+            }
+        }
+
         /// <summary>
         /// Returns the string represented by a fixed length ASCII string starting at 'offset' of length 'charCount'
         /// </summary>
@@ -4666,6 +4695,29 @@ namespace Microsoft.Diagnostics.Tracing
                 buff[i++] = c;
             }
             return Encoding.UTF8.GetString(buff, 0, i);     // Convert to unicode.  
+        }
+
+        internal static unsafe string ReadShortUTF8String(IntPtr pointer, int offset, int bufferLength)
+        {
+            // Read the length of the string
+            ushort length = (ushort)ReadInt16(pointer, offset);
+            if (length == 0)
+            {
+                return string.Empty;
+            }
+            if (length > bufferLength - sizeof(ushort))
+            {
+                throw new FormatException("Invalid UTF8 String");
+            }
+            var buff = new byte[length];
+            byte* ptr = ((byte*)pointer) + offset + sizeof(ushort);
+            ushort i = 0;
+            while (i < length)
+            {
+                byte c = ptr[i];
+                buff[i++] = c;
+            }
+            return Encoding.UTF8.GetString(buff, 0, i);     // Convert to unicode.
         }
     }
 

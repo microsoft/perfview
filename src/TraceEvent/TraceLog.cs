@@ -17,7 +17,9 @@ using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 using Microsoft.Diagnostics.Tracing.Parsers.JScript;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
+using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.SourceConverters;
 using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using System;
@@ -1217,6 +1219,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             new WpfTraceEventParser(this);
 
             var dynamicParser = Dynamic;
+
+            NettraceUniversalConverter.RegisterParsers(this);
+
             registeringStandardParsers = false;
 
         }
@@ -1344,6 +1349,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             jittedMethods = new List<MethodLoadUnloadVerboseTraceData>();
             jsJittedMethods = new List<MethodLoadUnloadJSTraceData>();
             sourceFilesByID = new Dictionary<JavaScriptSourceKey, string>();
+
+            universalConverter = new NettraceUniversalConverter();
 
             // We need to copy some information from the event source.
             // An EventPipeEventSource won't have headers set until Process() is called, so we wait for the event trigger instead of copying right away.
@@ -2092,6 +2099,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
                 };
             }
+
+            universalConverter.BeforeProcess(this, rawEvents);
         }
 
         /// <summary>
@@ -2406,6 +2415,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 codeAddresses.AddMethod(jsJittedMethod, sourceFilesByID);
             }
 
+            universalConverter.AfterProcess(this);
+
             // Make sure that all threads have a process
             foreach (var curThread in Threads)
             {
@@ -2533,7 +2544,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             options.ConversionLog.WriteLine("  {0,8:n0} unique code addresses. ", codeAddresses.Count);
             options.ConversionLog.WriteLine("  {0,8:n0} unique stacks.", callStacks.Count);
             options.ConversionLog.WriteLine("  {0,8:n0} unique managed methods parsed.", codeAddresses.Methods.Count);
-            options.ConversionLog.WriteLine("  {0,8:n0} CLR method event records.", codeAddresses.ManagedMethodRecordCount);
+            options.ConversionLog.WriteLine("  {0,8:n0} dynamic methods.", codeAddresses.DynamicMethods);
             options.ConversionLog.WriteLine("[Conversion complete {0:n0} events.  Conversion took {1:n0} sec.]",
                 eventCount, (DateTime.Now - startTime).TotalSeconds);
         }
@@ -4506,6 +4517,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal TraceEventDispatcher rawKernelEventSource;         // Only used by real time TraceLog on Win7.   It is the
         internal TraceLogOptions options;
         internal bool registeringStandardParsers;                   // Are we registering
+        internal NettraceUniversalConverter universalConverter;
 
         // Used for Real Time
         private struct QueueEntry
@@ -5932,6 +5944,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
             }
         }
+        internal void UniversalProcessStart(ProcessCreateTraceData data)
+        {
+            startTimeQPC = data.TimeStampQPC;
+            commandLine = data.Name;
+            imageFileName = data.Name;
+            parentID = -1;
+        }
+        internal void UniversalProcessStop(EmptyTraceData data)
+        {
+            endTimeQPC = data.TimeStampQPC;
+        }
 
         /// <summary>
         /// Sets the 'Parent' field for the process (based on the ParentID).
@@ -7055,6 +7078,46 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             CheckClassInvarients();
         }
 
+        internal TraceModuleFile UniversalMapping(ProcessMappingTraceData data)
+        {
+            int index;
+
+            // A loaded and managed modules depend on a module file, so get or create one.
+            // TODO: We'll need to store FileOffset as well to handle elf images.
+            TraceModuleFile moduleFile = process.Log.ModuleFiles.GetOrCreateModuleFile(data.FileName, data.StartAddress);
+            moduleFile.imageSize = (long)(data.EndAddress - data.StartAddress);
+
+            // Get or create the loaded module.
+            TraceLoadedModule loadedModule = FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
+            if (loadedModule == null)
+            {   
+                // The module file is what is used when looking up the module for an arbitrary address, so it must save both the start address and image size.
+                loadedModule = new TraceLoadedModule(process, moduleFile, data.StartAddress);
+                
+                // All mappings are enumerated at the beginning of the trace.
+                loadedModule.loadTimeQPC = process.Log.sessionStartTimeQPC;
+                
+                InsertAndSetOverlap(index + 1, loadedModule);
+            }
+
+            // Get or create a managed module.  This module is the container for dynamic symbols.
+            TraceManagedModule managedModule = FindManagedModuleAndIndex((long)data.StartAddress, data.TimeStampQPC, out index);
+            if (managedModule == null)
+            {
+                managedModule = new TraceManagedModule(process, moduleFile, (long)data.StartAddress);
+                modules.Insert(index + 1, managedModule);
+            }
+
+            process.anyModuleLoaded = true;
+
+            // Get the latest version to return.
+            moduleFile = loadedModule.ModuleFile;
+            Debug.Assert(moduleFile != null);
+            CheckClassInvarients();
+
+            return moduleFile;
+        }
+
         internal TraceManagedModule GetOrCreateManagedModule(long managedModuleID, long timeQPC)
         {
             int index;
@@ -7127,7 +7190,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // We only care about the native case.
                 if (canidateModule.key == canidateModule.ImageBase)
                 {
-                    ulong candidateImageEnd = (ulong)canidateModule.ImageBase + (uint)canidateModule.ModuleFile.ImageSize;
+                    ulong candidateImageEnd = (ulong)canidateModule.ImageBase + (ulong)canidateModule.ModuleFile.ImageSize;
                     if ((ulong)address < candidateImageEnd)
                     {
                         // Have we found a match?
@@ -8060,9 +8123,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public TraceModuleFiles ModuleFiles { get { return moduleFiles; } }
         /// <summary>
-        /// Indicates the number of managed method records that were encountered.  This is useful to understand if symbolic information 'mostly works'.
+        /// Indicates the number of dynamic method records that were encountered.  This is useful to understand if symbolic information 'mostly works'.
         /// </summary>
-        public int ManagedMethodRecordCount { get { return managedMethodRecordCount; } }
+        public int DynamicMethods { get { return dynamicMethodCount; } }
         /// <summary>
         /// Initially CodeAddresses for unmanaged code will have no useful name.  Calling LookupSymbolsForModule
         /// lets you resolve the symbols for a particular file so that the TraceCodeAddresses for that DLL
@@ -8372,7 +8435,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         internal void AddMethod(MethodLoadUnloadVerboseTraceData data)
         {
-            managedMethodRecordCount++;
+            dynamicMethodCount++;
             MethodIndex methodIndex = Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid;
             ILMapIndex ilMap = ILMapIndex.Invalid;
             ModuleFileIndex moduleFileIndex = Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid;
@@ -8402,6 +8465,37 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         info.SetILMapIndex(this, ilMap);
                     }
                     info.SetOptimizationTier(data.OptimizationTier);
+                }
+            });
+        }
+
+        internal void AddUniversalDynamicSymbol(ProcessSymbolTraceData data, TraceProcess process)
+        {
+            Debug.Assert(process != null);
+            dynamicMethodCount++;
+            MethodIndex methodIndex = Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid;
+            ModuleFileIndex moduleFileIndex = Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid;
+            TraceManagedModule module = null;
+            ForAllUnresolvedCodeAddressesInRange(process, data.StartAddress, (int)(data.EndAddress - data.StartAddress), true, delegate (ref CodeAddressInfo info)
+            {
+                // If we already resolved, that means that the address was reused, so only add something if it does not already have
+                // information associated with it.
+                if (info.GetMethodIndex(this) == Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid)
+                {
+                    // Lazily create the method since many methods never have code samples in them.
+                    if (module == null)
+                    {
+                        int index;
+                        TraceLoadedModule loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
+                        module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
+                        moduleFileIndex = module.ModuleFile.ModuleFileIndex;
+                        methodIndex = methods.NewMethod(data.Name, moduleFileIndex, (int)data.Id);
+                        
+                        // When universal traces support re-use of address space, we'll need to support it here.
+                    }
+
+                    // Set the info
+                    info.SetMethodIndex(this, methodIndex);
                 }
             });
         }
@@ -8463,7 +8557,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// start+length within the process 'process'.   If 'considerResolved' is true' then the address range
         /// is considered resolved and future calls to this routine will not find the addresses (since they are resolved).
         /// </summary>
-        internal void ForAllUnresolvedCodeAddressesInRange(TraceProcess process, Address start, int length, bool considerResolved, ForAllCodeAddrAction body)
+        internal void ForAllUnresolvedCodeAddressesInRange(TraceProcess process, Address start, long length, bool considerResolved, ForAllCodeAddrAction body)
         {
             if (process.codeAddressesInProcess == null)
             {
@@ -9432,7 +9526,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         private TraceCodeAddress[][] codeAddressObjects;  // If we were asked for TraceCodeAddresses (instead of indexes) we cache them, in sparse array
         private string[] names;                         // A cache (one per code address) of the string name of the address
-        private int managedMethodRecordCount;           // Remembers how many code addresses are managed methods (currently not serialized)
+        private int dynamicMethodCount;           // Remembers how many code addresses are managed methods (currently not serialized)
         internal int totalCodeAddresses;                 // Count of the number of times a code address appears in the log.
 
         // These are actually serialized.
@@ -10193,7 +10287,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Returns the size of the DLL when loaded in memory
         /// </summary>
-        public int ImageSize { get { return imageSize; } }
+        public long ImageSize { get { return imageSize; } }
         /// <summary>
         /// Returns the address just past the memory the module uses.
         /// </summary>
@@ -10344,7 +10438,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         internal string fileName;
-        internal int imageSize;
+        internal long imageSize;
         internal Address imageBase;
         internal string name;
         private ModuleFileIndex moduleFileIndex;
