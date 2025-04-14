@@ -5,7 +5,7 @@ This document describes the definitions of a set of universal machine-wide traci
 
 ## Format Restrictions
  - Any format that can be converted to a TraceLog (ETLX) by TraceEvent can use these event definitions.  At this time, PerfView will only consume them from nettrace files.
- - Formats must provide a common set of fields with each event.  These fields are used by in addition to the payloads listed in this document to interpret the events.  The fields do not explicitly required data types.  If they don't match what TraceEvent uses for storage, then TraceEvent will need to convert them.  It is recommended to use the types specified in the field descriptions below (if specified).
+ - Formats must provide a common set of fields with each event.  These fields are used by in addition to the payloads listed in this document to interpret the events.  The fields do not explicitly require data types.  If they don't match what TraceEvent uses for storage, then TraceEvent will need to convert them.  It is recommended to use the types specified in the field descriptions below (if specified).
  - Formats must provide the QPC frequency to ensure that times that are stored in the Value fields of the Universal Events Provider can be interpreted.
 
 ### Required Fields
