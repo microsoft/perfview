@@ -9,6 +9,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
     {
         private List<ProcessSymbolTraceData> _dynamicSymbols = new List<ProcessSymbolTraceData>();
         private Dictionary<ulong, TraceProcess> _mappingIdToProcesses = new Dictionary<ulong, TraceProcess>();
+        private Dictionary<ulong, ProcessMappingMetadataTraceData> _mappingMetadata = new Dictionary<ulong, ProcessMappingMetadataTraceData>();
 
         internal NettraceUniversalConverter()
         {
@@ -40,10 +41,15 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             };
             universalSystemParser.ProcessMapping += delegate (ProcessMappingTraceData data)
             {
+                _mappingMetadata.TryGetValue(data.MetadataId, out ProcessMappingMetadataTraceData metadata);
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                TraceModuleFile moduleFile = process.LoadedModules.UniversalMapping(data);
+                TraceModuleFile moduleFile = process.LoadedModules.UniversalMapping(data, metadata);
 
                 _mappingIdToProcesses[data.Id] = process;
+            };
+            universalSystemParser.ProcessMappingMetadata += delegate (ProcessMappingMetadataTraceData data)
+            {
+                _mappingMetadata[data.Id] = (ProcessMappingMetadataTraceData)data.Clone();
             };
             universalSystemParser.ProcessSymbol += delegate (ProcessSymbolTraceData data)
             {

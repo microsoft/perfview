@@ -42,6 +42,7 @@
       <NuspecProperties>$(NuspecProperties);SystemReflectionTypeExtensionsVersion=$(SystemReflectionTypeExtensionsVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);SystemRuntimeCompilerServicesUnsafeVersion=$(SystemRuntimeCompilerServicesUnsafeVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);MicrosoftDiagnosticsNETCoreClientVersion=$(MicrosoftDiagnosticsNETCoreClientVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemTextJsonVersion=$(SystemTextJsonVersion)</NuspecProperties>
     </PropertyGroup>
   </Target>
 
@@ -59,6 +60,7 @@
     <PackageReference Include="System.Reflection.TypeExtensions" Version="$(SystemReflectionTypeExtensionsVersion)" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
     <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="$(MicrosoftDiagnosticsNETCoreClientVersion)" />
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
 
   <ItemGroup>

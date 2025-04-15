@@ -4107,7 +4107,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 74; }
+            get { return 75; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -7078,7 +7078,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             CheckClassInvarients();
         }
 
-        internal TraceModuleFile UniversalMapping(ProcessMappingTraceData data)
+        internal TraceModuleFile UniversalMapping(ProcessMappingTraceData data, ProcessMappingMetadataTraceData metadata)
         {
             int index;
 
@@ -7114,6 +7114,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             moduleFile = loadedModule.ModuleFile;
             Debug.Assert(moduleFile != null);
             CheckClassInvarients();
+
+            PEProcessMappingSymbolMetadata symbolMetadata = metadata?.ParsedSymbolMetadata as PEProcessMappingSymbolMetadata;
+            if (symbolMetadata != null)
+            {
+                moduleFile.pdbName = symbolMetadata.PdbName;
+                moduleFile.pdbAge = symbolMetadata.PdbAge;
+                moduleFile.pdbSignature = symbolMetadata.PdbSignature;
+                moduleFile.r2rPerfMapSignature = symbolMetadata.PerfmapSignature;
+                moduleFile.r2rPerfMapVersion = symbolMetadata.PerfmapVersion;
+                moduleFile.r2rPerfMapName = symbolMetadata.PerfmapName;
+            }
 
             return moduleFile;
         }
@@ -10307,6 +10318,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public int PdbAge { get { return pdbAge; } }
 
         /// <summary>
+        /// Returns the GUID that uniquely identifies the R2R perfmap file for this DLL
+        /// </summary>
+        public Guid R2RPerfMapSignature { get { return r2rPerfMapSignature; } }
+
+        /// <summary>
+        /// Returns the version number of the R2R perfmap file format.
+        /// </summary>
+        public int R2RPerfMapVersion { get { return r2rPerfMapVersion; } }
+
+        /// <summary>
+        /// Returns the name of the R2R perfmap file.
+        /// </summary>
+        public string R2RPerfMapName { get { return r2rPerfMapName; } }
+
+        /// <summary>
         /// Returns the file version string that is optionally embedded in the DLL's resources.   Returns the empty string if not present.
         /// </summary>
         public string FileVersion { get { return fileVersion; } }
@@ -10448,6 +10474,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal string pdbName;
         internal Guid pdbSignature;
         internal int pdbAge;
+        internal Guid r2rPerfMapSignature;
+        internal int r2rPerfMapVersion;
+        internal string r2rPerfMapName;
         internal string fileVersion;
         internal string productName;
         internal string productVersion;
@@ -10466,6 +10495,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Write(pdbName);
             serializer.Write(pdbSignature);
             serializer.Write(pdbAge);
+            serializer.Write(r2rPerfMapSignature);
+            serializer.Write(r2rPerfMapVersion);
+            serializer.Write(r2rPerfMapName);
             serializer.Write(fileVersion);
             serializer.Write(productVersion);
             serializer.Write(timeDateStamp);
@@ -10483,6 +10515,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out pdbName);
             deserializer.Read(out pdbSignature);
             deserializer.Read(out pdbAge);
+            deserializer.Read(out r2rPerfMapSignature);
+            deserializer.Read(out r2rPerfMapVersion);
+            deserializer.Read(out r2rPerfMapName);
             deserializer.Read(out fileVersion);
             deserializer.Read(out productVersion);
             deserializer.Read(out timeDateStamp);

@@ -25,7 +25,7 @@ namespace Microsoft.Diagnostics.Symbols
     /// http://msdn.microsoft.com/library/x93ctkx8.aspx for more.   I have only exposed what
     /// I need, and the interface is quite large (and not super pretty).  
     /// </summary>
-    public unsafe class NativeSymbolModule : ManagedSymbolModule, IDisposable
+    public unsafe class NativeSymbolModule : ManagedSymbolModule, IDisposable, ISymbolLookup
     {
         /// <summary>
         /// Returns the name of the type allocated for a given relative virtual address.
