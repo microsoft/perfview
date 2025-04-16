@@ -6,7 +6,6 @@ namespace Microsoft.Diagnostics.Symbols
 {
     internal interface ISymbolLookup
     {
-        string FindNameForRva(uint rva);
-
+        string FindNameForRva(uint rva, ref uint symbolStart);
     }
 }

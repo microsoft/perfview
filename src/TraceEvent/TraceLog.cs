@@ -7124,6 +7124,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 moduleFile.r2rPerfMapSignature = symbolMetadata.PerfmapSignature;
                 moduleFile.r2rPerfMapVersion = symbolMetadata.PerfmapVersion;
                 moduleFile.r2rPerfMapName = symbolMetadata.PerfmapName;
+                moduleFile.r2rImageTextVirtualOffset = (uint)symbolMetadata.TextOffset;
             }
 
             return moduleFile;
@@ -8804,11 +8805,22 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             reader.m_log.WriteLine("[Loading symbols for " + moduleFile.FilePath + "]");
 
-            NativeSymbolModule moduleReader = OpenPdbForModuleFile(reader, moduleFile) as NativeSymbolModule;
-            if (moduleReader == null)
+            ISymbolLookup symbolLookup = null;
+            R2RPerfMapSymbolModule r2rSymbolModule = OpenR2RPerfMapForModuleFile(reader, moduleFile);
+            if (r2rSymbolModule != null)
             {
-                reader.m_log.WriteLine("Could not find PDB file.");
-                return;
+                symbolLookup = r2rSymbolModule;
+            }
+            else
+            {
+                NativeSymbolModule moduleReader = OpenPdbForModuleFile(reader, moduleFile) as NativeSymbolModule;
+                if (moduleReader == null)
+                {
+                    reader.m_log.WriteLine("Could not find PDB file.");
+                    return;
+                }
+
+                symbolLookup = moduleReader;
             }
 
             reader.m_log.WriteLine("Loaded, resolving symbols");
@@ -8839,7 +8851,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     else
                     {
                         uint symbolStart = 0;
-                        var newMethodName = moduleReader.FindNameForRva((uint)(address - moduleFile.ImageBase), ref symbolStart);
+                        var newMethodName = symbolLookup.FindNameForRva((uint)(address - moduleFile.ImageBase), ref symbolStart);
                         if (newMethodName.Length > 0)
                         {
                             // TODO FIX NOW
@@ -9016,6 +9028,37 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             symReader.m_log.WriteLine("Opened Pdb file {0}", pdbFileName);
             return symbolReaderModule;
+        }
+
+        /// <summary>
+        /// Look up the SymbolModule (open R2R perfmap) for a given moduleFile.
+        /// </summary>
+        private unsafe R2RPerfMapSymbolModule OpenR2RPerfMapForModuleFile(SymbolReader symReader, TraceModuleFile moduleFile)
+        {
+            // If we have a signature, use it
+            if (moduleFile.r2rPerfMapSignature != Guid.Empty)
+            {
+                string filePath = symReader.FindR2RPerfMapSymbolFilePath(moduleFile.R2RPerfMapName, moduleFile.R2RPerfMapSignature, moduleFile.R2RPerfMapVersion);
+                if (filePath != null)
+                {
+                    R2RPerfMapSymbolModule symbolModule = symReader.OpenR2RPerfMapSymbolFile(filePath, moduleFile.R2RImageTextVirtualOffset);
+                    if (symbolModule != null && symbolModule.Signature == moduleFile.R2RPerfMapSignature && symbolModule.Version == moduleFile.R2RPerfMapVersion)
+                    {
+                        return symbolModule;
+                    }
+                    else
+                    {
+                        symReader.m_log.WriteLine("ERROR: The R2R perfmap does not match the loaded module.  Actual Signature = " + symbolModule.Signature + " Requested Signature = " + moduleFile.R2RPerfMapSignature);
+                        return null;
+                    }
+                }
+            }
+            else
+            {
+                symReader.m_log.WriteLine("No R2R perfmap signature for {0} in trace.", moduleFile.FilePath);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -10333,6 +10376,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public string R2RPerfMapName { get { return r2rPerfMapName; } }
 
         /// <summary>
+        /// Returns the offset in bytes between the beginning of the PE image and the beginning of the text section according to the loaded layout.
+        /// </summary>
+        public uint R2RImageTextVirtualOffset { get { return r2rImageTextVirtualOffset; } }
+
+        /// <summary>
         /// Returns the file version string that is optionally embedded in the DLL's resources.   Returns the empty string if not present.
         /// </summary>
         public string FileVersion { get { return fileVersion; } }
@@ -10477,6 +10525,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal Guid r2rPerfMapSignature;
         internal int r2rPerfMapVersion;
         internal string r2rPerfMapName;
+        internal uint r2rImageTextVirtualOffset;
         internal string fileVersion;
         internal string productName;
         internal string productVersion;
@@ -10498,6 +10547,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Write(r2rPerfMapSignature);
             serializer.Write(r2rPerfMapVersion);
             serializer.Write(r2rPerfMapName);
+            serializer.Write((int)r2rImageTextVirtualOffset);
             serializer.Write(fileVersion);
             serializer.Write(productVersion);
             serializer.Write(timeDateStamp);
@@ -10518,6 +10568,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out r2rPerfMapSignature);
             deserializer.Read(out r2rPerfMapVersion);
             deserializer.Read(out r2rPerfMapName);
+            r2rImageTextVirtualOffset = (uint)deserializer.ReadInt();
             deserializer.Read(out fileVersion);
             deserializer.Read(out productVersion);
             deserializer.Read(out timeDateStamp);

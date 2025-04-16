@@ -468,6 +468,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
         public int PerfmapVersion { get; set; }
         [JsonPropertyName("perfmap_name")]
         public string PerfmapName { get; set; }
+        [JsonPropertyName("text_offset")]
+        public ulong TextOffset { get; set; }
     }
 
     internal sealed class ELFProcessMappingSymbolMetadata : ProcessMappingSymbolMetadata
