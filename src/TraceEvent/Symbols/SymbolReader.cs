@@ -33,6 +33,7 @@ namespace Microsoft.Diagnostics.Symbols
             m_log = TextWriter.Synchronized(log);
             m_symbolModuleCache = new Cache<string, ManagedSymbolModule>(10);
             m_pdbPathCache = new Cache<PdbSignature, string>(10);
+            m_r2rPerfMapPathCache = new Cache<R2RPerfMapSignature, string>(10);
 
             m_symbolPath = nt_symbol_path;
             if (m_symbolPath == null)
@@ -305,6 +306,80 @@ namespace Microsoft.Diagnostics.Symbols
             return pdbPath;
         }
 
+        internal string FindR2RPerfMapSymbolFilePath(string perfMapName, Guid perfMapSignature, int perfMapVersion)
+        {
+            m_log.WriteLine("FindR2RPerfMapSymbolFile: *{{ Locating R2R perfmap symbol file {0} Signature {1} Version {2}", perfMapName, perfMapSignature, perfMapVersion);
+
+            string indexPath = null;
+            string perfMapPath = null;
+            string symbolCacheTargetPath = null;
+            R2RPerfMapSignature cacheKey = new R2RPerfMapSignature() { Name = perfMapName, Signature = perfMapSignature, Version = perfMapVersion };
+            if (m_r2rPerfMapPathCache.TryGet(cacheKey, out perfMapPath))
+            {
+                m_log.WriteLine("FindR2RPerfMapSymbolFile: }} Hit Cache, returning {0}", perfMapPath);
+                return perfMapPath;
+            }
+            SymbolPath path = new SymbolPath(SymbolPath);
+            foreach (SymbolPathElement element in path.Elements)
+            {
+                if (element.IsSymServer)
+                {
+                    string cache = element.Cache;
+                    if (cache == null)
+                    {
+                        cache = path.DefaultSymbolCache();
+                    }
+                    if (indexPath == null)
+                    {
+                        indexPath = $"/{perfMapName}/r2rmap-v{perfMapVersion}-{perfMapSignature:N}/{perfMapName}";
+                    }
+                    if (symbolCacheTargetPath == null)
+                    {
+                        symbolCacheTargetPath = Path.Combine(perfMapName,  perfMapVersion.ToString() + "-" + perfMapSignature.ToString("N"), perfMapName);
+                    }
+                    perfMapPath = GetFileFromServer(element.Target, indexPath, Path.Combine(cache, symbolCacheTargetPath));
+                    if (perfMapPath != null)
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    string filePath = Path.Combine(element.Target, perfMapName);
+                    if ((Options & SymbolReaderOptions.CacheOnly) == 0 || !element.IsRemote)
+                    {
+                        if (File.Exists(filePath))
+                        {
+                            perfMapPath = filePath;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        m_log.WriteLine("FindR2RPerfMapSymbolFilePath: location {0} is remote and cacheOnly set, giving up.", filePath);
+                    }
+                }
+            }
+
+            if (perfMapPath != null)
+            {
+                m_log.WriteLine("FindR2RPerfMapSymbolFilePath: *}} Successfully found R2R perfmap symbol file {0} Signature {1} Version {2}", perfMapName, perfMapSignature, perfMapVersion);
+            }
+            else
+            {
+                string where = "";
+                if ((Options & SymbolReaderOptions.CacheOnly) != 0)
+                {
+                    where = " in local cache";
+                }
+
+                m_log.WriteLine("FindR2RPerfMapSymbolFilePath: *}} Failed to find R2R perfmap symbol file {0}{1} Signature {2} Version {3}", perfMapName, where, perfMapSignature, perfMapVersion);
+            }
+
+            m_r2rPerfMapPathCache.Add(cacheKey, perfMapPath);
+            return perfMapPath;
+        }
+
         // Find an executable file path (not a PDB) based on information about the file image.  
         /// <summary>
         /// This API looks up an executable file, by its build-timestamp and size (on a symbol server),  'fileName' should be 
@@ -416,6 +491,11 @@ namespace Microsoft.Diagnostics.Symbols
         public NativeSymbolModule OpenNativeSymbolFile(string pdbFileName)
         {
             return OpenSymbolFile(pdbFileName) as NativeSymbolModule;
+        }
+
+        internal R2RPerfMapSymbolModule OpenR2RPerfMapSymbolFile(string filePath, uint loadedLayoutTextOffset)
+        {
+            return new R2RPerfMapSymbolModule(filePath, loadedLayoutTextOffset);
         }
 
         // Various state that controls symbol and source file lookup.  
@@ -1609,6 +1689,15 @@ namespace Microsoft.Diagnostics.Symbols
             public int Age;
         }
 
+        private struct R2RPerfMapSignature : IEquatable<R2RPerfMapSignature>
+        {
+            public override int GetHashCode() { return Name.GetHashCode() + Signature.GetHashCode() + Version.GetHashCode(); }
+            public bool Equals(R2RPerfMapSignature other) { return Name == other.Name && Signature == other.Signature && Version == other.Version; }
+            public string Name;
+            public Guid Signature;
+            public int Version;
+        }
+
         internal TextWriter m_log;
         private List<string> m_deadServers;     // What servers can't be reached right now
         private DateTime m_lastDeadTimeUtc;     // The last time something went dead.  
@@ -1616,6 +1705,7 @@ namespace Microsoft.Diagnostics.Symbols
         private string m_SourceCacheDirectory;
         private Cache<string, ManagedSymbolModule> m_symbolModuleCache;
         private Cache<PdbSignature, string> m_pdbPathCache;
+        private Cache<R2RPerfMapSignature, string> m_r2rPerfMapPathCache;
         private string m_symbolPath;
 
         #endregion

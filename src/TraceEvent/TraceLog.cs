@@ -4107,7 +4107,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 74; }
+            get { return 75; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -7078,7 +7078,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             CheckClassInvarients();
         }
 
-        internal TraceModuleFile UniversalMapping(ProcessMappingTraceData data)
+        internal TraceModuleFile UniversalMapping(ProcessMappingTraceData data, ProcessMappingMetadataTraceData metadata)
         {
             int index;
 
@@ -7114,6 +7114,18 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             moduleFile = loadedModule.ModuleFile;
             Debug.Assert(moduleFile != null);
             CheckClassInvarients();
+
+            PEProcessMappingSymbolMetadata symbolMetadata = metadata?.ParsedSymbolMetadata as PEProcessMappingSymbolMetadata;
+            if (symbolMetadata != null)
+            {
+                moduleFile.pdbName = symbolMetadata.PdbName;
+                moduleFile.pdbAge = symbolMetadata.PdbAge;
+                moduleFile.pdbSignature = symbolMetadata.PdbSignature;
+                moduleFile.r2rPerfMapSignature = symbolMetadata.PerfmapSignature;
+                moduleFile.r2rPerfMapVersion = symbolMetadata.PerfmapVersion;
+                moduleFile.r2rPerfMapName = symbolMetadata.PerfmapName;
+                moduleFile.r2rImageTextVirtualOffset = (uint)symbolMetadata.TextOffset;
+            }
 
             return moduleFile;
         }
@@ -8793,11 +8805,26 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             reader.m_log.WriteLine("[Loading symbols for " + moduleFile.FilePath + "]");
 
-            NativeSymbolModule moduleReader = OpenPdbForModuleFile(reader, moduleFile) as NativeSymbolModule;
-            if (moduleReader == null)
+            // There is where we hook up R2R symbol lookup for Linux.  These symbol modules are .r2rmap files.
+            // The R2R modules that are used on Linux still have a pointer to the IL PDB, so we need to look for a R2R symbol module
+            // before attempting to lookup a PDB, or we may end up with an IL PDB, which won't be helpful for symbol lookup.
+            // For Windows traces this call will always return immediately because the module won't have any R2R perfmap information.
+            ISymbolLookup symbolLookup = null;
+            R2RPerfMapSymbolModule r2rSymbolModule = OpenR2RPerfMapForModuleFile(reader, moduleFile);
+            if (r2rSymbolModule != null)
             {
-                reader.m_log.WriteLine("Could not find PDB file.");
-                return;
+                symbolLookup = r2rSymbolModule;
+            }
+            else
+            {
+                NativeSymbolModule moduleReader = OpenPdbForModuleFile(reader, moduleFile) as NativeSymbolModule;
+                if (moduleReader == null)
+                {
+                    reader.m_log.WriteLine("Could not find PDB file.");
+                    return;
+                }
+
+                symbolLookup = moduleReader;
             }
 
             reader.m_log.WriteLine("Loaded, resolving symbols");
@@ -8828,7 +8855,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     else
                     {
                         uint symbolStart = 0;
-                        var newMethodName = moduleReader.FindNameForRva((uint)(address - moduleFile.ImageBase), ref symbolStart);
+                        var newMethodName = symbolLookup.FindNameForRva((uint)(address - moduleFile.ImageBase), ref symbolStart);
                         if (newMethodName.Length > 0)
                         {
                             // TODO FIX NOW
@@ -9005,6 +9032,37 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             symReader.m_log.WriteLine("Opened Pdb file {0}", pdbFileName);
             return symbolReaderModule;
+        }
+
+        /// <summary>
+        /// Look up the SymbolModule (open R2R perfmap) for a given moduleFile.
+        /// </summary>
+        private unsafe R2RPerfMapSymbolModule OpenR2RPerfMapForModuleFile(SymbolReader symReader, TraceModuleFile moduleFile)
+        {
+            // If we have a signature, use it
+            if (moduleFile.r2rPerfMapSignature != Guid.Empty)
+            {
+                string filePath = symReader.FindR2RPerfMapSymbolFilePath(moduleFile.R2RPerfMapName, moduleFile.R2RPerfMapSignature, moduleFile.R2RPerfMapVersion);
+                if (filePath != null)
+                {
+                    R2RPerfMapSymbolModule symbolModule = symReader.OpenR2RPerfMapSymbolFile(filePath, moduleFile.R2RImageTextVirtualOffset);
+                    if (symbolModule != null && symbolModule.Signature == moduleFile.R2RPerfMapSignature && symbolModule.Version == moduleFile.R2RPerfMapVersion)
+                    {
+                        return symbolModule;
+                    }
+                    else
+                    {
+                        symReader.m_log.WriteLine("ERROR: The R2R perfmap does not match the loaded module.  Actual Signature = " + symbolModule.Signature + " Requested Signature = " + moduleFile.R2RPerfMapSignature);
+                        return null;
+                    }
+                }
+            }
+            else
+            {
+                symReader.m_log.WriteLine("No R2R perfmap signature for {0} in trace.", moduleFile.FilePath);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -10307,6 +10365,26 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public int PdbAge { get { return pdbAge; } }
 
         /// <summary>
+        /// Returns the GUID that uniquely identifies the R2R perfmap file for this DLL
+        /// </summary>
+        public Guid R2RPerfMapSignature { get { return r2rPerfMapSignature; } }
+
+        /// <summary>
+        /// Returns the version number of the R2R perfmap file format.
+        /// </summary>
+        public int R2RPerfMapVersion { get { return r2rPerfMapVersion; } }
+
+        /// <summary>
+        /// Returns the name of the R2R perfmap file.
+        /// </summary>
+        public string R2RPerfMapName { get { return r2rPerfMapName; } }
+
+        /// <summary>
+        /// Returns the offset in bytes between the beginning of the PE image and the beginning of the text section according to the loaded layout.
+        /// </summary>
+        public uint R2RImageTextVirtualOffset { get { return r2rImageTextVirtualOffset; } }
+
+        /// <summary>
         /// Returns the file version string that is optionally embedded in the DLL's resources.   Returns the empty string if not present.
         /// </summary>
         public string FileVersion { get { return fileVersion; } }
@@ -10448,6 +10526,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal string pdbName;
         internal Guid pdbSignature;
         internal int pdbAge;
+        internal Guid r2rPerfMapSignature;
+        internal int r2rPerfMapVersion;
+        internal string r2rPerfMapName;
+        internal uint r2rImageTextVirtualOffset;
         internal string fileVersion;
         internal string productName;
         internal string productVersion;
@@ -10466,6 +10548,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Write(pdbName);
             serializer.Write(pdbSignature);
             serializer.Write(pdbAge);
+            serializer.Write(r2rPerfMapSignature);
+            serializer.Write(r2rPerfMapVersion);
+            serializer.Write(r2rPerfMapName);
+            serializer.Write((int)r2rImageTextVirtualOffset);
             serializer.Write(fileVersion);
             serializer.Write(productVersion);
             serializer.Write(timeDateStamp);
@@ -10483,6 +10569,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out pdbName);
             deserializer.Read(out pdbSignature);
             deserializer.Read(out pdbAge);
+            deserializer.Read(out r2rPerfMapSignature);
+            deserializer.Read(out r2rPerfMapVersion);
+            deserializer.Read(out r2rPerfMapName);
+            r2rImageTextVirtualOffset = (uint)deserializer.ReadInt();
             deserializer.Read(out fileVersion);
             deserializer.Read(out productVersion);
             deserializer.Read(out timeDateStamp);
