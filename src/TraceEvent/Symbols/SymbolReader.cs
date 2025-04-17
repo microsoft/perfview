@@ -10,7 +10,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftAntimalwareEngine;
 using Microsoft.Diagnostics.Utilities;
 
 namespace Microsoft.Diagnostics.Symbols
@@ -364,11 +363,6 @@ namespace Microsoft.Diagnostics.Symbols
 
             if (perfMapPath != null)
             {
-                //if (OnSymbolFileFound != null)
-                //{
-                //    OnSymbolFileFound(pdbPath, pdbIndexGuid, pdbIndexAge);
-                //}
-
                 m_log.WriteLine("FindR2RPerfMapSymbolFilePath: *}} Successfully found R2R perfmap symbol file {0} Signature {1} Version {2}", perfMapName, perfMapSignature, perfMapVersion);
             }
             else

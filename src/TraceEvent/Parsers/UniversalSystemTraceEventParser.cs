@@ -418,7 +418,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
         #endregion
     }
 
-
+    /// <summary>
+    /// Parser for ProcessMappingSymbolMetadata events.  The payload arrives in JSON format.
+    /// </summary>
     internal static class ProcessMappingSymbolMetadataParser
     {
         private static readonly JsonSerializerOptions Options = new JsonSerializerOptions()

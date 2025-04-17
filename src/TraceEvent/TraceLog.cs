@@ -8805,6 +8805,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             reader.m_log.WriteLine("[Loading symbols for " + moduleFile.FilePath + "]");
 
+            // There is where we hook up R2R symbol lookup for Linux.  These symbol modules are .r2rmap files.
+            // The R2R modules that are used on Linux still have a pointer to the IL PDB, so we need to look for a R2R symbol module
+            // before attempting to lookup a PDB, or we may end up with an IL PDB, which won't be helpful for symbol lookup.
+            // For Windows traces this call will always return immediately because the module won't have any R2R perfmap information.
             ISymbolLookup symbolLookup = null;
             R2RPerfMapSymbolModule r2rSymbolModule = OpenR2RPerfMapForModuleFile(reader, moduleFile);
             if (r2rSymbolModule != null)

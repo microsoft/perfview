@@ -1,11 +1,5 @@
-﻿using Microsoft.Diagnostics.Symbols;
-using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
+﻿using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -60,6 +54,7 @@ namespace TraceEventTests
             Assert.Null(peMetadata.PerfmapName);
         }
 
+        [Fact]
         public void PEProcessMappingMetadata_Empty()
         {
             string rawJson = @"{""type"": ""PE""}";
