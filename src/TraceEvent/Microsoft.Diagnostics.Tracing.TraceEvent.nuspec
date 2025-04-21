@@ -36,6 +36,7 @@
         <dependency id="System.Reflection.TypeExtensions" version="$SystemReflectionTypeExtensionsVersion$" />
         <dependency id="System.Runtime.CompilerServices.Unsafe" version="$SystemRuntimeCompilerServicesUnsafeVersion$" />
         <dependency id="Microsoft.Diagnostics.NETCore.Client" version="$MicrosoftDiagnosticsNETCoreClientVersion$" />
+        <dependency id="System.Text.Json" version="$SystemTextJsonVersion$" />
       </group>
     </dependencies>
   </metadata>

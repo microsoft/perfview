@@ -10154,6 +10154,59 @@ table {
 
         public TraceLog TryGetTraceLog() { return m_traceLog; }
 
+        /// <summary>
+        /// Find symbols for the simple module name 'simpleModuleName.  If 'processId' is non-zero then only search for modules loaded in that
+        /// process, otherwise look systemWide.
+        /// </summary>
+        public override void LookupSymbolsForModule(string simpleModuleName, TextWriter log, int processId = 0)
+        {
+            var symReader = GetSymbolReader(log);
+
+            // If we have a process, look the DLL up just there
+            var moduleFiles = new Dictionary<int, TraceModuleFile>();
+            if (processId != 0)
+            {
+                var process = m_traceLog.Processes.LastProcessWithID(processId);
+                if (process != null)
+                {
+                    foreach (var loadedModule in process.LoadedModules)
+                    {
+                        if (string.Compare(loadedModule.Name, simpleModuleName, StringComparison.OrdinalIgnoreCase) == 0)
+                        {
+                            moduleFiles[(int)loadedModule.ModuleFile.ModuleFileIndex] = loadedModule.ModuleFile;
+                        }
+                    }
+                }
+            }
+
+            // We did not find it, try system-wide
+            if (moduleFiles.Count == 0)
+            {
+                foreach (var moduleFile in m_traceLog.ModuleFiles)
+                {
+                    if (string.Compare(moduleFile.Name, simpleModuleName, StringComparison.OrdinalIgnoreCase) == 0)
+                    {
+                        moduleFiles[(int)moduleFile.ModuleFileIndex] = moduleFile;
+                    }
+                }
+            }
+
+            if (moduleFiles.Count == 0)
+            {
+                throw new ApplicationException("Could not find module " + simpleModuleName + " in trace.");
+            }
+
+            if (moduleFiles.Count > 1)
+            {
+                log.WriteLine("Found {0} modules with name {1}", moduleFiles.Count, simpleModuleName);
+            }
+
+            foreach (var moduleFile in moduleFiles.Values)
+            {
+                m_traceLog.CodeAddresses.LookupSymbolsForModule(symReader, moduleFile);
+            }
+        }
+
         #region Private
 
         private void HandleLostEvents(Window parentWindow, bool truncated, int numberOfLostEvents, int eventCountAtTrucation, StatusBar worker)
