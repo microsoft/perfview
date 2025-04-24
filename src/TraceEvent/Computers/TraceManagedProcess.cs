@@ -4825,11 +4825,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 if (data.Times != null)
                 {
                     _event.TimingInfo = new Nullable<int>[(int)TraceGC.TimingType.Sweep + 1];
+
+                    // These are fired by all GCs and the only fields fired by BGCs.
                     _event.TimingInfo[(int)TraceGC.TimingType.MarkRoot] = data.Times[1];
                     _event.TimingInfo[(int)TraceGC.TimingType.MarkShortWeak] = data.Times[2];
                     _event.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization] = data.Times[3];
                     _event.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak] = data.Times[4];
-                    if (_event.Type != GCType.BackgroundGC)
+
+                    // Instead of checking for the type we check the length of the data because we could be in
+                    // a situation where the beginning of a BGC is not in the trace and GetLastGC might not
+                    // get the actual BGC when it should.
+                    if (data.Times.Length > 5)
                     {
                         _event.TimingInfo[(int)TraceGC.TimingType.Plan] = data.Times[5];
                         if ((_event.GlobalHeapHistory.GlobalMechanisms & GCGlobalMechanisms.Compaction) != 0)
