@@ -1984,6 +1984,102 @@ namespace TraceEventTests
             Assert.False(StreamExtensions.IsFastSpanReadAvailable);
         }
 #endif
+
+        [Fact]
+        void V5StartStopOpcodeRemovedFromEventNames()
+        {
+            EventPipeWriterV5 writer = new EventPipeWriterV5();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(
+                new EventMetadata(1, "TestProvider", "ActivityStart", 15) { OpCode = (byte)EventOpcode.Start },
+                new EventMetadata(2, "TestProvider", "ActivityStop", 16) { OpCode = (byte)EventOpcode.Stop },
+                new EventMetadata(3, "TestProvider2", "ActivityStart", 15),
+                new EventMetadata(4, "TestProvider2", "ActivityStop", 16));
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlobV4Or5(1, 999, 1, Array.Empty<byte>());
+                w.WriteEventBlobV4Or5(2, 999, 2, Array.Empty<byte>());
+                w.WriteEventBlobV4Or5(3, 999, 3, Array.Empty<byte>());
+                w.WriteEventBlobV4Or5(4, 999, 4, Array.Empty<byte>());
+            });
+            writer.WriteEndObject();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                if (eventCount == 1)
+                {
+                    Assert.Equal("Activity/Start", e.EventName);
+                }
+                else if (eventCount == 2)
+                {
+                    Assert.Equal("Activity/Stop", e.EventName);
+                }
+                else if (eventCount == 3)
+                {
+                    Assert.Equal("Activity/Start", e.EventName);
+                }
+                else if (eventCount == 4)
+                {
+                    Assert.Equal("Activity/Stop", e.EventName);
+                }
+            };
+            source.Process();
+            Assert.Equal(4, eventCount);
+
+        }
+
+        [Fact]
+        void V6StartStopOpcodeRemovedFromEventNames()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(
+                new EventMetadata(1, "TestProvider", "ActivityStart", 15) {  OpCode = (byte)EventOpcode.Start},
+                new EventMetadata(2, "TestProvider", "ActivityStop", 16) { OpCode = (byte)EventOpcode.Stop },
+                new EventMetadata(3, "TestProvider2", "ActivityStart", 15),
+                new EventMetadata(4, "TestProvider2", "ActivityStop", 16));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, Array.Empty<byte>());
+                w.WriteEventBlob(2, 999, 2, Array.Empty<byte>());
+                w.WriteEventBlob(3, 999, 3, Array.Empty<byte>());
+                w.WriteEventBlob(4, 999, 4, Array.Empty<byte>());
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                if (eventCount == 1)
+                {
+                    Assert.Equal("Activity/Start", e.EventName);
+                }
+                else if(eventCount == 2)
+                {
+                    Assert.Equal("Activity/Stop", e.EventName);
+                }
+                else if (eventCount == 3)
+                {
+                    Assert.Equal("Activity/Start", e.EventName);
+                }
+                else if (eventCount == 4)
+                {
+                    Assert.Equal("Activity/Stop", e.EventName);
+                }
+            };
+            source.Process();
+            Assert.Equal(4, eventCount);
+
+        }
     }
 
 
@@ -2725,6 +2821,10 @@ namespace TraceEventTests
             {
                 w.WriteV5InitialMetadataBlob(eventMetadataBlob.MetadataId, eventMetadataBlob.ProviderName, eventMetadataBlob.EventName, eventMetadataBlob.EventId);
                 w.WriteV5MetadataParameterList();
+                if(eventMetadataBlob.OpCode != 0)
+                {
+                    w.WriteV5OpcodeMetadataTag(eventMetadataBlob.OpCode);
+                }
             });
         }
 
@@ -2783,6 +2883,14 @@ namespace TraceEventTests
             writer.Write((int)payloadSize);
             writer.Write((byte)tag);
             writer.Write(payloadBlob.GetBuffer(), 0, payloadSize);
+        }
+
+        public static void WriteV5OpcodeMetadataTag(this BinaryWriter writer, byte opcode)
+        {
+            WriteV5MetadataTagBytes(writer, 1 /* OpcodeTag */, w =>
+            {
+                w.Write((byte)opcode);
+            });
         }
 
         public static void WriteV5MetadataV2ParamTag(this BinaryWriter writer, int fieldCount, Action<BinaryWriter> writeFields)

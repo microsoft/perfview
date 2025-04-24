@@ -771,6 +771,8 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 ExtractImpliedOpcode();
             }
+            
+            StripStartStopInEventName();
         }
 
         public static Guid GetProviderGuidFromProviderName(string name)
@@ -875,7 +877,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// If the event doesn't have an explicit Opcode and the event name ends with "Start" or "Stop",
-        /// then we strip the "Start" or "Stop" from the event name and set the Opcode accordingly.
+        /// then we set the Opcode to Start or Stop respectively.
         /// </summary>
         private void ExtractImpliedOpcode()
         {
@@ -884,11 +886,28 @@ namespace Microsoft.Diagnostics.Tracing
                 if (EventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
                 {
                     Opcode = (int)TraceEventOpcode.Start;
-                    EventName = EventName.Substring(0, EventName.Length - 5);
                 }
                 else if (EventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
                 {
                     Opcode = (int)TraceEventOpcode.Stop;
+                }
+            }
+        }
+
+        /// <summary>
+        /// If the event has a Stop/Start opcode and also ends with the word "Start" or "Stop", then
+        /// remove the "Start" or "Stop" from the event name.
+        /// </summary>
+        private void StripStartStopInEventName()
+        {
+            if (EventName != null)
+            {
+                if (Opcode == (int)TraceEventOpcode.Start && EventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
+                {
+                    EventName = EventName.Substring(0, EventName.Length - 5);
+                }
+                else if (Opcode == (int)TraceEventOpcode.Stop && EventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
+                {
                     EventName = EventName.Substring(0, EventName.Length - 4);
                 }
             }
