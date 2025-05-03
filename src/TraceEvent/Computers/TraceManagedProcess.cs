@@ -879,6 +879,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     GCStats.ProcessCommittedUsage(stats, committedUsage);
                 };
 
+                source.Clr.GCDynamicEvent.GCOOMDetails += delegate (OOMDetailsTraceEvent oomDetails)
+                {
+                    var stats = currentManagedProcess(oomDetails.UnderlyingEvent);
+                    GCStats.ProcessOOMEvent(stats, oomDetails);
+                };
+
                 source.Clr.GCDynamicEvent.GCDynamicTraceEvent += delegate (GCDynamicTraceEvent gcDynamic)
                 {
                     var stats = currentManagedProcess(gcDynamic.UnderlyingEvent);
@@ -1738,6 +1744,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     m_stats.MaxSizePeakMB = Math.Max(m_stats.MaxSizePeakMB, _gc.HeapSizePeakMB);
                     m_stats.MaxAllocRateMBSec = Math.Max(m_stats.MaxAllocRateMBSec, _gc.AllocRateMBSec);
                     m_stats.MaxSuspendDurationMSec = Math.Max(m_stats.MaxSuspendDurationMSec, _gc.SuspendDurationMSec);
+
+                    foreach (var oom in _gc.OOMDetails)
+                    {
+                        m_stats.OOMDetails.Add(oom);
+                    }
                 }
 
                 m_prvcount = m_gcs.Count;
@@ -2146,6 +2157,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         public CommittedUsage CommittedUsageBefore { get; internal set; }
         public CommittedUsage CommittedUsageAfter { get; internal set; }
+        public List<OOMDetails> OOMDetails { get; internal set; } = new List<OOMDetails>();
 
         /// <summary>
         /// Memory survival percentage by generation
@@ -4683,6 +4695,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Indicator if PerHeapHistories is present
         /// </summary>
         public bool HasDetailedGCInfo;
+        /// <summary>
+        /// OOMs detected in the trace.
+        /// </summary>
+        public List<OOMDetails> OOMDetails = new List<OOMDetails>();
 
         #region private
 
@@ -4997,6 +5013,25 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     Debug.Assert(_event.CommittedUsageAfter == null);
                     _event.CommittedUsageAfter = traceData;
                 }
+            }
+        }
+
+        internal static void ProcessOOMEvent(TraceLoadedDotNetRuntime proc, OOMDetailsTraceEvent oomDetailsTrace)
+        {
+            TraceGC _event = GetLastGC(proc);
+            if (_event != null)
+            {
+                _event.OOMDetails.Add(new OOMDetails
+                {
+                    GCIndex = oomDetailsTrace.GCIndex,
+                    Reason = (OOMReason)oomDetailsTrace.Reason,
+                    AllocSize = oomDetailsTrace.AllocSize,
+                    FailureToGetMemory = (FailureGetMemory)oomDetailsTrace.FailureGetMemory,
+                    Size = oomDetailsTrace.Size,
+                    IsLOH = oomDetailsTrace.IsLOH,
+                    MemoryLoad = oomDetailsTrace.MemoryLoad,
+                    AvailablePageFileMB = oomDetailsTrace.AvailablePageFileMB,
+                });
             }
         }
 
