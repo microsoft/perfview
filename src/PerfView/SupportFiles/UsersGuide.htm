@@ -8762,7 +8762,7 @@
             <ul>
                 <li>
                     Added the Gen2 Object Death view that use the 100KB allocation events (coarse sampling).  Thus most traces
-                    will now have this view (including the /GCOnly view).   This view shows you were you allocated objects that then die in Gen 2 (These are the
+                    will now have this view (including the /GCOnly view).   This view shows you where you allocated objects that then die in Gen 2 (These are the
                     most important for reducing the number of Gen2 GCs (and Gen 2 GC fragmentation)).   You could do this before
                     when you turned on /DotNetAlloc or /DotNetAllocSampled collection but those are more expensive and can have
                     logistic issues (you can't attach to a existing process).    The view will only show you a coarse sampling
