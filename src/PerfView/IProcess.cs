@@ -10,6 +10,7 @@ namespace PerfView
         DateTime StartTime { get; }
         DateTime EndTime { get; }
         string Duration { get; }
+        double TotalDurationSeconds { get; }  // Added for proper Duration column sorting
         int ProcessID { get; }
         int ParentID { get; }
         double CPUTimeMSec { get; }
@@ -26,11 +27,18 @@ namespace PerfView
         public string CommandLine { get { return Process.CommandLine; } }
         public DateTime StartTime { get { return Process.CreationDate; } }
         public DateTime EndTime { get { return DateTime.Now; } }
+        public double TotalDurationSeconds
+        {
+            get 
+            { 
+                return (DateTime.Now - Process.CreationDate).TotalSeconds; 
+            }
+        }
         public string Duration
         {
             get
             {
-                double duration = (DateTime.Now - Process.CreationDate).TotalSeconds;
+                double duration = TotalDurationSeconds;
                 if (duration < 60)
                 {
                     return duration.ToString("f2") + " sec";
@@ -142,11 +150,18 @@ namespace PerfView
         public DateTime StartTime { get; internal set; }
         public DateTime EndTime { get; internal set; }
         public string CommandLine { get; internal set; }
+        public double TotalDurationSeconds
+        {
+            get
+            {
+                return (EndTime - StartTime).TotalSeconds;
+            }
+        }
         public string Duration
         {
             get
             {
-                double duration = (EndTime - StartTime).TotalSeconds;
+                double duration = TotalDurationSeconds;
                 if (duration < 60)
                 {
                     return duration.ToString("f2") + " sec";
