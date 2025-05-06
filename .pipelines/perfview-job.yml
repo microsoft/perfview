@@ -37,6 +37,7 @@ steps:
       **\bin\**\PerfViewTests.dll
     testRunTitle: 'PerfView - ${{ parameters.flavor }}'
     runTestsInIsolation: true
+    runInParallel: true
     otherConsoleOptions: '--blame'
 
 - task: CopyFiles@2
