@@ -7,23 +7,13 @@ steps:
   inputs:
     version: 8.0.x
 
-- task: NuGetToolInstaller@1
-  displayName: 'Install NuGet.exe'
-  inputs:
-    versionSpec: 6.3.0
-
-- task: NuGetCommand@2
-  displayName: 'NuGet Restore PerfView.sln'
-  inputs:
-    restoreSolution: PerfView.sln
-    feedsToUse: config
-    includeNuGetOrg: false
-    nugetConfigPath: '.\NuGet.config'
-
 - task: MSBuild@1
   displayName: 'Build PerfView.sln'
   inputs:
     solution: PerfView.sln
+    maximumCpuCount: true
+    msbuildArchitecture: 'x64'
+    msbuildArguments: '/restore'
     configuration: ${{ parameters.flavor }}
 
 - task: VSTest@2
