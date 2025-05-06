@@ -18,11 +18,12 @@ jobs:
       parameters:
         flavor: 'Debug'
 
-    - task: PublishBuildArtifacts@1
+    - task: PublishPipelineArtifact@1
       displayName: 'Publish Artifacts'
       inputs:
-        PathtoPublish: '$(build.artifactstagingdirectory)'
-        ArtifactName: 'PerfViewBinaries-Debug'
+        targetPath: '$(build.artifactstagingdirectory)'
+        artifact: 'PerfViewBinaries-Debug'
+        parallel: true
       condition: succeededOrFailed()
 
   - job: PerfView_Release
@@ -38,11 +39,12 @@ jobs:
       parameters:
         flavor: 'Release'
 
-    - task: PublishBuildArtifacts@1
+    - task: PublishPipelineArtifact@1
       displayName: 'Publish Artifact'
       inputs:
-        PathtoPublish: '$(build.artifactstagingdirectory)'
-        ArtifactName: 'PerfViewBinaries-Release'
+        targetPath: '$(build.artifactstagingdirectory)'
+        artifact: 'PerfViewBinaries-Release'
+        parallel: true
 
   - job: PerfCollect
     pool:
