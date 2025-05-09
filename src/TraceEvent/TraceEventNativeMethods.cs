@@ -1061,6 +1061,7 @@ namespace Microsoft.Diagnostics.Tracing
        );
 
         internal const uint ERROR_WMI_INSTANCE_NOT_FOUND = 4201;
+        internal const int ERROR_MORE_DATA = 234;  // 0xEA in hex
     } // end class
     #endregion
 
