@@ -448,6 +448,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             InitializeFromFile(etlxFilePath);
         }
+
+        /// <summary>
+        /// Open an ETLX file from a stream.  This is internal and currently just used for testing ETLX files stored in in-memory streams.
+        /// </summary>
+        internal TraceLog(Stream etlxStream)
+            : this()
+        {
+            InitializeFromStream(etlxStream);
+        }
+
+
         /// <summary>
         /// All the events in the ETLX file. The returned TraceEvents instance supports IEnumerable so it can be used
         /// in foreach statements, but it also supports other methods to further filter the evens before enumerating over them.
@@ -1070,6 +1081,23 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal static void CreateFromEventPipeEventSources(TraceEventDispatcher source, string etlxFilePath, TraceLogOptions options)
         {
+            // Avoid partially written files by writing to a temp and moving atomically to the final destination.
+            string etlxTempPath = etlxFilePath + ".new";
+            try
+            {
+                IOStreamStreamWriter streamWriter = new IOStreamStreamWriter(etlxTempPath, SerializationSettings.Default, FileShare.Read | FileShare.Delete);
+                CreateFromEventPipeEventSources(source, streamWriter, options);
+                File.Delete(etlxFilePath);
+                File.Move(etlxTempPath, etlxFilePath);
+            }
+            finally
+            {
+                File.Delete(etlxTempPath);
+            }
+        }
+
+        internal static void CreateFromEventPipeEventSources(TraceEventDispatcher source, IOStreamStreamWriter streamWriter, TraceLogOptions options)
+        {
             if (options == null)
             {
                 options = new TraceLogOptions();
@@ -1090,21 +1118,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     newLog.UserData[key] = source.UserData[key];
                 }
 
-                // Avoid partially written files by writing to a temp and moving atomically to the final destination.
-                string etlxTempPath = etlxFilePath + ".new";
-                try
-                {
-                    //****************************************************************************************************
-                    // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
-                    using (Serializer serializer = new Serializer(etlxTempPath, newLog, FileShare.Read | FileShare.Delete)) { }
-
-                    File.Delete(etlxFilePath);
-                    File.Move(etlxTempPath, etlxFilePath);
-                }
-                finally
-                {
-                    File.Delete(etlxTempPath);
-                }
+                //****************************************************************************************************
+                // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
+                using (Serializer serializer = new Serializer(streamWriter, newLog)) { }
             }
         }
 
@@ -2163,7 +2179,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // While scanning over the stream, copy all data to the file.
             rawEvents.AllEvents += delegate (TraceEvent data)
             {
-                Debug.Assert(_syncTimeQPC != 0);         // We should have set this in the Header event (or on session start if it is read time
 #if DEBUG
                 Debug.Assert(lastTimeStamp <= data.TimeStampQPC);     // Ensure they are in order
                 lastTimeStamp = data.TimeStampQPC;
@@ -3657,13 +3672,24 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
-        private unsafe void InitializeFromFile(string etlxFilePath)
+        private void InitializeFromFile(string etlxFilePath)
+        {
+            PinnedStreamReader reader = new PinnedStreamReader(etlxFilePath, SerializationSettings.Default, 0x10000);
+            InitializeFromStreamReader(reader, etlxFilePath);
+        }
+
+        private void InitializeFromStream(Stream stream)
+        {
+            PinnedStreamReader reader = new PinnedStreamReader(stream, SerializationSettings.Default, 0x10000);
+            InitializeFromStreamReader(reader, "Stream");
+        }
+
+        private unsafe void InitializeFromStreamReader(PinnedStreamReader reader, string path)
         {
             // If this Assert files, fix the declaration of headerSize to match
             Debug.Assert(sizeof(TraceEventNativeMethods.EVENT_HEADER) == 0x50 && sizeof(TraceEventNativeMethods.ETW_BUFFER_CONTEXT) == 4);
 
-            // As of TraceLog version 74, all StreamLabels are 64-bit.  See IFastSerializableVersion for details.
-            Deserializer deserializer = new Deserializer(new PinnedStreamReader(etlxFilePath, SerializationSettings.Default, 0x10000), etlxFilePath);
+            Deserializer deserializer = new Deserializer(reader, path);
 
             // when the deserializer needs a TraceLog we return the current instance.  We also assert that
             // we only do this once.
@@ -3714,12 +3740,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Our deserializer is now attached to our deferred events.
             Debug.Assert(lazyRawEvents.Deserializer == deserializer);
 
-            this.etlxFilePath = etlxFilePath;
+            this.etlxFilePath = path;
 
             // Sanity checking.
             Debug.Assert(pointerSize == 4 || pointerSize == 8, "Bad pointer size");
             Debug.Assert(10 <= cpuSpeedMHz && cpuSpeedMHz <= 100000, "Bad cpu speed");
-            Debug.Assert(0 < numberOfProcessors && numberOfProcessors < 1024, "Bad number of processors");
+            Debug.Assert(0 <= numberOfProcessors && numberOfProcessors < 1024, "Bad number of processors");
             Debug.Assert(0 < MaxEventIndex);
         }
 
@@ -4107,7 +4133,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 75; }
+            get { return 76; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
