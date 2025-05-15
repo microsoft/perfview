@@ -21,19 +21,15 @@
         </Grid.RowDefinitions>
 
         <!-- Help message at top -->
-        <RichTextBox Grid.Row="0" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True" AutomationProperties.Name="Memory data collection help">
-            <RichTextBox.Document>
-                <FlowDocument>
-                    <Paragraph>
-                        This dialog gives options for collecting Memory (GC Heap) data.   Typically simply typing a few characters
-                        of the process name in the Filter text box and hitting &lt;Enter&gt; is enough.  See
-                        <Hyperlink Command="Help" CommandParameter="CollectingDataGCHeap">Collecting GC Heap Data.</Hyperlink> and
-                        <Hyperlink Command="Help" CommandParameter="UnderstandingPerfDataGCHeap">Understanding GC Heap Data.</Hyperlink>
-                        for more.
-                    </Paragraph>
-                </FlowDocument>
-            </RichTextBox.Document>
-        </RichTextBox>
+        <Border Grid.Row="0" BorderBrush="#ABADB3" BorderThickness="1">
+            <TextBlock Grid.Row="0" Background="{DynamicResource HelpRibbonBackground}" TextWrapping="Wrap" AutomationProperties.Name="Memory data collection help">
+                This dialog gives options for collecting Memory (GC Heap) data. Typically simply typing a few characters
+                of the process name in the Filter text box and hitting &lt;Enter&gt; is enough. See
+                <Hyperlink Command="Help" CommandParameter="CollectingDataGCHeap">Collecting GC Heap Data.</Hyperlink> and
+                <Hyperlink Command="Help" CommandParameter="UnderstandingPerfDataGCHeap">Understanding GC Heap Data.</Hyperlink>
+                for more.
+            </TextBlock>
+        </Border>
 
         <!-- Option 1 capturing memory from dmp files -->
         <Grid Grid.Row="1" Name="ProcessDumpRow">
