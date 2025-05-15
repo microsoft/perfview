@@ -52,6 +52,14 @@ namespace PerfView
             }
         }
 
+        public double TotalDurationSeconds
+        {
+            get
+            {
+                return (EndTime - StartTime).TotalSeconds;
+            }
+        }
+
         public int ProcessID { get; internal set; }
 
         public int ParentID { get; internal set; }

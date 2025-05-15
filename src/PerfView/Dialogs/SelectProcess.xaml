@@ -94,6 +94,7 @@
                     <WPFToolKit:DataGridTextColumn
                 Header="Duration"
                 Binding="{Binding Duration}"
+                SortMemberPath="TotalDurationSeconds"
                 ElementStyle="{StaticResource RightAlign}"/>
                     <WPFToolKit:DataGridTextColumn
                 Header="CommandLine"
