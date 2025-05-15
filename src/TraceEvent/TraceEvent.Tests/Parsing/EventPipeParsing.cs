@@ -460,9 +460,10 @@ namespace TraceEventTests
                             if ((int)traceEvent.Opcode != 24) { throw new Exception(String.Format(traceOpcodeValidationMessage, 24, (int)traceEvent.Opcode, "TestEventSource0", "TestEvent3")); }
                             if (traceEvent.PayloadNames.Count() != 1) { throw new Exception(String.Format(tracePayloadValidationMessage, 1, traceEvent.PayloadNames.Count(), "TestEventSource0", "TestEvent3")); }
                             if (traceEvent.PayloadNames[0] != "arg0") { throw new Exception(String.Format(tracePayloadNamesValidationMessage, "arg0", traceEvent.PayloadNames[0], "TestEventSource0", "TestEvent3")); }
-                            if (traceEvent.PayloadValue(0).GetType() != typeof(char[])) { throw new Exception(String.Format(tracePayloadTypeValidationMessage, "char[]", traceEvent.PayloadValue(0).GetType(), "TestEventSource0", "TestEvent3", "arg0")); }
+                            if (traceEvent.PayloadValue(0).GetType() != typeof(string)) { throw new Exception(String.Format(tracePayloadTypeValidationMessage, "string", traceEvent.PayloadValue(0).GetType(), "TestEventSource0", "TestEvent3", "arg0")); }
                             char[] testEvent3Array = new char[] { (char)59299, (char)13231, (char)38541, (char)7407, (char)35812 };
-                            if (!Enumerable.SequenceEqual((char[])traceEvent.PayloadValue(0), testEvent3Array)) { throw new Exception(String.Format(tracePayloadValueValidationMessage, testEvent3Array, traceEvent.PayloadValue(0), "TestEventSource0", "TestEvent3", "arg0")); }
+                            string actualPayload0 = (string)traceEvent.PayloadValue(0);
+                            if (!Enumerable.SequenceEqual(actualPayload0.ToCharArray(), testEvent3Array)) { throw new Exception(String.Format(tracePayloadValueValidationMessage, testEvent3Array, traceEvent.PayloadValue(0), "TestEventSource0", "TestEvent3", "arg0")); }
 
                             ++successCount;
                             return;
@@ -898,7 +899,7 @@ namespace TraceEventTests
             EventPipeEventSource source = new EventPipeEventSource(stream);
             source.Process();
             Assert.Equal(new DateTime(2025, 2, 3, 4, 5, 6), source._syncTimeUTC);
-            Assert.Equal(1_000_000, source._syncTimeQPC);
+            Assert.Equal(0, source._syncTimeQPC);
             Assert.Equal(1_000, source._QPCFreq);
             Assert.Equal(8, source.PointerSize);
             Assert.Equal(0, source._processId);
@@ -1015,42 +1016,362 @@ namespace TraceEventTests
         }
 
 
+
         [Fact] //V6
-        public void ParseV6MetadataArrayParam()
+        public void ParseV6UTF8Char()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
             writer.WriteHeaders();
             writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
-                                          new MetadataParameter("Param1", new ArrayMetadataType(new MetadataType(MetadataTypeCode.Int16))),
-                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean)));
+                                          new MetadataParameter("UTF8Char", MetadataTypeCode.UTF8CodeUnit),
+                                          new MetadataParameter("UTF8CharArray", new ArrayMetadataType(new MetadataType(MetadataTypeCode.UTF8CodeUnit)))));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, 0, 0);
             });
             writer.WriteEventBlock(w =>
             {
-                w.WriteEventBlob(1, 999, 1, new byte[] { 2, 0, 12, 0, 19, 0, 1, 0, 0, 0 });
+                w.WriteEventBlob(1, 999, 1, p =>
+                {
+                    // UTF8 char 'A'
+                    p.Write((byte)'A');
+                    
+                    // UTF8 char array "Hello"
+                    p.WriteLengthPrefixedUTF8String("Hello");
+                });
             });
             writer.WriteEndBlock();
+            
             MemoryStream stream = new MemoryStream(writer.ToArray());
             EventPipeEventSource source = new EventPipeEventSource(stream);
             int eventCount = 0;
+            
             source.Dynamic.All += e =>
             {
                 eventCount++;
-                Assert.Equal($"TestEvent1", e.EventName);
+                Assert.Equal("TestEvent1", e.EventName);
                 Assert.Equal("TestProvider", e.ProviderName);
                 Assert.Equal(2, e.PayloadNames.Length);
-                Assert.Equal("Param1", e.PayloadNames[0]);
-                Assert.Equal("Param2", e.PayloadNames[1]);
-                short[] a = (short[])e.PayloadValue(0);
-                Assert.Equal(2, a.Length);
-                Assert.Equal(12, a[0]);
-                Assert.Equal(19, a[1]);
-                Assert.Equal(true, e.PayloadValue(1));
+                
+                // UTF8Char
+                Assert.Equal("UTF8Char", e.PayloadNames[0]);
+                Assert.Equal(typeof(char), e.PayloadValue(0).GetType());
+                Assert.Equal('A', (char)e.PayloadValue(0));
+                
+                // UTF8CharArray - should convert to string
+                Assert.Equal("UTF8CharArray", e.PayloadNames[1]);
+                Assert.Equal(typeof(string), e.PayloadValue(1).GetType());
+                Assert.Equal("Hello", e.PayloadValue(1));
             };
+            
             source.Process();
             Assert.Equal(1, eventCount);
+        }
+
+        [Theory] //V6
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ParseV6MetadataArrayParam(bool roundTripThroughEtlx)
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                          new MetadataParameter("IntArray", new ArrayMetadataType(new MetadataType(MetadataTypeCode.Int32))),
+                                          new MetadataParameter("UTF8CharArray", new ArrayMetadataType(new MetadataType(MetadataTypeCode.UTF8CodeUnit))),
+                                          new MetadataParameter("UTF16CharArray", new ArrayMetadataType(new MetadataType(MetadataTypeCode.UTF16CodeUnit))),
+                                          new MetadataParameter("StringArray", new ArrayMetadataType(new ArrayMetadataType(new MetadataType(MetadataTypeCode.UTF16CodeUnit))))));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p =>
+                {
+                    // int32[] [10, 20, 30]
+                    p.Write((ushort)3);
+                    p.Write(10);
+                    p.Write(20);
+                    p.Write(30);
+
+                    // UTF8 char array [A, B, C]
+                    p.WriteLengthPrefixedUTF8String("ABC");
+                    
+                    // UTF16 char array [x, y, z]
+                    p.WriteLengthPrefixedUTF16String("xyz");
+
+                    // string[] ["Hi", "Bye"]
+                    p.Write((ushort)2);
+                    p.WriteLengthPrefixedUTF16String("Hi");
+                    p.WriteLengthPrefixedUTF16String("Bye");
+                });
+            });
+            writer.WriteEndBlock();
+            
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            TraceEventDispatcher source = new EventPipeEventSource(stream);
+            if (roundTripThroughEtlx)
+            {
+                MemoryStream etlxStream = new MemoryStream();
+                TraceLog.CreateFromEventPipeEventSources(source, new IOStreamStreamWriter(etlxStream, SerializationSettings.Default, leaveOpen: true), null);
+                etlxStream.Position = 0;
+                source = new TraceLog(etlxStream).Events.GetSource();
+            }
+            int eventCount = 0;
+            
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal("TestEvent1", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+                Assert.Equal(4, e.PayloadNames.Length);
+                
+                // ints
+                Assert.Equal(typeof(int[]), e.PayloadValue(0).GetType());
+                int[] array = (int[])e.PayloadValue(0);
+                Assert.Equal(3, array.Length);
+                Assert.Equal(10, array[0]);
+                Assert.Equal(20, array[1]);
+                Assert.Equal(30, array[2]);
+
+                // UTF8 chars
+                Assert.Equal(typeof(string), e.PayloadValue(1).GetType());
+                Assert.Equal("ABC", (string)e.PayloadValue(1));
+                
+                // UTF16 chars
+                Assert.Equal(typeof(string), e.PayloadValue(2).GetType());
+                Assert.Equal("xyz", e.PayloadValue(2));
+
+                // strings
+                Assert.Equal(typeof(string[]), e.PayloadValue(3).GetType());
+                string[] stringArray = (string[])e.PayloadValue(3);
+                Assert.Equal(2, stringArray.Length);
+                Assert.Equal("Hi", stringArray[0]);
+                Assert.Equal("Bye", stringArray[1]);
+            };
+            
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Theory] //V6
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ParseV6FixedLengthArray(bool roundTripThroughEtlx)
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                          new MetadataParameter("IntArray", new FixedLengthArrayMetadataType(3, new MetadataType(MetadataTypeCode.Int32))),
+                                          new MetadataParameter("UTF8CharArray", new FixedLengthArrayMetadataType(3, new MetadataType(MetadataTypeCode.UTF8CodeUnit))),
+                                          new MetadataParameter("UTF16CharArray", new FixedLengthArrayMetadataType(3, new MetadataType(MetadataTypeCode.UTF16CodeUnit))),
+                                          new MetadataParameter("StringArray", new FixedLengthArrayMetadataType(2, new ArrayMetadataType(new MetadataType(MetadataTypeCode.UTF16CodeUnit))))));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p =>
+                {
+                    // ints
+                    p.Write(10);
+                    p.Write(20);
+                    p.Write(30);
+
+                    // UTF8 chars
+                    p.Write(Encoding.UTF8.GetBytes("ABC"));
+                    
+                    // UTF16 chars
+                    p.Write(Encoding.Unicode.GetBytes("xyz"));
+
+                    // string[] ["Hi", "Bye"]
+                    p.Write((ushort)2);
+                    p.Write(Encoding.Unicode.GetBytes("Hi"));
+                    p.Write((ushort)3);
+                    p.Write(Encoding.Unicode.GetBytes("Bye"));
+                });
+            });
+            writer.WriteEndBlock();
+            
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            TraceEventDispatcher source = new EventPipeEventSource(stream);
+            if (roundTripThroughEtlx)
+            {
+                MemoryStream etlxStream = new MemoryStream();
+                TraceLog.CreateFromEventPipeEventSources(source, new IOStreamStreamWriter(etlxStream, SerializationSettings.Default, leaveOpen: true), null);
+                etlxStream.Position = 0;
+                source = new TraceLog(etlxStream).Events.GetSource();
+            }
+            int eventCount = 0;
+            
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal("TestEvent1", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+                Assert.Equal(4, e.PayloadNames.Length);
+                
+                // FixedArray
+                Assert.Equal(typeof(int[]), e.PayloadValue(0).GetType());
+                int[] array = (int[])e.PayloadValue(0);
+                Assert.Equal(3, array.Length);
+                Assert.Equal(10, array[0]);
+                Assert.Equal(20, array[1]);
+                Assert.Equal(30, array[2]);
+
+                // UTF8
+                Assert.Equal(typeof(string), e.PayloadValue(1).GetType());
+                Assert.Equal("ABC", (string)e.PayloadValue(1));
+                
+                // UTF16
+                Assert.Equal(typeof(string), e.PayloadValue(2).GetType());
+                Assert.Equal("xyz", e.PayloadValue(2));
+
+                // strings
+                Assert.Equal(typeof(string[]), e.PayloadValue(3).GetType());
+                string[] stringArray = (string[])e.PayloadValue(3);
+                Assert.Equal(2, stringArray.Length);
+                Assert.Equal("Hi", stringArray[0]);
+                Assert.Equal("Bye", stringArray[1]);
+            };
+            
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Theory] //V6
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ParseV6RelLocAndDataLoc(bool roundTripThroughEtlx)
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                      new MetadataParameter("RelLocArray", new RelLocMetadataType(new MetadataType(MetadataTypeCode.Int32))),
+                                      new MetadataParameter("DataLocArray", new DataLocMetadataType(new MetadataType(MetadataTypeCode.Int32))),
+                                      new MetadataParameter("RelLocString", new RelLocMetadataType(new MetadataType(MetadataTypeCode.UTF8CodeUnit))),
+                                      new MetadataParameter("DataLocString", new DataLocMetadataType(new MetadataType(MetadataTypeCode.UTF16CodeUnit)))));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p =>
+                {
+                    // RelLoc layout: 4 bytes where the high 16 bits are size and low 16 bits are position
+                    // Size = 12 (3 ints * 4 bytes each), position = 16 (after itself 4+16 = 20)
+                    p.Write((12 << 16) | 16);
+
+                    // DataLoc layout: 4 bytes where the high 16 bits are size and low 16 bits are position
+                    // Size = 8 (2 ints * 4 bytes each), position = 32 (starting from beginning)
+                    p.Write((8 << 16) | 32);
+
+                    // RelLoc layout: 4 bytes where the high 16 bits are size and low 16 bits are position
+                    // Size = 5 (5 UTF8 chars * 1 byte each), position = 28 (after itself 12+28 = 40)
+                    p.Write((5 << 16) | 28);
+
+                    // DataLoc layout: 4 bytes where the high 16 bits are size and low 16 bits are position
+                    // Size = 10 (5 UTF16 chars * 2 byte each), position = 45 (starting from beginning)
+                    p.Write((10 << 16) | 45);
+
+                    // padding (offset 16)
+                    p.Write(42);
+
+                    // RelLoc array [1, 2, 3] located here (offset 20)
+                    p.Write(1);
+                    p.Write(2);
+                    p.Write(3);
+
+                    // DataLoc array [10, 20] located here (offset 32)
+                    p.Write(10);
+                    p.Write(20);
+
+                    // RelLoc string "Hello" located here (offset 40)
+                    p.Write(Encoding.UTF8.GetBytes("Hello"));
+
+                    // DataLoc string "World" located here (offset 45)
+                    p.Write(Encoding.Unicode.GetBytes("World"));
+                });
+            });
+            writer.WriteEndBlock();
+
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            TraceEventDispatcher source = new EventPipeEventSource(stream);
+            if(roundTripThroughEtlx)
+            {
+                MemoryStream etlxStream = new MemoryStream();
+                TraceLog.CreateFromEventPipeEventSources(source, new IOStreamStreamWriter(etlxStream, SerializationSettings.Default, leaveOpen:true), null);
+                etlxStream.Position = 0;
+                source = new TraceLog(etlxStream).Events.GetSource();
+            }
+
+            int eventCount = 0;
+
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal("TestEvent1", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+                Assert.Equal(4, e.PayloadNames.Length);
+
+                // RelLoc array
+                Assert.Equal(typeof(int[]), e.PayloadValue(0).GetType());
+                int[] relLocArray = (int[])e.PayloadValue(0);
+                Assert.Equal(3, relLocArray.Length);
+                Assert.Equal(1, relLocArray[0]);
+                Assert.Equal(2, relLocArray[1]);
+                Assert.Equal(3, relLocArray[2]);
+
+                // DataLoc array
+                Assert.Equal(typeof(int[]), e.PayloadValue(1).GetType());
+                int[] dataLocArray = (int[])e.PayloadValue(1);
+                Assert.Equal(2, dataLocArray.Length);
+                Assert.Equal(10, dataLocArray[0]);
+                Assert.Equal(20, dataLocArray[1]);
+
+                // RelLoc string
+                Assert.Equal(typeof(string), e.PayloadValue(2).GetType());
+                Assert.Equal("Hello", e.PayloadValue(2));
+
+                // DataLoc string
+                Assert.Equal(typeof(string), e.PayloadValue(3).GetType());
+                Assert.Equal("World", e.PayloadValue(3));
+            };
+
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact] //V6
+        public void V6RelLocThrowsOnVariableSizedElementType()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                      new MetadataParameter("RelLocString", new RelLocMetadataType(new ArrayMetadataType(new MetadataType(MetadataTypeCode.UTF8CodeUnit))))));
+            writer.WriteEndBlock();
+
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+
+            Assert.Throws<FormatException>(() => source.Process());
+        }
+
+        [Fact] //V6
+        public void V6DataLocThrowsOnVariableSizedElementType()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                      new MetadataParameter("DataLocString", new DataLocMetadataType(new ArrayMetadataType(new MetadataType(MetadataTypeCode.UTF16CodeUnit))))));
+            writer.WriteEndBlock();
+
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+
+            Assert.Throws<FormatException>(() => source.Process());
         }
 
         [Fact] //V6
@@ -1185,64 +1506,6 @@ namespace TraceEventTests
             Assert.Equal("TestEvent2", metadata2.EventName);
         }
 
-        [Fact] //V6
-        public void ParseV6LengthPrefixedStrings()
-        {
-            EventPipeWriterV6 writer = new EventPipeWriterV6();
-            writer.WriteHeaders();
-            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
-                                          new MetadataParameter("String1", MetadataTypeCode.LengthPrefixedUTF16String),
-                                          new MetadataParameter("String2", MetadataTypeCode.LengthPrefixedUTF8String),
-                                          new MetadataParameter("IntParam", MetadataTypeCode.Int32)));
-            writer.WriteThreadBlock(w =>
-            {
-                w.WriteThreadEntry(999, threadId: 15, processId: 10);
-            });
-            writer.WriteEventBlock(w =>
-            {
-                w.WriteEventBlob(1, 999, 1, p =>
-                {
-                    p.WriteLengthPrefixedUTF16String("Howdy");
-                    p.WriteLengthPrefixedUTF8String("Yuck");
-                    p.Write((int)12);
-                });
-                w.WriteEventBlob(1, 999, 2, p =>
-                {
-                    p.WriteLengthPrefixedUTF16String("");
-                    p.WriteLengthPrefixedUTF8String("");
-                    p.Write((int)17);
-                });
-            });
-            writer.WriteEndBlock();
-            MemoryStream stream = new MemoryStream(writer.ToArray());
-            EventPipeEventSource source = new EventPipeEventSource(stream);
-            int eventCount = 0;
-            source.Dynamic.All += e =>
-            {
-                eventCount++;
-                Assert.Equal($"TestEvent1", e.EventName);
-                Assert.Equal("TestProvider", e.ProviderName);
-                Assert.Equal(3, e.PayloadNames.Length);
-                Assert.Equal("String1", e.PayloadNames[0]);
-                Assert.Equal("String2", e.PayloadNames[1]);
-                Assert.Equal("IntParam", e.PayloadNames[2]);
-                if (eventCount == 1)
-                {
-                    Assert.Equal("Howdy", e.PayloadValue(0));
-                    Assert.Equal("Yuck", e.PayloadValue(1));
-                    Assert.Equal(12, e.PayloadValue(2));
-                }
-                else if (eventCount == 2)
-                {
-                    Assert.Equal("", e.PayloadValue(0));
-                    Assert.Equal("", e.PayloadValue(1));
-                    Assert.Equal(17, e.PayloadValue(2));
-                }
-            };
-            source.Process();
-            Assert.Equal(2, eventCount);
-        }
-
 
         [Fact] //V6
         public void ParseV6VarInts()
@@ -1324,9 +1587,9 @@ namespace TraceEventTests
             writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
                                           new MetadataParameter("VarInt", MetadataTypeCode.VarInt),
                                           new MetadataParameter("Struct", new ObjectMetadataType(
-                                              new MetadataParameter("UTF8String", MetadataTypeCode.LengthPrefixedUTF8String),
+                                              new MetadataParameter("UTF8String", new ArrayMetadataType(new MetadataType(MetadataTypeCode.UTF8CodeUnit))),
                                               new MetadataParameter("VarInt", MetadataTypeCode.VarInt),
-                                              new MetadataParameter("UTF16String", MetadataTypeCode.LengthPrefixedUTF16String),
+                                              new MetadataParameter("UTF16String", new ArrayMetadataType(new MetadataType(MetadataTypeCode.UTF16CodeUnit))),
                                               new MetadataParameter("VarUInt", MetadataTypeCode.VarUInt)))));
             writer.WriteThreadBlock(w =>
             {
@@ -2192,11 +2455,40 @@ namespace TraceEventTests
         public MetadataParameter[] Parameters { get; set; }
     }
 
+    public class FixedLengthArrayMetadataType : MetadataType
+    {
+        public FixedLengthArrayMetadataType(int elementCount, MetadataType elementType) : base(MetadataTypeCode.FixedLengthArray)
+        {
+            ElementType = elementType;
+            ElementCount = elementCount;
+        }
+        public MetadataType ElementType { get; set; }
+        public int ElementCount { get; set; }
+    }
+
+    public class RelLocMetadataType : MetadataType
+    {
+        public RelLocMetadataType(MetadataType elementType) : base(MetadataTypeCode.RelLoc)
+        {
+            ElementType = elementType;
+        }
+        public MetadataType ElementType { get; set; }
+    }
+
+    public class DataLocMetadataType : MetadataType
+    {
+        public DataLocMetadataType(MetadataType elementType) : base(MetadataTypeCode.DataLoc)
+        {
+            ElementType = elementType;
+        }
+        public MetadataType ElementType { get; set; }
+    }
+
     public enum MetadataTypeCode
     {
         Object = 1,                        // Concatenate together all of the encoded fields
         Boolean = 3,                       // A 4-byte LE integer with value 0=false and 1=true.  
-        Char = 4,                          // a 2-byte UTF16 encoded character
+        UTF16CodeUnit = 4,                 // a 2-byte UTF16 code unit
         SByte = 5,                         // 1-byte signed integer
         Byte = 6,                          // 1-byte unsigned integer
         Int16 = 7,                         // 2-byte signed LE integer
@@ -2213,8 +2505,10 @@ namespace TraceEventTests
         Array = 19,                        // New in V5 optional params: a UInt16 length-prefixed variable-sized array. Elements are encoded depending on the ElementType.
         VarInt = 20,                       // New in V6: variable-length signed integer with zig-zag encoding (defined the same as in Protobuf)
         VarUInt = 21,                      // New in V6: variable-length unsigned integer (ULEB128)
-        LengthPrefixedUTF16String = 22,    // New in V6: A string encoded with UTF16 characters and a UInt16 element count prefix. No null-terminator.
-        LengthPrefixedUTF8String = 23,     // New in V6: A string encoded with UTF8 characters and a Uint16 length prefix. No null-terminator.
+        FixedLengthArray = 22,             // New in V6: A fixed-length array of elements. The size is determined by the metadata.
+        UTF8CodeUnit = 23,                 // New in V6: A single UTF8 code unit (1 byte).
+        RelLoc = 24,                       // New in V6: An array at a relative location within the payload.
+        DataLoc = 25                       // New in V6: An absolute data location within the payload.
     }
 
     public class EventPayloadWriter
@@ -2553,7 +2847,7 @@ namespace TraceEventTests
                 w.Write((short)now.Minute);
                 w.Write((short)now.Second);
                 w.Write((short)now.Millisecond);
-                w.Write((long)1_000_000);         // syncTimeQPC
+                w.Write((long)0);                 // syncTimeQPC
                 w.Write((long)1000);              // qpcFreq
                 w.Write(8);                       // pointer size
                 w.Write(keyValues.Count);
@@ -2678,6 +2972,19 @@ namespace TraceEventTests
             if(type.TypeCode == MetadataTypeCode.Array)
             {
                 writer.WriteV6MetadataType((type as ArrayMetadataType).ElementType);
+            }
+            else if (type.TypeCode == MetadataTypeCode.FixedLengthArray)
+            {
+                writer.WriteV6MetadataType((type as FixedLengthArrayMetadataType).ElementType);
+                writer.Write((ushort)(type as FixedLengthArrayMetadataType).ElementCount);
+            }
+            else if(type.TypeCode == MetadataTypeCode.RelLoc)
+            {
+                writer.WriteV6MetadataType((type as RelLocMetadataType).ElementType);
+            } 
+            else if(type.TypeCode == MetadataTypeCode.DataLoc)
+            {
+                writer.WriteV6MetadataType((type as DataLocMetadataType).ElementType);
             }
             else if(type.TypeCode == MetadataTypeCode.Object)
             {

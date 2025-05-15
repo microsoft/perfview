@@ -273,8 +273,9 @@ FieldDescriptions format is:
 
 Type format is:
 
-- uint8 TypeCode;             // Type is a discriminated union and this is the discriminant. 
-- optional Type ElementType;  // Only present if TypeCode == Array (19).
+- uint8 TypeCode;                          // Type is a discriminated union and this is the discriminant. 
+- optional Type ElementType;               // Only present if TypeCode == Array (19), FixedLengthArray(22), RelLoc(24) OR DataLoc(25)
+- optional uint16 ElementCount;            // Only present if TypeCode == FixedLengthArray(22).
 - optional FieldDescriptions ObjectFields; // Only present if TypeCode == Object (1).
 
 ```
@@ -282,7 +283,7 @@ enum TypeCode
 {
   Object = 1,                        // Concatenate together all of the encoded fields
   Boolean = 3,                       // A 4-byte LE integer with value 0=false and 1=true.  
-  UTF16Char = 4,                     // a 2-byte UTF16 encoded character
+  UTF16CodeUnit = 4,                 // a 2-byte UTF16 code unit (Often this is a character, but some characters need more than one code unit to encode)
   SByte = 5,                         // 1-byte signed integer
   Byte = 6,                          // 1-byte unsigned integer
   Int16 = 7,                         // 2-byte signed LE integer
@@ -299,10 +300,23 @@ enum TypeCode
   Array = 19,                        // a UInt16 length-prefixed variable-sized array. Elements are encoded depending on the ElementType.
   VarInt = 20,                       // New in V6: variable-length signed integer with varint64 encoding.
   VarUInt = 21,                      // New in V6: variable-length unsigned integer with varuint64 encoding.
-  LengthPrefixedUTF16String = 22,    // New in V6: A string encoded with UTF16 characters and a UInt16 element count prefix. No null-terminator.
-  LengthPrefixedUTF8String = 23,     // New in V6: A string encoded with UTF8 characters and a UInt16 length prefix. No null-terminator.
+  FixedLengthArray = 22,             // New in V6: A fixed-length array of elements. The length is determined by the metadata.
+                                     // Format: Concatenate together ElementCount number of ElementType elements.
+  UTF8CodeUnit = 23,                 // New in V6: A 1-byte UTF8 code unit.  (Often this is a character, but some characters need more than one code unit to encode)
+  RelLoc = 24,                       // New in V6: An array at a relative location within the payload. 
+                                     // Format: 4 bytes where the high 16 bits are size and low 16 bits are position relative to after this field.
+                                     // Size is measured in bytes, not elements. The element type must be fixed sized.
+  DataLoc = 25                       // New in V6: An absolute data location within the payload.
+                                     // Format: 4 bytes where the high 16 bits are size and low 16 bits are position relative to start of the event parameters buffer.
+                                     // Size is measured in bytes, not elements. The element type must be fixed sized.
 }
 ```
+
+The RelLoc and DataLoc types only support fixed size element types. To determine if a type is fixed size:
+- Object is fixed size iff all of the field types are fixed size.
+- FixedLengthArray is fixed size iff the element type is fixed size.
+- Array, NullTerminatedUTF16String, and LengthPrefixedUTF(8|16)String are not fixed size.
+- All other types are fixed size.
 
 OptionalMetadata format is:
 

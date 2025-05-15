@@ -454,7 +454,7 @@ namespace Microsoft.Diagnostics.Tracing
                         payloadFetch.Offset = offset;
                         break;
                     }
-                case EventPipeTypeCode.Char:
+                case EventPipeTypeCode.UTF16CodeUnit:
                     {
                         payloadFetch.Type = typeof(char);
                         payloadFetch.Size = sizeof(char);
@@ -603,26 +603,62 @@ namespace Microsoft.Diagnostics.Tracing
                         payloadFetch.Offset = offset;
                         break;
                     }
-                case EventPipeTypeCode.LengthPrefixedUTF16String:
+                case EventPipeTypeCode.FixedLengthArray:
                     {
                         if (fieldLayoutVersion < EventPipeFieldLayoutVersion.FileFormatV6OrGreater)
                         {
-                            throw new FormatException($"LengthPrefixedUTF8String is not a valid type code for this metadata.");
+                            throw new FormatException($"FixedLengthArray is not a valid type code for this metadata.");
                         }
-                        payloadFetch.Type = typeof(string);
-                        payloadFetch.Size = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.ELEM_COUNT;
+                        DynamicTraceEventData.PayloadFetch elementType = ParseType(ref reader, 0, fieldName, fieldLayoutVersion);
+                        ushort elementCount = reader.ReadUInt16();
+                        try
+                        {
+                            payloadFetch = DynamicTraceEventData.PayloadFetch.FixedCountArrayPayloadFetch(offset, elementType, elementCount);
+                        }
+                        catch (ArgumentOutOfRangeException e)
+                        {
+                            throw new FormatException($"FixedLengthArray too large", e);
+                        }
+                        
+                        break;
+                    }
+                case EventPipeTypeCode.UTF8CodeUnit:
+                    {
+                        if (fieldLayoutVersion < EventPipeFieldLayoutVersion.FileFormatV6OrGreater)
+                        {
+                            throw new FormatException($"UTF8CodeUnit is not a valid type code for this metadata.");
+                        }
+                        payloadFetch.Type = typeof(char);
+                        payloadFetch.Size = sizeof(byte);
                         payloadFetch.Offset = offset;
                         break;
                     }
-                case EventPipeTypeCode.LengthPrefixedUTF8String:
+                case EventPipeTypeCode.RelLoc:
                     {
                         if (fieldLayoutVersion < EventPipeFieldLayoutVersion.FileFormatV6OrGreater)
                         {
-                            throw new FormatException($"LengthPrefixedUTF8String is not a valid type code for this metadata.");
+                            throw new FormatException($"RelLoc is not a valid type code for this metadata.");
                         }
-                        payloadFetch.Type = typeof(string);
-                        payloadFetch.Size = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.IS_ANSI | DynamicTraceEventData.ELEM_COUNT;
-                        payloadFetch.Offset = offset;
+                        DynamicTraceEventData.PayloadFetch elementType = ParseType(ref reader, 0, fieldName, fieldLayoutVersion);
+                        if(!elementType.IsFixedSize)
+                        {
+                            throw new FormatException($"RelLoc requires a fixed size element type.");
+                        }
+                        payloadFetch = DynamicTraceEventData.PayloadFetch.RelLocPayloadFetch(offset, elementType);
+                        break;
+                    }
+                case EventPipeTypeCode.DataLoc:
+                    {
+                        if (fieldLayoutVersion < EventPipeFieldLayoutVersion.FileFormatV6OrGreater)
+                        {
+                            throw new FormatException($"DataLoc is not a valid type code for this metadata.");
+                        }
+                        DynamicTraceEventData.PayloadFetch elementType = ParseType(ref reader, 0, fieldName, fieldLayoutVersion);
+                        if(!elementType.IsFixedSize)
+                        {
+                            throw new FormatException($"DataLoc requires a fixed size element type.");
+                        }
+                        payloadFetch = DynamicTraceEventData.PayloadFetch.DataLocPayloadFetch(offset, elementType);
                         break;
                     }
                 default:
@@ -638,7 +674,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Object = 1,                        // Concatenate together all of the encoded fields
             Boolean = 3,                       // A 4-byte LE integer with value 0=false and 1=true.  
-            Char = 4,                          // a 2-byte UTF16 encoded character
+            UTF16CodeUnit = 4,                 // a 2-byte UTF16 code unit
             SByte = 5,                         // 1-byte signed integer
             Byte = 6,                          // 1-byte unsigned integer
             Int16 = 7,                         // 2-byte signed LE integer
@@ -656,8 +692,10 @@ namespace Microsoft.Diagnostics.Tracing
             Array = 19,                        // New in V5 optional params: a UInt16 length-prefixed variable-sized array. Elements are encoded depending on the ElementType.
             VarInt = 20,                       // New in V6: variable-length signed integer with zig-zag encoding (same as protobuf)
             VarUInt = 21,                      // New in V6: variable-length unsigned integer (ULEB128)
-            LengthPrefixedUTF16String = 22,    // New in V6: A string encoded with UTF16 characters and a UInt16 element count prefix. No null-terminator.
-            LengthPrefixedUTF8String = 23,     // New in V6: A string encoded with UTF8 characters and a UInt16 length prefix. No null-terminator.
+            FixedLengthArray = 22,             // New in V6: A fixed-length array of elements. The length is determined by the metadata.
+            UTF8CodeUnit = 23,                 // New in V6: A single UTF8 code unit (1 byte).
+            RelLoc = 24,                       // New in V6: An array at a relative location within the payload. 
+            DataLoc = 25                       // New in V6: An absolute data location within the payload.
         }
 
         private void ParseOptionalMetadataV6OrGreater(ref SpanReader reader)

@@ -873,7 +873,9 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 int ret = eventRecord->BufferContext.ProcessorNumber;
-                Debug.Assert(0 <= ret && ret < traceEventSource.NumberOfProcessors);
+                Debug.Assert((traceEventSource.NumberOfProcessors == 0 && ret == 0) ||
+                             (0 <= ret && ret < traceEventSource.NumberOfProcessors));
+
                 return ret;
             }
         }
@@ -1740,14 +1742,6 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     break;
                 }
-#if DEBUG
-                // TODO review. 
-                if ((c < ' ' || c > '~') && !char.IsWhiteSpace(c))
-                {
-                    Debug.WriteLine("Warning: Found unprintable chars in string truncating to " + sb.ToString());
-                    break;
-                }
-#endif
                 sb.Append(c);
             }
             return sb.ToString();
@@ -1767,14 +1761,6 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     break;
                 }
-#if DEBUG
-                // TODO review. 
-                if ((c < ' ' || c > '~') && !char.IsWhiteSpace(c))
-                {
-                    Debug.WriteLine("Warning: Found unprintable chars in string truncating to " + sb.ToString());
-                    break;
-                }
-#endif
                 sb.Append(c);
             }
             return sb.ToString();
