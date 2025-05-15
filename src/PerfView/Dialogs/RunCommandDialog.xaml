@@ -27,21 +27,16 @@
                 <ColumnDefinition Width="auto"/>
             </Grid.ColumnDefinitions>
             <!-- Help message at top -->
-            <RichTextBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True" AutomationProperties.Name="Run collection help">
-                <RichTextBox.Document>
-                    <FlowDocument>
-                        <Paragraph Margin="0,0,0,0">
-                            This dialog give options for collecting ETW profile data.   The only required field the 'Command' field and
+            <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" BorderBrush="#ABADB3" BorderThickness="1">
+                <TextBlock Background="{DynamicResource HelpRibbonBackground}" TextWrapping="Wrap" AutomationProperties.Name="Run collection help">
+                    This dialog give options for collecting ETW profile data. The only required field the 'Command' field and
                     this is only necessary when using the 'Run' command.
-                        </Paragraph>
-                        <Paragraph Margin="0,0,0,0">
-                            <Bold>If you wish to analyze on another machine use the Zip option when collecting data.</Bold>
-                            See
-                            <Hyperlink Command="Help" CommandParameter="CollectingData">Collecting ETW Profile Data.</Hyperlink> for more.
-                        </Paragraph>
-                    </FlowDocument>
-                </RichTextBox.Document>
-            </RichTextBox>
+                    <LineBreak/>
+                    <Bold>If you wish to analyze on another machine use the Zip option when collecting data.</Bold>
+                    See
+                    <Hyperlink Command="Help" CommandParameter="CollectingData">Collecting ETW Profile Data.</Hyperlink> for more.
+                </TextBlock>
+            </Border>
             <!-- CommandToRun section for running specific process -->
             <TextBlock Grid.Row="1" Grid.Column="0" x:Name="CommandToRunLabel" Margin="5,0" VerticalAlignment="Center" ToolTip="The command line of the process to run while collecting data.">
                 <Hyperlink Command="Help" CommandParameter="CommandToRunTextBox">Command:</Hyperlink>
@@ -161,7 +156,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="20*"/>
                         </Grid.ColumnDefinitions>
-                        
+
                         <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="5,2,5,2"
                            ToolTip="Fire an event (and stack trace) every time the processor switch from one thread to another." >
                             <Hyperlink Command="Help" CommandParameter="KernelBaseCheckBox">Kernel Base:</Hyperlink>

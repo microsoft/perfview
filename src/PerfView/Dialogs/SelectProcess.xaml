@@ -14,20 +14,16 @@
         </Style>
     </Window.Resources>
     <DockPanel>
-        <RichTextBox DockPanel.Dock="Top" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True">
-            <RichTextBox.Document>
-                <FlowDocument>
-                    <Paragraph>
-                        The data collected was machine wide, but typically you are interested in only one process.
-                        This dialog box allows you to choose a particular process to focus on by either double clicking on a
-                        process or by selecting a process and hitting OK.
-                        The 'All Procs' button can be used if you wish to look at all data.
-                        See
-                        <Hyperlink Command="Help" CommandParameter="SelectProcessDialog">Selecting A Process Help</Hyperlink> for more.
-                    </Paragraph>
-                </FlowDocument>
-            </RichTextBox.Document>
-        </RichTextBox>
+        <Border DockPanel.Dock="Top" BorderBrush="#ABADB3" BorderThickness="1">
+            <TextBlock Background="{DynamicResource HelpRibbonBackground}" TextWrapping="Wrap" AutomationProperties.Name="Select process help">
+                The data collected was machine wide, but typically you are interested in only one process.
+                This dialog box allows you to choose a particular process to focus on by either double clicking on a
+                process or by selecting a process and hitting OK.
+                The 'All Procs' button can be used if you wish to look at all data.
+                See
+                <Hyperlink Command="Help" CommandParameter="SelectProcessDialog">Selecting A Process Help</Hyperlink> for more.
+            </TextBlock>
+        </Border>
         <Grid DockPanel.Dock="Top" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
