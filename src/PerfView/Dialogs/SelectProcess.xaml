@@ -41,6 +41,7 @@
         </Grid>
         <Grid DockPanel.Dock="Bottom" Background="{DynamicResource BackgroundColour}" >
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -50,10 +51,12 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Button Name="OKButton" Margin="5,4" Grid.Column="1" MinWidth="80" Content="OK" Click="OKClicked" IsDefault="True" />
-            <Button Name="AllProcsButton" Margin="5,4" Grid.Column="3" MinWidth="80" Content="All Procs" Click="AllProcsClicked"
+            <CheckBox Name="IncludeChildProcessesCheckBox" Grid.Column="0" Margin="5,0,0,0" VerticalAlignment="Center" 
+                     ToolTip="Include all descendant processes of selected processes">Include descendant processes</CheckBox>
+            <Button Name="OKButton" Margin="5,4" Grid.Column="2" MinWidth="80" Content="OK" Click="OKClicked" IsDefault="True" />
+            <Button Name="AllProcsButton" Margin="5,4" Grid.Column="4" MinWidth="80" Content="All Procs" Click="AllProcsClicked"
                     ToolTip="Investigate all processes"/>
-            <Button Margin="5,4" Grid.Column="5" MinWidth="80" Content="Cancel" Click="CancelClicked" IsCancel="True" />
+            <Button Margin="5,4" Grid.Column="6" MinWidth="80" Content="Cancel" Click="CancelClicked" IsCancel="True" />
         </Grid>
         <Grid PreviewKeyDown="GridKeyDownHander">
             <WPFToolKit:DataGrid Name="Grid"
