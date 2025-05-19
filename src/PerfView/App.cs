@@ -788,12 +788,6 @@ namespace PerfView
         /// </summary>
         public static SymbolReader GetSymbolReader(string etlFilePath = null, SymbolReaderOptions symbolFlags = SymbolReaderOptions.None)
         {
-            // Apply the DisableNGenPdbGeneration option if it's set in the command line
-            if (CommandProcessor.DataFile != null && CommandProcessor.DataFile.DisableNGenPdbGeneration)
-            {
-                symbolFlags |= SymbolReaderOptions.NoNGenSymbolCreation;
-            }
-
             var log = App.CommandProcessor.LogFile;
             SymbolPath symPath = new SymbolPath(App.SymbolPath);
             if ((symbolFlags & SymbolReaderOptions.CacheOnly) != 0)
