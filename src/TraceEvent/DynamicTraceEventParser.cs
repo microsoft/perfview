@@ -1237,7 +1237,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             else
             {
-                return ushort.MaxValue;     // Something sure to fail 
+                // We should never reach this point unless there was a bug initializing the
+                // PayloadFetch object.
+                Debug.Fail("Unexpected PayloadFetch size");
+                throw new InvalidOperationException("Unexpected PayloadFetch size");
             }
         }
 
