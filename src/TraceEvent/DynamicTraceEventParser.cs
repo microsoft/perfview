@@ -481,6 +481,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 throw new ArgumentOutOfRangeException("Payload size exceeds buffer size.");
             }
+            Type type = payloadFetch.Type;
 
             // Is this a struct field? 
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
@@ -500,9 +501,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (arrayInfo != null)
             {
                 var arrayCount = GetCountForArray(payloadFetch, arrayInfo, ref offset);
-
-                // TODO this is very inefficient for blitable types. Optimize that.
                 var elementType = arrayInfo.Element.Type;
+                
+                // Arrays of characters can be deserialized as strings if desired.
+                if(type == typeof(string))
+                {
+                    Debug.Assert(arrayInfo.Element.Type == typeof(char));
+                    Debug.Assert(arrayInfo.Element.Size == 1 || arrayInfo.Element.Size == 2);
+                    if (arrayInfo.Element.Size == 1)
+                    {
+                        return GetFixedAnsiStringAt(arrayCount, offset);
+                    }
+                    else
+                    {
+                        return GetFixedUnicodeStringAt(arrayCount, offset);
+                    }
+                }
 
                 // Byte array short-circuit.
                 if (elementType == typeof(byte))
@@ -510,6 +524,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return GetByteArrayAt(offset, arrayCount);
                 }
 
+                // TODO this is very inefficient for blitable types. Optimize that.
                 var ret = Array.CreateInstance(elementType, arrayCount);
                 for (int i = 0; i < arrayCount; i++)
                 {
@@ -525,7 +540,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return ret;
             }
 
-            Type type = payloadFetch.Type;
             if (type == null)
             {
                 return "[CANT PARSE]";
@@ -552,11 +566,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return GetDefaultValueByType(type);
             }
 
+            ushort size = payloadFetch.Size;
             switch (Type.GetTypeCode(type))
             {
                 case TypeCode.String:
                     {
-                        var size = payloadFetch.Size;
                         var isAnsi = false;
                         if (size >= SPECIAL_SIZES)
                         {
@@ -612,7 +626,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 case TypeCode.Boolean:
                     return GetByteAt(offset) != 0;
                 case TypeCode.Char:
-                    return (Char)GetInt16At(offset);
+                    if (size == 1)
+                    {
+                        return (char)GetByteAt(offset);
+                    }
+                    else 
+                    {
+                        return (char)GetInt16At(offset);
+                    }
                 case TypeCode.Byte:
                     return (byte)GetByteAt(offset);
                 case TypeCode.SByte:
@@ -1082,48 +1103,68 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         /// <summary>
         /// Returns the count of elements for the array represented by 'arrayInfo'
-        /// It also will adjust 'offset' so that it points at the beginning of the
-        /// array data (skips past the count). 
+        /// It also will adjust 'offset' so that it points at the first array element. 
         /// </summary>
         private int GetCountForArray(PayloadFetch payloadFetch, PayloadFetchArrayInfo arrayInfo, ref int offset)
         {
-            var arrayCount = arrayInfo.FixedCount;
-            if (arrayCount == 0)
+            int arrayCount;
+            if (arrayInfo.Kind == ArrayKind.FixedCount)
             {
-                // Arrays are not strings and thus should not have the ANSI bit set.  
-                Debug.Assert((payloadFetch.Size & IS_ANSI) == 0);
-                // Arrays never use a byte count.  
-                Debug.Assert((payloadFetch.Size & ELEM_COUNT) != 0);
-
-                if (DynamicTraceEventData.IsCountedSize(payloadFetch.Size))
+                arrayCount = arrayInfo.FixedCount;
+                Debug.Assert(arrayCount > 0);
+                if (0x10000 <= arrayCount)
                 {
-                    if (((payloadFetch.Size & DynamicTraceEventData.BIT_32) != 0))
-                    {
-                        arrayCount = GetInt32At(offset);
-                        offset += 4;
-                    }
-                    else
-                    {
-                        arrayCount = GetInt16At(offset);
-                        offset += 2;
-                    }
+                    throw new ArgumentOutOfRangeException(nameof(arrayCount));
+                }
+            }
+            else if (arrayInfo.Kind == ArrayKind.LengthPrefixed)
+            {
+                // The count is always an element count
+                Debug.Assert((payloadFetch.Size & ELEM_COUNT) != 0);
+                Debug.Assert(IsCountedSize(payloadFetch.Size));
+
+                // Length prefixed arrays have a 2 or 4 byte length field.
+                if (((payloadFetch.Size & DynamicTraceEventData.BIT_32) != 0))
+                {
+                    arrayCount = GetInt32At(offset);
+                    offset += 4;
                 }
                 else
                 {
-                    Debug.Assert(false);
-                    throw new NotSupportedException();      // Actually an assert.  
+                    arrayCount = GetInt16At(offset);
+                    offset += 2;
                 }
             }
-            if (0x10000 <= arrayCount)
+            else if (arrayInfo.Kind == ArrayKind.RelLoc)
             {
-                throw new ArgumentOutOfRangeException();
+                Debug.Assert(arrayInfo.Element.IsFixedSize);
+
+                arrayCount = GetInt16At(offset + 2) / arrayInfo.Element.Size;
+                offset = GetInt16At(offset) + offset + 4; // RelLoc offset is relative to the end of the field.
             }
+            else if (arrayInfo.Kind == ArrayKind.DataLoc)
+            {
+                Debug.Assert(arrayInfo.Element.IsFixedSize);
+
+                arrayCount = GetInt16At(offset + 2) / arrayInfo.Element.Size;
+                offset = GetInt16At(offset); // DataLoc offset is absolute in the buffer
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException("Unknown array kind: " + arrayInfo.Kind.ToString());
+            }
+
 
             return arrayCount;
         }
 
         internal int OffsetOfNextField(ref PayloadFetch payloadFetch, int offset, int payloadLength)
         {
+            if(payloadFetch.IsFixedSize)
+            {
+                return offset + payloadFetch.Size;
+            }
+
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
             if (classInfo != null)
             {
@@ -1139,9 +1180,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     throw new ArgumentOutOfRangeException();
                 }
 
+                // DataLoc and RelLoc arrays don't have inline elements that need to be skipped, but because they are fixed size
+                // they are handled above and should never be observed on this code path.
+                Debug.Assert(arrayInfo.IsElementDataInline);
                 var arrayCount = GetCountForArray(payloadFetch, arrayInfo, ref offset);
 
-                if (arrayInfo.Element.Array == null && arrayInfo.Element.Class == null && arrayInfo.Element.Size < SPECIAL_SIZES)
+                if (arrayInfo.Element.Array == null && arrayInfo.Element.Class == null && arrayInfo.Element.IsFixedSize)
                 {
                     return offset + arrayCount * arrayInfo.Element.Size;
                 }
@@ -1155,52 +1199,48 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             ushort size = payloadFetch.Size;
-            if (size >= SPECIAL_SIZES)
+            if (size == NULL_TERMINATED)
             {
-                if (size == NULL_TERMINATED)
+                return SkipUnicodeString(offset);
+            }
+            else if (size == (NULL_TERMINATED | IS_ANSI))
+            {
+                return SkipUTF8String(offset);
+            }
+            else if (size == POINTER_SIZE)
+            {
+                return offset + PointerSize;
+            }
+            else if (IsCountedSize(size) && payloadFetch.Type == typeof(string))
+            {
+                int elemSize;
+                if (((size & BIT_32) != 0))
                 {
-                    return SkipUnicodeString(offset);
-                }
-                else if (size == (NULL_TERMINATED | IS_ANSI))
-                {
-                    return SkipUTF8String(offset);
-                }
-                else if (size == POINTER_SIZE)
-                {
-                    return offset + PointerSize;
-                }
-                else if (IsCountedSize(size) && payloadFetch.Type == typeof(string))
-                {
-                    int elemSize;
-                    if (((size & BIT_32) != 0))
-                    {
-                        elemSize = GetInt32At(offset);
-                        offset += 4;        // skip size;
-                    }
-                    else
-                    {
-                        elemSize = GetInt16At(offset);
-                        offset += 2;        // skip size;
-                    }
-                    if ((size & IS_ANSI) == 0 && (size & ELEM_COUNT) != 0)
-                    {
-                        elemSize *= 2;     // Counted (not byte counted) unicode string. chars are 2 wide. 
-                    }
-
-                    return offset + elemSize;
-                }
-                else if (size == VARINT)
-                {
-                    return SkipVarInt(offset);
+                    elemSize = GetInt32At(offset);
+                    offset += 4;        // skip size;
                 }
                 else
                 {
-                    return ushort.MaxValue;     // Something sure to fail 
+                    elemSize = GetInt16At(offset);
+                    offset += 2;        // skip size;
                 }
+                if ((size & IS_ANSI) == 0 && (size & ELEM_COUNT) != 0)
+                {
+                    elemSize *= 2;     // Counted (not byte counted) unicode string. chars are 2 wide. 
+                }
+
+                return offset + elemSize;
+            }
+            else if (size == VARINT)
+            {
+                return SkipVarInt(offset);
             }
             else
             {
-                return offset + size;
+                // We should never reach this point unless there was a bug initializing the
+                // PayloadFetch object.
+                Debug.Fail("Unexpected PayloadFetch size");
+                throw new InvalidOperationException("Unexpected PayloadFetch size");
             }
         }
 
@@ -1384,22 +1424,119 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
+            private static bool ArrayElementCanProjectToString(PayloadFetch element)
+            {
+                return element.Type == typeof(char) && (element.Size == 1 || element.Size == 2);
+            }
+
             /// <summary>
             /// Returns a payload fetch for a Array.   If you know the count, then you can give it. 
             /// </summary>
-            public static PayloadFetch ArrayPayloadFetch(ushort offset, PayloadFetch element, ushort size, ushort fixedCount = 0)
+            public static PayloadFetch ArrayPayloadFetch(ushort offset, PayloadFetch element, ushort size, ushort fixedCount = 0, bool projectCharArrayAsString = true)
             {
                 var ret = new PayloadFetch();
                 ret.Offset = offset;
                 ret.Size = size;
-                ret.info = new PayloadFetchArrayInfo() { Element = element, FixedCount = fixedCount };
+                ret.info = new PayloadFetchArrayInfo() 
+                {
+                    Element = element,
+                    FixedCount = fixedCount,
+                    Kind = fixedCount == 0 ? ArrayKind.LengthPrefixed : ArrayKind.FixedCount
+                };
+
+                // If the array is a char array, then we can project it as a string.
+                if(projectCharArrayAsString && ArrayElementCanProjectToString(element))
+                {
+                    ret.Type = typeof(string);
+                }
+
                 return ret;
             }
+
+            public static PayloadFetch FixedCountArrayPayloadFetch(ushort offset, PayloadFetch element, ushort elementCount, bool projectCharArrayAsString = true)
+            {
+                ushort size = COUNTED_SIZE;
+                if (element.IsFixedSize)
+                {
+                    uint fixedSize = (uint)(elementCount * element.Size);
+                    if (fixedSize >= SPECIAL_SIZES)
+                    {
+                        throw new ArgumentOutOfRangeException($"FixedCountArray cannot exceed {SPECIAL_SIZES-1} bytes. ElementCount: {elementCount}, ElementTypeSize: {element.Size}");
+                    }
+                    size = (ushort)fixedSize;
+                }
+                return ArrayPayloadFetch(offset, element, size, elementCount, projectCharArrayAsString);
+            }
+
+            public static PayloadFetch RelLocPayloadFetch(ushort offset, PayloadFetch element, bool projectCharArrayAsString = true)
+            {
+                if(!element.IsFixedSize)
+                {
+                    throw new ArgumentException("RelLocPayloadFetch requires a fixed size element type.");
+                }
+                var ret = new PayloadFetch();
+                ret.Offset = offset;
+                ret.Size = 4;
+                ret.info = new PayloadFetchArrayInfo() 
+                {
+                    Element = element,
+                    FixedCount = 0,
+                    Kind = ArrayKind.RelLoc
+                };
+                if(projectCharArrayAsString && ArrayElementCanProjectToString(element))
+                {
+                    ret.Type = typeof(string);
+                }
+                return ret;
+            }
+
+            public static PayloadFetch DataLocPayloadFetch(ushort offset, PayloadFetch element, bool projectCharArrayAsString = true)
+            {
+                if(!element.IsFixedSize)
+                {
+                    throw new ArgumentException("DataLocPayloadFetch requires a fixed size element type.");
+                }
+                var ret = new PayloadFetch();
+                ret.Offset = offset;
+                ret.Size = 4;
+                ret.info = new PayloadFetchArrayInfo() 
+                {
+                    Element = element,
+                    FixedCount = 0,
+                    Kind = ArrayKind.DataLoc
+                };
+                if(projectCharArrayAsString && ArrayElementCanProjectToString(element))
+                {
+                    ret.Type = typeof(string);
+                }
+                return ret;
+            }
+
             public static PayloadFetch StructPayloadFetch(ushort offset, PayloadFetchClassInfo fields)
             {
                 var ret = new PayloadFetch();
                 ret.Offset = offset;
-                ret.Size = DynamicTraceEventData.UNKNOWN_SIZE;
+                int size = 0;
+                for (int i = 0; i < fields.FieldFetches.Length; i++)
+                {
+                    PayloadFetch field = fields.FieldFetches[i];
+                    if (field.IsFixedSize)
+                    {
+                        size += field.Size;
+                    }
+                    else
+                    {
+                        size = DynamicTraceEventData.UNKNOWN_SIZE; // We don't know the size of the field.
+                        break;
+                    }
+                }
+                // if the fields don't fit in a ushort, then revert to unknown size.
+                // Perhaps we should throw here but we didn't in the past and I am preserving that behavior for now.
+                if (size > DynamicTraceEventData.UNKNOWN_SIZE)
+                {
+                    size = DynamicTraceEventData.UNKNOWN_SIZE; // We don't know the size of the field.
+                }
+                ret.Size = (ushort)size;
                 ret.Type = typeof(StructValue);
                 ret.info = fields;
                 return ret;
@@ -1413,6 +1550,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // TODO come up with a real encoding for variable sized things
             // See special encodings above (also size > 0x8000 means fixed length ANSI).  
             public ushort Size;
+
+            public bool IsFixedSize => Size < SPECIAL_SIZES;
 
             // Non null of 'Type' is a class (record with fields)
             internal PayloadFetchClassInfo Class
@@ -1563,6 +1702,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     PayloadFetchArrayInfo arrayInfo = Array;
                     serializer.Write((byte)4);
                     serializer.Write(arrayInfo.FixedCount);
+                    serializer.Write((byte)arrayInfo.Kind);
                     arrayInfo.Element.ToStream(serializer);
                 }
                 else
@@ -1626,6 +1766,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     PayloadFetchArrayInfo arrayInfo = new PayloadFetchArrayInfo();
                     deserializer.Read(out arrayInfo.FixedCount);
+                    deserializer.Read(out byte arrayKind);
+                    arrayInfo.Kind = (ArrayKind)arrayKind;
                     arrayInfo.Element.FromStream(deserializer);
                     info = arrayInfo;
                 }
@@ -1647,14 +1789,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         }
 
+        internal enum ArrayKind
+        {
+            LengthPrefixed = 0,
+            FixedCount = 1,
+            RelLoc = 2,
+            DataLoc = 3,
+        }
+
         internal class PayloadFetchArrayInfo
         {
             public PayloadFetch Element;
             public int FixedCount;          // Normally 0 which means dynamic size
+            public ArrayKind Kind;
 
+            // True iff the array elements are stored inline as part of a contiguous blob of parameter data. Inline elements need to be skipped over when
+            // advancing to the next parameter in the payload.
+            public bool IsElementDataInline => Kind== ArrayKind.LengthPrefixed || Kind == ArrayKind.FixedCount;
             public override string ToString()
             {
-                return "<Array size = \"" + FixedCount + "\">\r\n" + Element.ToString() + "\r\n</Array>";
+                return "<Array size = \"" + FixedCount + "\" kind = \"" + Kind + "\">\r\n" + Element.ToString() + "\r\n</Array>";
             }
         }
 
