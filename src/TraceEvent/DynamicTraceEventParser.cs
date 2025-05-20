@@ -1111,10 +1111,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (arrayInfo.Kind == ArrayKind.FixedCount)
             {
                 arrayCount = arrayInfo.FixedCount;
-                Debug.Assert(arrayCount != 0);
+                Debug.Assert(arrayCount > 0);
                 if (0x10000 <= arrayCount)
                 {
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException(nameof(arrayCount));
                 }
             }
             else if (arrayInfo.Kind == ArrayKind.LengthPrefixed)
@@ -1524,6 +1524,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     else
                     {
                         size = DynamicTraceEventData.UNKNOWN_SIZE; // We don't know the size of the field.
+                        break;
                     }
                 }
                 // if the fields don't fit in a ushort, then revert to unknown size.
