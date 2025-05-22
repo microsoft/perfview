@@ -63,6 +63,18 @@ namespace PerfView
                         morphedContent = PadForColumn(morphedContent, i + e.StartColumnDisplayIndex);
                     }
 
+                    // Add a leading | character to the first column to ensure GitHub renders the content as table
+                    if (i == 0)
+                    {
+                        morphedContent = "| " + morphedContent;
+                    }
+                    
+                    // Add a trailing | character to the last column to complete the markdown table row
+                    if (i == e.ClipboardRowContent.Count - 1)
+                    {
+                        morphedContent = morphedContent + " |";
+                    }
+
                     // TODO Ugly, morph two cells on different rows into one line for the correct cut/paste experience 
                     // for ranges.  
                     if (m_clipboardRangeEnd != m_clipboardRangeStart)  // If we have just 2 things selected (and I can tell them apart)
