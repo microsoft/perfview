@@ -221,6 +221,8 @@ Compressed events are encoded with a header:
  - if Flags & 2 the value is read from the stream + previous SequenceNumber
  - otherwise previous sequence number
  - in either case, if MetadataId != 0 increment SequenceNumber by 1
+ - Note: For metadata events (MetadataId = 0), the sequence number, capture thread id, and capture proc number are always 0
+ - Note: Metadata events never have the CaptureThreadAndSequence flag set (Flags & 2 is always 0 for metadata events)
 - CaptureThreadId optional varint64
   - if Flags & 2 the value is read from the stream
   - otherwise previous CaptureThreadId
