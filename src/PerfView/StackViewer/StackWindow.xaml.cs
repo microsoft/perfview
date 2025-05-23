@@ -371,7 +371,7 @@ namespace PerfView
 
                 StatusBar.EndWork(delegate ()
                 {
-                    var selectedNodeName = FocusName != null ? FocusName : "ROOT";
+                    var selectedNodeName = FocusName ?? "ROOT";
                     var oldCallTree = m_callTree;
                     m_callTree = newCallTree;
 
