@@ -307,12 +307,12 @@ namespace PerfViewTests.StackViewer
                 stackWindow.CallTreeTab.IsSelected = true;
                 await WaitForUIAsync(stackWindow.Dispatcher, CancellationToken.None);
 
-                // Find a node in the call tree
-                var callTreeNode = stackWindow.m_callTreeView.Root;
+                // Find a node in the call tree that is not the root node.
+                var callTreeNode = stackWindow.m_callTreeView.Root.Callees[0];
                 Assert.NotNull(callTreeNode);
 
                 // Set focus to this node
-                stackWindow.SetFocus(callTreeNode.Data.Name);
+                stackWindow.SetFocus(callTreeNode.Name);
 
                 // Use "Goto Items in Callees" command (Shift+F10)
                 stackWindow.CalleesTab.IsSelected = true;
@@ -325,22 +325,16 @@ namespace PerfViewTests.StackViewer
 
                 // Now execute Set Time Range command
                 var byNameView = stackWindow.m_byNameView;
-                var row = byNameView.FindIndex(node => node.FirstTimeRelativeMSec > 0 && node.FirstTimeRelativeMSec < node.LastTimeRelativeMSec);
-                if (row >= 0)
-                {
-                    var selectedCells = stackWindow.ByNameDataGrid.Grid.SelectedCells;
-                    selectedCells.Clear();
-                    selectedCells.Add(new DataGridCellInfo(byNameView[row], stackWindow.ByNameDataGrid.FirstTimeColumn));
-                    selectedCells.Add(new DataGridCellInfo(byNameView[row], stackWindow.ByNameDataGrid.LastTimeColumn));
+                stackWindow.StartTextBox.Text = "0";
+                stackWindow.EndTextBox.Text = "100";
+                stackWindow.Update();
 
-                    StackWindow.SetTimeRangeCommand.Execute(null, stackWindow.ByNameDataGrid);
+                // Wait for any background processing to complete
+                await stackWindow.StatusBar.WaitForWorkCompleteAsync().ConfigureAwait(true);
 
-                    // Wait for any background processing to complete
-                    await stackWindow.StatusBar.WaitForWorkCompleteAsync().ConfigureAwait(true);
-
-                    // Verify focus was maintained
-                    Assert.Equal(calleeFocusName, stackWindow.FocusName);
-                }
+                // Verify focus was maintained
+                Assert.Equal(calleeFocusName, stackWindow.FocusName);
+                //}
             };
 
             return RunUITestAsync(setupAsync, testDriverAsync, cleanupAsync);
