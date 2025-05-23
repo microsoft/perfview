@@ -395,6 +395,9 @@ namespace PerfView
                         ByNameDataGrid.Grid.Columns[i].SortDirection = direction;
                     }
 
+                    // SignalPropertyChange the Caller-Callee Tab
+                    SetFocus(m_callTree.Root);
+
                     ByNameDataGrid.Focus();
 
                     // SignalPropertyChange the CallTree Tab
@@ -1703,36 +1706,17 @@ namespace PerfView
                         var bucketStartIndex = (HistogramCharacterIndex)(selectionStartIndex - histStart);
                         var bucketEndIndex = (HistogramCharacterIndex)(bucketStartIndex + selectionLen);
 
-                        // Remember the current focus node name before updating
-                        string currentFocusName = FocusName;
-
                         StartTextBox.Text = CallTree.TimeHistogramController.GetStartTimeForBucket(bucketStartIndex).ToString("n3");
                         EndTextBox.Text = CallTree.TimeHistogramController.GetStartTimeForBucket(bucketEndIndex).ToString("n3");
                         Update();
-
-                        // Restore the focus if we had one
-                        if (!string.IsNullOrEmpty(currentFocusName))
-                        {
-                            SetFocus(currentFocusName);
-                        }
                     }
                 }
                 return;
             }
             var callTreeNodes = GetSelectedNodes();
-            
-            // Remember the current focus node name before updating
-            string currentFocusName = FocusName;
-            
             StartTextBox.Text = callTreeNodes.Min(node => node.FirstTimeRelativeMSec).ToString("n3");
             EndTextBox.Text = callTreeNodes.Max(node => node.LastTimeRelativeMSec).ToString("n3");
             Update();
-            
-            // Restore the focus if we had one
-            if (!string.IsNullOrEmpty(currentFocusName))
-            {
-                SetFocus(currentFocusName);
-            }
         }
 
         // Given a CallTreeViewNode or a CallTreeNodeBase (this is what might be in the 'Item' list of a view)
