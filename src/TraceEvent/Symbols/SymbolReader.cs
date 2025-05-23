@@ -589,9 +589,9 @@ namespace Microsoft.Diagnostics.Symbols
         private SymbolReaderOptions _Options;
 
         /// <summary>
-        /// Gets or sets the timeout in seconds for symbol server requests. Default is 60 seconds.
+        /// Gets or sets the timeout for symbol server requests. Default is 60 seconds.
         /// </summary>
-        public int ServerTimeoutSeconds { get; set; } = 60;
+        public TimeSpan ServerTimeout { get; set; } = TimeSpan.FromSeconds(60);
 
         /// <summary>
         /// We call back on this when we find a PDB by probing in 'unsafe' locations (like next to the EXE or in the Built location)
@@ -1211,7 +1211,7 @@ namespace Microsoft.Diagnostics.Symbols
                 });
 
                 // Wait for the timeout period allowing for interruptions.
-                var limit = ServerTimeoutSeconds * 10; // Convert seconds to deciseconds (0.1 seconds)
+                var limit = (int)(ServerTimeout.TotalSeconds * 10); // Convert seconds to deciseconds (0.1 seconds)
 
                 for (int i = 0; i < limit; i++)
                 {
@@ -1246,7 +1246,7 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     canceled = true;
                     m_log.WriteLine("FindSymbolFilePath: Time {0} sec.  Timeout of {1} seconds exceeded for {2}.",
-                            sw.Elapsed.TotalSeconds, ServerTimeoutSeconds, serverPath);
+                            sw.Elapsed.TotalSeconds, ServerTimeout.TotalSeconds, serverPath);
                 }
             }
             finally
