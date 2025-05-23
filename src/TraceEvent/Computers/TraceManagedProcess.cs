@@ -2193,6 +2193,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public double GenSizeAfterMB(Gens gen)
         {
+            if (HeapStats == null)
+            {
+                return double.NaN;
+            }
+            
             if (gen == Gens.GenPinObj)
             {
                 return HeapStats.GenerationSize4 / 1000000.0;
