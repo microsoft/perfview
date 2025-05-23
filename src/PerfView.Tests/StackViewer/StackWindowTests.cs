@@ -325,8 +325,17 @@ namespace PerfViewTests.StackViewer
 
                 // Now execute Set Time Range command
                 var byNameView = stackWindow.m_byNameView;
-                stackWindow.StartTextBox.Text = "0";
-                stackWindow.EndTextBox.Text = "100";
+                
+                // Use min and max values from the stacksource
+                double minTime = stackWindow.m_stackSource.GetSample(0).TimeRelativeMSec;
+                double maxTime = 0;
+                for (int i = 0; i < stackWindow.m_stackSource.SampleIndexLimit; i++)
+                {
+                    maxTime = Math.Max(maxTime, stackWindow.m_stackSource.GetSample(i).TimeRelativeMSec);
+                }
+                
+                stackWindow.StartTextBox.Text = minTime.ToString("n3");
+                stackWindow.EndTextBox.Text = maxTime.ToString("n3");
                 stackWindow.Update();
 
                 // Wait for any background processing to complete

@@ -1681,7 +1681,6 @@ namespace PerfView
 
         private void DoSetTimeRange(object sender, ExecutedRoutedEventArgs e)
         {
-            string currentFocusName;
             if (TextBoxHasFocusAndNonEmptySelection(out var focusTextBox))
             {
                 var selectionStartIndex = focusTextBox.SelectionStart;
@@ -1705,7 +1704,7 @@ namespace PerfView
                         var bucketEndIndex = (HistogramCharacterIndex)(bucketStartIndex + selectionLen);
 
                         // Remember the current focus node name before updating
-                        currentFocusName = FocusName;
+                        string currentFocusName = FocusName;
 
                         StartTextBox.Text = CallTree.TimeHistogramController.GetStartTimeForBucket(bucketStartIndex).ToString("n3");
                         EndTextBox.Text = CallTree.TimeHistogramController.GetStartTimeForBucket(bucketEndIndex).ToString("n3");
@@ -1723,7 +1722,7 @@ namespace PerfView
             var callTreeNodes = GetSelectedNodes();
             
             // Remember the current focus node name before updating
-            currentFocusName = FocusName;
+            string currentFocusName = FocusName;
             
             StartTextBox.Text = callTreeNodes.Min(node => node.FirstTimeRelativeMSec).ToString("n3");
             EndTextBox.Text = callTreeNodes.Max(node => node.LastTimeRelativeMSec).ToString("n3");
