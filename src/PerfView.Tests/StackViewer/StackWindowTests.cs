@@ -327,11 +327,11 @@ namespace PerfViewTests.StackViewer
                 var byNameView = stackWindow.m_byNameView;
                 
                 // Use min and max values from the stacksource
-                double minTime = stackWindow.m_stackSource.GetSample(0).TimeRelativeMSec;
+                double minTime = stackWindow.StackSource.GetSampleByIndex(0).TimeRelativeMSec;
                 double maxTime = 0;
-                for (int i = 0; i < stackWindow.m_stackSource.SampleIndexLimit; i++)
+                for (int i = 0; i < stackWindow.StackSource.SampleIndexLimit; i++)
                 {
-                    maxTime = Math.Max(maxTime, stackWindow.m_stackSource.GetSample(i).TimeRelativeMSec);
+                    maxTime = Math.Max(maxTime, stackWindow.StackSource.GetSampleByIndex((StackSourceSampleIndex)i).TimeRelativeMSec);
                 }
                 
                 stackWindow.StartTextBox.Text = minTime.ToString("n3");
