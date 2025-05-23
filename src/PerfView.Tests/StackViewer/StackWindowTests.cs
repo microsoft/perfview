@@ -277,6 +277,78 @@ namespace PerfViewTests.StackViewer
             return TestSetTimeRangeWithSpaceImplAsync(CultureInfo.CurrentCulture);
         }
 
+        [WpfFact]
+        [WorkItem(2179, "https://github.com/Microsoft/perfview/issues/2179")]
+        [UseCulture("en-US")]
+        public Task TestSetTimeRangeAfterGotoCalleesAsync()
+        {
+            Func<Task<StackWindow>> setupAsync = async () =>
+            {
+                await JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                var file = new TimeRangeFile();
+                await OpenAsync(JoinableTaskFactory, file, GuiApp.MainWindow, GuiApp.MainWindow.StatusBar).ConfigureAwait(true);
+                var stackSource = file.GetStackSource();
+                return stackSource.Viewer;
+            };
+
+            Func<StackWindow, Task> cleanupAsync = async stackWindow =>
+            {
+                await JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                stackWindow.Close();
+            };
+
+            Func<StackWindow, Task> testDriverAsync = async stackWindow =>
+            {
+                await JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                // First, navigate to the call tree tab
+                stackWindow.CallTreeTab.IsSelected = true;
+                await WaitForUIAsync(stackWindow.Dispatcher, CancellationToken.None);
+
+                // Find a node in the call tree that is not the root node.
+                var callTreeNode = stackWindow.m_callTreeView.Root.Callees[0];
+                Assert.NotNull(callTreeNode);
+
+                // Set focus to this node
+                stackWindow.SetFocus(callTreeNode.Name);
+
+                // Use "Goto Items in Callees" command (Shift+F10)
+                stackWindow.CalleesTab.IsSelected = true;
+                await WaitForUIAsync(stackWindow.Dispatcher, CancellationToken.None);
+
+                // Remember current focus after going to callees
+                string calleeFocusName = stackWindow.FocusName;
+                Assert.NotNull(calleeFocusName);
+                Assert.NotEqual("ROOT", calleeFocusName);
+
+                // Now execute Set Time Range command
+                var byNameView = stackWindow.m_byNameView;
+                
+                // Use min and max values from the stacksource
+                double minTime = stackWindow.StackSource.GetSampleByIndex(0).TimeRelativeMSec;
+                double maxTime = 0;
+                for (int i = 0; i < stackWindow.StackSource.SampleIndexLimit; i++)
+                {
+                    maxTime = Math.Max(maxTime, stackWindow.StackSource.GetSampleByIndex((StackSourceSampleIndex)i).TimeRelativeMSec);
+                }
+                
+                stackWindow.StartTextBox.Text = minTime.ToString("n3");
+                stackWindow.EndTextBox.Text = maxTime.ToString("n3");
+                stackWindow.Update();
+
+                // Wait for any background processing to complete
+                await stackWindow.StatusBar.WaitForWorkCompleteAsync().ConfigureAwait(true);
+
+                // Verify focus was maintained
+                Assert.Equal(calleeFocusName, stackWindow.FocusName);
+                //}
+            };
+
+            return RunUITestAsync(setupAsync, testDriverAsync, cleanupAsync);
+        }
+
         private Task TestSetTimeRangeWithSpaceImplAsync(CultureInfo culture)
         {
             Func<Task<StackWindow>> setupAsync = async () =>
@@ -304,6 +376,14 @@ namespace PerfViewTests.StackViewer
                 var row = byNameView.FindIndex(node => node.FirstTimeRelativeMSec > 0 && node.FirstTimeRelativeMSec < node.LastTimeRelativeMSec);
                 CallTreeNodeBase selected = byNameView[row];
 
+                // Set focus to a specific node
+                string testFocusName = selected.Name;
+                stackWindow.SetFocus(testFocusName);
+
+                // Verify the focus is set correctly
+                Assert.Equal(testFocusName, stackWindow.FocusName);
+
+                // Now execute Set Time Range command
                 var selectedCells = stackWindow.ByNameDataGrid.Grid.SelectedCells;
                 selectedCells.Clear();
                 selectedCells.Add(new DataGridCellInfo(byNameView[row], stackWindow.ByNameDataGrid.FirstTimeColumn));
@@ -314,8 +394,12 @@ namespace PerfViewTests.StackViewer
                 // Wait for any background processing to complete
                 await stackWindow.StatusBar.WaitForWorkCompleteAsync().ConfigureAwait(true);
 
+                // Verify time range was set correctly
                 Assert.Equal(selected.FirstTimeRelativeMSec.ToString("n3", culture), stackWindow.StartTextBox.Text);
                 Assert.Equal(selected.LastTimeRelativeMSec.ToString("n3", culture), stackWindow.EndTextBox.Text);
+
+                // Verify focus was maintained
+                Assert.Equal(testFocusName, stackWindow.FocusName);
             };
 
             return RunUITestAsync(setupAsync, testDriverAsync, cleanupAsync);

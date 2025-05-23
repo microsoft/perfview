@@ -371,6 +371,7 @@ namespace PerfView
 
                 StatusBar.EndWork(delegate ()
                 {
+                    var selectedNodeName = FocusName ?? "ROOT";
                     var oldCallTree = m_callTree;
                     m_callTree = newCallTree;
 
@@ -395,8 +396,7 @@ namespace PerfView
                         ByNameDataGrid.Grid.Columns[i].SortDirection = direction;
                     }
 
-                    // SignalPropertyChange the Caller-Callee Tab
-                    SetFocus(m_callTree.Root);
+                    SetFocus(selectedNodeName);
 
                     ByNameDataGrid.Focus();
 
