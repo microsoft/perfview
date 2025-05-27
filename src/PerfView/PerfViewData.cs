@@ -6621,7 +6621,9 @@ table {
                                 if (module == null)
                                     continue;
 
-                                // Get the PDB path from cache or find it
+                                // Get the PDB path from cache or find it.
+                                // Cache the path instead of the NativeSymbolModule object because the SymbolReader
+                                // will dispose of the NativeSymbolModule when it is evicated from the SymbolReader cache.
                                 if (!loadedModules.TryGetValue(module, out var pdbPath))
                                 {
                                     pdbPath = (module.PdbSignature != Guid.Empty
@@ -6630,7 +6632,7 @@ table {
                                     loadedModules[module] = pdbPath; // Cache the path, not the module
                                 }
 
-                                // Get a fresh NativeSymbolModule for each lookup
+                                // Load the symbol file, using the SymbolReader cache or going to the disk if necessary.
                                 var symbolModule = (pdbPath != null) ? symReader.OpenNativeSymbolFile(pdbPath) : null;
 
                                 typeName = symbolModule?.GetTypeForHeapAllocationSite(
