@@ -1762,7 +1762,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                             }
                             else
                             {
-                                Trace.WriteLine("TdhEnumerateProviders failed HR = " + hr);
+                                throw new Exception("TdhEnumerateProviders failed HR = " + hr);
                             }
                         }
                     }
