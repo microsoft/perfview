@@ -25,7 +25,7 @@ Once downloaded you you can simply double click on the downloaded EXE to launch 
 While Github itself and your browser do some validation, to be extra careful you can
 also explicitly validate the digital signature of the downloaded file before running it.
 
-You can also script download of PerfView.exe using a curl:
+You can also script download PerfView.exe using curl:
 
 ```
 curl -L -o perfview.exe https://aka.ms/perfview/latest
