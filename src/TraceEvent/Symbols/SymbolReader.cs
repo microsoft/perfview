@@ -589,6 +589,11 @@ namespace Microsoft.Diagnostics.Symbols
         private SymbolReaderOptions _Options;
 
         /// <summary>
+        /// Gets or sets the timeout for symbol server requests. Default is 60 seconds.
+        /// </summary>
+        public TimeSpan ServerTimeout { get; set; } = TimeSpan.FromSeconds(60);
+
+        /// <summary>
         /// We call back on this when we find a PDB by probing in 'unsafe' locations (like next to the EXE or in the Built location)
         /// If this function returns true, we assume that it is OK to use the PDB.  
         /// </summary>
@@ -959,21 +964,6 @@ namespace Microsoft.Diagnostics.Symbols
 
             var sw = Stopwatch.StartNew();
 
-            if (m_deadServers != null)
-            {
-                // Try again after 5 minutes.  
-                if ((DateTime.UtcNow - m_lastDeadTimeUtc).TotalSeconds > 300)
-                {
-                    m_deadServers = null;
-                }
-            }
-
-            if (m_deadServers != null && m_deadServers.Contains(serverPath))
-            {
-                m_log.WriteLine("FindSymbolFilePath: Skipping server {0} because it was unreachable in the past, will try again in 5 min.", serverPath);
-                return false;
-            }
-
             bool canceled = false;        // Are we trying to cancel the task
             bool alive = false;           // Has the task ever been shown to be alive (worth giving them time)
             bool successful = false;      // The task was successful
@@ -1057,8 +1047,8 @@ namespace Microsoft.Diagnostics.Symbols
                     }
                 });
 
-                // Wait 60 seconds allowing for interruptions.
-                var limit = 600;
+                // Wait for the timeout period allowing for interruptions.
+                var limit = (int)(ServerTimeout.TotalSeconds * 10); // Convert seconds to deciseconds (0.1 seconds)
 
                 for (int i = 0; i < limit; i++)
                 {
@@ -1092,15 +1082,8 @@ namespace Microsoft.Diagnostics.Symbols
                 else if (!task.IsCompleted)
                 {
                     canceled = true;
-                    m_log.WriteLine("FindSymbolFilePath: Time {0} sec.  Timeout of {1} seconds exceeded for {2}.  Setting as dead server",
-                            sw.Elapsed.TotalSeconds, limit / 10, serverPath);
-                    if (m_deadServers == null)
-                    {
-                        m_deadServers = new List<string>();
-                    }
-
-                    m_deadServers.Add(serverPath);
-                    m_lastDeadTimeUtc = DateTime.UtcNow;
+                    m_log.WriteLine("FindSymbolFilePath: Time {0} sec.  Timeout of {1} seconds exceeded for {2}.",
+                            sw.Elapsed.TotalSeconds, ServerTimeout.TotalSeconds, serverPath);
                 }
             }
             finally
@@ -1536,8 +1519,6 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         internal TextWriter m_log;
-        private List<string> m_deadServers;     // What servers can't be reached right now
-        private DateTime m_lastDeadTimeUtc;     // The last time something went dead.  
         private string m_SymbolCacheDirectory;
         private string m_SourceCacheDirectory;
         private Cache<string, ManagedSymbolModule> m_symbolModuleCache;
