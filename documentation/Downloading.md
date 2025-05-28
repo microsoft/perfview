@@ -14,7 +14,7 @@ care about specific bug fixes or features go there.
 ## Shortcut to Download the Latest PerfView.exe
 
 In the common case, you only need one file, PerfView.exe, to use the tool.  The most recent copy of
-this file can be downloaded [directly from this link](https://github.com/microsoft/perfview/releases/latest/download/PerfView.exe).
+this file can be downloaded [directly from this link](https://aka.ms/perfview/latest).
 
 Once you click the above link in your browser it will start downloading, the details of which vary from browser to browser.
 In some cases it will prompt for more information (IE) and in others (Chrome) it may not be obvious that
@@ -24,6 +24,12 @@ local machine.
 Once downloaded you you can simply double click on the downloaded EXE to launch PerfView.
 While Github itself and your browser do some validation, to be extra careful you can
 also explicitly validate the digital signature of the downloaded file before running it.
+
+You can also script download PerfView.exe using curl:
+
+```
+curl -L -o perfview.exe https://aka.ms/perfview/latest
+```
 
 ### Explicitly Validating PerfView's Digital Signature
 
