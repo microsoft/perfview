@@ -9564,6 +9564,7 @@ table {
                 if (hasGC)
                 {
                     memory.AddChild(new PerfViewGCStats(this));
+                    memory.AddChild(new MemoryAnalyzer(this));
                 }
 
                 if (hasGCAllocationTicks)

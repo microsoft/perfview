@@ -95,6 +95,29 @@ namespace PerfView
             return menu;
         }
 
+        private TraceLog GetTraceLog(StatusBar worker)
+        {
+            var etlDataFile = m_dataFile as ETLPerfViewData;
+            if (etlDataFile != null)
+            {
+                return etlDataFile.GetTraceLog(worker.LogWriter);
+            }
+
+            var linuxDataFile = m_dataFile as LinuxPerfViewData;
+            if (linuxDataFile != null)
+            {
+                return linuxDataFile.GetTraceLog(worker.LogWriter);
+            }
+
+            var eventPipeDataFile = m_dataFile as EventPipePerfViewData;
+            if (eventPipeDataFile != null)
+            {
+                return eventPipeDataFile.GetTraceLog(worker.LogWriter);
+            }
+
+            return null;
+        }
+
         private void LaunchViewer(List<IProcess> selectedProcesses)
         {
             // Single process only
@@ -183,21 +206,31 @@ namespace PerfView
             {
                 if (m_dataFile.SupportsProcesses)
                 {
-                    // Only ETL/ETLX file supported
-                    ETLPerfViewData etlDataFile = m_dataFile as ETLPerfViewData;
-
-                    if (etlDataFile == null)
-                    {
-                        return;
-                    }
-
-                    m_traceLog = etlDataFile.GetTraceLog(worker.LogWriter);
+                    // Get TraceLog from the data file (supports multiple formats)
+                    m_traceLog = GetTraceLog(worker);
 
                     if (m_traceLog != null)
                     {
                         m_worker = worker;
 
                         m_traceLog.SelectClrProcess(LaunchViewer);
+                    }
+                }
+                else
+                {
+                    // Single process format - get the process directly
+                    m_traceLog = GetTraceLog(worker);
+
+                    if (m_traceLog != null)
+                    {
+                        m_worker = worker;
+
+                        bool hasClr;
+                        var clrProcesses = m_traceLog.GetClrProcesses(out hasClr);
+                        if (clrProcesses.Count > 0)
+                        {
+                            LaunchViewer(clrProcesses);
+                        }
                     }
                 }
             }
