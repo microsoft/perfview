@@ -787,19 +787,24 @@ namespace PerfView
                             {
                                 clrVersion = m.ModuleFile.FilePath;
 
-                                int pos = clrVersion.LastIndexOf('\\');
-
-                                if (pos > 0)
+                                // Only extract version from path for clr.dll, for other modules use full path
+                                if (name.Equals("clr", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    int p = clrVersion.LastIndexOf('\\', pos - 1);
+                                    int pos = clrVersion.LastIndexOf('\\');
 
-                                    if (p > 0)
+                                    if (pos > 0)
                                     {
-                                        pos = p;
-                                    }
+                                        int p = clrVersion.LastIndexOf('\\', pos - 1);
 
-                                    clrVersion = clrVersion.Substring(pos + 1);
+                                        if (p > 0)
+                                        {
+                                            pos = p;
+                                        }
+
+                                        clrVersion = clrVersion.Substring(pos + 1);
+                                    }
                                 }
+                                // For non-clr modules, clrVersion is already set to the full file path above
                             }
 
                             hasClr = true;
