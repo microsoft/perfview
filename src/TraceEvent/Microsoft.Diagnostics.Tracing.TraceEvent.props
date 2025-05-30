@@ -37,16 +37,5 @@
       <Visible>False</Visible>
     </None>
 
-    <!-- There are no static references to these so they need to be copied explicitly.  They are COM interop assemblies that require Windows. -->
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\TraceReloggerLib.dll') And ('$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-')))" Include="$(MSBuildThisFileDirectory)..\build\native\TraceReloggerLib.dll">
-      <Link>TraceReloggerLib.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\Dia2Lib.dll') And ('$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-')))" Include="$(MSBuildThisFileDirectory)..\build\native\Dia2Lib.dll">
-      <Link>Dia2Lib.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
   </ItemGroup>
 </Project>
