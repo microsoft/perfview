@@ -9562,6 +9562,8 @@ table {
                     memory.AddChild(new PerfViewGCStats(this));
                 }
 
+                memory.AddChild(new MemoryAnalyzer(this));
+
                 if (hasGCAllocationTicks)
                 {
                     if (hasObjectUpdate)
