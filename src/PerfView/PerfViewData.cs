@@ -6555,7 +6555,7 @@ table {
 
                 // These three variables are used in the local function GetAllocationType defined below.
                 // and are used to look up type names associated with the native allocations.   
-                var loadedModules = new Dictionary<TraceModuleFile, NativeSymbolModule>();
+                var loadedModules = new Dictionary<TraceModuleFile, string>(); // Cache PDB paths, not NativeSymbolModule objects
                 var allocationTypeNames = new Dictionary<CallStackIndex, string>();
                 var symReader = GetSymbolReader(log, SymbolReaderOptions.CacheOnly);
 
@@ -6621,15 +6621,19 @@ table {
                                 if (module == null)
                                     continue;
 
-                                if (!loadedModules.TryGetValue(module, out var symbolModule))
+                                // Get the PDB path from cache or find it.
+                                // Cache the path instead of the NativeSymbolModule object because the SymbolReader
+                                // will dispose of the NativeSymbolModule when it is evicated from the SymbolReader cache.
+                                if (!loadedModules.TryGetValue(module, out var pdbPath))
                                 {
-                                    loadedModules[module] = symbolModule =
-                                        (module.PdbSignature != Guid.Empty
-                                            ? symReader.FindSymbolFilePath(module.PdbName, module.PdbSignature, module.PdbAge, module.FilePath)
-                                            : symReader.FindSymbolFilePathForModule(module.FilePath)) is string pdb
-                                        ? symReader.OpenNativeSymbolFile(pdb)
-                                        : null;
+                                    pdbPath = (module.PdbSignature != Guid.Empty
+                                        ? symReader.FindSymbolFilePath(module.PdbName, module.PdbSignature, module.PdbAge, module.FilePath)
+                                        : symReader.FindSymbolFilePathForModule(module.FilePath));
+                                    loadedModules[module] = pdbPath; // Cache the path, not the module
                                 }
+
+                                // Load the symbol file, using the SymbolReader cache or going to the disk if necessary.
+                                var symbolModule = (pdbPath != null) ? symReader.OpenNativeSymbolFile(pdbPath) : null;
 
                                 typeName = symbolModule?.GetTypeForHeapAllocationSite(
                                         (uint)(eventLog.CodeAddresses.Address(eventLog.CallStacks.CodeAddressIndex(current)) - module.ImageBase)
