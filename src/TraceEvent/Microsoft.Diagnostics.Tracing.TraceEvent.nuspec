@@ -69,8 +69,8 @@
     <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\netstandard2.0" />
 
     <!-- Support Dlls -->
-    <file src="$OutDir$netstandard2.0\Dia2Lib.dll" target="lib\netstandard2.0\Dia2Lib.dll" />
-    <file src="$OutDir$netstandard2.0\TraceReloggerLib.dll" target="lib\netstandard2.0\TraceReloggerLib.dll" />
+    <file src="$OutDir$netstandard2.0\Dia2Lib.dll" target="build\native\Dia2Lib.dll" />
+    <file src="$OutDir$netstandard2.0\TraceReloggerLib.dll" target="build\native\TraceReloggerLib.dll" />
 
     <!-- Source code (All Frameworks *) -->
     <file exclude="obj\**\*.cs;bin\**\*.cs;TraceEvent.Tests\**\*.cs;Ctf\CtfTracing.Tests\**\*.cs" src="**\*.cs" target="src" />
