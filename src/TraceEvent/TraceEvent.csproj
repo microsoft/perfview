@@ -140,11 +140,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="$(TraceEventSupportFilesBase)\netstandard1.6\Dia2Lib.dll" Condition="'$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-'))">
+    <None Include="$(TraceEventSupportFilesBase)\netstandard1.6\Dia2Lib.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Include="$(TraceEventSupportFilesBase)netstandard1.6\TraceReloggerLib.dll" Condition="'$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-'))">
+    <None Include="$(TraceEventSupportFilesBase)netstandard1.6\TraceReloggerLib.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
