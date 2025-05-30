@@ -46,7 +46,7 @@
     <file src="Microsoft.Diagnostics.Tracing.TraceEvent.props" target="build\Microsoft.Diagnostics.Tracing.TraceEvent.props" />
     <file src="Microsoft.Diagnostics.Tracing.TraceEvent.props" target="buildTransitive\Microsoft.Diagnostics.Tracing.TraceEvent.props" />
 
-    <!-- Native binaries -->
+    <!-- Native binaries - Legacy structure for backward compatibility -->
     <file src="$OutDir$netstandard2.0\amd64\KernelTraceControl.dll" target="build\native\amd64\KernelTraceControl.dll" />
     <file src="$OutDir$netstandard2.0\amd64\msdia140.dll" target="build\native\amd64\msdia140.dll" />
 
@@ -56,6 +56,17 @@
 
     <file src="$OutDir$netstandard2.0\arm64\KernelTraceControl.dll" target="build\native\arm64\KernelTraceControl.dll" />
     <file src="$OutDir$netstandard2.0\arm64\msdia140.dll" target="build\native\arm64\msdia140.dll" />
+
+    <!-- Native binaries - RID-specific structure for Windows-only DLLs -->
+    <file src="$OutDir$netstandard2.0\amd64\KernelTraceControl.dll" target="runtimes\win-x64\native\KernelTraceControl.dll" />
+    <file src="$OutDir$netstandard2.0\amd64\msdia140.dll" target="runtimes\win-x64\native\msdia140.dll" />
+
+    <file src="$OutDir$netstandard2.0\x86\KernelTraceControl.dll" target="runtimes\win-x86\native\KernelTraceControl.dll" />
+    <file src="$OutDir$netstandard2.0\x86\KernelTraceControl.Win61.dll" target="runtimes\win-x86\native\KernelTraceControl.Win61.dll" />
+    <file src="$OutDir$netstandard2.0\x86\msdia140.dll" target="runtimes\win-x86\native\msdia140.dll" />
+
+    <file src="$OutDir$netstandard2.0\arm64\KernelTraceControl.dll" target="runtimes\win-arm64\native\KernelTraceControl.dll" />
+    <file src="$OutDir$netstandard2.0\arm64\msdia140.dll" target="runtimes\win-arm64\native\msdia140.dll" />
 
     <!-- NetStandard 2.0 Framework -->
 	
