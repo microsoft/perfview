@@ -198,6 +198,7 @@
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="TreeViewItem">
                             <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
                         </Style>
                     </TreeView.ItemContainerStyle>
                     <TreeView.ItemTemplate>
