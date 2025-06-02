@@ -2882,7 +2882,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
 #if DEBUG
-            if (GetProviderName() != null && !m_ConfirmedAllEventsAreInEnumeration)
+            if (GetProviderName() != null && !m_ConfirmedAllEventsAreInEnumeration && !(this is PredefinedDynamicTraceEventParser))
             {
                 ConfirmAllEventsAreInEnumeration();
                 m_ConfirmedAllEventsAreInEnumeration = true;
@@ -3132,7 +3132,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal virtual EventFilterResponse OnNewEventDefintion(TraceEvent template, bool mayHaveExistedBefore)
         {
 #if !NOT_WINDOWS && !NO_DYNAMIC_TRACEEVENTPARSER
-            Debug.Assert(template is DynamicTraceEventData);
+            Debug.Assert(template is DynamicTraceEventData || template is PredefinedDynamicEvent);
 #endif
             EventFilterResponse combinedResponse = EventFilterResponse.RejectProvider;      // This is the combined result from all subscriptions. 
             var templateState = StateObject;
@@ -3141,7 +3141,6 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 var cur = m_subscriptionRequests[i];
                 // TODO sort template by provider so we can optimize.  
-                Debug.Assert(GetProviderName() == null);         // Static parsers (providerName != null) don't support OnNewEventDefintion. 
                 if (cur.m_eventToObserve != null)
                 {
                     var response = cur.m_eventToObserve(template.ProviderName, template.EventName);
