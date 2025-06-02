@@ -100,12 +100,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // Parse event metadata.
             DynamicTraceEventData dynamicTraceEventData = RegisteredTraceEventParser.TryLookupWorker(data);
             if (dynamicTraceEventData == null)
+            {
                 return false;
+            }
 
             // Check if we have a template for this event
-            PredefinedDynamicEvent template = state.GetTemplate(dynamicTraceEventData.ProviderGuid, dynamicTraceEventData.EventName);
-            
-            if (template != null)
+            if (state.TryGetTemplate(dynamicTraceEventData.ProviderGuid, dynamicTraceEventData.EventName, out PredefinedDynamicEvent template))
             {
                 // Move the event data to our template
                 template.eventID = dynamicTraceEventData.eventID;
@@ -182,12 +182,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Get a template from the dictionary
         /// </summary>
-        public PredefinedDynamicEvent GetTemplate(Guid providerGuid, string eventName)
+        public bool TryGetTemplate(Guid providerGuid, string eventName, out PredefinedDynamicEvent template)
         {
             var key = new TemplateKey(providerGuid, eventName);
-            PredefinedDynamicEvent template;
-            templates.TryGetValue(key, out template);
-            return template;
+            return templates.TryGetValue(key, out template);
         }
 
         /// <summary>
