@@ -315,7 +315,7 @@ namespace PerfView
                                 // TODO painfully slow, fragile, trickly
                                 rest = XmlUtilities.XmlEscape(_event.Rest);                      // First escape all XML special chars (including quotes)
                                 rest = rest.Replace("&quot;", "\"");                             // Put back all the quotes
-                                rest = Regex.Replace(rest, "\\\\(\\\\*)\"", "$1&quote;");        // But escape the escaped quotes.
+                                rest = Regex.Replace(rest, "\\\\(\\\\*)\"", "$1&quot;");        // But escape the escaped quotes.
                             }
                             xmlFile.Write(" ");
                             xmlFile.Write(rest);
