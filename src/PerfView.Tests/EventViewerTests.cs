@@ -9,19 +9,12 @@ using Microsoft.VisualStudio.Threading;
 using PerfView;
 using PerfView.TestUtilities;
 using PerfViewTests.Utilities;
-using System.Threading;
 using System.Windows;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace PerfViewTests
 {
-    /// <summary>
-    /// Regression tests for issue #927: XML escaping for EventName when saving to XML
-    /// 
-    /// Tests that use the actual EventViewer UI and SaveDataToXmlFile implementation
-    /// to ensure proper XML escaping of EventName and other fields.
-    /// </summary>
     public class EventViewerTests : PerfViewTestBase
     {
         public EventViewerTests(ITestOutputHelper testOutputHelper)
@@ -160,9 +153,13 @@ namespace PerfViewTests
 
             protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
             {
-                m_Children = new List<PerfViewTreeItem>();
-                m_Children.Add(new TestPerfViewEventSource(this));
-                return null;
+                return doAfter =>
+                {
+                    TestPerfViewEventSource eventSource = new TestPerfViewEventSource(this);
+                    eventSource.Open(parentWindow, worker, doAfter);
+                    m_Children = new List<PerfViewTreeItem>();
+                    m_Children.Add(eventSource);
+                };
             }
 
             protected internal override EventSource OpenEventSourceImpl(TextWriter log)
@@ -186,6 +183,37 @@ namespace PerfViewTests
             public override EventSource GetEventSource()
             {
                 return _dataFile.EventSource;
+            }
+
+            public override void Open(Window parentWindow, StatusBar worker, Action doAfter)
+            {
+                if (Viewer == null)
+                {
+                    worker.StartWork("Opening " + Name, delegate ()
+                    {
+                        if (m_eventSource == null)
+                        {
+                            m_eventSource = DataFile.OpenEventSourceImpl(worker.LogWriter);
+                        }
+
+                        worker.EndWork(delegate ()
+                        {
+                            if (m_eventSource == null)
+                            {
+                                throw new ApplicationException("Not a file type that supports the EventView.");
+                            }
+
+                            Viewer = new EventWindow(parentWindow, this);
+                            Viewer.Show();
+                            doAfter?.Invoke();
+                        });
+                    });
+                }
+                else
+                {
+                    Viewer.Focus();
+                    doAfter?.Invoke();
+                }
             }
         }
 
