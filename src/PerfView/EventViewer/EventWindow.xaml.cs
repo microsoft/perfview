@@ -289,7 +289,7 @@ namespace PerfView
                         }
 
                         xmlFile.Write(" <Event EventName=\"{0}\" TimeMsec=\"{1:f3}\" ProcessName=\"{2}\"",
-                            _event.EventName, _event.TimeStampRelatveMSec, XmlUtilities.XmlEscape(_event.ProcessName));
+                            XmlUtilities.XmlEscape(_event.EventName), _event.TimeStampRelatveMSec, XmlUtilities.XmlEscape(_event.ProcessName));
 
                         bool displayRest = true;
                         if (m_source.ColumnsToDisplay != null)
@@ -299,7 +299,7 @@ namespace PerfView
                             for (int i = 0; i < limit; i++)
                             {
                                 var columnName = m_source.ColumnsToDisplay[i];
-                                xmlFile.Write("{0}=\"{1}\"", columnName, XmlUtilities.XmlEscape(_event.DisplayFields[i]));
+                                xmlFile.Write(" {0}=\"{1}\"", columnName, XmlUtilities.XmlEscape(_event.DisplayFields[i]));
                             }
                         }
 
