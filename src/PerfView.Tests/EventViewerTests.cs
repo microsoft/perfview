@@ -92,6 +92,42 @@ namespace PerfViewTests
                     // Verify the raw XML contains properly escaped content
                     Assert.Contains("EventName=\"Enter&quot; providername=&quot;Microsoft-Azure-Devices\"", xmlContent);
 
+                    // Test Rest field escaping behavior
+                    foreach (XmlElement element in eventElements)
+                    {
+                        var eventName = element.Attributes["EventName"]?.Value;
+                        
+                        // Test specific Rest field escaping scenarios
+                        if (eventName == "RestTestEvent1")
+                        {
+                            // Should contain: Property1="Value with quotes" Property2=Normal
+                            // Verify it contains the property but that quotes in values are properly escaped
+                            Assert.Contains("Property1=&quot;Value with quotes&quot;", xmlContent);
+                            Assert.Contains("Property2=Normal", xmlContent);
+                        }
+                        else if (eventName == "RestTestEvent2")
+                        {
+                            // Should contain: Property1=<tag>value</tag> Property2=Value&amp;escaped
+                            // Verify XML special characters are properly escaped
+                            Assert.Contains("Property1=&lt;tag&gt;value&lt;/tag&gt;", xmlContent);
+                            Assert.Contains("Property2=Value&amp;amp;escaped", xmlContent);
+                        }
+                        else if (eventName == "RestTestEvent3")
+                        {
+                            // Should contain: Property1='single quotes' Property2="escaped\"quotes"
+                            // Verify single quotes and escaped quotes are handled correctly
+                            Assert.Contains("Property1=&apos;single quotes&apos;", xmlContent);
+                            Assert.Contains("Property2=&quot;escaped&quot;quotes&quot;", xmlContent);
+                        }
+                        else if (eventName == "RestTestEvent4")
+                        {
+                            // Should contain: Property1=Mixed<>&'"chars Property2=Normal
+                            // Verify all mixed XML special characters are properly escaped
+                            Assert.Contains("Property1=Mixed&lt;&gt;&amp;&apos;&quot;chars", xmlContent);
+                            Assert.Contains("Property2=Normal", xmlContent);
+                        }
+                    }
+
                     // Also test other XML special characters
                     foreach (XmlElement element in eventElements)
                     {
@@ -229,13 +265,19 @@ namespace PerfViewTests
                 _events = new EventRecord[]
                 {
                     // The main test case from issue #927
-                    new TestEventRecord("Enter\" providername=\"Microsoft-Azure-Devices", "Process(3164)", 783264.803),
+                    new TestEventRecord("Enter\" providername=\"Microsoft-Azure-Devices", "Process(3164)", 783264.803, ""),
                     
                     // Additional test cases for various XML special characters
-                    new TestEventRecord("<script>alert('xss')</script>", "Process(1234)", 1000.0),
-                    new TestEventRecord("Test & Company", "Process(5678)", 2000.0),
-                    new TestEventRecord("Quote: \"Hello\"", "Process(9012)", 3000.0),
-                    new TestEventRecord("Apostrophe: 'Hello'", "Process(3456)", 4000.0),
+                    new TestEventRecord("<script>alert('xss')</script>", "Process(1234)", 1000.0, ""),
+                    new TestEventRecord("Test & Company", "Process(5678)", 2000.0, ""),
+                    new TestEventRecord("Quote: \"Hello\"", "Process(9012)", 3000.0, ""),
+                    new TestEventRecord("Apostrophe: 'Hello'", "Process(3456)", 4000.0, ""),
+                    
+                    // Test cases specifically for Rest field escaping
+                    new TestEventRecord("RestTestEvent1", "Process(1111)", 5000.0, "Property1=\"Value with quotes\" Property2=Normal"),
+                    new TestEventRecord("RestTestEvent2", "Process(2222)", 6000.0, "Property1=<tag>value</tag> Property2=Value&amp;escaped"),
+                    new TestEventRecord("RestTestEvent3", "Process(3333)", 7000.0, "Property1='single quotes' Property2=\"escaped\\\"quotes\""),
+                    new TestEventRecord("RestTestEvent4", "Process(4444)", 8000.0, "Property1=Mixed<>&'\"chars Property2=Normal"),
                 };
                 
                 MaxEventTimeRelativeMsec = double.PositiveInfinity;
@@ -256,7 +298,7 @@ namespace PerfViewTests
             }
 
             public override ICollection<string> EventNames => 
-                new List<string> { "TestEvent1", "TestEvent2", "TestEvent3", "TestEvent4", "TestEvent5" };
+                new List<string> { "TestEvent1", "TestEvent2", "TestEvent3", "TestEvent4", "TestEvent5", "RestTestEvent1", "RestTestEvent2", "RestTestEvent3", "RestTestEvent4" };
 
             public override EventSource Clone()
             {
@@ -272,19 +314,21 @@ namespace PerfViewTests
             private readonly string _eventName;
             private readonly string _processName;
             private readonly double _timeStamp;
+            private readonly string _rest;
 
-            public TestEventRecord(string eventName, string processName, double timeStamp) : base()
+            public TestEventRecord(string eventName, string processName, double timeStamp, string rest) : base()
             {
                 _eventName = eventName;
                 _processName = processName;
                 _timeStamp = timeStamp;
+                _rest = rest;
             }
 
             public override string EventName => _eventName;
             public override string ProcessName => _processName;
             public override double TimeStampRelatveMSec => _timeStamp;
             public override List<Payload> Payloads => new List<Payload>();
-            public override string Rest => "";
+            public override string Rest => _rest;
         }
     }
 }
