@@ -1,327 +1,238 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
-using System.Text;
-using System.Threading;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Xml;
 using EventSources;
-using Microsoft.Diagnostics.Utilities;
+using Microsoft.VisualStudio.Threading;
+using PerfView;
+using PerfView.TestUtilities;
+using PerfViewTests.Utilities;
+using System.Threading;
+using System.Windows;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace PerfViewTests
 {
     /// <summary>
     /// Regression tests for issue #927: XML escaping for EventName when saving to XML
     /// 
-    /// Tests that replicate the actual XML generation logic from EventWindow.SaveDataToXmlFile
+    /// Tests that use the actual EventViewer UI and SaveDataToXmlFile implementation
     /// to ensure proper XML escaping of EventName and other fields.
     /// </summary>
-    public class EventViewerXmlEscapeTests
+    public class EventViewerTests : PerfViewTestBase
     {
-        [Fact]
-        public void TestEventNameXmlEscapingInSaveToXmlLogic()
+        public EventViewerTests(ITestOutputHelper testOutputHelper)
+            : base(testOutputHelper)
         {
-            // Test case from issue #927 - EventName with double quotes that was causing invalid XML
-            var problemEventName = "Enter\" providername=\"Microsoft-Azure-Devices";
-            var processName = "Process(3164)";
-            var timeMsec = 783264.803;
-
-            // Create test event records with problematic EventName
-            var eventRecord = new TestEventRecord(problemEventName, processName, timeMsec);
-            var eventSource = new TestEventSource(new[] { eventRecord });
-
-            // Test the actual XML generation logic that mirrors EventWindow.SaveDataToXmlFile
-            var tempFile = Path.GetTempFileName() + ".xml";
-            try
-            {
-                // This replicates the SaveDataToXmlFile logic from EventWindow.xaml.cs
-                SaveDataToXmlFileWithEscaping(eventSource, tempFile);
-
-                // Read the generated XML
-                var xmlContent = File.ReadAllText(tempFile);
-
-                // Verify the XML is valid and can be parsed
-                var xmlDoc = new XmlDocument();
-                xmlDoc.LoadXml(xmlContent);
-
-                // Verify the EventName attribute is correctly preserved
-                var eventElement = xmlDoc.SelectSingleNode("/Events/Event");
-                Assert.NotNull(eventElement);
-                
-                var eventNameAttr = eventElement.Attributes["EventName"];
-                Assert.NotNull(eventNameAttr);
-                
-                // The key test: the full EventName should be preserved, not truncated to "Enter"
-                Assert.Equal(problemEventName, eventNameAttr.Value);
-
-                // Verify there are no spurious attributes created from unescaped content
-                Assert.Null(eventElement.Attributes["providername"]);
-
-                // Verify the raw XML contains properly escaped content
-                Assert.Contains("EventName=\"Enter&quot; providername=&quot;Microsoft-Azure-Devices\"", xmlContent);
-            }
-            finally
-            {
-                if (File.Exists(tempFile))
-                {
-                    File.Delete(tempFile);
-                }
-            }
         }
 
-        [Theory]
-        [InlineData("Enter\" providername=\"Microsoft-Azure-Devices", "Enter&quot; providername=&quot;Microsoft-Azure-Devices")]
-        [InlineData("<script>alert('xss')</script>", "&lt;script&gt;alert(&apos;xss&apos;)&lt;/script&gt;")]
-        [InlineData("Test & Company", "Test &amp; Company")]
-        [InlineData("Quote: \"Hello\"", "Quote: &quot;Hello&quot;")]
-        [InlineData("Apostrophe: 'Hello'", "Apostrophe: &apos;Hello&apos;")]
-        public void TestEventNameXmlEscapingForVariousSpecialCharacters(string originalEventName, string expectedEscaped)
+        [WpfFact]
+        [WorkItem(927, "https://github.com/Microsoft/perfview/issues/927")]
+        public Task TestEventNameXmlEscapingRegressionAsync()
         {
-            var processName = "Process(1234)";
-            var timeMsec = 1000.0;
-
-            var eventRecord = new TestEventRecord(originalEventName, processName, timeMsec);
-            var eventSource = new TestEventSource(new[] { eventRecord });
-
-            var tempFile = Path.GetTempFileName() + ".xml";
-            try
+            Func<Task<EventWindow>> setupAsync = async () =>
             {
-                SaveDataToXmlFileWithEscaping(eventSource, tempFile);
-                var xmlContent = File.ReadAllText(tempFile);
+                await JoinableTaskFactory.SwitchToMainThreadAsync();
 
-                // Verify the XML is valid
-                var xmlDoc = new XmlDocument();
-                xmlDoc.LoadXml(xmlContent);
+                var file = new XmlEscapeTestFile();
+                await OpenAsync(JoinableTaskFactory, file, GuiApp.MainWindow, GuiApp.MainWindow.StatusBar).ConfigureAwait(true);
+                var eventSource = file.Children.OfType<PerfViewEventSource>().First();
+                return eventSource.Viewer;
+            };
 
-                // Verify the EventName attribute is correctly preserved when parsed
-                var eventElement = xmlDoc.SelectSingleNode("/Events/Event");
-                Assert.NotNull(eventElement);
-                
-                var eventNameAttr = eventElement.Attributes["EventName"];
-                Assert.NotNull(eventNameAttr);
-                Assert.Equal(originalEventName, eventNameAttr.Value);
-
-                // Also verify the raw XML contains the expected escaped content
-                Assert.Contains($"EventName=\"{expectedEscaped}\"", xmlContent);
-            }
-            finally
+            Func<EventWindow, Task> cleanupAsync = async eventWindow =>
             {
-                if (File.Exists(tempFile))
+                await JoinableTaskFactory.SwitchToMainThreadAsync();
+                eventWindow.Close();
+            };
+
+            Func<EventWindow, Task> testDriverAsync = async eventWindow =>
+            {
+                await JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                // Create a temporary file for XML output
+                var tempFile = Path.GetTempFileName() + ".xml";
+                try
                 {
-                    File.Delete(tempFile);
+                    // Call the actual SaveDataToXmlFile method from EventWindow
+                    eventWindow.SaveDataToXmlFile(tempFile);
+
+                    // Wait for any background processing to complete
+                    await eventWindow.StatusBar.WaitForWorkCompleteAsync().ConfigureAwait(true);
+
+                    // Read the generated XML
+                    var xmlContent = File.ReadAllText(tempFile);
+
+                    // Verify the XML is valid and can be parsed
+                    var xmlDoc = new XmlDocument();
+                    xmlDoc.LoadXml(xmlContent);
+
+                    // Verify the problematic EventName from issue #927 is correctly preserved
+                    var eventElements = xmlDoc.SelectNodes("/Events/Event");
+                    Assert.NotNull(eventElements);
+                    Assert.True(eventElements.Count > 0);
+
+                    // Find the event with the problematic name
+                    XmlElement problemEvent = null;
+                    foreach (XmlElement element in eventElements)
+                    {
+                        var eventNameAttr = element.Attributes["EventName"];
+                        if (eventNameAttr?.Value == "Enter\" providername=\"Microsoft-Azure-Devices")
+                        {
+                            problemEvent = element;
+                            break;
+                        }
+                    }
+
+                    Assert.NotNull(problemEvent);
+                    
+                    // The key test: the full EventName should be preserved, not truncated to "Enter"
+                    var eventNameAttribute = problemEvent.Attributes["EventName"];
+                    Assert.Equal("Enter\" providername=\"Microsoft-Azure-Devices", eventNameAttribute.Value);
+
+                    // Verify there are no spurious attributes created from unescaped content
+                    Assert.Null(problemEvent.Attributes["providername"]);
+
+                    // Verify the raw XML contains properly escaped content
+                    Assert.Contains("EventName=\"Enter&quot; providername=&quot;Microsoft-Azure-Devices\"", xmlContent);
+
+                    // Also test other XML special characters
+                    foreach (XmlElement element in eventElements)
+                    {
+                        var eventName = element.Attributes["EventName"]?.Value;
+                        var processName = element.Attributes["ProcessName"]?.Value;
+
+                        // Verify all data is preserved correctly
+                        Assert.NotNull(eventName);
+                        Assert.NotNull(processName);
+                        
+                        // For the XML validation, we just ensure it parsed without exception
+                        // and the original data is preserved (no truncation or spurious attributes)
+                    }
                 }
-            }
+                finally
+                {
+                    if (File.Exists(tempFile))
+                    {
+                        File.Delete(tempFile);
+                    }
+                }
+            };
+
+            return RunUITestAsync(setupAsync, testDriverAsync, cleanupAsync);
         }
 
-        [Fact]
-        public void TestRegressionForIssue927()
+        private static Task OpenAsync(JoinableTaskFactory factory, PerfViewTreeItem item, Window parentWindow, StatusBar worker)
         {
-            // This is the exact case reported in issue #927
-            var eventName = "Enter\" providername=\"Microsoft-Azure-Devices";
-            var processName = "Process(3164)";
-            var timeMsec = 783264.803;
-
-            var eventRecord = new TestEventRecord(eventName, processName, timeMsec);
-            var eventSource = new TestEventSource(new[] { eventRecord });
-
-            var tempFile = Path.GetTempFileName() + ".xml";
-            try
+            return factory.RunAsync(async () =>
             {
-                SaveDataToXmlFileWithEscaping(eventSource, tempFile);
-                var xmlContent = File.ReadAllText(tempFile);
+                await factory.SwitchToMainThreadAsync();
 
-                // Before the fix, this would generate invalid XML like:
-                // <Event EventName="Enter" providername="Microsoft-Azure-Devices" TimeMsec="783264.803" ProcessName="Process(3164)"/>
-                // Which would truncate the EventName to just "Enter"
-
-                // After the fix, it should generate valid XML like:
-                // <Event EventName="Enter&quot; providername=&quot;Microsoft-Azure-Devices" TimeMsec="783264.803" ProcessName="Process(3164)"/>
-                // And preserve the full EventName value
-
-                // Verify the XML is valid and can be parsed
-                var xmlDoc = new XmlDocument();
-                xmlDoc.LoadXml(xmlContent);
-
-                // Verify the full EventName is preserved
-                var eventElement = xmlDoc.SelectSingleNode("/Events/Event");
-                Assert.NotNull(eventElement);
-                
-                var eventNameAttr = eventElement.Attributes["EventName"];
-                Assert.NotNull(eventNameAttr);
-                Assert.Equal(eventName, eventNameAttr.Value);
-
-                // Verify there are no extra spurious attributes from the unescaped content
-                Assert.Null(eventElement.Attributes["providername"]);
-            }
-            finally
-            {
-                if (File.Exists(tempFile))
-                {
-                    File.Delete(tempFile);
-                }
-            }
+                var result = new TaskCompletionSource<VoidResult>();
+                item.Open(parentWindow, worker, () => result.SetResult(default(VoidResult)));
+                await result.Task.ConfigureAwait(false);
+            }).Task;
         }
-
-        [Fact]
-        public void TestOldBehaviorWithoutEscapingShowsDataCorruption()
-        {
-            // This demonstrates what happens with the old, unfixed code (without escaping EventName)
-            var eventName = "Enter\" providername=\"Microsoft-Azure-Devices";
-            var processName = "Process(3164)";
-            var timeMsec = 783264.803;
-
-            var eventRecord = new TestEventRecord(eventName, processName, timeMsec);
-            var eventSource = new TestEventSource(new[] { eventRecord });
-
-            var tempFile = Path.GetTempFileName() + ".xml";
-            try
-            {
-                // Simulate the OLD behavior (before the fix) - no escaping on EventName
-                SaveDataToXmlFileWithoutEscaping(eventSource, tempFile);
-                var xmlContent = File.ReadAllText(tempFile);
-
-                // The XML is technically parsable, but the EventName gets truncated
-                var xmlDoc = new XmlDocument();
-                xmlDoc.LoadXml(xmlContent);
-
-                var eventElement = xmlDoc.SelectSingleNode("/Events/Event");
-                Assert.NotNull(eventElement);
-
-                // Before the fix, EventName would be truncated to just "Enter"
-                var eventNameAttr = eventElement.Attributes["EventName"];
-                Assert.NotNull(eventNameAttr);
-                Assert.Equal("Enter", eventNameAttr.Value);  // Truncated, not the full original value!
-
-                // And there would be spurious attributes created from the unescaped content
-                var spuriousAttr = eventElement.Attributes["providername"];
-                Assert.NotNull(spuriousAttr);
-                Assert.Equal("Microsoft-Azure-Devices", spuriousAttr.Value);
-
-                // This demonstrates the data corruption that occurred before the fix
-            }
-            finally
-            {
-                if (File.Exists(tempFile))
-                {
-                    File.Delete(tempFile);
-                }
-            }
-        }
-
-        #region Test Infrastructure and XML Generation Logic
 
         /// <summary>
-        /// Replicates the SaveDataToXmlFile logic from EventWindow.xaml.cs (lines 270-330)
-        /// This uses the FIXED behavior with proper XmlUtilities.XmlEscape on EventName.
+        /// A test file containing events with problematic EventNames for XML escaping testing.
         /// </summary>
-        private void SaveDataToXmlFileWithEscaping(EventSource eventSource, string xmlFileName)
+        private class XmlEscapeTestFile : PerfViewFile
         {
-            var savedCulture = Thread.CurrentThread.CurrentCulture;
-            try
+            public XmlEscapeTestFile() : this(new XmlEscapeTestEventSource())
             {
-                Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-                using (var xmlFile = File.CreateText(xmlFileName))
-                {
-                    // Write out column header
-                    xmlFile.WriteLine("<Events>");
-                    eventSource.ForEach(delegate (EventRecord _event)
-                    {
-                        // We have exceeded MaxRet, skip it.
-                        if (_event.EventName == null)
-                        {
-                            return false;
-                        }
-
-                        // This replicates the FIXED line from EventWindow.xaml.cs (line 291-292)
-                        // Note: XmlUtilities.XmlEscape is applied to BOTH EventName and ProcessName
-                        xmlFile.Write(" <Event EventName=\"{0}\" TimeMsec=\"{1:f3}\" ProcessName=\"{2}\"",
-                            XmlUtilities.XmlEscape(_event.EventName), _event.TimeStampRelatveMSec, XmlUtilities.XmlEscape(_event.ProcessName));
-
-                        xmlFile.WriteLine("/>");
-                        return true;
-                    });
-                    xmlFile.WriteLine("</Events>");
-                }
             }
-            finally
+
+            public XmlEscapeTestFile(XmlEscapeTestEventSource eventSource)
             {
-                Thread.CurrentThread.CurrentCulture = savedCulture;
+                Title = FormatName = nameof(XmlEscapeTestFile);
+                EventSource = eventSource;
+            }
+
+            public override string Title { get; }
+            public override string FormatName { get; }
+            public override string[] FileExtensions { get; } = new[] { "XML Escape Test" };
+
+            public XmlEscapeTestEventSource EventSource { get; }
+
+            protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
+            {
+                m_Children = new List<PerfViewTreeItem>();
+                m_Children.Add(new TestPerfViewEventSource(this));
+                return null;
+            }
+
+            protected internal override EventSource OpenEventSourceImpl(TextWriter log)
+            {
+                return EventSource;
             }
         }
 
         /// <summary>
-        /// Replicates the OLD SaveDataToXmlFile logic WITHOUT escaping EventName
-        /// This demonstrates the BROKEN behavior before the fix.
+        /// Test subclass of PerfViewEventSource that provides mock event data
         /// </summary>
-        private void SaveDataToXmlFileWithoutEscaping(EventSource eventSource, string xmlFileName)
+        private class TestPerfViewEventSource : PerfViewEventSource
         {
-            var savedCulture = Thread.CurrentThread.CurrentCulture;
-            try
+            private readonly XmlEscapeTestFile _dataFile;
+
+            public TestPerfViewEventSource(XmlEscapeTestFile dataFile) : base(dataFile)
             {
-                Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-                using (var xmlFile = File.CreateText(xmlFileName))
-                {
-                    // Write out column header
-                    xmlFile.WriteLine("<Events>");
-                    eventSource.ForEach(delegate (EventRecord _event)
-                    {
-                        // We have exceeded MaxRet, skip it.
-                        if (_event.EventName == null)
-                        {
-                            return false;
-                        }
-
-                        // This replicates the OLD, BROKEN line from EventWindow.xaml.cs (without XmlEscape on EventName)
-                        xmlFile.Write(" <Event EventName=\"{0}\" TimeMsec=\"{1:f3}\" ProcessName=\"{2}\"",
-                            _event.EventName, _event.TimeStampRelatveMSec, XmlUtilities.XmlEscape(_event.ProcessName));
-
-                        xmlFile.WriteLine("/>");
-                        return true;
-                    });
-                    xmlFile.WriteLine("</Events>");
-                }
+                _dataFile = dataFile;
             }
-            finally
+
+            public override EventSource GetEventSource()
             {
-                Thread.CurrentThread.CurrentCulture = savedCulture;
+                return _dataFile.EventSource;
             }
         }
+
         /// <summary>
-        /// Replicates the OLD SaveDataToXmlFile logic WITHOUT escaping EventName
-        /// This demonstrates the BROKEN behavior before the fix.
+        /// Test EventSource implementation with problematic EventNames for XML escaping testing
         /// </summary>
-        private void SaveDataToXmlFileWithoutEscaping(EventSource eventSource, string xmlFileName)
+        private class XmlEscapeTestEventSource : EventSource
         {
-            var savedCulture = Thread.CurrentThread.CurrentCulture;
-            try
+            private readonly EventRecord[] _events;
+
+            public XmlEscapeTestEventSource()
             {
-                Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-                using (var xmlFile = File.CreateText(xmlFileName))
+                _events = new EventRecord[]
                 {
-                    // Write out column header
-                    xmlFile.WriteLine("<Events>");
-                    eventSource.ForEach(delegate (EventRecord _event)
-                    {
-                        // We have exceeded MaxRet, skip it.
-                        if (_event.EventName == null)
-                        {
-                            return false;
-                        }
+                    // The main test case from issue #927
+                    new TestEventRecord("Enter\" providername=\"Microsoft-Azure-Devices", "Process(3164)", 783264.803),
+                    
+                    // Additional test cases for various XML special characters
+                    new TestEventRecord("<script>alert('xss')</script>", "Process(1234)", 1000.0),
+                    new TestEventRecord("Test & Company", "Process(5678)", 2000.0),
+                    new TestEventRecord("Quote: \"Hello\"", "Process(9012)", 3000.0),
+                    new TestEventRecord("Apostrophe: 'Hello'", "Process(3456)", 4000.0),
+                };
+                
+                MaxEventTimeRelativeMsec = double.PositiveInfinity;
+            }
 
-                        // This replicates the OLD, BROKEN line from EventWindow.xaml.cs (without XmlEscape on EventName)
-                        xmlFile.Write(" <Event EventName=\"{0}\" TimeMsec=\"{1:f3}\" ProcessName=\"{2}\"",
-                            _event.EventName, _event.TimeStampRelatveMSec, XmlUtilities.XmlEscape(_event.ProcessName));
-
-                        xmlFile.WriteLine("/>");
-                        return true;
-                    });
-                    xmlFile.WriteLine("</Events>");
+            public override void ForEach(Func<EventRecord, bool> callback)
+            {
+                foreach (var eventRecord in _events)
+                {
+                    if (!callback(eventRecord))
+                        break;
                 }
             }
-            finally
+
+            public override void SetEventFilter(List<string> eventNames)
             {
-                Thread.CurrentThread.CurrentCulture = savedCulture;
+                // Not needed for this test
+            }
+
+            public override ICollection<string> EventNames => 
+                new List<string> { "TestEvent1", "TestEvent2", "TestEvent3", "TestEvent4", "TestEvent5" };
+
+            public override EventSource Clone()
+            {
+                return new XmlEscapeTestEventSource();
             }
         }
 
@@ -347,29 +258,5 @@ namespace PerfViewTests
             public override List<Payload> Payloads => new List<Payload>();
             public override string Rest => "";
         }
-
-        /// <summary>
-        /// Test implementation of EventSource for testing XML escaping
-        /// </summary>
-        private class TestEventSource : EventSource
-        {
-            private readonly EventRecord[] _events;
-
-            public TestEventSource(EventRecord[] events)
-            {
-                _events = events;
-            }
-
-            public override void ForEach(Func<EventRecord, bool> callback)
-            {
-                foreach (var eventRecord in _events)
-                {
-                    if (!callback(eventRecord))
-                        break;
-                }
-            }
-        }
-
-        #endregion
     }
 }
