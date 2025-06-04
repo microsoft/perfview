@@ -213,8 +213,7 @@ namespace PerfView
                     {
                         m_worker = worker;
 
-                        bool hasClr;
-                        var clrProcesses = m_traceLog.GetClrProcesses(out hasClr);
+                        var clrProcesses = m_traceLog.GetClrProcesses(out _);
                         if (clrProcesses.Count > 0)
                         {
                             LaunchViewer(clrProcesses);
