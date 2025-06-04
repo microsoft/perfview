@@ -97,25 +97,13 @@ namespace PerfView
 
         private TraceLog GetTraceLog(StatusBar worker)
         {
-            var etlDataFile = m_dataFile as ETLPerfViewData;
-            if (etlDataFile != null)
+            return m_dataFile switch
             {
-                return etlDataFile.GetTraceLog(worker.LogWriter);
-            }
-
-            var linuxDataFile = m_dataFile as LinuxPerfViewData;
-            if (linuxDataFile != null)
-            {
-                return linuxDataFile.GetTraceLog(worker.LogWriter);
-            }
-
-            var eventPipeDataFile = m_dataFile as EventPipePerfViewData;
-            if (eventPipeDataFile != null)
-            {
-                return eventPipeDataFile.GetTraceLog(worker.LogWriter);
-            }
-
-            return null;
+                ETLPerfViewData etlDataFile => etlDataFile.GetTraceLog(worker.LogWriter),
+                LinuxPerfViewData linuxDataFile => linuxDataFile.GetTraceLog(worker.LogWriter),
+                EventPipePerfViewData eventPipeDataFile => eventPipeDataFile.GetTraceLog(worker.LogWriter),
+                _ => null,
+            };
         }
 
         private void LaunchViewer(List<IProcess> selectedProcesses)
@@ -237,7 +225,6 @@ namespace PerfView
             else
             {
                 m_mainWindow.Focus();
-
                 doAfter?.Invoke();
             }
         }
