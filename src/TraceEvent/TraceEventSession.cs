@@ -1122,7 +1122,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 EnabledProviderInfo? existingInfo = GetEnabledInfoForProviderAndSession(&providerGuid, (ulong)m_SessionId);
                 if (existingInfo.HasValue)
                 {
-                    mergedKeywords = matchAnyKeywords | existingInfo.Value.MatchAnyKeywords;
+                    mergedKeywords |= existingInfo.Value.MatchAnyKeywords;
                     levelToUse = existingInfo.Value.Level;
                 }
 
