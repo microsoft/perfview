@@ -735,6 +735,7 @@ namespace PerfView
         {
             return name.Equals("clr", StringComparison.OrdinalIgnoreCase) ||
                    name.Equals("coreclr", StringComparison.OrdinalIgnoreCase) ||
+                   name.Equals("libcoreclr", StringComparison.OrdinalIgnoreCase) ||
                    name.Equals("mscorwks", StringComparison.OrdinalIgnoreCase) ||
                    name.Equals("mrt100", StringComparison.OrdinalIgnoreCase);
         }
@@ -746,6 +747,8 @@ namespace PerfView
         {
             return name.Equals("mscorlib", StringComparison.OrdinalIgnoreCase) ||
                    name.Equals("mscorlib.ni", StringComparison.OrdinalIgnoreCase) ||
+                   name.Equals("system.private.corelib", StringComparison.OrdinalIgnoreCase) ||
+                   name.Equals("system.private.corelib.il", StringComparison.OrdinalIgnoreCase) ||
                    name.Equals("corefx", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -775,8 +778,6 @@ namespace PerfView
                 {
                     foreach (TraceLoadedModule m in mods)
                     {
-                        keep = false;
-
                         string name = m.Name;
 
                         if (name.IsClr() || name.IsMscorlib() && String.IsNullOrEmpty(clrVersion))
@@ -787,19 +788,16 @@ namespace PerfView
                             {
                                 clrVersion = m.ModuleFile.FilePath;
 
-                                int pos = clrVersion.LastIndexOf('\\');
-
-                                if (pos > 0)
+                                // Only extract version from path for clr.dll, for other modules use full path
+                                if (name.Equals("clr", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    int p = clrVersion.LastIndexOf('\\', pos - 1);
-
-                                    if (p > 0)
+                                    var parentDir = Path.GetDirectoryName(clrVersion);
+                                    if (!String.IsNullOrEmpty(parentDir))
                                     {
-                                        pos = p;
+                                        clrVersion = Path.GetFileName(parentDir);
                                     }
-
-                                    clrVersion = clrVersion.Substring(pos + 1);
                                 }
+                                // For non-clr modules, clrVersion is already set to the full file path above
                             }
 
                             hasClr = true;

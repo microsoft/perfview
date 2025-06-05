@@ -95,6 +95,17 @@ namespace PerfView
             return menu;
         }
 
+        private TraceLog GetTraceLog(StatusBar worker)
+        {
+            return m_dataFile switch
+            {
+                ETLPerfViewData etlDataFile => etlDataFile.GetTraceLog(worker.LogWriter),
+                LinuxPerfViewData linuxDataFile => linuxDataFile.GetTraceLog(worker.LogWriter),
+                EventPipePerfViewData eventPipeDataFile => eventPipeDataFile.GetTraceLog(worker.LogWriter),
+                _ => null,
+            };
+        }
+
         private void LaunchViewer(List<IProcess> selectedProcesses)
         {
             // Single process only
@@ -183,15 +194,8 @@ namespace PerfView
             {
                 if (m_dataFile.SupportsProcesses)
                 {
-                    // Only ETL/ETLX file supported
-                    ETLPerfViewData etlDataFile = m_dataFile as ETLPerfViewData;
-
-                    if (etlDataFile == null)
-                    {
-                        return;
-                    }
-
-                    m_traceLog = etlDataFile.GetTraceLog(worker.LogWriter);
+                    // Get TraceLog from the data file (supports multiple formats)
+                    m_traceLog = GetTraceLog(worker);
 
                     if (m_traceLog != null)
                     {
@@ -200,11 +204,26 @@ namespace PerfView
                         m_traceLog.SelectClrProcess(LaunchViewer);
                     }
                 }
+                else
+                {
+                    // Single process format - get the process directly
+                    m_traceLog = GetTraceLog(worker);
+
+                    if (m_traceLog != null)
+                    {
+                        m_worker = worker;
+
+                        var clrProcesses = m_traceLog.GetClrProcesses(out _);
+                        if (clrProcesses.Count > 0)
+                        {
+                            LaunchViewer(clrProcesses);
+                        }
+                    }
+                }
             }
             else
             {
                 m_mainWindow.Focus();
-
                 doAfter?.Invoke();
             }
         }
