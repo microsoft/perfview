@@ -1119,19 +1119,21 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 // Query existing keywords and merge them with requested keywords before capture state
                 ulong mergedKeywords = matchAnyKeywords;
                 TraceEventLevel levelToUse = TraceEventLevel.Verbose;
-                Guid* providerPtr = stackalloc Guid[1];
-                *providerPtr = providerGuid;
-                EnabledProviderInfo? existingInfo = GetEnabledInfoForProviderAndSession(providerPtr, (ulong)m_SessionId);
-                if (existingInfo.HasValue)
+                Guid[] guidArray = { providerGuid };
+                fixed (Guid* providerPtr = guidArray)
                 {
-                    mergedKeywords = matchAnyKeywords | existingInfo.Value.Keywords;
-                    levelToUse = existingInfo.Value.Level;
-                    
-                    // Enable the provider with merged keywords first
-                    int enableHr = TraceEventNativeMethods.EnableTraceEx2(
-                        m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-                        levelToUse, mergedKeywords, 0, EnableProviderTimeoutMSec, parameters);
-                    Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(enableHr));
+                    EnabledProviderInfo? existingInfo = GetEnabledInfoForProviderAndSession(providerPtr, (ulong)m_SessionId);
+                    if (existingInfo.HasValue)
+                    {
+                        mergedKeywords = matchAnyKeywords | existingInfo.Value.Keywords;
+                        levelToUse = existingInfo.Value.Level;
+                        
+                        // Enable the provider with merged keywords first
+                        int enableHr = TraceEventNativeMethods.EnableTraceEx2(
+                            m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER,
+                            levelToUse, mergedKeywords, 0, EnableProviderTimeoutMSec, parameters);
+                        Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(enableHr));
+                    }
                 }
 
                 fixed (byte* filterDataPtr = asArray)
