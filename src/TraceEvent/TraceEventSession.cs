@@ -1116,6 +1116,22 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     asArray[6] = (byte)(longVal >> 48);
                     asArray[7] = (byte)(longVal >> 56);
                 }
+                // Query existing keywords and merge them with requested keywords before capture state
+                ulong mergedKeywords = matchAnyKeywords;
+                Guid* providerPtr = stackalloc Guid[1];
+                *providerPtr = providerGuid;
+                long? existingKeywords = GetEnabledKeywordsForProviderAndSession(providerPtr, (ulong)m_SessionId);
+                if (existingKeywords.HasValue)
+                {
+                    mergedKeywords = matchAnyKeywords | (ulong)existingKeywords.Value;
+                    
+                    // Enable the provider with merged keywords first
+                    int enableHr = TraceEventNativeMethods.EnableTraceEx2(
+                        m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER,
+                        TraceEventLevel.Verbose, mergedKeywords, 0, EnableProviderTimeoutMSec, parameters);
+                    Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(enableHr));
+                }
+
                 fixed (byte* filterDataPtr = asArray)
                 {
                     if (asArray != null)
@@ -1125,9 +1141,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         filter.Size = asArray.Length;
                         filter.Ptr = filterDataPtr;
                     }
+
                     int hr = TraceEventNativeMethods.EnableTraceEx2(
                         m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE,
-                        TraceEventLevel.Verbose, matchAnyKeywords, 0, EnableProviderTimeoutMSec, parameters);
+                        TraceEventLevel.Verbose, mergedKeywords, 0, EnableProviderTimeoutMSec, parameters);
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
                 }
             }
