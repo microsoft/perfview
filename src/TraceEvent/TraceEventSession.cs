@@ -1118,17 +1118,19 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 }
                 // Query existing keywords and merge them with requested keywords before capture state
                 ulong mergedKeywords = matchAnyKeywords;
+                TraceEventLevel levelToUse = TraceEventLevel.Verbose;
                 Guid* providerPtr = stackalloc Guid[1];
                 *providerPtr = providerGuid;
-                long? existingKeywords = GetEnabledKeywordsForProviderAndSession(providerPtr, (ulong)m_SessionId);
-                if (existingKeywords.HasValue)
+                EnabledProviderInfo? existingInfo = GetEnabledInfoForProviderAndSession(providerPtr, (ulong)m_SessionId);
+                if (existingInfo.HasValue)
                 {
-                    mergedKeywords = matchAnyKeywords | (ulong)existingKeywords.Value;
+                    mergedKeywords = matchAnyKeywords | existingInfo.Value.Keywords;
+                    levelToUse = existingInfo.Value.Level;
                     
                     // Enable the provider with merged keywords first
                     int enableHr = TraceEventNativeMethods.EnableTraceEx2(
                         m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-                        TraceEventLevel.Verbose, mergedKeywords, 0, EnableProviderTimeoutMSec, parameters);
+                        levelToUse, mergedKeywords, 0, EnableProviderTimeoutMSec, parameters);
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(enableHr));
                 }
 
@@ -2571,17 +2573,23 @@ namespace Microsoft.Diagnostics.Tracing.Session
             for (int i = 0; &providerGuids[i] < bufferEnd; i++)
             {
                 Guid* providerId = &providerGuids[i];
-                long? matchAnyKeyword = GetEnabledKeywordsForProviderAndSession(providerId, sessionId);
-                if (matchAnyKeyword != null)
+                EnabledProviderInfo? enabledInfo = GetEnabledInfoForProviderAndSession(providerId, sessionId);
+                if (enabledInfo != null)
                 {
-                    ret.Add(*providerId, (ulong)matchAnyKeyword);
+                    ret.Add(*providerId, enabledInfo.Value.Keywords);
                 }
             }
 
             return ret;
         }
 
-        private static unsafe long? GetEnabledKeywordsForProviderAndSession(Guid *providerId, ulong sessionId)
+        private struct EnabledProviderInfo
+        {
+            public ulong Keywords;
+            public TraceEventLevel Level;
+        }
+
+        private static unsafe EnabledProviderInfo? GetEnabledInfoForProviderAndSession(Guid *providerId, ulong sessionId)
         {
             int buffSize = 256;     // An initial guess that probably works most of the time.
             byte* buffer;
@@ -2602,7 +2610,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 }
             }
 
-            long? matchAnyKeyword = null;
+            EnabledProviderInfo? result = null;
 
             TraceEventNativeMethods.TRACE_GUID_INFO* guidInfo = (TraceEventNativeMethods.TRACE_GUID_INFO*)buffer;
             byte *pCurrent = buffer + sizeof(TraceEventNativeMethods.TRACE_GUID_INFO);
@@ -2615,20 +2623,31 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     TraceEventNativeMethods.TRACE_ENABLE_INFO* pEnableInfo = &((TraceEventNativeMethods.TRACE_ENABLE_INFO*)pCurrent)[j];
                     if (pEnableInfo->LoggerId == sessionId)
                     {
-                        if (matchAnyKeyword == null)
+                        if (result == null)
                         {
-                            matchAnyKeyword = pEnableInfo->MatchAnyKeyword;
+                            result = new EnabledProviderInfo
+                            {
+                                Keywords = (ulong)pEnableInfo->MatchAnyKeyword,
+                                Level = (TraceEventLevel)pEnableInfo->Level
+                            };
                         }
                         else
                         {
-                            matchAnyKeyword |= pEnableInfo->MatchAnyKeyword;
+                            var current = result.Value;
+                            current.Keywords |= (ulong)pEnableInfo->MatchAnyKeyword;
+                            // Use the higher (more verbose) level
+                            if (pEnableInfo->Level > (byte)current.Level)
+                            {
+                                current.Level = (TraceEventLevel)pEnableInfo->Level;
+                            }
+                            result = current;
                         }
                     }
                 }
                 pCurrent += sizeof(TraceEventNativeMethods.TRACE_ENABLE_INFO) * pInstanceInfo->EnableCount;
             }
 
-            return matchAnyKeyword;
+            return result;
         }
 
         private static unsafe void CopyStringToPtr(char* toPtr, string str)
