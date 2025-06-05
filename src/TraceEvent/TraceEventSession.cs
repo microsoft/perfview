@@ -1119,22 +1119,18 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 // Query existing keywords and merge them with requested keywords before capture state
                 ulong mergedKeywords = matchAnyKeywords;
                 TraceEventLevel levelToUse = TraceEventLevel.Verbose;
-                Guid[] guidArray = { providerGuid };
-                fixed (Guid* providerPtr = guidArray)
+                EnabledProviderInfo? existingInfo = GetEnabledInfoForProviderAndSession(&providerGuid, (ulong)m_SessionId);
+                if (existingInfo.HasValue)
                 {
-                    EnabledProviderInfo? existingInfo = GetEnabledInfoForProviderAndSession(providerPtr, (ulong)m_SessionId);
-                    if (existingInfo.HasValue)
-                    {
-                        mergedKeywords = matchAnyKeywords | existingInfo.Value.Keywords;
-                        levelToUse = existingInfo.Value.Level;
-                        
-                        // Enable the provider with merged keywords first
-                        int enableHr = TraceEventNativeMethods.EnableTraceEx2(
-                            m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-                            levelToUse, mergedKeywords, 0, EnableProviderTimeoutMSec, parameters);
-                        Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(enableHr));
-                    }
+                    mergedKeywords = matchAnyKeywords | existingInfo.Value.MatchAnyKeywords;
+                    levelToUse = existingInfo.Value.Level;
                 }
+
+                // Enable the provider with merged keywords first
+                int enableHr = TraceEventNativeMethods.EnableTraceEx2(
+                    m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER,
+                    levelToUse, mergedKeywords, 0, EnableProviderTimeoutMSec, parameters);
+                Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(enableHr));
 
                 fixed (byte* filterDataPtr = asArray)
                 {
@@ -2578,7 +2574,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 EnabledProviderInfo? enabledInfo = GetEnabledInfoForProviderAndSession(providerId, sessionId);
                 if (enabledInfo != null)
                 {
-                    ret.Add(*providerId, enabledInfo.Value.Keywords);
+                    ret.Add(*providerId, enabledInfo.Value.MatchAnyKeywords);
                 }
             }
 
@@ -2587,7 +2583,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
         private struct EnabledProviderInfo
         {
-            public ulong Keywords;
+            public ulong MatchAnyKeywords;
             public TraceEventLevel Level;
         }
 
@@ -2629,14 +2625,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         {
                             result = new EnabledProviderInfo
                             {
-                                Keywords = (ulong)pEnableInfo->MatchAnyKeyword,
+                                MatchAnyKeywords = (ulong)pEnableInfo->MatchAnyKeyword,
                                 Level = (TraceEventLevel)pEnableInfo->Level
                             };
                         }
                         else
                         {
                             var current = result.Value;
-                            current.Keywords |= (ulong)pEnableInfo->MatchAnyKeyword;
+                            current.MatchAnyKeywords |= (ulong)pEnableInfo->MatchAnyKeyword;
                             // Use the higher (more verbose) level
                             if (pEnableInfo->Level > (byte)current.Level)
                             {
