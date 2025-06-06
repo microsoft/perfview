@@ -28,7 +28,7 @@
     </h3>
     <p>
         By default PerfView causes the Runtime to log an event at the beginning and
-        end of each <a href="http://msdn.microsoft.com/en-us/library/0xy59wtx.aspx">
+        end of each <a href="https://learn.microsoft.com/en-us/dotnet/api/system.object.finalize">
             .NET
             Garbage Collection
         </a> as well as every time 100K of objects are allocated.&nbsp;&nbsp;
@@ -41,7 +41,7 @@
     <p>
         If the GC heap is a large percentage of the total memory used then GC heap
         optimization then use the Memory->Take Heap Snapshot feature to drill into GC heap usage.
-        See <a href="http://msdn.microsoft.com/en-us/magazine/dd882521.aspx">
+        See <a href="https://learn.microsoft.com/en-us/archive/msdn-magazine/2010/april/clr-4-0-a-comprehensive-look-at-garbage-collection-improvements">
             Memory
             Usage Auditing For .NET Applications
         </a> for&nbsp; more on memory optimization.&nbsp;
@@ -63,7 +63,7 @@
         By default, PerfView causes the Runtime to log an event every time a managed object is
         finalized, meaning that its finalizer (denoted in C# with the ~ syntax) is executed.
         For a detailed look at the costs involved in finalization, see this
-        <a href="http://blogs.msdn.com/b/cbrumme/archive/2004/02/20/77460.aspx">blog post</a>.
+        blog post (archived).
     </p>
     <p>
         PerfView is unable to determine the stack that allocated a finalizable object,
@@ -115,7 +115,7 @@
         <ul>
             <li>
                 Precompile the code - On Desktop .NET the
-                <a href="\%22http:/msdn.microsoft.com/en-us/magazine/cc163808.aspx\%22">
+                <a href="https://learn.microsoft.com/en-us/archive/msdn-magazine/">
                     NGen Tool
                 </a> can be used. On .Net Core
                 <a href="https://github.com/dotnet/coreclr/blob/master/Documentation/building/crossgen.md">
@@ -152,7 +152,7 @@
     </h3>
     <p>
         Background JIT compilation is a feature that was introduced in Version 4.5 of the .NET runtime.&nbsp;&nbsp; The basic idea is to take advantage of multiple processors available on most machines to speed up startup time by doing Just in Time (JIT) compilation on a background thread.&nbsp;&nbsp;&nbsp;&nbsp; Note that the .NET runtime&#39;s preferred solution to the cost o JIT compilation is to precompile the code with NGEN.&nbsp;&nbsp; This reduces the cost of JIT compilation to 0, where background JIT compilation cannot do nearly as well (it tends to reduce it by half), so using NGEN as part of application deployment should be considered first.&nbsp; However if&nbsp; using the
-        <a href="\%22http:/msdn.microsoft.com/en-us/magazine/cc163808.aspx\%22">
+        <a href="https://learn.microsoft.com/en-us/archive/msdn-magazine/">
             NGen
             Tool
         </a> is impossible (XCOPY deployment, non-admin deployment, silverlight, IL code generated at runtime), background JIT is the next best option.&nbsp;
