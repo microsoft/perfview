@@ -1813,7 +1813,7 @@
         a normal <a href="#CollectingData">ETW Event Data collection</a> will also include
         coarse information on where objects where allocated. Every time 100K of GC objects
         were allocated, a stack trace is taken. These stack traces can be displayed in the
-        'GC Heap Alloc Stacks' view of the ETL file.
+        'GC Heap Alloc Ignore Free (Coarse Sampling) Stacks' view of the ETL file.
     </p>
     <p>
         These stacks show where a lot of bytes were allocated, however it does not tell
@@ -1838,12 +1838,12 @@
         long time, everything is fine, however if large objects are allocated a lot then either
         you are using a lot of memory or you are create a lot of garbage that will force a lot of
         Gen 2 collections (which are expensive).&nbsp;&nbsp; Thus you should not be allocating many
-        large objects.&nbsp;&nbsp; The GC Heap Alloc view has a special &#39;LargeObject&#39; pseudo-frame
+        large objects.&nbsp;&nbsp; The GC Heap Alloc Ignore Free (Coarse Sampling) view has a special &#39;LargeObject&#39; pseudo-frame
         that it injects if the object is big, making it VERY easy to find all the stacks where large
-        objects are allocated.&nbsp; This is a common use of the GC Heap Alloc Stacks view.
+        objects are allocated.&nbsp; This is a common use of the GC Heap Alloc Ignore Free (Coarse Sampling) Stacks view.
     </p>
 
-    <h4><a id="GCHeapNetMem(CoarseSampling)Stacks">Net </a><a id="GCHeapNetMemStacks">GC Heap Allocations Stacks (GC Heap Net Mem view)</a></h4>
+    <h4><a id="GCHeapNetMem(CoarseSampling)Stacks">Net </a><a id="GCHeapNetMemStacks">GC Heap Allocations Stacks (GC Heap Net Mem (Coarse Sampling) view)</a></h4>
     <p>
         The first choice of <a href="#InvestigatingMemoryData">
             investigating excessive memory usage
@@ -1853,9 +1853,9 @@
             of the GC heap
         </a>.&nbsp;&nbsp; This is because objects are only kept alive because they
         are rooted, and this information shows you all the paths that are keeping the memory alive.&nbsp;&nbsp;&nbsp;
-        However there are times that knowing the allocation stack is useful.&nbsp;&nbsp; The <a href="#GCHeapAlloc">
+        However there are times that knowing the allocation stack is useful.&nbsp;&nbsp; The <a href="#GCHeapAllocIgnoreFree(CoarseSampling)Stacks">
             GC
-            Heap Alloc Stacks
+            Heap Alloc Ignore Free (Coarse Sampling) Stacks
         </a> view shows you these stacks, but it does not know when objects die.&nbsp;&nbsp; It
         is also possible to turn on extra events that allow PerfView to trace object <strong>freeing</strong> as
         well as allocation and thus compute the NET amount of memory allocated on the GC heap (along with the
@@ -1880,9 +1880,9 @@
         you would have to restart the application to collect this information.&nbsp;
     </p>
     <p>
-        Once you have the data you can view the data in the &#39;GC Heap Net Mem&#39;, which shows you the call
+        Once you have the data you can view the data in the &#39;GC Heap Net Mem (Coarse Sampling)&#39;, which shows you the call
         stacks of all the allocations where the metric is bytes of GC Net GC heap.&nbsp;&nbsp;&nbsp;
-        The most notable difference between <a href="#GCHeapAlloc">GC Heap Alloc Stacks</a> and &#39;GC Heap Net Mem&#39;
+        The most notable difference between <a href="#GCHeapAllocIgnoreFree(CoarseSampling)Stacks">GC Heap Alloc Ignore Free (Coarse Sampling) Stacks</a> and &#39;GC Heap Net Mem (Coarse Sampling)&#39;
         is that the former shows allocations stacks of all objects, whereas the latter shows allocations stacks
         of only those objects that were not garbage collected yet.
     </p>
@@ -2214,7 +2214,7 @@
                         </li>
 
                         <li>
-                            <strong><a id="GCHeapAllocStacks">GC Heap Alloc Stacks</a></strong> - The .NET Runtime
+                            <strong><a id="GCHeapAllocStacks">GC Heap Alloc Ignore Free (Coarse Sampling) Stacks</a></strong> - The .NET Runtime
                             logs an event very time 100K bytes of GC heap memory is allocated.&nbsp; This view
                             shows this broken down by call stack where the metric is the number of bytes allocated.=&nbsp;
                             Note that much of this memory quickly becomes trash and thus does not contribute
@@ -2223,7 +2223,7 @@
                             reduce CPU.&nbsp;&nbsp; Keep in mind that this is a sample (only the allocation
                             that &#39;trips&#39; the 100K sample &#39;interval&#39; is logged, however for high
                             volume sites, this sampling will still be accurate.&nbsp;&nbsp;
-                            See the <a href="#GCHeapAlloc">GC Heap Alloc Section</a> for more on this view.
+                            See the <a href="#GCHeapAllocIgnoreFree(CoarseSampling)Stacks">GC Heap Alloc Ignore Free (Coarse Sampling) Stacks Section</a> for more on this view.
                         </li>
 
                         <li>
@@ -2271,11 +2271,11 @@
                         <li>
                             <strong><a id="GCHeapAllocIgnoreFree">GC Heap Alloc Ignore Free</a></strong> -
                             This view shows you the stack of allocations weighted by the size of the allocation but does
-                            not take into account object death (GCs).   It is like the GC Heap Alloc view, however
+                            not take into account object death (GCs).   It is like the GC Heap Alloc Ignore Free (Coarse Sampling) view, however
                             unlike that view it uses the finer grained events available when the .NET Alloc and
                             .NET Samp Alloc events are turned on.   This view is useful when you are trying to
                             carefully audit all allocations (Because for example you want to minimize GC pauses) and
-                            you want more detail than the GC Heap Alloc events give you (which is only every 100K).
+                            you want more detail than the GC Heap Alloc Ignore Free (Coarse Sampling) events give you (which is only every 100K).
                         </li>
                         <li>
                             <strong><a id="PerfViewHeapSnapshots">GC Heap Snapshots</a></strong> -  This node
@@ -2547,7 +2547,7 @@
                         </li>
                         <li>
                             <strong><a id="ServerRequestManagedAllocationStacks">Server Request Managed Allocation Stacks</a></strong> -
-                            This view performs the same task as the <a href="#GCHeapAllocStacks">GC Heap Alloc Stacks</a>
+                            This view performs the same task as the <a href="#GCHeapAllocStacks">GC Heap Alloc Ignore Free (Coarse Sampling) Stacks</a>
                             view, with the exception that results are rolled up by request. This view supports ASP.NET and
                             ASP.NET hosted WCF services.
                         </li>
@@ -4115,7 +4115,7 @@
             an event to be fired every time a .NET object is allocated.
             This can be also activated by the /DotNetAlloc command line option.
             Note that this only affect processes that start AFTER data collection has started.
-            See <a href="#GCHeapNetMemStacks">GC Heap Net Mem</a> for more.
+            See <a href="#GCHeapNetMemStacks">GC Heap Net Mem (Coarse Sampling)</a> for more.
             <p>
                 This option tends to have a VERY noticeable impact on performance (2X or more).   Also,
                 if the application allocates aggressively, so many events will be fired so quickly that
@@ -4151,7 +4151,7 @@
             <p>
                 Note that this only affect processes that start AFTER data collection has started.
                 This can be also activated by the /DotNetAllocSampled command line option.
-                See <a href="#GCHeapNetMemStacks">GC Heap Net Mem</a> for more.
+                See <a href="#GCHeapNetMemStacks">GC Heap Net Mem (Coarse Sampling)</a> for more.
             </p>
         </li>
         <li>
