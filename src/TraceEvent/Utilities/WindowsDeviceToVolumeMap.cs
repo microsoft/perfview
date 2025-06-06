@@ -92,16 +92,16 @@ namespace Microsoft.Diagnostics.Utilities
 
         private void Initialize()
         {
-            // Create a string builder which will act as the buffer used to receive the volume and device names.
-            StringBuilder builder = new StringBuilder((int)Interop.MAX_PATH, (int)Interop.MAX_PATH);
+            // Create a character buffer which will act as the buffer used to receive the volume and device names.
+            char[] buffer = new char[Interop.MAX_PATH];
 
             // Get the first volume.
-            IntPtr findHandle = Interop.FindFirstVolume(builder, Interop.MAX_PATH);
+            IntPtr findHandle = Interop.FindFirstVolume(buffer, Interop.MAX_PATH);
             try
             {
                 do
                 {
-                    string volumeName = builder.ToString();
+                    string volumeName = CharArrayToString(buffer);
                     string deviceName = string.Empty;
                     string lookupKey = volumeName;
 
@@ -116,10 +116,10 @@ namespace Microsoft.Diagnostics.Utilities
                     }
 
                     // Get the device name.
-                    uint charsWritten = Interop.QueryDosDevice(lookupKey, builder, (int)Interop.MAX_PATH);
+                    uint charsWritten = Interop.QueryDosDevice(lookupKey, buffer, (int)Interop.MAX_PATH);
                     if (charsWritten > 0)
                     {
-                        deviceName = builder.ToString();
+                        deviceName = CharArrayToString(buffer);
                     }
 
                     // Save the mapping.
@@ -128,7 +128,7 @@ namespace Microsoft.Diagnostics.Utilities
                         _deviceNameToVolumeNameMap.Add(deviceName, volumeName);
                     }
                 }
-                while (Interop.FindNextVolume(findHandle, builder, Interop.MAX_PATH));
+                while (Interop.FindNextVolume(findHandle, buffer, Interop.MAX_PATH));
             }
             finally
             {
@@ -138,6 +138,27 @@ namespace Microsoft.Diagnostics.Utilities
                     Interop.FindVolumeClose(findHandle);
                 }
             }
+        }
+
+        /// <summary>
+        /// Converts a null-terminated char array to a string.
+        /// </summary>
+        /// <param name="charArray">The char array to convert.</param>
+        /// <returns>The string representation, trimmed at the first null character.</returns>
+        private static string CharArrayToString(char[] charArray)
+        {
+            // Find the first null character or use the entire array length
+            int length = 0;
+            for (int i = 0; i < charArray.Length; i++)
+            {
+                if (charArray[i] == '\0')
+                {
+                    break;
+                }
+                length++;
+            }
+            
+            return length > 0 ? new string(charArray, 0, length) : string.Empty;
         }
 
         /// <summary>
@@ -181,25 +202,25 @@ namespace Microsoft.Diagnostics.Utilities
     {
         public const UInt32 MAX_PATH = 1024;
 
-        [DllImport("kernel32.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern IntPtr FindFirstVolume(
-            [Out] StringBuilder lpszVolumeName,
+            [Out] char[] lpszVolumeName,
             uint cchBufferLength);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern bool FindNextVolume(
             IntPtr hFindVolume,
-            [Out] StringBuilder lpszVolumeName,
+            [Out] char[] lpszVolumeName,
             uint cchBufferLength);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern bool FindVolumeClose(
             IntPtr hFindVolume);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern uint QueryDosDevice(
             string lpDeviceName,
-            StringBuilder lpTargetPath,
+            [Out] char[] lpTargetPath,
             int ucchMax);
     }
 }
