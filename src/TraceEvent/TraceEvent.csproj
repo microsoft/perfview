@@ -95,7 +95,6 @@
     <Compile Remove="Ctf/CtfTracing.Tests/**/*.*" />
     <Compile Remove="TraceEvent.Tests/**/*.*" />
     <Compile Remove="Samples/**/*.*" />
-    <EmbeddedResource Remove="**/*.resx" />
   </ItemGroup>
 
   <ItemGroup>
