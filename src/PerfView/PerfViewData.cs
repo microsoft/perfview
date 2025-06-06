@@ -9987,7 +9987,7 @@ table {
 
                         var stackSource = new MutableTraceEventStackSource(eventLog);
                         // EventPipe currently only has managed code stacks.
-                        stackSource.OnlyManagedCodeStacks = !hasUniversalSystem;
+                        stackSource.OnlyManagedCodeStacks = !m_supportsProcesses;
                         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
                         stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
 
