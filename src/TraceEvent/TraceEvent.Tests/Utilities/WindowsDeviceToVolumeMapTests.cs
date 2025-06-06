@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.Utilities;
 using Xunit;
 using Xunit.Abstractions;
@@ -15,16 +14,9 @@ namespace TraceEventTests
             _output = output;
         }
 
-        [Fact]
+        [WindowsFact]
         public void WindowsDeviceToVolumeMap_Initialize_DoesNotThrow()
         {
-            // Skip this test on non-Windows platforms
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                _output.WriteLine("Skipping WindowsDeviceToVolumeMap test on non-Windows platform");
-                return;
-            }
-
             // Test that initialization doesn't throw
             WindowsDeviceToVolumeMap map = null;
             Exception exception = Record.Exception(() => map = new WindowsDeviceToVolumeMap());
@@ -35,16 +27,9 @@ namespace TraceEventTests
             _output.WriteLine("WindowsDeviceToVolumeMap initialized successfully");
         }
 
-        [Fact]
+        [WindowsFact]
         public void WindowsDeviceToVolumeMap_ConvertDevicePathToVolumePath_DoesNotThrow()
         {
-            // Skip this test on non-Windows platforms
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                _output.WriteLine("Skipping WindowsDeviceToVolumeMap test on non-Windows platform");
-                return;
-            }
-
             WindowsDeviceToVolumeMap map = new WindowsDeviceToVolumeMap();
             
             // Test with some example device paths that might exist
@@ -70,16 +55,9 @@ namespace TraceEventTests
             }
         }
 
-        [Fact]
+        [WindowsFact]
         public void WindowsDeviceToVolumeMap_ShowDeviceToVolumeMapping()
         {
-            // Skip this test on non-Windows platforms
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                _output.WriteLine("Skipping WindowsDeviceToVolumeMap test on non-Windows platform");
-                return;
-            }
-
             WindowsDeviceToVolumeMap map = new WindowsDeviceToVolumeMap();
 
             // Use reflection to access the private _deviceNameToVolumeNameMap field
