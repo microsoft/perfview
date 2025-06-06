@@ -1843,7 +1843,7 @@
         objects are allocated.&nbsp; This is a common use of the GC Heap Alloc Ignore Free (Coarse Sampling) Stacks view.
     </p>
 
-    <h4><a id="GCHeapNetMem(CoarseSampling)Stacks">Net </a><a id="GCHeapNetMemStacks">GC Heap Allocations Stacks (GC Heap Net Mem view)</a></h4>
+    <h4><a id="GCHeapNetMem(CoarseSampling)Stacks">Net </a><a id="GCHeapNetMemStacks">GC Heap Allocations Stacks (GC Heap Net Mem (Coarse Sampling) view)</a></h4>
     <p>
         The first choice of <a href="#InvestigatingMemoryData">
             investigating excessive memory usage
@@ -1880,9 +1880,9 @@
         you would have to restart the application to collect this information.&nbsp;
     </p>
     <p>
-        Once you have the data you can view the data in the &#39;GC Heap Net Mem&#39;, which shows you the call
+        Once you have the data you can view the data in the &#39;GC Heap Net Mem (Coarse Sampling)&#39;, which shows you the call
         stacks of all the allocations where the metric is bytes of GC Net GC heap.&nbsp;&nbsp;&nbsp;
-        The most notable difference between <a href="#GCHeapAllocIgnoreFree(CoarseSampling)Stacks">GC Heap Alloc Ignore Free (Coarse Sampling) Stacks</a> and &#39;GC Heap Net Mem&#39;
+        The most notable difference between <a href="#GCHeapAllocIgnoreFree(CoarseSampling)Stacks">GC Heap Alloc Ignore Free (Coarse Sampling) Stacks</a> and &#39;GC Heap Net Mem (Coarse Sampling)&#39;
         is that the former shows allocations stacks of all objects, whereas the latter shows allocations stacks
         of only those objects that were not garbage collected yet.
     </p>
@@ -4115,7 +4115,7 @@
             an event to be fired every time a .NET object is allocated.
             This can be also activated by the /DotNetAlloc command line option.
             Note that this only affect processes that start AFTER data collection has started.
-            See <a href="#GCHeapNetMemStacks">GC Heap Net Mem</a> for more.
+            See <a href="#GCHeapNetMemStacks">GC Heap Net Mem (Coarse Sampling)</a> for more.
             <p>
                 This option tends to have a VERY noticeable impact on performance (2X or more).   Also,
                 if the application allocates aggressively, so many events will be fired so quickly that
@@ -4151,7 +4151,7 @@
             <p>
                 Note that this only affect processes that start AFTER data collection has started.
                 This can be also activated by the /DotNetAllocSampled command line option.
-                See <a href="#GCHeapNetMemStacks">GC Heap Net Mem</a> for more.
+                See <a href="#GCHeapNetMemStacks">GC Heap Net Mem (Coarse Sampling)</a> for more.
             </p>
         </li>
         <li>
