@@ -9461,6 +9461,7 @@ table {
             bool hasAspNetCoreHosting = false;
             bool hasContention = false;
             bool hasWaitHandle = false;
+            bool hasExceptions = false;
             bool hasUniversalSystem = false;
             bool hasUniversalCPU = false;
             if (m_traceLog != null)
@@ -9515,6 +9516,10 @@ table {
                     else if (eventStats.EventName.StartsWith("WaitHandleWait/Start"))
                     {
                         hasWaitHandle = true;
+                    }
+                    else if (eventStats.EventName.StartsWith("Exception/Start"))
+                    {
+                        hasExceptions = true;
                     }
                     else if (eventStats.ProviderGuid == UniversalSystemTraceEventParser.ProviderGuid)
                     {
@@ -9609,6 +9614,11 @@ table {
                 if (hasWaitHandle)
                 {
                     advanced.AddChild(new PerfViewStackSource(this, "WaitHandleWait"));
+                }
+
+                if (hasExceptions)
+                {
+                    advanced.AddChild(new PerfViewStackSource(this, "Exceptions"));
                 }
             }
 
@@ -9968,6 +9978,43 @@ table {
                         {
                             return null;
                         }
+
+                        return stackSource;
+                    }
+                case "Exceptions":
+                    {
+                        var eventLog = GetTraceLog(log);
+
+                        var stackSource = new MutableTraceEventStackSource(eventLog);
+                        // EventPipe currently only has managed code stacks.
+                        stackSource.OnlyManagedCodeStacks = !m_supportsProcesses;
+                        stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+                        stackSource.ShowOptimizationTiers = App.CommandLineArgs.ShowOptimizationTiers;
+
+                        TraceEvents events = eventLog.Events;
+
+                        if (startRelativeMSec != 0 || endRelativeMSec != double.PositiveInfinity)
+                        {
+                            events = events.FilterByTime(startRelativeMSec, endRelativeMSec);
+                        }
+
+                        var eventSource = events.GetSource();
+                        var sample = new StackSourceSample(stackSource);
+
+                        eventSource.Clr.ExceptionStart += delegate (ExceptionTraceData data)
+                        {
+                            sample.Metric = 1;
+                            sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+
+                            // Create a call stack that ends with the 'throw'
+                            var nodeName = "Throw(" + data.ExceptionType + ") " + data.ExceptionMessage;
+                            var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
+                            sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(data.CallStackIndex(), data));
+                            stackSource.AddSample(sample);
+                        };
+
+                        eventSource.Process();
+                        stackSource.DoneAddingSamples();
 
                         return stackSource;
                     }
