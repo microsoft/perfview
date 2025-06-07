@@ -1,20 +1,21 @@
-﻿using FastSerialization;
+﻿#nullable disable
+using FastSerialization;
 using Graphs;
-using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Xml;
+using Microsoft.Diagnostics.Utilities;
 using Address = System.UInt64;
-
+using SerializationException = FastSerialization.SerializationException;
 
 /// <summary>
 /// Represents a .GCDump file.  You can open it for reading with the construtor
 /// and you can write one with WriteMemoryGraph 
 /// </summary>
-public class GCHeapDump : IFastSerializable, IFastSerializableVersion
+internal class GCHeapDump : IFastSerializable, IFastSerializableVersion
 {
     public GCHeapDump(string inputFileName) :
         this(new Deserializer(inputFileName, new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.FourBytes }))
@@ -166,7 +167,10 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
                     }
                 }
             }
+            // ReSharper disable once EmptyGeneralCatchClause
+#pragma warning disable RCS1075
             catch (Exception)
+#pragma warning restore RCS1075
             {
             }
             if (info.UsesJavaScript || info.UsesDotNet)
@@ -709,7 +713,9 @@ public class InteropInfo : IFastSerializable
 /// </graph>
 /// 
 /// </summary>
+#pragma warning disable RCS1102
 internal class XmlGcHeapDump
+#pragma warning restore RCS1102
 {
     public static GCHeapDump ReadGCHeapDumpFromXml(string fileName)
     {

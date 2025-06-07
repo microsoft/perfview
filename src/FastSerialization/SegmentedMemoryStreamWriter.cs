@@ -1,11 +1,12 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
 namespace FastSerialization
 {
-    public class SegmentedMemoryStreamWriter
+    internal class SegmentedMemoryStreamWriter
     {
         public SegmentedMemoryStreamWriter(SerializationConfiguration config = null) : this(64, config) { }
         public SegmentedMemoryStreamWriter(long initialSize, SerializationConfiguration config = null)

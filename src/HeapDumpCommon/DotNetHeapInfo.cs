@@ -1,3 +1,4 @@
+#nullable disable
 using FastSerialization;
 using System.Collections.Generic;
 using Address = System.UInt64;

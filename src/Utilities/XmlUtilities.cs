@@ -4,6 +4,7 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
 // 
+#nullable disable
 using System;
 using System.Diagnostics;
 using System.Text;
@@ -17,7 +18,9 @@ namespace Microsoft.Diagnostics.Utilities
 #if UTILITIES_PUBLIC
     public 
 #endif
+#pragma warning disable RCS1102
     class XmlUtilities
+#pragma warning restore RCS1102
     {
         /// <summary>
         /// Given an XML element, remove the closing operator for it, so you can add new child elements to it by concatination. 

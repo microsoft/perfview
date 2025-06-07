@@ -1,4 +1,5 @@
-﻿namespace Microsoft.Diagnostics.HeapDump
+﻿#nullable disable
+namespace Microsoft.Diagnostics.HeapDump
 {
     using System.Collections.Generic;
 

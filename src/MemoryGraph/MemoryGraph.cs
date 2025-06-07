@@ -1,11 +1,12 @@
-﻿using FastSerialization;
+﻿#nullable disable
+using FastSerialization;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Address = System.UInt64;
 
 namespace Graphs
 {
-    public class MemoryGraph : Graph, IFastSerializable
+    internal class MemoryGraph : Graph, IFastSerializable
     {
         public MemoryGraph(int expectedSize, bool isVeryLargeGraph = false)
             : base(expectedSize, isVeryLargeGraph)
@@ -32,7 +33,10 @@ namespace Graphs
         public static MemoryGraph ReadFromBinaryFile(string inputFileName)
         {
             Deserializer deserializer = new Deserializer(inputFileName);
+            // ReSharper disable once RedundantNameQualifier
+#pragma warning disable IL2057
             deserializer.TypeResolver = typeName => System.Type.GetType(typeName);  // resolve types in this assembly (and mscorlib)
+#pragma warning restore IL2057
             deserializer.RegisterFactory(typeof(MemoryGraph), delegate () { return new MemoryGraph(1); });
             deserializer.RegisterFactory(typeof(Graphs.Module), delegate () { return new Graphs.Module(0); });
             return (MemoryGraph)deserializer.GetEntryObject();
@@ -172,7 +176,7 @@ namespace Graphs
     /// <summary>
     /// Support class for code:MemoryGraph
     /// </summary>
-    public class MemoryNode : Node
+    internal class MemoryNode : Node
     {
         public Address Address { get { return m_memoryGraph.GetAddress(Index); } }
         #region private
@@ -201,7 +205,7 @@ namespace Graphs
     /// you create the node.  Instead you can keep adding children to it incrementally
     /// and when you are done you call Build() which finalizes it (and all its children)
     /// </summary>
-    public class MemoryNodeBuilder
+    internal class MemoryNodeBuilder
     {
         public MemoryNodeBuilder(MemoryGraph graph, string typeName, string moduleName = null, NodeIndex nodeIndex = NodeIndex.Invalid)
         {

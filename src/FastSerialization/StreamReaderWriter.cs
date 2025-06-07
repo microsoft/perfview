@@ -8,6 +8,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;      // For StringBuilder.
+#nullable disable
 
 namespace FastSerialization
 {

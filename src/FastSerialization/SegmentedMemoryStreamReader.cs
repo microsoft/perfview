@@ -1,11 +1,12 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
 namespace FastSerialization
 {
-    public class SegmentedMemoryStreamReader
+    internal class SegmentedMemoryStreamReader
     {
          const int BlockCopyCapacity = 10 * 1024 * 1024;
 

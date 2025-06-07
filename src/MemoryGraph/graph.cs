@@ -1,3 +1,4 @@
+#nullable disable
 using FastSerialization;    // For IStreamReader
 using Graphs;
 using Microsoft.Diagnostics.Utilities;
@@ -63,7 +64,7 @@ namespace Graphs
     /// see code:Graph.SizeOfGraphDescription to determine the overhead for any particular graph.
     /// 
     /// </summary>
-    public class Graph : IFastSerializable, IFastSerializableVersion
+    internal class Graph : IFastSerializable, IFastSerializableVersion
     {
         /// <summary>
         /// Given an arbitrary code:NodeIndex that identifies the node, Get a code:Node object.  
@@ -678,7 +679,7 @@ namespace Graphs
     /// 
     /// A node implicitly knows where the 'next' child is (that is it is an iterator).  
     /// </summary>
-    public class Node
+    internal class Node
     {
         public int Size
         {
@@ -935,7 +936,7 @@ namespace Graphs
     /// <summary>
     /// Represents the nodeId of a particular node in the graph.  
     /// </summary>
-    public class NodeType
+    internal class NodeType
     {
         /// <summary>
         /// Every nodeId has a name, this is it.  
@@ -1050,7 +1051,7 @@ namespace Graphs
     /// <summary>
     /// Holds all interesting data about a module (in particular enough to look up PDB information)
     /// </summary>
-    public class Module : IFastSerializable
+    internal class Module : IFastSerializable
     {
         /// <summary>
         /// Create new module.  You must have at least a image base.   Everything else is optional.
@@ -1134,7 +1135,7 @@ namespace Graphs
     /// <summary>
     /// Stuff that is useful but does not need to be in Graph.   
     /// </summary>
-    public static class GraphUtils
+    internal static class GraphUtils
     {
         /// <summary>
         /// Write the graph as XML to a string and return it (useful for debugging small graphs).  
@@ -1353,7 +1354,8 @@ namespace Graphs
 /// 
 /// Thus this is a fairly expensive thing to create.  
 /// </summary>
-public class RefGraph
+#nullable disable
+internal class RefGraph
 {
     public RefGraph(Graph graph)
     {
@@ -1514,7 +1516,7 @@ public class RefGraph
     #endregion
 }
 
-public class RefNode
+internal class RefNode
 {
     /// <summary>
     /// Gets the first child for the node.  Will return null if there are no children.  
@@ -1649,7 +1651,7 @@ public class RefNode
 /// 
 /// This is just a first cut...
 /// </summary>
-public class SpanningTree
+internal class SpanningTree
 {
     public SpanningTree(Graph graph, TextWriter log)
     {
@@ -2137,7 +2139,7 @@ internal class PriorityQueue
 ///     2) We try hard to keep scale each object type by the count by which the whole
 ///        graph was reduced.  
 /// </summary>
-public class GraphSampler
+internal class GraphSampler
 {
     /// <summary>
     /// 

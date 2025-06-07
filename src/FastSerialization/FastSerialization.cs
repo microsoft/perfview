@@ -1,3 +1,4 @@
+#nullable disable
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 /* This file is best viewed using outline mode (Ctrl-M Ctrl-O) */
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
@@ -846,7 +847,9 @@ namespace FastSerialization
         {
             if (log == null)
             {
+#pragma warning disable SN0001
                 log = File.CreateText("log.serialize.xml");
+#pragma warning restore SN0001
             }
 
             log.WriteLine(str);
@@ -1132,7 +1135,10 @@ namespace FastSerialization
                     objType = (SerializationType)ReadObject();
                 }
             }
+#pragma warning disable RCS1075
+            // ReSharper disable once EmptyGeneralCatchClause
             catch (Exception) { }
+#pragma warning restore RCS1075
             reader.Goto(origPosition);
             if (objType == null)
             {
@@ -1861,7 +1867,9 @@ namespace FastSerialization
         {
             if (log == null)
             {
+#pragma warning disable SN0001
                 log = File.CreateText("log.deserialize.xml");
+#pragma warning restore SN0001
             }
 
             log.WriteLine(str);
@@ -1992,7 +2000,9 @@ namespace FastSerialization
             }
             else
             {
+#pragma warning disable IL2057
                 type = Type.GetType(fullName);
+#pragma warning restore IL2057
             }
 
             if (type == null)
@@ -2014,7 +2024,9 @@ namespace FastSerialization
                 // Factory of last resort.  
                 try
                 {
+#pragma warning disable IL2072
                     return (IFastSerializable)Activator.CreateInstance(type);
+#pragma warning restore IL2072
                 }
                 catch (MissingMethodException)
                 {
@@ -2427,7 +2439,9 @@ namespace FastSerialization
 #if FASTSERIALIZATION_PUBLIC
     public
 #endif
+#pragma warning disable RCS1194
     class SerializationException : Exception
+#pragma warning restore RCS1194
     {
         /// <summary>
         /// Thown when a error occurs in serialization.  

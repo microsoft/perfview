@@ -1,4 +1,5 @@
-﻿//     Copyright (c) Microsoft Corporation.  All rights reserved.
+﻿#nullable disable
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
 // This file is best viewed using outline mode (Ctrl-M Ctrl-O)
 //
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
@@ -15,7 +16,7 @@ using System.Diagnostics;
 
 namespace FastSerialization
 {
-    public class MemoryMappedFileStreamReader : IStreamReader
+    internal class MemoryMappedFileStreamReader : IStreamReader
     {
         const int BlockCopyCapacity = 10 * 1024 * 1024;
 
@@ -30,7 +31,9 @@ namespace FastSerialization
         private long _offset;
 
         public MemoryMappedFileStreamReader(string mapName, long length)
+#pragma warning disable CA1416
             : this(MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read), length, leaveOpen: false)
+#pragma warning restore CA1416
         {
         }
 
@@ -55,7 +58,9 @@ namespace FastSerialization
 
         public static MemoryMappedFileStreamReader CreateFromFile(string path)
         {
+#pragma warning disable SN0001 // - Won't run on Switch
             long capacity = new FileInfo(path).Length;
+#pragma warning restore SN0001
             MemoryMappedFile file = MemoryMappedFile.CreateFromFile(path, FileMode.Open, Guid.NewGuid().ToString("N"), capacity, MemoryMappedFileAccess.Read);
             return new MemoryMappedFileStreamReader(file, capacity, leaveOpen: false);
         }

@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿#nullable disable
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Microsoft.Diagnostics.FastSerialization;
 
