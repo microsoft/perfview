@@ -289,7 +289,7 @@ namespace PerfView
                         }
 
                         xmlFile.Write(" <Event EventName=\"{0}\" TimeMsec=\"{1:f3}\" ProcessName=\"{2}\"",
-                            _event.EventName, _event.TimeStampRelatveMSec, XmlUtilities.XmlEscape(_event.ProcessName));
+                            XmlUtilities.XmlEscape(_event.EventName), _event.TimeStampRelatveMSec, XmlUtilities.XmlEscape(_event.ProcessName));
 
                         bool displayRest = true;
                         if (m_source.ColumnsToDisplay != null)
@@ -299,7 +299,7 @@ namespace PerfView
                             for (int i = 0; i < limit; i++)
                             {
                                 var columnName = m_source.ColumnsToDisplay[i];
-                                xmlFile.Write("{0}=\"{1}\"", columnName, XmlUtilities.XmlEscape(_event.DisplayFields[i]));
+                                xmlFile.Write(" {0}=\"{1}\"", columnName, XmlUtilities.XmlEscape(_event.DisplayFields[i]));
                             }
                         }
 
@@ -315,7 +315,7 @@ namespace PerfView
                                 // TODO painfully slow, fragile, trickly
                                 rest = XmlUtilities.XmlEscape(_event.Rest);                      // First escape all XML special chars (including quotes)
                                 rest = rest.Replace("&quot;", "\"");                             // Put back all the quotes
-                                rest = Regex.Replace(rest, "\\\\(\\\\*)\"", "$1&quote;");        // But escape the escaped quotes.
+                                rest = Regex.Replace(rest, "\\\\(\\\\*)\"", "$1&quot;");        // But escape the escaped quotes.
                             }
                             xmlFile.Write(" ");
                             xmlFile.Write(rest);
