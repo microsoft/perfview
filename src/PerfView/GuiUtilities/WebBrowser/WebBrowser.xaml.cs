@@ -13,7 +13,7 @@ namespace PerfView.GuiUtilities
     /// <summary>
     /// Interaction logic for WebBrowserWindow.xaml
     /// </summary>
-    public partial class WebBrowserWindow : WindowBase, IDisposable
+    public partial class WebBrowserWindow : WindowBase
     {
         public WebBrowserWindow(Window parentWindow) : base(parentWindow)
         {
@@ -60,7 +60,6 @@ namespace PerfView.GuiUtilities
 
         #region private
         private bool _disposed = false;
-
         private void BackClick(object sender, RoutedEventArgs e)
         {
             if (!_disposed && Browser.CanGoBack)
@@ -89,8 +88,12 @@ namespace PerfView.GuiUtilities
             }
             else
             {
-                // Properly dispose WebView2 to prevent finalizer crashes
-                Dispose();
+                // Dispose WebView2 to prevent finalizer crashes
+                if (!_disposed && _Browser != null)
+                {
+                    _Browser.Dispose();
+                    _disposed = true;
+                }
             }
         }
 
@@ -124,26 +127,6 @@ namespace PerfView.GuiUtilities
                 // Navigate to the current specified source
                 Navigate();
             });
-        }
-
-        /// <summary>
-        /// Dispose of WebView2 resources to prevent finalizer crashes.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed)
-            {
-                if (disposing && _Browser != null)
-                {
-                    _Browser.Dispose();
-                }
-                _disposed = true;
-            }
         }
         #endregion
     }
