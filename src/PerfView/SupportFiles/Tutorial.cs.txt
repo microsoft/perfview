@@ -1,60 +1,64 @@
-// This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
-// It is available from http://www.codeplex.com/hyperAddin 
 using System;
-// using System.Collections.Generic;
+using System.Threading;
 
-class Program
+class Tutorial 
 {
-    public static int aStatic = 0;
-    // Spin is a simple compute bound program that lasts for 5 seconds
-    // It is a useful test program for CPU profilers.  
-    static int Main(string[] args)
+    /// <summary>
+    /// This is a simple tutorial program that demonstrates CPU usage patterns
+    /// that can be analyzed with PerfView. The program uses recursive methods
+    /// to create interesting call stack patterns.
+    /// </summary>
+    static void Main()
     {
-        int numSec = 5;
-        if (args.Length == 1)
-            numSec = int.Parse(args[0]);
-
-        Console.WriteLine("Spinning for {0} seconds", numSec);
-        RecSpin(numSec);
-        return 0;
+        Console.WriteLine("Tutorial starting...");
+        RecSpin(10);
+        Console.WriteLine("Tutorial finished.");
     }
 
-    // Spin for 'timeSec' seconds.   We do only 1 second in this
-    // method, doing the rest in the helper.   
-    static void RecSpin(int timeSec)
+    /// <summary>
+    /// Recursively spins for approximately the specified number of seconds,
+    /// alternating between RecSpin and RecSpinHelper methods to create
+    /// interesting call stack patterns for PerfView analysis.
+    /// </summary>
+    static void RecSpin(int seconds)
     {
-        if (timeSec <= 0)
+        if (seconds <= 0)
             return;
-        --timeSec;
+            
         SpinForASecond();
-        RecSpinHelper(timeSec);
+        
+        if (seconds > 1)
+            RecSpinHelper(seconds - 1);
     }
 
-    // RecSpinHelper is a clone of RecSpin.   It is repeated 
-    // to simulate mutual recursion (more interesting example)
-    static void RecSpinHelper(int timeSec)
+    /// <summary>
+    /// Helper method that works with RecSpin to create mutually recursive
+    /// call patterns for demonstration purposes.
+    /// </summary>
+    static void RecSpinHelper(int seconds)
     {
-        if (timeSec <= 0)
+        if (seconds <= 0)
             return;
-        --timeSec;
+            
         SpinForASecond();
-        RecSpin(timeSec);
+        
+        if (seconds > 1)
+            RecSpin(seconds - 1);
     }
 
-    // SpingForASecond repeatedly calls DateTime.Now until for
-    // 1 second.  It also does some work of its own in this
-    // methods so we get some exclusive time to look at.  
+    /// <summary>
+    /// Spins the CPU for approximately one second to simulate work.
+    /// This method will show up prominently in PerfView's CPU analysis.
+    /// </summary>
     static void SpinForASecond()
     {
-        DateTime start = DateTime.Now;
-        for (; ; )
+        var start = DateTime.UtcNow;
+        var spinFor = TimeSpan.FromSeconds(1);
+        
+        // Busy wait for approximately one second
+        while (DateTime.UtcNow - start < spinFor)
         {
-            if ((DateTime.Now - start).TotalSeconds > 1)
-                break;
-
-            // Do some work in this routine as well.   
-            for (int i = 0; i < 10; i++)
-                aStatic += i;
+            // Intentionally empty loop to consume CPU
         }
     }
 }

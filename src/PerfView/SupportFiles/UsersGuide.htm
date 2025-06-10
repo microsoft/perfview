@@ -25,14 +25,14 @@
     </h1>
     <p>
         PerfView is a tool for quickly and easily collecting and viewing both time and memory
-        performance data. PerfView uses the <a href="https://learn.microsoft.com/en-us/windows/win32/etw/event-tracing-portal">
+        performance data. PerfView uses the <a href="http://msdn.microsoft.com/en-us/library/bb968803(v=VS.85).aspx">
             Event Tracing for Windows (ETW)
         </a> feature of the operating system which can
         collect information machine wide a variety of useful events as described in the
         <a href="#AdvancedCollection">advanced collection</a> section. ETW is the same powerful
         technology the <strong>windows performance group uses almost exclusively</strong>
         to track and understand the performance of windows, and the basis for their
-        <a href="https://learn.microsoft.com/en-us/windows/win32/perfctrs/performance-counters-portal">Xperf</a> tool.
+        <a href="http://msdn.microsoft.com/en-us/performance/default.aspx">Xperf</a> tool.
         PerfView can be thought of a simplified and user friendly version
         of that tool. In addition PerfView has ability to collect .NET GC Heap information
         for doing memory investigation (Even for very large GC heaps). PerfView's ability
@@ -148,11 +148,11 @@
     <p>
         Inevitably however, there will be questions that the docs don't answer, or features
         you would like to have that don't yet exist, or bugs you want to report.  PerfView
-        is an <a href="https://github.com/microsoft/perfview">GitHub open source project</a>
+        is an <a href="https://github.com/Microsoft/perfview">GitHub open source project</a>
         and you should log questions, bugs or other feedback at
     </p>
     <center>
-        <a href="https://github.com/microsoft/perfview/issues"> PerfView Issues </a>
+        <a href="https://github.com/Microsoft/perfview/issues"> PerfView Issues </a>
     </center>
     <p>
         If you are just asking a question there is a Label called 'Question' that you can
@@ -170,7 +170,7 @@
         <a id="LatestVersion">Getting the latest version of PerfView</a>
     </h3>
     <p>
-        You can get the latest version of PerfView by going to the <a href="https://github.com/microsoft/perfview/blob/main/documentation/Downloading.md">PerfView GitHub Download Page</a>
+        You can get the latest version of PerfView by going to the <a href="https://github.com/Microsoft/perfview/blob/main/documentation/Downloading.md">PerfView GitHub Download Page</a>
     </p>
     <hr />
     <hr />
@@ -186,9 +186,9 @@
         On windows 7 it is recommended that you doc your help as described in <a href="#HelpTip">help tips</a>.&nbsp;
         PerfView comes with two tutorial examples &#39;built in&#39;.&nbsp;&nbsp;&nbsp;
         Also we strongly suggest that any application you write have performance plan as
-        described in <a href="https://learn.microsoft.com/en-us/archive/msdn-magazine/2006/april/clr-inside-out-use-clr-profiler-to-detect-these-10-performance-gotchas">part1</a>
-        and <a href="https://learn.microsoft.com/en-us/archive/msdn-magazine/2006/may/clr-inside-out-10-performance-gotchas-part-2">part2</a> of
-        <a href="https://learn.microsoft.com/en-us/archive/msdn-magazine/2006/april/clr-inside-out-use-clr-profiler-to-detect-these-10-performance-gotchas">
+        described in <a href="http://msdn.microsoft.com/en-us/magazine/cc500596.aspx">part1</a>
+        and <a href="http://msdn.microsoft.com/en-us/magazine/cc507639.aspx">part2</a> of
+        <a href="http://msdn.microsoft.com/en-us/magazine/cc500596.aspx">
             Measure Early and Often
             for Performance
         </a>.&nbsp;
@@ -930,7 +930,7 @@
     </h3>
     <p>
         If you have not done so, consider walking through the <a href="#Tutorial">tutorial</a>
-        and best practices from <a href="https://learn.microsoft.com/en-us/archive/msdn-magazine/2006/april/clr-inside-out-use-clr-profiler-to-detect-these-10-performance-gotchas">
+        and best practices from <a href="http://msdn.microsoft.com/en-us/magazine/cc500596.aspx">
             Measure
             Early and Often for Performance
         </a>.
@@ -1145,7 +1145,7 @@
         It is pretty clear the benefit of optimizing for time:&nbsp; your program goes faster,
         which means your users are not waiting as long.&nbsp;&nbsp; For memory it is not
         as clear.&nbsp; If your program uses 10% more memory than it could who cares?&nbsp;&nbsp;
-        There is a useful MSDN article called <a href="https://learn.microsoft.com/en-us/archive/msdn-magazine/2010/april/clr-4-0-a-comprehensive-look-at-garbage-collection-improvements">
+        There is a useful MSDN article called <a href="http://msdn.microsoft.com/en-us/magazine/dd882521.aspx">
             Memory
             Usage Auditing for .NET Applications
         </a> which will be summarized here.&nbsp;&nbsp;
@@ -1172,7 +1172,7 @@
         You can quickly determine this by opening <a href="http://en.wikipedia.org/wiki/Windows_Task_Manager">TaskManager</a>,
         selecting the &#39;processes&#39; tab an finding your processes
         &#39;Memory (Private Working Set) value .&nbsp;&nbsp;&nbsp; (See
-        <a href="https://learn.microsoft.com/en-us/archive/msdn-magazine/2010/april/clr-4-0-a-comprehensive-look-at-garbage-collection-improvements">
+        <a href="http://msdn.microsoft.com/en-us/magazine/dd882521.aspx">
             Memory
             Usage Auditing for .NET Applications
         </a> on an explanation of Private
@@ -1188,7 +1188,7 @@
         <a href="http://technet.microsoft.com/en-us/sysinternals/dd535533">vmmap</a>
         tool.&nbsp; This tool gives you a breakdown of ALL the memory used
         by your process (it is nicer than the vadump tool mentioned in
-        <a href="https://learn.microsoft.com/en-us/archive/msdn-magazine/2010/april/clr-4-0-a-comprehensive-look-at-garbage-collection-improvements">
+        <a href="http://msdn.microsoft.com/en-us/magazine/dd882521.aspx">
             Memory
             Usage Auditing for .NET Applications
         </a>).&nbsp;&nbsp; If this utility shows that the
@@ -2481,9 +2481,9 @@
                             is very much like the <a href="#AnyStacks">Any Stacks</a> view in that it shows all events that have
                             call stacks associated with them.  The only difference is at the top of the each stack (between the
                             process and thread frames) is a list of Start-Stop tasks (that is  an activity See
-                            
+                            <a href="http://blogs.msdn.com/b/vancem/archive/2015/09/14/exploring-eventsource-activity-correlation-and-causation-features.aspx">
                                 EventSource Activities
-                             (archived) on how to define your own).
+                            </a> on how to define your own).
                         </li>
                         <li>
                             <strong><a id="AnyStartStopTreeStacks">Any StartStopTree</a></strong> - This view
@@ -2690,7 +2690,7 @@
                 <a id="ClrProfilerHeapPerfViewFile">
                     .NET GC Heap (SOS format) (.gcHeap files)
                 </a>
-            </strong>- The .NET heap can be dumped using either PerfView or the&nbsp; <a href="https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.process">SOS debugging extension</a>
+            </strong>- The .NET heap can be dumped using either PerfView or the&nbsp; <a href="http://msdn.microsoft.com/en-us/library/bb190764.aspx">SOS debugging extension</a>
             utility to create a .gcHeap file.&nbsp; Opening this file will display the heap
             in the stack viewer.&nbsp; The spanning tree is generated from the roots of the
             graph, and this tree is shown in the stack viewer.&nbsp;
@@ -3570,9 +3570,9 @@
         percentage and also a big overweight. The report automatically filters out anything with less than &#43;/- 2% responsibility.
     </p>
     <p>
-        Most of this summary is available online with more examples 
+        Most of this summary is available online with more examples <a href="http://blogs.msdn.com/b/ricom/archive/2014/12/13/a-systematic-approach-to-finding-performance-regressions-using-overweight-analysis.aspx">
             here.
-         (archived)
+        </a>
     </p>
     <hr>
     <!--  ****************** -->
@@ -3750,7 +3750,7 @@
     <p>
         In addition to filtering by event type, you can also filter by process by placing
         text in the &#39;Process Filter&#39; text box.&nbsp; This text is a
-        <a href="https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.trace">.NET regular expression</a>
+        <a href="http://msdn.microsoft.com/en-us/library/az24scfc.aspx">.NET regular expression</a>
         and only records with processes that match this
         text will be selected.&nbsp; The matching is case insensitive, and only has to match
         a substring in the process name.&nbsp;&nbsp; You can use the standard regular expression
@@ -3776,7 +3776,7 @@
         Thus if you change the column's displayed it CAN affect the filtering if the there is
         text in the 'Text Filter' text box.
         The string in the 'Text Filter' is interpreted as a
-        <a href="https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.trace">
+        <a href="http://msdn.microsoft.com/en-us/library/az24scfc.aspx">
             .NET regular
             expression
         </a> and like the process filter by default the match only has to
@@ -4532,7 +4532,7 @@
         </ul>
         This information is typically sufficient to understand determine the optimal keywords
         to set for any given application.  See
-        the <a href="https://learn.microsoft.com/en-us/windows/win32/perfctrs/performance-counters-portal">official docs</a>
+        the <a href="http://msdn.microsoft.com/en-us/library/windows/desktop/aa384043(v=vs.85).aspx">official docs</a>
         for more details of the information in the manifest).
     </p>
     <!--  ****************** -->
@@ -4668,7 +4668,7 @@
         ExcPats text boxes.  If you need more powerful matching operators, you can do this by
         prefixing the ENTIRE PATTERN with a @.   That indicates to PerfView that the rest of the
         rest of the pattern follows
-        <a href="https://learn.microsoft.com/en-us/dotnet/api/system.net.httpwebrequest">.NET Regular expression</a> syntax.
+        <a href="http://msdn.microsoft.com/en-us/library/hs600312(v=vs.110).aspx">.NET Regular expression</a> syntax.
     </p>
     <p>
         Simplified pattern matching is NOT used in the &#39;Find&#39; box.&nbsp;
@@ -5027,7 +5027,7 @@
         Text searches of names in the view can be performed by typing a search pattern in
         the &#39;Find:&#39; text box in the upper right corner of the stack viewer.&nbsp;&nbsp;
         Ctrl-F will bring you to this search box quickly.&nbsp;&nbsp; The search pattern
-        uses <a href="https://learn.microsoft.com/en-us/dotnet/api/system.net.httpwebrequest">.NET regular expressions</a>,
+        uses <a href="http://msdn.microsoft.com/en-us/library/hs600312.aspx">.NET regular expressions</a>,
         and is case insensitive.&nbsp;&nbsp; Searching starts at the current cursor position
         and will wrap around until all text is searched.&nbsp;&nbsp; The F3 key can be used
         to find the next instance of the pattern.&nbsp; When all the text has been searched
@@ -5437,9 +5437,9 @@
         If your code is running on V4.6 of the .NET Framework or beyond, then it is trivial
         to add new start-stop activities that will show up in this view.
         See
-        
-                                EventSource Activities
-                             (archived) for details of doing this.   You will want to turn your events on using the
+        <a href="http://blogs.msdn.com/b/vancem/archive/2015/09/14/exploring-eventsource-activity-correlation-and-causation-features.aspx">
+            EventSource Activities
+        </a> for details of doing this.   You will want to turn your events on using the
         /Provider=*YOUR_EVENT_SOURCE_NAME when collecting data, and this view will simply
         incorporate them automatically.
     </p>
@@ -5661,7 +5661,7 @@
             <b>ReadOnlyBlobSection</b> - This is a set of bytes that were emitted as a blob and no more
             is known about them.  Currently .NET Metadata needed for reflection is emitted in this way
             and typically is the reason this section is large.   Using an
-            runtime directive file (archived) to limit the amount of
+            <a href="http://blogs.msdn.com/b/dotnet/archive/2014/05/20/net-native-deep-dive-dynamic-features-in-static-code.aspx">runtime directive file</a> to limit the amount of
             reflection used by the app can make this smaller.
         </li>
         <li>
@@ -5833,7 +5833,7 @@
         </li>
         <li>
             The <code>name</code> attribute controls the name of the scenario, as it is displayed
-            in the GUI. This can contain <code>$</code>-substitutions as specified in the <a href="https://learn.microsoft.com/en-us/dotnet/api/system.environment">.NET framework documentation.</a>
+            in the GUI. This can contain <code>$</code>-substitutions as specified in the <a href="http://msdn.microsoft.com/en-us/library/ewy2t5e0.aspx">.NET framework documentation.</a>
             Each <code>*</code> in the wild card pattern will be converted to a capture group,
             which will allow its use with the <code>$</code><i>number</i> substitution. (For
             example, the first * in the pattern can be referred to as "<code>$1</code>".)
@@ -5949,7 +5949,7 @@
     If you intend to transfer the data collected with PerfView to another machine an additional
     step called merging is needed.&nbsp;
     <p>
-        PerfView uses the <a href="https://learn.microsoft.com/en-us/windows/win32/etw/event-tracing-portal">
+        PerfView uses the <a href="http://msdn.microsoft.com/en-us/library/bb968803(v=VS.85).aspx">
             Event
             Tracing for Windows (ETW)Windows (ETW)
         </a> facility built into windows to collect profiling
@@ -6189,7 +6189,7 @@
     </h4>
     <p>
         Containers can be best thought of as a light weight virtual machine.    See
-        <a href="https://learn.microsoft.com/en-us/virtualization/windowscontainers/quick-start/quick-start-windows-10">Windows Containers on Windows 10</a>
+        <a href="https://docs.microsoft.com/en-us/virtualization/windowscontainers/quick-start/quick-start-windows-10">Windows Containers on Windows 10</a>
         for more background on containers for windows.   In particular windows supports a
         light weight container called a 'Windows Server Container' in which the kernel is
         shared among all the containers running on a machine.   Such containers are used
@@ -6279,13 +6279,13 @@
     </p>
     <p>
         Currently we don't create a binary distribution of PerfViewCollect, it must be built from the source code at
-        https://github.com/microsoft/perfview.   To build, however you don't need visual studio, you only need the
+        https://github.com/Microsoft/perfview.   To build, however you don't need visual studio, you only need the
         <a href="https://www.microsoft.com/net/download">.NET Core SDK</a>  Thus the procedure is
     </p>
     <ul>
         <li>Install the <a href="https://www.microsoft.com/net/download">.NET Core SDK</a>.  This gives you the 'dotnet' command</li>
         <li>Install Git for windows if you not already</li>
-        <li>git clone https://github.com/microsoft/perfview</li>
+        <li>git clone https://github.com/Microsoft/perfview</li>
         <li>cd PerfView\src\PerfViewCollect</li>
         <li>dotnet publish -c Release --self-contained -r win-x64</li>
     </ul>
@@ -6829,7 +6829,7 @@
     </h2>
     <p>
         The .NET V4.5 Runtime comes with a class called
-        <a href="https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.tracing.eventsource">System.Diagnostics.Tracing.EventSource</a>
+        <a href="http://msdn.microsoft.com/en-us/library/system.diagnostics.tracing.eventsource.aspx">System.Diagnostics.Tracing.EventSource</a>
         which can be used to log ETW events
         in a very convenient way. For example here is a trivial EventSource called MyCompanyEventSource
         which has a 'Load' and 'Unload' event. Each event logs whatever interesting information
@@ -7411,7 +7411,7 @@
     <!--  ********************************** -->
     <h2><a id="WorkingWithWPA">Working with WPA (Windows Performance Analyzer)</a></h2>
     <p>
-        <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/">Windows Performance Analyzer</a> (WPA)
+        <a href="http://msdn.microsoft.com/en-us/library/windows/hardware/hh448170.aspx">Windows Performance Analyzer</a> (WPA)
         is a tool build by the Windows and is available for no charge as part of the Windows Assessment and Deployment Kit.   Along
         with the Windows Performance Recorder (WPR) It can be used to collect and view ETW data.    Because they both use the same
         data format (ETW trace log (ETL) files), it is easy to collect using one tool and view using another.   This is useful because
@@ -7504,7 +7504,7 @@
     </h3>
     <p>
         PerfView data collection is based on
-        <a href="https://learn.microsoft.com/en-us/windows/win32/etw/event-tracing-portal">Event Tracing for Windows (ETW)</a>.&nbsp;&nbsp;
+        <a href="http://msdn.microsoft.com/en-us/library/bb968803(v=VS.85).aspx">Event Tracing for Windows (ETW)</a>.&nbsp;&nbsp;
         This is a general facility
         for logging information in a low overhead way.&nbsp; It is useful extensively throughout
         the Windows OS and in particular is used by both the Windows OS Kernel and the .NET
@@ -7533,7 +7533,7 @@
         By far, the ETW events built into the Windows Kernel are the most fundamental and
         useful.&nbsp;&nbsp; Almost any data collection will want to turn at least some of
         these on.&nbsp;&nbsp; PerfView groups the kernel events into three groups&nbsp;
-        See <a href="https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createfile">
+        See <a href="http://msdn.microsoft.com/en-us/library/aa363784(v=VS.85).aspx">
             Kernel
             ETW Events
         </a>
@@ -7670,7 +7670,7 @@
     <p>
         In addition to the kernel events, if you are running .NET Runtime code you are likely
         to want to also have the CLR ETW events turned on.&nbsp;&nbsp;&nbsp; PerfView turns
-        a number of these on by default.&nbsp;&nbsp; See&nbsp; <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task">CLR ETW Events</a>
+        a number of these on by default.&nbsp;&nbsp; See&nbsp; <a href="http://msdn.microsoft.com/en-us/library/dd264810.aspx">CLR ETW Events</a>
         for more information on these events.
     </p>
     <ol>
@@ -8147,7 +8147,7 @@
     <ol>
         <li>
             NGEN the application.&nbsp;&nbsp; The failures occur at JIT compiled code.&nbsp;
-            If you <a href="https://learn.microsoft.com/en-us/dotnet/api/system.appdomain">NGEN</a>
+            If you <a href="http://msdn.microsoft.com/en-us/library/6t9t5wcf(VS.80).aspx">NGEN</a>
             the application, JIT compilation will not be necessary and the broken stacks will
             disappear.&nbsp;&nbsp; To NGEN your application simply type&nbsp;
             <p>
@@ -8170,7 +8170,7 @@
             both as a 32 or a 64 bit process.&nbsp; By switching use a 32 bit process, you avoids
             the problem.&nbsp;&nbsp; This does not work if you took dependencies native code
             that only exists for 64 bit.&nbsp;&nbsp;&nbsp; You can convert your application
-            to run 32 bit by using the <a href="https://learn.microsoft.com/en-us/dotnet/api/system.reflection.assembly">CorFlags</a>
+            to run 32 bit by using the <a href="http://msdn.microsoft.com/en-us/library/ms164699(VS.80).aspx">CorFlags</a>
             utility that comes are part of the <a href="http://www.microsoft.com/downloads/details.aspx?FamilyID=fe6f2099-b7b4-4f47-a244-c96d69c35dec&amp;DisplayLang=en">.NET SDK</a>.&nbsp;&nbsp;
             It also comes are part of Visual Studio (open
             the VS command prompt).&nbsp;&nbsp; To switch simply type CorFlags /32bit+ <strong>YourApp.exe</strong>.
@@ -8178,7 +8178,7 @@
             <p>
                 For ASP.NET applications you can set it so that your page is loaded in a 32 bit
                 process by following the instruction in
-                this blog (archived)
+                <a href="http://blogs.msdn.com/b/rakkimk/archive/2007/11/03/iis7-running-32-bit-and-64-bit-asp-net-versions-at-the-same-time-on-different-worker-processes.aspx">this blog</a>
             </p>
         </li>
         <li>
@@ -8492,7 +8492,7 @@
             &nbsp;
             <p>
                 The NT performance team has a tool called XPERF (and a newer version called
-                <a href="https://learn.microsoft.com/en-us/windows/win32/etw/wevtapi-portal">Windows Performance Analyzer (WPA) </a>
+                <a href="http://msdn.microsoft.com/en-us/library/ff191077(v=VS.85).aspx">Windows Performance Analyzer (WPA) </a>
                 which is also VERY useful for doing performance
                 analysis.&nbsp; In fact, PerfView and XPERF/WAP should not really be considered
                 competitors.&nbsp; In fact they both use the same data (ETW data collected by various
@@ -8906,7 +8906,7 @@
         <li>
             Version 1.9.30 9/13/16
             <ul>
-                <li> Fix issue https://github.com/microsoft/perfview/issues/116.  Problem opening ETL files with bad end time. </li>
+                <li> Fix issue https://github.com/Microsoft/perfview/issues/116.  Problem opening ETL files with bad end time. </li>
             </ul>
         </li>
         <li>
