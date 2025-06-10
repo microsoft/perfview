@@ -97,8 +97,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         private bool OnUnhandledEvent(TraceEvent data)
         {
-            // Parse event metadata.
-            DynamicTraceEventData dynamicTraceEventData = RegisteredTraceEventParser.TryLookupWorker(data);
+            // Parse event metadata based on the source type
+            DynamicTraceEventData dynamicTraceEventData = null;
+            
+            // Handle EventPipe events differently from ETW events
+            EventPipeEventSource eventPipeSource = data.Source as EventPipeEventSource;
+            if (eventPipeSource != null)
+            {
+                eventPipeSource.TryGetTemplateFromMetadata(data, out dynamicTraceEventData);
+            }
+            else
+            {
+                // Use the existing ETW path for other event sources
+                dynamicTraceEventData = RegisteredTraceEventParser.TryLookupWorker(data);
+            }
+            
             if (dynamicTraceEventData == null)
             {
                 return false;
