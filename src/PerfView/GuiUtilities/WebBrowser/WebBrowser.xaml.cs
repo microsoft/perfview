@@ -13,7 +13,7 @@ namespace PerfView.GuiUtilities
     /// <summary>
     /// Interaction logic for WebBrowserWindow.xaml
     /// </summary>
-    public partial class WebBrowserWindow : WindowBase
+    public partial class WebBrowserWindow : WindowBase, IDisposable
     {
         public WebBrowserWindow(Window parentWindow) : base(parentWindow)
         {
@@ -25,8 +25,8 @@ namespace PerfView.GuiUtilities
         /// </summary>
         public bool HideOnClose;
 
-        public bool CanGoForward { get { return Browser.CanGoForward; } }
-        public bool CanGoBack { get { return Browser.CanGoBack; } }
+        public bool CanGoForward { get { return _disposed ? false : Browser.CanGoForward; } }
+        public bool CanGoBack { get { return _disposed ? false : Browser.CanGoBack; } }
         public WebView2 Browser { get { return _Browser; } }
 
         public static readonly DependencyProperty SourceProperty = DependencyProperty.Register(
@@ -52,16 +52,18 @@ namespace PerfView.GuiUtilities
         /// </summary>
         private void Navigate()
         {
-            if (Source != null && _Browser.CoreWebView2 != null)
+            if (!_disposed && Source != null && _Browser.CoreWebView2 != null)
             {
                 _Browser.CoreWebView2.Navigate(Source.ToString());
             }
         }
 
         #region private
+        private bool _disposed = false;
+
         private void BackClick(object sender, RoutedEventArgs e)
         {
-            if (Browser.CanGoBack)
+            if (!_disposed && Browser.CanGoBack)
             {
                 Browser.GoBack();
             }
@@ -69,7 +71,7 @@ namespace PerfView.GuiUtilities
 
         private void ForwardClick(object sender, RoutedEventArgs e)
         {
-            if (Browser.CanGoForward)
+            if (!_disposed && Browser.CanGoForward)
             {
                 Browser.GoForward();
             }
@@ -84,6 +86,11 @@ namespace PerfView.GuiUtilities
             {
                 Hide();
                 e.Cancel = true;
+            }
+            else
+            {
+                // Properly dispose WebView2 to prevent finalizer crashes
+                Dispose();
             }
         }
 
@@ -107,6 +114,26 @@ namespace PerfView.GuiUtilities
                 // Navigate to the current specified source
                 Navigate();
             });
+        }
+
+        /// <summary>
+        /// Dispose of WebView2 resources to prevent finalizer crashes.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing && _Browser != null)
+                {
+                    _Browser.Dispose();
+                }
+                _disposed = true;
+            }
         }
         #endregion
     }
