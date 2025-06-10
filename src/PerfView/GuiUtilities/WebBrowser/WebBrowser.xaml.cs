@@ -99,6 +99,11 @@ namespace PerfView.GuiUtilities
         /// </summary>
         private void Browser_Loaded(object sender, RoutedEventArgs e)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             var userDataFolder = Path.Combine(SupportFiles.SupportFileDir, "WebView2");
             Directory.CreateDirectory(userDataFolder);
             var environmentAwaiter = CoreWebView2Environment
@@ -108,6 +113,11 @@ namespace PerfView.GuiUtilities
 
             environmentAwaiter.OnCompleted(async () =>
             {
+                if (_disposed)
+                {
+                    return;
+                }
+
                 var environment = environmentAwaiter.GetResult();
                 await _Browser.EnsureCoreWebView2Async(environment).ConfigureAwait(true);
 
