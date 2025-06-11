@@ -21,31 +21,37 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public UniversalEventsTraceEventParser(TraceEventSource source) : base(source) 
         {
             // Register templates for the universal events
-            RegisterTemplate(new CpuSampleEvent());
-            RegisterTemplate(new CswitchSampleEvent());
+            RegisterTemplate(new SampleTraceData("cpu"));
+            RegisterTemplate(new SampleTraceData("cswitch"));
         }
 
-        public event Action<CpuSampleEvent> cpu
+        public event Action<SampleTraceData> cpu
         {
             add
             {
-                AddCallbackForEvent<CpuSampleEvent>("cpu", value);
+                AddCallbackForEvent(
+                    "cpu",
+                    (TraceEvent data) => value((SampleTraceData)data)
+                );
             }
             remove
             {
-                RemoveCallback<CpuSampleEvent>(value);
+                throw new NotImplementedException();
             }
         }
 
-        public event Action<CswitchSampleEvent> cswitch
+        public event Action<SampleTraceData> cswitch
         {
             add
             {
-                AddCallbackForEvent<CswitchSampleEvent>("cswitch", value);
+                AddCallbackForEvent(
+                    "cswitch",
+                    (TraceEvent data) => value((SampleTraceData)data)
+                );
             }
             remove
             {
-                RemoveCallback<CswitchSampleEvent>(value);
+                throw new NotImplementedException();
             }
         }
 
@@ -58,10 +64,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
 namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
 {
-    public sealed class CpuSampleEvent : PredefinedDynamicEvent
+    public sealed class SampleTraceData : PredefinedDynamicEvent
     {
-        public CpuSampleEvent()
-            : base("cpu", UniversalEventsTraceEventParser.ProviderGuid, UniversalEventsTraceEventParser.ProviderName)
+        public SampleTraceData(string eventName)
+            : base(eventName, UniversalEventsTraceEventParser.ProviderGuid, UniversalEventsTraceEventParser.ProviderName)
         {
         }
 
@@ -100,107 +106,5 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
         public static ulong GetKeywords() { return 0; }
         public static string GetProviderName() { return UniversalEventsTraceEventParser.ProviderName; }
         public static Guid GetProviderGuid() { return UniversalEventsTraceEventParser.ProviderGuid; }
-    }
-
-    public sealed class CswitchSampleEvent : PredefinedDynamicEvent
-    {
-        public CswitchSampleEvent()
-            : base("cswitch", UniversalEventsTraceEventParser.ProviderGuid, UniversalEventsTraceEventParser.ProviderName)
-        {
-        }
-
-        public Address Value { get { return GetVarUIntAt(0); } }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "Value" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return Value;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "Value", Value);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public static ulong GetKeywords() { return 0; }
-        public static string GetProviderName() { return UniversalEventsTraceEventParser.ProviderName; }
-        public static Guid GetProviderGuid() { return UniversalEventsTraceEventParser.ProviderGuid; }
-    }
-
-    // Keep the original SampleTraceData for backward compatibility
-    public sealed class SampleTraceData : TraceEvent
-    {
-        public Address Value { get { return GetVarUIntAt(0); } }
-
-        #region Private
-        internal SampleTraceData(Action<SampleTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            Action = action;
-        }
-        protected internal override void Dispatch()
-        {
-            Action(this);
-        }
-
-        protected internal override Delegate Target
-        {
-            get { return Action; }
-            set { Action = (Action<SampleTraceData>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "Value", Value);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "Value" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return Value;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        public static ulong GetKeywords() { return 0; }
-        public static string GetProviderName() { return UniversalEventsTraceEventParser.ProviderName; }
-        public static Guid GetProviderGuid() { return UniversalEventsTraceEventParser.ProviderGuid; }
-        private event Action<SampleTraceData> Action;
-        #endregion
     }
 }

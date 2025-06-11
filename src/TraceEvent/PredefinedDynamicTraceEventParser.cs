@@ -1,6 +1,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.Compatibility;
+using Microsoft.Diagnostics.Tracing.Etlx;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -98,13 +99,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private bool OnUnhandledEvent(TraceEvent data)
         {
             // Parse event metadata based on the source type
-            DynamicTraceEventData dynamicTraceEventData = null;
-            
-            // Handle EventPipe events differently from ETW events
+            TraceEvent dynamicTraceEventData = null;
+
             EventPipeEventSource eventPipeSource = data.Source as EventPipeEventSource;
-            if (eventPipeSource != null)
+            if (eventPipeSource != null && eventPipeSource.TryGetTemplateFromMetadata(data, out DynamicTraceEventData foundTemplate))
             {
-                eventPipeSource.TryGetTemplateFromMetadata(data, out dynamicTraceEventData);
+                dynamicTraceEventData = foundTemplate;
+            }
+            else if (data.Source is TraceLog || data.Source is TraceLogEventSource)
+            {
+                dynamicTraceEventData = data;
             }
             else
             {

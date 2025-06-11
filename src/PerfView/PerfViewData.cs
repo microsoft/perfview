@@ -43,7 +43,6 @@ using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Utilities;
 using Address = System.UInt64;
 using EventSource = EventSources.EventSource;
-using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
 
 namespace PerfView
 {
@@ -9829,7 +9828,7 @@ table {
                         var sample = new StackSourceSample(stackSource);
 
                         var universalEventsParser = new UniversalEventsTraceEventParser(eventSource);
-                        universalEventsParser.cpu += delegate (CpuSampleEvent data)
+                        universalEventsParser.cpu += delegate (SampleTraceData data)
                         {
                             sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                             sample.Metric = data.Value;
