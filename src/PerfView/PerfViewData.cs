@@ -7,6 +7,7 @@ using Microsoft.Diagnostics.Tracing.AutomatedAnalysis;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
 using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
@@ -9828,7 +9829,7 @@ table {
                         var sample = new StackSourceSample(stackSource);
 
                         var universalEventsParser = new UniversalEventsTraceEventParser(eventSource);
-                        universalEventsParser.cpu += delegate (SampleTraceData data)
+                        universalEventsParser.cpu += delegate (CpuSampleEvent data)
                         {
                             sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                             sample.Metric = data.Value;

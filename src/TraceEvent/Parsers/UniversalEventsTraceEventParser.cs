@@ -25,27 +25,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             RegisterTemplate(new CswitchSampleEvent());
         }
 
-        public event Action<SampleTraceData> cpu
+        public event Action<CpuSampleEvent> cpu
         {
             add
             {
-                source.RegisterEventTemplate(new SampleTraceData(value, 1, (int)TraceEventTask.Default, "cpu", Guid.Empty, 0, "Default", ProviderGuid, ProviderName));
+                AddCallbackForEvent<CpuSampleEvent>("cpu", value);
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 1, ProviderGuid);
+                RemoveCallback<CpuSampleEvent>(value);
             }
         }
 
-        public event Action<SampleTraceData> cswitch
+        public event Action<CswitchSampleEvent> cswitch
         {
             add
             {
-                source.RegisterEventTemplate(new SampleTraceData(value, 2, (int)TraceEventTask.Default, "cswitch", Guid.Empty, 0, "Default", ProviderGuid, ProviderName));
+                AddCallbackForEvent<CswitchSampleEvent>("cswitch", value);
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 2, ProviderGuid);
+                RemoveCallback<CswitchSampleEvent>(value);
             }
         }
 
