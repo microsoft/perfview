@@ -4121,7 +4121,7 @@
                 if the application allocates aggressively, so many events will be fired so quickly that
                 events will be lost even when the
                 /BufferSizeMB qualifier is used to set the size very large (e.g. 500Meg).  For these reasons it
-                is usually a better idea to use the <a href="DotNetAllocSampledCheckBox">.NET SampAlloc</a>
+                is usually a better idea to use the <a href="#DotNetAllocSampledCheckBox">.NET SampAlloc</a>
                 option instead if at all possible.
             </p>
         </li>
@@ -4143,7 +4143,7 @@
             reported is likely to be close to the true statistics.
             <p>
                 The overhead of turning on .NET SampAlloc CheckBox is much less than the
-                <a href="DotNetAllocCheckBox">.NET Alloc CheckBox</a>.   Typically the overhead is
+                <a href="#DotNetAllocCheckBox">.NET Alloc CheckBox</a>.   Typically the overhead is
                 10-20% (unlike 2X or  more), and produces 200 Meg per minute of trace.   This is
                 a bit more expensive than turning on /threadTime however low enough that you can
                 leave it on in production (especially if the application does not allocate heavily).
@@ -5413,7 +5413,7 @@
         add up to more than elapsed wall clock time.  This is easy to determine this is the case (because you will
         see more than one thread as children of the activity), and you can even see the overlap
         (by looking at the 'when' column of each of the children).   Still it is something to
-        be aware of.  See <a href="UnderstandingPerfDataThreadTime">Understanding Thread Time</a> and for more.
+        be aware of.  See <a href="#UnderstandingPerfDataThreadTime">Understanding Thread Time</a> and for more.
     </p>
     <p>
         It is also possible that the thread time will be LESS than elapsed wall clock time.
