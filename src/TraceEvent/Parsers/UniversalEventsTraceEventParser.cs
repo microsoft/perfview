@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
 
-    public sealed class UniversalEventsTraceEventParser: TraceEventParser
+    public sealed class UniversalEventsTraceEventParser: PredefinedDynamicTraceEventParser
     {
         public static string ProviderName = "Universal.Events";
         public static Guid ProviderGuid = new Guid("bc5e5d63-9799-5873-33d9-fba8316cef71");
@@ -18,7 +18,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             None = 0x0,
         };
 
-        public UniversalEventsTraceEventParser(TraceEventSource source) : base(source) { }
+        public UniversalEventsTraceEventParser(TraceEventSource source) : base(source) 
+        {
+            // Register templates for the universal events
+            RegisterTemplate(new CpuSampleEvent());
+            RegisterTemplate(new CswitchSampleEvent());
+        }
 
         public event Action<SampleTraceData> cpu
         {
@@ -28,7 +33,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 1, Guid.Empty);
+                source.UnregisterEventTemplate(value, 1, ProviderGuid);
             }
         }
 
@@ -40,28 +45,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 2, Guid.Empty);
+                source.UnregisterEventTemplate(value, 2, ProviderGuid);
             }
         }
 
         #region private
         protected override string GetProviderName() { return ProviderName; }
-
-        static private volatile TraceEvent[] s_templates;
-
-        protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
-        {
-            if (s_templates == null)
-            {
-                var templates = new TraceEvent[2];
-                templates[0] = new SampleTraceData(null, 1, (int)TraceEventTask.Default, "cpu", Guid.Empty, 0, "Default", ProviderGuid, ProviderName);
-                templates[1] = new SampleTraceData(null, 2, (int)TraceEventTask.Default, "cswitch", Guid.Empty, 0, "Default", ProviderGuid, ProviderName);
-                s_templates = templates;
-            }
-            foreach (var template in s_templates)
-                if (eventsToObserve == null || eventsToObserve(template.ProviderName, template.EventName) == EventFilterResponse.AcceptEvent)
-                    callback(template);
-        }
 
         #endregion
     }
@@ -69,6 +58,95 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
 namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
 {
+    public sealed class CpuSampleEvent : PredefinedDynamicEvent
+    {
+        public CpuSampleEvent()
+            : base("cpu", UniversalEventsTraceEventParser.ProviderGuid, UniversalEventsTraceEventParser.ProviderName)
+        {
+        }
+
+        public Address Value { get { return GetVarUIntAt(0); } }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "Value" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return Value;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "Value", Value);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public static ulong GetKeywords() { return 0; }
+        public static string GetProviderName() { return UniversalEventsTraceEventParser.ProviderName; }
+        public static Guid GetProviderGuid() { return UniversalEventsTraceEventParser.ProviderGuid; }
+    }
+
+    public sealed class CswitchSampleEvent : PredefinedDynamicEvent
+    {
+        public CswitchSampleEvent()
+            : base("cswitch", UniversalEventsTraceEventParser.ProviderGuid, UniversalEventsTraceEventParser.ProviderName)
+        {
+        }
+
+        public Address Value { get { return GetVarUIntAt(0); } }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "Value" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return Value;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "Value", Value);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public static ulong GetKeywords() { return 0; }
+        public static string GetProviderName() { return UniversalEventsTraceEventParser.ProviderName; }
+        public static Guid GetProviderGuid() { return UniversalEventsTraceEventParser.ProviderGuid; }
+    }
+
+    // Keep the original SampleTraceData for backward compatibility
     public sealed class SampleTraceData : TraceEvent
     {
         public Address Value { get { return GetVarUIntAt(0); } }
