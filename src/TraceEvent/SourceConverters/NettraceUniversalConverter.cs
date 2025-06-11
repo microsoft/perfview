@@ -57,7 +57,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             };
 
             UniversalEventsTraceEventParser universalEventsParser = new UniversalEventsTraceEventParser(source);
-            universalEventsParser.cpu += delegate(SampleTraceData data)
+            universalEventsParser.cpu += delegate(CpuSampleEvent data)
             {
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 TraceThread thread = traceLog.Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
