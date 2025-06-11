@@ -62,7 +62,7 @@ namespace PerfView.GuiUtilities
         private bool _disposed = false;
         private void BackClick(object sender, RoutedEventArgs e)
         {
-            if (!_disposed && Browser.CanGoBack)
+            if (CanGoBack)
             {
                 Browser.GoBack();
             }
@@ -70,7 +70,7 @@ namespace PerfView.GuiUtilities
 
         private void ForwardClick(object sender, RoutedEventArgs e)
         {
-            if (!_disposed && Browser.CanGoForward)
+            if (CanGoForward)
             {
                 Browser.GoForward();
             }
