@@ -1245,6 +1245,7 @@ namespace PerfView
                 // Thus we abandon browsers on close.
                 s_Browser.Closing += delegate
                 {
+                    // WebBrowserWindow will dispose itself in Window_Closing
                     s_Browser = null;
                 };
 
