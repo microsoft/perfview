@@ -61,7 +61,8 @@
               AutoGenerateColumns="False"
               MouseDoubleClick="OKClicked"
               IsReadOnly="True"
-              ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}">
+              ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
+              AutomationProperties.Name="Process selection table">
                 <WPFToolKit:DataGrid.Resources>
                     <Style x:Key="RightAlign">
                         <Setter Property="TextBlock.TextAlignment" Value="Right"/>
