@@ -2205,8 +2205,12 @@ SOFTWARE.
                 <Setter Property="OverridesDefaultStyle" Value="true" />
             </Style>
             <Style x:Key="{x:Type Hyperlink}" BasedOn="{StaticResource {x:Type Hyperlink}}" TargetType="{x:Type Hyperlink}">
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}" />
                 <Style.Triggers>
                     <Trigger Property="IsMouseOver" Value="true">
+                        <Setter Property="Foreground" Value="{StaticResource ControlBrightPrimaryColourBackground}" />
+                    </Trigger>
+                    <Trigger Property="IsFocused" Value="true">
                         <Setter Property="Foreground" Value="{StaticResource ControlBrightPrimaryColourBackground}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="false">
@@ -2220,8 +2224,12 @@ SOFTWARE.
     <Style x:Key="{x:Type Hyperlink}" TargetType="{x:Type Hyperlink}">
         <Setter Property="Foreground" Value="{StaticResource ControlDefaultForeground}" />
         <Setter Property="TextDecorations" Value="Underline" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}" />
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="true">
+                <Setter Property="Foreground" Value="{StaticResource ControlBrightPrimaryColourBackground}" />
+            </Trigger>
+            <Trigger Property="IsFocused" Value="true">
                 <Setter Property="Foreground" Value="{StaticResource ControlBrightPrimaryColourBackground}" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="false">
