@@ -243,6 +243,7 @@ namespace Stats
                 writer.Write(" GCSettingsFrozenSegs=\"{0}\"", runtime.GC.GCSettings.BitSettings.HasFlag(GCSettingsFlags.GCSettingsFrozenSegs));
                 writer.Write(" GCSettingsHardLimitConfig=\"{0}\"", runtime.GC.GCSettings.BitSettings.HasFlag(GCSettingsFlags.GCSettingsHardLimitConfig));
                 writer.Write(" GCSettingsNoAffinitize=\"{0}\"", runtime.GC.GCSettings.BitSettings.HasFlag(GCSettingsFlags.GCSettingsNoAffinitize));
+                writer.Write(" GCSettingsDynamicHeapCount=\"{0}\"", runtime.GC.GCSettings.BitSettings.HasFlag(GCSettingsFlags.GCSettingsDynamicHeapCount));
             }
             if (stats.CPUMSec != 0)
             {
