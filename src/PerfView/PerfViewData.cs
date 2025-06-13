@@ -152,6 +152,13 @@ namespace PerfView
                                     if (m_filter != null && !m_filter.IsMatch(Path.GetFileName(filePath)))
                                         continue;
 
+                                    // Filter out common system/hidden files that shouldn't appear in accessibility counts
+                                    var fileName = Path.GetFileName(filePath);
+                                    if (fileName.StartsWith(".") || fileName.StartsWith("~") || 
+                                        fileName.Equals("desktop.ini", StringComparison.OrdinalIgnoreCase) ||
+                                        fileName.Equals("thumbs.db", StringComparison.OrdinalIgnoreCase))
+                                        continue;
+
                                     m_Children.Add(PerfViewFile.Get(filePath, template));
                                 }
                             }
@@ -165,6 +172,15 @@ namespace PerfView
                                 }
                                 // We know that .NGENPDB directories are uninteresting, filter them out.  
                                 if (dir.EndsWith(".NGENPDB", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    continue;
+                                }
+
+                                // Filter out common hidden/system directories
+                                var dirName = Path.GetFileName(dir);
+                                if (dirName.StartsWith(".") && dirName != ".." ||
+                                    dirName.Equals("$RECYCLE.BIN", StringComparison.OrdinalIgnoreCase) ||
+                                    dirName.Equals("System Volume Information", StringComparison.OrdinalIgnoreCase))
                                 {
                                     continue;
                                 }

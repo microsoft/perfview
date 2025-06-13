@@ -194,18 +194,26 @@
                 </Grid>
                 <TreeView x:Name="TreeView" AutomationProperties.Name="File Explorer" Grid.Column="0" MouseDoubleClick="DoMouseDoubleClickInTreeView" KeyDown="KeyDownInTreeView" SelectedItemChanged="SelectedItemChangedInTreeView" PreviewMouseRightButtonDown="TreeView_PreviewMouseRightButtonDown"
                           ToolTip="Double Click to open.  Right click contains additional help and additional options."
+                          AutomationProperties.HelpText="Use arrow keys to navigate files and directories. Press Enter to open selected item."
                           IsEnabled="{Binding ElementName=StatusBar, Path=IsNotWorking}" AllowDrop="True" Drop="DoDrop">
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="TreeViewItem">
                             <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
                             <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
+                            <!-- Hide parent directory navigation from screen readers to improve accessibility -->
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Name}" Value="..">
+                                    <Setter Property="AutomationProperties.AccessibilityView" Value="Raw" />
+                                    <Setter Property="AutomationProperties.Name" Value="Parent directory (navigation only)" />
+                                </DataTrigger>
+                            </Style.Triggers>
                         </Style>
                     </TreeView.ItemContainerStyle>
                     <TreeView.ItemTemplate>
                         <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                             <StackPanel Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
-                                    <ContextMenu>
+                                    <ContextMenu AutomationProperties.AccessibilityView="Raw">
                                         <MenuItem Command="{x:Static src:MainWindow.ItemHelpCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.OpenInBrowserCommand}"/>
                                         <MenuItem Command="{x:Static src:MainWindow.RefreshDirCommand}"/>
@@ -221,7 +229,7 @@
                                         <MenuItem Command="{x:Static src:MainWindow.UnZipCommand}"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
-                                <Image Margin="0,0,5,0" Source="{Binding Icon}"/>
+                                <Image Margin="0,0,5,0" Source="{Binding Icon}" AutomationProperties.AccessibilityView="Raw"/>
                                 <TextBlock Text="{Binding Name}" />
                             </StackPanel>
                         </HierarchicalDataTemplate>
