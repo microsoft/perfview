@@ -782,6 +782,8 @@ SOFTWARE.
         </ControlTemplate.Triggers>
     </ControlTemplate>
     <Style TargetType="{x:Type ComboBox}">
+        <!-- Override system colors for high contrast mode -->
+        <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}" />
         <Setter Property="Background" Value="{StaticResource ControlDefaultBackground}" />
         <Setter Property="BorderBrush" Value="{StaticResource ControlDefaultBorderBrush}" />
@@ -1736,13 +1738,15 @@ SOFTWARE.
 
     <!-- Menu -->
     <Style TargetType="{x:Type Menu}">
-        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Background" Value="{StaticResource ControlDefaultBackground}" />
         <Setter Property="FontFamily" Value="{DynamicResource {x:Static SystemFonts.MenuFontFamilyKey}}" />
         <Setter Property="FontSize" Value="{DynamicResource {x:Static SystemFonts.MenuFontSizeKey}}" />
         <Setter Property="FontStyle" Value="{DynamicResource {x:Static SystemFonts.MenuFontStyleKey}}" />
         <Setter Property="FontWeight" Value="{DynamicResource {x:Static SystemFonts.MenuFontWeightKey}}" />
         <Setter Property="Foreground" Value="{StaticResource ControlDefaultForeground}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
+        <!-- Force dark colors even in high contrast mode -->
+        <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Menu}">
@@ -1759,6 +1763,10 @@ SOFTWARE.
     </Style>
 
     <Style TargetType="{x:Type MenuItem}">
+        <!-- Override system colors for high contrast mode -->
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="Background" Value="{StaticResource ControlDefaultBackground}" />
+        <Setter Property="Foreground" Value="{StaticResource ControlDefaultForeground}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type MenuItem}">
@@ -3590,6 +3598,8 @@ SOFTWARE.
 
     <!-- Textbox -->
     <Style TargetType="{x:Type TextBox}">
+        <!-- Override system colors for high contrast mode -->
+        <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="Background" Value="{StaticResource ContainerBackground}" />
         <Setter Property="BorderBrush" Value="{StaticResource ControlDefaultBorderBrush}" />
         <Setter Property="Foreground" Value="{StaticResource ControlDefaultForeground}" />
@@ -4927,7 +4937,11 @@ SOFTWARE.
     <!-- Inherit ComboBox style for HistoryComboBox -->
     <Style TargetType="{x:Type perfview:HistoryComboBox}"
            BasedOn="{StaticResource {x:Type ComboBox}}">
+        <!-- Override system colors for high contrast mode -->
+        <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="Background" Value="{StaticResource ControlDefaultBackground}" />
+        <Setter Property="BorderBrush" Value="{StaticResource ControlDefaultBorderBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource ControlDefaultForeground}" />
         <Setter Property="Template" Value="{StaticResource ComboBoxEditableTemplate}" />
     </Style>
 
