@@ -72,7 +72,7 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Menu Grid.Column="0" Background="{DynamicResource ControlDefaultBackground}" AutomationProperties.Name="Navigation">
+            <Menu Grid.Column="0" Background="{DynamicResource {x:Static SystemColors.MenuBarBrushKey}}" AutomationProperties.Name="Navigation">
                 <MenuItem Header="_File">
                     <MenuItem Header="_Clear Temp Files" Click="DoClearTempFiles" ToolTip="Some operations create temporary files.  This command clears all of these."/>
                     <MenuItem Header="Clear User Config" Click="DoClearUserConfig" ToolTip="Reset all user preferences back to their defaults when PerfView was first installed."/>
@@ -149,7 +149,7 @@
                     <MenuItem Header="_About" Click="DoAbout"/>
                 </MenuItem>
             </Menu>
-            <Rectangle Grid.Column="1" Grid.ColumnSpan="11" Fill="{DynamicResource ControlDefaultBackground}"/>
+            <Rectangle Grid.Column="1" Grid.ColumnSpan="11" Fill="{DynamicResource {x:Static SystemColors.MenuBarBrushKey}}"/>
             <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="MainViewerQuickStart">Main View Help (F1)</Hyperlink>
             </TextBlock>
@@ -186,7 +186,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="100*"/>
                     </Grid.ColumnDefinitions>
-                    <Rectangle Grid.Column="0" Grid.ColumnSpan="3" Fill="{DynamicResource ControlDefaultBackground}"/>
+                    <Rectangle Grid.Column="0" Grid.ColumnSpan="3" Fill="{DynamicResource {x:Static SystemColors.MenuBarBrushKey}}"/>
                     <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,0,0" ToolTip="Only files that match this RegEx filter pattern are displayed.">
                     <Hyperlink Command="Help" CommandParameter="FileFilterTextBox">Filter:</Hyperlink>
                     </TextBlock>
