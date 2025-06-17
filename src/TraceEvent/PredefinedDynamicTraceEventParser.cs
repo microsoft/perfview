@@ -98,34 +98,68 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         private bool OnUnhandledEvent(TraceEvent data)
         {
-            // Parse event metadata based on the source type
-            TraceEvent dynamicTraceEventData = null;
+            PredefinedDynamicEvent dynamicTraceEventData = null;
+            Guid providerGuid = data.ProviderGuid;
+            string eventName = data.EventName;
 
-            EventPipeEventSource eventPipeSource = data.Source as EventPipeEventSource;
-            if (eventPipeSource != null && eventPipeSource.TryGetTemplateFromMetadata(data, out DynamicTraceEventData foundTemplate))
+            // If we haven't yet seen this unknown event, we need to lookup its metadata.
+            // Keep track of all attempted lookups so that we don't lookup a type that we don't know about over and over.
+            if (!state.TryGetLookup(data.ProviderGuid, data.EventName, out dynamicTraceEventData))
             {
-                dynamicTraceEventData = foundTemplate;
-            }
-            else if (data.Source is TraceLog || data.Source is TraceLogEventSource)
-            {
-                dynamicTraceEventData = data;
+                // EventPipe metadata lookup.
+                EventPipeEventSource eventPipeSource = data.Source as EventPipeEventSource;
+                if (eventPipeSource != null && eventPipeSource.TryGetTemplateFromMetadata(data, out DynamicTraceEventData foundTemplate))
+                {
+                    providerGuid = foundTemplate.ProviderGuid;
+                    eventName = foundTemplate.EventName;
+                }
+                else
+                {
+                    // TraceLog metadata lookup.
+                    TraceLog traceLog = data.Source as TraceLog;
+                    if (traceLog != null)
+                    {
+                        TraceEventCounts counts = traceLog.Stats.GetEventCounts(data);
+                        if (counts != null)
+                        {
+                            providerGuid = counts.ProviderGuid;
+                            eventName = counts.EventName;
+                        }
+                    }
+                    else
+                    {
+                        // TraceLogging metadata lookup.
+                        DynamicTraceEventData parsedTemplate = RegisteredTraceEventParser.TryLookupWorker(data);
+                        if (parsedTemplate != null)
+                        {
+                            providerGuid = parsedTemplate.ProviderGuid;
+                            eventName = parsedTemplate.EventName;
+                        }
+                    }
+                }
             }
             else
             {
-                // Use the existing ETW path for other event sources
-                dynamicTraceEventData = RegisteredTraceEventParser.TryLookupWorker(data);
-            }
-            
-            if (dynamicTraceEventData == null)
-            {
+                if (dynamicTraceEventData != null)
+                {
+                    // Register the template so that it can be dispatched by the caller.
+                    source.RegisterEventTemplate(dynamicTraceEventData);
+                    var response = OnNewEventDefintion(dynamicTraceEventData, true);
+
+                    // Return true to indicate the event is handled
+                    // The caller will re-lookup and dispatch the event
+                    return response == EventFilterResponse.AcceptEvent;
+                }
+
+                // We have already looked up this event on a previous call and found no template.
                 return false;
             }
 
             // Check if we have a template for this event
-            if (state.TryGetTemplate(dynamicTraceEventData.ProviderGuid, dynamicTraceEventData.EventName, out PredefinedDynamicEvent template))
+            if (state.TryGetTemplate(providerGuid, eventName, out PredefinedDynamicEvent template))
             {
                 // Move the event data to our template
-                template.eventID = dynamicTraceEventData.eventID;
+                template.eventID = data.eventID;
 
                 // Register the template so that it can be dispatched by the caller.
                 source.RegisterEventTemplate(template);
@@ -136,6 +170,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return response == EventFilterResponse.AcceptEvent;
             }
 
+            // If we get here, we could not find a template.
+            // Save this result so we don't keep trying to do the lookup over and over.
+            // We must save the unresolved information because that's what we'd expect to come in again later.
+            state.AddLookup(data.ProviderGuid, data.EventName, null);
             return false;
         }
 
@@ -184,7 +222,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         public PredefinedDynamicTraceEventParserState()
         {
-            templates = new Dictionary<TemplateKey, PredefinedDynamicEvent>();
+            registeredTemplates = new Dictionary<TemplateKey, PredefinedDynamicEvent>();
+            templateLookups = new Dictionary<TemplateKey, PredefinedDynamicEvent>();
         }
 
         /// <summary>
@@ -193,7 +232,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public void AddTemplate(Guid providerGuid, string eventName, PredefinedDynamicEvent template)
         {
             var key = new TemplateKey(providerGuid, eventName);
-            templates[key] = template;
+            registeredTemplates[key] = template;
         }
 
         /// <summary>
@@ -202,7 +241,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public bool TryGetTemplate(Guid providerGuid, string eventName, out PredefinedDynamicEvent template)
         {
             var key = new TemplateKey(providerGuid, eventName);
-            return templates.TryGetValue(key, out template);
+            return registeredTemplates.TryGetValue(key, out template);
+        }
+
+        /// <summary>
+        /// Add a template to the lookup dictionary
+        /// </summary>
+        public void AddLookup(Guid providerGuid, string eventName, PredefinedDynamicEvent template)
+        {
+            var key = new TemplateKey(providerGuid, eventName);
+            templateLookups[key] = template;
+        }
+
+        /// <summary>
+        /// Get a template from the lookup dictionary
+        /// </summary>
+        public bool TryGetLookup(Guid providerGuid, string eventName, out PredefinedDynamicEvent template)
+        {
+            var key = new TemplateKey(providerGuid, eventName);
+            return templateLookups.TryGetValue(key, out template);
         }
 
         /// <summary>
@@ -210,9 +267,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public IEnumerable<PredefinedDynamicEvent> GetAllTemplates()
         {
-            return templates.Values;
+            return registeredTemplates.Values;
         }
 
-        private Dictionary<TemplateKey, PredefinedDynamicEvent> templates;
+        private Dictionary<TemplateKey, PredefinedDynamicEvent> registeredTemplates;
+        private Dictionary<TemplateKey, PredefinedDynamicEvent> templateLookups;
     }
 }
