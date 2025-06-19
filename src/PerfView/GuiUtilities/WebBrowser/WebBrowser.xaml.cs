@@ -25,8 +25,8 @@ namespace PerfView.GuiUtilities
         /// </summary>
         public bool HideOnClose;
 
-        public bool CanGoForward { get { return Browser.CanGoForward; } }
-        public bool CanGoBack { get { return Browser.CanGoBack; } }
+        public bool CanGoForward { get { return _disposed ? false : Browser.CanGoForward; } }
+        public bool CanGoBack { get { return _disposed ? false : Browser.CanGoBack; } }
         public WebView2 Browser { get { return _Browser; } }
 
         public static readonly DependencyProperty SourceProperty = DependencyProperty.Register(
@@ -52,16 +52,17 @@ namespace PerfView.GuiUtilities
         /// </summary>
         private void Navigate()
         {
-            if (Source != null && _Browser.CoreWebView2 != null)
+            if (!_disposed && Source != null && _Browser.CoreWebView2 != null)
             {
                 _Browser.CoreWebView2.Navigate(Source.ToString());
             }
         }
 
         #region private
+        private bool _disposed = false;
         private void BackClick(object sender, RoutedEventArgs e)
         {
-            if (Browser.CanGoBack)
+            if (CanGoBack)
             {
                 Browser.GoBack();
             }
@@ -69,7 +70,7 @@ namespace PerfView.GuiUtilities
 
         private void ForwardClick(object sender, RoutedEventArgs e)
         {
-            if (Browser.CanGoForward)
+            if (CanGoForward)
             {
                 Browser.GoForward();
             }
@@ -85,6 +86,15 @@ namespace PerfView.GuiUtilities
                 Hide();
                 e.Cancel = true;
             }
+            else
+            {
+                // Dispose WebView2 to prevent finalizer crashes
+                if (!_disposed && _Browser != null)
+                {
+                    _Browser.Dispose();
+                    _disposed = true;
+                }
+            }
         }
 
         /// <summary>
@@ -92,6 +102,11 @@ namespace PerfView.GuiUtilities
         /// </summary>
         private void Browser_Loaded(object sender, RoutedEventArgs e)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             var userDataFolder = Path.Combine(SupportFiles.SupportFileDir, "WebView2");
             Directory.CreateDirectory(userDataFolder);
             var environmentAwaiter = CoreWebView2Environment
@@ -101,6 +116,11 @@ namespace PerfView.GuiUtilities
 
             environmentAwaiter.OnCompleted(async () =>
             {
+                if (_disposed)
+                {
+                    return;
+                }
+
                 var environment = environmentAwaiter.GetResult();
                 await _Browser.EnsureCoreWebView2Async(environment).ConfigureAwait(true);
 
