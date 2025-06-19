@@ -6,14 +6,14 @@ using System.Diagnostics;
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     /// <summary>
-    /// PredefinedDynamicEvent is used to create strongly typed representations of TraceLogging events.
-    /// This allows TraceLogging events (self-describing events) to have the same level of strongly typed
+    /// PredefinedDynamicEvent is used to create strongly typed representations of self-describing events.
+    /// This allows self-describing events to have the same level of strongly typed
     /// support as manifested events.
     /// </summary>
     public abstract class PredefinedDynamicEvent : TraceEvent
     {
         /// <summary>
-        /// Creates a template for a TraceLogging event.
+        /// Creates a template for a self-describing event.
         /// </summary>
         /// <param name="eventName">The name of the event</param>
         /// <param name="providerGuid">The GUID of the provider</param>
@@ -56,8 +56,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             get { return m_action; }
             set { m_action = (Action<TraceEvent>)value; }
         }
-
-
 
         /// <summary>
         /// Creates a clone of this template.
