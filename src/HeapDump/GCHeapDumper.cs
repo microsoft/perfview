@@ -171,6 +171,12 @@ public class GCHeapDumper
 
         m_log.WriteLine("Process Has DotNet: {0} Has JScript: {1} Has ClrDll: {2} HasMrt {3} HasCoreClr {4}", hasDotNet, hasJScript, hasClrDll, hasMrt, hasCoreClr);
 
+        if (!hasDotNet && !hasJScript && !hasMrt && !hasCoreClr)
+        {
+            m_log.WriteLine("No supported runtime type detected, going to assume native AOT.");
+            hasMrt = true;
+        }
+
         if (hasClrDll && hasJScript)
         {
             m_log.WriteLine("[Detected both a JScript and .NET heap, forcing a GC before doing a heap dump.]");
