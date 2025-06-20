@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
 
-    public sealed class UniversalEventsTraceEventParser: TraceEventParser
+    public sealed class UniversalEventsTraceEventParser: PredefinedDynamicTraceEventParser
     {
         public static string ProviderName = "Universal.Events";
         public static Guid ProviderGuid = new Guid("bc5e5d63-9799-5873-33d9-fba8316cef71");
@@ -18,17 +18,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             None = 0x0,
         };
 
-        public UniversalEventsTraceEventParser(TraceEventSource source) : base(source) { }
+        public UniversalEventsTraceEventParser(TraceEventSource source) : base(source) 
+        {
+            // Register templates for the universal events
+            RegisterTemplate(new SampleTraceData("cpu"));
+            RegisterTemplate(new SampleTraceData("cswitch"));
+        }
 
         public event Action<SampleTraceData> cpu
         {
             add
             {
-                source.RegisterEventTemplate(new SampleTraceData(value, 1, (int)TraceEventTask.Default, "cpu", Guid.Empty, 0, "Default", ProviderGuid, ProviderName));
+                AddCallbackForEvent(
+                    "cpu",
+                    (TraceEvent data) => value((SampleTraceData)data)
+                );
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 1, Guid.Empty);
+                throw new NotImplementedException();
             }
         }
 
@@ -36,32 +44,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             add
             {
-                source.RegisterEventTemplate(new SampleTraceData(value, 2, (int)TraceEventTask.Default, "cswitch", Guid.Empty, 0, "Default", ProviderGuid, ProviderName));
+                AddCallbackForEvent(
+                    "cswitch",
+                    (TraceEvent data) => value((SampleTraceData)data)
+                );
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 2, Guid.Empty);
+                throw new NotImplementedException();
             }
         }
 
         #region private
         protected override string GetProviderName() { return ProviderName; }
-
-        static private volatile TraceEvent[] s_templates;
-
-        protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
-        {
-            if (s_templates == null)
-            {
-                var templates = new TraceEvent[2];
-                templates[0] = new SampleTraceData(null, 1, (int)TraceEventTask.Default, "cpu", Guid.Empty, 0, "Default", ProviderGuid, ProviderName);
-                templates[1] = new SampleTraceData(null, 2, (int)TraceEventTask.Default, "cswitch", Guid.Empty, 0, "Default", ProviderGuid, ProviderName);
-                s_templates = templates;
-            }
-            foreach (var template in s_templates)
-                if (eventsToObserve == null || eventsToObserve(template.ProviderName, template.EventName) == EventFilterResponse.AcceptEvent)
-                    callback(template);
-        }
 
         #endregion
     }
@@ -69,33 +64,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
 namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
 {
-    public sealed class SampleTraceData : TraceEvent
+    public sealed class SampleTraceData : PredefinedDynamicEvent
     {
+        public SampleTraceData(string eventName)
+            : base(eventName, UniversalEventsTraceEventParser.ProviderGuid, UniversalEventsTraceEventParser.ProviderName)
+        {
+        }
+
         public Address Value { get { return GetVarUIntAt(0); } }
-
-        #region Private
-        internal SampleTraceData(Action<SampleTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            Action = action;
-        }
-        protected internal override void Dispatch()
-        {
-            Action(this);
-        }
-
-        protected internal override Delegate Target
-        {
-            get { return Action; }
-            set { Action = (Action<SampleTraceData>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "Value", Value);
-            sb.Append("/>");
-            return sb;
-        }
 
         public override string[] PayloadNames
         {
@@ -119,10 +95,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
             }
         }
 
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "Value", Value);
+            sb.Append("/>");
+            return sb;
+        }
+
         public static ulong GetKeywords() { return 0; }
         public static string GetProviderName() { return UniversalEventsTraceEventParser.ProviderName; }
         public static Guid GetProviderGuid() { return UniversalEventsTraceEventParser.ProviderGuid; }
-        private event Action<SampleTraceData> Action;
-        #endregion
     }
 }
