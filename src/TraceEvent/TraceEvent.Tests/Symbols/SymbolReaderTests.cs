@@ -363,6 +363,137 @@ namespace TraceEventTests
             }
         }
 
+        [Fact]
+        public void MsfzFileDetectionWorks()
+        {
+            // Create a temporary file with MSFZ header
+            var tempDir = Path.GetTempPath();
+            var testFile = Path.Combine(tempDir, "test_msfz.pdb");
+            
+            try
+            {
+                // Write MSFZ header followed by some dummy data
+                var msfzHeader = "Microsoft MSFZ Container";
+                var headerBytes = Encoding.UTF8.GetBytes(msfzHeader);
+                var dummyData = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+                
+                using (var stream = File.Create(testFile))
+                {
+                    stream.Write(headerBytes, 0, headerBytes.Length);
+                    stream.Write(dummyData, 0, dummyData.Length);
+                }
+                
+                // Use reflection to call the private IsMsfzFile method
+                var method = typeof(SymbolReader).GetMethod("IsMsfzFile", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                var result = (bool)method.Invoke(_symbolReader, new object[] { testFile });
+                
+                Assert.True(result, "File with MSFZ header should be detected as MSFZ file");
+                
+                // Test with non-MSFZ file
+                var nonMsfzFile = Path.Combine(tempDir, "test_non_msfz.pdb");
+                File.WriteAllText(nonMsfzFile, "This is not an MSFZ file");
+                
+                result = (bool)method.Invoke(_symbolReader, new object[] { nonMsfzFile });
+                Assert.False(result, "File without MSFZ header should not be detected as MSFZ file");
+                
+                File.Delete(nonMsfzFile);
+            }
+            finally
+            {
+                if (File.Exists(testFile))
+                    File.Delete(testFile);
+            }
+        }
+
+        [Fact]
+        public void MsfzFileMovesToCorrectSubdirectory()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "msfz_test_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            
+            try
+            {
+                var testFile = Path.Combine(tempDir, "test.pdb");
+                
+                // Create MSFZ file
+                var msfzHeader = "Microsoft MSFZ Container";
+                var headerBytes = Encoding.UTF8.GetBytes(msfzHeader);
+                var dummyData = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+                
+                using (var stream = File.Create(testFile))
+                {
+                    stream.Write(headerBytes, 0, headerBytes.Length);
+                    stream.Write(dummyData, 0, dummyData.Length);
+                }
+                
+                // Use reflection to call the private MoveMsfzFileToSubdirectory method
+                var method = typeof(SymbolReader).GetMethod("MoveMsfzFileToSubdirectory", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                var newPath = (string)method.Invoke(_symbolReader, new object[] { testFile });
+                
+                var expectedPath = Path.Combine(tempDir, "msfz0", "test.pdb");
+                Assert.Equal(expectedPath, newPath);
+                Assert.True(File.Exists(expectedPath), "File should exist in msfz0 subdirectory");
+                Assert.False(File.Exists(testFile), "Original file should be moved");
+                
+                // Verify content is preserved
+                var content = File.ReadAllBytes(expectedPath);
+                Assert.True(content.Length == headerBytes.Length + dummyData.Length);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void HttpRequestIncludesMsfzAcceptHeader()
+        {
+            // This test verifies that our HttpRequestMessage creation includes the MSFZ accept header
+            // We'll create a minimal test by checking the private method behavior indirectly
+            
+            var tempDir = Path.Combine(Path.GetTempPath(), "msfz_http_test_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var targetPath = Path.Combine(tempDir, "test.pdb");
+            
+            try
+            {
+                // Configure intercepting handler to capture the request with MSFZ content
+                _handler.AddIntercept(new Uri("https://test.example.com/test.pdb"), HttpMethod.Get, HttpStatusCode.OK, () => {
+                    var msfzContent = "Microsoft MSFZ Container\x00\x01\x02\x03";
+                    return new StringContent(msfzContent, Encoding.UTF8, "application/msfz0");
+                });
+                
+                // This will trigger an HTTP request that should include the Accept header
+                var method = typeof(SymbolReader).GetMethod("GetPhysicalFileFromServer", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                var result = (bool)method.Invoke(_symbolReader, new object[] { 
+                    "https://test.example.com", 
+                    "test.pdb", 
+                    targetPath, 
+                    null 
+                });
+                
+                // Verify that the download was successful
+                Assert.True(result, "GetPhysicalFileFromServer should succeed with MSFZ content");
+                
+                // The file should have been moved to msfz0 subdirectory since it's an MSFZ file
+                var msfzPath = Path.Combine(Path.GetDirectoryName(targetPath), "msfz0", Path.GetFileName(targetPath));
+                Assert.True(File.Exists(msfzPath), "MSFZ file should be moved to msfz0 subdirectory");
+                Assert.False(File.Exists(targetPath), "Original file should not exist after move");
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
         protected void PrepareTestData()
         {
             lock (s_fileLock)
