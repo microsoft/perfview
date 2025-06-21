@@ -979,7 +979,11 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             m_log.WriteLine("FindSymbolFilePath: In task, sending HTTP request {0}", fullUri);
 
-                            var responseTask = HttpClient.GetAsync(fullUri, HttpCompletionOption.ResponseHeadersRead);
+                            // Create request with MSFZ support
+                            var request = new HttpRequestMessage(HttpMethod.Get, fullUri);
+                            request.Headers.Add("Accept", "application/msfz0");
+                            
+                            var responseTask = HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                             responseTask.Wait();
                             var response = responseTask.Result.EnsureSuccessStatusCode();
 
@@ -1092,6 +1096,79 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             return successful && File.Exists(fullDestPath);
+        }
+
+        /// <summary>
+        /// Checks if the file at the given path is an MSFZ file by checking for the "Microsoft MSFZ Container" header
+        /// </summary>
+        private bool IsMsfzFile(string filePath)
+        {
+            try
+            {
+                if (!File.Exists(filePath))
+                    return false;
+
+                const string msfzHeader = "Microsoft MSFZ Container";
+                var headerBytes = Encoding.UTF8.GetBytes(msfzHeader);
+
+                using (var stream = File.OpenRead(filePath))
+                {
+                    if (stream.Length < headerBytes.Length)
+                        return false;
+
+                    var buffer = new byte[headerBytes.Length];
+                    int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                    
+                    if (bytesRead != headerBytes.Length)
+                        return false;
+
+                    for (int i = 0; i < headerBytes.Length; i++)
+                    {
+                        if (buffer[i] != headerBytes[i])
+                            return false;
+                    }
+
+                    return true;
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.WriteLine("IsMsfzFile: Error checking file {0}: {1}", filePath, e.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Moves an MSFZ file to the msfz0 subdirectory and returns the new path
+        /// </summary>
+        private string MoveMsfzFileToSubdirectory(string originalPath)
+        {
+            try
+            {
+                var directory = Path.GetDirectoryName(originalPath);
+                var fileName = Path.GetFileName(originalPath);
+                var msfzDirectory = Path.Combine(directory, "msfz0");
+                
+                Directory.CreateDirectory(msfzDirectory);
+                
+                var newPath = Path.Combine(msfzDirectory, fileName);
+                
+                // If file already exists at destination, delete it first
+                if (File.Exists(newPath))
+                {
+                    File.Delete(newPath);
+                }
+                
+                File.Move(originalPath, newPath);
+                m_log.WriteLine("MoveMsfzFileToSubdirectory: Moved MSFZ file from {0} to {1}", originalPath, newPath);
+                
+                return newPath;
+            }
+            catch (Exception e)
+            {
+                m_log.WriteLine("MoveMsfzFileToSubdirectory: Error moving file {0}: {1}", originalPath, e.Message);
+                return originalPath; // Return original path if move fails
+            }
         }
 
         /// <summary>
@@ -1209,16 +1286,29 @@ namespace Microsoft.Diagnostics.Symbols
         /// <returns>targetPath or null if the file cannot be found.</returns>
         private string GetFileFromServer(string urlForServer, string fileIndexPath, string targetPath)
         {
+            // First check if the file exists in the normal cache location
             if (File.Exists(targetPath))
             {
                 m_log.WriteLine("FindSymbolFilePath: Found in cache {0}", targetPath);
                 return targetPath;
             }
 
+            // Also check if an MSFZ version exists in the msfz0 subdirectory
+            var directory = Path.GetDirectoryName(targetPath);
+            var fileName = Path.GetFileName(targetPath);
+            var msfzDirectory = Path.Combine(directory, "msfz0");
+            var msfzTargetPath = Path.Combine(msfzDirectory, fileName);
+            
+            if (File.Exists(msfzTargetPath))
+            {
+                m_log.WriteLine("FindSymbolFilePath: Found MSFZ file in cache {0}", msfzTargetPath);
+                return msfzTargetPath;
+            }
+
             // Fail quickly if instructed to  
             if ((Options & SymbolReaderOptions.CacheOnly) != 0)
             {
-                m_log.WriteLine("FindSymbolFilePath: no file at cache location {0} and cacheOnly set, giving up.", targetPath);
+                m_log.WriteLine("FindSymbolFilePath: no file at cache location {0} or {1} and cacheOnly set, giving up.", targetPath, msfzTargetPath);
                 return null;
             }
 
@@ -1232,10 +1322,10 @@ namespace Microsoft.Diagnostics.Symbols
             // login script and we don't want to blindly accept that).  
             Predicate<string> onlyBinaryContent = delegate (string contentType)
             {
-                bool ret = contentType.EndsWith("octet-stream");
+                bool ret = contentType.EndsWith("octet-stream") || contentType == "application/msfz0";
                 if (!ret)
                 {
-                    m_log.WriteLine("FindSymbolFilePath: expecting 'octet-stream' (Binary) data, got '{0}' (are you redirected to a login page?)", contentType);
+                    m_log.WriteLine("FindSymbolFilePath: expecting 'octet-stream' (Binary) or 'application/msfz0' data, got '{0}' (are you redirected to a login page?)", contentType);
                 }
 
                 return ret;
@@ -1245,6 +1335,12 @@ namespace Microsoft.Diagnostics.Symbols
             m_log.WriteLine("FindSymbolFilePath: Searching Symbol Server {0}.", urlForServer);
             if (GetPhysicalFileFromServer(urlForServer, fileIndexPath, targetPath, onlyBinaryContent))
             {
+                // Check if the downloaded file is an MSFZ file and move it if so
+                if (IsMsfzFile(targetPath))
+                {
+                    var msfzPath = MoveMsfzFileToSubdirectory(targetPath);
+                    return msfzPath;
+                }
                 return targetPath;
             }
 
