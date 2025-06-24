@@ -1120,17 +1120,11 @@ namespace Microsoft.Diagnostics.Symbols
                         return false;
                     }
 
-                    Span<byte> buffer = stackalloc byte[headerBytes.Length];
-                    int bytesRead = stream.Read(buffer);
-                    
-                    if (bytesRead != headerBytes.Length)
-                    {
-                        return false;
-                    }
-
+                    // Read and compare byte by byte to avoid allocation
                     for (int i = 0; i < headerBytes.Length; i++)
                     {
-                        if (buffer[i] != headerBytes[i])
+                        int b = stream.ReadByte();
+                        if (b == -1 || b != headerBytes[i])
                         {
                             return false;
                         }
