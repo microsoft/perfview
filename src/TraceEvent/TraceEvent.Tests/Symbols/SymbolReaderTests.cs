@@ -428,7 +428,7 @@ namespace TraceEventTests
                     stream.Write(dummyData, 0, dummyData.Length);
                 }
                 
-                // Since MoveMsfzFileToSubdirectory is now integrated into GetFileFromServerWithMsfzSupport,
+                // Since MSFZ logic is now integrated into GetFileFromServer,
                 // this test validates the MSFZ detection logic which remains the same
                 var isMsfzMethod = typeof(SymbolReader).GetMethod("IsMsfzFile", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -437,7 +437,7 @@ namespace TraceEventTests
                 Assert.True(isMsfz, "File should be detected as MSFZ file");
                 
                 // The file moving functionality is now tested through integration tests
-                // since it's part of the GetFileFromServerWithMsfzSupport method
+                // since it's part of the GetFileFromServer method
             }
             finally
             {
@@ -479,7 +479,7 @@ namespace TraceEventTests
                 Assert.True(result, "GetPhysicalFileFromServer should succeed with MSFZ content");
                 
                 // In the new architecture, GetPhysicalFileFromServer just downloads the file
-                // The MSFZ moving logic is handled by GetFileFromServerWithMsfzSupport
+                // The MSFZ moving logic is handled by GetFileFromServer
                 Assert.True(File.Exists(targetPath), "Downloaded file should exist at target path");
                 
                 // Verify the content is MSFZ

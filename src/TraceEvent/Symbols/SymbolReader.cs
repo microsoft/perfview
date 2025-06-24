@@ -249,14 +249,14 @@ namespace Microsoft.Diagnostics.Symbols
                             cache = path.DefaultSymbolCache();
                         }
 
-                        pdbPath = GetFileFromServerWithMsfzSupport(element.Target, pdbIndexPath, Path.Combine(cache, pdbIndexPath));
+                        pdbPath = GetFileFromServer(element.Target, pdbIndexPath, Path.Combine(cache, pdbIndexPath));
 
                         if (pdbPath == null && portablePdbMatch)
                         {
                             // pdb key will look like:
                             // Assuming 1bc56133-5645-4d28-90dd-6f12c66240ac as the index guid
                             // Foo.pdb/1bc5613356454d2890dd6f12c66240acFFFFFFFF/Foo.pdb will be the path
-                            pdbPath = GetFileFromServerWithMsfzSupport(element.Target, pdbSimpleName + @"\" + pdbIndexGuid.ToString("N").ToUpper() + "FFFFFFFF" + @"\" + pdbSimpleName, Path.Combine(cache, pdbIndexPath));
+                            pdbPath = GetFileFromServer(element.Target, pdbSimpleName + @"\" + pdbIndexGuid.ToString("N").ToUpper() + "FFFFFFFF" + @"\" + pdbSimpleName, Path.Combine(cache, pdbIndexPath));
                         }
                     }
                     else
@@ -1120,11 +1120,18 @@ namespace Microsoft.Diagnostics.Symbols
                         return false;
                     }
 
-                    // Read and compare byte by byte to avoid allocation
+                    // Read the header in one operation
+                    var buffer = new byte[headerBytes.Length];
+                    int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                    if (bytesRead < headerBytes.Length)
+                    {
+                        return false;
+                    }
+
+                    // Compare the header
                     for (int i = 0; i < headerBytes.Length; i++)
                     {
-                        int b = stream.ReadByte();
-                        if (b == -1 || b != headerBytes[i])
+                        if (buffer[i] != headerBytes[i])
                         {
                             return false;
                         }
@@ -1248,11 +1255,12 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// Get a file from a symbol server with MSFZ format support.
-        /// Checks both normal cache location and msfz0 subdirectory, downloads files using .new extension,
-        /// and properly places MSFZ files in msfz0 subdirectory.
+        /// Looks up 'fileIndexPath' on the server 'urlForServer' (concatenate to form complete URL) copying the file to 
+        /// 'targetPath' and returning targetPath name there (thus it is always a local file).  Unlike  GetPhysicalFileFromServer, 
+        /// GetFileFromServer understands how to deal with compressed files and file.ptr (redirection).  
         /// </summary>
-        private string GetFileFromServerWithMsfzSupport(string urlForServer, string fileIndexPath, string targetPath)
+        /// <returns>targetPath or null if the file cannot be found.</returns>
+        private string GetFileFromServer(string urlForServer, string fileIndexPath, string targetPath)
         {
             // First check if the file exists in the normal cache location
             if (File.Exists(targetPath))
@@ -1302,7 +1310,7 @@ namespace Microsoft.Diagnostics.Symbols
                 return ret;
             };
 
-            // Try to fetch the file directly to .new location
+            // Just try to fetch the file directly to .new location
             m_log.WriteLine("FindSymbolFilePath: Searching Symbol Server {0}.", urlForServer);
             if (GetPhysicalFileFromServer(urlForServer, fileIndexPath, tempTargetPath, onlyBinaryContent))
             {
@@ -1335,57 +1343,6 @@ namespace Microsoft.Diagnostics.Symbols
                 }
             }
 
-            return null;
-        }
-
-        /// <summary>
-        /// Looks up 'fileIndexPath' on the server 'urlForServer' (concatenate to form complete URL) copying the file to 
-        /// 'targetPath' and returning targetPath name there (thus it is always a local file).  Unlike  GetPhysicalFileFromServer, 
-        /// GetFileFromServer understands how to deal with compressed files and file.ptr (redirection).  
-        /// </summary>
-        /// <returns>targetPath or null if the file cannot be found.</returns>
-        private string GetFileFromServer(string urlForServer, string fileIndexPath, string targetPath)
-        {
-            // First check if the file exists in the cache location
-            if (File.Exists(targetPath))
-            {
-                m_log.WriteLine("FindSymbolFilePath: Found in cache {0}", targetPath);
-                return targetPath;
-            }
-
-            // Fail quickly if instructed to  
-            if ((Options & SymbolReaderOptions.CacheOnly) != 0)
-            {
-                m_log.WriteLine("FindSymbolFilePath: no file at cache location {0} and cacheOnly set, giving up.", targetPath);
-                return null;
-            }
-
-            // We just had a symbol cache with no target.   
-            if (urlForServer == null)
-            {
-                return null;
-            }
-
-            // Allows us to reject files that are not binary (sometimes you get redirected to a 
-            // login script and we don't want to blindly accept that).  
-            Predicate<string> onlyBinaryContent = delegate (string contentType)
-            {
-                bool ret = contentType.EndsWith("octet-stream");
-                if (!ret)
-                {
-                    m_log.WriteLine("FindSymbolFilePath: expecting 'octet-stream' (Binary) data, got '{0}' (are you redirected to a login page?)", contentType);
-                }
-
-                return ret;
-            };
-
-            // Just try to fetch the file directly
-            m_log.WriteLine("FindSymbolFilePath: Searching Symbol Server {0}.", urlForServer);
-            if (GetPhysicalFileFromServer(urlForServer, fileIndexPath, targetPath, onlyBinaryContent))
-            {
-                return targetPath;
-            }
-
             // The rest of this compressed file/file pointers stuff is only for remote servers.  
             if (!urlForServer.StartsWith(@"\\") && !Uri.IsWellFormedUriString(urlForServer, UriKind.Absolute))
             {
@@ -1408,6 +1365,24 @@ namespace Microsoft.Diagnostics.Symbols
                     return null;
                 }
                 File.Delete(compressedFilePath);
+                
+                // Check if the decompressed file is an MSFZ file and move it to the appropriate location
+                if (IsMsfzFile(targetPath))
+                {
+                    // Create msfz0 directory and move file there
+                    Directory.CreateDirectory(msfzDirectory);
+                    
+                    // If MSFZ file already exists at destination, delete it first
+                    if (File.Exists(msfzTargetPath))
+                    {
+                        File.Delete(msfzTargetPath);
+                    }
+                    
+                    File.Move(targetPath, msfzTargetPath);
+                    m_log.WriteLine("FindSymbolFilePath: Moved decompressed MSFZ file from {0} to {1}", targetPath, msfzTargetPath);
+                    return msfzTargetPath;
+                }
+                
                 return targetPath;
             }
 
