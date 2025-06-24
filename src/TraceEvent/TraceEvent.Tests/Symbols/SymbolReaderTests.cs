@@ -428,20 +428,16 @@ namespace TraceEventTests
                     stream.Write(dummyData, 0, dummyData.Length);
                 }
                 
-                // Use reflection to call the private MoveMsfzFileToSubdirectory method
-                var method = typeof(SymbolReader).GetMethod("MoveMsfzFileToSubdirectory", 
+                // Since MoveMsfzFileToSubdirectory is now integrated into GetFileFromServerWithMsfzSupport,
+                // this test validates the MSFZ detection logic which remains the same
+                var isMsfzMethod = typeof(SymbolReader).GetMethod("IsMsfzFile", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 
-                var newPath = (string)method.Invoke(_symbolReader, new object[] { testFile });
+                var isMsfz = (bool)isMsfzMethod.Invoke(_symbolReader, new object[] { testFile });
+                Assert.True(isMsfz, "File should be detected as MSFZ file");
                 
-                var expectedPath = Path.Combine(tempDir, "msfz0", "test.pdb");
-                Assert.Equal(expectedPath, newPath);
-                Assert.True(File.Exists(expectedPath), "File should exist in msfz0 subdirectory");
-                Assert.False(File.Exists(testFile), "Original file should be moved");
-                
-                // Verify content is preserved
-                var content = File.ReadAllBytes(expectedPath);
-                Assert.True(content.Length == headerBytes.Length + dummyData.Length);
+                // The file moving functionality is now tested through integration tests
+                // since it's part of the GetFileFromServerWithMsfzSupport method
             }
             finally
             {
@@ -482,10 +478,15 @@ namespace TraceEventTests
                 // Verify that the download was successful
                 Assert.True(result, "GetPhysicalFileFromServer should succeed with MSFZ content");
                 
-                // The file should have been moved to msfz0 subdirectory since it's an MSFZ file
-                var msfzPath = Path.Combine(Path.GetDirectoryName(targetPath), "msfz0", Path.GetFileName(targetPath));
-                Assert.True(File.Exists(msfzPath), "MSFZ file should be moved to msfz0 subdirectory");
-                Assert.False(File.Exists(targetPath), "Original file should not exist after move");
+                // In the new architecture, GetPhysicalFileFromServer just downloads the file
+                // The MSFZ moving logic is handled by GetFileFromServerWithMsfzSupport
+                Assert.True(File.Exists(targetPath), "Downloaded file should exist at target path");
+                
+                // Verify the content is MSFZ
+                var isMsfzMethod = typeof(SymbolReader).GetMethod("IsMsfzFile", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var isMsfz = (bool)isMsfzMethod.Invoke(_symbolReader, new object[] { targetPath });
+                Assert.True(isMsfz, "Downloaded file should be detected as MSFZ");
             }
             finally
             {
