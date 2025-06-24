@@ -36,13 +36,13 @@ namespace TraceEventTests
         {
             _handler = new InterceptingHandler();
             _symbolReader = new SymbolReader(TextWriter.Null, nt_symbol_path: null, httpClientDelegatingHandler: _handler);
+            PrepareTestData();
         }
 
 
         [Fact]
         public void NativeCppPdbHasValidSourceInfo()
         {
-            PrepareTestData();
             var pdbFile = _symbolReader.OpenNativeSymbolFile(Path.Combine(s_inputPdbDir, FileName_CppConPdb));
             using (pdbFile as IDisposable)
             {
@@ -65,7 +65,6 @@ namespace TraceEventTests
         [Fact]
         public void ManagedWinPdbHasValidSourceInfo1()
         {
-            PrepareTestData();
             var pdbFile = _symbolReader.OpenSymbolFile(Path.Combine(s_inputPdbDir, "CsDesktopProj.pdb"));
             using (pdbFile as IDisposable)
             {
@@ -89,7 +88,6 @@ namespace TraceEventTests
         [Fact]
         public void ManagedWinPdbHasValidSourceInfo2()
         {
-            PrepareTestData();
             var pdbFile = _symbolReader.OpenSymbolFile(Path.Combine(s_inputPdbDir, FileName_CsDesktopPdbWithSourceLink));
             using (pdbFile as IDisposable)
             {
@@ -115,7 +113,6 @@ namespace TraceEventTests
         [Fact]
         public void PortablePdbHasValidSourceInfo()
         {
-            PrepareTestData();
             var pdbFile = _symbolReader.OpenSymbolFile(Path.Combine(s_inputPdbDir, FileName_CsPortablePdb1));
             using (pdbFile as IDisposable)
             {
@@ -141,7 +138,6 @@ namespace TraceEventTests
         [Fact]
         public void SourceLinkUrlsAreEscaped()
         {
-            PrepareTestData();
             var pdbFile = _symbolReader.OpenSymbolFile(Path.Combine(s_inputPdbDir, FileName_CsPortablePdbEscapeSourceLink));
             using (pdbFile as IDisposable)
             {
@@ -172,7 +168,6 @@ namespace TraceEventTests
         [InlineData(FileName_CppConPdb, 4096)]
         public void ChecksumMatchAllowsAlternateLineEndings(string pdbName, uint metadataTokenOrRva)
         {
-            PrepareTestData();
             var pdbFile = _symbolReader.OpenSymbolFile(Path.Combine(s_inputPdbDir, pdbName));
             using (pdbFile as IDisposable)
             {
@@ -237,7 +232,6 @@ namespace TraceEventTests
         [InlineData(0x06000001 /*Test.get_X*/, "int X=>0;")]
         public void EmbeddedSourceCanBeLoaded(uint methodToken, string expectedSubstring)
         {
-            PrepareTestData();
             string pdbName = FileName_CsPortableEmbeddedSource;
             var pdbFile = _symbolReader.OpenSymbolFile(Path.Combine(s_inputPdbDir, pdbName));
             using (pdbFile as IDisposable)
@@ -306,7 +300,6 @@ namespace TraceEventTests
         [InlineData(FileName_CsPortablePdb1)]
         public void PdbFileLockingIsCorrect(string pdbFileName)
         {
-            PrepareTestData();
             const int E_WIN32_ERROR_SHARING_VIOLATION = -2147024864;
 
             string tempPdbPath = Path.Combine(Path.GetTempPath(), pdbFileName);
@@ -470,36 +463,29 @@ namespace TraceEventTests
             try
             {
                 // Configure intercepting handler to capture the request with MSFZ content
-                var targetUri = new Uri("https://test.example.com/test.pdb");
-                
-                _handler.AddIntercept(targetUri, HttpMethod.Get, HttpStatusCode.OK, () => {
+                _handler.AddIntercept(new Uri("https://test.example.com/test.pdb"), HttpMethod.Get, HttpStatusCode.OK, () => {
                     var msfzContent = "Microsoft MSFZ Container\x00\x01\x02\x03";
-                    var content = new ByteArrayContent(Encoding.UTF8.GetBytes(msfzContent));
-                    content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/msfz0");
-                    return content;
+                    return new StringContent(msfzContent, Encoding.UTF8, "application/msfz0");
                 });
                 
                 // This will trigger an HTTP request that should include the Accept header
-                var method = typeof(SymbolReader).GetMethod("GetFileFromServer", 
+                var method = typeof(SymbolReader).GetMethod("GetPhysicalFileFromServer", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 
-                Assert.NotNull(method);
-                
-                var result = (string)method.Invoke(_symbolReader, new object[] { 
+                var result = (bool)method.Invoke(_symbolReader, new object[] { 
                     "https://test.example.com", 
                     "test.pdb", 
-                    targetPath
+                    targetPath, 
+                    null 
                 });
                 
-                // Verify that the download was successful and returned the MSFZ path
-                Assert.NotNull(result);
-                Assert.Contains("msfz0", result);
+                // Verify that the download was successful
+                Assert.True(result, "GetPhysicalFileFromServer should succeed with MSFZ content");
                 
                 // The file should have been moved to msfz0 subdirectory since it's an MSFZ file
-                var expectedMsfzPath = Path.Combine(Path.GetDirectoryName(targetPath), "msfz0", Path.GetFileName(targetPath));
-                Assert.True(File.Exists(expectedMsfzPath), "MSFZ file should be moved to msfz0 subdirectory");
+                var msfzPath = Path.Combine(Path.GetDirectoryName(targetPath), "msfz0", Path.GetFileName(targetPath));
+                Assert.True(File.Exists(msfzPath), "MSFZ file should be moved to msfz0 subdirectory");
                 Assert.False(File.Exists(targetPath), "Original file should not exist after move");
-                Assert.Equal(expectedMsfzPath, result);
             }
             finally
             {

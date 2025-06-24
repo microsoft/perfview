@@ -249,14 +249,14 @@ namespace Microsoft.Diagnostics.Symbols
                             cache = path.DefaultSymbolCache();
                         }
 
-                        pdbPath = GetFileFromServer(element.Target, pdbIndexPath, Path.Combine(cache, pdbIndexPath));
+                        pdbPath = GetFileFromServerWithMsfzSupport(element.Target, pdbIndexPath, Path.Combine(cache, pdbIndexPath));
 
                         if (pdbPath == null && portablePdbMatch)
                         {
                             // pdb key will look like:
                             // Assuming 1bc56133-5645-4d28-90dd-6f12c66240ac as the index guid
                             // Foo.pdb/1bc5613356454d2890dd6f12c66240acFFFFFFFF/Foo.pdb will be the path
-                            pdbPath = GetFileFromServer(element.Target, pdbSimpleName + @"\" + pdbIndexGuid.ToString("N").ToUpper() + "FFFFFFFF" + @"\" + pdbSimpleName, Path.Combine(cache, pdbIndexPath));
+                            pdbPath = GetFileFromServerWithMsfzSupport(element.Target, pdbSimpleName + @"\" + pdbIndexGuid.ToString("N").ToUpper() + "FFFFFFFF" + @"\" + pdbSimpleName, Path.Combine(cache, pdbIndexPath));
                         }
                     }
                     else
@@ -1141,39 +1141,6 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// Moves an MSFZ file to the msfz0 subdirectory and returns the new path
-        /// </summary>
-        private string MoveMsfzFileToSubdirectory(string originalPath)
-        {
-            try
-            {
-                var directory = Path.GetDirectoryName(originalPath);
-                var fileName = Path.GetFileName(originalPath);
-                var msfzDirectory = Path.Combine(directory, "msfz0");
-                
-                Directory.CreateDirectory(msfzDirectory);
-                
-                var newPath = Path.Combine(msfzDirectory, fileName);
-                
-                // If file already exists at destination, delete it first
-                if (File.Exists(newPath))
-                {
-                    File.Delete(newPath);
-                }
-                
-                File.Move(originalPath, newPath);
-                m_log.WriteLine("MoveMsfzFileToSubdirectory: Moved MSFZ file from {0} to {1}", originalPath, newPath);
-                
-                return newPath;
-            }
-            catch (Exception e)
-            {
-                m_log.WriteLine("MoveMsfzFileToSubdirectory: Error moving file {0}: {1}", originalPath, e.Message);
-                return originalPath; // Return original path if move fails
-            }
-        }
-
-        /// <summary>
         /// Build the full uri from server path and pdb index path
         /// </summary>
         private string BuildFullUri(string serverPath, string pdbIndexPath)
@@ -1281,12 +1248,11 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// Looks up 'fileIndexPath' on the server 'urlForServer' (concatenate to form complete URL) copying the file to 
-        /// 'targetPath' and returning targetPath name there (thus it is always a local file).  Unlike  GetPhysicalFileFromServer, 
-        /// GetFileFromServer understands how to deal with compressed files and file.ptr (redirection).  
+        /// Get a file from a symbol server with MSFZ format support.
+        /// Checks both normal cache location and msfz0 subdirectory, downloads files using .new extension,
+        /// and properly places MSFZ files in msfz0 subdirectory.
         /// </summary>
-        /// <returns>targetPath or null if the file cannot be found.</returns>
-        private string GetFileFromServer(string urlForServer, string fileIndexPath, string targetPath)
+        private string GetFileFromServerWithMsfzSupport(string urlForServer, string fileIndexPath, string targetPath)
         {
             // First check if the file exists in the normal cache location
             if (File.Exists(targetPath))
@@ -1320,6 +1286,9 @@ namespace Microsoft.Diagnostics.Symbols
                 return null;
             }
 
+            // Download to a .new file first
+            var tempTargetPath = targetPath + ".new";
+            
             // Allows us to reject files that are not binary (sometimes you get redirected to a 
             // login script and we don't want to blindly accept that).  
             Predicate<string> onlyBinaryContent = delegate (string contentType)
@@ -1333,16 +1302,87 @@ namespace Microsoft.Diagnostics.Symbols
                 return ret;
             };
 
+            // Try to fetch the file directly to .new location
+            m_log.WriteLine("FindSymbolFilePath: Searching Symbol Server {0}.", urlForServer);
+            if (GetPhysicalFileFromServer(urlForServer, fileIndexPath, tempTargetPath, onlyBinaryContent))
+            {
+                // Check if the downloaded file is an MSFZ file and place it appropriately
+                if (IsMsfzFile(tempTargetPath))
+                {
+                    // Create msfz0 directory and move file there
+                    Directory.CreateDirectory(msfzDirectory);
+                    
+                    // If MSFZ file already exists at destination, delete it first
+                    if (File.Exists(msfzTargetPath))
+                    {
+                        File.Delete(msfzTargetPath);
+                    }
+                    
+                    File.Move(tempTargetPath, msfzTargetPath);
+                    m_log.WriteLine("FindSymbolFilePath: Moved MSFZ file from {0} to {1}", tempTargetPath, msfzTargetPath);
+                    return msfzTargetPath;
+                }
+                else
+                {
+                    // Regular PDB file - move to target location
+                    if (File.Exists(targetPath))
+                    {
+                        File.Delete(targetPath);
+                    }
+                    
+                    File.Move(tempTargetPath, targetPath);
+                    return targetPath;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Looks up 'fileIndexPath' on the server 'urlForServer' (concatenate to form complete URL) copying the file to 
+        /// 'targetPath' and returning targetPath name there (thus it is always a local file).  Unlike  GetPhysicalFileFromServer, 
+        /// GetFileFromServer understands how to deal with compressed files and file.ptr (redirection).  
+        /// </summary>
+        /// <returns>targetPath or null if the file cannot be found.</returns>
+        private string GetFileFromServer(string urlForServer, string fileIndexPath, string targetPath)
+        {
+            // First check if the file exists in the cache location
+            if (File.Exists(targetPath))
+            {
+                m_log.WriteLine("FindSymbolFilePath: Found in cache {0}", targetPath);
+                return targetPath;
+            }
+
+            // Fail quickly if instructed to  
+            if ((Options & SymbolReaderOptions.CacheOnly) != 0)
+            {
+                m_log.WriteLine("FindSymbolFilePath: no file at cache location {0} and cacheOnly set, giving up.", targetPath);
+                return null;
+            }
+
+            // We just had a symbol cache with no target.   
+            if (urlForServer == null)
+            {
+                return null;
+            }
+
+            // Allows us to reject files that are not binary (sometimes you get redirected to a 
+            // login script and we don't want to blindly accept that).  
+            Predicate<string> onlyBinaryContent = delegate (string contentType)
+            {
+                bool ret = contentType.EndsWith("octet-stream");
+                if (!ret)
+                {
+                    m_log.WriteLine("FindSymbolFilePath: expecting 'octet-stream' (Binary) data, got '{0}' (are you redirected to a login page?)", contentType);
+                }
+
+                return ret;
+            };
+
             // Just try to fetch the file directly
             m_log.WriteLine("FindSymbolFilePath: Searching Symbol Server {0}.", urlForServer);
             if (GetPhysicalFileFromServer(urlForServer, fileIndexPath, targetPath, onlyBinaryContent))
             {
-                // Check if the downloaded file is an MSFZ file and move it if so
-                if (IsMsfzFile(targetPath))
-                {
-                    var msfzPath = MoveMsfzFileToSubdirectory(targetPath);
-                    return msfzPath;
-                }
                 return targetPath;
             }
 
