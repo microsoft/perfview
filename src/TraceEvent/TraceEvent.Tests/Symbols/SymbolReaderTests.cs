@@ -470,9 +470,13 @@ namespace TraceEventTests
             try
             {
                 // Configure intercepting handler to capture the request with MSFZ content
-                _handler.AddIntercept(new Uri("https://test.example.com/test.pdb"), HttpMethod.Get, HttpStatusCode.OK, () => {
+                var targetUri = new Uri("https://test.example.com/test.pdb");
+                
+                _handler.AddIntercept(targetUri, HttpMethod.Get, HttpStatusCode.OK, () => {
                     var msfzContent = "Microsoft MSFZ Container\x00\x01\x02\x03";
-                    return new StringContent(msfzContent, Encoding.UTF8, "application/msfz0");
+                    var content = new ByteArrayContent(Encoding.UTF8.GetBytes(msfzContent));
+                    content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/msfz0");
+                    return content;
                 });
                 
                 // This will trigger an HTTP request that should include the Accept header
@@ -486,17 +490,6 @@ namespace TraceEventTests
                     "test.pdb", 
                     targetPath
                 });
-                
-                // Debug: Check what actually happened
-                Output.WriteLine($"Result: {result}");
-                Output.WriteLine($"Target path exists: {File.Exists(targetPath)}");
-                var msfzDir = Path.Combine(Path.GetDirectoryName(targetPath), "msfz0");
-                Output.WriteLine($"MSFZ dir exists: {Directory.Exists(msfzDir)}");
-                if (Directory.Exists(msfzDir))
-                {
-                    var msfzFile = Path.Combine(msfzDir, Path.GetFileName(targetPath));
-                    Output.WriteLine($"MSFZ file exists: {File.Exists(msfzFile)}");
-                }
                 
                 // Verify that the download was successful and returned the MSFZ path
                 Assert.NotNull(result);
