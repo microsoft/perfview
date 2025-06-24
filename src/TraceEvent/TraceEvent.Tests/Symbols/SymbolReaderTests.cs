@@ -369,6 +369,7 @@ namespace TraceEventTests
             // Create a temporary file with MSFZ header
             var tempDir = Path.GetTempPath();
             var testFile = Path.Combine(tempDir, "test_msfz.pdb");
+            var nonMsfzFile = Path.Combine(tempDir, "test_non_msfz.pdb");
             
             try
             {
@@ -392,18 +393,17 @@ namespace TraceEventTests
                 Assert.True(result, "File with MSFZ header should be detected as MSFZ file");
                 
                 // Test with non-MSFZ file
-                var nonMsfzFile = Path.Combine(tempDir, "test_non_msfz.pdb");
                 File.WriteAllText(nonMsfzFile, "This is not an MSFZ file");
                 
                 result = (bool)method.Invoke(_symbolReader, new object[] { nonMsfzFile });
                 Assert.False(result, "File without MSFZ header should not be detected as MSFZ file");
-                
-                File.Delete(nonMsfzFile);
             }
             finally
             {
                 if (File.Exists(testFile))
                     File.Delete(testFile);
+                if (File.Exists(nonMsfzFile))
+                    File.Delete(nonMsfzFile);
             }
         }
 

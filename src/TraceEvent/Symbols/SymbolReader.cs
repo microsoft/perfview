@@ -979,7 +979,7 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             m_log.WriteLine("FindSymbolFilePath: In task, sending HTTP request {0}", fullUri);
 
-                            // Create request with MSFZ support
+                            // Tell the symbol server that we support MSFZ symbols
                             var request = new HttpRequestMessage(HttpMethod.Get, fullUri);
                             request.Headers.Add("Accept", "application/msfz0");
                             
@@ -1106,7 +1106,9 @@ namespace Microsoft.Diagnostics.Symbols
             try
             {
                 if (!File.Exists(filePath))
+                {
                     return false;
+                }
 
                 const string msfzHeader = "Microsoft MSFZ Container";
                 var headerBytes = Encoding.UTF8.GetBytes(msfzHeader);
@@ -1114,18 +1116,24 @@ namespace Microsoft.Diagnostics.Symbols
                 using (var stream = File.OpenRead(filePath))
                 {
                     if (stream.Length < headerBytes.Length)
+                    {
                         return false;
+                    }
 
-                    var buffer = new byte[headerBytes.Length];
-                    int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                    Span<byte> buffer = stackalloc byte[headerBytes.Length];
+                    int bytesRead = stream.Read(buffer);
                     
                     if (bytesRead != headerBytes.Length)
+                    {
                         return false;
+                    }
 
                     for (int i = 0; i < headerBytes.Length; i++)
                     {
                         if (buffer[i] != headerBytes[i])
+                        {
                             return false;
+                        }
                     }
 
                     return true;
