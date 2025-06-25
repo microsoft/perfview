@@ -1354,20 +1354,22 @@ namespace Microsoft.Diagnostics.Symbols
             var compressedFilePath = targetPath.Substring(0, targetPath.Length - 1) + "_";
             if (GetPhysicalFileFromServer(urlForServer, compressedSigPath, compressedFilePath, onlyBinaryContent))
             {
-                // Decompress it
-                m_log.WriteLine("FindSymbolFilePath: Expanding {0} to {1}", compressedFilePath, targetPath);
-                var commandLine = "Expand " + Command.Quote(compressedFilePath) + " " + Command.Quote(targetPath);
+                // Decompress to temporary path first
+                var tempExpandPath = targetPath + ".expanding";
+                m_log.WriteLine("FindSymbolFilePath: Expanding {0} to {1}", compressedFilePath, tempExpandPath);
+                var commandLine = "Expand " + Command.Quote(compressedFilePath) + " " + Command.Quote(tempExpandPath);
                 var options = new CommandOptions().AddNoThrow();
                 var command = Command.Run(commandLine, options);
                 if (command.ExitCode != 0)
                 {
                     m_log.WriteLine("FindSymbolFilePath: Failure executing: {0}", commandLine);
+                    FileUtilities.ForceDelete(tempExpandPath);
                     return null;
                 }
-                File.Delete(compressedFilePath);
+                FileUtilities.ForceDelete(compressedFilePath);
                 
                 // Check if the decompressed file is an MSFZ file and move it to the appropriate location
-                if (IsMsfzFile(targetPath))
+                if (IsMsfzFile(tempExpandPath))
                 {
                     // Create msfz0 directory and move file there
                     Directory.CreateDirectory(msfzDirectory);
@@ -1378,12 +1380,21 @@ namespace Microsoft.Diagnostics.Symbols
                         FileUtilities.ForceDelete(msfzTargetPath);
                     }
                     
-                    FileUtilities.ForceMove(targetPath, msfzTargetPath);
-                    m_log.WriteLine("FindSymbolFilePath: Moved decompressed MSFZ file from {0} to {1}", targetPath, msfzTargetPath);
+                    FileUtilities.ForceMove(tempExpandPath, msfzTargetPath);
+                    m_log.WriteLine("FindSymbolFilePath: Moved decompressed MSFZ file from {0} to {1}", tempExpandPath, msfzTargetPath);
                     return msfzTargetPath;
                 }
-                
-                return targetPath;
+                else
+                {
+                    // Regular PDB file - move to target location
+                    if (File.Exists(targetPath))
+                    {
+                        FileUtilities.ForceDelete(targetPath);
+                    }
+                    
+                    FileUtilities.ForceMove(tempExpandPath, targetPath);
+                    return targetPath;
+                }
             }
 
             // See if we have a file that tells us to redirect elsewhere. 
