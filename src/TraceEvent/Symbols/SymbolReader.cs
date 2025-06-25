@@ -1301,10 +1301,10 @@ namespace Microsoft.Diagnostics.Symbols
             // login script and we don't want to blindly accept that).  
             Predicate<string> onlyBinaryContent = delegate (string contentType)
             {
-                bool ret = contentType.EndsWith("octet-stream") || contentType == "application/msfz0";
+                bool ret = contentType.EndsWith("octet-stream");
                 if (!ret)
                 {
-                    m_log.WriteLine("FindSymbolFilePath: expecting 'octet-stream' (Binary) or 'application/msfz0' data, got '{0}' (are you redirected to a login page?)", contentType);
+                    m_log.WriteLine("FindSymbolFilePath: expecting 'octet-stream' (Binary) data, got '{0}' (are you redirected to a login page?)", contentType);
                 }
 
                 return ret;
