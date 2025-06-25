@@ -965,10 +965,7 @@ namespace PerfView
                     if (sourceParentDir == "msfz0")
                     {
                         localPdbDir = Path.Combine(localPdbDir, "msfz0");
-                        if (!Directory.Exists(localPdbDir))
-                        {
-                            Directory.CreateDirectory(localPdbDir);
-                        }
+                        Directory.CreateDirectory(localPdbDir);
                         localPdbPath = Path.Combine(localPdbDir, fileName);
                     }
                     

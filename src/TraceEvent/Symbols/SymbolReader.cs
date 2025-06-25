@@ -1323,10 +1323,10 @@ namespace Microsoft.Diagnostics.Symbols
                     // If MSFZ file already exists at destination, delete it first
                     if (File.Exists(msfzTargetPath))
                     {
-                        File.Delete(msfzTargetPath);
+                        FileUtilities.ForceDelete(msfzTargetPath);
                     }
-                    
-                    File.Move(tempTargetPath, msfzTargetPath);
+
+                    FileUtilities.ForceMove(tempTargetPath, msfzTargetPath);
                     m_log.WriteLine("FindSymbolFilePath: Moved MSFZ file from {0} to {1}", tempTargetPath, msfzTargetPath);
                     return msfzTargetPath;
                 }
@@ -1335,10 +1335,10 @@ namespace Microsoft.Diagnostics.Symbols
                     // Regular PDB file - move to target location
                     if (File.Exists(targetPath))
                     {
-                        File.Delete(targetPath);
+                        FileUtilities.ForceDelete(targetPath);
                     }
                     
-                    File.Move(tempTargetPath, targetPath);
+                    FileUtilities.ForceMove(tempTargetPath, targetPath);
                     return targetPath;
                 }
             }
@@ -1375,10 +1375,10 @@ namespace Microsoft.Diagnostics.Symbols
                     // If MSFZ file already exists at destination, delete it first
                     if (File.Exists(msfzTargetPath))
                     {
-                        File.Delete(msfzTargetPath);
+                        FileUtilities.ForceDelete(msfzTargetPath);
                     }
                     
-                    File.Move(targetPath, msfzTargetPath);
+                    FileUtilities.ForceMove(targetPath, msfzTargetPath);
                     m_log.WriteLine("FindSymbolFilePath: Moved decompressed MSFZ file from {0} to {1}", targetPath, msfzTargetPath);
                     return msfzTargetPath;
                 }
