@@ -958,6 +958,17 @@ namespace PerfView
                     }
 
                     var localPdbPath = Path.Combine(localPdbDir, fileName);
+                    
+                    // If the source file is from an msfz0 subdirectory, also create the msfz0 subdirectory in the local cache
+                    var sourceDirectory = Path.GetDirectoryName(pdbPath);
+                    var sourceParentDir = Path.GetFileName(sourceDirectory);
+                    if (sourceParentDir == "msfz0")
+                    {
+                        localPdbDir = Path.Combine(localPdbDir, "msfz0");
+                        Directory.CreateDirectory(localPdbDir);
+                        localPdbPath = Path.Combine(localPdbDir, fileName);
+                    }
+                    
                     var fileExists = File.Exists(localPdbPath);
                     if (!fileExists || File.GetLastWriteTimeUtc(localPdbPath) != File.GetLastWriteTimeUtc(pdbPath))
                     {
