@@ -87,7 +87,8 @@
                     <MenuItem Header="_Close" Click="DoClose"/>
                 </MenuItem>
                 <MenuItem Header="_View">
-                    <MenuItem Header="_Show Local Time" IsCheckable="True" IsChecked="False" Checked="DoUseLocalTime" Unchecked="DoUseOriginTime"/>
+                    <MenuItem x:Name="ShowTimeStampColumnsMenuItem" Header="Show _TimeStamp Columns" IsCheckable="True" IsChecked="True" Checked="DoShowTimeStampColumns" Unchecked="DoHideTimeStampColumns"/>
+                    <MenuItem x:Name="ShowLocalTimeMenuItem" Header="_Show Local Time" IsCheckable="True" IsChecked="False" Checked="DoUseLocalTime" Unchecked="DoUseOriginTime"/>
                 </MenuItem>
                 <MenuItem Header="_Help">
                     <MenuItem Header="_Help on Event Viewer" Command="Help" CommandParameter="EventViewerQuickStart" />
