@@ -1957,6 +1957,10 @@ namespace PerfView
 
         private void DoShowTimeStampColumns(object sender, RoutedEventArgs e)
         {
+            // Check if UI elements are initialized to avoid null reference during XAML construction
+            if (ShowLocalTimeMenuItem == null || Grid?.Columns == null)
+                return;
+                
             // Show the appropriate timestamp column based on current preference
             bool useLocalTime = ShowLocalTimeMenuItem.IsChecked;
             foreach (var i in Grid.Columns)
@@ -1979,6 +1983,10 @@ namespace PerfView
 
         private void DoHideTimeStampColumns(object sender, RoutedEventArgs e)
         {
+            // Check if UI elements are initialized to avoid null reference during XAML construction
+            if (ShowLocalTimeMenuItem == null || Grid?.Columns == null)
+                return;
+                
             // Hide both timestamp columns
             foreach (var i in Grid.Columns)
             {
