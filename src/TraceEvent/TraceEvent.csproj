@@ -98,37 +98,37 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Condition="'$(ProcessorArchitecture)' == 'msil' Or ('$(ProcessorArchitecture)' == 'amd64' And ('$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-'))))" Include="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll">
+    <None Include="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll">
       <Link>amd64\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Condition="'$(ProcessorArchitecture)' == 'msil' Or ('$(ProcessorArchitecture)' == 'amd64' And ('$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-'))))" Include="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll">
+    <None Include="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll">
       <Link>amd64\msdia140.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Condition="'$(ProcessorArchitecture)' == 'msil' Or ('$(ProcessorArchitecture)' == 'x86' And ('$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-'))))" Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
+    <None Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
       <Link>x86\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Condition="'$(ProcessorArchitecture)' == 'msil' Or ('$(ProcessorArchitecture)' == 'x86' And ('$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-'))))" Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.Win61.dll">
+    <None Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.Win61.dll">
       <Link>x86\KernelTraceControl.Win61.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Condition="'$(ProcessorArchitecture)' == 'msil' Or ('$(ProcessorArchitecture)' == 'x86' And ('$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-'))))" Include="$(TraceEventSupportFilesBase)native\x86\msdia140.dll">
+    <None Include="$(TraceEventSupportFilesBase)native\x86\msdia140.dll">
       <Link>x86\msdia140.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Condition="'$(ProcessorArchitecture)' == 'msil' Or ('$(ProcessorArchitecture)' == 'arm64' And ('$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-'))))" Include="$(TraceEventSupportFilesBase)native\arm64\KernelTraceControl.dll">
+    <None Include="$(TraceEventSupportFilesBase)native\arm64\KernelTraceControl.dll">
       <Link>arm64\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Condition="'$(ProcessorArchitecture)' == 'msil' Or ('$(ProcessorArchitecture)' == 'arm64' And ('$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-'))))" Include="$(TraceEventSupportFilesBase)native\arm64\msdia140.dll">
+    <None Include="$(TraceEventSupportFilesBase)native\arm64\msdia140.dll">
       <Link>arm64\msdia140.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
