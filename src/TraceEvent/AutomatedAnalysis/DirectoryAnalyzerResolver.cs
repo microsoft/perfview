@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Reflection;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
@@ -6,6 +7,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
     /// <summary>
     /// Analyzer resolver that searches the specified directory.
     /// </summary>
+    [RequiresUnreferencedCode("Loads new assemblies")]
     public class DirectoryAnalyzerResolver : AnalyzerResolver
     {
         private static string _baseDirectory;

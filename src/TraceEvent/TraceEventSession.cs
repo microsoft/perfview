@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 
@@ -201,6 +202,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// is a special value which is a provider defined default, which is usually 'everything'</param>
         /// <param name="options">Additional options for the provider (e.g. taking a stack trace), arguments ... </param>
         /// <returns>true if the session already existed and needed to be restarted.</returns>
+        [SupportedOSPlatform("windows")]
         public bool EnableProvider(string providerName, TraceEventLevel providerLevel = TraceEventLevel.Verbose, ulong matchAnyKeywords = ulong.MaxValue, TraceEventProviderOptions options = null)
         {
             var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
@@ -222,6 +224,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// is a special value which is a provider defined default, which is usually 'everything'</param>
         /// <param name="options">Additional options for the provider (e.g. taking a stack trace), arguments ... </param>
         /// <returns>true if the session already existed and needed to be restarted.</returns>
+        [SupportedOSPlatform("windows")]
         public bool EnableProvider(Guid providerGuid, TraceEventLevel providerLevel = TraceEventLevel.Verbose, ulong matchAnyKeywords = ulong.MaxValue, TraceEventProviderOptions options = null)
         {
             lock (this)
@@ -519,6 +522,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// command will be sent (which causes EventSources to re-dump their manifest to the ETW log.  </param>
         /// <returns>true if the session already existed and needed to be restarted.</returns>
         [Obsolete("Use EnableProvider(string, TraceEventLevel, ulong, TraceEventProviderOptions) overload instead")]
+        [SupportedOSPlatform("windows")]
         public bool EnableProvider(string providerName, TraceEventLevel providerLevel, ulong matchAnyKeywords, TraceEventOptions options, IEnumerable<KeyValuePair<string, string>> values = null)
         {
             var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
@@ -545,6 +549,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// command will be sent (which causes EventSources to re-dump their manifest to the ETW log.  </param>
         /// <returns>true if the session already existed and needed to be restarted.</returns>
         [Obsolete("Use EnableProvider(Guid, TraceEventLevel, ulong, TraceEventProviderOptions) overload instead")]
+        [SupportedOSPlatform("windows")]
         public bool EnableProvider(Guid providerGuid, TraceEventLevel providerLevel, ulong matchAnyKeywords, TraceEventOptions options, IEnumerable<KeyValuePair<string, string>> values = null)
         {
             var args = new TraceEventProviderOptions() { Arguments = values };
@@ -563,6 +568,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// providers.   Ideally new providers follow the key-value convention and EnableProvider can be used.
         /// </summary>
         [Obsolete("Use TraceEventProviderOptions.RawArguments overload instead")]
+        [SupportedOSPlatform("windows")]
         public void EnableProviderWithRawProviderData(Guid providerGuid, TraceEventLevel providerLevel, ulong matchAnyKeywords, TraceEventOptions options, byte[] providerData, int providerDataSize)
         {
             var exactArray = providerData;
@@ -604,6 +610,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <param name="stackCapture">
         /// Specifies which events should have their stack traces captured when an event is logged</param>
         /// <returns>Returns true if the session existed before and was restarted (see TraceEventSession)</returns>
+        [SupportedOSPlatform("windows")]
         public unsafe bool EnableKernelProvider(KernelTraceEventParser.Keywords flags, KernelTraceEventParser.Keywords stackCapture = KernelTraceEventParser.Keywords.None)
         {
             // Setting stack capture implies that it is on.
@@ -822,6 +829,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// This API is OK to call from one thread while Process() is being run on another
         /// </summary>
         /// <param name="exeFileName"></param>
+        [SupportedOSPlatform("windows")]
         public void EnableWindowsHeapProvider(string exeFileName)
         {
             if (IsValidSession)
@@ -889,6 +897,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// implicitly stopped when the TraceEventSession is closed unless the StopOnDispose property is set to false.
         /// This API is OK to call from one thread while Process() is being run on another
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public bool Stop(bool noThrow = false)
         {
             lock (this)
@@ -937,6 +946,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// This API is OK to call from one thread while Process() is being run on another.   Calling Dispose is on
         /// a real time session is the way you can force a real time session to stop in a timely manner.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public void Dispose()
         {
             lock (this)         // It is pretty common to want do do this on different threads.
@@ -1441,6 +1451,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// If this is a real time session you can fetch the source associated with the session to start receiving events.
         /// Currently does not work on file based sources (we expect you to wait until the file is complete).
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public ETWTraceEventSource Source
         {
             get
@@ -1522,6 +1533,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// to the TraceEventSession constructor to open it.
         /// </summary>
         /// <returns>A enumeration of strings, each of which is a name of a session</returns>
+        [SupportedOSPlatform("windows")]
         public static unsafe List<string> GetActiveSessionNames()
         {
             int MAX_SESSIONS = GetETWMaxLoggers();
@@ -1535,13 +1547,13 @@ namespace Microsoft.Diagnostics.Tracing.Session
             int hr;
             byte[] sessionsArr = null;
             int previousSessionCount = 0;
-            
+
             // Query in a loop until we succeed or get a non-recoverable error
             do
             {
                 // Allocate buffer for the number of sessions we expect
                 sessionsArr = new byte[numSessions * sizeOfProperties];
-                
+
                 fixed (byte* sessionsArray = sessionsArr)
                 {
                     TraceEventNativeMethods.EVENT_TRACE_PROPERTIES** propertiesArray = stackalloc TraceEventNativeMethods.EVENT_TRACE_PROPERTIES*[numSessions];
@@ -1555,10 +1567,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         properties->LogFileNameOffset = (uint)sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES) + sizeof(char) * TraceEventSession.MaxNameSize;
                         propertiesArray[i] = properties;
                     }
-                    
+
                     // Try to get all active sessions
                     hr = TraceEventNativeMethods.QueryAllTraces((IntPtr)propertiesArray, numSessions, ref sessionCount);
-                    
+
                     // If we succeeded, extract the session names
                     if (hr == 0)
                     {
@@ -1578,7 +1590,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         {
                             Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
                         }
-                        
+
                         previousSessionCount = sessionCount;
                         numSessions = sessionCount; // sessionCount is updated by QueryAllTraces with the actual count
                     }
@@ -1590,7 +1602,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 }
             }
             while (hr == TraceEventNativeMethods.ERROR_MORE_DATA);
-            
+
             return activeTraceNames;
         }
 
@@ -1603,6 +1615,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// Get the maximum number of ETW loggers supported by the current machine
         /// </summary>
         /// <returns>The maximum number of supported ETW loggers</returns>
+        [SupportedOSPlatform("windows")]
         private static int GetETWMaxLoggers()
         {
             const string MaxEtwRegistryKey = "SYSTEM\\CurrentControlSet\\Control\\WMI";
@@ -1740,6 +1753,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// The 'properties' field is only the header information.  There is 'tail' that is
         /// required.  'ToUnmangedBuffer' fills in this tail properly.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         ~TraceEventSession()
         {
             Dispose();
@@ -1899,6 +1913,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <summary>
         /// Cleans out all provider data associated with this session.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         private void CleanFilterDataForEtwSession()
         {
             // Optimization, kernel sessions don't need filter cleanup.
@@ -1978,7 +1993,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
         private string GetEventSourceRegistryBaseLocation()
         {
-            if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
+            if (IntPtr.Size == 8)
             {
                 return @"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Winevt\Publishers";
             }
@@ -2006,6 +2021,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// This is present only used for compatibility
         /// </summary>
         /// <returns>the session index that will be used for this session.  Returns -1 if an entry could not be found </returns>
+        [SupportedOSPlatform("windows")]
         private void SetFilterDataForEtwSession(string providerGuid, byte[] data, bool V4_5EventSource = false)
         {
             string baseKeyName = GetEventSourceRegistryBaseLocation();
@@ -2407,6 +2423,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             Debug.Assert(curID <= stackTracingIdsMax);
             return curID;
         }
+        [SupportedOSPlatform("windows")]
         private void EnsureStarted(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties = null)
         {
             if (!m_Create)

@@ -9,21 +9,22 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Diagnostics.Utilities;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.Symbols
 {
     /// <summary>
-    /// A NativeSymbolModule represents symbol information for a native code module.   
-    /// NativeSymbolModules can potentially represent Managed modules (which is why it is a subclass of that interface).  
-    /// 
+    /// A NativeSymbolModule represents symbol information for a native code module.
+    /// NativeSymbolModules can potentially represent Managed modules (which is why it is a subclass of that interface).
+    ///
     /// NativeSymbolModule should just be the CONTRACT for Native Symbols (some subclass implements
     /// it for a particular format like Windows PDBs), however today because we have only one file format we
-    /// simply implement Windows PDBS here.   This can be factored out of this class when we 
+    /// simply implement Windows PDBS here.   This can be factored out of this class when we
     /// support other formats (e.g. Dwarf).
-    /// 
-    /// To implement support for Windows PDBs we use the Debug Interface Access (DIA).  See 
+    ///
+    /// To implement support for Windows PDBs we use the Debug Interface Access (DIA).  See
     /// http://msdn.microsoft.com/library/x93ctkx8.aspx for more.   I have only exposed what
-    /// I need, and the interface is quite large (and not super pretty).  
+    /// I need, and the interface is quite large (and not super pretty).
     /// </summary>
     public unsafe class NativeSymbolModule : ManagedSymbolModule, IDisposable, ISymbolLookup
     {
@@ -39,8 +40,8 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// Finds a (method) symbolic name for a given relative virtual address of some code.  
-        /// Returns an empty string if a name could not be found. 
+        /// Finds a (method) symbolic name for a given relative virtual address of some code.
+        /// Returns an empty string if a name could not be found.
         /// </summary>
         public string FindNameForRva(uint rva)
         {
@@ -50,15 +51,15 @@ namespace Microsoft.Diagnostics.Symbols
             return FindNameForRva(rva, ref dummy);
         }
         /// <summary>
-        /// Finds a (method) symbolic name for a given relative virtual address of some code.  
-        /// Returns an empty string if a name could not be found.  
-        /// symbolStartRva is set to the start of the symbol start 
+        /// Finds a (method) symbolic name for a given relative virtual address of some code.
+        /// Returns an empty string if a name could not be found.
+        /// symbolStartRva is set to the start of the symbol start
         /// </summary>
         public string FindNameForRva(uint rva, ref uint symbolStartRva)
         {
             ThrowIfDisposed();
 
-            System.Threading.Thread.Sleep(0);           // Allow cancellation.  
+            System.Threading.Thread.Sleep(0);           // Allow cancellation.
             if (m_symbolsByAddr == null)
             {
                 return "";
@@ -90,13 +91,13 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 m_reader.Log.WriteLine("Warning: NOT IN RANGE: address 0x{0:x} start {2:x} end {3:x} Offset {4:x} Len {5:x}, symbol {1}, prefixing with ??.",
                     rva, ret, symbolRva, symbolRva + symbolLen, rva - symbolRva, symbolLen);
-                ret = "??" + ret;   // Prefix with ?? to indicate it is questionable.  
+                ret = "??" + ret;   // Prefix with ?? to indicate it is questionable.
             }
 
             // TODO FIX NOW, should not need to do this hand-unmangling.
             if (0 <= ret.IndexOf('@'))
             {
-                // TODO relatively inefficient.  
+                // TODO relatively inefficient.
                 string unmangled = null;
                 symbol.get_undecoratedNameEx(0x1000, out unmangled);
                 if (unmangled != null)
@@ -121,14 +122,14 @@ namespace Microsoft.Diagnostics.Symbols
                 }
             }
 
-            // See if this is a NGEN mangled name, which is $#Assembly#Token suffix.  If so strip it off. 
+            // See if this is a NGEN mangled name, which is $#Assembly#Token suffix.  If so strip it off.
             var dollarIdx = ret.LastIndexOf('$');
             if (0 <= dollarIdx && dollarIdx + 2 < ret.Length && ret[dollarIdx + 1] == '#' && 0 <= ret.IndexOf('#', dollarIdx + 2))
             {
                 ret = ret.Substring(0, dollarIdx);
             }
 
-            // See if we have a Project N map that maps $_NN to a pre-merged assembly name 
+            // See if we have a Project N map that maps $_NN to a pre-merged assembly name
             var mergedAssembliesMap = GetMergedAssembliesMap();
             if (mergedAssembliesMap != null)
             {
@@ -142,7 +143,7 @@ namespace Microsoft.Diagnostics.Symbols
                     return GetAssemblyNameFromModuleIndex(mergedAssembliesMap, moduleIndex, original);
                 });
 
-                // By default - .NET native compilers do not generate a $#_ prefix for the methods coming from 
+                // By default - .NET native compilers do not generate a $#_ prefix for the methods coming from
                 // the assembly containing System.Object - the implicit module number is int.MaxValue
 
                 if (!prefixMatchFound)
@@ -164,7 +165,7 @@ namespace Microsoft.Diagnostics.Symbols
                     var assemblyName = new AssemblyName(fullAssemblyName);
                     return assemblyName.Name + "!";
                 }
-                catch (Exception) { } // Catch all AssemblyName fails with ' in the name.   
+                catch (Exception) { } // Catch all AssemblyName fails with ' in the name.
             }
 
             return defaultValue;
@@ -172,7 +173,7 @@ namespace Microsoft.Diagnostics.Symbols
 
         /// <summary>
         /// Fetches the source location (line number and file), given the relative virtual address (RVA)
-        /// of the location in the executable.  
+        /// of the location in the executable.
         /// </summary>
         public SourceLocation SourceLocationForRva(uint rva)
         {
@@ -184,13 +185,13 @@ namespace Microsoft.Diagnostics.Symbols
 
         /// <summary>
         /// This overload of SourceLocationForRva like the one that takes only an RVA will return a source location
-        /// if it can.   However this version has additional support for NGEN images.   In the case of NGEN images 
-        /// for .NET V4.6.1 or later), the NGEN images can't convert all the way back to a source location, but they 
+        /// if it can.   However this version has additional support for NGEN images.   In the case of NGEN images
+        /// for .NET V4.6.1 or later), the NGEN images can't convert all the way back to a source location, but they
         /// can convert the RVA back to IL artifacts (ilAssemblyName, methodMetadataToken, iloffset).  These can then
-        /// be used to look up the source line using the IL PDB.  
-        /// 
-        /// Thus if the return value from this is null, check to see if the ilAssemblyName is non-null, and if not 
-        /// you can look up the source location using that information.  
+        /// be used to look up the source line using the IL PDB.
+        ///
+        /// Thus if the return value from this is null, check to see if the ilAssemblyName is non-null, and if not
+        /// you can look up the source location using that information.
         /// </summary>
         public SourceLocation SourceLocationForRva(uint rva, out string ilAssemblyName, out uint methodMetadataToken, out int ilOffset)
         {
@@ -201,7 +202,7 @@ namespace Microsoft.Diagnostics.Symbols
             ilOffset = -1;
             m_reader.m_log.WriteLine("SourceLocationForRva: looking up RVA {0:x} ", rva);
 
-            // First fetch the line number information 'normally'.  (for the non-NGEN case, and old style NGEN (with /lines)). 
+            // First fetch the line number information 'normally'.  (for the non-NGEN case, and old style NGEN (with /lines)).
             uint fetchCount;
             IDiaEnumLineNumbers sourceLocs;
             m_session.findLinesByRVA(rva, 0, out sourceLocs);
@@ -209,14 +210,14 @@ namespace Microsoft.Diagnostics.Symbols
             sourceLocs.Next(1, out sourceLoc, out fetchCount);
             if (fetchCount == 0)
             {
-                // We have no native line number information.   See if we are an NGEN image and we can convert the RVA to an IL Offset.   
+                // We have no native line number information.   See if we are an NGEN image and we can convert the RVA to an IL Offset.
                 m_reader.m_log.WriteLine("SourceLocationForRva: did not find line info Looking for mangled symbol name (for NGEN pdbs)");
                 IDiaSymbol method = m_symbolsByAddr.symbolByRVA(rva);
                 if (method != null)
                 {
                     // Check to see if the method name follows the .NET V4.6.1 conventions
                     // of $#ASSEMBLY#TOKEN.   If so the line number we got back is not a line number at all but
-                    // an ILOffset. 
+                    // an ILOffset.
                     string name = method.name;
                     if (name != null)
                     {
@@ -238,8 +239,8 @@ namespace Microsoft.Diagnostics.Symbols
                                 return null;
                             }
 
-                            // We need the metadata token and assembly.   We get this from the name mangling of the method symbol, 
-                            // so look that up.  
+                            // We need the metadata token and assembly.   We get this from the name mangling of the method symbol,
+                            // so look that up.
                             if (tokenIdx == suffixIdx + 2)      // The assembly name is null
                             {
                                 ilAssemblyName = Path.GetFileNameWithoutExtension(SymbolFilePath);
@@ -259,7 +260,7 @@ namespace Microsoft.Diagnostics.Symbols
 
                             m_reader.m_log.WriteLine("SourceLocationForRva: Looking up IL Offset by RVA 0x{0:x}", rva);
                             m_session.findILOffsetsByRVA(rva, 0, out sourceLocs);
-                            // FEEFEE is some sort of illegal line number that is returned some time,  It is better to ignore it.  
+                            // FEEFEE is some sort of illegal line number that is returned some time,  It is better to ignore it.
                             // and take the next valid line
                             for (; ; )
                             {
@@ -279,7 +280,7 @@ namespace Microsoft.Diagnostics.Symbols
                                 ilOffset = 0;
                             }
                             m_reader.m_log.WriteLine("SourceLocationForRva: Found native to IL mappings, IL offset 0x{0:x}", ilOffset);
-                            return null;                           // we don't have source information but we did return the IL information. 
+                            return null;                           // we don't have source information but we did return the IL information.
                         }
                     }
                 }
@@ -287,7 +288,7 @@ namespace Microsoft.Diagnostics.Symbols
                 return null;
             }
 
-            // If we reach here we are in the non-NGEN case, we are not mapping to IL information and 
+            // If we reach here we are in the non-NGEN case, we are not mapping to IL information and
             IDiaSourceFile diaSrcFile = sourceLoc.sourceFile;
             var lineNum = (int)sourceLoc.lineNumber;
 
@@ -325,7 +326,7 @@ namespace Microsoft.Diagnostics.Symbols
             IDiaEnumLineNumbers sourceLocs;
             IDiaLineNumber sourceLoc;
 
-            // TODO FIX NOW, this code here is for debugging only turn if off when we are happy.  
+            // TODO FIX NOW, this code here is for debugging only turn if off when we are happy.
             //m_session.findLinesByRVA(methodSym.relativeVirtualAddress, (uint)(ilOffset + 256), out sourceLocs);
             //for (int i = 0; ; i++)
             //{
@@ -340,7 +341,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             // For managed code, the 'RVA' is a 'cumulative IL offset' (amount of IL bytes before this in the module)
             // Thus you find the line number of a particular IL offset by adding the offset within the method to
-            // the cumulative IL offset of the start of the method.  
+            // the cumulative IL offset of the start of the method.
             m_session.findLinesByRVA(methodSym.relativeVirtualAddress + (uint)ilOffset, 256, out sourceLocs);
             sourceLocs.Next(1, out sourceLoc, out fetchCount);
             if (fetchCount == 0)
@@ -352,7 +353,7 @@ namespace Microsoft.Diagnostics.Symbols
             var sourceFile = new MicrosoftPdbSourceFile(this, sourceLoc.sourceFile);
             IDiaLineNumber lineNum = null;
 
-            // FEEFEE is some sort of illegal line number that is returned some time,  It is better to ignore it.  
+            // FEEFEE is some sort of illegal line number that is returned some time,  It is better to ignore it.
             // and take the next valid line
             for (; ; )
             {
@@ -381,15 +382,15 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// The symbol representing the module as a whole.  All global symbols are children of this symbol 
+        /// The symbol representing the module as a whole.  All global symbols are children of this symbol
         /// </summary>
-        public Symbol GlobalSymbol 
-        { 
-            get 
+        public Symbol GlobalSymbol
+        {
+            get
             {
                 ThrowIfDisposed();
-                return new Symbol(this, m_session.globalScope); 
-            } 
+                return new Symbol(this, m_session.globalScope);
+            }
         }
 
 #if TEST_FIRST
@@ -430,41 +431,41 @@ namespace Microsoft.Diagnostics.Symbols
 #endif
 
         /// <summary>
-        /// The a unique identifier that is used to relate the DLL and its PDB.   
+        /// The a unique identifier that is used to relate the DLL and its PDB.
         /// </summary>
-        public override Guid PdbGuid 
-        { 
-            get 
+        public override Guid PdbGuid
+        {
+            get
             {
                 ThrowIfDisposed();
-                return m_session.globalScope.guid; 
-            } 
+                return m_session.globalScope.guid;
+            }
         }
 
         /// <summary>
-        /// Along with the PdbGuid, there is a small integer 
-        /// call the age is also used to find the PDB (it represents the different 
-        /// post link transformations the DLL has undergone).  
+        /// Along with the PdbGuid, there is a small integer
+        /// call the age is also used to find the PDB (it represents the different
+        /// post link transformations the DLL has undergone).
         /// </summary>
-        public override int PdbAge 
-        { 
-            get 
+        public override int PdbAge
+        {
+            get
             {
                 ThrowIfDisposed();
-                return (int)m_session.globalScope.age; 
-            } 
+                return (int)m_session.globalScope.age;
+            }
         }
 
         #region private
         /// <summary>
         /// A source file represents a source file from a PDB.  This is not just a string
         /// because the file has a build time path, a checksum, and it needs to be 'smart'
-        /// to copy down the file if requested.  
-        /// 
+        /// to copy down the file if requested.
+        ///
         /// TODO We don't need this subclass.   We can have SourceFile simply a container
         /// that holds the BuildTimePath, hashType and hashValue.    The lookup of the
-        /// source can then be put on NativeSymbolModule and called from SourceFile generically.  
-        /// This makes the different symbol files more similar and is a nice simplification.  
+        /// source can then be put on NativeSymbolModule and called from SourceFile generically.
+        /// This makes the different symbol files more similar and is a nice simplification.
         /// </summary>
         public class MicrosoftPdbSourceFile : SourceFile
         {
@@ -481,7 +482,7 @@ namespace Microsoft.Diagnostics.Symbols
                 }
                 else
                 {
-                    // Try to convert srcsrv information 
+                    // Try to convert srcsrv information
                     GetSourceServerTargetAndCommand(out string target, out _);
 
                     if (!string.IsNullOrEmpty(target) && Uri.IsWellFormedUriString(target, UriKind.Absolute))
@@ -496,29 +497,29 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             /// <summary>
-            /// Try to fetch the source file associated with 'buildTimeFilePath' from the symbol server 
-            /// information from the PDB from 'pdbPath'.   Will return a path to the returned file (uses 
-            /// SourceCacheDirectory associated symbol reader for context where to put the file), 
-            /// or null if unsuccessful.  
-            /// 
-            /// There is a tool called pdbstr associated with srcsrv that basically does this.  
-            ///     pdbstr -r -s:srcsrv -p:PDBPATH
-            /// will dump it. 
+            /// Try to fetch the source file associated with 'buildTimeFilePath' from the symbol server
+            /// information from the PDB from 'pdbPath'.   Will return a path to the returned file (uses
+            /// SourceCacheDirectory associated symbol reader for context where to put the file),
+            /// or null if unsuccessful.
             ///
-            /// The basic flow is 
-            /// 
+            /// There is a tool called pdbstr associated with srcsrv that basically does this.
+            ///     pdbstr -r -s:srcsrv -p:PDBPATH
+            /// will dump it.
+            ///
+            /// The basic flow is
+            ///
             /// There is a variables section and a files section
-            /// 
+            ///
             /// The file section is a list of items separated by *.   The first is the path, the rest are up to you
-            /// 
+            ///
             /// You form a command by using the SRCSRVTRG variable and substituting variables %var1 where var1 is the first item in the * separated list
             /// There are special operators %fnfile%(XXX), etc that manipulate the string XXX (get file name, translate \ to / ...
-            /// 
-            /// If what is at the end is a valid URL it is looked up.   
+            ///
+            /// If what is at the end is a valid URL it is looked up.
             /// </summary>
             protected override string GetSourceFromSrcServer()
             {
-                // Try getting the source from the source server using SourceLink information.  
+                // Try getting the source from the source server using SourceLink information.
                 var ret = base.GetSourceFromSrcServer();
                 if (ret != null)
                 {
@@ -561,10 +562,8 @@ namespace Microsoft.Diagnostics.Symbols
                     if (!File.Exists(target) && fetchCmdStr != null)
                     {
                         _log.WriteLine("Trying to generate the file {0}.", target);
-                        var toolsDir = Path.GetDirectoryName(typeof(SourceFile).GetTypeInfo().Assembly.ManifestModule.FullyQualifiedName);
-                        var archToolsDir = Path.Combine(toolsDir, NativeDlls.ProcessArchitectureDirectory);
 
-                        // Find the EXE to do the source server fetch.  We only support TF.exe.   
+                        // Find the EXE to do the source server fetch.  We only support TF.exe.
                         string addToPath = null;
                         if (fetchCmdStr.StartsWith("tf.exe ", StringComparison.OrdinalIgnoreCase))
                         {
@@ -606,7 +605,7 @@ namespace Microsoft.Diagnostics.Symbols
 
                         if (File.Exists(target))
                         {
-                            // If TF.exe command files it might still create an empty output file.   Fix that 
+                            // If TF.exe command files it might still create an empty output file.   Fix that
                             if (new FileInfo(target).Length == 0)
                             {
                                 File.Delete(target);
@@ -682,7 +681,7 @@ namespace Microsoft.Diagnostics.Symbols
                     sourceFile.get_checksum(0, out hashSizeInBytes, out *dummy);
 
                     // MD5 is 16 bytes
-                    // SHA1 is 20 bytes  
+                    // SHA1 is 20 bytes
                     // SHA-256 is 32 bytes
                     _hash = new byte[hashSizeInBytes];
 
@@ -713,8 +712,8 @@ namespace Microsoft.Diagnostics.Symbols
                     }
 
                     SrcFormat srcFormat = new SrcFormat();
-                    int srcFormatSize = Marshal.SizeOf(typeof(SrcFormat));
-                    int srcFormatHeaderSize = Marshal.SizeOf(typeof(SrcFormatHeader));
+                    int srcFormatSize = Marshal.SizeOf<SrcFormat>();
+                    int srcFormatHeaderSize = Marshal.SizeOf<SrcFormatHeader>();
                     byte* pSrcFormat = (byte*)&srcFormat;
                     injectedSource.get_source((uint)srcFormatSize, out uint sizeAvailable, out *pSrcFormat);
 
@@ -751,19 +750,19 @@ namespace Microsoft.Diagnostics.Symbols
             /// <summary>
             /// Parse the 'srcsrv' stream in a PDB file and return the target for SourceFile
             /// represented by the 'this' pointer.   This target is either a ULR or a local file
-            /// path.  
-            /// 
-            /// You can dump the srcsrv stream using a tool called pdbstr 
+            /// path.
+            ///
+            /// You can dump the srcsrv stream using a tool called pdbstr
             ///     pdbstr -r -s:srcsrv -p:PDBPATH
-            /// 
+            ///
             /// The target in this stream is called SRCSRVTRG and there is another variable SRCSRVCMD
             /// which represents the command to run to fetch the source into SRCSRVTRG
-            /// 
+            ///
             /// To form the target, the stream expect you to private a %targ% variable which is a directory
             /// prefix to tell where to put the source file being fetched.   If the source file is
-            /// available via a URL this variable is not needed.  
-            /// 
-            ///  ********* This is a typical example of what is in a PDB with source server information. 
+            /// available via a URL this variable is not needed.
+            ///
+            ///  ********* This is a typical example of what is in a PDB with source server information.
             ///  SRCSRV: ini ------------------------------------------------
             ///  VERSION=3
             ///  INDEXVERSION=2
@@ -783,8 +782,8 @@ namespace Microsoft.Diagnostics.Symbols
             ///  f:\dd\externalapis\legacy\vctools\vc12\inc\cvinfo.h*VSTFDEVDIV_DEVDIV2*/DevDiv/Fx/Rel/NetFxRel3Stage/externalapis/legacy/vctools/vc12/inc/cvinfo.h*1363200
             ///  f:\dd\externalapis\legacy\vctools\vc12\inc\vc\ammintrin.h*VSTFDEVDIV_DEVDIV2*/DevDiv/Fx/Rel/NetFxRel3Stage/externalapis/legacy/vctools/vc12/inc/vc/ammintrin.h*1363200
             ///  SRCSRV: end ------------------------------------------------
-            ///  
-            ///  ********* And here is a more modern one where the source code is available via a URL.  
+            ///
+            ///  ********* And here is a more modern one where the source code is available via a URL.
             ///  SRCSRV: ini ------------------------------------------------
             ///  VERSION=2
             ///  INDEXVERSION=2
@@ -796,7 +795,7 @@ namespace Microsoft.Diagnostics.Symbols
             ///  SRCSRV: source files ---------------------------------------
             ///  c:\Users\dev\Documents\Visual Studio 2012\Projects\DavidSymbolSourceTest\DavidSymbolSourceTest\Demo.cs*SQPvxWBMtvANyCp8Pd3OjoZEUgpKvjDVIY1WbaiFPMw=
             ///  SRCSRV: end ------------------------------------------------
-            ///  
+            ///
             /// </summary>
             /// <param name="target">returns the target source file path</param>
             /// <param name="command">returns the command to fetch the target source file</param>
@@ -861,7 +860,7 @@ namespace Microsoft.Diagnostics.Symbols
                             // log.WriteLine("Found source {0} in the PDB", buildTimePath);
                             if (string.Compare(BuildTimeFilePath, buildTimePath, StringComparison.OrdinalIgnoreCase) == 0)
                             {
-                                // Create variables for each of the pieces.  
+                                // Create variables for each of the pieces.
                                 for (int i = 0; i < pieces.Length; i++)
                                 {
                                     vars.Add("var" + (i + 1).ToString(), pieces[i]);
@@ -876,7 +875,7 @@ namespace Microsoft.Diagnostics.Symbols
                     }
                     else if (inVars)
                     {
-                        // Gather up the KEY=VALUE pairs into a dictionary.  
+                        // Gather up the KEY=VALUE pairs into a dictionary.
                         var m = Regex.Match(line, @"^(\w+)=(.*?)\s*$");
                         if (m.Success)
                         {
@@ -887,12 +886,12 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             /// <summary>
-            /// Returns the location of the tf.exe executable or 
+            /// Returns the location of the tf.exe executable or
             /// </summary>
             /// <returns></returns>
             private static string FindTfExe()
             {
-                // If you have VS installed used that TF.exe associated with that.  
+                // If you have VS installed used that TF.exe associated with that.
                 var progFiles = Environment.GetEnvironmentVariable("ProgramFiles (x86)");
                 if (progFiles == null)
                 {
@@ -937,7 +936,7 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 if (0 <= result.IndexOf('%'))
                 {
-                    // see http://msdn.microsoft.com/en-us/library/windows/desktop/ms680641(v=vs.85).aspx for details on the %fn* variables 
+                    // see http://msdn.microsoft.com/en-us/library/windows/desktop/ms680641(v=vs.85).aspx for details on the %fn* variables
                     result = Regex.Replace(result, @"%fnvar%\((.*?)\)", delegate (Match m)
                     {
                         return SourceServerFetchVar(SourceServerEvaluate(m.Groups[1].Value, vars), vars);
@@ -959,7 +958,7 @@ namespace Microsoft.Diagnostics.Symbols
                 return result;
             }
 
-            // Here is an example of the srcsrv stream.  
+            // Here is an example of the srcsrv stream.
 #if false
 SRCSRV: ini ------------------------------------------------
 VERSION=3
@@ -984,11 +983,11 @@ f:\dd\ndp\clr\src\debug\ee\i386\dbghelpers.asm*DEVDIV_TFS2*/DevDiv/D11RelS/FX45R
 SRCSRV: end ------------------------------------------------
 #endif
 #if false
-        // Here is ana example of the stream in use for the jithlp.asm file.  
+        // Here is ana example of the stream in use for the jithlp.asm file.
 
 f:\dd\ndp\clr\src\vm\i386\jithelp.asm*DEVDIV_TFS2*/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/VM/i386/jithelp.asm*592925
 
-        // Here is the command that it issues.  
+        // Here is the command that it issues.
 tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/VM/i386/jithelp.asm" /server:http://vstfdevdiv.redmond.corp.microsoft.com:8080/devdiv2 /console >"C:\Users\vancem\AppData\Local\Temp\PerfView\src\DEVDIV_TFS2\DevDiv\D11RelS\FX45RTMGDR\ndp\clr\src\VM\i386\jithelp.asm\592925\jithelp.asm"
 
 #endif
@@ -1052,18 +1051,18 @@ tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/V
         }
 
         /// <summary>
-        /// Gets the 'srcsvc' data stream from the PDB and return it in as a string.   Returns null if it is not present. 
-        /// 
-        /// There is a tool called pdbstr associated with srcsrv that basically does this.  
+        /// Gets the 'srcsvc' data stream from the PDB and return it in as a string.   Returns null if it is not present.
+        ///
+        /// There is a tool called pdbstr associated with srcsrv that basically does this.
         ///     pdbstr -r -s:srcsrv -p:PDBPATH
-        /// will dump it. 
+        /// will dump it.
         /// </summary>
         internal string GetSrcSrvStream()
         {
             ThrowIfDisposed();
 
-            // In order to get the IDiaDataSource3 which includes 'getStreamSize' API, you need to use the 
-            // dia2_internal.idl file from devdiv to produce the Interop.Dia2Lib.dll 
+            // In order to get the IDiaDataSource3 which includes 'getStreamSize' API, you need to use the
+            // dia2_internal.idl file from devdiv to produce the Interop.Dia2Lib.dll
             // see class DiaLoader for more
             var log = m_reader.m_log;
             log.WriteLine("Getting source server stream for PDB {0}", SymbolFilePath);
@@ -1320,7 +1319,7 @@ tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/V
 
         /// <summary>
         /// This function checks if the SymbolModule is disposed before proceeding with the call.
-        /// This is important because DIA doesn't provide any guarantees as to what will happen if 
+        /// This is important because DIA doesn't provide any guarantees as to what will happen if
         /// one attempts to call after the session is disposed, so this at least ensure that we
         /// fail cleanly in non-concurrent cases.
         /// </summary>
@@ -1333,9 +1332,9 @@ tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/V
         }
 
         /// <summary>
-        /// This static class contains the GetTypeName method for retrieving the type name of 
-        /// a heap allocation site. 
-        /// 
+        /// This static class contains the GetTypeName method for retrieving the type name of
+        /// a heap allocation site.
+        ///
         /// See https://github.com/KirillOsenkov/Dia2Dump/blob/master/PrintSymbol.cpp for more details
         /// </summary>
         private static class HeapAllocationTypeInfo
@@ -1539,12 +1538,12 @@ tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/V
     }
 
     /// <summary>
-    /// Represents a single symbol in a PDB file.  
+    /// Represents a single symbol in a PDB file.
     /// </summary>
     public class Symbol : IComparable<Symbol>
     {
         /// <summary>
-        /// The name for the symbol 
+        /// The name for the symbol
         /// </summary>
         public string Name { get { return m_name; } }
         /// <summary>
@@ -1552,18 +1551,18 @@ tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/V
         /// </summary>
         public uint RVA { get { return m_diaSymbol.relativeVirtualAddress; } }
         /// <summary>
-        /// The length of the memory that the symbol represents.  
+        /// The length of the memory that the symbol represents.
         /// </summary>
         public ulong Length { get { return m_diaSymbol.length; } }
         /// <summary>
-        /// A small integer identifier tat is unique for that symbol in the DLL. 
+        /// A small integer identifier tat is unique for that symbol in the DLL.
         /// </summary>
         public uint Id { get { return m_diaSymbol.symIndexId; } }
 
         /// <summary>
-        /// Decorated names are names that most closely resemble the source code (have overloading).  
+        /// Decorated names are names that most closely resemble the source code (have overloading).
         /// However when the linker does not directly support all the expressiveness of the
-        /// source language names are encoded to represent this.   This return this encoded name. 
+        /// source language names are encoded to represent this.   This return this encoded name.
         /// </summary>
         public string UndecoratedName
         {
@@ -1586,7 +1585,7 @@ tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/V
         }
 
         /// <summary>
-        /// Returns the children of the symbol.  Will return null if there are no children.  
+        /// Returns the children of the symbol.  Will return null if there are no children.
         /// </summary>
         public IEnumerable<Symbol> GetChildren()
         {
@@ -1594,7 +1593,7 @@ tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/V
         }
 
         /// <summary>
-        /// Returns the children of the symbol, with the given tag.  Will return null if there are no children.  
+        /// Returns the children of the symbol, with the given tag.  Will return null if there are no children.
         /// </summary>
         public IEnumerable<Symbol> GetChildren(SymTagEnum tag)
         {
@@ -1741,21 +1740,21 @@ namespace Dia2Lib
     /// The DiaLoader class knows how to load the msdia140.dll (the Debug Access Interface) (see docs at
     /// http://msdn.microsoft.com/en-us/library/x93ctkx8.aspx), without it being registered as a COM object.
     /// Basically it just called the DllGetClassObject interface directly.
-    /// 
-    /// It has one public method 'GetDiaSourceObject' which knows how to create a IDiaDataSource object. 
-    /// From there you can do anything you need.  
-    /// 
-    /// In order to get IDiaDataSource3 which includes 'getStreamSize' API, you need to use the 
+    ///
+    /// It has one public method 'GetDiaSourceObject' which knows how to create a IDiaDataSource object.
+    /// From there you can do anything you need.
+    ///
+    /// In order to get IDiaDataSource3 which includes 'getStreamSize' API, you need to use the
     /// vctools\langapi\idl\dia2_internal.idl file from devdiv to produce Dia2Lib.dll
-    /// 
-    /// roughly what you need to do is 
+    ///
+    /// roughly what you need to do is
     ///     copy vctools\langapi\idl\dia2_internal.idl .
     ///     copy vctools\langapi\idl\dia2.idl .
     ///     copy vctools\langapi\include\cvconst.h .
     ///     Change dia2.idl to include interface IDiaDataSource3 inside library Dia2Lib->importlib->coclass DiaSource
     ///     midl dia2_internal.idl /D CC_DP_CXX
     ///     tlbimp dia2_internal.tlb
-    ///     REM result is Dia2Lib.dll 
+    ///     REM result is Dia2Lib.dll
     /// </summary>
     internal static class DiaLoader
     {
@@ -1774,10 +1773,10 @@ namespace Dia2Lib
             // Ensure that the native DLL we need exists.
             NativeDlls.LoadNative("msdia140.dll");
 
-            // This is the value it was for msdia120 and before 
+            // This is the value it was for msdia120 and before
             // var diaSourceClassGuid = new Guid("{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}");
 
-            // This is the value for msdia140.  
+            // This is the value for msdia140.
             var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
             return (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GetTypeInfo().GUID);
         }
@@ -1888,7 +1887,7 @@ namespace Dia2Lib
         void Reserved70(); // prepareEnCRebuild
         #endregion
 
-        [PreserveSig] 
+        [PreserveSig]
         int dispose();
     };
 }

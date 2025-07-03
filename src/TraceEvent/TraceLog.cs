@@ -30,6 +30,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -155,6 +156,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// and only windows 8 has a session that allows both kernel and user mode events simultaneously.   Thus this is most useful
         /// on Win 8 systems.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session)
         {
             return CreateFromTraceEventSession(session, 1000);
@@ -171,6 +173,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// on Win 8 systems.
         /// </summary>
         /// <param name="minDispatchDelayMSec">The delay in milliseconds between when an event is received in TraceLog and when it is dispatched to the real time event source.</param>
+        [SupportedOSPlatform("windows")]
         public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session, int minDispatchDelayMSec)
         {
             if (minDispatchDelayMSec < 10)
@@ -7116,13 +7119,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Get or create the loaded module.
             TraceLoadedModule loadedModule = FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
             if (loadedModule == null)
-            {   
+            {
                 // The module file is what is used when looking up the module for an arbitrary address, so it must save both the start address and image size.
                 loadedModule = new TraceLoadedModule(process, moduleFile, data.StartAddress);
-                
+
                 // All mappings are enumerated at the beginning of the trace.
                 loadedModule.loadTimeQPC = process.Log.sessionStartTimeQPC;
-                
+
                 InsertAndSetOverlap(index + 1, loadedModule);
             }
 
@@ -8528,7 +8531,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
                         moduleFileIndex = module.ModuleFile.ModuleFileIndex;
                         methodIndex = methods.NewMethod(data.Name, moduleFileIndex, (int)data.Id);
-                        
+
                         // When universal traces support re-use of address space, we'll need to support it here.
                     }
 
