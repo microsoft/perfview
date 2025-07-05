@@ -7111,7 +7111,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // A loaded and managed modules depend on a module file, so get or create one.
             // TODO: We'll need to store FileOffset as well to handle elf images.
             TraceModuleFile moduleFile = process.Log.ModuleFiles.GetOrCreateModuleFile(data.FileName, data.StartAddress);
-            moduleFile.imageSize = (long)(data.EndAddress - data.StartAddress);
+            long newImageSize = (long)(data.EndAddress - data.StartAddress);
+            
+            // If we found an existing module file, check if we need to expand its size to handle overlapping mappings
+            if (moduleFile.imageSize < newImageSize)
+            {
+                moduleFile.imageSize = newImageSize;
+            }
 
             // Get or create the loaded module.
             TraceLoadedModule loadedModule = FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
@@ -7124,6 +7130,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 loadedModule.loadTimeQPC = process.Log.sessionStartTimeQPC;
                 
                 InsertAndSetOverlap(index + 1, loadedModule);
+            }
+            else
+            {
+                // Handle overlapping mappings by updating the loaded module's image size if needed
+                if (loadedModule.ModuleFile.imageSize < newImageSize)
+                {
+                    loadedModule.ModuleFile.imageSize = newImageSize;
+                }
             }
 
             // Get or create a managed module.  This module is the container for dynamic symbols.
@@ -8525,15 +8539,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     {
                         int index;
                         TraceLoadedModule loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
-                        module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
-                        moduleFileIndex = module.ModuleFile.ModuleFileIndex;
-                        methodIndex = methods.NewMethod(data.Name, moduleFileIndex, (int)data.Id);
+                        if (loadedModule != null)
+                        {
+                            module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
+                            moduleFileIndex = module.ModuleFile.ModuleFileIndex;
+                            methodIndex = methods.NewMethod(data.Name, moduleFileIndex, (int)data.Id);
+                        }
                         
                         // When universal traces support re-use of address space, we'll need to support it here.
                     }
 
-                    // Set the info
-                    info.SetMethodIndex(this, methodIndex);
+                    // Set the info (only if we found a module)
+                    if (module != null)
+                    {
+                        info.SetMethodIndex(this, methodIndex);
+                    }
                 }
             });
         }
