@@ -1,12 +1,13 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 /* This file is best viewed using outline mode (Ctrl-M Ctrl-O) */
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
-// It is available from http://www.codeplex.com/hyperAddin 
+// It is available from http://www.codeplex.com/hyperAddin
 /* If you uncomment this line, log.serialize.xml and log.deserialize.xml are created, which allow debugging */
 // #define DEBUG_SERIALIZE
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;      // For StringBuilder.
 
@@ -14,7 +15,7 @@ using System.Text;      // For StringBuilder.
 namespace FastSerialization
 {
     // #Introduction
-    // 
+    //
     // Sadly, System.Runtime.Serialization has a serious performance flaw. In the scheme created there, the
     // basic contract between an object and the serializer is fundamentally heavy. For serialization the
     // contract is for the object to implement System.Runtime.Serialization.ISerializable.GetObjectData
@@ -23,7 +24,7 @@ namespace FastSerialization
     // is then the serializers job to actually send out the bits given this table. The REQUIRED work of
     // serializing an integers copying 4 bytes to some output buffer (a few instructions), however the
     // protocol above requires 1000s.
-    // 
+    //
     // The classes in Serialize.cs are an attempt to create really light weight serialization. At the heart
     // of the design are two interfaces IStreamReader and IStreamWriter. They are a simplified
     // INTERFACE much like System.IO.BinaryReader and System.IO.BinaryWriter, that know how to
@@ -33,38 +34,38 @@ namespace FastSerialization
     // complicated graph of objects in the stream. While IStreamWriter does not have the ability to seek,
     // the IStreamReader does (using StreamLabel), because it is expected that the reader will want
     // to follow StreamLabel 'pointers' to traverse the serialized data in a more random access way.
-    // 
+    //
     // However, in general, an object needs more than a MemoryStreamWriter to serialize itself. When an object
     // graph could have cycles, it needs a way of remembering which objects it has already serialized. It
     // also needs a way encoding types, because in general the type of an object cannot always be inferred
     // from its context. This is the job of the Serializer class. A Serializer holds all the state
     // needed to represent a partially serialized object graph, but the most important part of a
     // Serializer is its Serializer.writer property, which holds the logical output stream.
-    // 
+    //
     // Similarly a Deserializer holds all the 'in flight' information needed to deserialize a complete
     // object graph, and its most important property is its Deserializer.reader that holds the logical
     // input stream.
-    // 
+    //
     // An object becomes serializable by doing two things
     //     * implementing the IFastSerializable interface and implementing the
     //         IFastSerializable.ToStream and IFastSerializable.FromStream methods.
     //     * implementing a public constructor with no arguments (default constructor). This is needed because
     //         an object needs to be created before IFastSerializable.FromStream can be called.
-    // 
+    //
     // The IFastSerializable.ToStream method that the object implements is passed a Serializer, and
     // the object is free to take advantage of all the facilities (like its serialized object table) to help
     // serialize itself, however at its heart, the ToStream method tends to fetch the Serialier.writer
     // and write out the primitive fields in order. Similarly at the heart of the
     // IFastSerializable.FromStream method is fetching the Deserializer.reader and reading in a
     // series of primitive types.
-    // 
+    //
     // Now the basic overhead of serializing a object in the common case is
-    // 
+    //
     //     * A interface call to IFastSerializable.ToStream.
     //     * A fetch of IStreamWriter from the Serialier.writer field
     //     * a series of IStreamWriter.Write operations which is an interface call, plus the logic to
     //         store the actual data to the stream (the real work).
-    //         
+    //
     // This is MUCH leaner, and now dominated by actual work of copying the data to the output buffer.
 
     /// <summary>
@@ -137,14 +138,14 @@ namespace FastSerialization
 
     /// <summary>
     /// A StreamLabel represents a position in a IStreamReader or IStreamWriter.
-    /// In memory it is represented as a 64 bit signed value but to preserve compat 
+    /// In memory it is represented as a 64 bit signed value but to preserve compat
     /// with the FastSerializer.1 format it is a 32 bit unsigned value when
     /// serialized in a file. FastSerializer can parse files exceeding 32 bit sizes
-    /// as long as the format doesn't persist a StreamLabel in the content. NetTrace 
+    /// as long as the format doesn't persist a StreamLabel in the content. NetTrace
     /// is an example of this.
     /// During writing it is generated by the IStreamWriter.GetLabel method an
     /// consumed by the IStreamWriter.WriteLabel method. On reading you can use
-    /// IStreamReader.Current and and IStreamReader. 
+    /// IStreamReader.Current and and IStreamReader.
     /// </summary>
 #if FASTSERIALIZATION_PUBLIC
     public
@@ -159,11 +160,11 @@ namespace FastSerialization
 
     /// <summary>
     /// IStreamWriter is meant to be a very simple streaming protocol. You can write integral types,
-    /// strings, and labels to the stream itself.  
-    /// 
+    /// strings, and labels to the stream itself.
+    ///
     /// IStreamWrite can be thought of a simplified System.IO.BinaryWriter, or maybe the writer
     /// part of a System.IO.Stream with a few helpers for primitive types.
-    /// 
+    ///
     /// See also IStreamReader
     /// </summary>
 #if FASTSERIALIZATION_PUBLIC
@@ -192,7 +193,7 @@ namespace FastSerialization
         /// </summary>
         void Write(StreamLabel value);
         /// <summary>
-        /// Write a string to a stream (supports null values).  
+        /// Write a string to a stream (supports null values).
         /// </summary>
         void Write(string value);
         /// <summary>
@@ -201,12 +202,12 @@ namespace FastSerialization
         /// <returns></returns>
         StreamLabel GetLabel();
         /// <summary>
-        /// Write a SuffixLabel it must be the last thing written to the stream.   The stream 
+        /// Write a SuffixLabel it must be the last thing written to the stream.   The stream
         /// guarantees that this value can be efficiently read at any time (probably by seeking
         /// back from the end of the stream)).   The idea is that when you generate a 'tableOfContents'
         /// you can only do this after processing the data (and probably writing it out), If you
         /// remember where you write this table of contents and then write a suffix label to it
-        /// as the last thing in the stream using this API, you guarantee that the reader can 
+        /// as the last thing in the stream using this API, you guarantee that the reader can
         /// efficiently seek to the end, read the value, and then goto that position.  (See
         /// IStreamReader.GotoSuffixLabel for more)
         /// </summary>
@@ -220,11 +221,11 @@ namespace FastSerialization
 
 
     /// IStreamReader is meant to be a very simple streaming protocol. You can read integral types,
-    /// strings, and labels to the stream itself.  You can also goto labels you have read from the stream. 
-    /// 
+    /// strings, and labels to the stream itself.  You can also goto labels you have read from the stream.
+    ///
     /// IStreamReader can be thought of a simplified System.IO.BinaryReder, or maybe the reader
     /// part of a System.IO.Stream with a few helpers for primitive types.
-    /// 
+    ///
     /// See also IStreamWriter
 #if FASTSERIALIZATION_PUBLIC
     public
@@ -248,7 +249,7 @@ namespace FastSerialization
         /// </summary>
         long ReadInt64();
         /// <summary>
-        /// Read a string from the stream.   Can represent null strings 
+        /// Read a string from the stream.   Can represent null strings
         /// </summary>
         string ReadString();
         /// <summary>
@@ -265,7 +266,7 @@ namespace FastSerialization
         /// </summary>
         void Goto(StreamLabel label);
         /// <summary>
-        /// Returns the current position in the stream.  
+        /// Returns the current position in the stream.
         /// </summary>
         StreamLabel Current { get; }
 
@@ -273,16 +274,16 @@ namespace FastSerialization
         /// Sometimes information is only known after writing the entire stream.  This information can be put
         /// on the end of the stream, but there needs to be a way of finding it relative to the end, rather
         /// than from the beginning.   A IStreamReader, however, does not actually let you go 'backwards' easily
-        /// because it does not guarantee the size what it writes out (it might compress).  
-        /// 
-        /// The solution is the concept of a 'suffixLabel' which is location in the stream where you can always 
+        /// because it does not guarantee the size what it writes out (it might compress).
+        ///
+        /// The solution is the concept of a 'suffixLabel' which is location in the stream where you can always
         /// efficiently get to.
-        /// 
-        /// It is written with a special API (WriteSuffixLabel that must be the last thing written.   It is 
+        ///
+        /// It is written with a special API (WriteSuffixLabel that must be the last thing written.   It is
         /// expected that it simply write an uncompressed StreamLabel.   It can then be used by using the
         /// GotoSTreamLabel() method below.   This goes to this well know position in the stream.   We expect
-        /// this is implemented by seeking to the end of the stream, reading the uncompressed streamLabel, 
-        /// and then seeking to that position.  
+        /// this is implemented by seeking to the end of the stream, reading the uncompressed streamLabel,
+        /// and then seeking to that position.
         /// </summary>
         void GotoSuffixLabel();
 
@@ -344,7 +345,7 @@ namespace FastSerialization
         }
 
         /// <summary>
-        /// Returns a StreamLabel that is the sum of label + offset.  
+        /// Returns a StreamLabel that is the sum of label + offset.
         /// </summary>
         public static StreamLabel Add(this StreamLabel label, int offset)
         {
@@ -352,7 +353,7 @@ namespace FastSerialization
         }
 
         /// <summary>
-        /// Returns the difference between two stream labels 
+        /// Returns the difference between two stream labels
         /// </summary>
         public static long Sub(this StreamLabel label, StreamLabel other)
         {
@@ -360,7 +361,7 @@ namespace FastSerialization
         }
 
         /// <summary>
-        /// Convenience method for skipping a a certain number of bytes in the stream.  
+        /// Convenience method for skipping a a certain number of bytes in the stream.
         /// </summary>
         public static void Skip(this IStreamReader reader, int byteCount)
         {
@@ -370,10 +371,10 @@ namespace FastSerialization
 #endif
 
     /// <summary>
-    /// Like a StreamLabel, a ForwardReference represents a pointer to a location in the stream.  
+    /// Like a StreamLabel, a ForwardReference represents a pointer to a location in the stream.
     /// However unlike a StreamLabel, the exact value in the stream does not need to be known at the
-    /// time the forward references is written.  Instead the ID is written, and later that ID is 
-    /// associated with the target location (using DefineForwardReference).   
+    /// time the forward references is written.  Instead the ID is written, and later that ID is
+    /// associated with the target location (using DefineForwardReference).
     /// </summary>
 #if FASTSERIALIZATION_PUBLIC
     public
@@ -381,43 +382,43 @@ namespace FastSerialization
     enum ForwardReference : int
     {
         /// <summary>
-        /// Returned when no appropriate ForwardReference exists.  
+        /// Returned when no appropriate ForwardReference exists.
         /// </summary>
         Invalid = -1
     };
 
     /// <summary>
     /// #SerializerIntroduction see also #StreamLayout
-    /// 
+    ///
     /// The Serializer class is a general purpose object graph serializer helper. While it does not have
     /// any knowledge of the serialization format of individual object, it does impose conventions on how to
     /// serialize support information like the header (which holds versioning information), a trailer (which
     /// holds deferred pointer information), and how types are versioned. However these conventions are
     /// intended to be very generic and thus this class can be used for essentially any serialization need.
-    /// 
+    ///
     /// Goals:
     ///     * Allows full range of serialization, including subclassing and cyclic object graphs.
     ///     * Can be serialized and deserialized efficiently sequentially (no seeks MANDATED on read or
     ///         write). This allows the serializer to be used over pipes and other non-seekable devices).
     ///     * Pay for play (thus very efficient in simple cases (no subclassing or cyclic graphs).
     ///     * Ideally self-describing, and debuggable (output as XML if desired?)
-    /// 
+    ///
     /// Versioning:
     ///     * We want the ability for new formats to accept old versions if objects wish to support old
     ///         formats
     ///     * Also wish to allow new formats to be read by OLD version if the new format is just an
     ///         'extension' (data added to end of objects). This makes making new versions almost pain-free.
-    ///         
+    ///
     /// Concepts:
     ///     * No-seek requirement
-    ///     
+    ///
     ///         The serialized form should be such that it can be deserialized efficiently in a serial fashion
     ///         (no seeks). This means all information needed to deserialize has to be 'just in time' (can't
     ///         be some table at the end). Pragmatically this means that type information (needed to create
     ///         instances), has to be output on first use, so it is available for the deserializer.
-    ///         
+    ///
     ///     * Laziness requirement
-    ///     
+    ///
     ///         While is should be possible to read the serialized for sequentially, we should also not force
     ///         it. It should be possible to have a large file that represents a persisted structure that can
     ///         be lazily brought into memory on demand. This means that all information needed to
@@ -425,22 +426,22 @@ namespace FastSerialization
     ///         Pragmatically this means that type information, and forward forwardReference information needs to
     ///         have a table in a well known Location at the end so that it can be found without having to
     ///         search the file sequentially.
-    ///     
+    ///
     ///     * Versioning requirement
-    ///         
+    ///
     ///         To allow OLD code to access NEW formats, it must be the case that the serialized form of
     ///         every instance knows how to 'skip' past any new data (even if it does not know its exact
     ///         size). To support this, objects have 'begin' and 'end' tags, which allows the deserializer to
     ///         skip the next object.
-    ///         
+    ///
     ///     * Polymorphism requirement
-    ///     
+    ///
     ///         Because the user of a filed may not know the exact instance stored there, in general objects
     ///         need to store the exact type of the instance. Thus they need to store a type identifier, this
     ///         can be folded into the 'begin' tag.
-    ///         
+    ///
     ///     * Arbitrary object graph (circularity) requirement (Forward references)
-    ///     
+    ///
     ///         The serializer needs to be able to serialize arbitrary object graphs, including those with
     ///         cycles in them. While you can do this without forward references, the system is more flexible
     ///         if it has the concept of a forward reference. Thus whenever a object reference is required, a
@@ -450,9 +451,9 @@ namespace FastSerialization
     ///         Serializer.Tags.ForwardDefintion) or at the end of the serialization in a forward
     ///         reference table (which allows forward references to be resolved without scanning then entire
     ///         file.
-    ///         
+    ///
     ///     * Contract between objects IFastSerializable.ToStream:
-    ///     
+    ///
     ///         The heart of the serialization and deserialization process the IFastSerializable
     ///         interface, which implements just two methods: ToStream (for serializing an object), and
     ///         FromStream (for deserializing and object). This interfaces is the mechanism by which objects
@@ -460,7 +461,7 @@ namespace FastSerialization
     ///         enough. An object that implements IFastSerializable must also implement a default
     ///         constructor (constructor with no args), so that that deserializer can create the object (and
     ///         then call FromStream to populated it).
-    ///         
+    ///
     ///         The ToStream method is only responsible for serializing the data in the object, and by itself
     ///         is not sufficient to serialize an interconnected, polymorphic graph of objects. It needs
     ///         help from the Serializer and Deserialize to do this. Serializer takes on the
@@ -468,9 +469,9 @@ namespace FastSerialization
     ///         the correct type before IFastSerializable.FromStream is called). It is also the
     ///         serializer's responsibility to provide the mechanism for dealing with circular object graphs
     ///         and forward references.
-    ///     
+    ///
     ///     * Layout of a serialized object: A serialized object has the following basic format
-    ///     
+    ///
     ///         * If the object is the definition of a previous forward references, then the definition must
     ///             begin with a Serializer.Tags.ForwardDefintion tag followed by a forward forwardReference
     ///             index which is being defined.
@@ -484,10 +485,10 @@ namespace FastSerialization
     ///         * Serializer.Tags.EndObject tag. This marks the end of the object. It quickly finds bugs
     ///             in ToStream FromStream mismatches, and also allows for V1 deserializers to skip past
     ///             additional fields added since V1.
-    ///         
+    ///
     ///     * Serializing Object references:
     ///       When an object forwardReference is serialized, any of the following may follow in the stream
-    ///       
+    ///
     ///         * Serializer.Tags.NullReference used to encode a null object forwardReference.
     ///         * Serializer.Tags.BeginObject or Serializer.Tags.ForwardDefintion, which indicates
     ///             that this the first time the target object has been referenced, and the target is being
@@ -498,17 +499,17 @@ namespace FastSerialization
     ///             indicates that the object is not yet serialized, but the serializer has chosen not to
     ///             immediately serialize the object. Ultimately this object will be defined, but has not
     ///             happened yet.
-    ///            
+    ///
     ///     * Serializing Types:
     ///       Types are simply objects of type SerializationType which contain enough information about
     ///       the type for the Deserializer to do its work (it full name and version number).   They are
     ///       serialized just like all other types.  The only thing special about it is that references to
-    ///       types after the BeginObject tag must not be forward references.  
-    ///  
+    ///       types after the BeginObject tag must not be forward references.
+    ///
     /// #StreamLayout:
     ///     The structure of the file as a whole is simply a list of objects.  The first and last objects in
-    ///     the file are part of the serialization infrastructure.  
-    ///     
+    ///     the file are part of the serialization infrastructure.
+    ///
     /// Layout Synopsis
     ///     * Signature representing Serializer format
     ///     * EntryObject (most of the rest of the file)
@@ -518,19 +519,19 @@ namespace FastSerialization
     ///             * Type for SerializationType  POSITION1
     ///                 * BeginObject tag
     ///                 * Type for SerializationType
-    ///                      * ObjectReference tag           // This is how our recursion ends.  
+    ///                      * ObjectReference tag           // This is how our recursion ends.
     ///                      * StreamLabel for POSITION1
     ///                 * Version Field for SerializationType
     ///                 * Minimum Version Field for SerializationType
-    ///                 * FullName string for SerializationType                
+    ///                 * FullName string for SerializationType
     ///                 * EndObject tag
     ///             * Version field for EntryObject's type
     ///             * Minimum Version field for EntryObject's type
     ///             * FullName string for EntryObject's type
     ///             * EndObject tag
-    ///         * Field1  
-    ///         * Field2 
-    ///         * V2_Field (this should be tagged so that it can be skipped by V1 deserializers.  
+    ///         * Field1
+    ///         * Field2
+    ///         * V2_Field (this should be tagged so that it can be skipped by V1 deserializers.
     ///         * EndObject tag
     ///     * ForwardReferenceTable pseudo-object
     ///         * Count of forward references
@@ -575,7 +576,7 @@ namespace FastSerialization
         }
 
         /// <summary>
-        /// Create a serializer that writes 'entryObject' another IStreamWriter 
+        /// Create a serializer that writes 'entryObject' another IStreamWriter
         /// </summary>
         public Serializer(IStreamWriter writer, IFastSerializable entryObject)
         {
@@ -588,19 +589,19 @@ namespace FastSerialization
                 this.writer = writer;
 
                 Log("<Serializer>");
-                // Write the header. 
+                // Write the header.
                 Write("!FastSerialization.1");
 
-                // Write the main object.  This is recursive and does most of the work. 
+                // Write the main object.  This is recursive and does most of the work.
                 Write(entryObject);
 
-                // Write any forward references. 
+                // Write any forward references.
                 WriteDeferedObjects();
 
-                // Write an unbalanced EndObject tag to represent the end of objects. 
+                // Write an unbalanced EndObject tag to represent the end of objects.
                 WriteTag(Tags.EndObject);
 
-                // Write the forward forwardReference table (for random access lookup)  
+                // Write the forward forwardReference table (for random access lookup)
                 StreamLabel forwardRefsLabel = writer.GetLabel();
                 Log("<ForwardRefTable StreamLabel=\"0x" + forwardRefsLabel.ToString("x") + "\">");
                 if (forwardReferenceDefinitions != null)
@@ -620,12 +621,12 @@ namespace FastSerialization
 
                 Log("</ForwardRefTable>");
 
-                // Write the trailer currently it has only one item in it, however it is expandable. 
-                // items.  
+                // Write the trailer currently it has only one item in it, however it is expandable.
+                // items.
                 StreamLabel trailerLabel = writer.GetLabel();
                 Log("<Trailer StreamLabel=\"0x" + trailerLabel.ToString("x") + "\">");
                 Write(forwardRefsLabel);
-                // More stuff goes here in future versions. 
+                // More stuff goes here in future versions.
                 Log("</Trailer>");
 
                 Log("<WriteSuffixLabel StreamLabelRef=\"0x" + trailerLabel.ToString("x") + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
@@ -642,7 +643,7 @@ namespace FastSerialization
             }
         }
 
-        // Convenience functions. 
+        // Convenience functions.
         /// <summary>
         /// Write a bool to a stream
         /// </summary>
@@ -747,26 +748,26 @@ namespace FastSerialization
         /// To tune working set (or disk seeks), or to make the dump of the format more readable, it is
         /// valuable to have control over which of several references to an object will actually cause it to
         /// be serialized (by default the first encountered does it).
-        /// 
+        ///
         /// WriteDefered allows you to write just a forwardReference to an object with the expectation that
         /// somewhere later in the serialization process the object will be serialized. If no call to
         /// WriteObject() occurs, then the object is serialized automatically before the stream is closed
-        /// (thus dangling references are impossible).        
+        /// (thus dangling references are impossible).
         /// </summary>
         public void WriteDefered(IFastSerializable obj) { WriteObjectRef(obj, true); }
         /// <summary>
         /// This is an optimized version of WriteObjectReference that can be used in some cases.
-        /// 
+        ///
         /// If the object is not aliased (it has an 'owner' and only that owner has references to it (which
         /// implies its lifetime is strictly less than its owners), then the serialization system does not
         /// need to put the object in the 'interning' table. This saves a space (entries in the intern table
         /// as well as 'SyncEntry' overhead of creating hash codes for object) as well as time (to create
         /// that bookkeeping) for each object that is treated as private (which can add up if because it is
         /// common that many objects are private).  The private instances are also marked in the serialized
-        /// format so on reading there is a similar bookkeeping savings. 
-        /// 
+        /// format so on reading there is a similar bookkeeping savings.
+        ///
         /// The ultimate bits written by WritePrivateObject are the same as WriteObject.
-        /// 
+        ///
         /// TODO Need a DEBUG mode where we detect if others besides the owner reference the object.
         /// </summary>
         public void WritePrivate(IFastSerializable obj)
@@ -777,9 +778,9 @@ namespace FastSerialization
             Log("</WritePrivateObject>");
         }
 
-        // forward reference support 
+        // forward reference support
         /// <summary>
-        /// Create a ForwardReference.   At some point before the end of the serialization, DefineForwardReference must be called on this value 
+        /// Create a ForwardReference.   At some point before the end of the serialization, DefineForwardReference must be called on this value
         /// </summary>
         /// <returns></returns>
         public ForwardReference GetForwardReference()
@@ -794,7 +795,7 @@ namespace FastSerialization
             return ret;
         }
         /// <summary>
-        /// Define the ForwardReference forwardReference to point at the current write location.  
+        /// Define the ForwardReference forwardReference to point at the current write location.
         /// </summary>
         /// <param name="forwardReference"></param>
         public void DefineForwardReference(ForwardReference forwardReference)
@@ -802,7 +803,7 @@ namespace FastSerialization
             forwardReferenceDefinitions[(int)forwardReference] = writer.GetLabel();
         }
 
-        // data added after V1 needs to be tagged so that V1 deserializers can skip it. 
+        // data added after V1 needs to be tagged so that V1 deserializers can skip it.
 
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a byte.  These should be read with the corresponding TryReadTagged operation
@@ -835,16 +836,16 @@ namespace FastSerialization
         {
             WriteTag(Tags.SkipRegion);
             ForwardReference endRegion = GetForwardReference();
-            Write(endRegion);        // Allow the reader to skip this. 
+            Write(endRegion);        // Allow the reader to skip this.
             Write(value);            // Write the data we can skip
-            DefineForwardReference(endRegion);  // This is where the forward reference refers to 
+            DefineForwardReference(endRegion);  // This is where the forward reference refers to
         }
 
         /// <summary>
         /// Writes the header for a skipping an arbitrary blob.   THus it writes a Blob
-        /// tag and the size, and the caller must then write 'sizes' bytes of data in 
+        /// tag and the size, and the caller must then write 'sizes' bytes of data in
         /// some way.   This allows you to create regions of arbitrary size that can
-        /// be skipped by old as well as new parsers.  
+        /// be skipped by old as well as new parsers.
         /// </summary>
         /// <param name="size"></param>
         public void WriteTaggedBlobHeader(int size)
@@ -854,17 +855,17 @@ namespace FastSerialization
         }
 
         /// <summary>
-        /// Writes an end tag (which is different from all others).   This is useful 
-        /// when you have a deferred region of tagged items.  
+        /// Writes an end tag (which is different from all others).   This is useful
+        /// when you have a deferred region of tagged items.
         /// </summary>
         public void WriteTaggedEnd() { WriteTag(Tags.EndObject); }
 
         /// <summary>
-        /// Retrieve the underlying stream we are writing to.  Generally the Write* methods are enough. 
+        /// Retrieve the underlying stream we are writing to.  Generally the Write* methods are enough.
         /// </summary>
         public IStreamWriter Writer { get { return writer; } }
         /// <summary>
-        /// Completes the writing of the stream. 
+        /// Completes the writing of the stream.
         /// </summary>
         public void Close()
         {
@@ -876,7 +877,7 @@ namespace FastSerialization
 
         /// <summary>
         /// To help debug any serialization issues, you can write data to a side file called 'log.serialize.xml'
-        /// which can track exactly what serialization operations occurred.  
+        /// which can track exactly what serialization operations occurred.
         /// </summary>
         [Conditional("DEBUG_SERIALIZE")]
         public void Log(string str)
@@ -916,7 +917,7 @@ namespace FastSerialization
                 return;
             }
 
-            // If we have a forward forwardReference to this, get it. 
+            // If we have a forward forwardReference to this, get it.
             ForwardReference forwardReference;
             if (defered)
             {
@@ -937,14 +938,14 @@ namespace FastSerialization
 
                 // Write the forward forwardReference index
                 Write((int)forwardReference);
-                // And its type. 
+                // And its type.
                 WriteTypeForObject(obj);
                 Log("</WriteForwardReference>");
                 return;
             }
 
-            // At this point we are writing an actual object and not a reference. 
-            // 
+            // At this point we are writing an actual object and not a reference.
+            //
             StreamLabel objLabel = writer.GetLabel();
             Log("<WriteObject obj=\"0x" + obj.GetHashCode().ToString("x") +
                 "\" StreamLabel=\"0x" + objLabel.ToString("x") +
@@ -958,7 +959,7 @@ namespace FastSerialization
                 WriteTag(Tags.ForwardDefinition);
                 Write((int)forwardReference);
 
-                // And also put it in the ForwardReferenceTable.  
+                // And also put it in the ForwardReferenceTable.
                 forwardReferenceDefinitions[(int)forwardReference] = objLabel;
                 // And we can remove it from the ObjectsWithForwardReferences table
                 ObjectsWithForwardReferences.Remove(obj);
@@ -972,7 +973,7 @@ namespace FastSerialization
         }
         private void WriteTypeForObject(IFastSerializable obj)
         {
-            // Write the type of the forward forwardReference. 
+            // Write the type of the forward forwardReference.
             RuntimeTypeHandle handle = obj.GetType().TypeHandle;
             SerializationType type;
             if (!TypesInGraph.TryGetValue(handle, out type))
@@ -1005,7 +1006,7 @@ namespace FastSerialization
             List<IFastSerializable> objs = new List<IFastSerializable>();
             while (ObjectsWithForwardReferences.Count > 0)
             {
-                // Copy the objects out because the calls to WriteObjectReference updates the collection.  
+                // Copy the objects out because the calls to WriteObjectReference updates the collection.
                 objs.AddRange(ObjectsWithForwardReferences.Keys);
                 foreach (IFastSerializable obj in objs)
                 {
@@ -1021,7 +1022,7 @@ namespace FastSerialization
             Type type = instance.GetType();
 
             // Special case: the SerializationType for SerializationType itself is null.  This avoids
-            // recursion.  
+            // recursion.
             if (type == typeof(SerializationType))
             {
                 return null;
@@ -1060,8 +1061,8 @@ namespace FastSerialization
     /// <summary>
     /// Deserializer is a helper class that holds all the information needed to deserialize an object
     /// graph as a whole (things like the table of objects already deserialized, and the list of types in
-    /// the object graph.  
-    /// 
+    /// the object graph.
+    ///
     /// see #SerializerIntroduction for more
     /// </summary>
 #if FASTSERIALIZATION_PUBLIC
@@ -1079,7 +1080,7 @@ namespace FastSerialization
         }
 
         /// <summary>
-        /// Create a Deserializer that reads its data from a given System.IO.Stream.   The stream will be closed when the Deserializer is done with it.  
+        /// Create a Deserializer that reads its data from a given System.IO.Stream.   The stream will be closed when the Deserializer is done with it.
         /// </summary>
         public Deserializer(Stream inputStream, string streamName, SerializationSettings settings)
         {
@@ -1099,7 +1100,7 @@ namespace FastSerialization
         }
 
         /// <summary>
-        /// Create a Deserializer that reads its data from a given IStreamReader.   The stream will be closed when the Deserializer is done with it.  
+        /// Create a Deserializer that reads its data from a given IStreamReader.   The stream will be closed when the Deserializer is done with it.
         /// </summary>
         public Deserializer(IStreamReader reader, string streamName)
         {
@@ -1140,8 +1141,8 @@ namespace FastSerialization
 
         /// <summary>
         /// Returns the full name of the type of the entry object without actually creating it.
-        /// Will return null on failure.  
-        /// </summary>  
+        /// Will return null on failure.
+        /// </summary>
         public string GetEntryTypeName()
         {
             StreamLabel origPosition = reader.Current;
@@ -1180,7 +1181,7 @@ namespace FastSerialization
             if (entryObject == null)
             {
                 // If you are going to deserialize the world, better to do it in order, which means deferring
-                // forward references (since you will get to them eventually).  
+                // forward references (since you will get to them eventually).
                 if (!allowLazyDeserialization)
                 {
                     deferForwardReferences = true;
@@ -1190,7 +1191,7 @@ namespace FastSerialization
                 entryObject = ReadObjectDefintion();
 
                 // If we are reading sequentially, read the position of the objects (will be marked by a
-                // unmatched EndObject tag. 
+                // unmatched EndObject tag.
                 if (!allowLazyDeserialization)
                 {
                     for (; ; )
@@ -1211,7 +1212,7 @@ namespace FastSerialization
             return entryObject;
         }
 
-        // For FromStream method bodies.  
+        // For FromStream method bodies.
         public void Read(byte[] buffer, int offset, int length)
         {
 #if DEBUG
@@ -1423,7 +1424,7 @@ namespace FastSerialization
             }
             else if (tag == Tags.Blob)
             {
-                // If it is a blob skip it and try again (presumably other things point at it.  
+                // If it is a blob skip it and try again (presumably other things point at it.
                 int size = reader.ReadInt32();
                 reader.Skip(size);
                 return ReadObject();
@@ -1566,9 +1567,9 @@ namespace FastSerialization
 
         // forward reference support
         /// <summary>
-        /// Given a forward reference find the StreamLabel (location in the stream) that it points at).  
-        /// Normally this call preserves the current read location, but if you do don't care you can 
-        /// set preserveCurrent as an optimization to make it more efficient.  
+        /// Given a forward reference find the StreamLabel (location in the stream) that it points at).
+        /// Normally this call preserves the current read location, but if you do don't care you can
+        /// set preserveCurrent as an optimization to make it more efficient.
         /// </summary>
         public StreamLabel ResolveForwardReference(ForwardReference reference, bool preserveCurrent = true)
         {
@@ -1629,15 +1630,15 @@ namespace FastSerialization
         }
 
         /// <summary>
-        /// Meant to be called from FromStream.  It returns the version number of the 
+        /// Meant to be called from FromStream.  It returns the version number of the
         /// type being deserialized.   It can be used so that new code can recognizes that it
-        /// is reading an old file format and adjust what it reads.   
+        /// is reading an old file format and adjust what it reads.
         /// </summary>
         public int VersionBeingRead { get { return typeBeingRead.Version; } }
 
         /// <summary>
         /// Meant to be called from FromStream.  It returns the version number of the MinimumReaderVersion
-        /// of the type that was serialized.   
+        /// of the type that was serialized.
         /// </summary>
         public int MinimumReaderVersionBeingRead { get { return typeBeingRead.MinimumReaderVersion; } }
 
@@ -1654,7 +1655,7 @@ namespace FastSerialization
 
         /// <summary>
         /// Registers a creation factory for a type.
-        /// 
+        ///
         /// When the <code>Deserializer</code>encounters a serialized type, it will look for a registered factory or type registration
         /// so that it knows how to construct an empty instance of the type that can be filled.  All non-primitive types
         /// must either be registered by calling RegisterFactory or RegisterType.
@@ -1666,7 +1667,7 @@ namespace FastSerialization
 
         /// <summary>
         /// Registers a creation factory for a type name.
-        /// 
+        ///
         /// When the <code>Deserializer</code>encounters a serialized type, it will look for a registered factory or type registration
         /// so that it knows how to construct an empty instance of the type that can be filled.  All non-primitive types
         /// must either be registered by calling RegisterFactory or RegisterType.
@@ -1678,12 +1679,12 @@ namespace FastSerialization
 
         /// <summary>
         /// Registers a type that can be created by instantiating the parameterless constructor.
-        /// 
+        ///
         /// When the <code>Deserializer</code>encounters a serialized type, it will look for a registered factory or type registration
         /// so that it knows how to construct an empty instance of the type that can be filled.  All non-primitive types
         /// must either be registered by calling RegisterFactory or RegisterType.
         /// </summary>
-        public void RegisterType(Type type)
+        public void RegisterType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             RegisterFactory(type, () =>
             {
@@ -1691,7 +1692,7 @@ namespace FastSerialization
             });
         }
 
-        private static IFastSerializable CreateDefault(Type type)
+        private static IFastSerializable CreateDefault([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             try
             {
@@ -1705,9 +1706,9 @@ namespace FastSerialization
         }
 
         // For FromStream method bodies, reading tagged values (for post V1 field additions)
-        // If the item is present, it is read into 'ret' otherwise 'ret' is left unchanged.   
+        // If the item is present, it is read into 'ret' otherwise 'ret' is left unchanged.
         // If after V1 you always add fields at the end, and you always use WriteTagged() and TryReadTagged()
-        // to write and read them, then you always get perfect backward and forward compatibility! 
+        // to write and read them, then you always get perfect backward and forward compatibility!
         // For things like collections you can do
         //
         // in collectionLen = 0;
@@ -1716,8 +1717,8 @@ namespace FastSerialization
         // for(int i =0; i < collectionLenght; i++)
         //      Read(out this.array[i]);
         //
-        // notice that the reading the array elements is does not use TryReadTagged, but IS 
-        // conditional on the collection length (which is tagged).   
+        // notice that the reading the array elements is does not use TryReadTagged, but IS
+        // conditional on the collection length (which is tagged).
 
         /// <summary>
         /// Try to read tagged value from the stream.  If it is a tagged bool, return int in ret and return true, otherwise leave the cursor unchanged and return false
@@ -1807,9 +1808,9 @@ namespace FastSerialization
         }
         /// <summary>
         /// Try to read the header for a tagged blob of bytes.  If Current points at a tagged
-        /// blob it succeeds and returns the size of the blob (the caller must read or skip 
+        /// blob it succeeds and returns the size of the blob (the caller must read or skip
         /// past it manually) If it is not a tagged blob it returns a size of 0 and resets
-        /// the read pointer to what it was before this method was called.  
+        /// the read pointer to what it was before this method was called.
         /// </summary>
         public int TryReadTaggedBlobHeader()
         {
@@ -1827,12 +1828,12 @@ namespace FastSerialization
         /// </summary>
         public bool TryReadTagged<T>(ref T ret) where T : IFastSerializable
         {
-            // Tagged objects always start with a SkipRegion so we don't need to know its size.  
+            // Tagged objects always start with a SkipRegion so we don't need to know its size.
             Tags tag = ReadTag();
             if (tag == Tags.SkipRegion)
             {
-                ReadForwardReference();     // Skip the forward reference which is part of SkipRegion 
-                ret = (T)ReadObject();      // Read the real object 
+                ReadForwardReference();     // Skip the forward reference which is part of SkipRegion
+                ret = (T)ReadObject();      // Read the real object
                 return true;
             }
             reader.Goto(Current - 1);
@@ -1843,12 +1844,12 @@ namespace FastSerialization
         /// </summary>
         public IFastSerializable TryReadTaggedObject()
         {
-            // Tagged objects always start with a SkipRegion so we don't need to know its size.  
+            // Tagged objects always start with a SkipRegion so we don't need to know its size.
             Tags tag = ReadTag();
             if (tag == Tags.SkipRegion)
             {
-                ReadForwardReference();     // Skip the forward reference which is part of SkipRegion 
-                return ReadObject();        // Read the real object 
+                ReadForwardReference();     // Skip the forward reference which is part of SkipRegion
+                return ReadObject();        // Read the real object
             }
             reader.Goto(Current - 1);
             return null;
@@ -1870,11 +1871,11 @@ namespace FastSerialization
             Goto(ResolveForwardReference(reference, false));
         }
         /// <summary>
-        /// Returns the current read position in the stream. 
+        /// Returns the current read position in the stream.
         /// </summary>
         public StreamLabel Current { get { return reader.Current; } }
         /// <summary>
-        /// Fetch the underlying IStreamReader that the deserializer reads data from 
+        /// Fetch the underlying IStreamReader that the deserializer reads data from
         /// </summary>
         public IStreamReader Reader { get { return reader; } }
         /// <summary>
@@ -1898,10 +1899,10 @@ namespace FastSerialization
             }
         }
 
-        #region private 
+        #region private
         private StreamWriter log;
         [Conditional("DEBUG_SERIALIZE")]
-        // see also Serializer.Log 
+        // see also Serializer.Log
         public void Log(string str)
         {
             if (log == null)
@@ -1971,7 +1972,7 @@ namespace FastSerialization
                 Log("</ReadType>");
 
                 // Create the instance (or get it from the unInitializedForwardReferences if it was created
-                // that way).  
+                // that way).
                 if (forwardReference != ForwardReference.Invalid)
                 {
                     DefineForwardReference(forwardReference, objectLabel);
@@ -2053,27 +2054,27 @@ namespace FastSerialization
 
         private void FindEndTag(SerializationType type, IFastSerializable objectBeingDeserialized)
         {
-            // Skip any extra fields in the object that I don't understand. 
+            // Skip any extra fields in the object that I don't understand.
             Log("<EndTagSearch>");
             int i = 0;
             for (; ; )
             {
                 Debug.Assert(i == 0 || type.Version != 0);
                 StreamLabel objectLabel = reader.Current;
-                // If this fails, the likely culprit is the FromStream of the objectBeingDeserialized. 
+                // If this fails, the likely culprit is the FromStream of the objectBeingDeserialized.
                 Tags tag = ReadTag();
 
                 // TODO this is a hack.   The .NET Core Runtime < V2.1 do not emit an EndObject tag
                 // properly for its V1 EventPipeFile object.   The next object is always data that happens
                 // to be size that is likley to be in the range 0x50-0xFF.  Thus we can fix this
                 // and implicilty insert the EndObject and fix things up.   This is acceptable because
-                // it really does not change non-error behavior.   
+                // it really does not change non-error behavior.
                 // V2.1 of NET Core will ship in 4/2018 so a year or so after that is is probably OK
                 // to remove this hack (basically dropping support for V1 of EventPipeFile)
                 if (type.FullName == "Microsoft.DotNet.Runtime.EventPipeFile" && type.Version <= 2 && (int)tag > 0x50)
                 {
-                    reader.Skip(-1);        // Undo the read of the byte 
-                    tag = Tags.EndObject;   // And make believe we saw the EntObject instead.  
+                    reader.Skip(-1);        // Undo the read of the byte
+                    tag = Tags.EndObject;   // And make believe we saw the EntObject instead.
                 }
 
                 int nesting = 0;
@@ -2108,7 +2109,7 @@ namespace FastSerialization
                         reader.ReadLabel();
                         break;
                     case Tags.SkipRegion:
-                        // Allow the region to be skipped.  
+                        // Allow the region to be skipped.
                         ForwardReference endSkipRef = ReadForwardReference();
                         StreamLabel endSkip = ResolveForwardReference(endSkipRef);
                         reader.Goto(endSkip);
@@ -2132,7 +2133,7 @@ namespace FastSerialization
             }
             done:
             Log("</EndTagSearch>");
-            // TODO would like some redundancy, so that failure happen close to the cause.  
+            // TODO would like some redundancy, so that failure happen close to the cause.
         }
 
         private void DefineForwardReference(ForwardReference forwardReference, StreamLabel definitionLabel)
@@ -2150,7 +2151,7 @@ namespace FastSerialization
                 forwardReferenceDefinitions.Add(StreamLabel.Invalid);
             }
 
-            // If it is already defined, it better match! 
+            // If it is already defined, it better match!
             Debug.Assert(forwardReferenceDefinitions[idx] == StreamLabel.Invalid ||
                 forwardReferenceDefinitions[idx] == definitionLabel);
 
@@ -2180,9 +2181,9 @@ namespace FastSerialization
         internal List<StreamLabel> forwardReferenceDefinitions;
         internal bool allowLazyDeserialization;
         /// <summary>
-        /// When we encounter a forward reference, we can either go to the forward reference table immediately and resolve it 
+        /// When we encounter a forward reference, we can either go to the forward reference table immediately and resolve it
         /// (deferForwardReferences == false), or simply remember that that position needs to be fixed up and continue with
-        /// the deserialization.   This later approach allows 'no seek' deserialization.   This variable which scheme we do. 
+        /// the deserialization.   This later approach allows 'no seek' deserialization.   This variable which scheme we do.
         /// </summary>
         internal bool deferForwardReferences;
         private Dictionary<string, Func<IFastSerializable>> factories;
@@ -2191,26 +2192,26 @@ namespace FastSerialization
 
 
     /// <summary>
-    /// #DeferedRegionOverview. 
-    /// 
+    /// #DeferedRegionOverview.
+    ///
     /// A DeferedRegion help make 'lazy' objects. You will have a DeferedRegion for each block of object you
     /// wish to independently decide whether to deserialize lazily (typically you have one per object however
     /// in the limit you can have one per field, it is up to you).
-    /// 
+    ///
     /// When you call DeferedRegion.Write you give it a delegate that will write all the deferred fields.
     /// The Write operation will place a forward reference in the stream that skips all the fields written,
     /// then the fields themselves, then define the forward reference. This allows readers to skip the
     /// deferred fields.
-    /// 
+    ///
     /// When you call DeferedRegion.Read  you also give it a delegate that reads all the deferred fields.
     /// However when 'Read' instead of reading the fields it
-    /// 
+    ///
     ///     * remembers the deserializer, stream position, and reading delegate.
     ///     * it uses the forward reference to skip the region.
-    ///     
-    /// When DeferedRegion.FinishRead is called, it first checks if the region was already restored. 
+    ///
+    /// When DeferedRegion.FinishRead is called, it first checks if the region was already restored.
     /// If not it used the information to read in the deferred region and returns.  Thus this FinishRead
-    /// should be called before any deferred field is used.  
+    /// should be called before any deferred field is used.
     /// </summary>
 #if FASTSERIALIZATION_PUBLIC
     public
@@ -2218,29 +2219,29 @@ namespace FastSerialization
     struct DeferedRegion
     {
         /// <summary>
-        /// see #DeferedRegionOverview.  
-        /// TODO more 
+        /// see #DeferedRegionOverview.
+        /// TODO more
         /// </summary>
         public void Write(Serializer serializer, Action toStream)
         {
             serializer.Log("<DeferedRegion>\r\n");
             // We actually don't use the this pointer!  We did this for symmetry with Read
             ForwardReference endRegion = serializer.GetForwardReference();
-            serializer.Write(endRegion);        // Allow the reader to skip this. 
-            toStream();                         // Write the deferred data. 
+            serializer.Write(endRegion);        // Allow the reader to skip this.
+            toStream();                         // Write the deferred data.
             serializer.DefineForwardReference(endRegion);
             serializer.Log("</DeferedRegion>\r\n");
         }
         /// <summary>
-        /// See overview in DeferedRegion class comment.  
+        /// See overview in DeferedRegion class comment.
         /// This call indicates that the 'fromStream' delegate  can deserialize a region of the object, which
         /// was serialized with the DeferedRegion.Write method.   The read skips the data for the region (thus
-        /// no objects associated with the region are created in memory) but the deferred object remembers 
-        /// 'fromStream' and will call it when 'FinishRead()' is called. 
+        /// no objects associated with the region are created in memory) but the deferred object remembers
+        /// 'fromStream' and will call it when 'FinishRead()' is called.
         /// </summary>
         public void Read(Deserializer deserializer, Action fromStream)
         {
-            Debug.Assert(this.fromStream == null);      // For now, don't call this more than once. 
+            Debug.Assert(this.fromStream == null);      // For now, don't call this more than once.
             deserializer.Log("<DeferRegionRead StreamLabel=\"0x" + deserializer.Current.ToString("x") + "\">");
             ForwardReference endReference = deserializer.ReadForwardReference();
             this.deserializer = deserializer;
@@ -2253,7 +2254,7 @@ namespace FastSerialization
         /// FinishRead indicates that you need to deserialize the lazy region you defined with the 'Read' method.
         /// If the region has already been deserialized, nothing is done.   Otherwise when you call this
         /// method the current position in the stream is put back to where it was when Read was called and the
-        /// 'fromStream' delegate registered in 'Read' is called to perform the deserialization.    
+        /// 'fromStream' delegate registered in 'Read' is called to perform the deserialization.
         /// </summary>
         public void FinishRead(bool preserveStreamPosition = false)
         {
@@ -2263,7 +2264,7 @@ namespace FastSerialization
             }
         }
         /// <summary>
-        /// Returns true if the FinsihRead() has already been called. 
+        /// Returns true if the FinsihRead() has already been called.
         /// </summary>
         public bool IsFinished { get { return fromStream == null; } }
 
@@ -2277,11 +2278,11 @@ namespace FastSerialization
         public StreamLabel StartPosition { get { return startPosition; } }
         #region private
         /// <summary>
-        /// This helper is just here to ensure that FinishRead gets inlined 
+        /// This helper is just here to ensure that FinishRead gets inlined
         /// </summary>
         private void FinishReadHelper(bool preserveStreamPosition)
         {
-            StreamLabel originalPosition = 0;       // keeps the compiler happy. 
+            StreamLabel originalPosition = 0;       // keeps the compiler happy.
             if (preserveStreamPosition)
             {
                 originalPosition = deserializer.Current;
@@ -2291,7 +2292,7 @@ namespace FastSerialization
             deserializer.Goto(startPosition);
             fromStream();
             deserializer.Log("</DeferRegionFinish>");
-            fromStream = null;      // Indicates we ran it. 
+            fromStream = null;      // Indicates we ran it.
 
             if (preserveStreamPosition)
             {
@@ -2308,10 +2309,10 @@ namespace FastSerialization
     /// <summary>
     /// A type can opt into being serializable by implementing IFastSerializable and a default constructor
     /// (constructor that takes not arguments).
-    /// 
+    ///
     /// Conceptually all clients of IFastSerializable also implement IFastSerializableVersion
     /// however the serializer will assume a default implementation of IFastSerializableVersion (that
-    /// Returns version 1 and assumes all versions are allowed to deserialize it.  
+    /// Returns version 1 and assumes all versions are allowed to deserialize it.
     /// </summary>
 #if FASTSERIALIZATION_PUBLIC
     public
@@ -2322,46 +2323,46 @@ namespace FastSerialization
         /// Given a Serializer, write yourself to the output stream. Conceptually this routine is NOT
         /// responsible for serializing its type information but only its field values. However it is
         /// conceptually responsible for the full transitive closure of its fields.
-        /// 
+        ///
         /// * For primitive fields, the choice is easy, simply call Serializer.Write
         /// * For object fields there is a choice
         ///     * If is is only references by the enclosing object (eg and therefore field's lifetime is
         ///         identical to referencing object), then the Serialize.WritePrivateObject can be
         ///         used.  This skips placing the object in the interning table (that ensures it is written
-        ///         exactly once).  
+        ///         exactly once).
         ///     * Otherwise call Serialize.WriteObject
-        /// * For value type fields (or collections of structs), you serialize the component fields.  
-        /// * For collections, typically you serialize an integer inclusiveCountRet followed by each object. 
+        /// * For value type fields (or collections of structs), you serialize the component fields.
+        /// * For collections, typically you serialize an integer inclusiveCountRet followed by each object.
         /// </summary>
         void ToStream(Serializer serializer);
         /// <summary>
-        /// 
+        ///
         /// Given a reader, and a 'this' instance, made by calling the default constructor, create a fully
         /// initialized instance of the object from the reader stream.  The deserializer provides the extra
-        /// state needed to do this for cyclic object graphs.  
-        /// 
+        /// state needed to do this for cyclic object graphs.
+        ///
         /// Note that it is legal for the instance to cache the deserializer and thus be 'lazy' about when
         /// the actual deserialization happens (thus large persisted strucuture on the disk might stay on the
-        /// disk).  
-        /// 
+        /// disk).
+        ///
         /// Typically the FromStream implementation is an exact mirror of the ToStream implementation, where
-        /// there is a Read() for every Write(). 
+        /// there is a Read() for every Write().
         /// </summary>
         void FromStream(Deserializer deserializer);
     }
 
-    // TODO fix the versioning so you don't have to create an instance of the type on serialization. 
+    // TODO fix the versioning so you don't have to create an instance of the type on serialization.
     /// <summary>
     /// Objects implement IFastSerializableVersion to indicate what the current version is for writing
     /// and which readers can read the current version.   If this interface is not implemented a default is
-    /// provided (assuming version 1 for writing and MinimumVersion = 0).  
-    /// 
+    /// provided (assuming version 1 for writing and MinimumVersion = 0).
+    ///
     /// By default Serializer.WriteObject will place marks when the object ends and always skip to the
     /// end even if the FromStream did not read all the object data.   This allows considerable versioning
     /// flexibility.  Simply by placing the new data at the end of the existing serialization, new versions
     /// of the type can be read by OLD deserializers (new fields will have the value determined by the
     /// default constructor (typically 0 or null).  This makes is relatively easy to keep MinimumVersion = 0
-    /// (the ideal case).  
+    /// (the ideal case).
     /// </summary>
 #if FASTSERIALIZATION_PUBLIC
     public
@@ -2370,8 +2371,8 @@ namespace FastSerialization
     {
         /// <summary>
         /// This is the version number for the serialization CODE (that is the app decoding the format)
-        /// It should be incremented whenever a change is made to IFastSerializable.ToStream and the format 
-        /// is publicly disseminated.  It must not vary from instance to instance.  This is pretty straightforward.   
+        /// It should be incremented whenever a change is made to IFastSerializable.ToStream and the format
+        /// is publicly disseminated.  It must not vary from instance to instance.  This is pretty straightforward.
         /// It defaults to 0
         /// </summary>
         int Version { get; }
@@ -2381,26 +2382,26 @@ namespace FastSerialization
         /// This is the Minimum version of the serialized data that this reader can deserialize.   Trying
         /// to read wire formats strictly smaller (older) than this will fail.   Setting this to the current
         /// version indicates that you don't care about ever reading data generated with an older version
-        /// of the code.  
-        /// 
-        /// If you set this to something other than your current version, you are obligated to ensure that
-        /// your FromStream() method can handle all formats >= than this number. 
+        /// of the code.
         ///
-        /// You can achieve this if you simply use the 'WriteTagged' and 'ReadTagged' APIs in your 'ToStream' 
-        /// and 'FromStream' after your V1 AND you always add new fields to the end of your class.   
-        /// This is the best practice.   Thus  
-        /// 
+        /// If you set this to something other than your current version, you are obligated to ensure that
+        /// your FromStream() method can handle all formats >= than this number.
+        ///
+        /// You can achieve this if you simply use the 'WriteTagged' and 'ReadTagged' APIs in your 'ToStream'
+        /// and 'FromStream' after your V1 AND you always add new fields to the end of your class.
+        /// This is the best practice.   Thus
+        ///
         ///     void IFastSerializable.ToStream(Serializer serializer)
         ///     {
         ///         serializer.Write(Ver_1_Field1);
         ///         serializer.Write(Ver_1_Field2);
         ///         // ...
-        ///         serializer.WriteTagged(Ver_2_Field1);   
+        ///         serializer.WriteTagged(Ver_2_Field1);
         ///         serializer.WriteTagged(Ver_2_Field2);
         ///         // ...
         ///         serializer.WriteTagged(Ver_3_Field1);
         ///     }
-        /// 
+        ///
         ///     void IFastSerializable.FromStream(Deserializer deserializer)
         ///     {
         ///         deserializer.Read(out Ver_1_Field1);
@@ -2409,46 +2410,46 @@ namespace FastSerialization
         ///         deserializer.TryReadTagged(ref Ver_2_Field1);  // If data no present (old format) then Ver_2_Field1 not set.
         ///         deserializer.TryReadTagged(ref Ver_2_Field2);  // ditto...
         ///         // ...
-        ///         deserializer.TryReadTagged(ref Ver_3_Field1);    
-        ///     } 
-        /// 
+        ///         deserializer.TryReadTagged(ref Ver_3_Field1);
+        ///     }
+        ///
         /// Tagging outputs a byte tag in addition to the field itself.   If that is a problem you can also use the
-        /// VersionBeingRead to find out what format is being read and write code that explicitly handles it.  
-        /// Note however that this only gets you Backward compatibility (new readers can read the old format, but old readers 
-        /// will still not be able to read the new format), which is why this is not the preferred method.  
-        /// 
+        /// VersionBeingRead to find out what format is being read and write code that explicitly handles it.
+        /// Note however that this only gets you Backward compatibility (new readers can read the old format, but old readers
+        /// will still not be able to read the new format), which is why this is not the preferred method.
+        ///
         ///     void IFastSerializable.FromStream(Deserializer deserializer)
         ///     {
         ///         // We assume that MinVersionCanRead == 4
-        ///         // Deserialize things that are common to all versions (4 and earlier) 
-        ///         
+        ///         // Deserialize things that are common to all versions (4 and earlier)
+        ///
         ///         if (deserializer.VersionBeingRead >= 5)
         ///         {
         ///             deserializer.Read(AVersion5Field);
         ///             if (deserializer.VersionBeingRead >= 5)
-        ///                 deserializer.ReadTagged(AVersion6Field);    
+        ///                 deserializer.ReadTagged(AVersion6Field);
         ///         }
         ///     }
         /// </summary>
         int MinimumVersionCanRead { get; }
         /// <summary>
         /// This is the minimum version of a READER that can read this format.   If you don't support forward
-        /// compatibility (old readers reading data generated by new readers) then this should be set to 
-        /// the current version.  
-        /// 
+        /// compatibility (old readers reading data generated by new readers) then this should be set to
+        /// the current version.
+        ///
         /// If you set this to something besides the current version you are obligated to ensure that your
         /// ToStream() method ONLY adds fields at the end, AND that all of those added fields use the WriteTagged()
         /// operations (which tags the data in a way that old readers can skip even if they don't know what it is)
-        /// In addition your FromStream() method must read these with the ReadTagged() deserializer APIs.  
-        /// 
-        /// See the comment in front of MinimumVersionCanRead for an example of using the WriteTagged() and ReadTagged() 
-        /// methods. 
+        /// In addition your FromStream() method must read these with the ReadTagged() deserializer APIs.
+        ///
+        /// See the comment in front of MinimumVersionCanRead for an example of using the WriteTagged() and ReadTagged()
+        /// methods.
         /// </summary>
         int MinimumReaderVersion { get; }
     }
 
     /// <summary>
-    /// Thrown when the deserializer detects an error. 
+    /// Thrown when the deserializer detects an error.
     /// </summary>
 #if FASTSERIALIZATION_PUBLIC
     public
@@ -2456,7 +2457,7 @@ namespace FastSerialization
     class SerializationException : Exception
     {
         /// <summary>
-        /// Thown when a error occurs in serialization.  
+        /// Thown when a error occurs in serialization.
         /// </summary>
         public SerializationException(string message)
             : base(message)
@@ -2469,15 +2470,15 @@ namespace FastSerialization
     {
         /// <summary>
         /// This is the version represents the version of both the reading
-        /// code and the version for the format for this type in serialized form.  
-        /// See IFastSerializableVersion for more.  
+        /// code and the version for the format for this type in serialized form.
+        /// See IFastSerializableVersion for more.
         /// </summary>
         public int Version { get { return version; } }
         /// <summary>
-        /// The version the the smallest (oldest) reader code that can read 
-        /// this file format.  Readers strictly less than this are rejected.  
-        /// This allows support for forward compatbility.   
-        /// See IFastSerializableVersion for more.  
+        /// The version the the smallest (oldest) reader code that can read
+        /// this file format.  Readers strictly less than this are rejected.
+        /// This allows support for forward compatbility.
+        /// See IFastSerializableVersion for more.
         /// </summary>
         public int MinimumReaderVersion { get { return minimumReaderVersion; } }
         public string FullName { get { return fullName; } }
@@ -2515,12 +2516,12 @@ namespace FastSerialization
             factory = deserializer.GetFactory(fullName);
             // This is only here for efficiency (you don't have to cast every instance)
             // since most objects won't be versioned.  However it means that you have to
-            // opt into versioning or you will break on old formats.  
+            // opt into versioning or you will break on old formats.
             if (minimumReaderVersion > 0)
             {
                 IFastSerializableVersion instance = factory() as IFastSerializableVersion;
 
-                // File version must meet minimum version requirements. 
+                // File version must meet minimum version requirements.
                 if (instance != null && !(version >= instance.MinimumVersionCanRead))
                 {
                     throw new SerializationException(string.Format("File format is version {0} App accepts formats >= {1}.",
@@ -2550,15 +2551,15 @@ namespace FastSerialization
 
     internal enum Tags : byte
     {
-        Error,              // To improve debugabilty, 0 is an illegal tag.  
-        NullReference,      // Tag for a null object forwardReference. 
-        ObjectReference,    // followed by StreamLabel 
+        Error,              // To improve debugabilty, 0 is an illegal tag.
+        NullReference,      // Tag for a null object forwardReference.
+        ObjectReference,    // followed by StreamLabel
         ForwardReference,   // followed by an index (Int32) into the Forward forwardReference array and a Type object
         BeginObject,        // followed by Type object, ToStream data, tagged EndObject
-        BeginPrivateObject, // Like beginObject, but not placed in interning table on deserialiation 
-        EndObject,          // placed after an object to mark its end (for V2 fields, and debugability). 
+        BeginPrivateObject, // Like beginObject, but not placed in interning table on deserialiation
+        EndObject,          // placed after an object to mark its end (for V2 fields, and debugability).
         ForwardDefinition,  // followed by a forward forwardReference index and an Object definition (BeginObject)
-        // This is used when a a forward forwardReference is actually defined.  
+        // This is used when a a forward forwardReference is actually defined.
 
         // In important invarient is that you must always be able to 'skip' to the next object in the
         // serialization stream.  For the first version, this happens naturally, but if you add
@@ -2568,19 +2569,19 @@ namespace FastSerialization
         // reading objects until it finds an unmatched 'EndObject' tag.  Thus even though the V1
         // FromStream call has no knowledge of the extra fields, they are properly skipped.   For this
         // to work all most V1 fields must be tagged (so we know how to skip them even if we don't
-        // understand what they are for).  That is what these tags are for.  
-        // 
+        // understand what they are for).  That is what these tags are for.
+        //
         // ToStream routines are free to encode all fields with tags, which allows a bit more
         // debuggability, because the object's data can be decoded even if the Deserializer is not
-        // available.  
+        // available.
         Byte,
         Int16,
         Int32,
         Int64,
         SkipRegion,
-        String,             // Size of string (in bytes) followed by UTF8 bytes.  
+        String,             // Size of string (in bytes) followed by UTF8 bytes.
         Blob,
-        Limit,              // Just past the last valid tag, used for asserts.  
+        Limit,              // Just past the last valid tag, used for asserts.
     }
     #endregion
 }

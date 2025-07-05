@@ -2,6 +2,7 @@
 using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -10,10 +11,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     /// <summary>
     /// This parser knows how to decode Windows Software Trace Preprocessor (WPP) events.  In order to decode
-    /// the events it needs access to the TMF files that describe the events (these are created from the PDB at 
-    /// build time). 
+    /// the events it needs access to the TMF files that describe the events (these are created from the PDB at
+    /// build time).
     /// <br/>
-    /// You will generally use this for the 'FormattedMessage' property of the event.  
+    /// You will generally use this for the 'FormattedMessage' property of the event.
     /// </summary>
     public sealed class WppTraceEventParser : ExternalTraceEventParser
     {
@@ -21,8 +22,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// Construct a new WPPTraceEventParser that is attached to 'source'.   Once you do this the source
         /// will understand WPP events. In particular you can subscribe to the  Wpp.All event to get the
         /// stream of WPP events in the source. For WppTraceEventParser to function, it needs the TMF
-        /// files for the events it will decode. You should pass the directory to find these TMF files 
-        /// in 'TMFDirectory'.  Each file should have the form of a GUID.tmf.   
+        /// files for the events it will decode. You should pass the directory to find these TMF files
+        /// in 'TMFDirectory'.  Each file should have the form of a GUID.tmf.
         /// </summary>
         /// <param name="source"></param>
         /// <param name="TMFDirectory"></param>
@@ -36,7 +37,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         internal override unsafe DynamicTraceEventData TryLookup(TraceEvent unknownEvent)
         {
-            // WPP is always classic 
+            // WPP is always classic
             if (unknownEvent.IsClassicProvider)
             {
                 var taskGuid = unknownEvent.taskGuid;
@@ -45,7 +46,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     var templates = CreateTemplatesForTMFFile(taskGuid, tmfPath);
 
-                    // Register all the templates in the file, and if we found the specific one we are looking for return that one. 
+                    // Register all the templates in the file, and if we found the specific one we are looking for return that one.
                     DynamicTraceEventData ret = null;
                     foreach (var template in templates)
                     {
@@ -58,7 +59,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             OnNewEventDefintion(template, false);
                         }
                     }
-                    // If we fail, remove the file so we don't ever try to this Task's events again.  
+                    // If we fail, remove the file so we don't ever try to this Task's events again.
                     m_tmfDataFilePathsByFileNameBase[taskGuid.ToString()] = null;
                     return ret;
                 }
@@ -85,7 +86,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         private struct TypeAndFormat
         {
-            public TypeAndFormat(Type Type, IDictionary<long, string> Map) { this.Type = Type; this.Map = Map; }
+            public TypeAndFormat([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type Type, IDictionary<long, string> Map) { this.Type = Type; this.Map = Map; }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             public Type Type;
             public IDictionary<long, string> Map;
         }
@@ -169,7 +172,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             var eventId = int.Parse(m.Groups[3].Value);
                             var formatStr = m.Groups[4].Value;
 
-                            // Substitute in %!NAME! for their values as defined in the tail  
+                            // Substitute in %!NAME! for their values as defined in the tail
                             if (formatStr.Contains("%!"))
                             {
                                 var tail = m.Groups[5].Value;
@@ -187,7 +190,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     if (m1.Success)
                                     {
                                         varValue = m1.Groups[1].Value;
-                                        varValue = Regex.Replace(varValue, @" \w+=.*", "");     // Remove things that look like the next key-value    
+                                        varValue = Regex.Replace(varValue, @" \w+=.*", "");     // Remove things that look like the next key-value
                                     }
                                     formatStr = formatStr.Replace("%!" + varName + "!", varValue);
                                 }
@@ -200,7 +203,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
 
                             var template = new DynamicTraceEventData(null, eventId, 0, fileName + "/" + m.Groups[2].Value, taskGuid, 0, "", providerGuid, eventProviderName);
-                            template.lookupAsWPP = true;                // Use WPP lookup conventions. 
+                            template.lookupAsWPP = true;                // Use WPP lookup conventions.
 
                             parameterTypes.Clear();
 
@@ -225,7 +228,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     IDictionary<long, string> map = null;
                                     if (typeStr == "String")
                                     {
-                                        type = typeof(StringBuilder);       // We use StringBuild to represent a ANSI string 
+                                        type = typeof(StringBuilder);       // We use StringBuild to represent a ANSI string
                                     }
                                     else if (typeStr == "WString")
                                     {
@@ -239,7 +242,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     {
                                         type = typeof(int);
                                         // By making map non-null we indicate that this is a enum, but we don't add any enum
-                                        // mappings, which makes it print as Hex.  Thus we are just saying 'print as hex'  
+                                        // mappings, which makes it print as Hex.  Thus we are just saying 'print as hex'
                                         map = new SortedDictionary<long, string>();
                                     }
                                     else if (typeStr == "Double")
@@ -250,7 +253,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     {
                                         type = typeof(IntPtr);
                                     }
-                                    else if (typeStr.StartsWith("Enum("))       // TODO more support for enums 
+                                    else if (typeStr.StartsWith("Enum("))       // TODO more support for enums
                                     {
                                         type = typeof(int);
                                     }
@@ -306,12 +309,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 }
                             }
 
-                            formatStr = formatStr.Replace("%0", "");    // TODO What is this?  Why is it here?  
+                            formatStr = formatStr.Replace("%0", "");    // TODO What is this?  Why is it here?
                             formatStr = Regex.Replace(formatStr, @"%(\d+)!(\w?)\w*!", delegate (Match match)
                             {
                                 var argNum = int.Parse(match.Groups[1].Value) - 10;     // 0 first arg ...
 
-                                // If it has a !x qualifer after it change th map so it will be decoded as hex.  
+                                // If it has a !x qualifer after it change th map so it will be decoded as hex.
                                 if (match.Groups[2].Value == "x" && 0 <= argNum && argNum < template.payloadFetches.Length &&
                                     template.payloadFetches[argNum].Map == null)
                                 {
