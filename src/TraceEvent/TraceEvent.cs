@@ -1566,6 +1566,9 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Create a template with the given event meta-data.  Used by TraceParserGen.
         /// </summary>
+        [UnconditionalSuppressMessage("Trimming", "IL3050",
+            Justification = "Warning is due to inheriting from DynamicObject, but there is only a problem if the caller uses dynamic, in which case they will receive a separate warning."
+        )]
         protected TraceEvent(int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
         {
 

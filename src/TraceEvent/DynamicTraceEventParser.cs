@@ -1712,6 +1712,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     serializer.Write((byte)0);
                 }
             }
+
+#if NET9_0_OR_GREATER
+            /// <summary>
+            /// Feature switch that turns off deserialization of any types that are not primitive types.
+            /// Specifically, the <see cref="PayloadFetch.Type"/> property must either be a primitive type,
+            /// or null.
+            /// </summary>
+            internal static class PrimitiveOnlyDeserialization
+            {
+                private const string FeatureSwitchName = "PrimitiveOnlyDeserialization.IsDisabled";
+
+
+                [FeatureSwitchDefinition(FeatureSwitchName)]
+                [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+#pragma warning disable IL4000 // The feature switch should be make the return value match RequiresUnreferencedCode
+                // We reverse the logic here because FeatureGuards must always return false when the target type is not available.
+                public static bool IsDisabled => AppContext.TryGetSwitch(FeatureSwitchName, out bool disabled) ? disabled : true;
+#pragma warning restore IL4000
+            }
+#endif
+
             public void FromStream(Deserializer deserializer)
             {
                 Offset = (ushort)deserializer.ReadInt16();
@@ -1719,7 +1740,38 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 var typeName = deserializer.ReadString();
                 if (typeName != null)
                 {
+#if NET9_0_OR_GREATER
+                    if (PrimitiveOnlyDeserialization.IsDisabled)
+                    {
+                        Type = Type.GetType(typeName);
+                    }
+                    else
+                    {
+                        Type = typeName switch
+                        {
+                            "System.Char" => typeof(char),
+                            "System.String" => typeof(string),
+                            "System.Int32" => typeof(int),
+                            "System.Int64" => typeof(long),
+                            "System.Boolean" => typeof(bool),
+                            "System.Double" => typeof(double),
+                            "System.Single" => typeof(float),
+                            "System.Byte" => typeof(byte),
+                            "System.SByte" => typeof(sbyte),
+                            "System.UInt16" => typeof(ushort),
+                            "System.Int16" => typeof(short),
+                            "System.UInt32" => typeof(uint),
+                            "System.UInt64" => typeof(ulong),
+                            "System.Guid" => typeof(Guid),
+                            "System.DateTime" => typeof(DateTime),
+                            "System.IntPtr" => typeof(IntPtr),
+                            "Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData.StructValue" => typeof(StructValue),
+                            _ => null,
+                        };
+                    }
+#else
                     Type = Type.GetType(typeName);
+#endif
                 }
 
                 var fetchType = deserializer.ReadByte();
@@ -2009,7 +2061,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             id = "Stream";
             int len = Math.Min((int)(manifestStream.Length - manifestStream.Position), manifestLen);
             serializedManifest = new byte[len];
+#if NET
             manifestStream.ReadExactly(serializedManifest, 0, len);
+#else
+            manifestStream.Read(serializedManifest, 0, len);
+#endif
+
         }
         /// <summary>
         /// Read a ProviderManifest from a file.

@@ -160,6 +160,7 @@
 
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.nuspec" />
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.props" />
+    <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.targets" />
   </ItemGroup>
 
 
