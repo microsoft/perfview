@@ -1567,7 +1567,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-            public Type Type;
+            public Type Type;    // currently null for arrays
 
             // Non null of 'Type' is a enum
             public IDictionary<long, string> Map
