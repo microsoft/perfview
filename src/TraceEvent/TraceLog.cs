@@ -8542,6 +8542,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                             moduleFileIndex = module.ModuleFile.ModuleFileIndex;
                             methodIndex = methods.NewMethod(data.Name, moduleFileIndex, (int)data.Id);
                         }
+                        else
+                        {
+                            // We should always get a loadedModule here because if we have a symbol, then we should have a module that contains it.
+                            // Assert so that we can detect bugs here during development.
+                            Debug.Assert(false, "loadedModule is missing for symbol");
+                        }
                         
                         // When universal traces support re-use of address space, we'll need to support it here.
                     }
