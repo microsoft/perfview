@@ -7121,13 +7121,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // Get or create the loaded module.
             TraceLoadedModule loadedModule = FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
-            if (loadedModule == null)
+            if (loadedModule == null || loadedModule.ImageBase != data.StartAddress)
             {   
                 // The module file is what is used when looking up the module for an arbitrary address, so it must save both the start address and image size.
                 loadedModule = new TraceLoadedModule(process, moduleFile, data.StartAddress);
                 
-                // All mappings are enumerated at the beginning of the trace.
-                loadedModule.loadTimeQPC = process.Log.sessionStartTimeQPC;
+                // Set the timestamp from the mapping data
+                loadedModule.loadTimeQPC = data.TimeStampQPC;
                 
                 InsertAndSetOverlap(index + 1, loadedModule);
             }
@@ -7138,6 +7138,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     loadedModule.ModuleFile.imageSize = newImageSize;
                 }
+                // Update the timestamp to match the new mapping
+                loadedModule.loadTimeQPC = data.TimeStampQPC;
             }
 
             // Get or create a managed module.  This module is the container for dynamic symbols.
