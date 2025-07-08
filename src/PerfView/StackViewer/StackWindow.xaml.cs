@@ -1291,13 +1291,7 @@ namespace PerfView
 
         private void DoFindInByName(object sender, ExecutedRoutedEventArgs e)
         {
-            var selectedNodes = GetSelectedNodes();
-            if (selectedNodes.Count == 0)
-            {
-                return; // No nodes selected, nothing to do
-            }
-
-            var displayName = selectedNodes.Single().DisplayName;
+            var displayName = GetSelectedNodes().Single().DisplayName;
 
             for (int i = 0; i < m_byNameView.Count; i++)
             {
@@ -1322,13 +1316,7 @@ namespace PerfView
 
         private void DoFindInCallTreeName(object sender, ExecutedRoutedEventArgs e)
         {
-            var selectedNodes = GetSelectedNodes();
-            if (selectedNodes.Count == 0)
-            {
-                return; // No nodes selected, nothing to do
-            }
-
-            var displayName = Regex.Escape(selectedNodes.Single().DisplayName);
+            var displayName = Regex.Escape(GetSelectedNodes().Single().DisplayName);
 
             CallTreeTab.IsSelected = true;
             FindTextBox.Text = displayName; // F3 support
@@ -1337,37 +1325,19 @@ namespace PerfView
 
         private void DoViewInCallerCallee(object sender, RoutedEventArgs e)
         {
-            var selectedNodes = GetSelectedNodes();
-            if (selectedNodes.Count == 0)
-            {
-                return; // No nodes selected, nothing to do
-            }
-
-            SetFocus(selectedNodes.Single());
+            SetFocus(GetSelectedNodes().Single());
 
             CallerCalleeTab.IsSelected = true;
         }
         private void DoViewInCallers(object sender, ExecutedRoutedEventArgs e)
         {
-            var selectedNodes = GetSelectedNodes();
-            if (selectedNodes.Count == 0)
-            {
-                return; // No nodes selected, nothing to do
-            }
-
-            SetFocus(selectedNodes.Single());
+            SetFocus(GetSelectedNodes().Single());
 
             CallersTab.IsSelected = true;
         }
         private void DoViewInCallees(object sender, ExecutedRoutedEventArgs e)
         {
-            var selectedNodes = GetSelectedNodes();
-            if (selectedNodes.Count == 0)
-            {
-                return; // No nodes selected, nothing to do
-            }
-
-            SetFocus(selectedNodes.Single());
+            SetFocus(GetSelectedNodes().Single());
 
             CalleesTab.IsSelected = true;
         }
@@ -2150,13 +2120,7 @@ namespace PerfView
         }
         private void DoGotoSource(object sender, ExecutedRoutedEventArgs e)
         {
-            var selectedNodes = GetSelectedNodes();
-            if (selectedNodes.Count == 0)
-            {
-                return; // No nodes selected, nothing to do
-            }
-
-            var asCallTreeNodeBase = selectedNodes.Single();
+            var asCallTreeNodeBase = GetSelectedNodes().Single();
             var cellText = asCallTreeNodeBase.DisplayName;
 
             if (cellText.EndsWith("!?"))
@@ -2628,7 +2592,13 @@ namespace PerfView
         private void ByName_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             e.Handled = true;
-            DoViewInCallers(sender, null);
+            
+            // Check if a single node is selected before proceeding
+            // This mirrors the CanExecute check for ViewInCallersCommand
+            if (GetSelectedNodes().Count == 1)
+            {
+                DoViewInCallers(sender, null);
+            }
         }
         internal void DataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
