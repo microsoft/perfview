@@ -535,7 +535,11 @@ namespace PerfView
                     }
                     else
                     {
-                        parsedArgs.OSHeapExe = Path.ChangeExtension(parsedArgs.OSHeapExe, ".exe");
+                        // ETW expects the exe name without the .exe extension, so strip it if present
+                        if (parsedArgs.OSHeapExe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                        {
+                            parsedArgs.OSHeapExe = parsedArgs.OSHeapExe.Substring(0, parsedArgs.OSHeapExe.Length - 4);
+                        }
                         heapSession.EnableWindowsHeapProvider(parsedArgs.OSHeapExe);
                         LogFile.WriteLine("[Enabling heap logging for process with EXE {0} to : {1}]", parsedArgs.OSHeapExe, Path.GetFullPath(heapFileName));
                     }
