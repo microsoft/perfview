@@ -256,13 +256,7 @@ namespace PerfView
         /// <returns>This instance for fluent chaining.</returns>
         public static SymbolReaderAuthenticationHandler AddSymwebAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, bool silent = false)
         {
-            DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
-            {
-                ExcludeInteractiveBrowserCredential = silent,
-                ExcludeManagedIdentityCredential = true // This is not designed to be used in a service.
-            };
-
-            return httpHandler.AddHandler(new SymwebHandler(log, new DefaultAzureCredential(options)));
+            return httpHandler.AddHandler(new SymwebHandler(log, CreateTokenCredential()));
         }
 
         /// <summary>
@@ -285,13 +279,7 @@ namespace PerfView
         /// <returns>This instance for fluent chaining.</returns>
         public static SymbolReaderAuthenticationHandler AddAzureDevOpsAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, bool silent = false)
         {
-            DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
-            {
-                ExcludeInteractiveBrowserCredential = silent,
-                ExcludeManagedIdentityCredential = true // This is not designed to be used in a service.
-            };
-
-            return httpHandler.AddHandler(new AzureDevOpsHandler(log, new DefaultAzureCredential(options)));
+            return httpHandler.AddHandler(new AzureDevOpsHandler(log, CreateTokenCredential()));
         }
 
         /// <summary>
@@ -306,6 +294,13 @@ namespace PerfView
 
         public static SymbolReaderAuthenticationHandler AddBasicHttpAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, Window mainWindow)
             => httpHandler.AddHandler(new BasicHttpAuthHandler(log));
+
+        private static ChainedTokenCredential CreateTokenCredential()
+        {
+            return new ChainedTokenCredential(
+                new VisualStudioCredential(),
+                new InteractiveBrowserCredential());
+        }
 
         /// <summary>
         /// Get the HWND of the given WPF window in a way that honors WPF

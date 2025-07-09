@@ -60,12 +60,9 @@ internal class Program
             string inputSpec = null;
             int minSecForTrigger = -1;
 
-            DefaultAzureCredential symbolsTokenCredential = new DefaultAzureCredential(
-                new DefaultAzureCredentialOptions()
-                {
-                    ExcludeInteractiveBrowserCredential = false,
-                    ExcludeManagedIdentityCredential = true,
-                });
+            ChainedTokenCredential symbolsTokenCredential = new ChainedTokenCredential(
+                new VisualStudioCredential(),
+                new InteractiveBrowserCredential());
 
             var dumper = new GCHeapDumper(Console.Out, symbolsTokenCredential);
 
