@@ -538,21 +538,6 @@ namespace PerfView
             });
         }
 
-        private void DoHide(object sender, RoutedEventArgs e)
-        {
-            // TODO need count of all active children
-            if (StackWindow.StackWindows.Count > 0)
-            {
-                Visibility = Visibility.Hidden;
-            }
-        }
-
-        private void CanHide(object sender, CanExecuteRoutedEventArgs e)
-        {
-            // TODO need count of all active children
-            e.CanExecute = StackWindow.StackWindows.Count > 0;
-        }
-
         private void DoUserCommand(object sender, RoutedEventArgs e)
         {
             if (m_UserDefineCommandDialog == null)
@@ -1081,8 +1066,6 @@ namespace PerfView
         public static RoutedUICommand UnZipCommand = new RoutedUICommand("UnZip", "UnZip", typeof(MainWindow));
         public static RoutedUICommand ItemHelpCommand = new RoutedUICommand("Help on Item", "ItemHelp", typeof(MainWindow));
         public static RoutedUICommand OpenInBrowserCommand = new RoutedUICommand("Open in Browser", "OpenInBrowser", typeof(MainWindow));
-        public static RoutedUICommand HideCommand = new RoutedUICommand("Hide", "Hide", typeof(MainWindow),
-            new InputGestureCollection() { new KeyGesture(Key.H, ModifierKeys.Alt) });
         public static RoutedUICommand UserCommand = new RoutedUICommand("User Command", "UserCommand", typeof(MainWindow),
     new InputGestureCollection() { new KeyGesture(Key.U, ModifierKeys.Alt) });
         public static RoutedUICommand RefreshDirCommand = new RoutedUICommand("Refresh Dir", "RefreshDir",

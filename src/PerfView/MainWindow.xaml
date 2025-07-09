@@ -29,7 +29,6 @@
         <CommandBinding Command="{x:Static src:MainWindow.MergeCommand}" Executed="DoMerge"/>
         <CommandBinding Command="{x:Static src:MainWindow.ZipCommand}" Executed="DoZip"/>
         <CommandBinding Command="{x:Static src:MainWindow.UnZipCommand}" Executed="DoUnZip"/>
-        <CommandBinding Command="{x:Static src:MainWindow.HideCommand}" Executed="DoHide" CanExecute="CanHide" />
         <CommandBinding Command="{x:Static src:MainWindow.UserCommand}" Executed="DoUserCommand"/>
         <CommandBinding Command="{x:Static src:MainWindow.RefreshDirCommand}" Executed="DoRefreshDir"/>
         <CommandBinding Command="{x:Static src:MainWindow.OpenCommand}" Executed="DoOpen"/>
@@ -79,15 +78,6 @@
                     <MenuItem Header="Set Symbol _Path" Click="DoSetSymbolPath" ToolTip="Sets the locations to look for symbolic information (PDB files)."/>
                     <MenuItem Header="_User Command" Command="{x:Static src:MainWindow.UserCommand}" ToolTip="Run a User Defined Command."/>
                     <MenuItem Header="Go to Directory" Command="{x:Static src:MainWindow.FocusDirectoryCommand}" ToolTip="Focus and select the directory textbox."/>
-                    <Separator IsTabStop="False" Focusable="False" IsEnabled="False" 
-                              AutomationProperties.IsKeyboardFocusable="False" 
-                              AutomationProperties.IsContentElement="False"
-                              AutomationProperties.Name=""/>
-                    <MenuItem Header="_Hide" Command="{x:Static src:MainWindow.HideCommand}" ToolTip="Hides the current window (can reopen using windows explorer)"/>
-                    <Separator IsTabStop="False" Focusable="False" IsEnabled="False" 
-                              AutomationProperties.IsKeyboardFocusable="False" 
-                              AutomationProperties.IsContentElement="False"
-                              AutomationProperties.Name=""/>
                     <MenuItem Header="_Exit" Click="DoExit"/>
                 </MenuItem>
                 <MenuItem Header="_Collect">
