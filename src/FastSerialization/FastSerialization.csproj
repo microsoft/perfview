@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net9.0;netstandard2.0</TargetFrameworks>
     <RootNamespace>Microsoft.Diagnostics.FastSerialization</RootNamespace>
     <AssemblyName>Microsoft.Diagnostics.FastSerialization</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -14,6 +14,9 @@
     <Version>$(FastSerializationVersion)</Version>
     <FileVersion>$(FastSerializationVersion)</FileVersion>
     <InformationalVersion>$(FastSerializationVersion)</InformationalVersion>
+    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">true</IsAotCompatible>
+    <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
+    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -27,6 +30,10 @@
   <ItemGroup>
     <!-- *** SourceLink Support *** -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All" />
+    <PackageReference Include="PolySharp" Version="1.14.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
 
   <!-- ******************* Signing Support *********************** -->

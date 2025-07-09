@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -160,23 +161,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         private void ReadHeader()
         {
             int bytes = _ctfStream.EventHeader.GetSize();
-        }
-
-        private bool ReadStruct<T>(out T result) where T : struct
-        {
-            int size = Marshal.SizeOf(typeof(T));
-            int read = TryReadExactlyCount(_buffer, 0, size);
-
-            _position += read;
-
-            if (size != read)
-            {
-                result = default(T);
-                return false;
-            }
-
-            result = (T)Marshal.PtrToStructure(_handle.AddrOfPinnedObject(), typeof(T));
-            return true;
         }
 
         public override bool CanRead
