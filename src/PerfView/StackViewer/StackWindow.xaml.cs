@@ -2592,8 +2592,15 @@ namespace PerfView
         private void ByName_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             e.Handled = true;
-            DoViewInCallers(sender, null);
+
+            // Check if a single node is selected before proceeding
+            // Exactly one node must be selected in order to view callers.
+            if (GetSelectedNodes().Count == 1)
+            {
+                DoViewInCallers(sender, null);
+            }
         }
+
         internal void DataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             var uiElement = sender as UIElement;
