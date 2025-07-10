@@ -2592,9 +2592,9 @@ namespace PerfView
         private void ByName_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             e.Handled = true;
-            
+
             // Check if a single node is selected before proceeding
-            // This mirrors the CanExecute check for ViewInCallersCommand
+            // Exactly one node must be selected in order to view callers.
             if (GetSelectedNodes().Count == 1)
             {
                 DoViewInCallers(sender, null);
