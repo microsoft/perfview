@@ -2600,6 +2600,7 @@ namespace PerfView
                 DoViewInCallers(sender, null);
             }
         }
+
         internal void DataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             var uiElement = sender as UIElement;
