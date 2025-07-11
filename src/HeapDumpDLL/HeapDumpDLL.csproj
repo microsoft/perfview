@@ -1,90 +1,90 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>net462;netstandard20</TargetFrameworks>
-    <RootNamespace>Microsoft.Diagnostics.HeapDump</RootNamespace>
-    <AssemblyName>Microsoft.Diagnostics.HeapDump</AssemblyName>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+ <PropertyGroup>
+  <TargetFrameworks>net462;netstandard20</TargetFrameworks>
+  <RootNamespace>Microsoft.Diagnostics.HeapDump</RootNamespace>
+  <AssemblyName>Microsoft.Diagnostics.HeapDump</AssemblyName>
+  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
-    <Company>Microsoft</Company>
-    <Description>General Utility library</Description>
-    <Copyright>Copyright © Microsoft 2010</Copyright>
-    <Version>$(HeapDumpDllVersion)</Version>
-  </PropertyGroup>
+  <Company>Microsoft</Company>
+  <Description>General Utility library</Description>
+  <Copyright>Copyright © Microsoft 2010</Copyright>
+  <Version>$(HeapDumpDllVersion)</Version>
+ </PropertyGroup>
 
-  <PropertyGroup>
-    <DefineConstants>$(DefineConstants);UTILITIES_PUBLIC</DefineConstants>
-  </PropertyGroup>
+ <PropertyGroup>
+  <DefineConstants>$(DefineConstants);UTILITIES_PUBLIC</DefineConstants>
+ </PropertyGroup>
 
-  <PropertyGroup>
-    <HighEntropyVA>true</HighEntropyVA>
-  </PropertyGroup>
+ <PropertyGroup>
+  <HighEntropyVA>true</HighEntropyVA>
+ </PropertyGroup>
 
-  <ItemGroup>
-    <!-- *** SourceLink Support *** -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All" />
-  </ItemGroup>
+ <ItemGroup>
+  <!-- *** SourceLink Support *** -->
+  <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+ </ItemGroup>
 
-  <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'">
-    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' == 'local'">
-    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
-    <Reference Include="Microsoft.Diagnostics.Runtime">
-      <HintPath>$(MicrosoftDiagnosticsRuntimePath)</HintPath>
-    </Reference>
-  </ItemGroup>
+ <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'">
+  <PackageReference Include="Microsoft.Diagnostics.Runtime" />
+ </ItemGroup>
+ <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' == 'local'">
+  <PackageReference Include="System.Collections.Immutable" />
+  <Reference Include="Microsoft.Diagnostics.Runtime">
+   <HintPath>$(MicrosoftDiagnosticsRuntimePath)</HintPath>
+  </Reference>
+ </ItemGroup>
 
-  <!-- Override the version of System.Text.Json that is transitively included to address security issues. -->
-  <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
-  </ItemGroup>
+ <!-- Override the version of System.Text.Json that is transitively included to address security issues. -->
+ <ItemGroup>
+  <PackageReference Include="System.Text.Json" />
+ </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
-    <ProjectReference Include="..\MemoryGraph\MemoryGraph.csproj" />
-    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
-    <ProjectReference Include="..\Utilities\Utilities.csproj" />
-  </ItemGroup>
+ <ItemGroup>
+  <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
+  <ProjectReference Include="..\MemoryGraph\MemoryGraph.csproj" />
+  <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+  <ProjectReference Include="..\Utilities\Utilities.csproj" />
+ </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="..\HeapDump\GCHeapDump.cs" />
-    <Compile Include="..\HeapDump\Utilities\*.cs" />
-    <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
-    <Compile Include="..\HeapDumpCommon\GCHeapDumpNames.cs" />
-    <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
-    <Compile Include="..\PerfView\memory\JavaScriptDumpGraph.cs" />
-    <Compile Include="..\PerfView\memory\JavaScriptHeapDumper.cs" />
-    <Compile Include="..\PerfView\PerfViewLogger.cs" />
-    <Compile Include="..\ETWHeapDump\DotNetHeapDumper.cs" />
-    <Compile Include="..\ETWHeapDump\DotNetHeapDumpGraphReader.cs" />
-  </ItemGroup>
+ <ItemGroup>
+  <Compile Include="..\HeapDump\GCHeapDump.cs" />
+  <Compile Include="..\HeapDump\Utilities\*.cs" />
+  <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
+  <Compile Include="..\HeapDumpCommon\GCHeapDumpNames.cs" />
+  <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
+  <Compile Include="..\PerfView\memory\JavaScriptDumpGraph.cs" />
+  <Compile Include="..\PerfView\memory\JavaScriptHeapDumper.cs" />
+  <Compile Include="..\PerfView\PerfViewLogger.cs" />
+  <Compile Include="..\ETWHeapDump\DotNetHeapDumper.cs" />
+  <Compile Include="..\ETWHeapDump\DotNetHeapDumpGraphReader.cs" />
+ </ItemGroup>
 
-  <!-- Only include these files in the net462 version because there are some non-netstandard dependencies. -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
-    <Compile Include="..\HeapDump\CollectionMetadata.cs" />
-    <Compile Include="..\HeapDump\Debugger\**\*.cs" />
-    <Compile Include="..\HeapDump\GCHeapDumper.cs" />
-    <Compile Include="..\HeapDump\HeapDumpException.cs" />
-    <Compile Include="..\HeapDump\HeapDumpHResult.cs" />
-    <Compile Include="..\PerfView\Triggers.cs" />
-  </ItemGroup>
+ <!-- Only include these files in the net462 version because there are some non-netstandard dependencies. -->
+ <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
+  <Compile Include="..\HeapDump\CollectionMetadata.cs" />
+  <Compile Include="..\HeapDump\Debugger\**\*.cs" />
+  <Compile Include="..\HeapDump\GCHeapDumper.cs" />
+  <Compile Include="..\HeapDump\HeapDumpException.cs" />
+  <Compile Include="..\HeapDump\HeapDumpHResult.cs" />
+  <Compile Include="..\PerfView\Triggers.cs" />
+ </ItemGroup>
 
-  <!-- ******************* Signing Support *********************** -->
-  <ItemGroup>
-    <FilesToSign Include="$(TargetPath)">
-        <Authenticode>Microsoft400</Authenticode>
-        <StrongName>StrongName</StrongName>
-    </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
-  </ItemGroup>
+ <!-- ******************* Signing Support *********************** -->
+ <ItemGroup>
+  <FilesToSign Include="$(TargetPath)">
+    <Authenticode>Microsoft400</Authenticode>
+    <StrongName>StrongName</StrongName>
+  </FilesToSign>
+  <PackageReference Include="MicroBuild.Core" />
+ </ItemGroup>
 
-  <!-- .NET Strong Name Signing -->
-  <PropertyGroup>
-    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
-    <DelaySign>true</DelaySign>
-    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
+ <!-- .NET Strong Name Signing -->
+ <PropertyGroup>
+  <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
+  <DelaySign>true</DelaySign>
+  <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+ </PropertyGroup>
 </Project>

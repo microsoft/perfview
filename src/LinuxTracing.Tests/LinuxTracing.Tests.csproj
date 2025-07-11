@@ -1,46 +1,46 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>net462</TargetFrameworks>
-    <RootNamespace>LinuxTracingTests</RootNamespace>
-    <AssemblyName>LinuxTracingTests</AssemblyName>
-    <Description>Unit tests.</Description>
-    <Copyright>Copyright © Microsoft 2016</Copyright>
+ <PropertyGroup>
+  <TargetFrameworks>net462</TargetFrameworks>
+  <RootNamespace>LinuxTracingTests</RootNamespace>
+  <AssemblyName>LinuxTracingTests</AssemblyName>
+  <Description>Unit tests.</Description>
+  <Copyright>Copyright © Microsoft 2016</Copyright>
 
-    <!-- Test projects can automatically generate the necessary binding redirects -->
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-  </PropertyGroup>
+  <!-- Test projects can automatically generate the necessary binding redirects -->
+  <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+ </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="xunit" Version="$(XunitVersion)" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualstudioVersion)" PrivateAssets="all" />
-  </ItemGroup>
+ <ItemGroup>
+  <PackageReference Include="xunit" />
+  <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+ </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\PerfView\PerfView.csproj" />
-    <ProjectReference Include="..\PerfView.TestUtilities\PerfView.TestUtilities.csproj" />
-    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
-  </ItemGroup>
+ <ItemGroup>
+  <ProjectReference Include="..\PerfView\PerfView.csproj" />
+  <ProjectReference Include="..\PerfView.TestUtilities\PerfView.TestUtilities.csproj" />
+  <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+ </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="..\PerfView.TestUtilities\DebugAssertionTests.cs">
-      <Link>DebugAssertionTests.cs</Link>
-    </Compile>
-  </ItemGroup>
+ <ItemGroup>
+  <Compile Include="..\PerfView.TestUtilities\DebugAssertionTests.cs">
+   <Link>DebugAssertionTests.cs</Link>
+  </Compile>
+ </ItemGroup>
 
-  <ItemGroup>
-    <None Include="App.config" />
-    <None Include="Outputs\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Sources\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <Content Include="xunit.runner.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+ <ItemGroup>
+  <None Include="App.config" />
+  <None Include="Outputs\**\*.*">
+   <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </None>
+  <None Include="Sources\**\*.*">
+   <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </None>
+  <Content Include="xunit.runner.json">
+   <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </Content>
+ </ItemGroup>
 
 </Project>

@@ -1,37 +1,37 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- This project is here only to support MicroBuild Signing of these native DLLs 
-       See https://github.com/Microsoft/perfview/pull/540 for more details -->
+ <!-- This project is here only to support MicroBuild Signing of these native DLLs 
+    See https://github.com/Microsoft/perfview/pull/540 for more details -->
 
-  <PropertyGroup>
-    <OutputType>library</OutputType>
-    <TargetFramework>net462</TargetFramework>
-  </PropertyGroup>
-   
-  <ItemGroup>
-    <None Include="..\EtwClrProfiler\$(Configuration)\x86\EtwClrProfiler.dll">
-      <Link>x86\EtwClrProfiler.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\EtwClrProfiler\$(Configuration)\amd64\EtwClrProfiler.dll">
-      <Link>amd64\EtwClrProfiler.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="readme.md" />
-  </ItemGroup>
+ <PropertyGroup>
+  <OutputType>library</OutputType>
+  <TargetFramework>net462</TargetFramework>
+ </PropertyGroup>
+  
+ <ItemGroup>
+  <None Include="..\EtwClrProfiler\$(Configuration)\x86\EtwClrProfiler.dll">
+   <Link>x86\EtwClrProfiler.dll</Link>
+   <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </None>
+  <None Include="..\EtwClrProfiler\$(Configuration)\amd64\EtwClrProfiler.dll">
+   <Link>amd64\EtwClrProfiler.dll</Link>
+   <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </None>
+  <None Include="readme.md" />
+ </ItemGroup>
 
-  <!-- ******************* Signing Support *********************** -->
-  <ItemGroup>
-    <FilesToSign Include="$(OutDir)\x86\EtwClrProfiler.dll">
-        <Authenticode>Microsoft400</Authenticode>
-    </FilesToSign>
-    <FilesToSign Include="$(OutDir)\amd64\EtwClrProfiler.dll">
-        <Authenticode>Microsoft400</Authenticode>
-    </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EtwClrProfiler\ETWClrProfilerX64.vcxproj" />
-    <ProjectReference Include="..\EtwClrProfiler\ETWClrProfilerX86.vcxproj" />
-  </ItemGroup>
+ <!-- ******************* Signing Support *********************** -->
+ <ItemGroup>
+  <FilesToSign Include="$(OutDir)\x86\EtwClrProfiler.dll">
+    <Authenticode>Microsoft400</Authenticode>
+  </FilesToSign>
+  <FilesToSign Include="$(OutDir)\amd64\EtwClrProfiler.dll">
+    <Authenticode>Microsoft400</Authenticode>
+  </FilesToSign>
+  <PackageReference Include="MicroBuild.Core" />
+ </ItemGroup>
+ <ItemGroup>
+  <ProjectReference Include="..\EtwClrProfiler\ETWClrProfilerX64.vcxproj" />
+  <ProjectReference Include="..\EtwClrProfiler\ETWClrProfilerX86.vcxproj" />
+ </ItemGroup>
 </Project>
