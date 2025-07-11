@@ -1,70 +1,70 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
- <PropertyGroup>
-  <TargetFrameworks>net462</TargetFrameworks>
-  <RootNamespace>Microsoft.Diagnostics.EtwHeapDump</RootNamespace>
-  <AssemblyName>Microsoft.Diagnostics.EtwHeapDump</AssemblyName>
-  <PublishRepositoryUrl>true</PublishRepositoryUrl>
-  <Company>Microsoft</Company>
-  <Description>General Utility library</Description>
-  <Copyright>Copyright Microsoft 2010</Copyright>
- </PropertyGroup>
+  <PropertyGroup>
+    <TargetFrameworks>net462</TargetFrameworks>
+    <RootNamespace>Microsoft.Diagnostics.EtwHeapDump</RootNamespace>
+    <AssemblyName>Microsoft.Diagnostics.EtwHeapDump</AssemblyName>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <Company>Microsoft</Company>
+    <Description>General Utility library</Description>
+    <Copyright>Copyright Microsoft 2010</Copyright>
+  </PropertyGroup>
 
- <PropertyGroup>
-  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  <DefineConstants>$(DefineConstants);UTILITIES_PUBLIC</DefineConstants>
- </PropertyGroup>
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);UTILITIES_PUBLIC</DefineConstants>
+  </PropertyGroup>
 
- <PropertyGroup>
-  <HighEntropyVA>true</HighEntropyVA>
- </PropertyGroup>
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
 
- <ItemGroup>
-  <!-- *** SourceLink Support *** -->
-  <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
- </ItemGroup>
+  <ItemGroup>
+    <!-- *** SourceLink Support *** -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+  </ItemGroup>
 
- <!-- ******************* Signing Support *********************** -->
- <ItemGroup>
-  <FilesToSign Include="$(TargetPath)">
-    <Authenticode>Microsoft400</Authenticode>
-    <StrongName>StrongName</StrongName>
-  </FilesToSign>
+  <!-- ******************* Signing Support *********************** -->
+  <ItemGroup>
+    <FilesToSign Include="$(TargetPath)">
+        <Authenticode>Microsoft400</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
 
-  <PackageReference Include="MicroBuild.Core" />
- </ItemGroup>
+    <PackageReference Include="MicroBuild.Core" />
+  </ItemGroup>
 
- <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'">
-  <PackageReference Include="Microsoft.Diagnostics.Runtime" />
- </ItemGroup>
- <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' == 'local'">
-  <PackageReference Include="System.Collections.Immutable" />
-  <Reference Include="Microsoft.Diagnostics.Runtime">
-   <HintPath>$(MicrosoftDiagnosticsRuntimePath)</HintPath>
-  </Reference>
- </ItemGroup>
+  <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'">
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' == 'local'">
+    <PackageReference Include="System.Collections.Immutable" />
+    <Reference Include="Microsoft.Diagnostics.Runtime">
+      <HintPath>$(MicrosoftDiagnosticsRuntimePath)</HintPath>
+    </Reference>
+  </ItemGroup>
 
- <!-- Override the version of System.Text.Json that is transitively included to address security issues. -->
- <ItemGroup>
-  <PackageReference Include="System.Text.Json" />
- </ItemGroup>
+  <!-- Override the version of System.Text.Json that is transitively included to address security issues. -->
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
 
- <ItemGroup>
-  <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
-  <ProjectReference Include="..\MemoryGraph\MemoryGraph.csproj" />
-  <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
-  <ProjectReference Include="..\Utilities\Utilities.csproj" />
- </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
+    <ProjectReference Include="..\MemoryGraph\MemoryGraph.csproj" />
+    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+    <ProjectReference Include="..\Utilities\Utilities.csproj" />
+  </ItemGroup>
 
- <ItemGroup>
-  <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
-  <Compile Include="..\HeapDumpCommon\GCHeapDumpNames.cs" />
- </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
+    <Compile Include="..\HeapDumpCommon\GCHeapDumpNames.cs" />
+  </ItemGroup>
 
- <!-- .NET Strong Name Signing -->
- <PropertyGroup>
-  <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
-  <DelaySign>true</DelaySign>
-  <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
- </PropertyGroup>
+  <!-- .NET Strong Name Signing -->
+  <PropertyGroup>
+    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 </Project>

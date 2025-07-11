@@ -1,45 +1,45 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
- <PropertyGroup>
-  <TargetFrameworks>net462;netstandard2.0</TargetFrameworks>
-  <RootNamespace>Microsoft.Diagnostics.Utilities</RootNamespace>
-  <AssemblyName>Microsoft.Diagnostics.Utilities</AssemblyName>
-  <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  <PropertyGroup>
+    <TargetFrameworks>net462;netstandard2.0</TargetFrameworks>
+    <RootNamespace>Microsoft.Diagnostics.Utilities</RootNamespace>
+    <AssemblyName>Microsoft.Diagnostics.Utilities</AssemblyName>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
-  <Company>Microsoft</Company>
-  <Description>Utility library</Description>
-  <Copyright>Copyright © Microsoft 2010</Copyright>
-  <Version>$(UtilitiesVersion)</Version>
- </PropertyGroup>
+    <Company>Microsoft</Company>
+    <Description>Utility library</Description>
+    <Copyright>Copyright © Microsoft 2010</Copyright>
+    <Version>$(UtilitiesVersion)</Version>
+  </PropertyGroup>
 
- <PropertyGroup>
-  <DefineConstants>$(DefineConstants);UTILITIES_PUBLIC</DefineConstants>
- </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);UTILITIES_PUBLIC</DefineConstants>
+  </PropertyGroup>
 
- <PropertyGroup>
-  <HighEntropyVA>true</HighEntropyVA>
- </PropertyGroup>
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
 
- <ItemGroup>
-  <!-- *** SourceLink Support *** -->
-  <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All"/>
- </ItemGroup>
+  <ItemGroup>
+    <!-- *** SourceLink Support *** -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All"/>
+  </ItemGroup>
 
- <!-- ******************* Signing Support *********************** -->
- <ItemGroup>
-  <FilesToSign Include="$(TargetPath)">
-    <Authenticode>Microsoft400</Authenticode>
-    <StrongName>StrongName</StrongName>
-  </FilesToSign>
-  <PackageReference Include="MicroBuild.Core" />
- </ItemGroup>
+  <!-- ******************* Signing Support *********************** -->
+  <ItemGroup>
+    <FilesToSign Include="$(TargetPath)">
+        <Authenticode>Microsoft400</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
+    <PackageReference Include="MicroBuild.Core" />
+  </ItemGroup>
 
- <!-- .NET Strong Name Signing -->
- <PropertyGroup>
-  <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
-  <DelaySign>true</DelaySign>
-  <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
- </PropertyGroup>
+  <!-- .NET Strong Name Signing -->
+  <PropertyGroup>
+    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 </Project>
 

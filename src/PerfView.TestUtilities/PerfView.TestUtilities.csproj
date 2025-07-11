@@ -1,41 +1,41 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
- <PropertyGroup>
-  <TargetFrameworks>net462;net8.0</TargetFrameworks>
-  <Description>Unit test utility library.</Description>
-  <Copyright>Copyright © Microsoft 2017</Copyright>
+  <PropertyGroup>
+    <TargetFrameworks>net462;net8.0</TargetFrameworks>
+    <Description>Unit test utility library.</Description>
+    <Copyright>Copyright © Microsoft 2017</Copyright>
 
-  <!-- Test projects can automatically generate the necessary binding redirects -->
-  <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-  <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
- </PropertyGroup>
+    <!-- Test projects can automatically generate the necessary binding redirects -->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+  </PropertyGroup>
 
- <ItemGroup>
-  <PackageReference Include="xunit" />
- </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit" />
+  </ItemGroup>
 
- <ItemGroup>
-  <!-- Set some source files to type None -->
-  <None Include="@(Compile)" />
-  <Compile Remove="DebugAssertionTests.cs" />
-  <None Remove="@(Compile)" />
- </ItemGroup>
+  <ItemGroup>
+    <!-- Set some source files to type None -->
+    <None Include="@(Compile)" />
+    <Compile Remove="DebugAssertionTests.cs" />
+    <None Remove="@(Compile)" />
+  </ItemGroup>
 
- <!-- ******************* Signing Support *********************** -->
- <!-- We don't need to actually sign this official, but we do need
-    to use the right key because TraceEvent (which is signed)
-    needs to give this DLL 'InternalVisibleTo' and signed DLLs
-    can only give this to other signed DLLs. But since we run
-    on dev machines with signing validation skipped, we can
-    public sign it and never real sign it. -->
+  <!-- ******************* Signing Support *********************** -->
+  <!-- We don't need to actually sign this official, but we do need
+       to use the right key because TraceEvent (which is signed)
+       needs to give this DLL 'InternalVisibleTo' and signed DLLs
+       can only give this to other signed DLLs.  But since we run
+       on dev machines with signing validation skipped, we can
+       public sign it and never real sign it. -->
 
- <PropertyGroup>
-  <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-  <SignAssembly>true</SignAssembly>
-  <PublicSign Condition="'$(SIGNING_BUILD)'!= 'true'">true</PublicSign>
-  <DelaySign Condition="'$(SIGNING_BUILD)'== 'true'">true</DelaySign>
-  <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
- </PropertyGroup>
+  <PropertyGroup>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(SIGNING_BUILD)'!= 'true'">true</PublicSign>
+    <DelaySign Condition="'$(SIGNING_BUILD)'== 'true'">true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 
 </Project>

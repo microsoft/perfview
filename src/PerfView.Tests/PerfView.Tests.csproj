@@ -1,61 +1,61 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
- <PropertyGroup>
-  <TargetFrameworks>net462</TargetFrameworks>
-  <RootNamespace>PerfViewTests</RootNamespace>
-  <AssemblyName>PerfViewTests</AssemblyName>
-  <Description>Unit tests for PerfView.</Description>
-  <Copyright>Copyright © Microsoft 2016</Copyright>
+  <PropertyGroup>
+    <TargetFrameworks>net462</TargetFrameworks>
+    <RootNamespace>PerfViewTests</RootNamespace>
+    <AssemblyName>PerfViewTests</AssemblyName>
+    <Description>Unit tests for PerfView.</Description>
+    <Copyright>Copyright © Microsoft 2016</Copyright>
 
-  <!-- Test projects can automatically generate the necessary binding redirects -->
-  <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-  <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
- </PropertyGroup>
+    <!-- Test projects can automatically generate the necessary binding redirects -->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+  </PropertyGroup>
 
- <ItemGroup>
-  <Reference Include="PresentationCore" />
-  <Reference Include="PresentationFramework" />
-  <Reference Include="System.Xaml" />
-  <Reference Include="WindowsBase" />
- </ItemGroup>
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
 
- <ItemGroup>
-  <PackageReference Include="Microsoft.VisualStudio.Threading" />
-  <PackageReference Include="xunit" />
-  <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
-  <PackageReference Include="Xunit.StaFact" />
-  <PackageReference Include="xunit.extensibility.core" />
-  <PackageReference Include="xunit.extensibility.execution" />
- </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Threading" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <PackageReference Include="Xunit.StaFact" />
+    <PackageReference Include="xunit.extensibility.core" />
+    <PackageReference Include="xunit.extensibility.execution" />
+  </ItemGroup>
 
- <ItemGroup>
-  <ProjectReference Include="..\PerfView\PerfView.csproj" />
-  <ProjectReference Include="..\PerfView.TestUtilities\PerfView.TestUtilities.csproj" />
-  <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
- </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PerfView\PerfView.csproj" />
+    <ProjectReference Include="..\PerfView.TestUtilities\PerfView.TestUtilities.csproj" />
+    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+  </ItemGroup>
 
- <ItemGroup>
-  <Compile Include="..\PerfView.TestUtilities\DebugAssertionTests.cs">
-   <Link>DebugAssertionTests.cs</Link>
-  </Compile>
- </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\PerfView.TestUtilities\DebugAssertionTests.cs">
+      <Link>DebugAssertionTests.cs</Link>
+    </Compile>
+  </ItemGroup>
 
- <ItemGroup>
-  <Content Include="GraphSerialization\inputs\**\*.*">
-   <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-  </Content>
- </ItemGroup>
+  <ItemGroup>
+    <Content Include="GraphSerialization\inputs\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
- <ItemGroup>
-  <None Include="app.config" />
-  <Content Include="xunit.runner.json">
-   <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-  </Content>
- </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <Content Include="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
- <ItemGroup>
-  <Folder Include="GraphSerialization\inputs\" />
- </ItemGroup>
+  <ItemGroup>
+    <Folder Include="GraphSerialization\inputs\" />
+  </ItemGroup>
 
 </Project>

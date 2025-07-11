@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
- <PropertyGroup>
-  <OutputType>Exe</OutputType>
-  <TargetFrameworks>net462</TargetFrameworks>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net462</TargetFrameworks>
 
-  <Company>Microsoft</Company>
-  <Product>TraceEvent Samples</Product>
-  <Description>A set of samples for the Microsoft.Diagnostics.Tracinging.TraceEvent library</Description>
-  <Copyright>Copyright © Microsoft 2018</Copyright>
- </PropertyGroup>
+    <Company>Microsoft</Company>
+    <Product>TraceEvent Samples</Product>
+    <Description>A set of samples for the Microsoft.Diagnostics.Tracinging.TraceEvent library</Description>
+    <Copyright>Copyright © Microsoft 2018</Copyright>
+  </PropertyGroup>
 
- <ItemGroup>
-  <ProjectReference Include="..\TraceEvent.csproj" />
-  <PackageReference Include="System.Reactive.Linq" />
- </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TraceEvent.csproj" />
+    <PackageReference Include="System.Reactive.Linq" />
+  </ItemGroup>
 
 </Project>
 

@@ -1,30 +1,30 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
- <PropertyGroup>
-  <TargetFrameworks>net462</TargetFrameworks>
-  <OutputType>Exe</OutputType>
-  <AssemblyName>TraceParserGen</AssemblyName>
- </PropertyGroup>
+  <PropertyGroup>
+    <TargetFrameworks>net462</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>TraceParserGen</AssemblyName>
+  </PropertyGroup>
 
- <ItemGroup>
-  <EmbeddedResource Include="UsersGuide.htm">
-   <Type>Non-Resx</Type>
-   <WithCulture>false</WithCulture>
-   <LogicalName>UsersGuide.htm</LogicalName>
-  </EmbeddedResource>
- </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="UsersGuide.htm">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>UsersGuide.htm</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
 
- <PropertyGroup>
-  <HighEntropyVA>true</HighEntropyVA>
- </PropertyGroup>
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
 
- <!-- ******************* Signing Support *********************** -->
- <ItemGroup>
-  <FilesToSign Include="$(TargetPath)">
-    <Authenticode>Microsoft400</Authenticode>
-  </FilesToSign>
-  <PackageReference Include="MicroBuild.Core" />
- </ItemGroup>
+  <!-- ******************* Signing Support *********************** -->
+  <ItemGroup>
+    <FilesToSign Include="$(TargetPath)">
+        <Authenticode>Microsoft400</Authenticode>
+    </FilesToSign>
+    <PackageReference Include="MicroBuild.Core" />
+  </ItemGroup>
 
 </Project>

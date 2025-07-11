@@ -1,149 +1,149 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
- <PropertyGroup>
-  <OutputType>Exe</OutputType>
-  <TargetFramework>net8.0-windows</TargetFramework>
-  <RootNamespace>PerfView</RootNamespace>
- </PropertyGroup>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>PerfView</RootNamespace>
+  </PropertyGroup>
 
- <PropertyGroup>
-  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  <DefineConstants>$(DefineConstants);PERFVIEW_COLLECT;DOTNET_CORE</DefineConstants>
-  <NoWarn>$(NoWarn),0649,0618</NoWarn>
-  <PublishRepositoryUrl>true</PublishRepositoryUrl>
- </PropertyGroup>
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);PERFVIEW_COLLECT;DOTNET_CORE</DefineConstants>
+    <NoWarn>$(NoWarn),0649,0618</NoWarn>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
 
- <PropertyGroup>
-  <HighEntropyVA>true</HighEntropyVA>
- </PropertyGroup>
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
 
- <ItemGroup>
-  <Compile Include="..\PerfView\App.cs" />
-  <Compile Include="..\PerfView\CommandLineArgs.cs" />
-  <Compile Include="..\PerfView\CommandProcessor.cs" />
-  <Compile Include="..\PerfView\ConfigData.cs" />
-  <Compile Include="..\PerfView\Triggers.cs" />
-  <Compile Include="..\PerfView\PerfViewLogger.cs" />
-  <Compile Include="..\PerfView\Utilities\commandLine.cs" />
-  <Compile Include="..\PerfView\Utilities\CommandLineUtilities.cs" />
-  <Compile Include="..\PerfView\Utilities\SupportFiles.cs" />
-  <Compile Include="..\PerfView\Utilities\CacheFiles.cs" />
-  <Compile Include="..\PerfView\Utilities\ResourceUtilities.cs" />
-  <Compile Include="..\PerfView\Utilities\StreamUtilities.cs" />
-  <Compile Include="..\Utilities\FileUtilities.cs" />
-  <Compile Include="..\Utilities\DirectoryUtilities.cs" />
-  <Compile Include="..\Utilities\StringUtilities.cs" />
-  <Compile Include="..\Utilities\XmlUtilities.cs" />
-  <Compile Include="..\PerfView\Utilities\ExceptionMessage.cs" />
-  <Compile Include="..\PerfView\Properties\BuildDateAttribute.cs" />
-  <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
-  <Compile Include="..\PerfView\memory\HeapSnapshot.cs" />
-  <Compile Include="..\PerfView\Extensibility.cs" />
-  <Compile Include="..\PerfView\UserCommands.cs" />
-  <Compile Include="..\PerfView\OtherSources\XMLStackSource.cs" />
-  <Compile Include="..\PerfView\ClrStats.cs" />
-  <Compile Include="..\PerfView\GcStats.cs" />
-  <Compile Include="..\PerfView\JitStats.cs" />
-  <Compile Include="..\PerfView\RuntimeLoaderStats.cs" />
-  <Compile Include="..\PerfView\FileVersionInformation.cs" />
-  <Compile Include="..\PerfView\DotNetVersionLogger.cs" />
- </ItemGroup>
-
- <ItemGroup>
-  <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" />
-  <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All"/>
- </ItemGroup>
-
- <!-- Ensure that the native components of TraceEvent are restored into the target and publish directories so that TraceEvent can pinvoke into them. -->
- <Target Name="CopyTraceEventNativeFilesToTarget" AfterTargets="Build">
   <ItemGroup>
-   <TraceEventNativeFiles
-    Include="$(TraceEventSupportFilesBase)native\**\*.*" />
+    <Compile Include="..\PerfView\App.cs" />
+    <Compile Include="..\PerfView\CommandLineArgs.cs" />
+    <Compile Include="..\PerfView\CommandProcessor.cs" />
+    <Compile Include="..\PerfView\ConfigData.cs" />
+    <Compile Include="..\PerfView\Triggers.cs" />
+    <Compile Include="..\PerfView\PerfViewLogger.cs" />
+    <Compile Include="..\PerfView\Utilities\commandLine.cs" />
+    <Compile Include="..\PerfView\Utilities\CommandLineUtilities.cs" />
+    <Compile Include="..\PerfView\Utilities\SupportFiles.cs" />
+    <Compile Include="..\PerfView\Utilities\CacheFiles.cs" />
+    <Compile Include="..\PerfView\Utilities\ResourceUtilities.cs" />
+    <Compile Include="..\PerfView\Utilities\StreamUtilities.cs" />
+    <Compile Include="..\Utilities\FileUtilities.cs" />
+    <Compile Include="..\Utilities\DirectoryUtilities.cs" />
+    <Compile Include="..\Utilities\StringUtilities.cs" />
+    <Compile Include="..\Utilities\XmlUtilities.cs" />
+    <Compile Include="..\PerfView\Utilities\ExceptionMessage.cs" />
+    <Compile Include="..\PerfView\Properties\BuildDateAttribute.cs" />
+    <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
+    <Compile Include="..\PerfView\memory\HeapSnapshot.cs" />
+    <Compile Include="..\PerfView\Extensibility.cs" />
+    <Compile Include="..\PerfView\UserCommands.cs" />
+    <Compile Include="..\PerfView\OtherSources\XMLStackSource.cs" />
+    <Compile Include="..\PerfView\ClrStats.cs" />
+    <Compile Include="..\PerfView\GcStats.cs" />
+    <Compile Include="..\PerfView\JitStats.cs" />
+    <Compile Include="..\PerfView\RuntimeLoaderStats.cs" />
+    <Compile Include="..\PerfView\FileVersionInformation.cs" />
+    <Compile Include="..\PerfView\DotNetVersionLogger.cs" />
   </ItemGroup>
-  <Copy
-   SourceFiles="@(TraceEventNativeFiles)"
-   DestinationFiles="@(TraceEventNativeFiles->'$(TargetDir)%(RecursiveDir)%(FileName)%(Extension)')"
-   SkipUnchangedFiles="true" />
- </Target>
- <Target Name="CopyTraceEventNativeFilesToPublish" AfterTargets="Publish">
-  <ItemGroup>
-   <TraceEventNativeFiles
-    Include="$(TraceEventSupportFilesBase)native\**\*.*" />
-  </ItemGroup>
-  <Copy
-   SourceFiles="@(TraceEventNativeFiles)"
-   DestinationFiles="@(TraceEventNativeFiles->'$(PublishDir)%(RecursiveDir)%(FileName)%(Extension)')"
-   SkipUnchangedFiles="true" />
- </Target>
 
- <ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All"/>
+  </ItemGroup>
+
+  <!-- Ensure that the native components of TraceEvent are restored into the target and publish directories so that TraceEvent can pinvoke into them. -->
+  <Target Name="CopyTraceEventNativeFilesToTarget" AfterTargets="Build">
+    <ItemGroup>
+      <TraceEventNativeFiles
+        Include="$(TraceEventSupportFilesBase)native\**\*.*" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(TraceEventNativeFiles)"
+      DestinationFiles="@(TraceEventNativeFiles->'$(TargetDir)%(RecursiveDir)%(FileName)%(Extension)')"
+      SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="CopyTraceEventNativeFilesToPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <TraceEventNativeFiles
+        Include="$(TraceEventSupportFilesBase)native\**\*.*" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(TraceEventNativeFiles)"
+      DestinationFiles="@(TraceEventNativeFiles->'$(PublishDir)%(RecursiveDir)%(FileName)%(Extension)')"
+      SkipUnchangedFiles="true" />
+  </Target>
+
+  <ItemGroup>
 
 <!-- TODO: These are needed for Heap dump and fine grained .NET allocation and call profiling but 
-   I have pruned these out for now so we can at least get ETW working.  Bring them back eventually.
+     I have pruned these out for now so we can at least get ETW working.   Bring them back eventually.
 
-  <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net462\HeapDump.exe">
-   <Type>Non-Resx</Type>
-   <WithCulture>false</WithCulture>
-   <LogicalName>.\amd64\HeapDump.exe</LogicalName>
-   <Link>amd64\HeapDump.exe</Link>
-   <Visible>False</Visible>
-  </EmbeddedResource>
-  <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net462\HeapDump.exe.config">
-   <Type>Non-Resx</Type>
-   <WithCulture>false</WithCulture>
-   <LogicalName>.\amd64\HeapDump.exe.config</LogicalName>
-   <Link>amd64\HeapDump.exe.config</Link>
-   <Visible>False</Visible>
-  </EmbeddedResource>
-  <EmbeddedResource Include="..\HeapDump\$(OutDir)\HeapDump.exe">
-   <Type>Non-Resx</Type>
-   <WithCulture>false</WithCulture>
-   <LogicalName>.\x86\HeapDump.exe</LogicalName>
-   <Link>x86\HeapDump.exe</Link>
-   <Visible>False</Visible>
-  </EmbeddedResource>
-  <EmbeddedResource Include="..\EtwClrProfiler\$(Configuration)\x86\EtwClrProfiler.dll">
-   <Type>Non-Resx</Type>
-   <WithCulture>false</WithCulture>
-   <LogicalName>.\x86\EtwClrProfiler.dll</LogicalName>
-   <Link>x86\EtwClrProfiler.dll</Link>
-   <Visible>False</Visible>
-  </EmbeddedResource>
-  <EmbeddedResource Include="..\EtwClrProfiler\$(Configuration)\amd64\EtwClrProfiler.dll">
-   <Type>Non-Resx</Type>
-   <WithCulture>false</WithCulture>
-   <LogicalName>.\amd64\EtwClrProfiler.dll</LogicalName>
-   <Link>amd64\EtwClrProfiler.dll</Link>
-   <Visible>False</Visible>
-  </EmbeddedResource>
+    <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net462\HeapDump.exe">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\HeapDump.exe</LogicalName>
+      <Link>amd64\HeapDump.exe</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net462\HeapDump.exe.config">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\HeapDump.exe.config</LogicalName>
+      <Link>amd64\HeapDump.exe.config</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\HeapDump\$(OutDir)\HeapDump.exe">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\HeapDump.exe</LogicalName>
+      <Link>x86\HeapDump.exe</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\EtwClrProfiler\$(Configuration)\x86\EtwClrProfiler.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\EtwClrProfiler.dll</LogicalName>
+      <Link>x86\EtwClrProfiler.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\EtwClrProfiler\$(Configuration)\amd64\EtwClrProfiler.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\EtwClrProfiler.dll</LogicalName>
+      <Link>amd64\EtwClrProfiler.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
 -->
 
-  <EmbeddedResource Include="..\PerfView\SupportFiles\Eula.rtf">
-   <Type>Non-Resx</Type>
-   <WithCulture>false</WithCulture>
-   <LogicalName>.\EULA.rtf</LogicalName>
-  </EmbeddedResource>
+    <EmbeddedResource Include="..\PerfView\SupportFiles\Eula.rtf">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\EULA.rtf</LogicalName>
+    </EmbeddedResource>
 
-  <EmbeddedResource Include="..\PerfView\SupportFiles\UsersGuide.htm">
-   <Type>Non-Resx</Type>
-   <WithCulture>false</WithCulture>
-   <LogicalName>.\UsersGuide.htm</LogicalName>
-  </EmbeddedResource>
-  <EmbeddedResource Include="..\PerfView\SupportFiles\HtmlReportUsersGuide.htm">
-   <Type>Non-Resx</Type>
-   <WithCulture>false</WithCulture>
-   <LogicalName>.\HtmlReportUsersGuide.htm</LogicalName>
-  </EmbeddedResource>
-  <EmbeddedResource Include="..\PerfView\SupportFiles\PerfViewWebVideos.htm">
-   <Type>Non-Resx</Type>
-   <WithCulture>false</WithCulture>
-   <LogicalName>.\PerfViewWebVideos.htm</LogicalName>
-  </EmbeddedResource>
- </ItemGroup>
+    <EmbeddedResource Include="..\PerfView\SupportFiles\UsersGuide.htm">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\UsersGuide.htm</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\PerfView\SupportFiles\HtmlReportUsersGuide.htm">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\HtmlReportUsersGuide.htm</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\PerfView\SupportFiles\PerfViewWebVideos.htm">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\PerfViewWebVideos.htm</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
 
- <ItemGroup>
-  <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
- </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+  </ItemGroup>
 
 
 </Project>

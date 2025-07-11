@@ -36,13 +36,13 @@
       <NuspecProperties>$(NuspecProperties);Configuration=$(Configuration)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);version=$(InformationalVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);OutDir=$(OutputPath)</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);MicrosoftWin32RegistryVersion=5.0.0</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemCollectionsImmutableVersion=8.0.0</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemReflectionMetadataVersion=8.0.0</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemReflectionTypeExtensionsVersion=4.7.0</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemRuntimeCompilerServicesUnsafeVersion=6.0.0</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);MicrosoftDiagnosticsNETCoreClientVersion=0.2.510501</NuspecProperties>
-      <NuspecProperties>$(NuspecProperties);SystemTextJsonVersion=8.0.5</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);MicrosoftWin32RegistryVersion=$(MicrosoftWin32RegistryVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemCollectionsImmutableVersion=$(SystemCollectionsImmutableVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemReflectionMetadataVersion=$(SystemReflectionMetadataVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemReflectionTypeExtensionsVersion=$(SystemReflectionTypeExtensionsVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemRuntimeCompilerServicesUnsafeVersion=$(SystemRuntimeCompilerServicesUnsafeVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);MicrosoftDiagnosticsNETCoreClientVersion=$(MicrosoftDiagnosticsNETCoreClientVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);SystemTextJsonVersion=$(SystemTextJsonVersion)</NuspecProperties>
     </PropertyGroup>
   </Target>
 
