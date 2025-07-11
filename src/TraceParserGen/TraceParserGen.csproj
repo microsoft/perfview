@@ -24,7 +24,7 @@
     <FilesToSign Include="$(TargetPath)">
         <Authenticode>Microsoft400</Authenticode>
     </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
+    <PackageReference Include="MicroBuild.Core" />
   </ItemGroup>
 
 </Project>
