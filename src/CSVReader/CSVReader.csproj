@@ -1,36 +1,36 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
- <PropertyGroup>
-  <TargetFramework>net462</TargetFramework>
+  <PropertyGroup>
+    <TargetFramework>net462</TargetFramework>
 
-  <Description>CSVReader</Description>
-  <Company>Microsoft</Company>
-  <Copyright>Copyright © Microsoft 2010</Copyright>
- </PropertyGroup>
+    <Description>CSVReader</Description>
+    <Company>Microsoft</Company>
+    <Copyright>Copyright © Microsoft 2010</Copyright>
+  </PropertyGroup>
 
- <PropertyGroup>
-  <HighEntropyVA>true</HighEntropyVA>
- </PropertyGroup>
+  <PropertyGroup>
+    <HighEntropyVA>true</HighEntropyVA>
+  </PropertyGroup>
 
- <ItemGroup>
-  <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
- </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+  </ItemGroup>
 
- <!-- ******************* Signing Support *********************** -->
- <ItemGroup>
-  <FilesToSign Include="$(TargetPath)">
-    <Authenticode>Microsoft400</Authenticode>
-    <StrongName>StrongName</StrongName>
-  </FilesToSign>
-  <PackageReference Include="MicroBuild.Core" />
- </ItemGroup>
+  <!-- ******************* Signing Support *********************** -->
+  <ItemGroup>
+    <FilesToSign Include="$(TargetPath)">
+        <Authenticode>Microsoft400</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
+    <PackageReference Include="MicroBuild.Core" />
+  </ItemGroup>
 
- <!-- .NET Strong Name Signing -->
- <PropertyGroup>
-  <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
-  <DelaySign>true</DelaySign>
-  <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
- </PropertyGroup>
+  <!-- .NET Strong Name Signing -->
+  <PropertyGroup>
+    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 
 </Project>
