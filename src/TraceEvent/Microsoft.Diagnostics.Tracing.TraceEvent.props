@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <!--
+      These are native dependencies that need to be copied for consumption via pinvoke.
+      They should be copied as follows:
+      - For platform-neutral builds, copy all binaries.
+      - If we know the target architecture but not the runtime identifier, copy the architecture specific binaries.
+      - If we know the target architecture and the runtime identifier, only copy the matching architecture's binaries on Windows.  These binaries are not consumed on non-Windows platforms.
+    -->
     <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\x86\KernelTraceControl.dll') And ('$(ProcessorArchitecture)' == 'msil' Or ('$(ProcessorArchitecture)' == 'x86' And ('$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-')))))" Include="$(MSBuildThisFileDirectory)..\build\native\x86\KernelTraceControl.dll">
       <Link>x86\KernelTraceControl.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
