@@ -29,10 +29,9 @@
     <UtilitiesVersion>$(ReleaseVersion)</UtilitiesVersion>
   </PropertyGroup>
 
-  <!-- ClrMD version handling - keep this as property for conditional logic -->
+  <!-- ClrMD version handling -->
   <PropertyGroup>
-    <MicrosoftDiagnosticsRuntimeVersion>4.0.0-beta.24314.3</MicrosoftDiagnosticsRuntimeVersion>
-    <!-- If we set MicrosoftDiagnosticsRuntimeVersion to 'local' instead of the version below, it will build PerfView with a locally built ClrMD. -->
+    <!-- If we set MicrosoftDiagnosticsRuntimeVersion to 'local', it will build PerfView with a locally built ClrMD. -->
     <!-- This particular path assume clrmd is cloned side-by-side with PerfView, feel free to change as needed. -->
     <!--
     <MicrosoftDiagnosticsRuntimeVersion>local</MicrosoftDiagnosticsRuntimeVersion>

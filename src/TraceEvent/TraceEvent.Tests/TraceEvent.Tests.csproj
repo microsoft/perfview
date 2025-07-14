@@ -23,7 +23,7 @@
     <PackageReference Include="Microsoft.Diagnostics.Runtime" />
   </ItemGroup>
   <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' == 'local'">
-    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
+    <PackageReference Include="System.Collections.Immutable" />
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>$(MicrosoftDiagnosticsRuntimePath)</HintPath>
     </Reference>

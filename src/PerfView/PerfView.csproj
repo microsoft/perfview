@@ -85,6 +85,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.Core" GeneratePathProperty="true" />
     <PackageReference Include="Azure.Identity" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Identity.Client" GeneratePathProperty="true" />
@@ -436,7 +437,7 @@
       <Link>x86\Microsoft.Diagnostics.Runtime.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'" Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\netstandard2.0\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'" Include="$(PkgMicrosoft_Diagnostics_Runtime)\lib\netstandard2.0\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
