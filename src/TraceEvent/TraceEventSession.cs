@@ -3053,7 +3053,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
 
             // Compute the Sha1 hash
-            var sha1 = System.Security.Cryptography.SHA1.Create(); // lgtm [cs/weak-crypto]
+            var sha1 = System.Security.Cryptography.SHA1.Create(); // lgtm [cs/weak-crypto] The EventSource name to GUID protocol requires a SHA1 hash.
             byte[] hash = sha1.ComputeHash(bytes);
 
             // Create a GUID out of the first 16 bytes of the hash (SHA-1 create a 20 byte hash)

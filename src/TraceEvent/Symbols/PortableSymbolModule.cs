@@ -119,7 +119,7 @@ namespace Microsoft.Diagnostics.Symbols
                 Guid hashAlgorithmGuid = metaData.GetGuid(sourceFileDocument.HashAlgorithm);
                 if (hashAlgorithmGuid == HashAlgorithmSha1)
                 {
-                    _hashAlgorithm = System.Security.Cryptography.SHA1.Create(); // lgtm [cs/weak-crypto]
+                    _hashAlgorithm = System.Security.Cryptography.SHA1.Create(); // lgtm [cs/weak-crypto] The PDB specifies the checksum algorithm.  This is not controlled by TraceEvent.
                 }
                 else if (hashAlgorithmGuid == HashAlgorithmSha256)
                 {
