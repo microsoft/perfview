@@ -40,18 +40,6 @@
     -->
   </PropertyGroup>
 
-  <!-- Package version properties needed for nuspec file variable substitution -->
-  <!-- These properties are derived from Directory.Packages.props to maintain consistency -->
-  <PropertyGroup>
-    <MicrosoftWin32RegistryVersion>5.0.0</MicrosoftWin32RegistryVersion>
-    <SystemCollectionsImmutableVersion>8.0.0</SystemCollectionsImmutableVersion>
-    <SystemReflectionMetadataVersion>8.0.0</SystemReflectionMetadataVersion>
-    <SystemReflectionTypeExtensionsVersion>4.7.0</SystemReflectionTypeExtensionsVersion>
-    <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
-    <MicrosoftDiagnosticsNETCoreClientVersion>0.2.510501</MicrosoftDiagnosticsNETCoreClientVersion>
-    <SystemTextJsonVersion>8.0.5</SystemTextJsonVersion>
-  </PropertyGroup>
-
   <PropertyGroup>
     <!--
       Make sure any documentation comments which are included in code get checked for syntax during the build, but do

@@ -46,6 +46,21 @@
     </PropertyGroup>
   </Target>
 
+  <!-- Target to set package version properties from resolved package references -->
+  <!-- This eliminates duplication with Directory.Packages.props by using the actual resolved versions -->
+  <Target Name="SetPackageVersionPropertiesFromResolvedReferences" BeforeTargets="GenerateNuspec;SetNuspecProperties">
+    <PropertyGroup>
+      <!-- Extract package versions from PackageVersion items defined in Directory.Packages.props -->
+      <MicrosoftWin32RegistryVersion>@(PackageVersion->WithMetadataValue('Identity', 'Microsoft.Win32.Registry')->'%(Version)')</MicrosoftWin32RegistryVersion>
+      <SystemCollectionsImmutableVersion>@(PackageVersion->WithMetadataValue('Identity', 'System.Collections.Immutable')->'%(Version)')</SystemCollectionsImmutableVersion>
+      <SystemReflectionMetadataVersion>@(PackageVersion->WithMetadataValue('Identity', 'System.Reflection.Metadata')->'%(Version)')</SystemReflectionMetadataVersion>
+      <SystemReflectionTypeExtensionsVersion>@(PackageVersion->WithMetadataValue('Identity', 'System.Reflection.TypeExtensions')->'%(Version)')</SystemReflectionTypeExtensionsVersion>
+      <SystemRuntimeCompilerServicesUnsafeVersion>@(PackageVersion->WithMetadataValue('Identity', 'System.Runtime.CompilerServices.Unsafe')->'%(Version)')</SystemRuntimeCompilerServicesUnsafeVersion>
+      <MicrosoftDiagnosticsNETCoreClientVersion>@(PackageVersion->WithMetadataValue('Identity', 'Microsoft.Diagnostics.NETCore.Client')->'%(Version)')</MicrosoftDiagnosticsNETCoreClientVersion>
+      <SystemTextJsonVersion>@(PackageVersion->WithMetadataValue('Identity', 'System.Text.Json')->'%(Version)')</SystemTextJsonVersion>
+    </PropertyGroup>
+  </Target>
+
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW;SUPPORT_V1_V2;CONTAINER_WORKAROUND_NOT_NEEDED</DefineConstants>
     <NoWarn>$(NoWarn),0649,0618</NoWarn>
