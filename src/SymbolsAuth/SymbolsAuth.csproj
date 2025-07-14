@@ -35,8 +35,18 @@
       <NuspecProperties>$(NuspecProperties);Configuration=$(Configuration)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);version=$(InformationalVersion)</NuspecProperties>
       <NuspecProperties>$(NuspecProperties);OutDir=$(OutputPath)</NuspecProperties>
-      <NuSpecProperties>$(NuspecProperties);AzureIdentityVersion=1.11.4</NuSpecProperties>
-      <NuSpecProperties>$(NuspecProperties);MicrosoftIdentityModelJsonWebTokensVersion=7.1.2</NuSpecProperties>
+      <NuSpecProperties>$(NuspecProperties);AzureIdentityVersion=$(AzureIdentityVersion)</NuSpecProperties>
+      <NuSpecProperties>$(NuspecProperties);MicrosoftIdentityModelJsonWebTokensVersion=$(MicrosoftIdentityModelJsonWebTokensVersion)</NuSpecProperties>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Target to set package version properties from resolved package references -->
+  <!-- This eliminates duplication with Directory.Packages.props by using the actual resolved versions -->
+  <Target Name="SetPackageVersionPropertiesFromResolvedReferences" BeforeTargets="GenerateNuspec;SetNuspecProperties">
+    <PropertyGroup>
+      <!-- Extract package versions from PackageVersion items defined in Directory.Packages.props -->
+      <AzureIdentityVersion>@(PackageVersion->WithMetadataValue('Identity', 'Azure.Identity')->'%(Version)')</AzureIdentityVersion>
+      <MicrosoftIdentityModelJsonWebTokensVersion>@(PackageVersion->WithMetadataValue('Identity', 'Microsoft.IdentityModel.JsonWebTokens')->'%(Version)')</MicrosoftIdentityModelJsonWebTokensVersion>
     </PropertyGroup>
   </Target>
 
