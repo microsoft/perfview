@@ -664,11 +664,17 @@ namespace Microsoft.Diagnostics.Symbols
                 // 3 checksum generated with the SHA256 hashing algorithm.
                 if (sourceFile.checksumType == 1)
                 {
-                    _hashAlgorithm = System.Security.Cryptography.MD5.Create(); // lgtm [cs/weak-crypto] The PDB specifies the checksum algorithm.  This is not controlled by TraceEvent.
+                    // CodeQL [SM02196] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                    // CodeQL [SM03938] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                    // CodeQL [SM03939] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                    _hashAlgorithm = System.Security.Cryptography.MD5.Create();
                 }
                 else if (sourceFile.checksumType == 2)
                 {
-                    _hashAlgorithm = System.Security.Cryptography.SHA1.Create(); // lgtm [cs/weak-crypto] The PDB specifies the checksum algorithm.  This is not controlled by TraceEvent.
+                    // CodeQL [SM02196] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                    // CodeQL [SM03938] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                    // CodeQL [SM03939] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                    _hashAlgorithm = System.Security.Cryptography.SHA1.Create();
                 }
                 else if (sourceFile.checksumType == 3)
                 {
@@ -725,11 +731,17 @@ namespace Microsoft.Diagnostics.Symbols
 
                     if (srcFormat.Header.algorithmId == guidMD5)
                     {
-                        _hashAlgorithm = System.Security.Cryptography.MD5.Create(); // lgtm [cs/weak-crypto] The checksum algorithm is specified by the injected source.  This is not controlled by TraceEvent.
+                        // CodeQL [SM02196] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                        // CodeQL [SM03938] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                        // CodeQL [SM03939] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                        _hashAlgorithm = System.Security.Cryptography.MD5.Create();
                     }
                     else if (srcFormat.Header.algorithmId == guidSHA1)
                     {
-                        _hashAlgorithm = System.Security.Cryptography.SHA1.Create(); // lgtm [cs/weak-crypto] The checksum algorithm is specified by the injected source.  This is not controlled by TraceEvent.
+                        // CodeQL [SM02196] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                        // CodeQL [SM03938] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                        // CodeQL [SM03939] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                        _hashAlgorithm = System.Security.Cryptography.SHA1.Create();
                     }
                     else if (srcFormat.Header.algorithmId == guidSHA256)
                     {
