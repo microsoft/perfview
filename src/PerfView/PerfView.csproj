@@ -83,25 +83,26 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Core" Version="$(AzureCoreVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Azure.Identity" Version="$(AzureIdentityVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" Version="$(MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Identity.Client" Version="$(MicrosoftIdentityClientVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Identity.Client.Extensions.Msal" Version="$(MicrosoftIdentityClientExtensionsMsalVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.IdentityModel.Abstractions" Version="$(MicrosoftIdentityModelAbstractionsVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="$(MicrosoftIdentityModelTokensVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="$(MicrosoftIdentityModelJsonWebTokensVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Web.WebView2" Version="$(MicrosoftWebWebView2Version)" GeneratePathProperty="true" />
-    <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
-    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="$(SystemDiagnosticsDiagnosticSourceVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="$(SystemSecurityCryptographyProtectedDataVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Text.Encodings.Web" Version="$(SystemTextEncodingsWebVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="Azure.Core" GeneratePathProperty="true" />
+    <PackageReference Include="Azure.Identity" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Identity.Client" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Identity.Client.Extensions.Msal" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.IdentityModel.Abstractions" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Web.WebView2" GeneratePathProperty="true" />
+    <PackageReference Include="PerfView.SupportFiles" PrivateAssets="all" />
+    <PackageReference Include="System.Buffers" GeneratePathProperty="true" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" GeneratePathProperty="true" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" GeneratePathProperty="true" />
+    <PackageReference Include="System.Memory" GeneratePathProperty="true" />
+    <PackageReference Include="System.Numerics.Vectors" GeneratePathProperty="true" />
+    <PackageReference Include="System.Text.Encodings.Web" GeneratePathProperty="true" />
+    <PackageReference Include="System.Text.Json" GeneratePathProperty="true" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" GeneratePathProperty="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -112,13 +113,13 @@
       HeapDump dependencies are pulled from the HeapDump output directory because HeapDump runs out of process
       and can have a different set of dependencies.
     -->
-    <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Win32.Registry" GeneratePathProperty="true" />
+    <PackageReference Include="System.Collections.Immutable" GeneratePathProperty="true" />
+    <PackageReference Include="System.Reflection.Metadata" GeneratePathProperty="true" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" GeneratePathProperty="true" />
 
     <!-- *** SourceLink Support *** -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -436,7 +437,7 @@
       <Link>x86\Microsoft.Diagnostics.Runtime.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'" Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\netstandard2.0\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'" Include="$(PkgMicrosoft_Diagnostics_Runtime)\lib\netstandard2.0\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
@@ -769,7 +770,7 @@
     <FilesToSign Include="$(TargetPath)">
         <Authenticode>Microsoft400</Authenticode>
     </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
+    <PackageReference Include="MicroBuild.Core" />
   </ItemGroup>
 
 </Project>

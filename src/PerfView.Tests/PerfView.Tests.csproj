@@ -21,12 +21,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="$(MicrosoftVisualStudioThreadingVersion)" />
-    <PackageReference Include="xunit" Version="$(XunitVersion)" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualstudioVersion)" PrivateAssets="all" />
-    <PackageReference Include="Xunit.StaFact" Version="$(XunitStaFactVersion)" />
-    <PackageReference Include="xunit.extensibility.core" Version="$(XunitExtensibilityCoreVersion)" />
-    <PackageReference Include="xunit.extensibility.execution" Version="$(XunitExtensibilityExecutionVersion)" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <PackageReference Include="Xunit.StaFact" />
+    <PackageReference Include="xunit.extensibility.core" />
+    <PackageReference Include="xunit.extensibility.execution" />
   </ItemGroup>
 
   <ItemGroup>

@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TraceEvent.csproj" />
-    <PackageReference Include="System.Reactive.Linq" Version="6.0.0" />
+    <PackageReference Include="System.Reactive.Linq" />
   </ItemGroup>
 
 </Project>

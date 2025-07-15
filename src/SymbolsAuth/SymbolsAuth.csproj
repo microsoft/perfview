@@ -40,19 +40,29 @@
     </PropertyGroup>
   </Target>
 
+  <!-- Target to set package version properties from resolved package references -->
+  <!-- This eliminates duplication with Directory.Packages.props by using the actual resolved versions -->
+  <Target Name="SetPackageVersionPropertiesFromResolvedReferences" BeforeTargets="GenerateNuspec;SetNuspecProperties">
+    <PropertyGroup>
+      <!-- Extract package versions from PackageVersion items defined in Directory.Packages.props -->
+      <AzureIdentityVersion>@(PackageVersion->WithMetadataValue('Identity', 'Azure.Identity')->'%(Version)')</AzureIdentityVersion>
+      <MicrosoftIdentityModelJsonWebTokensVersion>@(PackageVersion->WithMetadataValue('Identity', 'Microsoft.IdentityModel.JsonWebTokens')->'%(Version)')</MicrosoftIdentityModelJsonWebTokensVersion>
+    </PropertyGroup>
+  </Target>
+
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="$(AzureIdentityVersion)" />
-    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="$(MicrosoftIdentityModelJsonWebTokensVersion)" />
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
   </ItemGroup>
 
   <!-- Override the version of System.Text.Json that is transitively included to address security issues. -->
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
+    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- *** SourceLink Support *** -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -61,7 +71,7 @@
 
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
-    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
+    <PackageReference Include="MicroBuild.Core" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageSpec)'==''">

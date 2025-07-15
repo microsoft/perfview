@@ -24,14 +24,14 @@
 
   <ItemGroup>
     <!-- *** SourceLink Support *** -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'">
-    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" />
   </ItemGroup>
   <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' == 'local'">
-    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
+    <PackageReference Include="System.Collections.Immutable" />
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>$(MicrosoftDiagnosticsRuntimePath)</HintPath>
     </Reference>
@@ -39,7 +39,7 @@
 
   <!-- Override the version of System.Text.Json that is transitively included to address security issues. -->
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
+    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -78,7 +78,7 @@
         <Authenticode>Microsoft400</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
+    <PackageReference Include="MicroBuild.Core" />
   </ItemGroup>
 
   <!-- .NET Strong Name Signing -->

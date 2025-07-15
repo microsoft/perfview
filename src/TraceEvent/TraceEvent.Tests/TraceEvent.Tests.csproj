@@ -14,24 +14,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit" Version="$(XunitVersion)" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualstudioVersion)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'">
-    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" />
   </ItemGroup>
   <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' == 'local'">
-    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
+    <PackageReference Include="System.Collections.Immutable" />
     <Reference Include="Microsoft.Diagnostics.Runtime">
       <HintPath>$(MicrosoftDiagnosticsRuntimePath)</HintPath>
     </Reference>
-  </ItemGroup>
-
-  <!-- Override the version of System.Text.Json that is transitively included to address security issues. -->
-  <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
 
   <ItemGroup>
