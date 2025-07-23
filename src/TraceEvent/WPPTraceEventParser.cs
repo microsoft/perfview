@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using static Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData.PayloadFetch;
 
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
@@ -86,12 +87,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         private struct TypeAndFormat
         {
-            public TypeAndFormat([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type Type, IDictionary<long, string> Map) { this.Type = Type; this.Map = Map; }
+            public TypeAndFormat(Type Type, IDictionary<long, string> Map) { this.Type = Type; this.Map = Map; }
 
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             public Type Type;
             public IDictionary<long, string> Map;
         }
+
+        /// <summary>
+        /// This is only meant to be used in <see cref="CreateTemplatesForTMFFile"/>
+        /// </summary>
+        private static FetchType TypeToFetchType(Type type) => type switch
+        {
+            { } t when t == typeof(double) => FetchType.System_Double,
+            { } t when t == typeof(string) => FetchType.System_String,
+            { } t when t == typeof(IntPtr) => FetchType.System_IntPtr,
+            { } t when t == typeof(int) => FetchType.System_Int32,
+            { } t when t == typeof(long) => FetchType.System_Int64,
+            { } t when t == typeof(bool) => FetchType.System_Boolean,
+            { } t when t == typeof(Guid) => FetchType.System_Guid,
+            _ => throw new ArgumentException($"Unknown type {type.FullName} for WPPTraceEventParser"),
+        };
 
         private List<DynamicTraceEventData> CreateTemplatesForTMFFile(Guid taskGuid, string tmfPath)
         {
@@ -295,9 +310,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     type = typeof(string);
                                     size |= DynamicTraceEventData.IS_ANSI;
                                 }
-                                size |= DynamicTraceEventData.SizeOfType(type);
+                                var fetchType = TypeToFetchType(type);
+                                size |= DynamicTraceEventData.SizeOfType(fetchType);
                                 template.payloadFetches[i].Size = size;
-                                template.payloadFetches[i].Type = type;
+                                template.payloadFetches[i].Type = fetchType;
 
                                 if (size >= DynamicTraceEventData.SPECIAL_SIZES || offset == ushort.MaxValue)
                                 {

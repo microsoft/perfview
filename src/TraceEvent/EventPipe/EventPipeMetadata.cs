@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using static Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData.PayloadFetch;
 
 namespace Microsoft.Diagnostics.Tracing
 {
@@ -209,7 +210,7 @@ namespace Microsoft.Diagnostics.Tracing
                 ushort extendedDataCount = 0;
                 TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM* curExtendedBufferPtr = _extendedDataBuffer;
                 _eventRecord->ExtendedData = _extendedDataBuffer;
-                
+
                 if (stackBytesSize > 0)
                 {
                     if ((_eventRecord->EventHeader.Flags & TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER) != 0)
@@ -449,112 +450,112 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 case EventPipeTypeCode.Boolean:
                     {
-                        payloadFetch.Type = typeof(bool);
+                        payloadFetch.Type = FetchType.System_Boolean;
                         payloadFetch.Size = 4; // We follow windows conventions and use 4 bytes for bool.
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.UTF16CodeUnit:
                     {
-                        payloadFetch.Type = typeof(char);
+                        payloadFetch.Type = FetchType.System_Char;
                         payloadFetch.Size = sizeof(char);
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.SByte:
                     {
-                        payloadFetch.Type = typeof(SByte);
+                        payloadFetch.Type = FetchType.System_SByte;
                         payloadFetch.Size = sizeof(SByte);
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.Byte:
                     {
-                        payloadFetch.Type = typeof(byte);
+                        payloadFetch.Type = FetchType.System_Byte;
                         payloadFetch.Size = sizeof(byte);
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.Int16:
                     {
-                        payloadFetch.Type = typeof(Int16);
+                        payloadFetch.Type = FetchType.System_Int16;
                         payloadFetch.Size = sizeof(Int16);
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.UInt16:
                     {
-                        payloadFetch.Type = typeof(UInt16);
+                        payloadFetch.Type = FetchType.System_UInt16;
                         payloadFetch.Size = sizeof(UInt16);
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.Int32:
                     {
-                        payloadFetch.Type = typeof(Int32);
+                        payloadFetch.Type = FetchType.System_Int32;
                         payloadFetch.Size = sizeof(Int32);
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.UInt32:
                     {
-                        payloadFetch.Type = typeof(UInt32);
+                        payloadFetch.Type = FetchType.System_UInt32;
                         payloadFetch.Size = sizeof(UInt32);
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.Int64:
                     {
-                        payloadFetch.Type = typeof(Int64);
+                        payloadFetch.Type = FetchType.System_Int64;
                         payloadFetch.Size = sizeof(Int64);
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.UInt64:
                     {
-                        payloadFetch.Type = typeof(UInt64);
+                        payloadFetch.Type = FetchType.System_UInt64;
                         payloadFetch.Size = sizeof(UInt64);
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.Single:
                     {
-                        payloadFetch.Type = typeof(Single);
+                        payloadFetch.Type = FetchType.System_Single;
                         payloadFetch.Size = sizeof(Single);
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.Double:
                     {
-                        payloadFetch.Type = typeof(Double);
+                        payloadFetch.Type = FetchType.System_Double;
                         payloadFetch.Size = sizeof(Double);
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.Decimal:
                     {
-                        payloadFetch.Type = typeof(Decimal);
+                        payloadFetch.Type = FetchType.System_Decimal;
                         payloadFetch.Size = sizeof(Decimal);
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.DateTime:
                     {
-                        payloadFetch.Type = typeof(DateTime);
+                        payloadFetch.Type = FetchType.System_DateTime;
                         payloadFetch.Size = 8;
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.Guid:
                     {
-                        payloadFetch.Type = typeof(Guid);
+                        payloadFetch.Type = FetchType.System_Guid;
                         payloadFetch.Size = 16;
                         payloadFetch.Offset = offset;
                         break;
                     }
                 case EventPipeTypeCode.NullTerminatedUTF16String:
                     {
-                        payloadFetch.Type = typeof(String);
+                        payloadFetch.Type = FetchType.System_String;
                         payloadFetch.Size = DynamicTraceEventData.NULL_TERMINATED;
                         payloadFetch.Offset = offset;
                         break;
@@ -587,7 +588,7 @@ namespace Microsoft.Diagnostics.Tracing
                         {
                             throw new FormatException($"VarInt is not a valid type code for this metadata.");
                         }
-                        payloadFetch.Type = typeof(long);
+                        payloadFetch.Type = FetchType.System_Int64;
                         payloadFetch.Size = DynamicTraceEventData.VARINT;
                         payloadFetch.Offset = offset;
                         break;
@@ -598,7 +599,7 @@ namespace Microsoft.Diagnostics.Tracing
                         {
                             throw new FormatException($"VarUInt is not a valid type code for this metadata.");
                         }
-                        payloadFetch.Type = typeof(ulong);
+                        payloadFetch.Type = FetchType.System_UInt64;
                         payloadFetch.Size = DynamicTraceEventData.VARINT;
                         payloadFetch.Offset = offset;
                         break;
@@ -619,7 +620,7 @@ namespace Microsoft.Diagnostics.Tracing
                         {
                             throw new FormatException($"FixedLengthArray too large", e);
                         }
-                        
+
                         break;
                     }
                 case EventPipeTypeCode.UTF8CodeUnit:
@@ -628,7 +629,7 @@ namespace Microsoft.Diagnostics.Tracing
                         {
                             throw new FormatException($"UTF8CodeUnit is not a valid type code for this metadata.");
                         }
-                        payloadFetch.Type = typeof(char);
+                        payloadFetch.Type = FetchType.System_Char;
                         payloadFetch.Size = sizeof(byte);
                         payloadFetch.Offset = offset;
                         break;
@@ -673,7 +674,7 @@ namespace Microsoft.Diagnostics.Tracing
         enum EventPipeTypeCode
         {
             Object = 1,                        // Concatenate together all of the encoded fields
-            Boolean = 3,                       // A 4-byte LE integer with value 0=false and 1=true.  
+            Boolean = 3,                       // A 4-byte LE integer with value 0=false and 1=true.
             UTF16CodeUnit = 4,                 // a 2-byte UTF16 code unit
             SByte = 5,                         // 1-byte signed integer
             Byte = 6,                          // 1-byte unsigned integer
@@ -694,7 +695,7 @@ namespace Microsoft.Diagnostics.Tracing
             VarUInt = 21,                      // New in V6: variable-length unsigned integer (ULEB128)
             FixedLengthArray = 22,             // New in V6: A fixed-length array of elements. The length is determined by the metadata.
             UTF8CodeUnit = 23,                 // New in V6: A single UTF8 code unit (1 byte).
-            RelLoc = 24,                       // New in V6: An array at a relative location within the payload. 
+            RelLoc = 24,                       // New in V6: An array at a relative location within the payload.
             DataLoc = 25                       // New in V6: An absolute data location within the payload.
         }
 
@@ -789,7 +790,7 @@ namespace Microsoft.Diagnostics.Tracing
             //TraceEvent expects empty name to be canonicalized as null rather than ""
             if (EventName == "")
             {
-                EventName = null; 
+                EventName = null;
             }
 
             if(ProviderId == Guid.Empty)
@@ -804,12 +805,12 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 PopulateWellKnownEventParameters();
             }
-            
+
             if (Opcode == 0)
             {
                 ExtractImpliedOpcode();
             }
-            
+
             StripStartStopInEventName();
         }
 
@@ -876,23 +877,23 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     DynamicTraceEventData.PayloadFetch[] fieldFetches = new DynamicTraceEventData.PayloadFetch[3];
                     string[] fieldNames = new string[3];
-                    fieldFetches[0].Type = typeof(string);
+                    fieldFetches[0].Type = FetchType.System_String;
                     fieldFetches[0].Size = DynamicTraceEventData.NULL_TERMINATED;
                     fieldFetches[0].Offset = 0;
                     fieldNames[0] = "SourceName";
 
-                    fieldFetches[1].Type = typeof(string);
+                    fieldFetches[1].Type = FetchType.System_String;
                     fieldFetches[1].Size = DynamicTraceEventData.NULL_TERMINATED;
                     fieldFetches[1].Offset = ushort.MaxValue;
                     fieldNames[1] = "EventName";
 
                     DynamicTraceEventData.PayloadFetch[] keyValuePairFieldFetches = new DynamicTraceEventData.PayloadFetch[2];
                     string[] keyValuePairFieldNames = new string[2];
-                    keyValuePairFieldFetches[0].Type = typeof(string);
+                    keyValuePairFieldFetches[0].Type = FetchType.System_String;
                     keyValuePairFieldFetches[0].Size = DynamicTraceEventData.NULL_TERMINATED;
                     keyValuePairFieldFetches[0].Offset = 0;
                     keyValuePairFieldNames[0] = "Key";
-                    keyValuePairFieldFetches[1].Type = typeof(string);
+                    keyValuePairFieldFetches[1].Type = FetchType.System_String;
                     keyValuePairFieldFetches[1].Size = DynamicTraceEventData.NULL_TERMINATED;
                     keyValuePairFieldFetches[1].Offset = ushort.MaxValue;
                     keyValuePairFieldNames[1] = "Value";

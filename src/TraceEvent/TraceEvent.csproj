@@ -29,7 +29,7 @@
     <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
     <LangVersion>9.0</LangVersion>
     <!-- Baseline analyzer warnings from NET 9.0 -->
-    <NoWarn>$(NoWarn);CA2014</NoWarn>
+    <NoWarn>$(NoWarn);CA2014;CS8524</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -160,7 +160,6 @@
 
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.nuspec" />
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.props" />
-    <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.targets" />
   </ItemGroup>
 
 

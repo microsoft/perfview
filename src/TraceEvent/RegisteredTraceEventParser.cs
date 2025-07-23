@@ -9,12 +9,13 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using static Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData.PayloadFetch;
 
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     /// <summary>
     /// RegisteredTraceEventParser uses the standard windows provider database (TDH, what gets registered with wevtutil)
-    /// to find the names of events and fields of the events).   
+    /// to find the names of events and fields of the events).
     /// </summary>
     public sealed unsafe class RegisteredTraceEventParser : ExternalTraceEventParser
     {
@@ -35,11 +36,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 // Uncomment this if you want to see the template in the debugger at this point
                 // template.source = data.source;
                 // template.eventRecord = data.eventRecord;
-                // template.userData = data.userData;  
+                // template.userData = data.userData;
                 m_state.m_templates[template] = template;
             };
 
-            // Try to parse bitmap and value map information.  
+            // Try to parse bitmap and value map information.
             symbolSource.MetaDataEventMapInfo += delegate (EmptyTraceData data)
             {
                 try
@@ -66,7 +67,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// Given a provider name that has been registered with the operating system, get
         /// a string representing the ETW manifest for that provider.    Note that this
         /// manifest is not as rich as the original source manifest because some information
-        /// is not actually compiled into the binary manifest that is registered with the OS.  
+        /// is not actually compiled into the binary manifest that is registered with the OS.
         /// </summary>
         public static string GetManifestForRegisteredProvider(string providerName)
         {
@@ -82,11 +83,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// Given a provider GUID that has been registered with the operating system, get
         /// a string representing the ETW manifest for that provider.    Note that this
         /// manifest is not as rich as the original source manifest because some information
-        /// is not actually compiled into the binary manifest that is registered with the OS.  
+        /// is not actually compiled into the binary manifest that is registered with the OS.
         /// </summary>
         public static string GetManifestForRegisteredProvider(Guid providerGuid)
         {
-            int buffSize = 84000;       // Still in the small object heap.  
+            int buffSize = 84000;       // Still in the small object heap.
             var buffer = new byte[buffSize]; // Still in the small object heap.
             byte* enumBuffer = null;
 
@@ -98,18 +99,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             SortedDictionary<int, StringWriter> events = new SortedDictionary<int, StringWriter>();
             // We keep tasks separated by task ID
             SortedDictionary<int, TaskInfo> tasks = new SortedDictionary<int, TaskInfo>();
-            // Templates where the KEY is the template string and the VALUE is the template name (backwards)  
+            // Templates where the KEY is the template string and the VALUE is the template name (backwards)
             Dictionary<string, string> templateIntern = new Dictionary<string, string>(8);
 
-            // Remember any enum types we have.   Value is XML for the enum (normal) 
+            // Remember any enum types we have.   Value is XML for the enum (normal)
             Dictionary<string, string> enumIntern = new Dictionary<string, string>();
             StringWriter enumLocalizations = new StringWriter();
 
-            // Any task names used so far 
+            // Any task names used so far
             Dictionary<string, int> taskNames = new Dictionary<string, int>();
-            // Any  es used so far 
+            // Any  es used so far
             Dictionary<string, int> opcodeNames = new Dictionary<string, int>();
-            // This ensures that we have unique event names. 
+            // This ensures that we have unique event names.
             Dictionary<string, int> eventNames = new Dictionary<string, int>();
 
             SortedDictionary<ulong, string> keywords = new SortedDictionary<ulong, string>();
@@ -118,7 +119,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 foreach (var keywordItem in keywordsItems)
                 {
-                    // Skip the reserved keywords.   
+                    // Skip the reserved keywords.
                     if (keywordItem.Value >= 1000000000000UL)
                     {
                         continue;
@@ -200,7 +201,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             taskName = "task_" + eventInfo->EventDescriptor.Task.ToString();
                         }
 
-                        // Ensure task name is unique.  
+                        // Ensure task name is unique.
                         int taskNumForName;
                         if (taskNames.TryGetValue(taskName, out taskNumForName) && taskNumForName != eventInfo->EventDescriptor.Task)
                         {
@@ -223,7 +224,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
                         }
 
-                        // Ensure opcode name is unique.  
+                        // Ensure opcode name is unique.
                         int opcodeNumForName;
                         if (opcodeNames.TryGetValue(opcodeName, out opcodeNumForName) && opcodeNumForName != eventInfo->EventDescriptor.Opcode)
                         {
@@ -237,7 +238,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         }
                         opcodeNames[opcodeName] = eventInfo->EventDescriptor.Opcode;
 
-                        // And event name 
+                        // And event name
                         string eventName = taskName;
                         if (!taskName.EndsWith(opcodeName, StringComparison.OrdinalIgnoreCase))
                         {
@@ -280,9 +281,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         if (eventInfo->EventDescriptor.Opcode != 0)
                         {
                             string opcodeId;
-                            if (eventInfo->EventDescriptor.Opcode < 10)       // It is a reserved opcode.  
+                            if (eventInfo->EventDescriptor.Opcode < 10)       // It is a reserved opcode.
                             {
-                                // For some reason opcodeName does not have the underscore, which we need. 
+                                // For some reason opcodeName does not have the underscore, which we need.
                                 if (eventInfo->EventDescriptor.Opcode == (byte)TraceEventOpcode.DataCollectionStart)
                                 {
                                     opcodeId = "win:DC_Start";
@@ -311,7 +312,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
                             eventWriter.Write(" opcode=\"{0}\"", opcodeId);
                         }
-                        // TODO handle cases outside standard levels 
+                        // TODO handle cases outside standard levels
                         if ((int)TraceEventLevel.Always <= eventInfo->EventDescriptor.Level && eventInfo->EventDescriptor.Level <= (int)TraceEventLevel.Verbose)
                         {
                             var asLevel = (TraceEventLevel)eventInfo->EventDescriptor.Level;
@@ -352,7 +353,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                         var hr = TdhGetEventMapInformation(&eventRecord, mapName, enumInfo, ref buffSize);
                                         if (hr == 0)
                                         {
-                                            // We only support manifest enums for now.  
+                                            // We only support manifest enums for now.
                                             if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP ||
                                                 enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_BITMAP)
                                             {
@@ -409,7 +410,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
                             var templateStr = templateWriter.ToString();
 
-                            // See if this template already exists, and if not make it 
+                            // See if this template already exists, and if not make it
                             string templateName;
                             if (!templateIntern.TryGetValue(templateStr, out templateName))
                             {
@@ -463,7 +464,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 var task = tasks[taskValue];
                 manifest.WriteLine("     <task name=\"{0}\" message=\"$(string.task_{1})\" value=\"{2}\"{3}>", task.Name, task.Name, taskValue,
-                    task.Opcodes == null ? "/" : "");       // If no opcodes, terminate immediately.  
+                    task.Opcodes == null ? "/" : "");       // If no opcodes, terminate immediately.
                 localizedStrings.WriteLine("    <string id=\"task_{0}\" value=\"{1}\"/>", task.Name, task.Name);
                 if (task.Opcodes != null)
                 {
@@ -555,7 +556,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         /// <summary>
         /// Generates a space separated list of set of keywords 'keywordSet' using the table 'keywords'
-        /// It will generate new keyword names if needed and add them to 'keywords' if they are not present.  
+        /// It will generate new keyword names if needed and add them to 'keywords' if they are not present.
         /// </summary>
         private static string GetKeywordStr(SortedDictionary<ulong, string> keywords, ulong keywordSet)
         {
@@ -617,11 +618,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Try to look up 'unknonwEvent using TDH or the TraceLogging mechanism.   if 'mapTable' is non-null it will be used
         /// look up the string names for fields that have bitsets or enumerated values.   This is only need for the KernelTraceControl
-        /// case where the map information is logged as special events and can't be looked up with TDH APIs.  
+        /// case where the map information is logged as special events and can't be looked up with TDH APIs.
         /// </summary>
         internal static DynamicTraceEventData TryLookupWorker(TraceEvent unknownEvent, Dictionary<MapKey, IDictionary<long, string>> mapTable = null)
         {
-            // Is this a TraceLogging style 
+            // Is this a TraceLogging style
             DynamicTraceEventData ret = null;
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -666,16 +667,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         /// <summary>
         /// TdhEventParser takes the Trace Diagnostics Helper (TDH) TRACE_EVENT_INFO structure and
-        /// (passed as a byte*) and converts it to a DynamicTraceEventData which which 
+        /// (passed as a byte*) and converts it to a DynamicTraceEventData which which
         /// can be used to parse events of that type.   You first create TdhEventParser and then
-        /// call ParseEventMetaData to do the parsing.  
+        /// call ParseEventMetaData to do the parsing.
         /// </summary>
         internal class TdhEventParser
         {
             /// <summary>
             /// Creates a new parser from the TRACE_EVENT_INFO held in 'buffer'.  Use
             /// ParseEventMetaData to then parse it into a DynamicTraceEventData structure.
-            ///  EventRecord can be null and mapTable if present allow the parser to resolve maps (enums), and can be null.  
+            ///  EventRecord can be null and mapTable if present allow the parser to resolve maps (enums), and can be null.
             /// </summary>
             public TdhEventParser(byte* eventInfo, TraceEventNativeMethods.EVENT_RECORD* eventRecord, Dictionary<MapKey, IDictionary<long, string>> mapTable)
             {
@@ -718,7 +719,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
 
                 var eventID = eventInfo->EventDescriptor.Id;
-                // Mark it as a classic event if necessary. 
+                // Mark it as a classic event if necessary.
                 if (eventInfo->DecodingSource == 1) // means it is from MOF (Classic)
                 {
                     eventID = (int)TraceEventID.Illegal;
@@ -745,13 +746,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 newTemplate.payloadNames = fields.FieldNames;
                 newTemplate.payloadFetches = fields.FieldFetches;
 
-                return newTemplate;      // return this as the event template for this lookup. 
+                return newTemplate;      // return this as the event template for this lookup.
             }
 
             /// <summary>
-            /// Parses at most 'maxFields' fields starting at the current position.  
+            /// Parses at most 'maxFields' fields starting at the current position.
             /// Will return the parse fields in 'payloadNamesRet' and 'payloadFetchesRet'
-            /// Will return true if successful, false means an error occurred.  
+            /// Will return true if successful, false means an error occurred.
             /// </summary>
             private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(int startField, int numFields)
             {
@@ -767,9 +768,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     // Remove anything that does not look like an ID (.e.g space)
                     propertyName = Regex.Replace(propertyName, "[^A-Za-z0-9_]", "");
 
-                    // If it is an array, the field offset starts over at 0 because they are 
+                    // If it is an array, the field offset starts over at 0 because they are
                     // describing the ELMEMENT not the array and thus each element starts at 0
-                    // Strings do NOT describe the element and thus don't get this treatment. 
+                    // Strings do NOT describe the element and thus don't get this treatment.
                     var arrayFieldOffset = fieldOffset;
                     if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0 &&
                         propertyInfo->InType != TdhInputType.UnicodeString && propertyInfo->InType != TdhInputType.AnsiString)
@@ -805,10 +806,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         {
                             string mapName = new string((char*)(&eventBuffer[propertyInfo->MapNameOffset]));
 
-                            // Normal case, you can look up the enum information immediately. 
+                            // Normal case, you can look up the enum information immediately.
                             if (eventRecord != null)
                             {
-                                int buffSize = 84000;  // TODO this is inefficient (and incorrect for very large enums).  
+                                int buffSize = 84000;  // TODO this is inefficient (and incorrect for very large enums).
                                 byte* enumBuffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
 
                                 EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
@@ -824,10 +825,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             {
                                 // This is the kernelTraceControl case,  the map information will be provided
                                 // later, so we have to set up a LAZY map which will be evaluated when we need the
-                                // enum (giving time for the enum definition to be processed. 
+                                // enum (giving time for the enum definition to be processed.
                                 var mapKey = new MapKey(eventInfo->ProviderGuid, mapName);
 
-                                // Set the map to be a lazyMap, which is a Func that returns a map.  
+                                // Set the map to be a lazyMap, which is a Func that returns a map.
                                 Func<IDictionary<long, string>> lazyMap = delegate ()
                                 {
                                     IDictionary<long, string> map = null;
@@ -847,7 +848,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     // Is it an array (binary and not a struct) (seems InType is not valid if property is a struct, so need to test for both.
                     if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength | PROPERTY_FLAGS.ParamFixedCount)) != 0 || propertyInfo->CountOrCountIndex > 1 || (propertyInfo->InType == TdhInputType.Binary && (propertyInfo->Flags & PROPERTY_FLAGS.Struct) == 0))
                     {
-                        // silliness where if it is a byte[] they use Length otherwise they use count.  Normalize it.  
+                        // silliness where if it is a byte[] they use Length otherwise they use count.  Normalize it.
                         var countOrCountIndex = propertyInfo->CountOrCountIndex;
                         if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamLength) != 0 || propertyInfo->InType == TdhInputType.Binary)
                         {
@@ -864,8 +865,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         else
                         {
                             // We only support the case where the length/count is right before the array.   We remove this field
-                            // and use the PREFIX size to indicate that the size of the array is determined by the 32 or 16 bit number before 
-                            // the array data.   
+                            // and use the PREFIX size to indicate that the size of the array is determined by the 32 or 16 bit number before
+                            // the array data.
                             if (countOrCountIndex == startField + curField - 1)
                             {
                                 var lastFieldIdx = fieldFetches.Count - 1;
@@ -896,33 +897,33 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
                         }
 
-                        // Strings are treated specially (we don't treat them as an array of chars).  
+                        // Strings are treated specially (we don't treat them as an array of chars).
                         // They don't need an arrayFetch but DO need set the size and offset appropriately
-                        if (propertyFetch.Type == typeof(string))
+                        if (propertyFetch.Type == FetchType.System_String)
                         {
                             // This is a string with its size determined by another field.   Set the size
-                            // based on 'arraySize' but preserver the IS_ANSI that we got from looking at the tdhInType.  
+                            // based on 'arraySize' but preserver the IS_ANSI that we got from looking at the tdhInType.
                             propertyFetch.Size = (ushort)(arraySize | (propertyFetch.Size & DynamicTraceEventData.IS_ANSI));
                             propertyFetch.Offset = arrayFieldOffset;
                         }
                         else
                         {
-                            Debug.WriteLine("     Field is an array of size " + ((fixedCount != 0) ? fixedCount.ToString() : "VARIABLE") + " of type " + ((propertyFetch.Type ?? typeof(void))) + " at offset " + arrayFieldOffset.ToString("x"));
+                            Debug.WriteLine("     Field is an array of size " + ((fixedCount != 0) ? fixedCount.ToString() : "VARIABLE") + " of type " + (propertyFetch.Type is { } t1 ? FetchTypeHelpers.GetFullName(t1) : "System.Void") + " at offset " + arrayFieldOffset.ToString("x"));
                             propertyFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(arrayFieldOffset, propertyFetch, arraySize, fixedCount, projectCharArrayAsString:false);
                         }
 
-                        fieldOffset = ushort.MaxValue;           // Indicate that the next offset must be computed at run time. 
+                        fieldOffset = ushort.MaxValue;           // Indicate that the next offset must be computed at run time.
                     }
 
                     fieldFetches.Add(propertyFetch);
                     fieldNames.Add(propertyName);
                     var size = propertyFetch.Size;
-                    Debug.WriteLine("    Got TraceLogging Field " + propertyName + " " + (propertyFetch.Type ?? typeof(void)) + " size " + size.ToString("x") + " offset " + fieldOffset.ToString("x") + " (void probably means array)");
+                    Debug.WriteLine("    Got TraceLogging Field " + propertyName + " " + (propertyFetch.Type is { } t2 ? FetchTypeHelpers.GetFullName(t2) : "System.Void") + " size " + size.ToString("x") + " offset " + fieldOffset.ToString("x") + " (void probably means array)");
 
                     Debug.Assert(0 < size);
                     if (size >= DynamicTraceEventData.SPECIAL_SIZES)
                     {
-                        fieldOffset = ushort.MaxValue;           // Indicate that the offset must be computed at run time. 
+                        fieldOffset = ushort.MaxValue;           // Indicate that the offset must be computed at run time.
                     }
                     else if (fieldOffset != ushort.MaxValue)
                     {
@@ -937,11 +938,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             // Parses a EVENT_MAP_INFO into a Dictionary for a Value map or a SortedDictionary for a Bitmap
-            // returns null if it does not know how to parse it.  
+            // returns null if it does not know how to parse it.
             internal static unsafe IDictionary<long, string> ParseMap(EVENT_MAP_INFO* enumInfo, byte* enumBuffer)
             {
                 IDictionary<long, string> map = null;
-                // We only support manifest enums for now.  
+                // We only support manifest enums for now.
                 if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP ||
                     enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_BITMAP)
                 {
@@ -971,9 +972,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             #region private
             private TRACE_EVENT_INFO* eventInfo;
             private TraceEventNativeMethods.EVENT_RECORD* eventRecord;
-            private Dictionary<MapKey, IDictionary<long, string>> mapTable;     // table of enums that have defined. 
+            private Dictionary<MapKey, IDictionary<long, string>> mapTable;     // table of enums that have defined.
             private EVENT_PROPERTY_INFO* propertyInfos;
-            private byte* eventBuffer;                           // points at the eventInfo, but in increments of bytes 
+            private byte* eventBuffer;                           // points at the eventInfo, but in increments of bytes
             #endregion // private
         }
 
@@ -1034,8 +1035,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public int NameOffset;
             public MAP_FLAGS Flag;
             public int EntryCount;
-            public int ValueType;                  // I don't expect patterns, I expect this to be 0 (which means normal enums).  
-            public EVENT_MAP_ENTRY MapEntryArray;  // Actually an array, this is the first element.  
+            public int ValueType;                  // I don't expect patterns, I expect this to be 0 (which means normal enums).
+            public EVENT_MAP_ENTRY MapEntryArray;  // Actually an array, this is the first element.
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -1060,7 +1061,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public int PropertyCount;
             public int TopLevelPropertyCount;
             public int Flags;
-            public EVENT_PROPERTY_INFO EventPropertyInfoArray;  // Actually an array, this is the first element.  
+            public EVENT_PROPERTY_INFO EventPropertyInfoArray;  // Actually an array, this is the first element.
         }
 
         public struct EVENT_DESCRIPTOR
@@ -1079,12 +1080,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public PROPERTY_FLAGS Flags;
             public int NameOffset;
 
-            // These are valid if Flags & Struct not set. 
+            // These are valid if Flags & Struct not set.
             public TdhInputType InType;
             public ushort OutType;             // Really TDH_OUT_TYPE
             public int MapNameOffset;
 
-            // These are valid if Flags & Struct is set.  
+            // These are valid if Flags & Struct is set.
             public int StructStartIndex
             {
                 get
@@ -1103,7 +1104,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             // Normally Count is 1 (thus every field in an array, it is just that most array have fixed size of 1)
-            public ushort CountOrCountIndex;                // Flags & ParamFixedLength determines if it count, otherwise countIndex 
+            public ushort CountOrCountIndex;                // Flags & ParamFixedLength determines if it count, otherwise countIndex
                                                             // Normally Length is the size of InType (thus is fixed), but can be variable for blobs.
             public ushort LengthOrLengthIndex;              // Flags & ParamLength determines if it lengthIndex otherwise it is the length InType
             public int Reserved;
@@ -1166,7 +1167,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
     /// <summary>
     /// ExternalTraceEventParser is an abstract class that acts as a parser for any 'External' resolution
-    /// This include the TDH (RegisteredTraceEventParser) as well as the WPPTraceEventParser.   
+    /// This include the TDH (RegisteredTraceEventParser) as well as the WPPTraceEventParser.
     /// </summary>
     public abstract unsafe class ExternalTraceEventParser : TraceEventParser
     {
@@ -1184,7 +1185,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 this.source.RegisterUnhandledEvent(delegate (TraceEvent unknown)
                 {
-                    // See if we already have this definition 
+                    // See if we already have this definition
                     DynamicTraceEventData parsedTemplate = null;
 
                     if (!m_state.m_templates.TryGetValue(unknown, out parsedTemplate))
@@ -1192,7 +1193,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         parsedTemplate = TryLookup(unknown);
                         if (parsedTemplate == null)
                         {
-                            m_state.m_templates.Add(unknown.Clone(), null);         // add an entry to remember that we tried and failed.  
+                            m_state.m_templates.Add(unknown.Clone(), null);         // add an entry to remember that we tried and failed.
                         }
                     }
                     if (parsedTemplate == null)
@@ -1203,13 +1204,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     // registeredWithTraceEventSource is a fail safe.   Basically if you added yourself to the table
                     // (In OnNewEventDefinition) then you should not come back as unknown, however because of dual events
                     // and just general fragility we don't want to rely on that.  So we keep a bit and ensure that we
-                    // only add the event definition once.  
+                    // only add the event definition once.
                     if (!parsedTemplate.registeredWithTraceEventSource)
                     {
                         parsedTemplate.registeredWithTraceEventSource = true;
                         bool ret = OnNewEventDefintion(parsedTemplate, false) == EventFilterResponse.AcceptEvent;
 
-                        // If we have subscribers, notify them as well.  
+                        // If we have subscribers, notify them as well.
                         var newEventDefinition = NewEventDefinition;
                         if (newEventDefinition != null)
                         {
@@ -1224,7 +1225,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
-        /// Override.  
+        /// Override.
         /// </summary>
         public override bool IsStatic { get { return false; } }
 
@@ -1236,7 +1237,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         protected override string GetProviderName()
         {
-            // We handle more than one provider, so the convention is to return null. 
+            // We handle more than one provider, so the convention is to return null.
             return null;
         }
 
@@ -1263,7 +1264,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
-            // Normally state is setup in the constructor, but call can be invoked before the constructor has finished, 
+            // Normally state is setup in the constructor, but call can be invoked before the constructor has finished,
             if (m_state == null)
             {
                 m_state = (ExternalTraceEventParserState)StateObject;
@@ -1287,7 +1288,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
-        /// Register 'template' so that if there are any subscriptions to template they get registered with the source.    
+        /// Register 'template' so that if there are any subscriptions to template they get registered with the source.
         /// </summary>
         internal override EventFilterResponse OnNewEventDefintion(TraceEvent template, bool mayHaveExistedBefore)
         {
@@ -1312,14 +1313,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        private Dictionary<MapKey, IDictionary<long, string>> m_maps;       // Any maps (enums or bitsets) defined by KernelTraceControl events.  
+        private Dictionary<MapKey, IDictionary<long, string>> m_maps;       // Any maps (enums or bitsets) defined by KernelTraceControl events.
 
         #endregion
     }
 
     #region internal classes
     /// <summary>
-    /// Used to look up Enums (provider x enumName);  Very boring class.  
+    /// Used to look up Enums (provider x enumName);  Very boring class.
     /// </summary>
     internal class MapKey : IEquatable<MapKey>
     {
@@ -1351,19 +1352,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     /// <summary>
     /// TDHDynamicTraceEventParserState represents the state of a  TDHDynamicTraceEventParser that needs to be
     /// serialized to a log file.  It does NOT include information about what events are chosen but DOES contain
-    /// any other necessary information that came from the ETL data file or the OS TDH APIs.  
+    /// any other necessary information that came from the ETL data file or the OS TDH APIs.
     /// </summary>
     internal class ExternalTraceEventParserState : IFastSerializable
     {
         public ExternalTraceEventParserState() { }
 
-        // This is set of all dynamic event templates that this parser has TRIED to resolve.  If resolution 
-        // failed then the value is null, otherwise it is the same as the key.   
+        // This is set of all dynamic event templates that this parser has TRIED to resolve.  If resolution
+        // failed then the value is null, otherwise it is the same as the key.
         internal Dictionary<TraceEvent, DynamicTraceEventData> m_templates;
 
         /// <summary>
         /// This defines what it means to be the same event.   For manifest events it means provider and event ID
-        /// for classic, it means that taskGuid and opcode match.  
+        /// for classic, it means that taskGuid and opcode match.
         /// </summary>
         internal class TraceEventComparer : IEqualityComparer<TraceEvent>
         {
@@ -1419,7 +1420,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public virtual void ToStream(Serializer serializer)
         {
-            // Calculate the count.  
+            // Calculate the count.
             var count = 0;
             foreach (var template in m_templates.Values)
             {

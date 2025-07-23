@@ -12,6 +12,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+using static Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData.PayloadFetch;
 using Address = System.UInt64;
 
 namespace Microsoft.Diagnostics.Tracing.Parsers
@@ -482,7 +483,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 throw new ArgumentOutOfRangeException("Payload size exceeds buffer size.");
             }
-            Type type = payloadFetch.Type;
+            FetchType? typeOpt = payloadFetch.Type;
 
             // Is this a struct field?
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
@@ -505,9 +506,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 var elementType = arrayInfo.Element.Type;
 
                 // Arrays of characters can be deserialized as strings if desired.
-                if(type == typeof(string))
+                if(typeOpt == FetchType.System_String)
                 {
-                    Debug.Assert(arrayInfo.Element.Type == typeof(char));
+                    Debug.Assert(arrayInfo.Element.Type == FetchType.System_Char);
                     Debug.Assert(arrayInfo.Element.Size == 1 || arrayInfo.Element.Size == 2);
                     if (arrayInfo.Element.Size == 1)
                     {
@@ -520,7 +521,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
 
                 // Byte array short-circuit.
-                if (elementType == typeof(byte))
+                if (elementType == FetchType.System_Byte)
                 {
                     return GetByteArrayAt(offset, arrayCount);
                 }
@@ -530,9 +531,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 for (int i = 0; i < arrayCount; i++)
                 {
                     object value = GetPayloadValueAt(ref arrayInfo.Element, offset, payloadLength);
-                    if (value.GetType() != elementType)
+                    if (arrayInfo.Element.Type != elementType)
                     {
-                        value = ((IConvertible)value).ToType(elementType, null);
+                        value = FetchTypeHelpers.Convert(elementType, value); // ((IConvertible)value).ToType(elementType, null);
                     }
 
                     ret.SetValue(value, i);
@@ -541,7 +542,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return ret;
             }
 
-            if (type == null)
+            if (typeOpt is not {} type)
             {
                 return "[CANT PARSE]";
             }
@@ -564,11 +565,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             if ((uint)EventDataLength <= (uint)offset)
             {
-                return GetDefaultValueByType(type);
+                return FetchTypeHelpers.GetDefaultValueByType(type);
             }
 
             ushort size = payloadFetch.Size;
-            switch (Type.GetTypeCode(type))
+            switch (FetchTypeHelpers.GetTypeCode(type))
             {
                 case TypeCode.String:
                     {
@@ -674,7 +675,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 case TypeCode.Double:
                     return GetDoubleAt(offset);
                 default:
-                    if (type == typeof(IntPtr))
+                    if (typeOpt == FetchType.System_IntPtr)
                     {
                         if (PointerSize == 4)
                         {
@@ -685,11 +686,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             return (Address)GetInt64At(offset);
                         }
                     }
-                    else if (type == typeof(Guid))
+                    else if (typeOpt == FetchType.System_Guid)
                     {
                         return GetGuidAt(offset);
                     }
-                    else if (type == typeof(DateTime))
+                    else if (typeOpt == FetchType.System_DateTime)
                     {
                         if (payloadFetch.Size == 16)
                         {
@@ -1212,7 +1213,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 return offset + PointerSize;
             }
-            else if (IsCountedSize(size) && payloadFetch.Type == typeof(string))
+            else if (IsCountedSize(size) && payloadFetch.Type == FetchType.System_String)
             {
                 int elemSize;
                 if (((size & BIT_32) != 0))
@@ -1245,9 +1246,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        internal static ushort SizeOfType(Type type)
+        internal static ushort SizeOfType(FetchType type)
         {
-            switch (Type.GetTypeCode(type))
+            switch (FetchTypeHelpers.GetTypeCode(type))
             {
                 case TypeCode.String:
                     return NULL_TERMINATED;
@@ -1268,17 +1269,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 case TypeCode.DateTime:
                     return 8;
                 default:
-                    if (type == typeof(Guid))
+                    if (type == FetchType.System_Guid)
                     {
                         return 16;
                     }
 
-                    if (type == typeof(IntPtr))
+                    if (type == FetchType.System_IntPtr)
                     {
                         return POINTER_SIZE;
                     }
 
-                    throw new Exception("Unsupported type " + type.Name); // TODO
+                    throw new Exception("Unsupported type " + FetchTypeHelpers.GetName(type)); // TODO
             }
         }
 
@@ -1311,11 +1312,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// <summary>
             /// Constructor for normal types, (int, string) ...)   Also handles Enums (which are ints with a map)
             /// </summary>
-            public PayloadFetch(ushort offset, ushort size, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, IDictionary<long, string> map = null)
+            public PayloadFetch(ushort offset, ushort size, FetchType fetchType, IDictionary<long, string> map = null)
             {
                 Offset = offset;
                 Size = size;
-                Type = type;
+                Type = fetchType;
                 info = map;
             }
 
@@ -1332,17 +1333,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 switch (inType)
                 {
                     case RegisteredTraceEventParser.TdhInputType.UnicodeString:
-                        Type = typeof(string);
+                        Type = FetchType.System_String;
                         Size = DynamicTraceEventData.NULL_TERMINATED;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.AnsiString:
-                        Type = typeof(string);
+                        Type = FetchType.System_String;
                         Size = DynamicTraceEventData.NULL_TERMINATED | DynamicTraceEventData.IS_ANSI;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.UInt8:
                         if (outType == 13)       // Encoding for boolean
                         {
-                            Type = typeof(bool);
+                            Type = FetchType.System_Boolean;
                             Size = 1;
                             break;
                         }
@@ -1350,7 +1351,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     case RegisteredTraceEventParser.TdhInputType.Binary:
                     // Binary is an array of bytes.  The later logic will transform it to array, thus Binary is like byte
                     case RegisteredTraceEventParser.TdhInputType.Int8:
-                        Type = typeof(byte);
+                        Type = FetchType.System_Byte;
                         Size = 1;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Int16:
@@ -1358,76 +1359,76 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         Size = 2;
                         if (outType == 1)       // Encoding for String
                         {
-                            Type = typeof(char);
+                            Type = FetchType.System_Char;
                             break;
                         }
-                        Type = typeof(short);
+                        Type = FetchType.System_Int16;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Int32:
                     case RegisteredTraceEventParser.TdhInputType.UInt32:
                     case RegisteredTraceEventParser.TdhInputType.HexInt32:
-                        Type = typeof(int);
+                        Type = FetchType.System_Int32;
                         Size = 4;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Int64:
                     case RegisteredTraceEventParser.TdhInputType.UInt64:
                     case RegisteredTraceEventParser.TdhInputType.HexInt64:
-                        Type = typeof(long);
+                        Type = FetchType.System_Int64;
                         Size = 8;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Float:
-                        Type = typeof(float);
+                        Type = FetchType.System_Single;
                         Size = 4;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Double:
-                        Type = typeof(double);
+                        Type = FetchType.System_Double;
                         Size = 8;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Boolean:
-                        Type = typeof(bool);
+                        Type = FetchType.System_Boolean;
                         Size = 4;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.GUID:
-                        Type = typeof(Guid);
+                        Type = FetchType.System_Guid;
                         Size = 16;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Pointer:
                     case RegisteredTraceEventParser.TdhInputType.SizeT:
-                        Type = typeof(IntPtr);
+                        Type = FetchType.System_IntPtr;
                         Size = DynamicTraceEventData.POINTER_SIZE;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.FILETIME:
-                        Type = typeof(DateTime);
+                        Type = FetchType.System_DateTime;
                         Size = 8;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.CountedUtf16String:
                     case RegisteredTraceEventParser.TdhInputType.CountedString:
-                        Type = typeof(string);
+                        Type = FetchType.System_String;
                         Size = DynamicTraceEventData.COUNTED_SIZE;  // Unicode, 16 bit, byteCount
                         break;
                     case RegisteredTraceEventParser.TdhInputType.CountedAnsiString:
                     case RegisteredTraceEventParser.TdhInputType.CountedMbcsString:
-                        Type = typeof(string);
+                        Type = FetchType.System_String;
                         Size = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.IS_ANSI + DynamicTraceEventData.ELEM_COUNT; // 16 Bit.
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Struct:
-                        Type = typeof(DynamicTraceEventData.StructValue);
+                        Type = FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue;
                         Size = DynamicTraceEventData.UNKNOWN_SIZE;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.SYSTEMTIME:
-                        Type = typeof(DateTime);
+                        Type = FetchType.System_DateTime;
                         Size = 16;
                         break;
                     default:
                         Size = DynamicTraceEventData.UNKNOWN_SIZE;
-                        Type = null;
+                        Type = null; // Unknown type.
                         break;
                 }
             }
 
             private static bool ArrayElementCanProjectToString(PayloadFetch element)
             {
-                return element.Type == typeof(char) && (element.Size == 1 || element.Size == 2);
+                return element.Type == FetchType.System_Char && (element.Size == 1 || element.Size == 2);
             }
 
             /// <summary>
@@ -1446,9 +1447,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 };
 
                 // If the array is a char array, then we can project it as a string.
-                if(projectCharArrayAsString && ArrayElementCanProjectToString(element))
+                if (projectCharArrayAsString && ArrayElementCanProjectToString(element))
                 {
-                    ret.Type = typeof(string);
+                    ret.Type = FetchType.System_String;
                 }
 
                 return ret;
@@ -1462,7 +1463,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     uint fixedSize = (uint)(elementCount * element.Size);
                     if (fixedSize >= SPECIAL_SIZES)
                     {
-                        throw new ArgumentOutOfRangeException($"FixedCountArray cannot exceed {SPECIAL_SIZES-1} bytes. ElementCount: {elementCount}, ElementTypeSize: {element.Size}");
+                        throw new ArgumentOutOfRangeException($"FixedCountArray cannot exceed {SPECIAL_SIZES - 1} bytes. ElementCount: {elementCount}, ElementTypeSize: {element.Size}");
                     }
                     size = (ushort)fixedSize;
                 }
@@ -1471,7 +1472,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             public static PayloadFetch RelLocPayloadFetch(ushort offset, PayloadFetch element, bool projectCharArrayAsString = true)
             {
-                if(!element.IsFixedSize)
+                if (!element.IsFixedSize)
                 {
                     throw new ArgumentException("RelLocPayloadFetch requires a fixed size element type.");
                 }
@@ -1484,16 +1485,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     FixedCount = 0,
                     Kind = ArrayKind.RelLoc
                 };
-                if(projectCharArrayAsString && ArrayElementCanProjectToString(element))
+                if (projectCharArrayAsString && ArrayElementCanProjectToString(element))
                 {
-                    ret.Type = typeof(string);
+                    ret.Type = FetchType.System_String;
                 }
                 return ret;
             }
 
             public static PayloadFetch DataLocPayloadFetch(ushort offset, PayloadFetch element, bool projectCharArrayAsString = true)
             {
-                if(!element.IsFixedSize)
+                if (!element.IsFixedSize)
                 {
                     throw new ArgumentException("DataLocPayloadFetch requires a fixed size element type.");
                 }
@@ -1506,9 +1507,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     FixedCount = 0,
                     Kind = ArrayKind.DataLoc
                 };
-                if(projectCharArrayAsString && ArrayElementCanProjectToString(element))
+                if (projectCharArrayAsString && ArrayElementCanProjectToString(element))
                 {
-                    ret.Type = typeof(string);
+                    ret.Type = FetchType.System_String;
                 }
                 return ret;
             }
@@ -1538,7 +1539,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     size = DynamicTraceEventData.UNKNOWN_SIZE; // We don't know the size of the field.
                 }
                 ret.Size = (ushort)size;
-                ret.Type = typeof(StructValue);
+                ret.Type = FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue;
                 ret.info = fields;
                 return ret;
             }
@@ -1566,8 +1567,189 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 get { return info as PayloadFetchArrayInfo; }
             }
 
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-            public Type Type;    // currently null for arrays
+            public FetchType? Type;    // currently null for arrays
+
+            public enum FetchType
+            {
+                System_Boolean,
+                System_Char,
+                System_String,
+                System_SByte,
+                System_Int16,
+                System_Int32,
+                System_Int64,
+                System_Byte,
+                System_UInt16,
+                System_UInt32,
+                System_UInt64,
+                System_Single,
+                System_Double,
+                System_Decimal,
+                System_DateTime,
+                System_Guid,
+                System_IntPtr,
+                Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue,
+            }
+
+            public static class FetchTypeHelpers
+            {
+                public static FetchType Parse(string typeName)
+                {
+                    return typeName switch
+                    {
+                        "System.Boolean" => FetchType.System_Boolean,
+                        "System.Char" => FetchType.System_Char,
+                        "System.String" => FetchType.System_String,
+                        "System.SByte" => FetchType.System_SByte,
+                        "System.Int16" => FetchType.System_Int16,
+                        "System.Int32" => FetchType.System_Int32,
+                        "System.Int64" => FetchType.System_Int64,
+                        "System.Byte" => FetchType.System_Byte,
+                        "System.UInt16" => FetchType.System_UInt16,
+                        "System.UInt32" => FetchType.System_UInt32,
+                        "System.UInt64" => FetchType.System_UInt64,
+                        "System.Single" => FetchType.System_Single,
+                        "System.Double" => FetchType.System_Double,
+                        "System.Decimal" => FetchType.System_Decimal,
+                        "System.DateTime" => FetchType.System_DateTime,
+                        "System.Guid" => FetchType.System_Guid,
+                        "Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData.StructValue" => FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue,
+                        "System.IntPtr" => FetchType.System_IntPtr,
+
+                        _ => throw new InvalidDataException("Unknown FetchType: " + typeName),
+                    };
+                }
+                public static string GetName(FetchType fetchType) => fetchType switch
+                {
+                    FetchType.System_Boolean => "Boolean",
+                    FetchType.System_Char => "Char",
+                    FetchType.System_String => "String",
+                    FetchType.System_SByte => "SByte",
+                    FetchType.System_Int16 => "Int16",
+                    FetchType.System_Int32 => "Int32",
+                    FetchType.System_Int64 => "Int64",
+                    FetchType.System_Byte => "Byte",
+                    FetchType.System_UInt16 => "UInt16",
+                    FetchType.System_UInt32 => "UInt32",
+                    FetchType.System_UInt64 => "UInt64",
+                    FetchType.System_IntPtr => "IntPtr",
+                    FetchType.System_Single => "Single",
+                    FetchType.System_Double => "Double",
+                    FetchType.System_Decimal => "Decimal",
+                    FetchType.System_DateTime => "DateTime",
+                    FetchType.System_Guid => "Guid",
+                    FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue => "StructValue",
+                };
+
+                internal static TypeCode GetTypeCode(FetchType type)
+                {
+                    return type switch
+                    {
+                        FetchType.System_Boolean => TypeCode.Boolean,
+                        FetchType.System_Char => TypeCode.Char,
+                        FetchType.System_String => TypeCode.String,
+                        FetchType.System_SByte => TypeCode.SByte,
+                        FetchType.System_Int16 => TypeCode.Int16,
+                        FetchType.System_Int32 => TypeCode.Int32,
+                        FetchType.System_Int64 => TypeCode.Int64,
+                        FetchType.System_Byte => TypeCode.Byte,
+                        FetchType.System_UInt16 => TypeCode.UInt16,
+                        FetchType.System_UInt32 => TypeCode.UInt32,
+                        FetchType.System_UInt64 => TypeCode.UInt64,
+                        FetchType.System_Single => TypeCode.Single,
+                        FetchType.System_Double => TypeCode.Double,
+                        FetchType.System_Decimal => TypeCode.Decimal,
+                        FetchType.System_DateTime => TypeCode.DateTime,
+                        FetchType.System_Guid => TypeCode.Object,
+                        FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue => TypeCode.Object,
+                        FetchType.System_IntPtr => TypeCode.Object
+                    };
+                }
+
+                internal static object GetDefaultValueByType(FetchType type)
+                {
+                    return type switch
+                    {
+                        FetchType.System_Boolean => default(bool),
+                        FetchType.System_Char => default(char),
+                        FetchType.System_String => string.Empty,
+                        FetchType.System_SByte => default(sbyte),
+                        FetchType.System_Int16 => default(short),
+                        FetchType.System_Int32 => default(int),
+                        FetchType.System_Int64 => default(long),
+                        FetchType.System_Byte => default(byte),
+                        FetchType.System_UInt16 => default(ushort),
+                        FetchType.System_UInt32 => default(uint),
+                        FetchType.System_UInt64 => default(ulong),
+                        FetchType.System_Single => default(float),
+                        FetchType.System_Double => default(double),
+                        FetchType.System_Decimal => default(decimal),
+                        FetchType.System_DateTime => default(DateTime),
+                        FetchType.System_Guid => default(Guid),
+                        FetchType.System_IntPtr => IntPtr.Zero,
+                        FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue => default(StructValue),
+                    };
+                }
+
+                internal static string GetFullName(FetchType type)
+                {
+                    return type switch
+                    {
+                        FetchType.System_Boolean => "System.Boolean",
+                        FetchType.System_Char => "System.Char",
+                        FetchType.System_String => "System.String",
+                        FetchType.System_SByte => "System.SByte",
+                        FetchType.System_Int16 => "System.Int16",
+                        FetchType.System_Int32 => "System.Int32",
+                        FetchType.System_Int64 => "System.Int64",
+                        FetchType.System_Byte => "System.Byte",
+                        FetchType.System_UInt16 => "System.UInt16",
+                        FetchType.System_UInt32 => "System.UInt32",
+                        FetchType.System_UInt64 => "System.UInt64",
+                        FetchType.System_Single => "System.Single",
+                        FetchType.System_Double => "System.Double",
+                        FetchType.System_Decimal => "System.Decimal",
+                        FetchType.System_DateTime => "System.DateTime",
+                        FetchType.System_Guid => "System.Guid",
+                        FetchType.System_IntPtr => "System.IntPtr",
+                        FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue => "Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData.StructValue",
+                    };
+                }
+
+                internal static object Convert(FetchType? typeOpt, object value)
+                {
+                    if (typeOpt is not { } type)
+                    {
+                        if (value == null)
+                        {
+                            return null; // No type, no value.
+                        }
+                        throw new InvalidOperationException($"Cannot convert value '{value}' when type is null.");
+                    }
+
+                    return type switch
+                    {
+                        FetchType.System_Boolean => System.Convert.ToBoolean(value),
+                        FetchType.System_Char => System.Convert.ToChar(value),
+                        FetchType.System_String => System.Convert.ToString(value),
+                        FetchType.System_SByte => System.Convert.ToSByte(value),
+                        FetchType.System_Int16 => System.Convert.ToInt16(value),
+                        FetchType.System_Int32 => System.Convert.ToInt32(value),
+                        FetchType.System_Int64 => System.Convert.ToInt64(value),
+                        FetchType.System_Byte => System.Convert.ToByte(value),
+                        FetchType.System_UInt16 => System.Convert.ToUInt16(value),
+                        FetchType.System_UInt32 => System.Convert.ToUInt32(value),
+                        FetchType.System_UInt64 => System.Convert.ToUInt64(value),
+                        FetchType.System_Single => System.Convert.ToSingle(value),
+                        FetchType.System_Double => System.Convert.ToDouble(value),
+                        FetchType.System_Decimal => System.Convert.ToDecimal(value),
+                        FetchType.System_DateTime => System.Convert.ToDateTime(value),
+                        FetchType.System_Guid => System.Guid.Parse(System.Convert.ToString(value)),
+                        FetchType.System_IntPtr => new IntPtr(System.Convert.ToInt64(value)),
+                        FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue => (StructValue)value,
+                    };
+                }
+            }
 
             // Non null of 'Type' is a enum
             public IDictionary<long, string> Map
@@ -1621,7 +1803,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public override string ToString()
             {
                 StringWriter sw = new StringWriter();
-                sw.Write("<PayloadFetch Size=\"{0}\" Offset=\"{1}\" Type=\"{2}\"", Size, Offset, Type != null ? Type.Name : "");
+                sw.Write("<PayloadFetch Size=\"{0}\" Offset=\"{1}\" Type=\"{2}\"", Size, Offset, Type is { } t ? FetchTypeHelpers.GetName(t) : "");
                 if (Map != null)
                 {
                     sw.Write("HasMap=\"true\"/>");
@@ -1653,13 +1835,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 serializer.Write((short)Offset);
                 serializer.Write((short)Size);
-                if (Type == null)
+                if (Type is not { } t)
                 {
                     serializer.Write((string)null);
                 }
                 else
                 {
-                    serializer.Write(Type.FullName);
+                    serializer.Write(FetchTypeHelpers.GetFullName(t));
                 }
 
                 var map = Map;
@@ -1713,26 +1895,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-#if NET9_0_OR_GREATER
-            /// <summary>
-            /// Feature switch that turns off deserialization of any types that are not primitive types.
-            /// Specifically, the <see cref="PayloadFetch.Type"/> property must either be a primitive type,
-            /// or null.
-            /// </summary>
-            internal static class PrimitiveOnlyDeserialization
-            {
-                private const string FeatureSwitchName = "PrimitiveOnlyDeserialization.IsDisabled";
-
-
-                [FeatureSwitchDefinition(FeatureSwitchName)]
-                [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
-#pragma warning disable IL4000 // The feature switch should be make the return value match RequiresUnreferencedCode
-                // We reverse the logic here because FeatureGuards must always return false when the target type is not available.
-                public static bool IsDisabled => AppContext.TryGetSwitch(FeatureSwitchName, out bool disabled) ? disabled : true;
-#pragma warning restore IL4000
-            }
-#endif
-
             public void FromStream(Deserializer deserializer)
             {
                 Offset = (ushort)deserializer.ReadInt16();
@@ -1740,38 +1902,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 var typeName = deserializer.ReadString();
                 if (typeName != null)
                 {
-#if NET9_0_OR_GREATER
-                    if (PrimitiveOnlyDeserialization.IsDisabled)
-                    {
-                        Type = Type.GetType(typeName);
-                    }
-                    else
-                    {
-                        Type = typeName switch
-                        {
-                            "System.Char" => typeof(char),
-                            "System.String" => typeof(string),
-                            "System.Int32" => typeof(int),
-                            "System.Int64" => typeof(long),
-                            "System.Boolean" => typeof(bool),
-                            "System.Double" => typeof(double),
-                            "System.Single" => typeof(float),
-                            "System.Byte" => typeof(byte),
-                            "System.SByte" => typeof(sbyte),
-                            "System.UInt16" => typeof(ushort),
-                            "System.Int16" => typeof(short),
-                            "System.UInt32" => typeof(uint),
-                            "System.UInt64" => typeof(ulong),
-                            "System.Guid" => typeof(Guid),
-                            "System.DateTime" => typeof(DateTime),
-                            "System.IntPtr" => typeof(IntPtr),
-                            "Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData.StructValue" => typeof(StructValue),
-                            _ => null,
-                        };
-                    }
-#else
-                    Type = Type.GetType(typeName);
-#endif
+                    Type = FetchTypeHelpers.Parse(typeName);
                 }
 
                 var fetchType = deserializer.ReadByte();
@@ -1946,12 +2077,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             this.manifest = manifest;
             payloadNames = new string[] { "Format", "MajorVersion", "MinorVersion", "Magic", "TotalChunks", "ChunkNumber", "PayloadLength" };
             payloadFetches = new PayloadFetch[] {
-                new PayloadFetch(0, 1, typeof(byte)),
-                new PayloadFetch(1, 1, typeof(byte)),
-                new PayloadFetch(2, 1, typeof(byte)),
-                new PayloadFetch(3, 1, typeof(byte)),
-                new PayloadFetch(4, 2, typeof(ushort)),
-                new PayloadFetch(6, 2, typeof(ushort)),
+                new PayloadFetch(0, 1, FetchType.System_Byte),
+                new PayloadFetch(1, 1, FetchType.System_Byte),
+                new PayloadFetch(2, 1, FetchType.System_Byte),
+                new PayloadFetch(3, 1, FetchType.System_Byte),
+                new PayloadFetch(4, 2, FetchType.System_UInt16),
+                new PayloadFetch(6, 2, FetchType.System_UInt16),
             };
             m_target += action;
         }
@@ -2560,15 +2691,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 if (reader.NodeType == XmlNodeType.Element && reader.Name == "data")
                 {
                     string inType = reader.GetAttribute("inType");
-                    Type type = GetTypeForManifestTypeName(inType);
-                    if (type == null)
+                    FetchType? typeOpt = GetTypeForManifestTypeName(inType);
+                    if (typeOpt is not { } type)
                     {
                         Trace.WriteLine("Found an unsupported type " + inType + " skipping all fields after that.");
                         break;
                     }
                     ushort size = DynamicTraceEventData.SizeOfType(type);
                     // Strings are weird in that they are encoded multiple ways.
-                    if (type == typeof(string) && inType == "win:AnsiString")
+                    if (type == FetchType.System_String && inType == "win:AnsiString")
                     {
                         size = DynamicTraceEventData.NULL_TERMINATED | DynamicTraceEventData.IS_ANSI;
                     }
@@ -2589,7 +2720,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         string lengthStr = reader.GetAttribute("length");
                         if (lengthStr != null && 0 <= prevFieldIdx &&
                             lengthStr == ret.payloadNames[prevFieldIdx] &&
-                                (ret.payloadFetches[prevFieldIdx].Type == typeof(int) || ret.payloadFetches[prevFieldIdx].Type == typeof(uint)))
+                                (ret.payloadFetches[prevFieldIdx].Type == FetchType.System_Int32 || ret.payloadFetches[prevFieldIdx].Type == FetchType.System_UInt32))
                         {
                             // Remove the previous field, since it was just there to encode the length of the blob.
                             if (offset != ushort.MaxValue)
@@ -2634,49 +2765,48 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// Returns the .NET type corresponding to the manifest type 'manifestTypeName'
         /// Returns null if it could not be found.
         /// </summary>
-        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-        private static Type GetTypeForManifestTypeName(string manifestTypeName)
+        private static FetchType? GetTypeForManifestTypeName(string manifestTypeName)
         {
             switch (manifestTypeName)
             {
                 case "win:Pointer":
                 case "trace:SizeT":
-                    return typeof(IntPtr);
+                    return FetchType.System_IntPtr;
                 case "win:Boolean":
-                    return typeof(bool);
+                    return FetchType.System_Boolean;
                 case "win:UInt8":
-                    return typeof(byte);
+                    return FetchType.System_Byte;
                 case "win:Int8":
-                    return typeof(sbyte);
+                    return FetchType.System_SByte;
                 case "win:Int16":
-                    return typeof(short);
+                    return FetchType.System_Int16;
                 case "win:UInt16":
                 case "trace:Port":
-                    return typeof(ushort);
+                    return FetchType.System_UInt16;
                 case "win:Int32":
-                    return typeof(int);
+                    return FetchType.System_Int32;
                 case "win:UInt32":
                 case "trace:    ":
                 case "trace:IPAddrV4":
-                    return typeof(uint);
+                    return FetchType.System_UInt32;
                 case "win:Int64":
                 case "trace:WmiTime":
-                    return typeof(long);
+                    return FetchType.System_Int64;
                 case "win:UInt64":
-                    return typeof(ulong);
+                    return FetchType.System_UInt64;
                 case "win:Double":
-                    return typeof(double);
+                    return FetchType.System_Double;
                 case "win:Float":
-                    return typeof(float);
+                    return FetchType.System_Single;
                 case "win:AnsiString":
                 case "win:UnicodeString":
-                    return typeof(string);
+                    return FetchType.System_String;
                 case "win:Binary":
-                    return typeof(byte);        // We special case this later to make it an array of this type.
+                    return FetchType.System_Byte;        // We special case this later to make it an array of this type.
                 case "win:GUID":
-                    return typeof(Guid);
+                    return FetchType.System_Guid;
                 case "win:FILETIME":
-                    return typeof(DateTime);
+                    return FetchType.System_DateTime;
                 default:
                     return null;
             }
