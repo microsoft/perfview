@@ -4726,7 +4726,8 @@ table {
             {
                 m_WarnedAboutBrokenStacks = true;
                 
-                // Only run broken stack analysis for ETW traces, as the logic is specific to ETW
+                // Only run broken stack analysis for ETW traces, as the logic is specific to ETW.
+                // Universal traces, EventPipe traces, Linux traces, etc. should not use this analysis.
                 if (!(DataFile is ETLPerfViewData))
                 {
                     log.WriteLine("Skipping broken stack analysis for non-ETW trace.");
