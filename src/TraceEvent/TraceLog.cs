@@ -3797,6 +3797,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #endif
 
         /// <summary>
+        /// Regular expression for parsing jitted symbol names from universal traces.
+        /// Format: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
+        /// </summary>
+        private static readonly System.Text.RegularExpressions.Regex s_jittedSymbolRegex = 
+            new System.Text.RegularExpressions.Regex(@"^(?<returnType>\S+)\s+\[(?<module>[^\]]+)\]\s+(?<methodSignature>.+?)\[(?<optimizationLevel>[^\]]+)\]$", 
+                System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        /// <summary>
         /// Parses a jitted symbol name from universal traces with format: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
         /// and returns the module name and method signature.
         /// </summary>
@@ -3805,9 +3813,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (string.IsNullOrEmpty(symbolName))
                 return null;
 
-            // Regular expression to parse: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
-            var regex = new System.Text.RegularExpressions.Regex(@"^(?<returnType>\S+)\s+\[(?<module>[^\]]+)\]\s+(?<methodSignature>.+?)\[(?<optimizationLevel>[^\]]+)\]$");
-            var match = regex.Match(symbolName);
+            var match = s_jittedSymbolRegex.Match(symbolName);
 
             if (match.Success)
             {

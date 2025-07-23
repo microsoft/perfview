@@ -19,6 +19,8 @@ namespace TraceEventTests
                    "System.Private.CoreLib", "System.Threading.PortableThreadPool+WorkerThread::WorkerThreadStart()")]
         [InlineData("void [SomeAssembly] SomeNamespace.SomeClass::SomeMethod(string, int32)[Tier0]", 
                    "SomeAssembly", "SomeNamespace.SomeClass::SomeMethod(string, int32)")]
+        [InlineData("int32 [My.Custom.Assembly] My.Namespace.MyClass::ComplexMethod(class System.Collections.Generic.List`1<string>, int32)[OptimizedTier1]", 
+                   "My.Custom.Assembly", "My.Namespace.MyClass::ComplexMethod(class System.Collections.Generic.List`1<string>, int32)")]
         public void ParseJittedSymbolName_ShouldExtractModuleAndMethod(string symbolName, string expectedModule, string expectedMethod)
         {
             // Act
@@ -35,6 +37,8 @@ namespace TraceEventTests
         [InlineData("void System.Threading.ThreadPoolWorkQueue::Dispatch()")]
         [InlineData("")]
         [InlineData(null)]
+        [InlineData("void [System.Private.CoreLib] System.Threading.ThreadPoolWorkQueue::Dispatch()")]  // Missing optimization level
+        [InlineData("void System.Private.CoreLib System.Threading.ThreadPoolWorkQueue::Dispatch()[OptimizedTier1]")]  // Missing brackets around module
         public void ParseJittedSymbolName_ShouldReturnNullForInvalidFormat(string symbolName)
         {
             // Act
