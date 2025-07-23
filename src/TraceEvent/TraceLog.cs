@@ -3795,6 +3795,29 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return true;
         }
 #endif
+
+        /// <summary>
+        /// Parses a jitted symbol name from universal traces with format: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
+        /// and returns the module name and method signature.
+        /// </summary>
+        internal static (string moduleName, string methodSignature)? ParseJittedSymbolName(string symbolName)
+        {
+            if (string.IsNullOrEmpty(symbolName))
+                return null;
+
+            // Regular expression to parse: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
+            var regex = new System.Text.RegularExpressions.Regex(@"^(?<returnType>\S+)\s+\[(?<module>[^\]]+)\]\s+(?<methodSignature>.+?)\[(?<optimizationLevel>[^\]]+)\]$");
+            var match = regex.Match(symbolName);
+
+            if (match.Success)
+            {
+                string module = match.Groups["module"].Value;
+                string methodSignature = match.Groups["methodSignature"].Value.Trim();
+                return (module, methodSignature);
+            }
+
+            return null;
+        }
         void IFastSerializable.ToStream(Serializer serializer)
         {
             // Write out the events themselves, Before we do this we write a reference past the end of the
@@ -8545,7 +8568,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         {
                             module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
                             moduleFileIndex = module.ModuleFile.ModuleFileIndex;
-                            methodIndex = methods.NewMethod(data.Name, moduleFileIndex, (int)data.Id);
+                            
+                            // Check if this is jitted code based on the filename starting with "memfd:doublemapper"
+                            string methodName = data.Name;
+                            if (loadedModule.ModuleFile.FilePath != null && loadedModule.ModuleFile.FilePath.StartsWith("memfd:doublemapper"))
+                            {
+                                // For jitted code in universal traces, the symbol format is: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
+                                // We should parse and use module!Method(args...) format
+                                var parsed = TraceLog.ParseJittedSymbolName(data.Name);
+                                if (parsed.HasValue)
+                                {
+                                    methodName = $"{parsed.Value.moduleName}!{parsed.Value.methodSignature}";
+                                }
+                            }
+                            
+                            methodIndex = methods.NewMethod(methodName, moduleFileIndex, (int)data.Id);
                         }
                         
                         // When universal traces support re-use of address space, we'll need to support it here.
