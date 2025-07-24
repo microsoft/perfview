@@ -8577,7 +8577,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                             
                             // Check if this is jitted code based on the filename starting with "memfd:doublemapper"
                             string methodName = data.Name;
-                            if (loadedModule.ModuleFile.FilePath != null && loadedModule.ModuleFile.FilePath.StartsWith("memfd:doublemapper"))
+                            if (loadedModule.ModuleFile.FilePath != null && loadedModule.ModuleFile.FilePath.StartsWith("/memfd:doublemapper"))
                             {
                                 // For jitted code in universal traces, the symbol format is: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
                                 // We should parse and use module!Method(args...) format
