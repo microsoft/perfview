@@ -139,10 +139,12 @@ namespace PerfView.GuiUtilities
                         {
                             _Browser.Dispose();
                         }
-                        else
+                        else if (!Dispatcher.HasShutdownStarted)
                         {
                             Dispatcher.Invoke(() => _Browser.Dispose());
                         }
+                        // If dispatcher has shut down, we can't safely dispose WebView2
+                        // but the process is exiting anyway so this is acceptable
                     }
                     catch (Exception ex)
                     {
