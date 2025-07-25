@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 {
@@ -13,7 +15,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// Create an new instance of AnalyzerProviderAttribute which stores the Type of the IAnalyzerProvider for the assembly.
         /// </summary>
         /// <param name="providerType">The type contained in this assembly that implements IAnalyzerProvider.</param>
-        public AnalyzerProviderAttribute(Type providerType)
+        public AnalyzerProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type providerType)
         {
             ProviderType = providerType;
         }
@@ -21,6 +23,7 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
         /// <summary>
         /// The type that implements IAnalyzerProvider.
         /// </summary>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public Type ProviderType { get; }
     }
 

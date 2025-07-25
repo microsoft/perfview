@@ -6,26 +6,27 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using TraceReloggerLib;
 using Microsoft.Diagnostics.Utilities;
 
-#pragma warning disable 0414 // This is is because m_scratchBufferSize was #if conditionally removed, and I don't want it to complain about it.  
+#pragma warning disable 0414 // This is is because m_scratchBufferSize was #if conditionally removed, and I don't want it to complain about it.
 
 namespace Microsoft.Diagnostics.Tracing
 {
     /// <summary>
-    /// ETWReloggerTraceEventSource is designed to be able to write ETW files using an existing ETW input stream (either a file, files or real time session) as a basis. 
-    /// The relogger capabilities only exist on Windows 8 OSes and beyond.  
-    /// 
+    /// ETWReloggerTraceEventSource is designed to be able to write ETW files using an existing ETW input stream (either a file, files or real time session) as a basis.
+    /// The relogger capabilities only exist on Windows 8 OSes and beyond.
+    ///
     /// The right way to think about this class is that it is just like ETWTraceEventSource, but it also has a output file associated with it, and WriteEvent APIs that
-    /// can be used to either copy events from the event stream (the common case), or inject new events (high level stats).  
+    /// can be used to either copy events from the event stream (the common case), or inject new events (high level stats).
     /// </summary>
     public unsafe class ETWReloggerTraceEventSource : TraceEventDispatcher
     {
         /// <summary>
         /// Create an ETWReloggerTraceEventSource that can takes its input from the family of etl files inputFileName
         /// and can write them to the ETL file outputFileName (.kernel*.etl, .user*.etl .clr*.etl)
-        /// 
+        ///
         /// This is a shortcut for  ETWReloggerTraceEventSource(inputFileName, TraceEventSourceType.MergeAll, outputFileStream)
         /// </summary>
         public ETWReloggerTraceEventSource(string inputFileName, string outputFileName)
@@ -35,7 +36,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Create an ETWReloggerTraceEventSource that can takes its input from a variety of sources (either a single file,
         /// a set of files, or a real time ETW session (based on 'type'), and can write these events to a new ETW output
-        /// file 'outputFileName. 
+        /// file 'outputFileName.
         /// </summary>
         public ETWReloggerTraceEventSource(string fileOrSessionName, TraceEventSourceType type, string outputFileName)
             : base()
@@ -78,12 +79,12 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// The output file can use a compressed form or not.  Compressed forms can only be read on Win8 and beyond.   Defaults to true.  
+        /// The output file can use a compressed form or not.  Compressed forms can only be read on Win8 and beyond.   Defaults to true.
         /// </summary>
         public bool OutputUsesCompressedFormat { set { m_relogger.SetCompressionMode((sbyte)(value ? 1 : 0)); } }
 
         /// <summary>
-        /// Writes an event from the input stream to the output stream of events. 
+        /// Writes an event from the input stream to the output stream of events.
         /// </summary>
         public void WriteEvent(TraceEvent data)
         {
@@ -96,11 +97,11 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Connect the given EventSource so any events logged from it will go to the output stream of events.   
+        /// Connect the given EventSource so any events logged from it will go to the output stream of events.
         /// Once connected, you may only write events from this EventSource while processing the input stream
         /// (that is during the callback of an input stream event), because the context for the EventSource event
         /// (e.g. timestamp, proesssID, threadID ...) will be derived from the current event being processed by
-        /// the input stream.  
+        /// the input stream.
         /// </summary>
         public void ConnectEventSource(EventSource eventSource)
         {
@@ -113,10 +114,10 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
 #if true // TODO Decide if we want to expose these or not, ConnenctEventSource may be enough.  These are a bit clunky especially but do allow the
-        // ability to modify events you don't own, which may be useful.  
+        // ability to modify events you don't own, which may be useful.
 
         /// <summary>
-        /// Writes an event that did not exist previously into the data stream, The context data (time, process, thread, activity, comes from 'an existing event') 
+        /// Writes an event that did not exist previously into the data stream, The context data (time, process, thread, activity, comes from 'an existing event')
         /// </summary>
         public unsafe void WriteEvent(Guid providerId, ref _EVENT_DESCRIPTOR eventDescriptor, TraceEvent template, params object[] payload)
         {
@@ -128,8 +129,8 @@ namespace Microsoft.Diagnostics.Tracing
 
             fixed (_EVENT_DESCRIPTOR* fixedEventDescr = &eventDescriptor)
             {
-                // The interop assembly has its own def of EventDescriptor, but they are identical, so we use unsafe casting to 
-                // bridge the gap.  
+                // The interop assembly has its own def of EventDescriptor, but they are identical, so we use unsafe casting to
+                // bridge the gap.
                 _EVENT_DESCRIPTOR* ptrDescr = (_EVENT_DESCRIPTOR*)fixedEventDescr;
 
                 newEvent.SetEventDescriptor(ref *ptrDescr);
@@ -144,14 +145,14 @@ namespace Microsoft.Diagnostics.Tracing
         public unsafe void WriteEvent(Guid providerId, ref _EVENT_DESCRIPTOR eventDescriptor, DateTime timeStamp, int processId, int processorIndex, int threadID, Guid activityID, params object[] payload)
         {
 
-            // Today we always create 64 bit events on 64 bit OSes.  
+            // Today we always create 64 bit events on 64 bit OSes.
             var newEvent = m_relogger.CreateEventInstance(m_traceHandleForFirstStream,
                 (pointerSize == 8) ? TraceEventNativeMethods.EVENT_HEADER_FLAG_64_BIT_HEADER : TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER);
 
             fixed (_EVENT_DESCRIPTOR* fixedEventDescr = &eventDescriptor)
             {
-                // The interop assembly has its own def of EventDescriptor, but they are identical, so we use unsafe casting to 
-                // bridge the gap.  
+                // The interop assembly has its own def of EventDescriptor, but they are identical, so we use unsafe casting to
+                // bridge the gap.
                 _EVENT_DESCRIPTOR* ptrDescr = (_EVENT_DESCRIPTOR*)fixedEventDescr;
 
                 newEvent.SetEventDescriptor(ref *ptrDescr);
@@ -193,13 +194,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Implements TraceEventDispatcher.Dispose
         /// </summary>
+        [SupportedOSPlatform("windows")]
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
                 if (m_relogger != null)
                 {
-                    Marshal.FinalReleaseComObject(m_relogger);      // Force the com object to die.  
+                    Marshal.FinalReleaseComObject(m_relogger);      // Force the com object to die.
                 }
 
                 if (m_eventListener != null)
@@ -235,7 +237,7 @@ namespace Microsoft.Diagnostics.Tracing
             // Where we are writing the serialized data in m_scratchBuffer
             int curBlobPtr = 0;
 
-            // Need to serialize the objects according to ETW serialization conventions.   
+            // Need to serialize the objects according to ETW serialization conventions.
             foreach (var payloadArg in payloadArgs)
             {
                 var argType = payloadArg.GetType();
@@ -246,7 +248,7 @@ namespace Microsoft.Diagnostics.Tracing
                     var newCurBlobPtr = curBlobPtr + bytesNeeded;
                     EnsureSratchBufferSpace(newCurBlobPtr);
 
-                    // Copy the string. 
+                    // Copy the string.
                     char* toPtr = (char*)(&m_scratchBuffer[curBlobPtr]);
                     fixed (char* fromPtr = asString)
                     {
@@ -310,7 +312,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// This is used by the ConnectEventSource to route events from the EventSource to the relogger. 
+        /// This is used by the ConnectEventSource to route events from the EventSource to the relogger.
         /// </summary>
         private class ReloggerEventListener : EventListener
         {
@@ -326,8 +328,8 @@ namespace Microsoft.Diagnostics.Tracing
                 var relogger = m_relogger;
                 var newEvent = relogger.m_relogger.CreateEventInstance(relogger.m_traceHandleForFirstStream, 0);
 
-                // The interop assembly has its own def of EventDescriptor, but they are identical, so we use unsafe casting to 
-                // bridge the gap.  
+                // The interop assembly has its own def of EventDescriptor, but they are identical, so we use unsafe casting to
+                // bridge the gap.
                 _EVENT_DESCRIPTOR descr = new _EVENT_DESCRIPTOR();
                 descr.Id = (ushort)eventData.EventId;
                 descr.Keyword = (ulong)eventData.Keywords;
@@ -347,7 +349,7 @@ namespace Microsoft.Diagnostics.Tracing
                 newEvent.SetProcessId(eventRecord->EventHeader.ProcessId);
                 newEvent.SetTimeStamp(ref eventRecord->EventHeader.TimeStamp);
 
-                // Copy over the payload. 
+                // Copy over the payload.
                 relogger.SetPayload(newEvent, eventData.Payload);
                 relogger.m_relogger.Inject(newEvent);
             }
@@ -369,7 +371,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 m_sentManifest[eventSourceIdx] = true;
 
-                // Get the manifest and send it.  
+                // Get the manifest and send it.
                 var manifestStr = EventSource.GenerateManifest(eventSource.GetType(), eventSource.Name);
                 var manifestBytes = System.Text.Encoding.UTF8.GetBytes(manifestStr);
                 m_relogger.SendManifest(manifestBytes, eventSource);
@@ -380,7 +382,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// This is the class the Win32 APIs call back on.  
+        /// This is the class the Win32 APIs call back on.
         /// </summary>
         private unsafe class ReloggerCallbacks : ITraceEventCallback
         {
@@ -392,6 +394,7 @@ namespace Microsoft.Diagnostics.Tracing
                 Initialize(rawData);
             }
 
+            [SupportedOSPlatform("windows")]
             public void OnEvent(ITraceEvent eventData, CTraceRelogger relogger)
             {
                 var rawData = (TraceEventNativeMethods.EVENT_RECORD*)eventData.GetEventRecord();
@@ -410,7 +413,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 Debug.Assert(rawData->EventHeader.HeaderType == 0);     // if non-zero probably old-style ETW header
 
-                // Give it an event ID if it does not have one.  
+                // Give it an event ID if it does not have one.
                 source.m_traceLoggingEventId.TestForTraceLoggingEventAndFixupIfNeeded(rawData);
 
                 // Lookup the event;
@@ -422,7 +425,7 @@ namespace Microsoft.Diagnostics.Tracing
                 // Keep in mind that for UnhandledTraceEvent 'PrepForCallback' has NOT been called, which means the
                 // opcode, guid and eventIds are not correct at this point.  The ToString() routine WILL call
                 // this so if that is in your debug window, it will have this side effect (which is good and bad)
-                // Looking at rawData will give you the truth however. 
+                // Looking at rawData will give you the truth however.
                 anEvent.DebugValidate();
 
                 if (anEvent.NeedsFixup)
@@ -432,8 +435,8 @@ namespace Microsoft.Diagnostics.Tracing
 
                 source.Dispatch(anEvent);
 
-                // Release the COM object aggressively  Otherwise you build up quite a few of these before 
-                // the GC kicks in and cleans them all up.  
+                // Release the COM object aggressively  Otherwise you build up quite a few of these before
+                // the GC kicks in and cleans them all up.
                 Marshal.FinalReleaseComObject(source.m_curITraceEvent);
                 source.m_curITraceEvent = null;
             }
@@ -455,7 +458,7 @@ namespace Microsoft.Diagnostics.Tracing
                     {
                         // We did not get a if (m_source.sessionStartTimeQPC != 0) EventTraceHeaderTraceData either in the OnBeginProcessTrace callback (file based case) or the
                         // first event (real time case).   This is really a problem, as we need that information, but we will go ahead and
-                        // try to initialize as best we can. 
+                        // try to initialize as best we can.
 
                         m_source.pointerSize = ETWTraceEventSource.GetOSPointerSize();
                         m_source.numberOfProcessors = Environment.ProcessorCount;
@@ -507,7 +510,7 @@ namespace Microsoft.Diagnostics.Tracing
             envelope.Format = ManifestEnvelope.ManifestFormats.SimpleXmlFormat;
             envelope.MajorVersion = 1;
             envelope.MinorVersion = 0;
-            envelope.Magic = 0x5B;              // An unusual number that can be checked for consistancy. 
+            envelope.Magic = 0x5B;              // An unusual number that can be checked for consistancy.
             int dataLeft = rawManifest.Length;
             envelope.TotalChunks = (ushort)((dataLeft + (ManifestEnvelope.MaxChunkSize - 1)) / ManifestEnvelope.MaxChunkSize);
             envelope.ChunkNumber = 0;
@@ -534,7 +537,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             int bufferSize = sizeof(ManifestEnvelope) + Math.Min(ManifestEnvelope.MaxChunkSize, rawManifest.Length);
             byte[] buffer = new byte[bufferSize];
-            int manifestIdx = 0;                    // Where we are in the manifest. 
+            int manifestIdx = 0;                    // Where we are in the manifest.
             while (dataLeft > 0)
             {
                 // Copy envelope into buffer
@@ -545,13 +548,13 @@ namespace Microsoft.Diagnostics.Tracing
                     buffer[bufferIdx++] = *envelopePtr++;
                 }
 
-                // Copy chunk of manifest into buffer 
+                // Copy chunk of manifest into buffer
                 while (bufferIdx < buffer.Length && manifestIdx < rawManifest.Length)
                 {
                     buffer[bufferIdx++] = rawManifest[manifestIdx++];
                 }
 
-                // write the envelope + chunk.  
+                // write the envelope + chunk.
                 fixed (byte* bufferPtr = buffer)
                 {
                     manifestEvent.SetPayload(ref *bufferPtr, (uint)bufferIdx);
@@ -571,9 +574,9 @@ namespace Microsoft.Diagnostics.Tracing
         private int m_eventsLost;
         private byte* m_scratchBuffer;
         private int m_scratchBufferSize;
-        private ITraceEvent m_curITraceEvent;                                            // Before we make callbacks we remember the ITraceEvent 
-        private TraceEventNativeMethods.EVENT_RECORD* m_curTraceEventRecord;             // This is the TraceEvent eventRecord that corresponds to the ITraceEvent. 
-        private TraceLoggingEventId m_traceLoggingEventId;                               // Used to give TraceLogging events Event IDs. 
+        private ITraceEvent m_curITraceEvent;                                            // Before we make callbacks we remember the ITraceEvent
+        private TraceEventNativeMethods.EVENT_RECORD* m_curTraceEventRecord;             // This is the TraceEvent eventRecord that corresponds to the ITraceEvent.
+        private TraceLoggingEventId m_traceLoggingEventId;                               // Used to give TraceLogging events Event IDs.
 
         #endregion
     }
