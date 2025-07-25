@@ -8539,9 +8539,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     {
                         int index;
                         TraceLoadedModule loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
-                        module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
-                        moduleFileIndex = module.ModuleFile.ModuleFileIndex;
-                        methodIndex = methods.NewMethod(data.Name, moduleFileIndex, (int)data.Id);
+
+                        // We should always get a loadedModule here because if we have a symbol, then we should have a module that contains it.
+                        // Assert so that we can detect bugs here during development.
+                        Debug.Assert(loadedModule != null, "loadedModule is missing for symbol");
+
+                        if (loadedModule != null)
+                        {
+                            module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
+                            moduleFileIndex = module.ModuleFile.ModuleFileIndex;
+                            methodIndex = methods.NewMethod(data.Name, moduleFileIndex, (int)data.Id);
+                        }
 
                         // When universal traces support re-use of address space, we'll need to support it here.
                     }

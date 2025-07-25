@@ -2192,12 +2192,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             id = "Stream";
             int len = Math.Min((int)(manifestStream.Length - manifestStream.Position), manifestLen);
             serializedManifest = new byte[len];
-#if NET
-            manifestStream.ReadExactly(serializedManifest, 0, len);
-#else
             manifestStream.Read(serializedManifest, 0, len);
-#endif
-
         }
         /// <summary>
         /// Read a ProviderManifest from a file.
