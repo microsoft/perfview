@@ -122,6 +122,13 @@ namespace PerfView
                     App.UserConfigData["MainWindowTop"] = Top.ToString("f0", CultureInfo.InvariantCulture);
                     App.UserConfigData["MainWindowLeft"] = Left.ToString("f0", CultureInfo.InvariantCulture);
                 }
+
+                // Dispose WebBrowser window to prevent WebView2 finalizer crashes
+                if (s_Browser != null)
+                {
+                    s_Browser.Dispose();
+                    s_Browser = null;
+                }
             };
 
             // Initialize configuration options.
@@ -1228,7 +1235,8 @@ namespace PerfView
                 // Thus we abandon browsers on close.
                 s_Browser.Closing += delegate
                 {
-                    // WebBrowserWindow will dispose itself in Window_Closing
+                    // Dispose WebBrowserWindow to prevent finalizer crashes
+                    s_Browser.Dispose();
                     s_Browser = null;
                 };
 

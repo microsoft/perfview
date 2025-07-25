@@ -13,11 +13,14 @@ namespace PerfView.GuiUtilities
     /// <summary>
     /// Interaction logic for WebBrowserWindow.xaml
     /// </summary>
-    public partial class WebBrowserWindow : WindowBase
+    public partial class WebBrowserWindow : WindowBase, IDisposable
     {
         public WebBrowserWindow(Window parentWindow) : base(parentWindow)
         {
             InitializeComponent();
+            
+            // Register for application shutdown to ensure proper disposal
+            Application.Current.Exit += OnApplicationExit;
         }
 
         /// <summary>
@@ -89,12 +92,67 @@ namespace PerfView.GuiUtilities
             else
             {
                 // Dispose WebView2 to prevent finalizer crashes
-                if (!_disposed && _Browser != null)
+                Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Handle application exit to ensure WebView2 is disposed before finalization
+        /// </summary>
+        private void OnApplicationExit(object sender, ExitEventArgs e)
+        {
+            Dispose();
+        }
+
+        /// <summary>
+        /// Dispose WebView2 and cleanup resources
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Protected dispose method following standard dispose pattern
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                // Unregister from application events
+                if (Application.Current != null)
                 {
-                    _Browser.Dispose();
-                    _disposed = true;
+                    Application.Current.Exit -= OnApplicationExit;
+                }
+
+                // Dispose WebView2 on UI thread
+                if (_Browser != null)
+                {
+                    try
+                    {
+                        // Ensure we're on the UI thread for WebView2 disposal
+                        if (Dispatcher.CheckAccess())
+                        {
+                            _Browser.Dispose();
+                        }
+                        else
+                        {
+                            Dispatcher.Invoke(() => _Browser.Dispose());
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log the exception but don't let it crash the application
+                        System.Diagnostics.Debug.WriteLine($"WebView2 disposal error: {ex.Message}");
+                    }
                 }
             }
+
+            _disposed = true;
         }
 
         /// <summary>

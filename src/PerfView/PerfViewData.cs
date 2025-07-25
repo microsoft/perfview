@@ -1111,6 +1111,8 @@ namespace PerfView
                         Viewer.WindowState = System.Windows.WindowState.Maximized;
                         Viewer.Closing += delegate (object sender, CancelEventArgs e)
                         {
+                            // Dispose the viewer to prevent WebView2 finalizer crashes
+                            Viewer.Dispose();
                             Viewer = null;
                         };
                         Viewer.Browser.NavigationStarting += delegate (object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
