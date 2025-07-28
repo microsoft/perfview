@@ -7135,14 +7135,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal TraceModuleFile UniversalMapping(ProcessMappingTraceData data, ProcessMappingMetadataTraceData metadata)
         {
+            return UniversalMapping(data.FileName, data.StartAddress, data.EndAddress, data.TimeStampQPC, metadata);
+        }
+
+        internal TraceModuleFile UniversalMapping(string fileName, Address startAddress, Address endAddress, long timeStampQPC, ProcessMappingMetadataTraceData metadata)
+        {
             int index;
 
             // A loaded and managed modules depend on a module file, so get or create one.
             // The key is the file name.  For jitted code on Linux, this will be a memfd with a static name, which is OK
             // because this path will use the StartAddress to ensure that we get the right one.
             // TODO: We'll need to store FileOffset as well to handle elf images.
-            TraceModuleFile moduleFile = process.Log.ModuleFiles.GetOrCreateModuleFile(data.FileName, data.StartAddress);
-            long newImageSize = (long)(data.EndAddress - data.StartAddress);
+            TraceModuleFile moduleFile = process.Log.ModuleFiles.GetOrCreateModuleFile(fileName, startAddress);
+            long newImageSize = (long)(endAddress - startAddress);
             
             // New mappings will have an imageSize of 0 and will get set.
             // Existing mappings that have the same StartAddress but increase in length will get updated here.
@@ -7153,24 +7158,24 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // The loaded module is looked up by StartAddress and time to ensure that we don't use a module that hasn't been loaded yet.
             // If the StartAddress or size don't match, then create a new one.  This handles overlapping cases.
-            TraceLoadedModule loadedModule = FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
-            if (loadedModule == null || loadedModule.ImageBase != data.StartAddress || loadedModule.ModuleFile.imageSize != newImageSize)
+            TraceLoadedModule loadedModule = FindModuleAndIndexContainingAddress(startAddress, timeStampQPC, out index);
+            if (loadedModule == null || loadedModule.ImageBase != startAddress || loadedModule.ModuleFile.imageSize != newImageSize)
             {
                 // The module file is what is used when looking up the module for an arbitrary address, so it must save both the start address and image size.
-                loadedModule = new TraceLoadedModule(process, moduleFile, data.StartAddress);
+                loadedModule = new TraceLoadedModule(process, moduleFile, startAddress);
 
                 // Set the timestamp from the mapping data
-                loadedModule.loadTimeQPC = data.TimeStampQPC;
+                loadedModule.loadTimeQPC = timeStampQPC;
 
                 InsertAndSetOverlap(index + 1, loadedModule);
             }
 
             // Get or create a managed module.  This module is the container for dynamic symbols.
-            TraceManagedModule managedModule = FindManagedModuleAndIndex((long)data.StartAddress, data.TimeStampQPC, out index);
+            TraceManagedModule managedModule = FindManagedModuleAndIndex((long)startAddress, timeStampQPC, out index);
             if (managedModule == null)
             {
-                managedModule = new TraceManagedModule(process, moduleFile, (long)data.StartAddress);
-                managedModule.loadTimeQPC = data.TimeStampQPC;
+                managedModule = new TraceManagedModule(process, moduleFile, (long)startAddress);
+                managedModule.loadTimeQPC = timeStampQPC;
                 modules.Insert(index + 1, managedModule);
             }
 
@@ -8564,32 +8569,34 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     if (module == null)
                     {
                         int index;
+                        string moduleName = "UNKNOWN";
+                        string methodName = data.Name;
                         TraceLoadedModule loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
 
-                        // We should always get a loadedModule here because if we have a symbol, then we should have a module that contains it.
-                        // Assert so that we can detect bugs here during development.
-                        Debug.Assert(loadedModule != null, "loadedModule is missing for symbol");
-
-                        if (loadedModule != null)
+                        // For jitted code in universal traces, the symbol format is: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
+                        var parsed = TraceLog.ParseJittedSymbolName(data.Name);
+                        if (parsed.HasValue)
                         {
-                            module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
-                            moduleFileIndex = module.ModuleFile.ModuleFileIndex;
-                            
-                            // Check if this is jitted code based on the filename starting with "memfd:doublemapper"
-                            string methodName = data.Name;
-                            if (loadedModule.ModuleFile.FilePath != null && loadedModule.ModuleFile.FilePath.StartsWith("/memfd:doublemapper"))
-                            {
-                                // For jitted code in universal traces, the symbol format is: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
-                                // We should parse and use module!Method(args...) format
-                                var parsed = TraceLog.ParseJittedSymbolName(data.Name);
-                                if (parsed.HasValue)
-                                {
-                                    methodName = $"{parsed.Value.moduleName}!{parsed.Value.methodSignature}";
-                                }
-                            }
-                            
-                            methodIndex = methods.NewMethod(methodName, moduleFileIndex, (int)data.Id);
+                            moduleName = parsed.Value.moduleName;
+                            methodName = parsed.Value.methodSignature;
                         }
+
+                        // We don't create a blanket jitted code module.
+                        if (loadedModule == null)
+                        {
+                            if (moduleName.Equals("UNKNOWN"))
+                            {
+                                Debug.WriteLine(data.Name);
+                            }
+                            TraceModuleFile moduleFile = process.LoadedModules.UniversalMapping(moduleName, data.StartAddress, data.EndAddress, data.TimeStampQPC, null);
+                            loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
+                        }
+                        
+
+                        module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
+                        moduleFileIndex = module.ModuleFile.ModuleFileIndex;
+                            
+                        methodIndex = methods.NewMethod(methodName, moduleFileIndex, (int)data.Id);
                         
                         // When universal traces support re-use of address space, we'll need to support it here.
                     }

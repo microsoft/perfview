@@ -7,6 +7,8 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
 {
     internal sealed class NettraceUniversalConverter
     {
+        private const string JittedCodeMappingName = "/memfd:doublemapper";
+
         private List<ProcessSymbolTraceData> _dynamicSymbols = new List<ProcessSymbolTraceData>();
         private Dictionary<ulong, TraceProcess> _mappingIdToProcesses = new Dictionary<ulong, TraceProcess>();
         private Dictionary<ulong, ProcessMappingMetadataTraceData> _mappingMetadata = new Dictionary<ulong, ProcessMappingMetadataTraceData>();
@@ -41,11 +43,18 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             };
             universalSystemParser.ProcessMapping += delegate (ProcessMappingTraceData data)
             {
-                _mappingMetadata.TryGetValue(data.MetadataId, out ProcessMappingMetadataTraceData metadata);
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                TraceModuleFile moduleFile = process.LoadedModules.UniversalMapping(data, metadata);
-
                 _mappingIdToProcesses[data.Id] = process;
+
+                if (!string.IsNullOrEmpty(data.FileName) && data.FileName.StartsWith(JittedCodeMappingName))
+                {
+                    // Don't create a module for jitted code.
+                    // These will be created for each jitted code symbol.
+                    return;
+                }
+
+                _mappingMetadata.TryGetValue(data.MetadataId, out ProcessMappingMetadataTraceData metadata);
+                TraceModuleFile moduleFile = process.LoadedModules.UniversalMapping(data, metadata);
             };
             universalSystemParser.ProcessMappingMetadata += delegate (ProcessMappingMetadataTraceData data)
             {
