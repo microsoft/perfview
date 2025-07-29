@@ -7,6 +7,8 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
 {
     internal sealed class NettraceUniversalConverter
     {
+        private const string DotnetJittedCodeMappingName = "/memfd:doublemapper";
+
         private List<ProcessSymbolTraceData> _dynamicSymbols = new List<ProcessSymbolTraceData>();
         private Dictionary<ulong, TraceProcess> _mappingIdToProcesses = new Dictionary<ulong, TraceProcess>();
         private Dictionary<ulong, ProcessMappingMetadataTraceData> _mappingMetadata = new Dictionary<ulong, ProcessMappingMetadataTraceData>();
@@ -41,11 +43,18 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             };
             universalSystemParser.ProcessMapping += delegate (ProcessMappingTraceData data)
             {
-                _mappingMetadata.TryGetValue(data.MetadataId, out ProcessMappingMetadataTraceData metadata);
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                TraceModuleFile moduleFile = process.LoadedModules.UniversalMapping(data, metadata);
-
                 _mappingIdToProcesses[data.Id] = process;
+
+                if (!string.IsNullOrEmpty(data.FileName) && data.FileName.StartsWith(DotnetJittedCodeMappingName))
+                {
+                    // Don't create a module for jitted code.
+                    // These will be created for each jitted code symbol.
+                    return;
+                }
+
+                _mappingMetadata.TryGetValue(data.MetadataId, out ProcessMappingMetadataTraceData metadata);
+                TraceModuleFile moduleFile = process.LoadedModules.UniversalMapping(data, metadata);
             };
             universalSystemParser.ProcessMappingMetadata += delegate (ProcessMappingMetadataTraceData data)
             {
@@ -74,6 +83,36 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                     traceLog.CodeAddresses.AddUniversalDynamicSymbol(universalProcessSymbol, process);
                 }
             }
+        }
+
+        /// <summary>
+        /// Regular expression for parsing dotnet jitted symbol names from universal traces.
+        /// Format: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
+        /// The return type can be multi-word (e.g., "instance void", "valuetype [Type]Type").
+        /// </summary>
+        private static readonly System.Text.RegularExpressions.Regex s_jittedSymbolRegex =
+            new System.Text.RegularExpressions.Regex(@"^(?<returnType>.+?)\s+\[(?<module>[^\]]+)\]\s+(?<methodSignature>.+?)\[(?<optimizationLevel>[^\]]+)\]$",
+                System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        /// <summary>
+        /// Parses a dotnet jitted symbol name from universal traces with format: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
+        /// and returns the module name and method signature.
+        /// </summary>
+        internal static (string moduleName, string methodSignature)? ParseDotnetJittedSymbolName(string symbolName)
+        {
+            if (!string.IsNullOrEmpty(symbolName))
+            {
+                var match = s_jittedSymbolRegex.Match(symbolName);
+
+                if (match.Success)
+                {
+                    string module = match.Groups["module"].Value;
+                    string methodSignature = match.Groups["methodSignature"].Value.Trim();
+                    return (module, methodSignature);
+                }
+            }
+
+            return null;
         }
     }
 }
