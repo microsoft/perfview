@@ -4730,7 +4730,6 @@ table {
                 // Universal traces, EventPipe traces, Linux traces, etc. should not use this analysis.
                 if (!(DataFile is ETLPerfViewData))
                 {
-                    log.WriteLine("Skipping broken stack analysis for non-ETW trace.");
                     return false;
                 }
                 
