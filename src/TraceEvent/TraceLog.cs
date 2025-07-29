@@ -3796,35 +3796,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 #endif
 
-        /// <summary>
-        /// Regular expression for parsing jitted symbol names from universal traces.
-        /// Format: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
-        /// The return type can be multi-word (e.g., "instance void", "valuetype [Type]Type").
-        /// </summary>
-        private static readonly System.Text.RegularExpressions.Regex s_jittedSymbolRegex = 
-            new System.Text.RegularExpressions.Regex(@"^(?<returnType>.+?)\s+\[(?<module>[^\]]+)\]\s+(?<methodSignature>.+?)\[(?<optimizationLevel>[^\]]+)\]$", 
-                System.Text.RegularExpressions.RegexOptions.Compiled);
-
-        /// <summary>
-        /// Parses a jitted symbol name from universal traces with format: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
-        /// and returns the module name and method signature.
-        /// </summary>
-        internal static (string moduleName, string methodSignature)? ParseJittedSymbolName(string symbolName)
-        {
-            if (string.IsNullOrEmpty(symbolName))
-                return null;
-
-            var match = s_jittedSymbolRegex.Match(symbolName);
-
-            if (match.Success)
-            {
-                string module = match.Groups["module"].Value;
-                string methodSignature = match.Groups["methodSignature"].Value.Trim();
-                return (module, methodSignature);
-            }
-
-            return null;
-        }
         void IFastSerializable.ToStream(Serializer serializer)
         {
             // Write out the events themselves, Before we do this we write a reference past the end of the
@@ -8574,25 +8545,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         string methodName = data.Name;
                         TraceLoadedModule loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
 
-                        // For jitted code in universal traces, the symbol format is: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
-                        var parsed = TraceLog.ParseJittedSymbolName(data.Name);
+                        // Try to parse the symbol as a universal symbol.
+                        var parsed = NettraceUniversalConverter.ParseDotnetJittedSymbolName(data.Name);
                         if (parsed.HasValue)
                         {
                             moduleName = parsed.Value.moduleName;
                             methodName = parsed.Value.methodSignature;
                         }
 
-                        // We don't create a blanket jitted code module.
+                        // We don't create a blanket jitted code module, so create one here.
+                        // Non-jitted symbols will already have a module, so loadedModule will not be null.
                         if (loadedModule == null)
                         {
-                            if (moduleName.Equals("UNKNOWN"))
-                            {
-                                Debug.WriteLine(data.Name);
-                            }
                             TraceModuleFile moduleFile = process.LoadedModules.UniversalMapping(moduleName, data.StartAddress, data.EndAddress, data.TimeStampQPC, null);
                             loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
                         }
-                        
 
                         module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
                         moduleFileIndex = module.ModuleFile.ModuleFileIndex;

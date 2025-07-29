@@ -2,6 +2,7 @@ using System;
 using Xunit;
 using Xunit.Abstractions;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.SourceConverters;
 
 namespace TraceEventTests
 {
@@ -21,7 +22,6 @@ namespace TraceEventTests
                    "SomeAssembly", "SomeNamespace.SomeClass::SomeMethod(string, int32)")]
         [InlineData("int32 [My.Custom.Assembly] My.Namespace.MyClass::ComplexMethod(class System.Collections.Generic.List`1<string>, int32)[OptimizedTier1]", 
                    "My.Custom.Assembly", "My.Namespace.MyClass::ComplexMethod(class System.Collections.Generic.List`1<string>, int32)")]
-        // Multi-word return types that were failing before
         [InlineData("instance void [System.Net.Sockets] System.Net.Sockets.SocketAsyncEngine::EventLoop()[QuickJitted]", 
                    "System.Net.Sockets", "System.Net.Sockets.SocketAsyncEngine::EventLoop()")]
         [InlineData("instance bool [System.Private.CoreLib] System.Threading.LowLevelLifoSemaphore::Wait(int32,bool)[OptimizedTier1]", 
@@ -30,10 +30,10 @@ namespace TraceEventTests
                    "System.Net.Sockets", "Interop+Sys::Shutdown(class [System.Runtime]System.Runtime.InteropServices.SafeHandle,valuetype System.Net.Sockets.SocketShutdown)")]
         [InlineData("valuetype [System.Net.Primitives]System.Net.Sockets.SocketError [System.Net.Sockets] System.Net.Sockets.SocketPal::Shutdown(class System.Net.Sockets.SafeSocketHandle,bool,bool,valuetype System.Net.Sockets.SocketShutdown)[QuickJitted]", 
                    "System.Net.Sockets", "System.Net.Sockets.SocketPal::Shutdown(class System.Net.Sockets.SafeSocketHandle,bool,bool,valuetype System.Net.Sockets.SocketShutdown)")]
-        public void ParseJittedSymbolName_ShouldExtractModuleAndMethod(string symbolName, string expectedModule, string expectedMethod)
+        public void ParseDotnetJittedSymbolName_ShouldExtractModuleAndMethod(string symbolName, string expectedModule, string expectedMethod)
         {
             // Act
-            var result = TraceLog.ParseJittedSymbolName(symbolName);
+            var result = NettraceUniversalConverter.ParseDotnetJittedSymbolName(symbolName);
             
             // Assert
             Assert.NotNull(result);
@@ -48,10 +48,10 @@ namespace TraceEventTests
         [InlineData(null)]
         [InlineData("void [System.Private.CoreLib] System.Threading.ThreadPoolWorkQueue::Dispatch()")]  // Missing optimization level
         [InlineData("void System.Private.CoreLib System.Threading.ThreadPoolWorkQueue::Dispatch()[OptimizedTier1]")]  // Missing brackets around module
-        public void ParseJittedSymbolName_ShouldReturnNullForInvalidFormat(string symbolName)
+        public void ParseDotnetJittedSymbolName_ShouldReturnNullForInvalidFormat(string symbolName)
         {
             // Act
-            var result = TraceLog.ParseJittedSymbolName(symbolName);
+            var result = NettraceUniversalConverter.ParseDotnetJittedSymbolName(symbolName);
             
             // Assert
             Assert.Null(result);
