@@ -4725,6 +4725,14 @@ table {
             if (!m_WarnedAboutBrokenStacks)
             {
                 m_WarnedAboutBrokenStacks = true;
+                
+                // Only run broken stack analysis for ETW traces, as the logic is specific to ETW.
+                // Universal traces, EventPipe traces, Linux traces, etc. should not use this analysis.
+                if (!(DataFile is ETLPerfViewData))
+                {
+                    return false;
+                }
+                
                 float brokenPercent = Viewer.CallTree.Root.GetBrokenStackCount() * 100 / Viewer.CallTree.Root.InclusiveCount;
                 if (brokenPercent > 0)
                 {
