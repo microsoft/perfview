@@ -21,6 +21,15 @@ namespace TraceEventTests
                    "SomeAssembly", "SomeNamespace.SomeClass::SomeMethod(string, int32)")]
         [InlineData("int32 [My.Custom.Assembly] My.Namespace.MyClass::ComplexMethod(class System.Collections.Generic.List`1<string>, int32)[OptimizedTier1]", 
                    "My.Custom.Assembly", "My.Namespace.MyClass::ComplexMethod(class System.Collections.Generic.List`1<string>, int32)")]
+        // Multi-word return types that were failing before
+        [InlineData("instance void [System.Net.Sockets] System.Net.Sockets.SocketAsyncEngine::EventLoop()[QuickJitted]", 
+                   "System.Net.Sockets", "System.Net.Sockets.SocketAsyncEngine::EventLoop()")]
+        [InlineData("instance bool [System.Private.CoreLib] System.Threading.LowLevelLifoSemaphore::Wait(int32,bool)[OptimizedTier1]", 
+                   "System.Private.CoreLib", "System.Threading.LowLevelLifoSemaphore::Wait(int32,bool)")]
+        [InlineData("valuetype Interop/Error [System.Net.Sockets] Interop+Sys::Shutdown(class [System.Runtime]System.Runtime.InteropServices.SafeHandle,valuetype System.Net.Sockets.SocketShutdown)[QuickJitted]", 
+                   "System.Net.Sockets", "Interop+Sys::Shutdown(class [System.Runtime]System.Runtime.InteropServices.SafeHandle,valuetype System.Net.Sockets.SocketShutdown)")]
+        [InlineData("valuetype [System.Net.Primitives]System.Net.Sockets.SocketError [System.Net.Sockets] System.Net.Sockets.SocketPal::Shutdown(class System.Net.Sockets.SafeSocketHandle,bool,bool,valuetype System.Net.Sockets.SocketShutdown)[QuickJitted]", 
+                   "System.Net.Sockets", "System.Net.Sockets.SocketPal::Shutdown(class System.Net.Sockets.SafeSocketHandle,bool,bool,valuetype System.Net.Sockets.SocketShutdown)")]
         public void ParseJittedSymbolName_ShouldExtractModuleAndMethod(string symbolName, string expectedModule, string expectedMethod)
         {
             // Act
