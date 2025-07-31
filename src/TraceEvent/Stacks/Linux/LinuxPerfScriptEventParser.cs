@@ -471,6 +471,18 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                         IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
                         linuxEvent = new SchedWakeupEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedWakeup);
                     }
+                    else if (eventDetails.Length > IrqEnterEvent.Name.Length && eventDetails.Substring(0, IrqEnterEvent.Name.Length) == IrqEnterEvent.Name)
+                    {
+                        IrqEnter irqEnter = ReadIrqEnter(source);
+                        IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
+                        linuxEvent = new IrqEnterEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, irqEnter);
+                    }
+                    else if (eventDetails.Length > IrqExitEvent.Name.Length && eventDetails.Substring(0, IrqExitEvent.Name.Length) == IrqExitEvent.Name)
+                    {
+                        IrqExit irqExit = ReadIrqExit(source);
+                        IEnumerable<Frame> frames = ReadFramesForSample(processCommand, pid, tid, threadTimeFrame, source);
+                        linuxEvent = new IrqExitEvent(processCommand, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, irqExit);
+                    }
                     else
                     {
                         source.ReadAsciiStringUpTo('\n', sb);
@@ -1019,6 +1031,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             int priority;
             int targetCpu;
 
+            // New format2 is: sched:sched_wakeup: %s:%d [%d] CPU:%03d
             // New Format is: sched:sched_wakeup: comm=%s pid=%d prio=%d target_cpu=%03d
             // Old format is: sched:sched_wakeup: task %s:%d [%d] success=%d [%03d]
 
@@ -1057,7 +1070,7 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 source.MoveNext();
                 targetCpu = source.ReadInt();
             }
-            else
+            else if (nextField == "task")
             {
                 // Old format
                 source.SkipUpTo(' ');
@@ -1080,11 +1093,81 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 source.MoveNext();      // skip '['
                 targetCpu = source.ReadInt();
             }
+            else
+            {
+                // New format 2
+                source.ReadAsciiStringUpTo(':', sb);
+                comm = sb.ToString();
+
+                source.MoveNext();
+                pid = source.ReadInt();
+
+                source.SkipSpace();
+                source.MoveNext();      // skip '['
+                priority = source.ReadInt();
+                source.MoveNext();      // skip ']'
+
+                source.SkipUpTo(':');
+                source.MoveNext();      // skip ':'
+                targetCpu = source.ReadInt();
+            }
 
             source.ReadAsciiStringUpTo('\n', sb);
             sb.Clear();
 
             return new SchedWakeup(comm, pid, priority, targetCpu);
+        }
+
+        private IrqEnter ReadIrqEnter(FastStream source)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            // Format is: irq:irq_handler_entry: irq=<vector> name=<name>
+
+            // Skip "irq:irq_handler_entry: "
+            source.SkipUpTo(' ');
+            source.SkipSpace();
+
+            source.SkipUpTo('=');
+            source.MoveNext();      // Skip '='
+            uint vector = source.ReadUInt();
+
+            source.SkipUpTo('=');
+            source.MoveNext();      // Skip '='
+            source.ReadAsciiStringUpTo(' ', sb);
+            string name = sb.ToString();
+            sb.Clear();
+
+            source.ReadAsciiStringUpTo('\n', sb);
+            sb.Clear();
+
+            return new IrqEnter(vector, name);
+        }
+
+        private IrqExit ReadIrqExit(FastStream source)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            // Format is: irq:irq_handler_exit: irq=<vector> ret=<name>
+
+            // Skip "irq:irq_handler_exit: "
+            source.SkipUpTo(' ');
+            source.SkipSpace();
+
+            source.SkipUpTo('=');
+            source.MoveNext();      // Skip '='
+            uint vector = source.ReadUInt();
+
+            source.SkipUpTo('=');
+            source.MoveNext();      // Skip '='
+            source.ReadAsciiStringUpTo(' ', sb);
+            string status = sb.ToString();
+            sb.Clear();
+
+            source.ReadAsciiStringUpTo('\n', sb);
+            sb.Clear();
+
+            return new IrqExit(vector, status);
         }
 
         // Reads from the current position to the next field name, storing the result in "dest". Looping logic is required because there may be spaces in the field name.
@@ -1437,6 +1520,16 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
         /// Represents a wakeup event.
         /// </summary>
         Wakeup,
+
+        /// <summary>
+        /// Represents an IRQ enter event.
+        /// </summary>
+        IrqEnter,
+
+        /// <summary>
+        /// Represents an IRQ exit event.
+        /// </summary>
+        IrqExit,
     }
 
     /// <summary>
@@ -1686,6 +1779,76 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
             ProcessId = processId;
             Priority = priority;
             TargetCpu = targetCpu;
+        }
+    }
+
+    /// <summary>
+    /// A sample that has extra properties to hold IRQ enter events.
+    /// </summary>
+    public class IrqEnterEvent : LinuxEvent
+    {
+        public static readonly string Name = "irq_handler_entry";
+
+        /// <summary>
+        /// The details of the IO init.
+        /// </summary>
+        public IrqEnter Enter { get; }
+
+        public IrqEnterEvent(
+            string comm, int tid, int pid,
+            double time, int timeProp, int cpu,
+            string eventName, string eventProp, IEnumerable<Frame> callerStacks, IrqEnter enter) :
+            base(EventKind.IrqEnter, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
+        {
+            Enter = enter;
+        }
+    }
+
+    public class IrqEnter
+    {
+        public uint Vector { get; }
+        public string Name { get; }
+
+        public IrqEnter(
+            uint vector, string name)
+        {
+            Vector = vector;
+            Name = name;
+        }
+    }
+
+    /// <summary>
+    /// A sample that has extra properties to hold IRQ exit events.
+    /// </summary>
+    public class IrqExitEvent : LinuxEvent
+    {
+        public static readonly string Name = "irq_handler_exit";
+
+        /// <summary>
+        /// The details of the IRQ exit.
+        /// </summary>
+        public IrqExit Exit { get; }
+
+        public IrqExitEvent(
+            string comm, int tid, int pid,
+            double time, int timeProp, int cpu,
+            string eventName, string eventProp, IEnumerable<Frame> callerStacks, IrqExit exit) :
+            base(EventKind.IrqExit, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
+        {
+            Exit = exit;
+        }
+    }
+
+    public class IrqExit
+    {
+        public uint Vector { get; }
+        public string Status { get; }
+
+        public IrqExit(
+            uint vector, string status)
+        {
+            Vector = vector;
+            Status = status;
         }
     }
 
