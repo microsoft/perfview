@@ -446,7 +446,7 @@ The LabelList block, BlockHeader.Kind=8, contains a set of key-value pairs that 
 
 The content of a LabelListBlock is:
 
-- firstIndex - uint32  // The index of the first entry in the block. Each successive entry is implicitly indexed by the previous entry's index + 1.
+- firstIndex - uint32  // The index of the first entry in the block. Each successive entry is implicitly indexed by the previous entry's index + 1. firstIndex must be >= 1.
 - count - uint32       // The number of entries in the block.
 - Concatenated sequence of label_lists, each of which is:
   - one or more Label entries each of which is:
@@ -470,6 +470,8 @@ If the high bit of the Kind field is set that demarcates that this is the last l
 
 Similar to StackBlock, references to a row in the LabelListBlock are only valid in the file after the LabelListBlock that defines it and before the next SequencePoint block.
 This prevents the reader from needing a lookup table that grows indefinitely with file length or requiring the reader to search the entire file to resolve a given label list index.
+
+An empty LabelList can't be explicitly encoded in the LabelListBlock, but implicitly the LabelList index 0 refers to an empty LabelList. 
 
 ## Changes relative to older file format versions
 
