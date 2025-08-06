@@ -3,9 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="color-scheme" content="light dark">
     <title>PerfView Videos</title>
     <style>
+        :root[data-theme="light"] {
+            color-scheme: light;
+        }
+
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+        }
+
         body {
             font-family: Segoe UI,SegoeUI,Segoe WP,Helvetica Neue,Helvetica,Tahoma,Arial,sans-serif;
             font-weight: 400;
@@ -174,6 +182,10 @@
         <li><a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/tutorial-10-investigating-net-heap-memory-leaks-part1-collecting-data">Investigating .NET Heap Memory Leaks: Part 1: Collecting the Data</a> (8 min) This is the first of a two part video of step-by-step instructions for using PerfView to investigate a &#39;Leak&#39; in the .NET GC heap.&nbsp; This first part goes through the mechanics of collecting the data which involves taking two heap snapshots at appropriate times.&nbsp; </li>
         <li><a href="https://docs.microsoft.com/en-us/shows/perfview-tutorial/tutorial-11-investigating-net-heap-memory-leaks-part2-analyzing-data">Investigation .NET Heap Memory Leaks: Part 2: Analyzing the Data </a>(11 min).&nbsp; In this second part we take the two snapshots collected in part 1 and walk though the mechanics of doing a &#39;diff&#39; of the two memory heaps to determine how the heap grew between the two points in time.&nbsp; This lets us home in on places where we were not dropping references to objects (which caused them to &#39;leak&#39;).&nbsp; </li>
     </ol>
-
-</body>
+    <script>
+      // Set theme based on user preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    </script>
+  </body>
 </html>

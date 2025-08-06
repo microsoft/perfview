@@ -19,27 +19,27 @@
     <PackageVersion Include="Azure.Identity" Version="1.11.4" />
     <PackageVersion Include="MicroBuild.Core" Version="0.3.1" />
     <PackageVersion Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.510501" />
-    <PackageVersion Include="Microsoft.Identity.Client" Version="4.61.3" />
-    <PackageVersion Include="Microsoft.Identity.Client.Extensions.Msal" Version="4.61.3" />
-    <PackageVersion Include="Microsoft.IdentityModel.Abstractions" Version="7.1.2" />
-    <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="7.1.2" />
-    <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="7.1.2" />
+    <PackageVersion Include="Microsoft.Identity.Client" Version="4.74.1" />
+    <PackageVersion Include="Microsoft.Identity.Client.Extensions.Msal" Version="4.74.1" />
+    <PackageVersion Include="Microsoft.IdentityModel.Abstractions" Version="8.13.0" />
+    <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.13.0" />
+    <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.13.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Win32.Registry" Version="5.0.0" />
-    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.2792.45" />
-    <PackageVersion Include="System.Buffers" Version="4.5.1" />
-    <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.0" />
-    <PackageVersion Include="System.Memory" Version="4.5.5" />
-    <PackageVersion Include="System.Numerics.Vectors" Version="4.5.0" />
-    <PackageVersion Include="System.Reflection.Metadata" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.3351.48" />
+    <PackageVersion Include="System.Buffers" Version="4.6.1" />
+    <PackageVersion Include="System.Collections.Immutable" Version="9.0.8" />
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="9.0.8" />
+    <PackageVersion Include="System.Memory" Version="4.6.3" />
+    <PackageVersion Include="System.Numerics.Vectors" Version="4.6.1" />
+    <PackageVersion Include="System.Reflection.Metadata" Version="9.0.8" />
     <PackageVersion Include="System.Reflection.TypeExtensions" Version="4.7.0" />
-    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
+    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
     <PackageVersion Include="System.Security.Cryptography.Algorithms" Version="4.3.1" />
-    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="4.7.0" />
-    <PackageVersion Include="System.Text.Encodings.Web" Version="8.0.0" />
-    <PackageVersion Include="System.Text.Json" Version="8.0.5" />
-    <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="9.0.8" />
+    <PackageVersion Include="System.Text.Encodings.Web" Version="9.0.8" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.8" />
+    <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
   </ItemGroup>
 
   <!-- ClrMD -->

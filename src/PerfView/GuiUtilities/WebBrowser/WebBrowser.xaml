@@ -6,8 +6,8 @@
         Style="{DynamicResource CustomWindowStyle}"
         Closing="Window_Closing"
         Title="Web Browser" Height="700" Width="1100">
-    <DockPanel>
-        <Grid DockPanel.Dock="Top">
+    <DockPanel Background="{DynamicResource ControlDefaultBackground}">
+        <Grid DockPanel.Dock="Top" Background="{DynamicResource ControlDefaultBackground}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
