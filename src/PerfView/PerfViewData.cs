@@ -1,4 +1,4 @@
-using Diagnostics.Tracing.StackSources;
+﻿using Diagnostics.Tracing.StackSources;
 using global::DiagnosticsHub.Packaging.Interop;
 using Graphs;
 using Microsoft.Diagnostics.Symbols;
@@ -1204,55 +1204,84 @@ namespace PerfView
 
         private string GenerateReportFile(StatusBar worker, TraceLog trace)
         {
-            var reportFileName = CacheFiles.FindFile(FilePath, "." + Name + ".html");
-            using (var writer = File.CreateText(reportFileName))
-            {
-                writer.WriteLine("<html>");
-                writer.WriteLine("<head>");
-                writer.WriteLine("<title>{0}</title>", Title);
-                writer.WriteLine("<meta charset=\"UTF-8\"/>");
-                writer.WriteLine("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>");
+            var reportFileName = CacheFiles.FindFile(FilePath, $".{Name}.html");
+            using var writer = File.CreateText(reportFileName);
+            writer.WriteLine($$"""
+                <html lang="en">
+                  <head>
+                    <title>{{Title}}</title>
+                    <meta charset="UTF-8"/>
+                    <meta name="color-scheme" content="light dark">
+                    <style>
+                      :root[data-theme="light"] {
+                        color-scheme: light;
+                        --error-color: #b3261e;       /* dark red for light mode (accessible on white) */
+                        --hover-color: #eeeeee;       /* light grey for hover on light bg */
+                        --row-vibrant-blue: #56a5eC;
+                        --row-medium-blue: #82caff;
+                        --row-subtle-blue: #bdedff;
+                      }
 
-                // Add basic styling to the generated HTML
-                writer.WriteLine(@"
-<style>
-body {
-    font-family: Segoe UI Light, Helvetica, sans-serif;
-}
+                      :root[data-theme="dark"] {
+                        color-scheme: dark;
+                        --error-color: #ffb4ab;      /* soft red/pink for dark mode (better on dark) */
+                        --hover-color: #333333;      /* dark grey for hover on dark bg */
+                        --row-vibrant-blue: #234d7a;
+                        --row-medium-blue: #1e4166;
+                        --row-subtle-blue: #1a3552;
+                      }
 
-tr:hover {
-    background-color: #eeeeee;
-}
+                      body {
+                        font-family: Segoe UI Light, Helvetica, sans-serif;
+                      }
 
-th {
-    background-color: #eeeeee;
-    font-family: Helvetica;
-    padding: 4px;
-    font-size: small;
-    font-weight: normal;
-}
+                      tr:hover {
+                        background-color: var(--hover-color);
+                      }
 
-td {
-    font-family: Consolas, monospace;
-    font-size: small;
-    padding: 3px;
-    padding-bottom: 5px;
-}
+                      th {
+                        background-color: var(--hover-color);
+                        font-family: Helvetica;
+                        padding: 4px;
+                        font-size: small;
+                        font-weight: normal;
+                      }
 
-table {
-    border-collapse: collapse;
-}
-</style>
-");
+                      td {
+                        font-family: Consolas, monospace;
+                        font-size: small;
+                        padding: 3px;
+                        padding-bottom: 5px;
+                      }
 
-                writer.WriteLine("</head>");
-                writer.WriteLine("<body>");
-                WriteHtmlBody(trace, writer, reportFileName, worker.LogWriter);
-                writer.WriteLine("</body>");
-                writer.WriteLine("</html>");
+                      table {
+                        border-collapse: collapse;
+                      }
 
+                      .error {
+                        color: var(--error-color);
+                        font-weight: bold;
+                        font-size: medium;
+                      }
 
-            }
+                      .row-vibrant { background-color: var(--row-vibrant-blue); }
+                      .row-medium { background-color: var(--row-medium-blue); }
+                      .row-subtle { background-color: var(--row-subtle-blue); }
+                    </style>
+                  </head>
+                  <body>
+                """);
+
+            WriteHtmlBody(trace, writer, reportFileName, worker.LogWriter);
+            writer.WriteLine("""
+                    <script>
+                      // Set theme based on user preference
+                      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+                    </script>
+                  </body>
+                </html>
+                """);
 
             return reportFileName;
         }

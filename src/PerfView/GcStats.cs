@@ -20,11 +20,14 @@ namespace Stats
 
         public static void ToHtml(TextWriter writer, TraceProcess stats, TraceLoadedDotNetRuntime runtime, string fileName, bool doServerGCReport = false)
         {
-            writer.WriteLine("<H3><A Name=\"Stats_{0}\"><font color=\"blue\">GC Stats for Process {1,5}: {2}</font><A></H3>", stats.ProcessID, stats.ProcessID, stats.Name);
-            writer.WriteLine("<UL>");
+            writer.WriteLine($"""
+                <H3><A Name="Stats_{stats.ProcessID}"><font color="blue">GC Stats for Process {stats.ProcessID,5}: {stats.Name}</font><A></H3>
+                <UL>
+                """);
+
             if (runtime.GC.Stats().GCVersionInfoMismatch)
             {
-                writer.WriteLine("<LI><Font size=3 color=\"red\">Warning: Did not recognize the V4.0 GC Information events.  Falling back to V2.0 behavior.</font></LI>");
+                writer.WriteLine("""<LI><Font class=".error">Warning: Did not recognize the V4.0 GC Information events.  Falling back to V2.0 behavior.</font></LI>""");
             }
 
             if (!string.IsNullOrEmpty(stats.CommandLine))
@@ -33,7 +36,7 @@ namespace Stats
             }
 
             var runtimeBuiltTime = "";
-            if (runtime.RuntimeBuiltTime != default(DateTime))
+            if (runtime.RuntimeBuiltTime != default)
             {
                 runtimeBuiltTime = string.Format(" (built on {0})", runtime.RuntimeBuiltTime);
             }
@@ -1215,11 +1218,11 @@ namespace Stats
             switch (gen)
             {
                 case 2:
-                    return "bgcolor=#56A5EC";
+                    return "class=\"row-vibrant\"";
                 case 1:
-                    return "bgcolor=#82CAFF";
+                    return "class=\"row-medium\"";
                 default:
-                    return "bgcolor=#BDEDFF";
+                    return "class=\"row-subtle\"";
             }
         }
         #endregion

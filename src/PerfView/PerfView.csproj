@@ -72,6 +72,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="app.manifest"/>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="PresentationFramework.Aero" />
@@ -511,14 +512,14 @@
       <Link>Microsoft.Identity.Client.Extensions.Msal.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_Abstractions)\lib\net461\Microsoft.IdentityModel.Abstractions.dll">
+    <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_Abstractions)\lib\net462\Microsoft.IdentityModel.Abstractions.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.IdentityModel.Abstractions.dll</LogicalName>
       <Link>Microsoft.IdentityModel.Abstractions.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_JsonWebTokens)\lib\net461\Microsoft.IdentityModel.JsonWebTokens.dll">
+    <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_JsonWebTokens)\lib\net462\Microsoft.IdentityModel.JsonWebTokens.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.IdentityModel.JsonWebTokens.dll</LogicalName>
@@ -567,14 +568,14 @@
       <Link>runtimes\win-arm64\native\WebView2Loader.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_Tokens)\lib\net461\Microsoft.IdentityModel.Tokens.dll">
+    <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_Tokens)\lib\net462\Microsoft.IdentityModel.Tokens.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.IdentityModel.Tokens.dll</LogicalName>
       <Link>Microsoft.IdentityModel.Tokens.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Buffers)\lib\net461\System.Buffers.dll">
+    <EmbeddedResource Include="$(PkgSystem_Buffers)\lib\net462\System.Buffers.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Buffers.dll</LogicalName>
@@ -588,21 +589,21 @@
       <Link>System.Diagnostics.DiagnosticSource.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Memory)\lib\net461\System.Memory.dll">
+    <EmbeddedResource Include="$(PkgSystem_Memory)\lib\net462\System.Memory.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Memory.dll</LogicalName>
       <Link>System.Memory.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Numerics_Vectors)\lib\net46\System.Numerics.Vectors.dll">
+    <EmbeddedResource Include="$(PkgSystem_Numerics_Vectors)\lib\net462\System.Numerics.Vectors.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Numerics.Vectors.dll</LogicalName>
       <Link>System.Numerics.Vectors.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Security_Cryptography_ProtectedData)\lib\net461\System.Security.Cryptography.ProtectedData.dll">
+    <EmbeddedResource Include="$(PkgSystem_Security_Cryptography_ProtectedData)\lib\net462\System.Security.Cryptography.ProtectedData.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Security.Cryptography.ProtectedData.dll</LogicalName>
@@ -623,7 +624,7 @@
       <Link>System.Text.Json.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Threading_Tasks_Extensions)\lib\net461\System.Threading.Tasks.Extensions.dll">
+    <EmbeddedResource Include="$(PkgSystem_Threading_Tasks_Extensions)\lib\net462\System.Threading.Tasks.Extensions.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Threading.Tasks.Extensions.dll</LogicalName>

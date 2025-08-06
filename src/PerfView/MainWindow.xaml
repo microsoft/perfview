@@ -174,7 +174,7 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="619*"/>
             </Grid.ColumnDefinitions>
-            <DockPanel Background="{DynamicResource PanelBackground}" Grid.Column="0">
+            <DockPanel Background="{DynamicResource ContainerBackground}" Grid.Column="0">
                 <controls:HistoryComboBox x:Name="Directory" DockPanel.Dock="Top" AutomationProperties.Name="Directory Search Bar"
                          ToolTip="This is the directory to search for performance data files." TextEntered="DoTextEnteredInDirectoryTextBox" />
                 <Grid DockPanel.Dock="Top" >

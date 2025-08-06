@@ -63,6 +63,10 @@ SOFTWARE.
     <SolidColorBrush x:Key="AlternateRowBackground" Color="#FF424124" />
     <SolidColorBrush x:Key="HelpRibbonBackground" Color="#FF323838" />
 
+    <SolidColorBrush x:Key="ScrollBarBackground" Color="#2e2e2e" />
+    <SolidColorBrush x:Key="ScrollBarControlForground" Color="#4d4d4d" />
+    <SolidColorBrush x:Key="ScrollBarControlMouseOver" Color="#999999" />
+
     <!-- Colourful theme  Colours -->
     <SolidColorBrush x:Key="ControlPrimaryColourBackground" Color="#FF2084E8" />
     <SolidColorBrush x:Key="ControlPrimaryColourBorderBrush" Color="#FF3294E8" />
@@ -2624,17 +2628,23 @@ SOFTWARE.
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Thumb}">
                     <Grid Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
-                        <Rectangle x:Name="rectangle" Fill="{TemplateBinding Background}" SnapsToDevicePixels="True" />
+                        <Border x:Name="border"
+                            BorderThickness="3,0,3,0"
+                            BorderBrush="{StaticResource ControlDefaultBorderBrush}">
+                            <Rectangle x:Name="rectangle"
+                                  Fill="{StaticResource ScrollBarControlForground}"
+                                  SnapsToDevicePixels="True" />
+                        </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="true">
-                            <Setter Property="Fill" TargetName="rectangle" Value="{StaticResource ControlMouseOverBackground}" />
-                            <Setter Property="BorderBrush" Value="{StaticResource ControlMouseOverBorderBrush}" />
+                            <Setter Property="Fill" TargetName="rectangle" Value="{StaticResource ScrollBarControlMouseOver}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource ScrollBarControlMouseOver}" />
                         </Trigger>
                         <Trigger Property="IsDragging" Value="true">
-                            <Setter Property="Fill" TargetName="rectangle" Value="{StaticResource ControlBrightDefaultBackground}" />
-                            <Setter Property="BorderBrush" Value="{StaticResource ControlBrightDefaultBackground}" />
-                            <Setter Property="Foreground" Value="{StaticResource ControlBrightDefaultBorderBrush}" />
+                            <Setter Property="Fill" TargetName="rectangle" Value="{StaticResource ScrollBarControlMouseOver}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource ScrollBarControlMouseOver}" />
+                            <Setter Property="Foreground" Value="{StaticResource ScrollBarControlMouseOver}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -2651,18 +2661,23 @@ SOFTWARE.
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Thumb}">
                     <Grid Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
-                        <Rectangle x:Name="rectangle" Fill="{TemplateBinding Background}" SnapsToDevicePixels="True" />
-
+                        <Border x:Name="border"
+                           BorderThickness="0,3,0,3"
+                           BorderBrush="{StaticResource ControlDefaultBorderBrush}">
+                            <Rectangle x:Name="rectangle"
+                                 Fill="{StaticResource ScrollBarControlForground}"
+                                 SnapsToDevicePixels="True" />
+                        </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="true">
-                            <Setter Property="Fill" TargetName="rectangle" Value="{StaticResource ControlMouseOverBackground}" />
-                            <Setter Property="BorderBrush" Value="{StaticResource ControlMouseOverBorderBrush}" />
+                            <Setter Property="Fill" TargetName="rectangle" Value="{StaticResource ScrollBarControlMouseOver}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource ScrollBarControlMouseOver}" />
                         </Trigger>
                         <Trigger Property="IsDragging" Value="true">
-                            <Setter Property="Fill" TargetName="rectangle" Value="{StaticResource ControlBrightDefaultBackground}" />
-                            <Setter Property="BorderBrush" Value="{StaticResource ControlBrightDefaultBackground}" />
-                            <Setter Property="Foreground" Value="{StaticResource ControlBrightDefaultBorderBrush}" />
+                            <Setter Property="Fill" TargetName="rectangle" Value="{StaticResource ScrollBarControlMouseOver}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource ScrollBarControlMouseOver}" />
+                            <Setter Property="Foreground" Value="{StaticResource ScrollBarControlMouseOver}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -4069,7 +4084,7 @@ SOFTWARE.
         <Setter Property="WindowChrome.WindowChrome">
             <Setter.Value>
                 <WindowChrome CaptionHeight="26"
-                              ResizeBorderThickness="6"
+                              ResizeBorderThickness="8"
                               CornerRadius="0"
                               GlassFrameThickness="1"
                               NonClientFrameEdges="None"

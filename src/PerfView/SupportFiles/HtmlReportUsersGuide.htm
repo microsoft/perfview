@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="color-scheme" content="light dark">
     <title>Understand Perf Reports</title>
     <style>
+        :root {
+            color-scheme: dark light;
+        }
+
         body {
             font-family: Segoe UI,SegoeUI,Segoe WP,Helvetica Neue,Helvetica,Tahoma,Arial,sans-serif;
             font-weight: 400;
@@ -335,6 +339,10 @@
     <p>&nbsp;</p>
     <p>&nbsp;</p>
     <p>&nbsp;</p>
-</body>
-
+    <script>
+      // Set theme based on user preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    </script>
+  </body>
 </html>
