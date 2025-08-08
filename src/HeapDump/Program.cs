@@ -60,9 +60,10 @@ internal class Program
             string inputSpec = null;
             int minSecForTrigger = -1;
 
-            ChainedTokenCredential symbolsTokenCredential = new ChainedTokenCredential(
-                new VisualStudioCredential(),
-                new InteractiveBrowserCredential());
+            // We tried using a ChainedTokenCredential with a VisualStudioCredential, but this resulted in
+            // silent failures in the log if the VisualStudioCredential timed out.  For now, let's just use
+            // an interactive browser credential, which will always prompt the user.
+            TokenCredential symbolsTokenCredential = new InteractiveBrowserCredential();
 
             var dumper = new GCHeapDumper(Console.Out, symbolsTokenCredential);
 
