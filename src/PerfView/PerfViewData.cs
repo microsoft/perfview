@@ -43,6 +43,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Utilities;
 using Address = System.UInt64;
 using EventSource = EventSources.EventSource;
+using PerfView.Dialogs;
 
 namespace PerfView
 {
@@ -4670,13 +4671,16 @@ namespace PerfView
                                     // Catch the error if you don't merge and move to a new machine.  
                                     if (traceLog != null && !traceLog.CurrentMachineIsCollectionMachine() && !traceLog.HasPdbInfo)
                                     {
-                                        MessageBox.Show(parentWindow,
-                                            "Warning!   This file was not merged and was moved from the collection\r\n" +
-                                            "machine.  This means the data is incomplete and symbolic name resolution\r\n" +
-                                            "will NOT work.  The recommended fix is use the perfview (not windows OS)\r\n" +
-                                            "zip command.  Right click on the file in the main view and select ZIP.\r\n" +
-                                            "\r\n" +
-                                            "See merging and zipping in the users guide for more information.",
+                                        XamlMessageBox.Show(
+                                            parentWindow,
+                                            """
+                                            Warning! This file was not merged and was moved from the collection
+                                            machine. This means the data is incomplete and symbolic name resolution
+                                            will NOT work. The recommended fix is use the perfview (not windows OS)
+                                            zip command. Right click on the file in the main view and select ZIP.
+
+                                            See merging and zipping in the users guide for more information.
+                                            """,
                                             "Data not merged before leaving the machine!");
                                     }
 
@@ -4783,14 +4787,19 @@ namespace PerfView
         {
             if (brokenPercent > 1)
             {
-                log.WriteLine("Finished aggregating stacks.  (" + brokenPercent.ToString("f1") + "% Broken Stacks)");
+                log.WriteLine($"Finished aggregating stacks.  ({brokenPercent:f1}% Broken Stacks)");
             }
 
             if (brokenPercent > 10)
             {
-                MessageBox.Show(parentWindow, "Warning: There are " + brokenPercent.ToString("f1") + "% stacks that are broken\r\n" +
-                    "Top down analysis is suspect, however bottom up approaches are still valid.\r\n\r\n" +
-                    "Use the troubleshooting link at the top of the view for more information.\r\n",
+                XamlMessageBox.Show(
+                    parentWindow,
+                    $"""
+                    Warning: There are {brokenPercent:f1}% stacks that are broken.
+                    Top down analysis is suspect, however bottom up approaches are still valid.
+
+                    Use the troubleshooting link at the top of the view for more information.
+                    """,
                     "Broken Stacks");
 
                 return true;
@@ -5594,12 +5603,15 @@ namespace PerfView
             {
                 // TODO FIX NOW, investigate the missing events.  All we know is that incs and dec are not
                 // consistent with the RefCount value that is in the events.
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+                GuiApp.MainWindow.Dispatcher.BeginInvoke(() =>
                 {
-                    MessageBox.Show(GuiApp.MainWindow,
-                        "Warning: the Interop CCW events on which this data is based seem to be incomplete.\r\n" +
-                        "There seem to be missing instrumentation, which make the referenct counts unreliable\r\n"
-                        , "Data May be Incorrect");
+                    MessageBox.Show(
+                        GuiApp.MainWindow,
+                        """
+                        Warning: the Interop CCW events on which this data is based seem to be incomplete.
+                        There seem to be missing instrumentation, which make the referenct counts unreliable
+                        """,
+                        "Data May be Incorrect");
                 });
 
                 var objectToTypeMap = new Dictionary<long, Address>(1000);
@@ -7574,14 +7586,17 @@ namespace PerfView
             {
                 if (App.UserConfigData["WarnedAboutOsHeapAllocTypes"] == null)
                 {
-                    MessageBox.Show(stackWindow,
-                        "Warning: Allocation type resolution only happens on window launch.\r\n" +
-                        "Thus if you manually lookup symbols in this view you will get method\r\n" +
-                        "names of allocations sites, but to get the type name associated the \r\n" +
-                        "allocation site.\r\n" +
-                        "\r\n" +
-                        "You must close and reopen this window to get the allocation types.\r\n"
-                        , "May need to resolve PDBs and reopen.");
+                    XamlMessageBox.Show(
+                        stackWindow,
+                        """
+                        Warning: Allocation type resolution only happens on window launch.
+                        Thus if you manually lookup symbols in this view you will get method
+                        names of allocations sites, but to get the type name associated the
+                        allocation site.
+
+                        You must close and reopen this window to get the allocation types.
+                        """,
+                        "May need to resolve PDBs and reopen.");
                     App.UserConfigData["WarnedAboutOsHeapAllocTypes"] = "true";
                 }
             }
@@ -7662,13 +7677,15 @@ namespace PerfView
                     if (!m_notifiedAboutWin8)
                     {
                         m_notifiedAboutWin8 = true;
-                        var versionMismatchWarning = "This trace was captured on Window 8 and is being read\r\n" +
-                                                     "on and earlier OS.  If you experience any problems please\r\n" +
-                                                     "read the trace on an Windows 8 OS.";
+                        var versionMismatchWarning = """
+                            This trace was captured on Window 8 and is being read
+                            on and earlier OS.  If you experience any problems please
+                            read the trace on an Windows 8 OS.
+                            """;
                         worker.LogWriter.WriteLine(versionMismatchWarning);
-                        parentWindow.Dispatcher.BeginInvoke((Action)delegate ()
+                        parentWindow.Dispatcher.BeginInvoke(() =>
                         {
-                            MessageBox.Show(parentWindow, versionMismatchWarning, "Log File Version Mismatch", MessageBoxButton.OK);
+                            XamlMessageBox.Show(parentWindow, versionMismatchWarning, "Log File Version Mismatch", MessageBoxButton.OK);
                         });
                     }
                 }
@@ -8274,11 +8291,18 @@ namespace PerfView
                 m_traceLog.CodeAddresses.UnsafePDBMatching = true;
             }
 
-            if (m_traceLog.Truncated)   // Warn about truncation.  
+            if (m_traceLog.Truncated)   // Warn about truncation.
             {
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+                GuiApp.MainWindow.Dispatcher.BeginInvoke(() =>
                 {
-                    MessageBox.Show("The ETL file was too big to convert and was truncated.\r\nSee log for details", "Log File Truncated", MessageBoxButton.OK);
+                    XamlMessageBox.Show(
+                        """
+                        The ETL file was too big to convert and was truncated.
+                        See log for details.
+                        """,
+                        "Log File Truncated",
+                        MessageBoxButton.OK);
+                        
                 });
             }
             return m_traceLog;
@@ -8304,9 +8328,9 @@ namespace PerfView
             }
 
             MessageBoxResult result = MessageBoxResult.None;
-            parentWindow.Dispatcher.BeginInvoke((Action)delegate ()
+            parentWindow.Dispatcher.BeginInvoke(() =>
             {
-                result = MessageBox.Show(parentWindow, warning, "Lost Events", MessageBoxButton.OKCancel);
+                result = XamlMessageBox.Show(parentWindow, warning, "Lost Events", MessageBoxButton.OKCancel);
                 worker.LogWriter.WriteLine(warning);
                 if (result != MessageBoxResult.OK)
                 {
@@ -9423,7 +9447,14 @@ namespace PerfView
             {
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    MessageBox.Show("The ETL file was too big to convert and was truncated.\r\nSee log for details", "Log File Truncated", MessageBoxButton.OK);
+                    XamlMessageBox.Show(
+                        """
+                        The ETL file was too big to convert and was truncated.
+                        See log for details.
+                        """,
+                        "Log File Truncated",
+                        MessageBoxButton.OK);
+                        
                 });
             }
             return m_traceLog;
@@ -10201,7 +10232,14 @@ namespace PerfView
             {
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    MessageBox.Show("The ETL file was too big to convert and was truncated.\r\nSee log for details", "Log File Truncated", MessageBoxButton.OK);
+                    MessageBox.Show(
+                        """
+                        The ETL file was too big to convert and was truncated.
+                        See log for details.
+                        """,
+                        "Log File Truncated",
+                        MessageBoxButton.OK);
+                        
                 });
             }
             return m_traceLog;
@@ -10300,24 +10338,22 @@ namespace PerfView
 
         private void HandleLostEvents(Window parentWindow, bool truncated, int numberOfLostEvents, int eventCountAtTrucation, StatusBar worker)
         {
-            string warning;
-            if (!truncated)
-            {
-                warning = "WARNING: There were " + numberOfLostEvents + " lost events in the trace.\r\n" +
-                    "Some analysis might be invalid.";
-            }
-            else
-            {
-                warning = "WARNING: The ETLX file was truncated at " + eventCountAtTrucation + " events.\r\n" +
-                    "This is to keep the ETLX file size under 4GB, however all rundown events are processed.\r\n" +
-                    "Use /SkipMSec:XXX after clearing the cache (File->Clear Temp Files) to see the later parts of the file.\r\n" +
-                    "See log for more details.";
-            }
+            string warning = !truncated
+                ? $"""
+                WARNING: There were {numberOfLostEvents} lost events in the trace.
+                Some analysis might be invalid.
+                """
+                : $"""
+                WARNING: The ETLX file was truncated at {eventCountAtTrucation} events.
+                This is to keep the ETLX file size under 4GB, however all rundown events are processed.
+                Use /SkipMSec:XXX after clearing the cache (File->Clear Temp Files) to see the later parts of the file.
+                See log for more details.
+                """;
 
             MessageBoxResult result = MessageBoxResult.None;
             parentWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
-                result = MessageBox.Show(parentWindow, warning, "Lost Events", MessageBoxButton.OKCancel);
+                result = XamlMessageBox.Show(parentWindow, warning, "Lost Events", MessageBoxButton.OKCancel);
                 worker.LogWriter.WriteLine(warning);
                 if (result != MessageBoxResult.OK)
                 {
@@ -10425,17 +10461,22 @@ namespace PerfView
                 {
                     if (m_numFailures == 1 && !Path.GetFileName(module.Path).StartsWith("mrt", StringComparison.OrdinalIgnoreCase))
                     {
-                        GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+                        GuiApp.MainWindow.Dispatcher.BeginInvoke(() =>
                         {
-                            MessageBox.Show(GuiApp.MainWindow,
-                                "Warning: Could not find PDB for module " + Path.GetFileName(module.Path) + "\r\n" +
-                                "Some types will not have symbolic names.\r\n" +
-                                "See log for more details.\r\n" +
-                                "Fix by placing PDB on symbol path or in a directory called 'symbols' beside .gcdump file.",
+                            XamlMessageBox.Show(
+                                GuiApp.MainWindow,
+                                $"""
+                                Warning: Could not find PDB for module {Path.GetFileName(module.Path)}.
+                                Some types will not have symbolic names.
+                                See log for more details.
+                                Fix by placing PDB on symbol path or in a directory called 'symbols' beside .gcdump file.
+                                """,
                                 "PDB lookup failure");
                         });
                     }
-                    m_log.WriteLine("Failed to find PDB for module {0} to look up type 0x{1:x}", module.Path, typeID);
+
+                    m_log.WriteLine($"Failed to find PDB for module {module.Path} to look up type 0x{typeID:x}");
+
                     if (m_numFailures == 5)
                     {
                         m_log.WriteLine("Discontinuing PDB module lookup messages");
