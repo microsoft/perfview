@@ -3115,7 +3115,14 @@ namespace PerfView
 
                 if (m_ViewsShouldBeSaved)
                 {
-                    var result = MessageBox.Show("You have created Notes that have not been saved\r\nDo you wish to save?", "Unsaved Notes", MessageBoxButton.YesNoCancel);
+                    var result = XamlMessageBox.Show(
+                        """
+                        You have created Notes that have not been saved.
+                        Do you wish to save?
+                        """,
+                        "Unsaved Notes",
+                        MessageBoxButton.YesNoCancel);
+
                     if (result == MessageBoxResult.Cancel)
                     {
                         e.Cancel = true;

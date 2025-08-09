@@ -4252,6 +4252,7 @@ SOFTWARE.
                                     </DockPanel>
                                     <StackPanel Orientation="Horizontal"
                                                 Grid.Column="0" HorizontalAlignment="Right">
+                                        <!-- Keeping here for reference should we need to add it back in
                                         <Button x:Name="btnMinimize"
                                                 Background="Transparent"
                                                 BorderBrush="Transparent"
@@ -4264,7 +4265,7 @@ SOFTWARE.
                                                        Margin="1 1 0 0"
                                                        Stroke="{StaticResource ControlGlythColour}"
                                                        StrokeThickness="2" />
-                                        </Button>
+                                        </Button>-->
                                         <Button x:Name="btnClose"
                                                 Background="Transparent"
                                                 BorderBrush="Transparent"

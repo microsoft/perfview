@@ -1,5 +1,6 @@
 using Microsoft.Diagnostics.Tracing.Analysis.GC;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using PerfView.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -244,7 +245,7 @@ namespace PerfView
 
             if (source.SampleIndexLimit == 0)
             {
-                MessageBox.Show("No stacks found for induced GC", ".Net Heap Analyzer", MessageBoxButton.OK);
+                XamlMessageBox.Show("No stacks found for induced GC", ".Net Heap Analyzer", MessageBoxButton.OK);
             }
             else
             {

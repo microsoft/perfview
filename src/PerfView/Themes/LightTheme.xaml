@@ -77,6 +77,12 @@ SOFTWARE.
         <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
     </Style>
 
+    <Style x:Key="CustomToolWindowStyle" TargetType="{x:Type Window}">
+        <!--<Setter Property="BorderThickness" Value="1" />-->
+        <Setter Property="ResizeMode" Value="NoResize" />
+        <Setter Property="WindowStyle" Value="SingleBorderWindow" />
+    </Style>
+
     <!-- Custom MenuItem style which resolves color contrast issue with menu border brushes -->
     <!-- Only two modifications to default control template: MenuItem.Selected.Border and MenuItem.Highlight.Border modified to #FF2084E8 -->
     <SolidColorBrush x:Key="Menu.Static.Background" Color="#FFF0F0F0"/>

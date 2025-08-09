@@ -3,6 +3,10 @@ using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Utilities;
+
+#if !PERFVIEW_COLLECT
+using PerfView.Dialogs;
+#endif
 using PerfView.Properties;
 using System;
 using System.Diagnostics;
@@ -43,9 +47,9 @@ namespace PerfView
             CommandProcessor = new CommandProcessor();
             App.SetAccessibilitySwitchOverrides();
 
-            StreamWriter writerToCleanup = null;   // If we create a log file, we need to clean it up.  
+            StreamWriter writerToCleanup = null;   // If we create a log file, we need to clean it up.
             int retCode = -1;
-            bool newConsoleCreated = false;        // If we create a new console, we need to wait before existing            
+            bool newConsoleCreated = false;        // If we create a new console, we need to wait before existing
             try
             {
 #if !PERFVIEW_COLLECT
@@ -80,8 +84,8 @@ namespace PerfView
                     DisplaySplashScreen();
                 }
 #endif
-                App.Unpack();                   // Install the program if it is not done already 
-                App.RelaunchIfNeeded(args);     // If we are running from a a network share, relaunch locally. 
+                App.Unpack();                   // Install the program if it is not done already
+                App.RelaunchIfNeeded(args);     // If we are running from a a network share, relaunch locally.
 
                 // This does the real work
                 retCode = DoMain(args, ref newConsoleCreated, ref writerToCleanup);
@@ -891,10 +895,13 @@ namespace PerfView
 #if !PERFVIEW_COLLECT
             if (!App.CommandLineArgs.TrustPdbs)
             {
-                ret.SecurityCheck = delegate (string pdbFile)
+                ret.SecurityCheck = pdbFile =>
                 {
-                    var result = System.Windows.MessageBox.Show("Found " + pdbFile + " on your local machine.  Do you want to use it?",
-                        "Security Check", System.Windows.MessageBoxButton.YesNo);
+                    var result = XamlMessageBox.Show(
+                        $"Found {pdbFile} on your local machine.  Do you want to use it?",
+                        "Security Check",
+                        System.Windows.MessageBoxButton.YesNo);
+
                     return result == System.Windows.MessageBoxResult.Yes;
                 };
             }
@@ -1265,6 +1272,7 @@ namespace PerfView
             m_terseLog.Dispose();
             m_verboseLog.Dispose();
         }
+
 #region private
         private TextWriter m_verboseLog;
         private TextWriter m_terseLog;

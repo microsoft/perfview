@@ -148,10 +148,15 @@ namespace PerfView.Dialogs
 
             if (m_args.MaxDumpCountK >= 10000)
             {
-                var response = MessageBox.Show("WARNING: you have selected a Max Dump Count larger than 10M objects.\r\n" +
-                    "You should only need 100K to do a good job, even at 10M the GUI will be very sluggish.\r\n" +
-                    "Consider canceling and picking a smaller value.", "Max Dump Size Too Big",
+                var response = XamlMessageBox.Show(
+                    """
+                    WARNING: you have selected a Max Dump Count larger than 10M objects.
+                    You should only need 100K to do a good job, even at 10M the GUI will be very sluggish.
+                    Consider canceling and picking a smaller value.
+                    """,
+                    "Max Dump Size Too Big",
                     MessageBoxButton.OKCancel);
+
                 if (response != MessageBoxResult.OK)
                 {
                     StatusBar.Log("Memory collection canceled.");
