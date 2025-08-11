@@ -298,6 +298,8 @@ namespace PerfView
         private static ChainedTokenCredential CreateTokenCredential()
         {
             return new ChainedTokenCredential(
+                new EnvironmentCredential(),
+                new AzureCliCredential(),
                 new VisualStudioCredential(),
                 new InteractiveBrowserCredential());
         }
