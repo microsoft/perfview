@@ -2,6 +2,7 @@
 using Azure.Identity;
 using Microsoft.Diagnostics.Runtime;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -11,6 +12,15 @@ using Triggers;
 #if CROSS_GENERATION_LIVENESS
 using Microsoft.Diagnostics.CrossGenerationLiveness;
 #endif
+
+[Flags]
+public enum SymbolsAuthenticationType
+{
+    Environment = 1,
+    AzureCli = 2,
+    VisualStudio = 4,
+    Interactive = 8
+}
 
 internal class Program
 {
@@ -59,10 +69,9 @@ internal class Program
             bool processDump = false;
             string inputSpec = null;
             int minSecForTrigger = -1;
+            SymbolsAuthenticationType symbolsAuth = SymbolsAuthenticationType.Interactive;
 
-            ChainedTokenCredential symbolsTokenCredential = new ChainedTokenCredential(
-                new VisualStudioCredential(),
-                new InteractiveBrowserCredential());
+            ChainedTokenCredential symbolsTokenCredential = CreateTokenCredential(symbolsAuth);
 
             var dumper = new GCHeapDumper(Console.Out, symbolsTokenCredential);
 
@@ -173,6 +182,22 @@ internal class Program
                             goto Usage;
                         }
                         Console.WriteLine("Generation To Trigger: " + dumper.GenerationToTrigger);
+                    }
+                    else if (arg.StartsWith("/SymbolsAuth:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string authTypesStr = arg.Substring(13);
+                        if (TryParseSymbolsAuthenticationTypes(authTypesStr, out var parsedAuthTypes))
+                        {
+                            symbolsAuth = parsedAuthTypes;
+                            symbolsTokenCredential = CreateTokenCredential(symbolsAuth);
+                            dumper = new GCHeapDumper(Console.Out, symbolsTokenCredential);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid value for /SymbolsAuth: {0}", authTypesStr);
+                            Console.WriteLine("Valid values are: Environment, AzureCli, VisualStudio, Interactive (can be combined with commas)");
+                            goto Usage;
+                        }
                     }
                     else
                     {
@@ -331,6 +356,65 @@ internal class Program
         }
 
         return -1;
+    }
+
+    private static bool TryParseSymbolsAuthenticationTypes(string authTypesStr, out SymbolsAuthenticationType result)
+    {
+        result = (SymbolsAuthenticationType)0;
+        
+        if (string.IsNullOrWhiteSpace(authTypesStr))
+        {
+            return false;
+        }
+
+        var parts = authTypesStr.Split(',');
+        foreach (var part in parts)
+        {
+            var trimmedPart = part.Trim();
+            if (Enum.TryParse<SymbolsAuthenticationType>(trimmedPart, true, out var parsedType))
+            {
+                result |= parsedType;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        return result != (SymbolsAuthenticationType)0;
+    }
+
+    private static ChainedTokenCredential CreateTokenCredential(SymbolsAuthenticationType authTypes)
+    {
+        var credentials = new List<TokenCredential>();
+
+        if (authTypes.HasFlag(SymbolsAuthenticationType.Environment))
+        {
+            credentials.Add(new EnvironmentCredential());
+        }
+        
+        if (authTypes.HasFlag(SymbolsAuthenticationType.AzureCli))
+        {
+            credentials.Add(new AzureCliCredential());
+        }
+        
+        if (authTypes.HasFlag(SymbolsAuthenticationType.VisualStudio))
+        {
+            credentials.Add(new VisualStudioCredential());
+        }
+        
+        if (authTypes.HasFlag(SymbolsAuthenticationType.Interactive))
+        {
+            credentials.Add(new InteractiveBrowserCredential());
+        }
+
+        // If no credentials are specified, default to Interactive
+        if (credentials.Count == 0)
+        {
+            credentials.Add(new InteractiveBrowserCredential());
+        }
+
+        return new ChainedTokenCredential(credentials.ToArray());
     }
 
     private static int PointerSizeForProcess(int processID)
