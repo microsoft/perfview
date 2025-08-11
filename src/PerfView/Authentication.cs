@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -11,6 +12,19 @@ using Utilities;
 
 namespace PerfView
 {
+    /// <summary>
+    /// Flags enum representing the types of Azure credentials that can be used for symbol authentication.
+    /// </summary>
+    [Flags]
+    public enum SymbolsAuthenticationTypes
+    {
+        None = 0,
+        Environment = 1,
+        AzureCli = 2,
+        VisualStudio = 4,
+        Interactive = 8
+    }
+
     /// <summary>
     /// Registered commands for authentication options.
     /// </summary>
@@ -256,7 +270,8 @@ namespace PerfView
         /// <returns>This instance for fluent chaining.</returns>
         public static SymbolReaderAuthenticationHandler AddSymwebAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, bool silent = false)
         {
-            return httpHandler.AddHandler(new SymwebHandler(log, CreateTokenCredential()));
+            var authTypes = ParseSymbolsAuthenticationTypes(App.CommandLineArgs?.SymbolsAuth);
+            return httpHandler.AddHandler(new SymwebHandler(log, CreateTokenCredential(authTypes)));
         }
 
         /// <summary>
@@ -279,7 +294,8 @@ namespace PerfView
         /// <returns>This instance for fluent chaining.</returns>
         public static SymbolReaderAuthenticationHandler AddAzureDevOpsAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, bool silent = false)
         {
-            return httpHandler.AddHandler(new AzureDevOpsHandler(log, CreateTokenCredential()));
+            var authTypes = ParseSymbolsAuthenticationTypes(App.CommandLineArgs?.SymbolsAuth);
+            return httpHandler.AddHandler(new AzureDevOpsHandler(log, CreateTokenCredential(authTypes)));
         }
 
         /// <summary>
@@ -295,13 +311,74 @@ namespace PerfView
         public static SymbolReaderAuthenticationHandler AddBasicHttpAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, Window mainWindow)
             => httpHandler.AddHandler(new BasicHttpAuthHandler(log));
 
-        private static ChainedTokenCredential CreateTokenCredential()
+        /// <summary>
+        /// Parses the SymbolsAuth command line argument into SymbolsAuthenticationTypes flags.
+        /// </summary>
+        /// <param name="symbolsAuthArg">Comma-separated string of authentication types</param>
+        /// <returns>Combined flags representing the specified authentication types</returns>
+        public static SymbolsAuthenticationTypes ParseSymbolsAuthenticationTypes(string symbolsAuthArg)
         {
-            return new ChainedTokenCredential(
-                new EnvironmentCredential(),
-                new AzureCliCredential(),
-                new VisualStudioCredential(),
-                new InteractiveBrowserCredential());
+            if (string.IsNullOrWhiteSpace(symbolsAuthArg))
+            {
+                return SymbolsAuthenticationTypes.Interactive; // Default
+            }
+
+            var result = SymbolsAuthenticationTypes.None;
+            var parts = symbolsAuthArg.Split(',');
+
+            foreach (var part in parts)
+            {
+                var trimmed = part.Trim();
+                if (Enum.TryParse<SymbolsAuthenticationTypes>(trimmed, true, out var authType))
+                {
+                    result |= authType;
+                }
+                else
+                {
+                    // Invalid value - could log a warning, but for now just ignore
+                }
+            }
+
+            // If nothing was parsed or only None was specified, default to Interactive
+            if (result == SymbolsAuthenticationTypes.None)
+            {
+                result = SymbolsAuthenticationTypes.Interactive;
+            }
+
+            return result;
+        }
+
+        private static ChainedTokenCredential CreateTokenCredential(SymbolsAuthenticationTypes authTypes = SymbolsAuthenticationTypes.Interactive)
+        {
+            var credentials = new List<TokenCredential>();
+
+            if (authTypes.HasFlag(SymbolsAuthenticationTypes.Environment))
+            {
+                credentials.Add(new EnvironmentCredential());
+            }
+            
+            if (authTypes.HasFlag(SymbolsAuthenticationTypes.AzureCli))
+            {
+                credentials.Add(new AzureCliCredential());
+            }
+            
+            if (authTypes.HasFlag(SymbolsAuthenticationTypes.VisualStudio))
+            {
+                credentials.Add(new VisualStudioCredential());
+            }
+            
+            if (authTypes.HasFlag(SymbolsAuthenticationTypes.Interactive))
+            {
+                credentials.Add(new InteractiveBrowserCredential());
+            }
+
+            // If no credentials are specified or if only None is specified, default to Interactive
+            if (credentials.Count == 0)
+            {
+                credentials.Add(new InteractiveBrowserCredential());
+            }
+
+            return new ChainedTokenCredential(credentials.ToArray());
         }
 
         /// <summary>
