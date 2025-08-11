@@ -25,7 +25,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Xml;
 using Utilities;
-using Azure.Identity;
 using Address = System.UInt64;
 using Path = System.IO.Path;
 
@@ -2097,7 +2096,6 @@ namespace PerfView
             // Look them up.
             StatusBar.StartWork("Symbol Lookup", delegate ()
             {
-                var authFailures = new List<string>();
                 foreach (var moduleName in moduleNames)
                 {
                     StatusBar.LogWriter.WriteLine();
@@ -2109,12 +2107,6 @@ namespace PerfView
                         StatusBar.Log("Finished Lookup up symbols for " + moduleName + " Elapsed Time = " +
                             StatusBar.Duration.TotalSeconds.ToString("n3"));
                     }
-                    catch (Azure.Identity.AuthenticationFailedException ex)
-                    {
-                        var errorMessage = "Authentication failed for " + moduleName + ": " + ex.Message;
-                        StatusBar.LogError(errorMessage);
-                        authFailures.Add(moduleName);
-                    }
                     catch (ApplicationException ex)
                     {
                         StatusBar.LogError("Error looking up " + moduleName + "\r\n    " + ex.Message);
@@ -2123,12 +2115,6 @@ namespace PerfView
                 StatusBar.EndWork(delegate ()
                 {
                     Update();
-                    
-                    // Show authentication failure dialog if any failures occurred
-                    if (authFailures.Count > 0)
-                    {
-                        ShowAuthenticationFailureDialog(authFailures);
-                    }
                 });
             });
         }
@@ -3903,20 +3889,6 @@ namespace PerfView
 
         // List of presets loaded from configuration (and then maybe adjusted later)
         private List<Preset> m_presets;
-
-        /// <summary>
-        /// Shows a dialog to inform the user about authentication failures and directs them to check the logs.
-        /// </summary>
-        /// <param name="failedModules">List of module names that failed authentication</param>
-        private void ShowAuthenticationFailureDialog(List<string> failedModules)
-        {
-            var message = "Authentication failed while resolving symbols for the following modules:\n\n";
-            message += string.Join("\n", failedModules);
-            message += "\n\nPlease check the log for more details and verify your authentication credentials.";
-            
-            MessageBox.Show(this, message, "Symbol Server Authentication Failed", 
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
 
         #endregion
     }
