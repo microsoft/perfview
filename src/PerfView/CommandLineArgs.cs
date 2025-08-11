@@ -792,4 +792,16 @@ namespace PerfView
 
         public override string ToString() => Text;
     }
+
+    /// <summary>
+    /// Flags enum representing the types of Azure credentials that can be used for symbol authentication.
+    /// </summary>
+    [Flags]
+    public enum SymbolsAuthenticationType
+    {
+        Environment = 1,
+        AzureCli = 2,
+        VisualStudio = 4,
+        Interactive = 8
+    }
 }

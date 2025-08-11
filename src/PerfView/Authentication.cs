@@ -6,25 +6,13 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using Azure.Core;
 using Azure.Identity;
 using Microsoft.Diagnostics.Symbols.Authentication;
 using Utilities;
 
 namespace PerfView
 {
-    /// <summary>
-    /// Flags enum representing the types of Azure credentials that can be used for symbol authentication.
-    /// </summary>
-    [Flags]
-    public enum SymbolsAuthenticationType
-    {
-        None = 0,
-        Environment = 1,
-        AzureCli = 2,
-        VisualStudio = 4,
-        Interactive = 8
-    }
-
     /// <summary>
     /// Registered commands for authentication options.
     /// </summary>
@@ -270,8 +258,7 @@ namespace PerfView
         /// <returns>This instance for fluent chaining.</returns>
         public static SymbolReaderAuthenticationHandler AddSymwebAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, bool silent = false)
         {
-            var authTypes = App.CommandLineArgs?.SymbolsAuth ?? SymbolsAuthenticationType.Interactive;
-            return httpHandler.AddHandler(new SymwebHandler(log, CreateTokenCredential(authTypes)));
+            return httpHandler.AddHandler(new SymwebHandler(log, CreateTokenCredential(App.CommandLineArgs.SymbolsAuth)));
         }
 
         /// <summary>
@@ -294,8 +281,7 @@ namespace PerfView
         /// <returns>This instance for fluent chaining.</returns>
         public static SymbolReaderAuthenticationHandler AddAzureDevOpsAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, bool silent = false)
         {
-            var authTypes = App.CommandLineArgs?.SymbolsAuth ?? SymbolsAuthenticationType.Interactive;
-            return httpHandler.AddHandler(new AzureDevOpsHandler(log, CreateTokenCredential(authTypes)));
+            return httpHandler.AddHandler(new AzureDevOpsHandler(log, CreateTokenCredential(App.CommandLineArgs.SymbolsAuth)));
         }
 
         /// <summary>
@@ -311,7 +297,7 @@ namespace PerfView
         public static SymbolReaderAuthenticationHandler AddBasicHttpAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, Window mainWindow)
             => httpHandler.AddHandler(new BasicHttpAuthHandler(log));
 
-        private static ChainedTokenCredential CreateTokenCredential(SymbolsAuthenticationType authTypes = SymbolsAuthenticationType.Interactive)
+        private static ChainedTokenCredential CreateTokenCredential(SymbolsAuthenticationType authTypes)
         {
             var credentials = new List<TokenCredential>();
 
@@ -335,7 +321,7 @@ namespace PerfView
                 credentials.Add(new InteractiveBrowserCredential());
             }
 
-            // If no credentials are specified or if only None is specified, default to Interactive
+            // If no credentials are specified, default to Interactive
             if (credentials.Count == 0)
             {
                 credentials.Add(new InteractiveBrowserCredential());
