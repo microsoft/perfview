@@ -304,6 +304,13 @@
       <Link>HeapDump\System.Collections.Immutable.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\HeapDump\$(OutDir)\System.Runtime.CompilerServices.Unsafe.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\HeapDump\System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
+      <Link>HeapDump\System.Runtime.CompilerServices.Unsafe.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\System.Memory.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
