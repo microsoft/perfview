@@ -79,7 +79,7 @@ namespace PerfView
             var symbolsAuthArg = "";
             if (App.CommandLineArgs.SymbolsAuth != SymbolsAuthenticationType.Interactive)
             {
-                symbolsAuthArg = $" /SymbolsAuth:{App.CommandLineArgs.SymbolsAuth}";
+                symbolsAuthArg = $" /SymbolsAuth:{App.CommandLineArgs.SymbolsAuth.ToString().Replace(" ", "")}";
             }
 
             var commandLine = string.Format("\"{0}\"{1} /ForceGC {2}", heapDumpExe, symbolsAuthArg, processID.ToString());
@@ -179,7 +179,7 @@ namespace PerfView
             var symbolsAuthArg = "";
             if (App.CommandLineArgs.SymbolsAuth != SymbolsAuthenticationType.Interactive)
             {
-                symbolsAuthArg = $" /SymbolsAuth:{App.CommandLineArgs.SymbolsAuth}";
+                symbolsAuthArg = $" /SymbolsAuth:{App.CommandLineArgs.SymbolsAuth.ToString().Replace(" ", "")}";
             }
 
             var commandLine = string.Format("\"{0}\"{1} {2} \"{3}\" \"{4}\"", heapDumpExe, symbolsAuthArg, qualifiers, inputArg, outputFile);

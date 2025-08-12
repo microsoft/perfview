@@ -14,7 +14,7 @@ using Microsoft.Diagnostics.CrossGenerationLiveness;
 #endif
 
 [Flags]
-public enum SymbolsAuthenticationType
+internal enum SymbolsAuthenticationType
 {
     Environment = 1,
     AzureCli = 2,
@@ -190,7 +190,8 @@ internal class Program
                         {
                             symbolsAuth = parsedAuthTypes;
                             symbolsTokenCredential = CreateTokenCredential(symbolsAuth);
-                            dumper = new GCHeapDumper(Console.Out, symbolsTokenCredential);
+                            dumper.SymbolsAuthTokenCredential = symbolsTokenCredential;
+                            Console.WriteLine("Set symbols authentication credentials to {0}", authTypesStr);
                         }
                         else
                         {

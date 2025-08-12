@@ -2997,6 +2997,11 @@ namespace PerfView
                 cmdLineArgs += " /LogFile:" + Command.Quote(parsedArgs.LogFile);
             }
 
+            if (parsedArgs.SymbolsAuth != SymbolsAuthenticationType.Interactive)
+            {
+                cmdLineArgs += " /SymbolsAuth:" + parsedArgs.SymbolsAuth.ToString().Replace(" ", "");
+            }
+
             if (parsedArgs.NoRundown)
             {
                 cmdLineArgs += " /NoRundown";
