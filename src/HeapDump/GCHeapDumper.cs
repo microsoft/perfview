@@ -21,6 +21,8 @@ using Address = System.UInt64;
 using Microsoft.Diagnostics.Utilities;
 using Microsoft.Diagnostics.HeapDump;
 using Azure.Core;
+using Azure.Identity;
+
 
 
 #if CROSS_GENERATION_LIVENESS
@@ -38,11 +40,10 @@ public class GCHeapDumper
     /// to dump a heap.  
     /// </summary>
     /// <param name="log"></param>
-    /// <param name="symbolsAuthTokenCredential"></param>
-    public GCHeapDumper(TextWriter log, TokenCredential symbolsAuthTokenCredential = null)
+    public GCHeapDumper(TextWriter log)
     {
         m_origLog = log;
-        SymbolsAuthTokenCredential = symbolsAuthTokenCredential;
+        SymbolsAuthTokenCredential = new InteractiveBrowserCredential();
         m_copyOfLog = new StringWriter();
         m_log = new TeeTextWriter(m_copyOfLog, m_origLog);
 

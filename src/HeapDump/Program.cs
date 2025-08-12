@@ -1,6 +1,5 @@
-﻿using Azure.Core;
-using Azure.Identity;
-using Microsoft.Diagnostics.Runtime;
+﻿using Microsoft.Diagnostics.Runtime;
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,15 +11,6 @@ using Triggers;
 #if CROSS_GENERATION_LIVENESS
 using Microsoft.Diagnostics.CrossGenerationLiveness;
 #endif
-
-[Flags]
-internal enum SymbolsAuthenticationType
-{
-    Environment = 1,
-    AzureCli = 2,
-    VisualStudio = 4,
-    Interactive = 8
-}
 
 internal class Program
 {
@@ -69,11 +59,8 @@ internal class Program
             bool processDump = false;
             string inputSpec = null;
             int minSecForTrigger = -1;
-            SymbolsAuthenticationType symbolsAuth = SymbolsAuthenticationType.Interactive;
 
-            ChainedTokenCredential symbolsTokenCredential = CreateTokenCredential(symbolsAuth);
-
-            var dumper = new GCHeapDumper(Console.Out, symbolsTokenCredential);
+            var dumper = new GCHeapDumper(Console.Out);
 
             for (int curArgIdx = 0; curArgIdx < args.Length; curArgIdx++)
             {
@@ -186,17 +173,16 @@ internal class Program
                     else if (arg.StartsWith("/SymbolsAuth:", StringComparison.OrdinalIgnoreCase))
                     {
                         string authTypesStr = arg.Substring(13);
-                        if (TryParseSymbolsAuthenticationTypes(authTypesStr, out var parsedAuthTypes))
+                        if (TryParseSymbolsAuthenticationTypes(authTypesStr, out SymbolsAuthenticationType parsedAuthTypes))
                         {
-                            symbolsAuth = parsedAuthTypes;
-                            symbolsTokenCredential = CreateTokenCredential(symbolsAuth);
-                            dumper.SymbolsAuthTokenCredential = symbolsTokenCredential;
+                            dumper.SymbolsAuthTokenCredential = SymbolsAuthenticationUtilities.CreateTokenCredential(parsedAuthTypes);
                             Console.WriteLine("Set symbols authentication credentials to {0}", authTypesStr);
                         }
                         else
                         {
                             Console.WriteLine("Invalid value for /SymbolsAuth: {0}", authTypesStr);
-                            Console.WriteLine("Valid values are: Environment, AzureCli, VisualStudio, Interactive (can be combined with commas)");
+                            var validValues = string.Join(", ", Enum.GetNames(typeof(SymbolsAuthenticationType)));
+                            Console.WriteLine("Valid values are: {0} (can be combined with commas)", validValues);
                             goto Usage;
                         }
                     }
@@ -385,38 +371,7 @@ internal class Program
         return result != (SymbolsAuthenticationType)0;
     }
 
-    private static ChainedTokenCredential CreateTokenCredential(SymbolsAuthenticationType authTypes)
-    {
-        var credentials = new List<TokenCredential>();
 
-        if (authTypes.HasFlag(SymbolsAuthenticationType.Environment))
-        {
-            credentials.Add(new EnvironmentCredential());
-        }
-        
-        if (authTypes.HasFlag(SymbolsAuthenticationType.AzureCli))
-        {
-            credentials.Add(new AzureCliCredential());
-        }
-        
-        if (authTypes.HasFlag(SymbolsAuthenticationType.VisualStudio))
-        {
-            credentials.Add(new VisualStudioCredential());
-        }
-        
-        if (authTypes.HasFlag(SymbolsAuthenticationType.Interactive))
-        {
-            credentials.Add(new InteractiveBrowserCredential());
-        }
-
-        // If no credentials are specified, default to Interactive
-        if (credentials.Count == 0)
-        {
-            credentials.Add(new InteractiveBrowserCredential());
-        }
-
-        return new ChainedTokenCredential(credentials.ToArray());
-    }
 
     private static int PointerSizeForProcess(int processID)
     {

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -791,17 +792,5 @@ namespace PerfView
         }
 
         public override string ToString() => Text;
-    }
-
-    /// <summary>
-    /// Flags enum representing the types of Azure credentials that can be used for symbol authentication.
-    /// </summary>
-    [Flags]
-    public enum SymbolsAuthenticationType
-    {
-        Environment = 1,
-        AzureCli = 2,
-        VisualStudio = 4,
-        Interactive = 8
     }
 }

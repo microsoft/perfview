@@ -9,6 +9,7 @@ using System.Windows.Interop;
 using Azure.Core;
 using Azure.Identity;
 using Microsoft.Diagnostics.Symbols.Authentication;
+using Microsoft.Diagnostics.Utilities;
 using Utilities;
 
 namespace PerfView
