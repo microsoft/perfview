@@ -34,6 +34,7 @@
     <Compile Include="..\Utilities\DirectoryUtilities.cs" />
     <Compile Include="..\Utilities\StringUtilities.cs" />
     <Compile Include="..\Utilities\XmlUtilities.cs" />
+    <Compile Include="..\Utilities\SymbolsAuthenticationUtilities.cs" />
     <Compile Include="..\PerfView\Utilities\ExceptionMessage.cs" />
     <Compile Include="..\PerfView\Properties\BuildDateAttribute.cs" />
     <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />

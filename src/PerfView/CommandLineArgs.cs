@@ -1,6 +1,7 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -65,6 +66,7 @@ namespace PerfView
         // options common to multiple commands
         public string DataFile;             // This is the name of the ETL file (not the ZIP file)
         public string LogFile;
+        public SymbolsAuthenticationType SymbolsAuth = SymbolsAuthenticationType.Interactive;          // Specifies authentication types for symbol servers
 
         // Memory options
         public string ProcessDumpFile;      // if taking a snapshot from a dump, this is the dump file (dataFile is the output file)
@@ -277,6 +279,7 @@ namespace PerfView
             parser.NoDashOnParameterSets = true;
 
             parser.DefineOptionalQualifier("LogFile", ref LogFile, "Send messages to this file instead launching the GUI.  Intended for batch scripts and other automation.");
+            parser.DefineOptionalQualifier("SymbolsAuth", ref SymbolsAuth, "Specifies authentication types for symbol servers. Values: Environment, AzureCli, VisualStudio, Interactive. Can be combined with +. Default is Interactive only.");
 
             // These apply to start, collect and run
             parser.DefineOptionalQualifier("BufferSize", ref BufferSizeMB, "The size the buffers (in MB) the OS should use to store events waiting to be written to disk."); // TODO remove eventually. 
