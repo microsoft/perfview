@@ -162,9 +162,19 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal TraceEventNativeMethods.EVENT_RECORD* GetEventRecordForEventData(in EventPipeEventHeader eventData)
         {
-            // We have already initialize all the fields of _eventRecord that do no vary from event to event.
+            // We have already initialize all the fields of _eventRecord that do not vary from event to event.
             // Now we only have to copy over the fields that are specific to particular event.
-            //
+
+            // these events usually come from metadata, but they can be overridden by the label list
+            _eventRecord->EventHeader.Opcode = 
+                eventData.OpCodeOverride.HasValue ? eventData.OpCodeOverride.Value : Opcode;
+            _eventRecord->EventHeader.Level = 
+                eventData.LevelOverride.HasValue ? eventData.LevelOverride.Value : Level;
+            _eventRecord->EventHeader.Keyword = 
+                eventData.KeywordsOverride.HasValue ? eventData.KeywordsOverride.Value : Keywords;
+            _eventRecord->EventHeader.Version = 
+                eventData.VersionOverride.HasValue ? eventData.VersionOverride.Value : EventVersion;
+
             // Note: ThreadId isn't 32 bit on all of our platforms but ETW EVENT_RECORD* only has room for a 32 bit
             // ID. We'll need to refactor up the stack if we want to expose a bigger ID.
             _eventRecord->EventHeader.ThreadId = unchecked((int)eventData.ThreadId);
@@ -257,10 +267,10 @@ namespace Microsoft.Diagnostics.Tracing
         public Dictionary<string, string> Attributes { get; private set; } = new Dictionary<string, string>();
         public Guid ProviderId { get { return _eventRecord->EventHeader.ProviderId; } private set { _eventRecord->EventHeader.ProviderId = value; } }
         public int EventId { get { return _eventRecord->EventHeader.Id; } private set { _eventRecord->EventHeader.Id = (ushort)value; } }
-        public int EventVersion { get { return _eventRecord->EventHeader.Version; } private set { _eventRecord->EventHeader.Version = (byte)value; } }
-        public ulong Keywords { get { return _eventRecord->EventHeader.Keyword; } private set { _eventRecord->EventHeader.Keyword = value; } }
-        public int Level { get { return _eventRecord->EventHeader.Level; } private set { _eventRecord->EventHeader.Level = (byte)value; } }
-        public byte Opcode { get { return _eventRecord->EventHeader.Opcode; } internal set { _eventRecord->EventHeader.Opcode = (byte)value; } }
+        public byte EventVersion { get; private set; }
+        public ulong Keywords { get; private set; }
+        public byte Level { get; private set; }
+        public byte Opcode { get; private set; }
 
         public DynamicTraceEventData.PayloadFetch[] ParameterTypes { get; internal set; }
         public string[] ParameterNames { get; internal set; }

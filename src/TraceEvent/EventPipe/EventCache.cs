@@ -102,7 +102,8 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
         enum SequencePointFlags : uint
         {
-            FlushThreads = 1
+            FlushThreads = 1,
+            FlushMetadata = 2
         }
 
         public void ProcessSequencePointBlockV6OrGreater(Block block)
@@ -123,6 +124,11 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             if((flags & (uint)SequencePointFlags.FlushThreads) != 0)
             {
                 _threads.Flush();
+            }
+
+            if((flags & (uint)SequencePointFlags.FlushMetadata) != 0)
+            {
+                _source.FlushMetadataCache();
             }
         }
 

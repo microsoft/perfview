@@ -430,7 +430,31 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     traceEvent.FixupData();
                 }
-                Dispatch(traceEvent);
+
+                // TraceEvent templates include a fixed opcode in the template even though it is permitted to vary per event. Ideally
+                // TraceEvent library would handle this is in a general purpose way but for now we are doing a fix scoped to
+                // EventPipeEventSource only.
+                //
+                if (eventRecord->EventHeader.Opcode == (byte)traceEvent.Opcode ||
+                    eventRecord->EventHeader.Opcode == 0)
+                {
+                    Dispatch(traceEvent);
+                }
+                else
+                {
+                    // temporarily modify the opcode, opcodeName, and eventName to match the event record.
+                    TraceEventOpcode templateOpcode = traceEvent.opcode;
+                    string templateOpcodeName = traceEvent.opcodeName;
+                    string templateEventName = traceEvent.eventName;
+                    traceEvent.opcode = (TraceEventOpcode)eventRecord->EventHeader.Opcode;
+                    traceEvent.opcodeName = null; // gets recalculated on demand
+                    traceEvent.eventName = null; // gets recalculated on demand
+                    Dispatch(traceEvent);
+                    traceEvent.opcode = templateOpcode;
+                    traceEvent.opcodeName = templateOpcodeName;
+                    traceEvent.eventName = templateEventName;
+                }
+
                 sessionEndTimeQPC = eventRecord->EventHeader.TimeStamp;
             }
         }
@@ -464,6 +488,10 @@ namespace Microsoft.Diagnostics.Tracing
                 LabelList labelList = LabelListCache.GetLabelList(eventData.LabelListId);
                 eventData.ActivityID = labelList.ActivityId.HasValue ? labelList.ActivityId.Value : Guid.Empty;
                 eventData.RelatedActivityID = labelList.RelatedActivityId.HasValue ? labelList.RelatedActivityId.Value : Guid.Empty;
+                eventData.OpCodeOverride = labelList.OpCode;
+                eventData.KeywordsOverride = labelList.Keywords;
+                eventData.LevelOverride = labelList.Level;
+                eventData.VersionOverride = labelList.Version;
             }
 
             // Basic sanity checks.  Are the timestamps and sizes sane.
@@ -498,12 +526,26 @@ namespace Microsoft.Diagnostics.Tracing
         private void CacheMetadata(EventPipeMetadata metadata)
         {
             DynamicTraceEventData eventTemplate = CreateTemplate(metadata);
-            _eventMetadataDictionary.Add(metadata.MetaDataId, metadata);
-            _metadataTemplates[eventTemplate] = eventTemplate;
+            try
+            {
+                _eventMetadataDictionary.Add(metadata.MetaDataId, metadata);
+                _metadataTemplates[eventTemplate] = eventTemplate;
+            }
+            catch (ArgumentException)
+            {
+                EventPipeMetadata old = _eventMetadataDictionary[metadata.MetaDataId];
+                throw new FormatException($"Metadata ID {metadata.MetaDataId} already in use. Previously this id defined event {old.ProviderName}\\{old.EventName}. Now redefined for event {metadata.ProviderName}\\{metadata.EventName}.");
+            }
         }
 
         internal bool TryGetMetadata(int metadataId, out EventPipeMetadata metadata) =>  _eventMetadataDictionary.TryGetValue(metadataId, out metadata);
         internal bool TryGetThread(long threadIndex, out EventPipeThread thread) => _threadCache.TryGetValue(threadIndex, out thread);
+
+        internal void FlushMetadataCache()
+        {
+            _eventMetadataDictionary.Clear();
+            _metadataTemplates.Clear();
+        }
 
         private TraceEventNativeMethods.EVENT_RECORD* ConvertEventHeaderToRecord(ref EventPipeEventHeader eventData)
         {
@@ -1289,6 +1331,10 @@ namespace Microsoft.Diagnostics.Tracing
         public int HeaderSize;         // The size of the event up to the payload
         public int TotalNonHeaderSize; // The size of the payload, stack, and alignment padding
 
+        public byte? LevelOverride;
+        public byte? OpCodeOverride;
+        public ulong? KeywordsOverride;
+        public byte? VersionOverride;
 
         public bool IsMetadata() => MetaDataId == 0; // 0 means that it's a metadata Id
 
