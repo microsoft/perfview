@@ -58,7 +58,7 @@ namespace PerfView.Dialogs
             {
                 if (Presets.Exists(x => x.Name == PresetName.Text))
                 {
-                    MessageBox.Show(
+                    XamlMessageBox.Show(
                         $"Preset '{PresetName.Text}' already exists. Choose another name.",
                         "Preset Name",
                         MessageBoxButton.OK,
