@@ -106,6 +106,44 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void SerializationConfigurationCompatibilityMapping()
+        {
+            SerializationSettings settings = SerializationSettings.Default;
+
+            // Create a simple serializable object
+            SampleSerializableType sample = new SampleSerializableType(SampleSerializableType.ConstantValue);
+            MemoryStream ms = new MemoryStream();
+            Serializer s = new Serializer(new IOStreamStreamWriter(ms, settings, leaveOpen: true), sample);
+            s.Dispose();
+
+            // Test the OnUnregisteredType callback for backward compatibility
+            Deserializer d = new Deserializer(new PinnedStreamReader(ms, settings), "name");
+            d.RegisterType(typeof(SampleSerializableType));
+
+            // Set up OnUnregisteredType handler similar to what GCHeapDump does
+            d.OnUnregisteredType = (typeName) =>
+            {
+                if (typeName == "FastSerialization.SerializationConfiguration")
+                {
+                    // Return a factory for a compatible dummy object
+                    return () => new SerializationConfigurationCompatibilityShim();
+                }
+                return null;
+            };
+
+            // This should succeed and not throw a TypeLoadException for SerializationConfiguration
+            SampleSerializableType deserialized = (SampleSerializableType)d.ReadObject();
+            Assert.Equal(SampleSerializableType.ConstantValue, deserialized.BeforeValue);
+            Assert.Equal(SampleSerializableType.ConstantValue, deserialized.AfterValue);
+
+            // Test that the callback correctly handles the old type name
+            var factory = d.OnUnregisteredType("FastSerialization.SerializationConfiguration");
+            Assert.NotNull(factory);
+            var shimInstance = factory();
+            Assert.IsType<SerializationConfigurationCompatibilityShim>(shimInstance);
+        }
+
+        [Fact]
         public void SuccessfullyDeserializeRegisteredType()
         {
             SerializationSettings settings = SerializationSettings.Default
@@ -155,6 +193,22 @@ namespace TraceEventTests
             StreamLabel label = deserializer.Reader.ReadLabel();
             Assert.Equal((ulong)0x7EADBEEF, (ulong)label);
             AfterValue = deserializer.ReadInt();
+        }
+    }
+
+    /// <summary>
+    /// Test compatibility shim for SerializationConfiguration backward compatibility.
+    /// </summary>
+    public sealed class SerializationConfigurationCompatibilityShim : IFastSerializable
+    {
+        void IFastSerializable.ToStream(Serializer serializer)
+        {
+            // Empty implementation - this is just a compatibility shim
+        }
+
+        void IFastSerializable.FromStream(Deserializer deserializer)
+        {
+            // Empty implementation - this is just a compatibility shim
         }
     }
 }

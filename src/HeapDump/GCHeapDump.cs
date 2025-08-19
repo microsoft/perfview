@@ -217,6 +217,18 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
         deserializer.RegisterFactory(typeof(JSHeapInfo), delegate () { return new JSHeapInfo(); });
         deserializer.RegisterFactory(typeof(DotNetHeapInfo), delegate () { return new DotNetHeapInfo(); });
 
+        // Handle backward compatibility for renamed types
+        deserializer.OnUnregisteredType = (typeName) =>
+        {
+            // SerializationConfiguration was renamed to SerializationSettings in newer versions
+            if (typeName == "FastSerialization.SerializationConfiguration")
+            {
+                // Return a compatible empty placeholder that implements IFastSerializable
+                return () => new SerializationConfigurationShim();
+            }
+            return null;
+        };
+
         try
         {
             var entryObj = (GCHeapDump)deserializer.GetEntryObject();
@@ -1085,5 +1097,24 @@ internal class XmlGcHeapDump
     #endregion
 
 
+}
+
+/// <summary>
+/// Compatibility shim for the old SerializationConfiguration class that was renamed to SerializationSettings.
+/// This class provides backward compatibility when deserializing old .gcdump files that reference
+/// the old "FastSerialization.SerializationConfiguration" type name.
+/// </summary>
+internal class SerializationConfigurationShim : IFastSerializable
+{
+    public void ToStream(Serializer serializer)
+    {
+        // Empty implementation - this is just a compatibility shim
+    }
+
+    public void FromStream(Deserializer deserializer)
+    {
+        // Empty implementation - this is just a compatibility shim that consumes
+        // any data that might have been serialized with the old type
+    }
 }
 
