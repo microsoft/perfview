@@ -1325,19 +1325,19 @@ namespace PerfView
 
         private void DoViewInCallerCallee(object sender, RoutedEventArgs e)
         {
-            SetFocus(GetSelectedNodes().Single());
+            SetFocus(GetSelectedNodes().Single().Name);
 
             CallerCalleeTab.IsSelected = true;
         }
         private void DoViewInCallers(object sender, ExecutedRoutedEventArgs e)
         {
-            SetFocus(GetSelectedNodes().Single());
+            SetFocus(GetSelectedNodes().Single().Name);
 
             CallersTab.IsSelected = true;
         }
         private void DoViewInCallees(object sender, ExecutedRoutedEventArgs e)
         {
-            SetFocus(GetSelectedNodes().Single());
+            SetFocus(GetSelectedNodes().Single().Name);
 
             CalleesTab.IsSelected = true;
         }
