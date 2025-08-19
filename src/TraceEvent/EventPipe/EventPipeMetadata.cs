@@ -166,14 +166,10 @@ namespace Microsoft.Diagnostics.Tracing
             // Now we only have to copy over the fields that are specific to particular event.
 
             // these events usually come from metadata, but they can be overridden by the label list
-            _eventRecord->EventHeader.Opcode = 
-                eventData.OpCodeOverride.HasValue ? eventData.OpCodeOverride.Value : Opcode;
-            _eventRecord->EventHeader.Level = 
-                eventData.LevelOverride.HasValue ? eventData.LevelOverride.Value : Level;
-            _eventRecord->EventHeader.Keyword = 
-                eventData.KeywordsOverride.HasValue ? eventData.KeywordsOverride.Value : Keywords;
-            _eventRecord->EventHeader.Version = 
-                eventData.VersionOverride.HasValue ? eventData.VersionOverride.Value : EventVersion;
+            _eventRecord->EventHeader.Opcode = eventData.OpCodeOverride ?? Opcode ?? 0;
+            _eventRecord->EventHeader.Level = eventData.LevelOverride ?? Level;
+            _eventRecord->EventHeader.Keyword = eventData.KeywordsOverride ?? Keywords;
+            _eventRecord->EventHeader.Version = eventData.VersionOverride ?? EventVersion;
 
             // Note: ThreadId isn't 32 bit on all of our platforms but ETW EVENT_RECORD* only has room for a 32 bit
             // ID. We'll need to refactor up the stack if we want to expose a bigger ID.
@@ -270,7 +266,7 @@ namespace Microsoft.Diagnostics.Tracing
         public byte EventVersion { get; private set; }
         public ulong Keywords { get; private set; }
         public byte Level { get; private set; }
-        public byte Opcode { get; private set; }
+        public byte? Opcode { get; private set; }
 
         public DynamicTraceEventData.PayloadFetch[] ParameterTypes { get; internal set; }
         public string[] ParameterNames { get; internal set; }
@@ -794,6 +790,8 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         // After metadata has been read we do a set of baked in transforms.
+        // None of these transforms are part of the NetTrace file format, rather they are a combination of TraceEvent/EventSource specific conventions
+        // and workarounds for well known events in historic scenarios where data was missing.
         public void ApplyTransforms()
         {
             //TraceEvent expects empty name to be canonicalized as null rather than ""
@@ -815,7 +813,7 @@ namespace Microsoft.Diagnostics.Tracing
                 PopulateWellKnownEventParameters();
             }
             
-            if (Opcode == 0)
+            if (!Opcode.HasValue)
             {
                 ExtractImpliedOpcode();
             }

@@ -407,7 +407,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             else
             {
-                DispatchEventRecord(ConvertEventHeaderToRecord(ref eventHeader));
+                DispatchEvent(ref eventHeader);
             }
             if(eventHeader.PayloadSize < eventHeader.TotalNonHeaderSize)
             {
@@ -416,8 +416,17 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        private void DispatchEventRecord(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
+        private void DispatchEvent(ref EventPipeEventHeader eventHeader)
         {
+            if (!_eventMetadataDictionary.TryGetValue(eventHeader.MetaDataId, out var metadata))
+            {
+                throw new FormatException($"Event is referencing undefined Metadata ID {eventHeader.MetaDataId}");
+
+            }
+
+            TraceEventNativeMethods.EVENT_RECORD* eventRecord = metadata.GetEventRecordForEventData(eventHeader);
+            ValidateStackFields(eventHeader, eventRecord);
+
             if (eventRecord != null)
             {
                 // in the code below we set sessionEndTimeQPC to be the timestamp of the last event.
@@ -425,34 +434,34 @@ namespace Microsoft.Diagnostics.Tracing
                 Debug.Assert(sessionEndTimeQPC <= eventRecord->EventHeader.TimeStamp);
                 Debug.Assert(sessionEndTimeQPC == 0 || eventRecord->EventHeader.TimeStamp - sessionEndTimeQPC < _QPCFreq * 24 * 3600);
 
-                var traceEvent = Lookup(eventRecord);
-                if (traceEvent.NeedsFixup)
+                var templateEvent = Lookup(eventRecord);
+                if (templateEvent.NeedsFixup)
                 {
-                    traceEvent.FixupData();
+                    templateEvent.FixupData();
                 }
 
                 // TraceEvent templates include a fixed opcode in the template even though it is permitted to vary per event. Ideally
                 // TraceEvent library would handle this is in a general purpose way but for now we are doing a fix scoped to
                 // EventPipeEventSource only.
                 //
-                if (eventRecord->EventHeader.Opcode == (byte)traceEvent.Opcode ||
-                    eventRecord->EventHeader.Opcode == 0)
+                byte? eventOpcode = eventHeader.OpCodeOverride ?? metadata.Opcode;
+                if (!eventOpcode.HasValue || eventOpcode == (byte)templateEvent.Opcode)
                 {
-                    Dispatch(traceEvent);
+                    Dispatch(templateEvent);
                 }
                 else
                 {
                     // temporarily modify the opcode, opcodeName, and eventName to match the event record.
-                    TraceEventOpcode templateOpcode = traceEvent.opcode;
-                    string templateOpcodeName = traceEvent.opcodeName;
-                    string templateEventName = traceEvent.eventName;
-                    traceEvent.opcode = (TraceEventOpcode)eventRecord->EventHeader.Opcode;
-                    traceEvent.opcodeName = null; // gets recalculated on demand
-                    traceEvent.eventName = null; // gets recalculated on demand
-                    Dispatch(traceEvent);
-                    traceEvent.opcode = templateOpcode;
-                    traceEvent.opcodeName = templateOpcodeName;
-                    traceEvent.eventName = templateEventName;
+                    TraceEventOpcode templateOpcode = templateEvent.opcode;
+                    string templateOpcodeName = templateEvent.opcodeName;
+                    string templateEventName = templateEvent.eventName;
+                    templateEvent.opcode = (TraceEventOpcode)eventOpcode;
+                    templateEvent.opcodeName = null; // gets recalculated on demand
+                    templateEvent.eventName = null; // gets recalculated on demand
+                    Dispatch(templateEvent);
+                    templateEvent.opcode = templateOpcode;
+                    templateEvent.opcodeName = templateOpcodeName;
+                    templateEvent.eventName = templateEventName;
                 }
 
                 sessionEndTimeQPC = eventRecord->EventHeader.TimeStamp;
@@ -547,19 +556,6 @@ namespace Microsoft.Diagnostics.Tracing
             _metadataTemplates.Clear();
         }
 
-        private TraceEventNativeMethods.EVENT_RECORD* ConvertEventHeaderToRecord(ref EventPipeEventHeader eventData)
-        {
-            if (_eventMetadataDictionary.TryGetValue(eventData.MetaDataId, out var metaData))
-            {
-                return metaData.GetEventRecordForEventData(eventData);
-            }
-            else
-            {
-                Debug.Assert(false, "Warning can't find metaData for ID " + eventData.MetaDataId);
-                return null;
-            }
-        }
-
         internal override unsafe Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             if (FileFormatVersionNumber >= 4)
@@ -595,9 +591,7 @@ namespace Microsoft.Diagnostics.Tracing
         private void EventCache_OnEvent(ref EventPipeEventHeader header)
         {
             _lastLabelListId = header.LabelListId;
-            TraceEventNativeMethods.EVENT_RECORD* eventRecord = ConvertEventHeaderToRecord(ref header);
-            ValidateStackFields(header, eventRecord);
-            DispatchEventRecord(eventRecord);
+            DispatchEvent(ref header);
         }
 
         private void EventCache_OnEventsDropped(int droppedEventCount)
@@ -647,8 +641,9 @@ namespace Microsoft.Diagnostics.Tracing
 
         private DynamicTraceEventData CreateTemplate(EventPipeMetadata metadata)
         {
-            DynamicTraceEventData template = new DynamicTraceEventData(null, metadata.EventId, 0, metadata.EventName, Guid.Empty, metadata.Opcode, null, metadata.ProviderId, metadata.ProviderName);
-            template.opcode = (TraceEventOpcode)metadata.Opcode;
+            int opcode = metadata.Opcode ?? 0;
+            DynamicTraceEventData template = new DynamicTraceEventData(null, metadata.EventId, 0, metadata.EventName, Guid.Empty, opcode, null, metadata.ProviderId, metadata.ProviderName);
+            template.opcode = (TraceEventOpcode)opcode;
             template.opcodeName = template.opcode.ToString();
             template.payloadNames = metadata.ParameterNames;
             template.payloadFetches = metadata.ParameterTypes;

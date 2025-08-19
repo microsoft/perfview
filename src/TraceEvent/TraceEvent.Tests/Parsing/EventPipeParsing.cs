@@ -1441,10 +1441,10 @@ namespace TraceEventTests
             source.Process();
 
             Assert.True(source.TryGetMetadata(1, out EventPipeMetadata metadata));
-            Assert.Equal(20, metadata.Opcode);
             Assert.Equal((ulong)0x00ff00ff00ff00ff, metadata.Keywords);
             Assert.Equal(4, metadata.Level);
             Assert.Equal(22, metadata.EventVersion);
+            Assert.Equal(20, metadata.Opcode.Value);
             Assert.Equal("Thing happened param1={param1} param2={param2}", metadata.MessageTemplate);
             Assert.Equal("Yet another test event", metadata.Description);
             Assert.Equal(2, metadata.Attributes.Count);
@@ -2005,6 +2005,73 @@ namespace TraceEventTests
             Assert.Equal(6, eventCount);
         }
 
+        [Fact]
+        public void V6LabelListCanOverrideTemplate()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "Microsoft-Windows-DotNETRuntime", "GCEnd", 2));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
+            });
+            writer.WriteLabelListBlock(7, 2, w =>
+            {
+                w.WriteOpCodeLabel(8);
+                w.WriteKeywordsLabel(0x123456789abcef);
+                w.WriteLevelLabel(19);
+                w.WriteVersionLabel(4, isLastLabel: true);
+                w.WriteOpCodeLabel(0);
+                w.WriteKeywordsLabel(0);
+                w.WriteLevelLabel(0);
+                w.WriteVersionLabel(0, isLastLabel: true);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 1, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 7 }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 2, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 8 }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 3, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 0 }, p => { });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Clr.GCStop += e =>
+            {
+                eventCount++;
+                if (eventCount == 1)
+                {
+                    // Suspend is opcode 8
+                    Assert.Equal("GC/Suspend", e.EventName);
+                    Assert.Equal("Microsoft-Windows-DotNETRuntime", e.ProviderName);
+                    Assert.Equal(8, (int)e.Opcode);
+                    Assert.Equal(0x123456789abcefUL, (ulong)e.Keywords);
+                    Assert.Equal(19, (int)e.Level);
+                    Assert.Equal(4, e.Version);
+                }
+                else if (eventCount == 2)
+                {
+                    Assert.Equal("GC", e.EventName);
+                    Assert.Equal("Microsoft-Windows-DotNETRuntime", e.ProviderName);
+                    Assert.Equal(0, (int)e.Opcode);
+                    Assert.Equal(0UL, (ulong)e.Keywords);
+                    Assert.Equal(0, (int)e.Level);
+                    Assert.Equal(0, e.Version);
+                }
+                else if (eventCount == 3)
+                {
+                    Assert.Equal("GC/Stop", e.EventName);
+                    Assert.Equal("Microsoft-Windows-DotNETRuntime", e.ProviderName);
+                    Assert.Equal(2, (int)e.Opcode);
+                    Assert.Equal(0UL, (ulong)e.Keywords);
+                    Assert.Equal(0, (int)e.Level);
+                    Assert.Equal(0, e.Version);
+                }
+            };
+            source.Process();
+            Assert.Equal(3, eventCount);
+        }
+
         [Fact] //V6
         public void V6LabelListCanOverrideMetadata()
         {
@@ -2030,7 +2097,7 @@ namespace TraceEventTests
             {
                 w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 1, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 7 }, p => { });
                 w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 2, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 8 }, p => { });
-                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 1, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 0 }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 3, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 0 }, p => { });
             });
             writer.WriteEndBlock();
             MemoryStream stream = new MemoryStream(writer.ToArray());
