@@ -614,8 +614,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             if (header.MetaDataId != 0 &&
-                StackCache.TryGetStack(header.StackId, out int stackBytesSize, out IntPtr stackBytes) &&
-                stackBytesSize != 0 && stackBytes != IntPtr.Zero) // Sometimes the values in the StackCache are zeros.
+                header.StackBytesSize != 0 && header.StackBytes != IntPtr.Zero)
             {
                 // .NET Core emits stacks for some events that we don't need and so they are excised out before we get here.
                 if (_eventMetadataDictionary.TryGetValue(header.MetaDataId, out EventPipeMetadata metadataHeader) &&
