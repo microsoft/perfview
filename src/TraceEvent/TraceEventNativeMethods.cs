@@ -63,11 +63,11 @@ namespace Microsoft.Diagnostics.Tracing
         private static bool IsValidTraceHandle(TRACEHANDLE handle) => handle != INVALID_HANDLE_VALUE;
 
         internal const uint EVENT_TRACE_REAL_TIME_MODE = 0x00000100;
-        // private sessions or private logger information.   Sadly, these are not very useful because they don't work for real time.  
-        // TODO USE or remove.   See http://msdn.microsoft.com/en-us/library/windows/desktop/aa363689(v=vs.85).aspx
-        // Unfortunately they only work for file based logging (not real time) so they are of limited value.  
-        // internal const uint EVENT_TRACE_PRIVATE_LOGGER_MODE = 0x00000800;
-        // internal const uint EVENT_TRACE_PRIVATE_IN_PROC = 0x00020000;
+
+        // PRIVATE logger flags only work with file based logging and not real time.
+        internal const uint EVENT_TRACE_PRIVATE_LOGGER_MODE = 0x00000800;
+        internal const uint EVENT_TRACE_PRIVATE_IN_PROC = 0x00020000;
+
 
         //  EVENT_TRACE_LOGFILE.LogFileMode should be set to PROCESS_TRACE_MODE_EVENT_RECORD 
         //  to consume events using EventRecordCallback
@@ -1047,54 +1047,6 @@ namespace Microsoft.Diagnostics.Tracing
             ref int pBufferSize
         );
 
-#if false       // Enable when we support filtering by payload values.  
-        [DllImport("tdh.dll")]
-        internal static extern int TdhCreatePayloadFilter(
-            ref Guid ProviderGuid,
-            ref EventDescriptor EventDescriptor,
-            bool EventMatchANY,
-            int PayloadPredicateCount,
-            PAYLOAD_FILTER_PREDICATE* PayloadPredicates,
-            void* PayloadFilter
-            );
-
-        [DllImport("tdh.dll")]
-        internal static extern int TdhAggregatePayloadFilters(
-             int PayloadFilterCount,
-             void* PayloadFilterPtrs,
-             ref bool EventMatchAllFlags,
-             ref EventDescriptor EventFilterDescriptor
-         );
-
-        internal struct PAYLOAD_FILTER_PREDICATE
-        {
-            public char* FieldName;
-            public PAYLOAD_OPERATOR CompareOp;
-            public char* Value;
-        };
-
-        internal enum PAYLOAD_OPERATOR : short
-        {
-            // For integers, comparison can be one of:
-            PAYLOADFIELD_EQ = 0,
-            PAYLOADFIELD_NE = 1,
-            PAYLOADFIELD_LE = 2,
-            PAYLOADFIELD_GT = 3,
-            PAYLOADFIELD_LT = 4,
-            PAYLOADFIELD_GE = 5,
-            PAYLOADFIELD_BETWEEN = 6,        // Two values: lower/upper bounds
-            PAYLOADFIELD_NOTBETWEEN = 7,     // Two values: lower/upper bounds
-            PAYLOADFIELD_MODULO = 8,         // For periodically sampling a field
-            // For strings:
-            PAYLOADFIELD_CONTAINS = 20, // Substring identical to Value
-            PAYLOADFIELD_DOESNTCONTAIN = 21, // No substring identical to Value
-            // For strings or other non-integer values
-            PAYLOADFIELD_IS = 30,         // Field is identical to Value
-            PAYLOADFIELD_ISNOT = 31,         // Field is NOT identical to Value
-            PAYLOADFIELD_INVALID = 32
-        };
-#endif
-
         // Used to decompress WinSat data 
         internal const int COMPRESSION_FORMAT_LZNT1 = 0x0002;
         internal const int COMPRESSION_ENGINE_MAXIMUM = 0x0100;
@@ -1109,6 +1061,7 @@ namespace Microsoft.Diagnostics.Tracing
        );
 
         internal const uint ERROR_WMI_INSTANCE_NOT_FOUND = 4201;
+        internal const int ERROR_MORE_DATA = 234;  // 0xEA in hex
     } // end class
     #endregion
 

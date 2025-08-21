@@ -85,12 +85,6 @@ namespace PerfViewExtensibility
                    graph.TotalNumberOfReferences / 1000.0, (int)graph.NodeTypeIndexLimit / 1000.0,
                    graph.SizeOfGraphDescription() / 1000000.0);
 
-#if false // TODO FIX NOW remove
-            using (StreamWriter writer = File.CreateText(Path.ChangeExtension(this.FilePath, ".heapDump.xml")))
-            {
-                ((MemoryGraph)graph).DumpNormalized(writer);
-            }
-#endif
             var retSource = new MemoryGraphStackSource(graph, log, gcDump.CountMultipliersByType);
 
             // Set the sampling ratio so that the number of objects does not get too far out of control.  
@@ -309,11 +303,11 @@ namespace PerfViewExtensibility
             GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
                 var viewer = new WebBrowserWindow(GuiApp.MainWindow);
-                viewer.Browser.Navigating += delegate (object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
+                viewer.Browser.NavigationStarting += delegate (object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
                 {
-                    if (e.Uri != null)
+                    if (e.Uri != null && Uri.TryCreate(e.Uri, UriKind.Absolute, out Uri uri))
                     {
-                        if (e.Uri.Scheme == "command")
+                        if (uri.Scheme == "command")
                         {
                             e.Cancel = true;
                             if (viewer.StatusBar.Visibility != System.Windows.Visibility.Visible)
@@ -321,7 +315,7 @@ namespace PerfViewExtensibility
                             viewer.StatusBar.StartWork("Following Hyperlink", delegate ()
                             {
                                 if (DoCommand != null)
-                                    DoCommand(e.Uri.LocalPath, viewer.StatusBar.LogWriter, viewer);
+                                    DoCommand(uri.LocalPath, viewer.StatusBar.LogWriter, viewer);
                                 else
                                     viewer.StatusBar.Log("This view does not support command URLs.");
                                 viewer.StatusBar.EndWork(null);
@@ -332,7 +326,7 @@ namespace PerfViewExtensibility
                 viewer.Width = 1000;
                 viewer.Height = 600;
                 viewer.Title = title;
-                WebBrowserWindow.Navigate(viewer.Browser, Path.GetFullPath(htmlFilePath));
+                viewer.Source = new Uri(Path.GetFullPath(htmlFilePath));
                 viewer.Show();
                 if (OnOpened != null)
                     viewer.Loaded += delegate { OnOpened(viewer); };
@@ -1784,78 +1778,6 @@ namespace PerfViewExtensibility
         }
         #endregion
     }
-
-#if false
-// TODO FIX NOW use or remove 
-//
-// What is the right model?
-// 
-// StackSource - represents the raw data.   No dependencies, Can do filtering. - Clean for Model
-// CallTree - Depends on StackSource, model for treeview,  - Clean for Model
-// AggregateCallTree - callers view and callees view - Clean for Model
-// EventSource - eventView - Clean for Model.  
-// 
-// MutableTraceEventStackSource - Sources for ETL file - Clean for Model 
-// 
-// PerfViewItem
-//     Filename, ICON, help, Expanded, Children, Open 
-// PerfViewFile
-// PerfViewStackSource - know their view
-//     At the very least they are a model for the MainViewer's GUI.  
-//     They open 
-// PerfViewEventSource - know their view
-// PerfViewHtmlReport
-// 
-// These things know about StatusBars, they know their view.   
-//
-// Does the automation drive the GUI or does it drive the MODEL?  
-static class GuiModel
-{
-    public static void Wait(this StatusBar worker)
-    {
-        while (worker.IsWorking)
-            Thread.Sleep(100);
-    }
-
-    public static PerfViewFile Open(string fileName)
-    {
-        var ret = PerfViewFile.Get(fileName);
-
-        var mainWindow = GuiApp.MainWindow;
-        ret.Open(mainWindow, mainWindow.StatusBar);
-        mainWindow.StatusBar.Wait();
-        return ret;
-    }
-
-    public static void ResolveSymbols(this PerfViewStackSource source)
-    {
-        var viewer = source.Viewer;
-        viewer.DoLookupWarmSymbols(null, null);
-        viewer.StatusBar.Wait();
-    }
-
-    public static void SetFilter(this PerfViewStackSource source, FilterParams filter)
-    {
-        var viewer = source.Viewer;
-        viewer.Filter = filter;
-        viewer.Update();
-        viewer.StatusBar.Wait();
-    }
-
-    public static CallTree CallTree(this PerfViewStackSource source)
-    {
-        return source.Viewer.CallTree;
-    }
-
-    public static void Save(this PerfViewStackSource source, string fileName)
-    {
-        var viewer = source.Viewer;
-        viewer.FileName = fileName;
-        viewer.DoSave(null, null);
-        viewer.StatusBar.Wait();
-    }
-}
-#endif
     #endregion
 }
 

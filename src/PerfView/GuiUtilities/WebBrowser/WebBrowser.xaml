@@ -2,11 +2,12 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:PerfView"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Style="{DynamicResource CustomWindowStyle}"
         Closing="Window_Closing"
         Title="Web Browser" Height="700" Width="1100">
-    <DockPanel>
-        <Grid DockPanel.Dock="Top">
+    <DockPanel Background="{DynamicResource ControlDefaultBackground}">
+        <Grid DockPanel.Dock="Top" Background="{DynamicResource ControlDefaultBackground}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
@@ -20,6 +21,6 @@
              <TextBlock Grid.Column="3" Margin="5,2,40,3" VerticalAlignment="Center">Click in Window, Ctrl-F for find</TextBlock>
         </Grid>
         <src:StatusBar x:Name="StatusBar" DockPanel.Dock="Bottom" Visibility="Collapsed"/>
-        <WebBrowser Name="_Browser" SizeChanged="Browser_SizeChanged"></WebBrowser>
+        <wv2:WebView2 Name="_Browser" Loaded="Browser_Loaded"/>
     </DockPanel>
 </src:WindowBase>

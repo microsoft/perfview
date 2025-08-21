@@ -25,7 +25,7 @@ namespace Microsoft.Diagnostics.Symbols
     /// http://msdn.microsoft.com/library/x93ctkx8.aspx for more.   I have only exposed what
     /// I need, and the interface is quite large (and not super pretty).  
     /// </summary>
-    public unsafe class NativeSymbolModule : ManagedSymbolModule, IDisposable
+    public unsafe class NativeSymbolModule : ManagedSymbolModule, IDisposable, ISymbolLookup
     {
         /// <summary>
         /// Returns the name of the type allocated for a given relative virtual address.
@@ -114,19 +114,11 @@ namespace Microsoft.Diagnostics.Symbols
                     ret = ret.Substring(1);
                 }
 
-#if false // TODO FIX NOW remove  
-                var m = Regex.Match(ret, @"(.*)@\d+$");
-                if (m.Success)
-                    ret = m.Groups[1].Value;
-                else
-                    Debug.WriteLine(string.Format("Warning: address 0x{0:x} symbol {1} has a mangled name.", rva, ret));
-#else
                 var atIdx = ret.IndexOf('@');
                 if (0 < atIdx)
                 {
                     ret = ret.Substring(0, atIdx);
                 }
-#endif
             }
 
             // See if this is a NGEN mangled name, which is $#Assembly#Token suffix.  If so strip it off. 
@@ -672,11 +664,17 @@ namespace Microsoft.Diagnostics.Symbols
                 // 3 checksum generated with the SHA256 hashing algorithm.
                 if (sourceFile.checksumType == 1)
                 {
-                    _hashAlgorithm = System.Security.Cryptography.MD5.Create(); // lgtm [cs/weak-crypto]
+                    // CodeQL [SM02196] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                    // CodeQL [SM03938] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                    // CodeQL [SM03939] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                    _hashAlgorithm = System.Security.Cryptography.MD5.Create();
                 }
                 else if (sourceFile.checksumType == 2)
                 {
-                    _hashAlgorithm = System.Security.Cryptography.SHA1.Create(); // lgtm [cs/weak-crypto]
+                    // CodeQL [SM02196] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                    // CodeQL [SM03938] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                    // CodeQL [SM03939] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                    _hashAlgorithm = System.Security.Cryptography.SHA1.Create();
                 }
                 else if (sourceFile.checksumType == 3)
                 {
@@ -733,11 +731,17 @@ namespace Microsoft.Diagnostics.Symbols
 
                     if (srcFormat.Header.algorithmId == guidMD5)
                     {
-                        _hashAlgorithm = System.Security.Cryptography.MD5.Create(); // lgtm [cs/weak-crypto]
+                        // CodeQL [SM02196] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                        // CodeQL [SM03938] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                        // CodeQL [SM03939] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                        _hashAlgorithm = System.Security.Cryptography.MD5.Create();
                     }
                     else if (srcFormat.Header.algorithmId == guidSHA1)
                     {
-                        _hashAlgorithm = System.Security.Cryptography.SHA1.Create(); // lgtm [cs/weak-crypto]
+                        // CodeQL [SM02196] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                        // CodeQL [SM03938] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                        // CodeQL [SM03939] The checksum algorithm is specified by the built artifact.  This is not controlled by TraceEvent.
+                        _hashAlgorithm = System.Security.Cryptography.SHA1.Create();
                     }
                     else if (srcFormat.Header.algorithmId == guidSHA256)
                     {
@@ -1639,18 +1643,6 @@ tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/V
             return ((int)RVA - (int)other.RVA);
         }
         #region private
-#if false
-        // TODO FIX NOW use or remove
-        internal enum NameSearchOptions
-        {
-            nsNone,
-            nsfCaseSensitive = 0x1,
-            nsfCaseInsensitive = 0x2,
-            nsfFNameExt = 0x4,                  // treat as a file path
-            nsfRegularExpression = 0x8,         // * and ? wildcards
-            nsfUndecoratedName = 0x10,          // A undecorated name is the name you see in the source code.  
-        };
-#endif
 
         /// <summary>
         /// override

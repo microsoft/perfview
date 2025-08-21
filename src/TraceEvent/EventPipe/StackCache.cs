@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Tracing.EventPipe
 {
@@ -26,38 +22,23 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             }
         }
 
-        public void ProcessStackBlock(byte[] stackBlock)
+        public void ProcessStackBlock(Block block)
         {
-            PinnedBuffer buffer = new PinnedBuffer(stackBlock);
-            if(stackBlock.Length < 8)
-            {
-                Debug.Assert(false, "Bad stack block size");
-                return;
-            }
-            int cursor = 0;
-            int firstStackId = BitConverter.ToInt32(stackBlock, cursor);
-            cursor += 4;
-            int countStackIds = BitConverter.ToInt32(stackBlock, cursor);
-            cursor += 4;
+            _buffers.Add(block.TakeOwnership());
+            SpanReader reader = block.Reader;
+            int firstStackId = reader.ReadInt32();
+            int countStackIds = reader.ReadInt32();
             int nextStackId = firstStackId;
-            while (cursor < stackBlock.Length)
+            while (reader.RemainingBytes.Length > 0)
             {
                 StackMarker marker = new StackMarker();
-                marker.BackingBuffer = buffer;
                 int stackId = nextStackId++;
-                marker.StackBytesSize = BitConverter.ToInt32(stackBlock, cursor);
-                cursor += 4;
-                if (cursor + marker.StackBytesSize <= stackBlock.Length)
-                {
-                    marker.StackBytes = buffer.PinningHandle.AddrOfPinnedObject() + cursor;
-                    cursor += marker.StackBytesSize;
-                    _stacks.Add(stackId, marker);
-                }
-                else
-                {
-                    Debug.Assert(false, "Stack size exceeds stack block region");
-                    break;
-                }
+                marker.StackBytesSize = reader.ReadInt32();
+                // This is safe because the span is backed by FixedBuffer and it can't move
+                // The StackCache will keep ownership of the buffer until it is flushed
+                marker.StackBytes = reader.UnsafeGetFixedReadPointer();
+                reader.ReadBytes(marker.StackBytesSize);
+                _stacks.Add(stackId, marker);
             }
             Debug.Assert(nextStackId == firstStackId + countStackIds);
         }
@@ -65,15 +46,20 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         public void Flush()
         {
             _stacks.Clear();
+            foreach(FixedBuffer buffer in _buffers)
+            {
+                ((IDisposable)buffer).Dispose();
+            }
+            _buffers.Clear();
         }
 
         struct StackMarker
         {
             public int StackBytesSize;
             public IntPtr StackBytes;
-            public PinnedBuffer BackingBuffer;
         }
 
         Dictionary<int, StackMarker> _stacks = new Dictionary<int, StackMarker>();
+        List<FixedBuffer> _buffers = new List<FixedBuffer>();
     }
 }

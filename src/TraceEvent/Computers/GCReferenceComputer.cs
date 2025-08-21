@@ -67,13 +67,6 @@ namespace Microsoft.Diagnostics.Tracing
         public void DisposeGCReference(GCReferenceID GCReferenceID)
         {
         }
-
-#if false 
-        /// <summary>
-        /// This callback will be fired any time a tracked GC reference dies.  
-        /// </summary>
-        public event Action<GCReferenceID> OnDeath;
-#endif 
     }
 
 }

@@ -9,9 +9,15 @@ started information.
 Please see the [PerfView Download Page](documentation/Downloading.md) for the link and instructions for downloading the 
 current version of PerfView.  
 
+PerfView requires .NET Framework 4.7.2 or later, which is widely available for all supported versions of Windows.
+
 ### Are you here about the TraceEvent Library?
 
-PerfView is built on a library called Microsoft.Diagnostics.Tracing.TraceEvent, that knows how to both collect and parse Event Tracing for Windows (ETW) data.   Thus if there is any information that PerfView collects and processes that you would like to manipulate yourself programmatically, you would probably be interested in the [TraceEvent Library Documentation](documentation/TraceEvent/TraceEventLibrary.md)
+PerfView is built on a library called Microsoft.Diagnostics.Tracing.TraceEvent, that knows how to both collect and parse Event Tracing for Windows (ETW) and EventPipe (.NET Core trace) data. Thus if there is any information that PerfView collects and processes that you would like to manipulate yourself programmatically, you would probably be interested in the [TraceEvent Library Documentation](documentation/TraceEvent/TraceEventLibrary.md)
+
+### Not Sure if you should use PerfView or TraceEvent?
+
+See the [scenarios](documentation/Scenarios.md) document to determine which is the best choice for what you're trying to do.
 
 ### Learning about PerfView 
 
@@ -24,7 +30,7 @@ download PerfView using the instructions above and select the Help -> User's Gui
 
 When you have question about PerfView, your first reaction should be to search the Users Guide (Help -> User's Guide) and 
 see if you can find the answer already.   If that does not work you can ask a question by creating a [new PerfView Issue](https://github.com/Microsoft/perfview/issues/new).
-State your question succinctly in the title, and if necessary give details in the body of the issue, there is a issue tag
+State your question succinctly in the title, and if necessary give details in the body of the issue, there is an issue tag
 called 'question' that you should use as well that marks your issue as a question rather than some bug report.
 If the question is specific to a particular trace (*.ETL.ZIP file) you can drag that file onto the issue and it will be downloaded.
 This allows those watching for issues to reproduce your environment and give much more detailed and useful answers.
@@ -48,22 +54,25 @@ you can do that by following the rest of these instructions.
 
 ### Tools Needed to Build PerfView
 
-The only tools you need to build PerfView are Visual Studio 2022 and the .NET Core SDK.   The
-[Visual Studio 2022 Community Edition](https://www.visualstudio.com/vs/community/) can be downloaded *for free* and,
-along with the .NET Core SDK, has everything you need to fetch PerfView from GitHub, build and test it. We expect you
+The only tool you need to build PerfView is Visual Studio 2022.  The [Visual Studio 2022 Community Edition](https://www.visualstudio.com/vs/community/) 
+can be downloaded *for free* and has everything you need to fetch PerfView from GitHub, build and test it. We expect you 
 to download Visual Studio 2022 Community Edition if you don't already have Visual Studio 2022.
 
-PerfView is mostly C# code, however there is a small amount of C++ code to implement some advanced features of PerfView 
-(The ETWCLrProfiler dlls that allow PerfView to intercept the .NET Method calls; see .NET Call in the Collect dialog).  
-If you downloaded the Visual Studio 2022 Community Edition, it does not install the C++ compilation tools by default and
-it also does not include the Windows 10 SDK by default (we build PerfView so it can run on Win8 as well as Win10).  Thus
-when you install Visual Studio 2022 check the 'Desktop Development with C++' option and then look the right pane to see
-the optional sub-components, and make sure the Windows 10 SDK is also checked (it typically is not).  Installing the latest version should be OK.   If you have
-already installed Visual Studio 2022, you can add these options by going to Control Panel -> Programs and Features -> Visual Studio 2022, and click 'Modify'.   This will get you to the place where you can selecte the Desktop Development with C++ and the Windows 10 SDK. 
-If you get any errors compiling the ETWClrProfiler* dlls, it is likely associated with getting this Win 10.0 SDK.  See 
-the troubleshooting sections below for more if you need it.  
+In your installation of Visual Studio, you need to ensure you have the following workloads and components installed:
 
-The .NET Core SDK should be part of the default Visual Studio 2022 installation now, but if not it can be installed easily from [here](https://www.microsoft.com/net/download/windows).
+  * **.NET desktop development** workload with all default components.
+  * **Desktop development with C++** workload with all default components plus the latest Windows 10 SDK.
+    * The Windows 10 SDK is not enabled by default in this workload, so you will need to check the box for it to be installed.
+  * **MSVC v143 - VS 2022 C++ x64/x86 Spectre-mitigated libs (Latest)** component.
+    * This can be found under the 'Individual Components' tab.
+
+A `.vsconfig` file is included in the root of the repository that can be used to install the necessary components. When 
+opening the solution in Visual Studio, it will prompt you to install any components that it thinks are missing from your 
+installation.  Alternatively, you can [import the `.vsconfig` in the Visual Studio Installer](https://learn.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration).
+
+If you get any errors compiling the ETWClrCompiler projects, it is likely because you either don't have the Windows 10 SDK 
+installed, or you don't have the spectre-mitigated libs installed. Please refer to the [troubleshooting section](#information-for-build-troubleshooting) for more information.
+
 
 ### Cloning the PerfView GitHub Repository. 
 
@@ -74,7 +83,7 @@ will lead you through the basics of doing this. All it assumes is that you have 
 
 ### How to Build and Debug PerfView 
 
-PerfView is developed in Visual Studio 2022 using features through C# 6.
+PerfView is developed in Visual Studio 2022 using features through C# 7.3.
 
   * The solution file is PerfView.sln.  Opening this file in Visual Studio (or double clicking on it in 
   the Windows Explorer) and selecting Build -> Build Solution, will build it. You can also build the 
@@ -82,11 +91,10 @@ PerfView is developed in Visual Studio 2022 using features through C# 6.
   The build follows standard Visual Studio conventions, and the resulting PerfView.exe file ends up in
   src/PerfView/bin/*BuildType*/PerfView.exe. You need only deploy this one EXE to use it.  
 
-  * The solution consists of 11 projects, representing support DLLs and the main EXE. To run PerfView in the 
+  * The solution consists of several projects, representing support DLLs and the main EXE. To run PerfView in the 
   debugger **you need to make sure that the 'Startup Project' is set to the 'PerfView' project** so that it launches 
   the main EXE.   If the PerfView project in the Solution Explorer (on the right) is not bold, right click on the PerfView project 
   and select 'Set as Startup Project'. After doing this 'Start Debugging' (F5) should work.
-  (It is annoying that this is not part of the .sln file...).  
 
 ### Deploying your new version of Perfview
 
@@ -124,10 +132,12 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
     4. Build perfView by typing the command 'msbuild'
   
   * If you get an error "MSB8036: The Windows SDK version 10.0.17763.0 was not found",  Or you get a 'assert.h' not found error, or 
-  frankly any error associated with building the ETWClrProfiler dlls, you should make sure that you have the Windows 10.0.17763.0 
-  SDK installed.  Unfortunately this library tends not to be 
-  installed with Visual Studio anymore unless you ask for it explicitly.   To fix it 
-     * windows-Key -> type Control panel -> Programs and Features, and right click on your VS2019 and select 'Modify'. Then look under the C++ Desktop Development and check that the Windows SDK 10.0.17763.0 option is selected.  If not, select it and have the setup install this.  Then try building PerfView again.
+  frankly any error associated with building the ETWClrProfiler dlls, you should make sure that you have the Windows 10 SDK installed.  Unfortunately this library tends not to be 
+  installed with Visual Studio anymore unless you ask for it explicitly.   To fix it launch the Visual Studio Installer, modify the installation, and then look under the C++ Desktop Development and check that the Windows SDK 10.0.17763.0 option is selected.  If not, select it and continue.  Then try building PerfView again.
+
+  * If you get an error "MSB8040: Spectre-mitigated libraries are required for this project",  modify your Visual Studio 
+    installation to ensure that you have the 'MSVC v143 - VS 2022 C++ x64/x86 Spectre-mitigated libs (Latest)' component installed. 
+
   
 ### Running Tests
 
@@ -139,17 +149,12 @@ the debugger to figure out what went wrong.
 
 ### Check in testing and code coverage statistica
 
-This repository uses [AppVeyor](https://www.appveyor.com/) and Azure DevOps to automatically build and test pull requests, which allows
-the community to easily view build results. Code coverage is provided by [codecov.io](https://codecov.io). The build and
-coverage status reflected here is the AppVeyor and Azure DevOps build status of the **main** branch.
+This repository uses Azure DevOps to automatically build and test pull requests, which allows
+the community to easily view build results. The build and status reflected here is the Azure DevOps build status of the **main** branch.
 
-[![Build Status](https://dev.azure.com/ms/perfview/_apis/build/status%2FCI?branchName=main)](https://dev.azure.com/ms/perfview/_build/latest?definitionId=332&branchName=main)
+[![Build Status](https://dev.azure.com/dnceng-public/public/_apis/build/status%2Fmicrosoft.perfview?branchName=main)](https://dev.azure.com/dnceng-public/public/_build/latest?definitionId=294&branchName=main)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/fxtu3xa874whk2w0?svg=true)](https://ci.appveyor.com/project/sharwell/perfview)
-
-[![codecov](https://codecov.io/gh/Microsoft/perfview/branch/main/graph/badge.svg)](https://codecov.io/gh/Microsoft/perfview)
-
-> :warning: Builds produced by AppVeyor and Azure DevOps CI are not considered official builds of PerfView, and are not signed or otherwise
+> :warning: Builds produced by Azure DevOps CI are not considered official builds of PerfView, and are not signed or otherwise
 > validated for safety or security in any way. This build integration is provided as a convenience for community
 > participants, but is not endorsed by Microsoft nor is it considered an official release channel in any way. For
 > information about official builds, see the [PerfView Download Page](documentation/Downloading.md) page.
@@ -182,15 +187,4 @@ The code is broken into several main sections:
   heap using Microsoft.Diagnostics.Runtime APIs.  This allows getting heap dumps from debugger process dumps.  
   * Global - An example of using PerfView's extensibility mechanism
   * CSVReader - old code that lets PerfView read .ETL.CSV files generated by XPERF (probably will delete)
-  * Zip - a clone of System.IO.Compression.dll so that PerfView can run on pre V4.5 runtimes (probably will delete)
-
-### Other Documentation
-
-These docs are for specialized scenarios 
-
-  * [Updating SupportFiles](documentation/MakingSupportFilesNugetPackages.md) PerfView uses some binary files that it
-does not build itself. We created two nuget packages to hold these.  This document tells you how to update this
-nuget package when these files need to be updated. Very few people should care about these instructions.  
-
-  * [Internal Docs](https://devdiv.visualstudio.com/DevDiv/_git/perfview?_a=preview&path=%2Fdocumentation%2Finternal%2FinternalDocs.md&version=GBmain) This is documentation that is only 
-  useful for internal Microsoft users. By design the link will not work for most people.
+  * Zip - a clone of System.IO.Compression.dll so that PerfView can run on pre v4.5 runtimes (probably will delete)

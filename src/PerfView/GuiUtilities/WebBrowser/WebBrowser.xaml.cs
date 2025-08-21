@@ -1,8 +1,11 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.Wpf;
+using Utilities;
 
 
 namespace PerfView.GuiUtilities
@@ -16,57 +19,63 @@ namespace PerfView.GuiUtilities
         {
             InitializeComponent();
         }
+
         /// <summary>
         /// If set simply hide the window rather than closing it when the user requests closing. 
         /// </summary>
         public bool HideOnClose;
 
-        public bool CanGoForward { get { return Browser.CanGoForward; } }
-        public bool CanGoBack { get { return Browser.CanGoBack; } }
-        public WebBrowser Browser { get { return _Browser; } }
-        /// <summary>
-        /// LIke Broswer.Navigate, but you don't have to be on the GUI thread to use it.  
-        /// </summary>
-        public void Navigate(string uri)
+        public bool CanGoForward { get { return _disposed ? false : Browser.CanGoForward; } }
+        public bool CanGoBack { get { return _disposed ? false : Browser.CanGoBack; } }
+        public WebView2 Browser { get { return _Browser; } }
+
+        public static readonly DependencyProperty SourceProperty = DependencyProperty.Register(
+            nameof(Source),
+            typeof(Uri),
+            typeof(WebBrowser),
+            new PropertyMetadata(OnSourceChanged));
+
+        public Uri Source
         {
-            // Make sure we do it on the GUI thread.
-            Dispatcher.BeginInvoke((Action)delegate
-            {
-                WebBrowserWindow.Navigate(Browser, uri);
-            });
+            get { return (Uri)GetValue(SourceProperty); }
+            set { SetValue(SourceProperty, value); }
+        }
+
+        private static void OnSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            (d as WebBrowserWindow)?.Navigate();
         }
 
         /// <summary>
-        /// A simple helper wrapper that translates some exceptions nicely.  
+        /// If WebView2 has been initialized, navigate to current source. If WebView2 is not initialized yet, it will 
+        /// be navigated to once initialization has completed.
         /// </summary>
-        public static void Navigate(WebBrowser browser, string url)
+        private void Navigate()
         {
-            try
+            if (!_disposed && Source?.ToString() is { } source)
             {
-                browser.Navigate(url);
-            }
-            catch (COMException)
-            {
-                // This can happen on Win10 systems without IE installed.  
-                throw new ApplicationException("Error Trying to open a Web Browser.   Is Internet Explorer Installed?");
+                Browser?.CoreWebView2.Navigate(source);
             }
         }
 
         #region private
+        private bool _disposed = false;
         private void BackClick(object sender, RoutedEventArgs e)
         {
-            if (Browser.CanGoBack)
+            if (CanGoBack)
             {
                 Browser.GoBack();
             }
         }
+
         private void ForwardClick(object sender, RoutedEventArgs e)
         {
-            if (Browser.CanGoForward)
+            if (CanGoForward)
             {
                 Browser.GoForward();
             }
         }
+
         /// <summary>
         /// We hide rather than close the editor.  
         /// </summary>
@@ -77,22 +86,55 @@ namespace PerfView.GuiUtilities
                 Hide();
                 e.Cancel = true;
             }
-        }
-        /// <summary>
-        /// The browser looses where it is when it resizes, which is very confusing to people
-        /// Thus force a resync when the window resizes.  
-        /// </summary>
-        private void Browser_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (m_notFirst)
+            else
             {
-                Browser.Navigate(Browser.Source);
+                // Dispose WebView2 to prevent finalizer crashes
+                if (!_disposed)
+                {
+                    Browser?.Dispose();
+                    _disposed = true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Ensure that we configure the WebView2 environment to specify where the user data is stored.
+        /// </summary>
+        private void Browser_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (_disposed)
+            {
+                return;
             }
 
-            m_notFirst = true;
+            var userDataFolder = Path.Combine(SupportFiles.SupportFileDir, "WebView2");
+            Directory.CreateDirectory(userDataFolder);
+
+            var environmentAwaiter = CoreWebView2Environment
+                .CreateAsync(userDataFolder: userDataFolder)
+                .ConfigureAwait(true)
+                .GetAwaiter();
+
+            environmentAwaiter.OnCompleted(async () =>
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                var environment = environmentAwaiter.GetResult();
+                await Browser.EnsureCoreWebView2Async(environment).ConfigureAwait(true);
+
+                // Set the preferred color scheme directly on the profile
+                Browser.CoreWebView2.Profile.PreferredColorScheme = GuiApp.MainWindow.ThemeViewModel.IsLightTheme
+                    ? CoreWebView2PreferredColorScheme.Light
+                    : CoreWebView2PreferredColorScheme.Dark;
+
+                // Navigate to the current specified source
+                Navigate();
+            });
         }
 
-        private bool m_notFirst;
-        #endregion 
+        #endregion
     }
 }

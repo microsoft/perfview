@@ -2,8 +2,10 @@ using Microsoft.Diagnostics.Tracing.Analysis.GC;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System;
 using System.Collections.Generic;
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
@@ -347,7 +349,8 @@ namespace PerfView
             StackPanel reason = new StackPanel();
             {
                 reason.AddTextBlock("GC Reason ", "GCReason", OnHelp, 3, 2);
-                reason.AddButton("Select All", 60, ReasonSelectAll, 3, 2);
+                var selectAllReasonButton = reason.AddButton("Select All", 60, ReasonSelectAll, 3, 2);
+                AutomationProperties.SetName(selectAllReasonButton, "Select all GC reasons");
 
                 m_inducedBlocking = reason.AddCheckBox(true, "Induced Blocking", 3, 2, UpdateEvents);
                 m_inducedNonblocking = reason.AddCheckBox(true, "Induced Nonblocking", 3, 0, UpdateEvents);
@@ -359,7 +362,8 @@ namespace PerfView
             StackPanel gen = new StackPanel();
             {
                 gen.AddTextBlock("Generation ", "Generation", OnHelp, 3, 2);
-                gen.AddButton("Select All", 60, GenerationSelectAll, 3, 2);
+                var selectAllGenerationsButton = gen.AddButton("Select All", 60, GenerationSelectAll, 3, 2);
+                AutomationProperties.SetName(selectAllGenerationsButton, "Select all generations");
 
                 m_g0 = gen.AddCheckBox(true, "0", 3, 0, UpdateEvents);
                 m_g1 = gen.AddCheckBox(true, "1", 3, 0, UpdateEvents);
@@ -377,6 +381,7 @@ namespace PerfView
             m_grid.MouseRightButtonUp += MouseRightButtonUp;
             m_grid.AutoGenerateColumns = false;
             m_grid.IsReadOnly = true;
+            m_grid.ColumnHeaderStyle = Toolbox.FocusableDataGridColumnHeaderStyle(m_grid.ColumnHeaderStyle);
 
             // Columns
             m_grid.AddColumn(Toolbox.CreateTextBlock("GCIndex ", "GCIndex", OnHelp), "Number", true, Toolbox.CountFormatN0);

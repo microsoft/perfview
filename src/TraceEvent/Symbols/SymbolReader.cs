@@ -33,6 +33,7 @@ namespace Microsoft.Diagnostics.Symbols
             m_log = TextWriter.Synchronized(log);
             m_symbolModuleCache = new Cache<string, ManagedSymbolModule>(10);
             m_pdbPathCache = new Cache<PdbSignature, string>(10);
+            m_r2rPerfMapPathCache = new Cache<R2RPerfMapSignature, string>(10);
 
             m_symbolPath = nt_symbol_path;
             if (m_symbolPath == null)
@@ -305,6 +306,80 @@ namespace Microsoft.Diagnostics.Symbols
             return pdbPath;
         }
 
+        internal string FindR2RPerfMapSymbolFilePath(string perfMapName, Guid perfMapSignature, int perfMapVersion)
+        {
+            m_log.WriteLine("FindR2RPerfMapSymbolFile: *{{ Locating R2R perfmap symbol file {0} Signature {1} Version {2}", perfMapName, perfMapSignature, perfMapVersion);
+
+            string indexPath = null;
+            string perfMapPath = null;
+            string symbolCacheTargetPath = null;
+            R2RPerfMapSignature cacheKey = new R2RPerfMapSignature() { Name = perfMapName, Signature = perfMapSignature, Version = perfMapVersion };
+            if (m_r2rPerfMapPathCache.TryGet(cacheKey, out perfMapPath))
+            {
+                m_log.WriteLine("FindR2RPerfMapSymbolFile: }} Hit Cache, returning {0}", perfMapPath);
+                return perfMapPath;
+            }
+            SymbolPath path = new SymbolPath(SymbolPath);
+            foreach (SymbolPathElement element in path.Elements)
+            {
+                if (element.IsSymServer)
+                {
+                    string cache = element.Cache;
+                    if (cache == null)
+                    {
+                        cache = path.DefaultSymbolCache();
+                    }
+                    if (indexPath == null)
+                    {
+                        indexPath = $"/{perfMapName}/r2rmap-v{perfMapVersion}-{perfMapSignature:N}/{perfMapName}";
+                    }
+                    if (symbolCacheTargetPath == null)
+                    {
+                        symbolCacheTargetPath = Path.Combine(perfMapName,  perfMapVersion.ToString() + "-" + perfMapSignature.ToString("N"), perfMapName);
+                    }
+                    perfMapPath = GetFileFromServer(element.Target, indexPath, Path.Combine(cache, symbolCacheTargetPath));
+                    if (perfMapPath != null)
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    string filePath = Path.Combine(element.Target, perfMapName);
+                    if ((Options & SymbolReaderOptions.CacheOnly) == 0 || !element.IsRemote)
+                    {
+                        if (File.Exists(filePath))
+                        {
+                            perfMapPath = filePath;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        m_log.WriteLine("FindR2RPerfMapSymbolFilePath: location {0} is remote and cacheOnly set, giving up.", filePath);
+                    }
+                }
+            }
+
+            if (perfMapPath != null)
+            {
+                m_log.WriteLine("FindR2RPerfMapSymbolFilePath: *}} Successfully found R2R perfmap symbol file {0} Signature {1} Version {2}", perfMapName, perfMapSignature, perfMapVersion);
+            }
+            else
+            {
+                string where = "";
+                if ((Options & SymbolReaderOptions.CacheOnly) != 0)
+                {
+                    where = " in local cache";
+                }
+
+                m_log.WriteLine("FindR2RPerfMapSymbolFilePath: *}} Failed to find R2R perfmap symbol file {0}{1} Signature {2} Version {3}", perfMapName, where, perfMapSignature, perfMapVersion);
+            }
+
+            m_r2rPerfMapPathCache.Add(cacheKey, perfMapPath);
+            return perfMapPath;
+        }
+
         // Find an executable file path (not a PDB) based on information about the file image.  
         /// <summary>
         /// This API looks up an executable file, by its build-timestamp and size (on a symbol server),  'fileName' should be 
@@ -418,6 +493,11 @@ namespace Microsoft.Diagnostics.Symbols
             return OpenSymbolFile(pdbFileName) as NativeSymbolModule;
         }
 
+        internal R2RPerfMapSymbolModule OpenR2RPerfMapSymbolFile(string filePath, uint loadedLayoutTextOffset)
+        {
+            return new R2RPerfMapSymbolModule(filePath, loadedLayoutTextOffset);
+        }
+
         // Various state that controls symbol and source file lookup.  
         /// <summary>
         /// The symbol path used to look up PDB symbol files.   Set when the reader is initialized.  
@@ -509,6 +589,11 @@ namespace Microsoft.Diagnostics.Symbols
         private SymbolReaderOptions _Options;
 
         /// <summary>
+        /// Gets or sets the timeout for symbol server requests. Default is 60 seconds.
+        /// </summary>
+        public TimeSpan ServerTimeout { get; set; } = TimeSpan.FromSeconds(60);
+
+        /// <summary>
         /// We call back on this when we find a PDB by probing in 'unsafe' locations (like next to the EXE or in the Built location)
         /// If this function returns true, we assume that it is OK to use the PDB.  
         /// </summary>
@@ -589,8 +674,8 @@ namespace Microsoft.Diagnostics.Symbols
             var clrDir = GetClrDirectoryForNGenImage(ngenImageFullPath, m_log, out privateRuntimeVerString);
             if (clrDir == null)
             {
-                m_log.WriteLine("Could not find CLR directory for NGEN image {0}, Trying .NET Core", ngenImageFullPath);
-                return HandleNetCorePdbs(ngenImageFullPath, pdbPath);
+                m_log.WriteLine("Could not find CLR directory for NGEN image {0}, Giving up", ngenImageFullPath);
+                return null;
             }
 
             // See if this is a V4.5 CLR, if so we can do line numbers too.l  
@@ -751,169 +836,6 @@ namespace Microsoft.Diagnostics.Symbols
             }
         }
 
-        /// <summary>
-        /// Given a NGEN (or ReadyToRun) image 'ngenImageFullPath' and the PDB path
-        /// that we WANT it to generate generate the PDB.  Returns either pdbPath 
-        /// on success or null on failure.  
-        /// 
-        /// TODO can be removed when we properly publish the NGEN pdbs as part of build.  
-        /// </summary>
-        private string HandleNetCorePdbs(string ngenImageFullPath, string pdbPath)
-        {
-            // We only handle NGEN PDB. 
-            if (!pdbPath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
-            {
-                m_log.WriteLine("Not a crossGen PDB {0}", pdbPath);
-                return null;
-            }
-
-            var ngenImageDir = Path.GetDirectoryName(ngenImageFullPath);
-            var pdbDir = Path.GetDirectoryName(pdbPath);
-
-            // We need Crossgen, and there are several options, see what we can do. 
-            string crossGen = GetCrossGenExePath(ngenImageFullPath);
-            if (crossGen == null)
-            {
-                m_log.WriteLine("Could not find Crossgen.exe to generate PDBs, giving up.");
-                return null;
-            }
-
-            var winDir = Environment.GetEnvironmentVariable("winDir");
-            if (winDir == null)
-            {
-                return null;
-            }
-
-            // Make sure the output dir exists.  
-            Directory.CreateDirectory(pdbDir);
-
-            // Are these readyToRun images
-            string crossGenInputName = ngenImageFullPath;
-            if (!crossGenInputName.EndsWith(".ni.dll", StringComparison.OrdinalIgnoreCase))
-            {
-                // Note that the PDB does not pick the correct PDB signature unless the name
-                // of the PDB matches the name of the DLL (with suffixes removed).  
-
-                crossGenInputName = pdbPath.Substring(0, pdbPath.Length - 3) + "dll";
-                File.Copy(ngenImageFullPath, crossGenInputName);
-            }
-
-            var cmdLine = Command.Quote(crossGen) +
-                " /CreatePdb " + Command.Quote(pdbDir) +
-                " /Platform_Assemblies_Paths " + Command.Quote(ngenImageDir) +
-                " " + Command.Quote(crossGenInputName);
-
-            var options = new CommandOptions();
-            options.AddOutputStream(m_log);
-            options.AddNoThrow();
-
-            // Needs diasymreader.dll to be on the path.  
-            var newPath = winDir + @"\Microsoft.NET\Framework\v4.0.30319" + ";" +
-                winDir + @"\Microsoft.NET\Framework64\v4.0.30319" + ";%PATH%";
-            options.AddEnvironmentVariable("PATH", newPath);
-            options.AddCurrentDirectory(ngenImageDir);
-            m_log.WriteLine("**** Running CrossGen");
-            m_log.WriteLine("set PATH=" + newPath);
-            m_log.WriteLine("{0}\r\n", cmdLine);
-            var cmd = Command.Run(cmdLine, options);
-
-            // Delete the temporary file if necessary
-            if (crossGenInputName != ngenImageFullPath)
-            {
-                FileUtilities.ForceDelete(crossGenInputName);
-            }
-
-            if (cmd.ExitCode != 0 || !File.Exists(pdbPath))
-            {
-                m_log.WriteLine("CrossGen failed to generate {0} exit code {0}", pdbPath, cmd.ExitCode);
-                return null;
-            }
-
-            return pdbPath;
-        }
-
-        private static string getNugetPackageDir()
-        {
-            string homeDrive = Environment.GetEnvironmentVariable("HOMEDRIVE");
-            if (homeDrive == null)
-            {
-                return null;
-            }
-
-            string homePath = Environment.GetEnvironmentVariable("HOMEPATH");
-            if (homePath == null)
-            {
-                return null;
-            }
-
-            var nugetPackageDir = homeDrive + homePath + @"\.nuget\packages";
-            if (!Directory.Exists(nugetPackageDir))
-            {
-                return null;
-            }
-
-            return nugetPackageDir;
-        }
-
-        private string GetCrossGenExePath(string ngenImageFullPath)
-        {
-            var imageDir = Path.GetDirectoryName(ngenImageFullPath);
-            string crossGen = Path.Combine(imageDir, "crossGen.exe");
-
-            m_log.WriteLine("Checking for CoreCLR case, looking for CrossGen at {0}", crossGen);
-            if (File.Exists(crossGen))
-            {
-                return crossGen;
-            }
-
-            string coreclr = Path.Combine(imageDir, "coreclr.dll");
-            if (File.Exists(coreclr))
-            {
-                DateTime coreClrTimeStamp = File.GetLastWriteTimeUtc(coreclr);
-                m_log.WriteLine("Found coreclr: at  {0}, timestamp {1}", coreclr, coreClrTimeStamp);
-                string nugetDir = getNugetPackageDir();
-                if (nugetDir != null)
-                {
-                    m_log.WriteLine("Found nuget package dir: at  {0}", nugetDir);
-                    foreach (var runtimeDir in Directory.GetDirectories(nugetDir, "runtime.win*.microsoft.netcore.runtime.coreclr"))
-                    {
-                        foreach (var runtimeVersionDir in Directory.GetDirectories(runtimeDir))
-                        {
-                            foreach (var osarchDir in Directory.GetDirectories(Path.Combine(runtimeVersionDir, "runtimes"), "win*"))
-                            {
-                                string packageCoreCLR = Path.Combine(osarchDir, @"native\coreclr.dll");
-                                DateTime packageCoreClrTimeStamp = File.GetLastWriteTimeUtc(packageCoreCLR);
-                                m_log.WriteLine("Checking timestamp of file {0} = {1}", packageCoreCLR, packageCoreClrTimeStamp);
-                                if (File.Exists(packageCoreCLR) && packageCoreClrTimeStamp == coreClrTimeStamp)
-                                {
-                                    crossGen = Path.Combine(runtimeVersionDir, @"tools\crossgen.exe");
-                                    m_log.WriteLine("Found matching CoreCLR, probing for crossgen at {0}", crossGen);
-                                    if (File.Exists(crossGen))
-                                    {
-                                        return crossGen;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Check if you are running the runtime out of the nuget directory itself 
-            var m = Regex.Match(imageDir, @"^(.*)\\runtimes\\win.*\\native$", RegexOptions.IgnoreCase);
-            if (m.Success)
-            {
-                crossGen = Path.Combine(m.Groups[1].Value, "tools", "crossGen.exe");
-                if (File.Exists(crossGen))
-                {
-                    return crossGen;
-                }
-            }
-
-            m_log.WriteLine("Could not find crossgen, giving up");
-            return null;
-        }
-
         // TODO remove after 12/2015
         private void InsurePathIsInNIC(TextWriter log, ref string ngenImageFullPath)
         {
@@ -1042,21 +964,6 @@ namespace Microsoft.Diagnostics.Symbols
 
             var sw = Stopwatch.StartNew();
 
-            if (m_deadServers != null)
-            {
-                // Try again after 5 minutes.  
-                if ((DateTime.UtcNow - m_lastDeadTimeUtc).TotalSeconds > 300)
-                {
-                    m_deadServers = null;
-                }
-            }
-
-            if (m_deadServers != null && m_deadServers.Contains(serverPath))
-            {
-                m_log.WriteLine("FindSymbolFilePath: Skipping server {0} because it was unreachable in the past, will try again in 5 min.", serverPath);
-                return false;
-            }
-
             bool canceled = false;        // Are we trying to cancel the task
             bool alive = false;           // Has the task ever been shown to be alive (worth giving them time)
             bool successful = false;      // The task was successful
@@ -1072,7 +979,11 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             m_log.WriteLine("FindSymbolFilePath: In task, sending HTTP request {0}", fullUri);
 
-                            var responseTask = HttpClient.GetAsync(fullUri, HttpCompletionOption.ResponseHeadersRead);
+                            // Tell the symbol server that we support MSFZ symbols
+                            var request = new HttpRequestMessage(HttpMethod.Get, fullUri);
+                            request.Headers.Add("Accept", "application/msfz0");
+                            
+                            var responseTask = HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                             responseTask.Wait();
                             var response = responseTask.Result.EnsureSuccessStatusCode();
 
@@ -1140,8 +1051,8 @@ namespace Microsoft.Diagnostics.Symbols
                     }
                 });
 
-                // Wait 60 seconds allowing for interruptions.
-                var limit = 600;
+                // Wait for the timeout period allowing for interruptions.
+                var limit = (int)(ServerTimeout.TotalSeconds * 10); // Convert seconds to deciseconds (0.1 seconds)
 
                 for (int i = 0; i < limit; i++)
                 {
@@ -1175,15 +1086,8 @@ namespace Microsoft.Diagnostics.Symbols
                 else if (!task.IsCompleted)
                 {
                     canceled = true;
-                    m_log.WriteLine("FindSymbolFilePath: Time {0} sec.  Timeout of {1} seconds exceeded for {2}.  Setting as dead server",
-                            sw.Elapsed.TotalSeconds, limit / 10, serverPath);
-                    if (m_deadServers == null)
-                    {
-                        m_deadServers = new List<string>();
-                    }
-
-                    m_deadServers.Add(serverPath);
-                    m_lastDeadTimeUtc = DateTime.UtcNow;
+                    m_log.WriteLine("FindSymbolFilePath: Time {0} sec.  Timeout of {1} seconds exceeded for {2}.",
+                            sw.Elapsed.TotalSeconds, ServerTimeout.TotalSeconds, serverPath);
                 }
             }
             finally
@@ -1192,6 +1096,55 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             return successful && File.Exists(fullDestPath);
+        }
+
+        /// <summary>
+        /// Checks if the file at the given path is an MSFZ file by checking for the "Microsoft MSFZ Container" header
+        /// </summary>
+        private bool IsMsfzFile(string filePath)
+        {
+            try
+            {
+                if (!File.Exists(filePath))
+                {
+                    return false;
+                }
+
+                const string msfzHeader = "Microsoft MSFZ Container";
+                var headerBytes = Encoding.UTF8.GetBytes(msfzHeader);
+
+                using (var stream = File.OpenRead(filePath))
+                {
+                    if (stream.Length < headerBytes.Length)
+                    {
+                        return false;
+                    }
+
+                    // Read the header in one operation
+                    var buffer = new byte[headerBytes.Length];
+                    int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                    if (bytesRead < headerBytes.Length)
+                    {
+                        return false;
+                    }
+
+                    // Compare the header
+                    for (int i = 0; i < headerBytes.Length; i++)
+                    {
+                        if (buffer[i] != headerBytes[i])
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.WriteLine("IsMsfzFile: Error checking file {0}: {1}", filePath, e.Message);
+                return false;
+            }
         }
 
         /// <summary>
@@ -1309,16 +1262,29 @@ namespace Microsoft.Diagnostics.Symbols
         /// <returns>targetPath or null if the file cannot be found.</returns>
         private string GetFileFromServer(string urlForServer, string fileIndexPath, string targetPath)
         {
+            // First check if the file exists in the normal cache location
             if (File.Exists(targetPath))
             {
                 m_log.WriteLine("FindSymbolFilePath: Found in cache {0}", targetPath);
                 return targetPath;
             }
 
+            // Also check if an MSFZ version exists in the msfz0 subdirectory
+            var directory = Path.GetDirectoryName(targetPath);
+            var fileName = Path.GetFileName(targetPath);
+            var msfzDirectory = Path.Combine(directory, "msfz0");
+            var msfzTargetPath = Path.Combine(msfzDirectory, fileName);
+            
+            if (File.Exists(msfzTargetPath))
+            {
+                m_log.WriteLine("FindSymbolFilePath: Found MSFZ file in cache {0}", msfzTargetPath);
+                return msfzTargetPath;
+            }
+
             // Fail quickly if instructed to  
             if ((Options & SymbolReaderOptions.CacheOnly) != 0)
             {
-                m_log.WriteLine("FindSymbolFilePath: no file at cache location {0} and cacheOnly set, giving up.", targetPath);
+                m_log.WriteLine("FindSymbolFilePath: no file at cache location {0} or {1} and cacheOnly set, giving up.", targetPath, msfzTargetPath);
                 return null;
             }
 
@@ -1328,6 +1294,9 @@ namespace Microsoft.Diagnostics.Symbols
                 return null;
             }
 
+            // Download to a .new file first
+            var tempTargetPath = targetPath + ".new";
+            
             // Allows us to reject files that are not binary (sometimes you get redirected to a 
             // login script and we don't want to blindly accept that).  
             Predicate<string> onlyBinaryContent = delegate (string contentType)
@@ -1341,11 +1310,37 @@ namespace Microsoft.Diagnostics.Symbols
                 return ret;
             };
 
-            // Just try to fetch the file directly
+            // Just try to fetch the file directly to .new location
             m_log.WriteLine("FindSymbolFilePath: Searching Symbol Server {0}.", urlForServer);
-            if (GetPhysicalFileFromServer(urlForServer, fileIndexPath, targetPath, onlyBinaryContent))
+            if (GetPhysicalFileFromServer(urlForServer, fileIndexPath, tempTargetPath, onlyBinaryContent))
             {
-                return targetPath;
+                // Check if the downloaded file is an MSFZ file and place it appropriately
+                if (IsMsfzFile(tempTargetPath))
+                {
+                    // Create msfz0 directory and move file there
+                    Directory.CreateDirectory(msfzDirectory);
+                    
+                    // If MSFZ file already exists at destination, delete it first
+                    if (File.Exists(msfzTargetPath))
+                    {
+                        FileUtilities.ForceDelete(msfzTargetPath);
+                    }
+
+                    FileUtilities.ForceMove(tempTargetPath, msfzTargetPath);
+                    m_log.WriteLine("FindSymbolFilePath: Moved MSFZ file from {0} to {1}", tempTargetPath, msfzTargetPath);
+                    return msfzTargetPath;
+                }
+                else
+                {
+                    // Regular PDB file - move to target location
+                    if (File.Exists(targetPath))
+                    {
+                        FileUtilities.ForceDelete(targetPath);
+                    }
+                    
+                    FileUtilities.ForceMove(tempTargetPath, targetPath);
+                    return targetPath;
+                }
             }
 
             // The rest of this compressed file/file pointers stuff is only for remote servers.  
@@ -1359,18 +1354,47 @@ namespace Microsoft.Diagnostics.Symbols
             var compressedFilePath = targetPath.Substring(0, targetPath.Length - 1) + "_";
             if (GetPhysicalFileFromServer(urlForServer, compressedSigPath, compressedFilePath, onlyBinaryContent))
             {
-                // Decompress it
-                m_log.WriteLine("FindSymbolFilePath: Expanding {0} to {1}", compressedFilePath, targetPath);
-                var commandLine = "Expand " + Command.Quote(compressedFilePath) + " " + Command.Quote(targetPath);
+                // Decompress to temporary path first
+                var tempExpandPath = targetPath + ".expanding";
+                m_log.WriteLine("FindSymbolFilePath: Expanding {0} to {1}", compressedFilePath, tempExpandPath);
+                var commandLine = "Expand " + Command.Quote(compressedFilePath) + " " + Command.Quote(tempExpandPath);
                 var options = new CommandOptions().AddNoThrow();
                 var command = Command.Run(commandLine, options);
                 if (command.ExitCode != 0)
                 {
                     m_log.WriteLine("FindSymbolFilePath: Failure executing: {0}", commandLine);
+                    FileUtilities.ForceDelete(tempExpandPath);
                     return null;
                 }
-                File.Delete(compressedFilePath);
-                return targetPath;
+                FileUtilities.ForceDelete(compressedFilePath);
+                
+                // Check if the decompressed file is an MSFZ file and move it to the appropriate location
+                if (IsMsfzFile(tempExpandPath))
+                {
+                    // Create msfz0 directory and move file there
+                    Directory.CreateDirectory(msfzDirectory);
+                    
+                    // If MSFZ file already exists at destination, delete it first
+                    if (File.Exists(msfzTargetPath))
+                    {
+                        FileUtilities.ForceDelete(msfzTargetPath);
+                    }
+                    
+                    FileUtilities.ForceMove(tempExpandPath, msfzTargetPath);
+                    m_log.WriteLine("FindSymbolFilePath: Moved decompressed MSFZ file from {0} to {1}", tempExpandPath, msfzTargetPath);
+                    return msfzTargetPath;
+                }
+                else
+                {
+                    // Regular PDB file - move to target location
+                    if (File.Exists(targetPath))
+                    {
+                        FileUtilities.ForceDelete(targetPath);
+                    }
+                    
+                    FileUtilities.ForceMove(tempExpandPath, targetPath);
+                    return targetPath;
+                }
             }
 
             // See if we have a file that tells us to redirect elsewhere. 
@@ -1609,13 +1633,21 @@ namespace Microsoft.Diagnostics.Symbols
             public int Age;
         }
 
+        private struct R2RPerfMapSignature : IEquatable<R2RPerfMapSignature>
+        {
+            public override int GetHashCode() { return Name.GetHashCode() + Signature.GetHashCode() + Version.GetHashCode(); }
+            public bool Equals(R2RPerfMapSignature other) { return Name == other.Name && Signature == other.Signature && Version == other.Version; }
+            public string Name;
+            public Guid Signature;
+            public int Version;
+        }
+
         internal TextWriter m_log;
-        private List<string> m_deadServers;     // What servers can't be reached right now
-        private DateTime m_lastDeadTimeUtc;     // The last time something went dead.  
         private string m_SymbolCacheDirectory;
         private string m_SourceCacheDirectory;
         private Cache<string, ManagedSymbolModule> m_symbolModuleCache;
         private Cache<PdbSignature, string> m_pdbPathCache;
+        private Cache<R2RPerfMapSignature, string> m_r2rPerfMapPathCache;
         private string m_symbolPath;
 
         #endregion

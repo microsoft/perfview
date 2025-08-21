@@ -34,6 +34,7 @@
     <Compile Include="..\Utilities\DirectoryUtilities.cs" />
     <Compile Include="..\Utilities\StringUtilities.cs" />
     <Compile Include="..\Utilities\XmlUtilities.cs" />
+    <Compile Include="..\Utilities\SymbolsAuthenticationUtilities.cs" />
     <Compile Include="..\PerfView\Utilities\ExceptionMessage.cs" />
     <Compile Include="..\PerfView\Properties\BuildDateAttribute.cs" />
     <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
@@ -50,8 +51,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All"/>
   </ItemGroup>
 
   <!-- Ensure that the native components of TraceEvent are restored into the target and publish directories so that TraceEvent can pinvoke into them. -->

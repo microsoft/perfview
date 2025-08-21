@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <!-- *** SourceLink Support *** -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All"/>
   </ItemGroup>
 
   <!-- ******************* Signing Support *********************** -->
@@ -33,7 +33,7 @@
         <Authenticode>Microsoft400</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
+    <PackageReference Include="MicroBuild.Core" />
   </ItemGroup>
 
   <!-- .NET Strong Name Signing -->

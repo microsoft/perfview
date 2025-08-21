@@ -1,5 +1,6 @@
 using Microsoft.Diagnostics.Tracing.Analysis.GC;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using PerfView.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -87,6 +88,7 @@ namespace PerfView
             m_grid.AddColumn("Description", "Description");
             m_grid.AddColumn("Suggestion", "Suggestion");
             m_grid.AddButtonColumn(typeof(Issue), "Action", "Action", OnClick);
+            m_grid.ColumnHeaderStyle = Toolbox.FocusableDataGridColumnHeaderStyle(m_grid.ColumnHeaderStyle);
 
             m_leftPanel = new StackPanel();
             m_leftPanel.Width = LeftPanelWidth;
@@ -243,7 +245,7 @@ namespace PerfView
 
             if (source.SampleIndexLimit == 0)
             {
-                MessageBox.Show("No stacks found for induced GC", ".Net Heap Analyzer", MessageBoxButton.OK);
+                XamlMessageBox.Show("No stacks found for induced GC", ".Net Heap Analyzer", MessageBoxButton.OK);
             }
             else
             {

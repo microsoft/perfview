@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <!-- Enable NuGet Central Package Management -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <!-- Support files and analyzers -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.3.183" />
+    <PackageVersion Include="PerfView.SupportFiles" Version="1.0.8" />
+    <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.30" />
+    <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" Version="0.1.2" />
+  </ItemGroup>
+  <!-- External dependencies -->
+  <ItemGroup>
+    <PackageVersion Include="Azure.Core" Version="1.38.0" />
+    <PackageVersion Include="Azure.Identity" Version="1.11.4" />
+    <PackageVersion Include="MicroBuild.Core" Version="0.3.1" />
+    <PackageVersion Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.510501" />
+    <PackageVersion Include="Microsoft.Identity.Client" Version="4.74.1" />
+    <PackageVersion Include="Microsoft.Identity.Client.Extensions.Msal" Version="4.74.1" />
+    <PackageVersion Include="Microsoft.IdentityModel.Abstractions" Version="8.13.0" />
+    <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.13.0" />
+    <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.13.0" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Win32.Registry" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.3351.48" />
+    <PackageVersion Include="System.Buffers" Version="4.6.1" />
+    <PackageVersion Include="System.Collections.Immutable" Version="9.0.8" />
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="9.0.8" />
+    <PackageVersion Include="System.Memory" Version="4.6.3" />
+    <PackageVersion Include="System.Numerics.Vectors" Version="4.6.1" />
+    <PackageVersion Include="System.Reflection.Metadata" Version="9.0.8" />
+    <PackageVersion Include="System.Reflection.TypeExtensions" Version="4.7.0" />
+    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+    <PackageVersion Include="System.Security.Cryptography.Algorithms" Version="4.3.1" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="9.0.8" />
+    <PackageVersion Include="System.Text.Encodings.Web" Version="9.0.8" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.8" />
+    <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
+  </ItemGroup>
+  <!-- ClrMD -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="4.0.0-beta.24314.3" />
+  </ItemGroup>
+  <!-- Test dependencies -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.VisualStudio.Threading" Version="17.8.14" />
+    <PackageVersion Include="xunit" Version="2.6.5" />
+    <PackageVersion Include="xunit.extensibility.core" Version="2.6.5" />
+    <PackageVersion Include="xunit.extensibility.execution" Version="2.6.5" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.6" />
+    <PackageVersion Include="Xunit.StaFact" Version="0.3.2" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
+  </ItemGroup>
+  <!-- Sample dependencies -->
+  <ItemGroup>
+    <PackageVersion Include="System.Reactive.Linq" Version="5.0.0" />
+  </ItemGroup>
+</Project>

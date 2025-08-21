@@ -319,7 +319,7 @@ namespace PerfView
                             }
                         }
                     }
-
+                    
                     ETWEventRecord eventRecord = null;
                     if (textFilter != null)
                     {
@@ -346,7 +346,8 @@ namespace PerfView
                         eventRecord = emptyEventRecord;
                         eventRecord.m_timeStampRelativeMSec = data.TimeStampRelativeMSec;
                     }
-
+                    
+                    
                     if (eventRecord == null)
                     {
                         eventRecord = new ETWEventRecord(this, data, columnOrder, NonRestFields, durationMSec);
@@ -534,6 +535,7 @@ namespace PerfView
         private Dictionary<string, bool> m_selectedEvents;      // set to true if the event is only present because it is a start for a stop.  
         private bool m_selectedAllEvents;       // This ensures that when a user selects all events he gets everything 
 
+        
         internal class ETWEventRecord : EventRecord
         {
             // Used as the null record (after MaxRet happens). 
@@ -552,7 +554,8 @@ namespace PerfView
 
                 m_timeStampRelativeMSec = data.TimeStampRelativeMSec;
                 m_idx = data.EventIndex;
-
+                m_payloads = new List<Payload>();
+                
                 // Compute the data column 
                 var restString = new StringBuilder();
 
@@ -560,21 +563,21 @@ namespace PerfView
                 var hasStack = data.CallStackIndex() != CallStackIndex.Invalid;
                 if (hasStack)
                 {
-                    AddField("HasStack", hasStack.ToString(), columnOrder, restString);
+                    AddField("HasStack", hasStack.ToString(), columnOrder, restString, m_payloads);
                 }
 
                 var asCSwitch = data as CSwitchTraceData;
                 if (asCSwitch != null)
                 {
-                    AddField("HasBlockingStack", (asCSwitch.BlockingStack() != CallStackIndex.Invalid).ToString(), columnOrder, restString);
+                    AddField("HasBlockingStack", (asCSwitch.BlockingStack() != CallStackIndex.Invalid).ToString(), columnOrder, restString, m_payloads);
                 }
 
-                AddField("ThreadID", data.ThreadID.ToString("n0"), columnOrder, restString);
-                AddField("ProcessorNumber", data.ProcessorNumber.ToString(), columnOrder, restString);
+                AddField("ThreadID", data.ThreadID.ToString("n0"), columnOrder, restString, m_payloads);
+                AddField("ProcessorNumber", data.ProcessorNumber.ToString(), columnOrder, restString, m_payloads);
 
                 if (0 < durationMSec)
                 {
-                    AddField("DURATION_MSEC", durationMSec.ToString("n3"), columnOrder, restString);
+                    AddField("DURATION_MSEC", durationMSec.ToString("n3"), columnOrder, restString, m_payloads);
                 }
 
                 var payloadNames = data.PayloadNames;
@@ -583,28 +586,28 @@ namespace PerfView
                     // WPP events look classic and use the EventID as their discriminator
                     if (data.IsClassicProvider && data.ID != 0)
                     {
-                        AddField("EventID", ((int)data.ID).ToString(), columnOrder, restString);
+                        AddField("EventID", ((int)data.ID).ToString(), columnOrder, restString, m_payloads);
                     }
 
-                    AddField("DataLength", data.EventDataLength.ToString(), columnOrder, restString);
+                    AddField("DataLength", data.EventDataLength.ToString(), columnOrder, restString, m_payloads);
                 }
 
                 try
                 {
                     for (int i = 0; i < payloadNames.Length; i++)
                     {
-                        AddField(payloadNames[i], data.PayloadString(i), columnOrder, restString);
+                        AddField(payloadNames[i], data.PayloadString(i), columnOrder, restString, m_payloads);
                     }
                 }
                 catch (Exception e)
                 {
-                    AddField("ErrorParsingFields", e.Message, columnOrder, restString);
+                    AddField("ErrorParsingFields", e.Message, columnOrder, restString, m_payloads);
                 }
 
                 var message = data.FormattedMessage;
                 if (message != null)
                 {
-                    AddField("FormattedMessage", message, columnOrder, restString);
+                    AddField("FormattedMessage", message, columnOrder, restString, m_payloads);
                 }
 
                 if (source.m_needsComputers)
@@ -621,7 +624,7 @@ namespace PerfView
                                 id = "^" + id;              // Indicates it is at the start of the task. 
                             }
 
-                            AddField("ActivityInfo", id, columnOrder, restString);
+                            AddField("ActivityInfo", id, columnOrder, restString, m_payloads    );
                         }
 
                         var startStopActivity = source.m_startStopActivityComputer.GetCurrentStartStopActivity(thread, data);
@@ -634,7 +637,7 @@ namespace PerfView
                                 parentName = startStopActivity.Creator.Name;
                             }
 
-                            AddField("StartStopActivity", name + "/P=" + parentName, columnOrder, restString);
+                            AddField("StartStopActivity", name + "/P=" + parentName, columnOrder, restString, m_payloads);
                         }
                     }
                 }
@@ -642,18 +645,18 @@ namespace PerfView
                 // We pass 0 as the process ID for creating the activityID because we want uniform syntax.  
                 if (data.ActivityID != Guid.Empty)
                 {
-                    AddField("ActivityID", StartStopActivityComputer.ActivityPathString(data.ActivityID), columnOrder, restString);
+                    AddField("ActivityID", StartStopActivityComputer.ActivityPathString(data.ActivityID), columnOrder, restString, m_payloads);
                 }
 
                 Guid relatedActivityID = data.RelatedActivityID;
                 if (relatedActivityID != Guid.Empty)
                 {
-                    AddField("RelatedActivityID", StartStopActivityComputer.ActivityPathString(data.RelatedActivityID), columnOrder, restString);
+                    AddField("RelatedActivityID", StartStopActivityComputer.ActivityPathString(data.RelatedActivityID), columnOrder, restString, m_payloads);
                 }
 
                 if(data.ContainerID != null)
                 {
-                    AddField("ContainerID", data.ContainerID, columnOrder, restString);
+                    AddField("ContainerID", data.ContainerID, columnOrder, restString, m_payloads);
                 }
 
                 m_asText = restString.ToString();
@@ -666,7 +669,8 @@ namespace PerfView
             public DateTime OriginTimeStamp { get { return TimeZoneInfo.ConvertTime(LocalTimeStamp, this.m_source.OriginTimeZone); } }
             public override string Rest { get { return m_asText; } set { } }
             public EventIndex Index { get { return m_idx; } }
-
+            public override List<Payload> Payloads { get { return m_payloads; }  }
+            
             #region private
 
             private static readonly Regex specialCharRemover = new Regex(" *[\r\n\t]+ *", RegexOptions.Compiled);
@@ -675,12 +679,15 @@ namespace PerfView
             /// Adds 'fieldName' with value 'fieldValue' to the output.  It either goes into a column (based on columnOrder) or it goes into
             /// 'rest' as a fieldName="fieldValue" string.   It also updates 'columnSums' for the fieldValue for any in a true column 
             /// </summary>
-            private void AddField(string fieldName, string fieldValue, Dictionary<string, int> columnOrder, StringBuilder restString)
+            private void AddField(string fieldName, string fieldValue, Dictionary<string, int> columnOrder, StringBuilder restString, List<Payload> payloadsList)
             {
                 if (fieldValue == null)
                 {
                     fieldValue = "";
                 }
+
+                payloadsList.Add(new Payload(fieldName, fieldValue));
+
                 // If the field value has to many newlines in it, the GUI gets confused because the text block is larger than
                 // the vertical size.   WPF may fix this at some point, but in the mean time this is a work around. 
                 fieldValue = specialCharRemover.Replace(fieldValue, " ");
@@ -787,6 +794,7 @@ namespace PerfView
             private string m_asText;
             private EventIndex m_idx;
             private ETWEventSource m_source;        // Lets you get at source information
+            private List<Payload> m_payloads;
             #endregion
         }
 
@@ -812,244 +820,4 @@ namespace PerfView
         }
         #endregion
     }
-
-#if false 
-    // This is experimental 
-    /// <summary>
-    /// The EventViewer takes a abstract EventSource and displays it.  GenericEventSource
-    /// is the implementation of the abstract EventSource class that takes it data from an
-    /// arbitrary source
-    /// 
-    /// </summary>
-    public class GenericEventSource : EventSource
-    {
-        public GenericEventSource() : this(new GenericEventRecords()) { }
-
-        public GenericEventSource(GenericEventRecords records)
-        {
-            m_records = records;
-            m_records.OnNewRecord += this.EventCallback;
-
-            NonRestFields = 10;
-            MaxEventTimeRelativeMsec = 60000;       // Currently set to 1 min, will expand when we exceed that.  
-            m_allEventRecords = new List<GenericEventRecord>();
-            m_eventFieldNames = new SortedDictionary<string, string[]>();
-            m_processFilter = new SortedDictionary<string, bool>();
-        }
-
-        public override ICollection<string> EventNames { get { return m_eventFieldNames.Keys; } }
-        public override void SetEventFilter(List<string> eventNames)
-        {
-            m_selectedAllEvents = (eventNames.Count >= EventNames.Count);
-            m_selectedEvents = new Dictionary<string, bool>();
-            foreach (var eventName in eventNames)
-                m_selectedEvents[eventName] = false;
-        }
-        public override IEnumerable<EventRecord> Events
-        {
-            get
-            {
-                m_textFilter = null;
-                if (!string.IsNullOrWhiteSpace(TextFilterRegex))
-                {
-                    string pat = TextFilterRegex;
-                    bool negate = false;
-                    if (pat.StartsWith("!"))
-                    {
-                        negate = true;
-                        pat = pat.Substring(1);
-                    }
-                    var textRegex = new Regex(pat, RegexOptions.IgnoreCase);
-                    m_textFilter = delegate(GenericEventRecord record)
-                    {
-                        bool match = record.Matches(textRegex);
-                        return negate ? !match : match;
-                    };
-                }
-
-                foreach (var eventRecord in m_allEventRecords)
-                    if (PassesFilter(eventRecord))
-                        yield return eventRecord;
-            }
-        }
-        public override ICollection<string> ProcessNames { get { return m_processFilter.Keys; } }
-        public override ICollection<string> AllColumnNames(List<string> eventNames)
-        {
-            var retFields = new SortedDictionary<string, string>();
-            foreach (var eventName in eventNames)
-            {
-                string[] fieldNames;
-                if (m_eventFieldNames.TryGetValue(eventName, out fieldNames))
-                {
-                    foreach (var fieldName in fieldNames)
-                        retFields[fieldName] = null;
-                }
-            }
-            retFields["ThreadID"] = null;
-            retFields["ActivityID"] = null;
-            retFields["RelatedActivityID"] = null;
-            retFields["HasStack"] = null;
-            retFields["DURATION_MSEC"] = null;
-            retFields["FormattedMessage"] = null;
-
-            return retFields.Keys;
-        }
-        public override EventSource Clone()
-        {
-            // TODO FIX NOW Implement. 
-            throw new NotImplementedException();
-        }
-
-        public GenericEventRecords Records { get { return m_records; } }
-
-        event Action OnEventNamesChanged;
-        event Action<EventRecord> OnEvent;
-
-    #region private
-        GenericEventRecords m_records;
-
-        // Keeps running sets of things users interact with in the GUI.  
-        SortedDictionary<string, string[]> m_eventFieldNames;
-        SortedDictionary<string, bool> m_processFilter;
-
-        Dictionary<string, bool> m_selectedEvents;      // set to true if the event is only present because it is a start for a stop.  
-        bool m_selectedAllEvents;                       // This ensures that when a user selects all events he gets everything 
-        List<GenericEventRecord> m_allEventRecords;
-        Predicate<GenericEventRecord> m_textFilter;
-
-        private void EventCallback(GenericEventRecord eventRecord)
-        {
-            if (!m_processFilter.ContainsKey(eventRecord.ProcessName))
-            {
-                bool isSelected = true;
-                var processFilterRegexStr = ProcessFilterRegex;
-                if (!string.IsNullOrWhiteSpace(processFilterRegexStr))
-                    isSelected = Regex.IsMatch(eventRecord.ProcessName, processFilterRegexStr);
-                m_processFilter[eventRecord.ProcessName] = isSelected;
-            }
-
-            string[] fieldNames;
-            if (!m_eventFieldNames.TryGetValue(eventRecord.EventName, out fieldNames))
-            {
-                m_eventFieldNames[eventRecord.EventName] = eventRecord.FieldNames;
-                if (OnEventNamesChanged != null)
-                    OnEventNamesChanged();
-            }
-
-            m_allEventRecords.Add(eventRecord);
-
-            if (PassesFilter(eventRecord))
-                OnEvent(eventRecord);
-        }
-
-        private bool PassesFilter(GenericEventRecord eventRecord)
-        {
-            if (eventRecord.TimeStampRelatveMSec < StartTimeRelativeMSec)
-                return false;
-            if (EndTimeRelativeMSec < eventRecord.TimeStampRelatveMSec)
-                return false;
-
-            if (!m_processFilter[eventRecord.ProcessName])
-                return false;
-
-            if (!m_selectedAllEvents && !m_selectedEvents.ContainsKey(eventRecord.EventName))
-                return false;
-
-            if (m_textFilter != null && !m_textFilter(eventRecord))
-                return false;
-
-            return true;
-        }
-
-    #endregion
-    }
-
-    public class GenericEventRecord : EventRecord
-    {
-        public GenericEventRecord(string eventName, string processName, double timeStampRelativeMSec, string[] fieldNames, string[] fields)
-        {
-            m_EventName = eventName;
-            m_ProcessName = processName;
-            m_TimeStampRelativeMSec = timeStampRelativeMSec;
-            m_FieldNames = fieldNames;
-            m_Fields = fields;
-        }
-
-        public override string EventName { get { return m_EventName; } }
-        public override string ProcessName { get { return m_ProcessName; } }
-        public override double TimeStampRelatveMSec { get { return m_TimeStampRelativeMSec; } }
-        public override string[] FieldNames { get { return m_FieldNames; } }
-        public override string Field(int index) { return m_Fields[index]; }
-
-    #region private
-        string m_EventName;
-        string m_ProcessName;
-        double m_TimeStampRelativeMSec;
-        string[] m_FieldNames;
-        string[] m_Fields;
-    #endregion
-    }
-
-    public class GenericEventRecords
-    {
-        public GenericEventRecords()
-        {
-            Records = new List<GenericEventRecord>();
-        }
-        public void AddRecord(GenericEventRecord eventRecord)
-        {
-            Records.Add(eventRecord);
-            if (OnNewRecord != null)
-                OnNewRecord(eventRecord);
-        }
-
-        public Action<GenericEventRecord> OnNewRecord;
-        public List<GenericEventRecord> Records;
-    }
-
-    public class XXX
-    {
-        public static void X()
-        {
-            // Create a new session, turn on some events, and get the stream of events
-            var session = new TraceEventSession("MySession");
-            session.EnableProvider(TraceEventProviders.GetEventSourceGuidFromName("MyEventSource"));
-            var eventStream = session.Source;
-
-            // Create an in memory GENERIC list of parsed (basically string) records that can hold the results
-            GenericEventSource eventSource = new GenericEventSource();
-
-            // Hook up the ETW eventStream to the generic in memory event source. 
-            var dynamicParser = new DynamicTraceEventParser(eventStream);
-            Action<TraceEvent> sendToEventStore = delegate(TraceEvent data)
-            {
-                var processName = data.ProcessName;
-                if (!processName.StartsWith("("))
-                    processName += " (" + data.ProcessID + ")";
-
-                var fieldNames = data.PayloadNames;
-                var fields = new string[fieldNames.Length];
-                for (int i = 0; i < fields.Length; i++)
-                    fields[i] = data.PayloadString(i);
-
-                var genericRecord = new GenericEventRecord(data.EventName, data.ProcessName, data.TimeStampRelativeMSec, fieldNames, fields);
-                eventSource.Records.AddRecord(genericRecord);
-            };
-            dynamicParser.All += sendToEventStore;
-            var registeredParser = new RegisteredTraceEventParser(eventStream);
-            registeredParser.All += sendToEventStore;
-            eventStream.UnhandledEvents += sendToEventStore;
-
-            // Start processing ETW events and filling the in-memory list (which the GUI is observing).  
-            var thread = new Thread(delegate()
-            {
-                session.Source.Process();
-            });
-            thread.Start();
-
-            var window = new EventWindow(GuiApp.MainWindow, eventSource);
-            window.Show();
-        }
-    }
-#endif
 }

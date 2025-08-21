@@ -6186,7 +6186,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
         public bool HasCount { get { return Version >= 3; } }
-        public int NumGenerations { get { return HasCount ? Count : 4; } }
+        public int NumGenerations { get { return HasCount ? Count : 5; } }
         public int MemoryPressure
         {
             get

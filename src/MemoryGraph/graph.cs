@@ -235,7 +235,7 @@ namespace Graphs
             {
                 throw new ApplicationException("RootIndex not set.");
             }
-#if false
+#if DEBUG
             // Validate that any referenced node was actually defined and that all node indexes are within range;
             var nodeStorage = AllocNodeStorage();
             for (NodeIndex nodeIndex = 0; nodeIndex < NodeIndexLimit; nodeIndex++)
@@ -243,7 +243,7 @@ namespace Graphs
                 var node = GetNode(nodeIndex, nodeStorage);
                 Debug.Assert(node.Index != NodeIndex.Invalid);
                 Debug.Assert(node.TypeIndex < NodeTypeIndexLimit);
-                for (var childIndex = node.GetFirstChildIndex(); childIndex != null; childIndex = node.GetNextChildIndex())
+                for (var childIndex = node.GetFirstChildIndex(); childIndex != NodeIndex.Invalid; childIndex = node.GetNextChildIndex())
                     Debug.Assert(0 <= childIndex && childIndex < NodeIndexLimit);
                 if (!node.Defined)
                     Debug.WriteLine("Warning: undefined object " + nodeIndex);
@@ -465,8 +465,9 @@ namespace Graphs
             RootIndex = NodeIndex.Invalid;
             if (m_writer == null)
             {
-                m_writer = new SegmentedMemoryStreamWriter(m_expectedNodeCount * 8,
-                    m_isVeryLargeGraph ? new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes } : null);
+                SerializationSettings settings = SerializationSettings.Default
+                    .WithStreamLabelWidth(m_isVeryLargeGraph ? StreamLabelWidth.EightBytes : StreamLabelWidth.FourBytes);
+                m_writer = new SegmentedMemoryStreamWriter(m_expectedNodeCount * 8, settings);
             }
 
             m_totalSize = 0;
@@ -594,8 +595,9 @@ namespace Graphs
             // Read in the Blob stream.  
             // TODO be lazy about reading in the blobs.  
             int blobCount = deserializer.ReadInt();
-            SegmentedMemoryStreamWriter writer = new SegmentedMemoryStreamWriter(blobCount,
-                m_isVeryLargeGraph ? new SerializationConfiguration() { StreamLabelWidth = StreamLabelWidth.EightBytes } : null);
+            SerializationSettings settings = SerializationSettings.Default
+                .WithStreamLabelWidth(m_isVeryLargeGraph ? StreamLabelWidth.EightBytes : StreamLabelWidth.FourBytes);
+            SegmentedMemoryStreamWriter writer = new SegmentedMemoryStreamWriter(blobCount, settings);
 
             while (8 <= blobCount)
             {
@@ -1068,7 +1070,7 @@ namespace Graphs
         /// <summary>
         /// The size of the image when loaded in memory
         /// </summary>
-        public int Size;
+        public long Size;
         /// <summary>
         /// The time when this image was built (There is a field in the PE header).   May be MinimumValue if unknonwn. 
         /// </summary>
@@ -1211,30 +1213,6 @@ namespace Graphs
             NodeType typeStorage = graph.AllocTypeNodeStorage();
             Node node;
 
-#if false 
-            // Compute reachability info
-            bool[] reachable = new bool[(int)graph.NodeIndexLimit];
-            Queue<NodeIndex> workQueue = new Queue<NodeIndex>();
-            workQueue.Enqueue(graph.RootIndex);
-            while (workQueue.Count > 0)
-            {
-                var nodeIdx = workQueue.Dequeue();
-                if (!reachable[(int)nodeIdx])
-                {
-                    reachable[(int)nodeIdx] = true;
-                    node = graph.GetNode(nodeIdx, nodeStorage);
-                    for (var childIndex = node.GetFirstChildIndex(); childIndex != NodeIndex.Invalid; childIndex = node.GetNextChildIndex())
-                        workQueue.Enqueue(childIndex);
-                }
-            }
-
-            // Get Reachability count. 
-            int reachableCount = 0;
-            for (int i = 0; i < reachable.Length; i++)
-                if (reachable[i])
-                    reachableCount++;
-#endif
-
             // Sort the nodes by virtual address 
             NodeIndex[] sortedNodes = new NodeIndex[(int)graph.NodeIndexLimit];
             for (int i = 0; i < sortedNodes.Length; i++)
@@ -1370,11 +1348,6 @@ public class RefGraph
                 AddRefsTo(childIndex, nodeIndex);
             }
         }
-
-        // Sadly, this check is too expensive even for DEBUG 
-#if false 
-        CheckConsistancy(graph);
-#endif
     }
     /// <summary>
     /// Allocates nodes to be used as storage for methods like code:GetNode, code:RefNode.GetFirstChild and code:RefNode.GetNextChild
@@ -2664,234 +2637,3 @@ public class GraphSampler
     private MemoryGraph m_newGraph;
     #endregion
 }
-
-#if false
-namespace Experimental
-{
-    /// <summary>
-    /// code:PagedGrowableArray is an array (has an index operation) but can efficiently represent
-    /// either very large arrays as well as sparse arrays.  
-    /// </summary>
-    public struct PagedGrowableArray<T>
-    {
-        public PagedGrowableArray(int initialSize)
-        {
-            Debug.Assert(initialSize > 0);
-            var numPages = (initialSize + pageSize - 1) / pageSize;
-            m_count = 0;
-            m_pages = new T[numPages][];
-        }
-        public T this[int index]
-        {
-            get
-            {
-                Debug.Assert((uint)index < (uint)m_count);
-                return m_pages[index / pageSize][index % pageSize];
-            }
-            set
-            {
-                Debug.Assert((uint)index < (uint)m_count);
-                m_pages[index / pageSize][index % pageSize] = value;
-            }
-        }
-        public int Count
-        {
-            get { return m_count; }
-            set
-            {
-                Debug.Assert(false, "Not completed");
-                if (value > m_count)
-                {
-                    var onLastPage = m_count % pageSize;
-                    if (onLastPage != 0)
-                    {
-                        var lastPage = m_pages[m_count / pageSize];
-                        var nullOnLastPage = Math.Min(value - m_count, pageSize);
-                        while (nullOnLastPage > onLastPage)
-                        {
-                            --nullOnLastPage;
-                            lastPage[nullOnLastPage] = default(T);
-                        }
-                    }
-                }
-                else
-                {
-                    // Release unused pages
-                    while (m_count > value)
-                    {
-
-                    }
-                }
-                m_count = value;
-            }
-        }
-        /// <summary>
-        /// Append the value to the end of the array.  
-        /// </summary>
-        /// <param name="value"></param>
-        public void Add(T value)
-        {
-            if (m_count % pageSize == 0)
-            {
-                var pageIndex = m_count / pageSize;
-                if (pageIndex >= m_pages.Length)
-                {
-                    var newPageLength = m_pages.Length * 2;
-                    var newPages = new T[newPageLength][];
-                    Array.Copy(m_pages, newPages, m_pages.Length);
-                    m_pages = newPages;
-                }
-                if (m_pages[pageIndex] == null)
-                    m_pages[pageIndex] = new T[pageSize];
-            }
-
-            m_pages[m_count / pageSize][m_count % pageSize] = value;
-            m_count++;
-        }
-
-#region private
-        const int pageSize = 4096;
-
-        T[][] m_pages;
-        int m_count;
-#endregion
-    }
-
-    class CompressedGrowableArray : IFastSerializable
-    {
-        public CompressedGrowableArray()
-        {
-            m_pages = new Page[256];
-        }
-        public long this[int index]
-        {
-            get
-            {
-                return m_pages[index >> 8][(byte)index];
-            }
-        }
-        /// <summary>
-        /// Append the value to the end of the array.  
-        /// </summary>
-        /// <param name="value"></param>
-        public void Add(long value)
-        {
-            if (m_numPages >= m_pages.Length)
-            {
-                int newLength = m_pages.Length * 2;
-                var newArray = new Page[newLength];
-                Array.Copy(m_pages, newArray, m_pages.Length);
-                m_pages = newArray;
-
-            }
-            // m_pages[m_numPages-1].Add(value);
-        }
-
-#region private
-        void IFastSerializable.ToStream(Serializer serializer)
-        {
-            serializer.Write(m_numPages);
-            for (int i = 0; i < m_numPages; i++)
-                serializer.Write(m_pages[i]);
-        }
-        void IFastSerializable.FromStream(Deserializer deserializer)
-        {
-            deserializer.Read(out m_numPages);
-            for (int i = 0; i < m_numPages; i++)
-                deserializer.Read(out m_pages[i]);
-        }
-
-        /// <summary>
-        /// A page represents 256 entries in the table.   For each page we remember a 'm_baseValue' and 
-        /// we delta encode.  If the offset fit 15 bits you simply add the offset to the base value
-        /// Otherwise what is in the table is an offset into the 'm_compressedValues' blob and the offset
-        /// is encoded as a variable length signed number.  
-        /// </summary>
-        class Page : IFastSerializable
-        {
-            Page(long baseValue)
-            {
-                m_indexOrOffset = new short[256];
-                m_baseValue = baseValue;
-            }
-            public long this[byte index]
-            {
-                get
-                {
-                    short val = m_indexOrOffset[index];
-                    if ((val & 0x8000) != 0)
-                        return val + m_baseValue;
-                    return ValueFromIndex(val);
-                }
-            }
-
-#region private
-            private long ValueFromIndex(short val)
-            {
-                return m_baseValue + ReadCompressedInt(val & ~0x8000);
-            }
-            private long ReadCompressedInt(int blobIndex)
-            {
-                long ret = 0;
-                byte b = m_compressedValues[blobIndex++];
-                int asInt = b << 25 >> 25;
-                ret = asInt;
-#if DEBUG
-                for (int i = 0; ; i++)
-                {
-                    Debug.Assert(i < 5);
-#else
-                for (; ; )
-                {
-#endif
-                    if ((b & 0x80) == 0)
-                        return ret;
-                    ret <<= 7;
-                    b = m_compressedValues[blobIndex++];
-                    ret += (b & 0x7f);
-                }
-            }
-            private int WriteCompressedInt(long value)
-            {
-                throw new NotImplementedException();
-            }
-
-            void IFastSerializable.ToStream(Serializer serializer)
-            {
-                serializer.Write(m_baseValue);
-                for (int i = 0; i < 256; i++)
-                    serializer.Write(m_indexOrOffset[i]);
-                serializer.Write(m_compressedValuesIndex);
-                for (int i = 0; i < m_compressedValuesIndex; i++)
-                    serializer.Write(m_compressedValues[i]);
-            }
-            void IFastSerializable.FromStream(Deserializer deserializer)
-            {
-                deserializer.Read(out m_baseValue);
-                for (int i = 0; i < 256; i++)
-                    m_indexOrOffset[i] = deserializer.ReadInt16();
-
-                deserializer.Read(out m_compressedValuesIndex);
-                if (m_compressedValuesIndex != 0)
-                {
-                    m_compressedValues = new byte[m_compressedValuesIndex];
-                    for (int i = 0; i < m_compressedValuesIndex; i++)
-                        m_compressedValues[i] = deserializer.ReadByte();
-                }
-            }
-
-            long m_baseValue;                  // All values are relative to this.  
-            short[] m_indexOrOffset;           // table of value (either offsets or indexes into the compressed blobs)
-
-            byte[] m_compressedValues;          // If all the values are not within 32K of the base, then store them here.  
-            int m_compressedValuesIndex;        // Next place to write to in m_compressedValues
-#endregion
-        }
-
-        int m_numPages;
-        Page[] m_pages;
-#endregion
-    }
-}
-
-#endif

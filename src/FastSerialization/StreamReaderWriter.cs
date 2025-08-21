@@ -22,18 +22,19 @@ namespace FastSerialization
         /// <summary>
         /// Create a IStreamReader (reads binary data) from a given byte buffer
         /// </summary>
-        public MemoryStreamReader(byte[] data) : this(data, 0, data.Length) { }
+        public MemoryStreamReader(byte[] data, SerializationSettings settings) : this(data, 0, data.Length, settings) { }
         /// <summary>
         /// Create a IStreamReader (reads binary data) from a given subregion of a byte buffer.
         /// </summary>
-        public MemoryStreamReader(byte[] data, int start, int length, SerializationConfiguration config = null)
+        public MemoryStreamReader(byte[] data, int start, int length, SerializationSettings settings)
         {
             bytes = data;
             position = start;
             endPosition = length;
-            SerializationConfiguration = config != null ? config : new SerializationConfiguration();
 
-            if(SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+
+            if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
             {
                 readLabel = () =>
                 {
@@ -56,9 +57,14 @@ namespace FastSerialization
         /// </summary>
         public virtual long Length { get { return endPosition; } }
         public virtual bool HasLength { get { return true; } }
-        public SerializationConfiguration SerializationConfiguration { get; private set; }
 
         #region implemenation of IStreamReader
+
+        /// <summary>
+        /// The settings associated with this reader.
+        /// </summary>
+        public SerializationSettings Settings { get; private set; }
+
         public virtual void Read(byte[] data, int offset, int length)
         {
             if (length > endPosition - position)
@@ -244,12 +250,11 @@ namespace FastSerialization
         /// 
         /// Call 'GetBytes' call to get the raw array.  Only the first 'Length' bytes are valid
         /// </summary>
-        public MemoryStreamWriter(int initialSize = 64, SerializationConfiguration config = null)
+        public MemoryStreamWriter(SerializationSettings settings, int initialSize = 64)
         {
-            bytes = new byte[initialSize];
-            SerializationConfiguration = config != null ? config : new SerializationConfiguration();
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
-            if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
             {
                 writeLabel = (value) =>
                 {
@@ -265,9 +270,14 @@ namespace FastSerialization
                     Write((long)value);
                 };
             }
+
+            bytes = new byte[initialSize];
         }
 
-        public SerializationConfiguration SerializationConfiguration { get; set; }
+        /// <summary>
+        /// The settings associated with this writer.
+        /// </summary>
+        public SerializationSettings Settings { get; private set; }
 
         /// <summary>
         /// Returns a IStreamReader that will read the written bytes. You cannot write additional bytes to the stream after making this call.
@@ -281,7 +291,7 @@ namespace FastSerialization
                 readerBytes = new byte[endPosition];
                 Array.Copy(bytes, readerBytes, endPosition);
             }
-            return new MemoryStreamReader(readerBytes, 0, endPosition);
+            return new MemoryStreamReader(readerBytes, 0, endPosition, Settings);
         }
 
         /// <summary>
@@ -647,17 +657,17 @@ namespace FastSerialization
         /// Create a new IOStreamStreamReader from the given file.  
         /// </summary>
         /// <param name="fileName"></param>
-        public IOStreamStreamReader(string fileName, SerializationConfiguration config = null)
-            : this(new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete), config: config) { }
+        public IOStreamStreamReader(string fileName, SerializationSettings settings)
+            : this(new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete), settings: settings) { }
 
         /// <summary>
         /// Create a new IOStreamStreamReader from the given System.IO.Stream.   Optionally you can specify the size of the read buffer
         /// The stream will be closed by the IOStreamStreamReader when it is closed.  
         /// </summary>
-        public IOStreamStreamReader(Stream inputStream, int bufferSize = defaultBufferSize, bool leaveOpen = false, SerializationConfiguration config = null, StreamReaderAlignment alignment = StreamReaderAlignment.EightBytes)
-            : base(new byte[bufferSize + (int)alignment], 0, 0, config)
+        public IOStreamStreamReader(Stream inputStream, SerializationSettings settings, int bufferSize = defaultBufferSize, bool leaveOpen = false)
+            : base(new byte[bufferSize + (int)settings.StreamReaderAlignment], 0, 0, settings)
         {
-            align = (int)alignment;
+            align = (int)settings.StreamReaderAlignment;
             Debug.Assert(bufferSize % align == 0);
             this.inputStream = inputStream;
             this.leaveOpen = leaveOpen;
@@ -907,17 +917,17 @@ namespace FastSerialization
         /// <summary>
         /// Create a new PinnedStreamReader that gets its data from a given file.  You can optionally set the size of the read buffer.  
         /// </summary>
-        public PinnedStreamReader(string fileName, int bufferSize = defaultBufferSize, SerializationConfiguration config = null)
+        public PinnedStreamReader(string fileName, SerializationSettings settings, int bufferSize = defaultBufferSize)
             : this(new FileStream(fileName, FileMode.Open, FileAccess.Read,
-            FileShare.Read | FileShare.Delete), bufferSize, config)
+            FileShare.Read | FileShare.Delete), settings, bufferSize)
         { }
 
         /// <summary>
         /// Create a new PinnedStreamReader that gets its data from a given System.IO.Stream.  You can optionally set the size of the read buffer.  
         /// The stream will be closed by the PinnedStreamReader when it is closed.  
         /// </summary>
-        public PinnedStreamReader(Stream inputStream, int bufferSize = defaultBufferSize, SerializationConfiguration config = null, StreamReaderAlignment alignment = StreamReaderAlignment.EightBytes)
-            : base(inputStream, bufferSize, config: config, alignment: alignment)
+        public PinnedStreamReader(Stream inputStream, SerializationSettings settings, int bufferSize = defaultBufferSize)
+            : base(inputStream, settings, bufferSize)
         {
             // Pin the array
             pinningHandle = System.Runtime.InteropServices.GCHandle.Alloc(bytes, System.Runtime.InteropServices.GCHandleType.Pinned);
@@ -934,7 +944,7 @@ namespace FastSerialization
         /// <returns></returns>
         public PinnedStreamReader Clone()
         {
-            PinnedStreamReader ret = new PinnedStreamReader(inputStream, bytes.Length - align);
+            PinnedStreamReader ret = new PinnedStreamReader(inputStream, Settings, bytes.Length - align);
             return ret;
         }
 
@@ -1004,13 +1014,13 @@ namespace FastSerialization
         /// Create a IOStreamStreamWriter that writes its data to a given file that it creates
         /// </summary>
         /// <param name="fileName"></param>
-        public IOStreamStreamWriter(string fileName, SerializationConfiguration config = null, FileShare share = FileShare.Read) : this(new FileStream(fileName, FileMode.Create, FileAccess.ReadWrite, share), config: config) { }
+        public IOStreamStreamWriter(string fileName, SerializationSettings settings, FileShare share = FileShare.Read) : this(new FileStream(fileName, FileMode.Create, FileAccess.ReadWrite, share), settings: settings) { }
 
         /// <summary>
         /// Create a IOStreamStreamWriter that writes its data to a System.IO.Stream
         /// </summary>
-        public IOStreamStreamWriter(Stream outputStream, int bufferSize = defaultBufferSize + sizeof(long), bool leaveOpen = false, SerializationConfiguration config = null)
-            : base(bufferSize, config)
+        public IOStreamStreamWriter(Stream outputStream, SerializationSettings settings, int bufferSize = defaultBufferSize + sizeof(long), bool leaveOpen = false)
+            : base(settings, bufferSize)
         {
             this.outputStream = outputStream;
             this.leaveOpen = leaveOpen;
@@ -1059,7 +1069,7 @@ namespace FastSerialization
         public override StreamLabel GetLabel()
         {
             long len = Length;
-            if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes && len != (uint)len)
+            if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes && len != (uint)len)
             {
                 throw new NotSupportedException("Streams larger than 4 GB.  You need to use /MaxEventCount to limit the size.");
             }

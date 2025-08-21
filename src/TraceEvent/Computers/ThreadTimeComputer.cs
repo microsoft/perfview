@@ -278,15 +278,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                     TransferAspNetRequestToThread(data.ContextId, ThreadIndex.Invalid);
                 };
-#if false
-                    aspNet.AspNetReqEndHandler += delegate(AspNetEndHandlerTraceData data)
-                    {
-                        var thread = data.Thread();
-                        if (thread == null)
-                            return;
-                        m_threadState[(int)thread.ThreadIndex].LogThreadRunninAspNetRequest(Guid.Empty);
-                    };
-#endif
+
                 aspNet.AspNetReqStartHandler += delegate (AspNetStartHandlerTraceData data)
                 {
                     var thread = data.Thread();

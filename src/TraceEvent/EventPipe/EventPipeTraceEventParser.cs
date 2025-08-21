@@ -1,7 +1,4 @@
-using FastSerialization;
 using Microsoft.Diagnostics.Tracing.Parsers;
-using System;
-using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.Tracing.EventPipe
 {

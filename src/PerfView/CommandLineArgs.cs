@@ -1,6 +1,7 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -65,6 +66,7 @@ namespace PerfView
         // options common to multiple commands
         public string DataFile;             // This is the name of the ETL file (not the ZIP file)
         public string LogFile;
+        public SymbolsAuthenticationType SymbolsAuth = SymbolsAuthenticationType.Interactive;          // Specifies authentication types for symbol servers
 
         // Memory options
         public string ProcessDumpFile;      // if taking a snapshot from a dump, this is the dump file (dataFile is the output file)
@@ -132,6 +134,7 @@ namespace PerfView
         public bool JITInlining;            // Turn on logging of successful and failed JIT inlining
         public int OSHeapProcess;           // Turn on OS Heap tracing for the process with the given process ID.
         public string OSHeapExe;            // Turn on OS heap tracing for any process with the given EXE
+        public int OSHeapMaxMB;             // Maximum size of the heap ETL file.
 
         public bool NetworkCapture;         // Capture the full packets of every incoming and outgoing  packet
         public bool NetMonCapture;          // Capture a NetMon-only trace as well as a standard ETW trace (implies NetworkCapture)  
@@ -276,6 +279,7 @@ namespace PerfView
             parser.NoDashOnParameterSets = true;
 
             parser.DefineOptionalQualifier("LogFile", ref LogFile, "Send messages to this file instead launching the GUI.  Intended for batch scripts and other automation.");
+            parser.DefineOptionalQualifier("SymbolsAuth", ref SymbolsAuth, "Specifies authentication types for symbol servers. Values: Environment, AzureCli, VisualStudio, Interactive. Can be combined with +. Default is Interactive only.");
 
             // These apply to start, collect and run
             parser.DefineOptionalQualifier("BufferSize", ref BufferSizeMB, "The size the buffers (in MB) the OS should use to store events waiting to be written to disk."); // TODO remove eventually. 
@@ -546,6 +550,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("UserCritContention", ref UserCritContention, "Turn on UserCrit contention events.");
             parser.DefineOptionalQualifier("OSHeapProcess", ref OSHeapProcess, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given process ID.");
             parser.DefineOptionalQualifier("OSHeapExe", ref OSHeapExe, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given EXE (only filename WITH extension).");
+            parser.DefineOptionalQualifier("OSHeapMaxMB", ref OSHeapMaxMB, "Approximate maximum size of OS heap ETL file.");
 
             parser.DefineOptionalQualifier("NetworkCapture", ref NetworkCapture, "Captures the full data of every network packet entering or leaving the OS.");
             parser.DefineOptionalQualifier("NetMonCapture", ref NetMonCapture, "Create _netmon.etl file that NetMon.exe can read, along with the standard ETL file.   Implies /NetworkCapture.");

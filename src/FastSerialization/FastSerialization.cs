@@ -98,14 +98,41 @@ namespace FastSerialization
     };
 
     /// <summary>
-    /// These settings apply to use of Serializer and Deserializer specifically.
+    /// Settings used by <code>Serializer</code> and <code>Deserializer</code>.
     /// </summary>
 #if FASTSERIALIZATION_PUBLIC
     public
 #endif
-    sealed class SerializationConfiguration
+    sealed class SerializationSettings
     {
-        public StreamLabelWidth StreamLabelWidth { get; set; } = StreamLabelWidth.EightBytes;
+        internal StreamLabelWidth StreamLabelWidth { get; }
+
+        internal StreamReaderAlignment StreamReaderAlignment { get; }
+
+        public static SerializationSettings Default { get; } = new SerializationSettings(
+            StreamLabelWidth.EightBytes,
+            StreamReaderAlignment.EightBytes);
+
+        public SerializationSettings WithStreamLabelWidth(StreamLabelWidth width)
+        {
+            return new SerializationSettings(
+                width,
+                StreamReaderAlignment);
+        }
+
+        public SerializationSettings WithStreamReaderAlignment(StreamReaderAlignment alignment)
+        {
+            return new SerializationSettings(
+                StreamLabelWidth,
+                alignment);
+        }
+
+        private SerializationSettings(
+            StreamLabelWidth streamLabelWidth, StreamReaderAlignment streamReaderAlignment)
+        {
+            StreamLabelWidth = streamLabelWidth;
+            StreamReaderAlignment = streamReaderAlignment;
+        }
     }
 
     /// <summary>
@@ -184,6 +211,11 @@ namespace FastSerialization
         /// IStreamReader.GotoSuffixLabel for more)
         /// </summary>
         void WriteSuffixLabel(StreamLabel value);
+
+        /// <summary>
+        /// The settings associated with this writer.
+        /// </summary>
+        SerializationSettings Settings { get; }
     }
 
 
@@ -253,6 +285,11 @@ namespace FastSerialization
         /// and then seeking to that position.  
         /// </summary>
         void GotoSuffixLabel();
+
+        /// <summary>
+        /// The settings associated with this reader.
+        /// </summary>
+        SerializationSettings Settings { get; }
     }
 
 #if !DOTNET_V35
@@ -516,7 +553,7 @@ namespace FastSerialization
         /// <param name="filePath">The destination file.</param>
         /// <param name="entryObject">The object to serialize.</param>
         /// <param name="share">Optional sharing mode for the destination file. Defaults to <see cref="FileShare.Read"/>.</param>
-        public Serializer(string filePath, IFastSerializable entryObject, FileShare share = FileShare.Read) : this(new IOStreamStreamWriter(filePath, share: share), entryObject) { }
+        public Serializer(string filePath, IFastSerializable entryObject, FileShare share = FileShare.Read) : this(new IOStreamStreamWriter(filePath, settings: SerializationSettings.Default, share: share), entryObject) { }
 
         /// <summary>
         /// Create a serializer that writes <paramref name="entryObject"/> to a <see cref="Stream"/>. The serializer
@@ -533,7 +570,7 @@ namespace FastSerialization
         /// closes.
         /// </summary>
         public Serializer(Stream outputStream, IFastSerializable entryObject, bool leaveOpen)
-            : this(new IOStreamStreamWriter(outputStream, leaveOpen: leaveOpen), entryObject)
+            : this(new IOStreamStreamWriter(outputStream, SerializationSettings.Default, leaveOpen: leaveOpen), entryObject)
         {
         }
 
@@ -1035,18 +1072,18 @@ namespace FastSerialization
         /// <summary>
         /// Create a Deserializer that reads its data from a given file
         /// </summary>
-        public Deserializer(string filePath, SerializationConfiguration config = null)
+        public Deserializer(string filePath, SerializationSettings settings)
         {
-            IOStreamStreamReader reader = new IOStreamStreamReader(filePath, config);
+            IOStreamStreamReader reader = new IOStreamStreamReader(filePath, settings);
             Initialize(reader, filePath);
         }
 
         /// <summary>
         /// Create a Deserializer that reads its data from a given System.IO.Stream.   The stream will be closed when the Deserializer is done with it.  
         /// </summary>
-        public Deserializer(Stream inputStream, string streamName, SerializationConfiguration config = null)
+        public Deserializer(Stream inputStream, string streamName, SerializationSettings settings)
         {
-            IOStreamStreamReader reader = new IOStreamStreamReader(inputStream, config: config);
+            IOStreamStreamReader reader = new IOStreamStreamReader(inputStream, settings: settings);
             Initialize(reader, streamName);
         }
 
@@ -1055,9 +1092,9 @@ namespace FastSerialization
         /// <paramref name="leaveOpen"/> parameter determines whether the deserializer will close the stream when it
         /// closes.
         /// </summary>
-        public Deserializer(Stream inputStream, string streamName, bool leaveOpen, SerializationConfiguration config = null)
+        public Deserializer(Stream inputStream, string streamName, bool leaveOpen, SerializationSettings settings)
         {
-            IOStreamStreamReader reader = new IOStreamStreamReader(inputStream, leaveOpen: leaveOpen, config: config);
+            IOStreamStreamReader reader = new IOStreamStreamReader(inputStream, leaveOpen: leaveOpen, settings: settings);
             Initialize(reader, streamName);
         }
 
@@ -1100,21 +1137,6 @@ namespace FastSerialization
             ThrowException:
             throw new SerializationException("Not a understood file format: " + streamName);
         }
-
-#if false 
-        /// <summary>
-        /// On by default.  If off, then you read the whole file from beginning to the end and never have to
-        /// seek.  This should only be used when you have this requirement (you are reading from an unseekable
-        /// stream 
-        /// 
-        /// TODO remove? we have not tested this with AllowLazyDeserialzation==false. 
-        /// </summary>
-        public bool AllowLazyDeserialization
-        {
-            get { return allowLazyDeserialization; }
-            set { allowLazyDeserialization = value; }
-        }
-#endif 
 
         /// <summary>
         /// Returns the full name of the type of the entry object without actually creating it.
@@ -1625,38 +1647,61 @@ namespace FastSerialization
         public String Name { get; private set; }
 
         /// <summary>
-        /// If set this function is set, then it is called whenever a type name from the serialization
-        /// data is encountered.  It is your you then need to look that up.  If it is not present 
-        /// it uses Type.GetType(string) which only checks the current assembly and mscorlib. 
+        /// Called when <code>Deserializer</code> encounters a type that is not registered, allowing the implementation
+        /// to return a factory delegate to be cached and used for subsequent encounters.
         /// </summary>
-        public Func<string, Type> TypeResolver { get; set; }
+        public Func<string, Func<IFastSerializable>> OnUnregisteredType { get; set; }
 
         /// <summary>
-        /// For every IFastSerializable object being deserialized, the Deserializer needs to create 'empty' objects 
-        /// that 'FromStream' is invoked on.  The Deserializer gets these 'empty' objects by calling a 'factory'
-        /// delegate for that type.   Thus all types being deserialized must have a factory.   
+        /// Registers a creation factory for a type.
         /// 
-        /// RegisterFactory registers such a factory for particular 'type'.  
+        /// When the <code>Deserializer</code>encounters a serialized type, it will look for a registered factory or type registration
+        /// so that it knows how to construct an empty instance of the type that can be filled.  All non-primitive types
+        /// must either be registered by calling RegisterFactory or RegisterType.
         /// </summary>
         public void RegisterFactory(Type type, Func<IFastSerializable> factory)
         {
             factories[type.FullName] = factory;
         }
+
+        /// <summary>
+        /// Registers a creation factory for a type name.
+        /// 
+        /// When the <code>Deserializer</code>encounters a serialized type, it will look for a registered factory or type registration
+        /// so that it knows how to construct an empty instance of the type that can be filled.  All non-primitive types
+        /// must either be registered by calling RegisterFactory or RegisterType.
+        /// </summary>
         public void RegisterFactory(string typeName, Func<IFastSerializable> factory)
         {
             factories[typeName] = factory;
         }
 
         /// <summary>
-        /// For every IFastSerializable object being deserialized, the Deserializer needs to create 'empty' objects 
-        /// that 'FromStream' is invoked on.  The Deserializer gets these 'empty' objects by calling a 'factory'
-        /// delegate for that type.   Thus all types being deserialized must have a factory.   
+        /// Registers a type that can be created by instantiating the parameterless constructor.
         /// 
-        /// RegisterDefaultFactory registers a factory that is passed a type parameter and returns a new IFastSerialable object. 
+        /// When the <code>Deserializer</code>encounters a serialized type, it will look for a registered factory or type registration
+        /// so that it knows how to construct an empty instance of the type that can be filled.  All non-primitive types
+        /// must either be registered by calling RegisterFactory or RegisterType.
         /// </summary>
-        public void RegisterDefaultFactory(Func<Type, IFastSerializable> defaultFactory)
+        public void RegisterType(Type type)
         {
-            this.defaultFactory = defaultFactory;
+            RegisterFactory(type, () =>
+            {
+                return CreateDefault(type);
+            });
+        }
+
+        private static IFastSerializable CreateDefault(Type type)
+        {
+            try
+            {
+                return (IFastSerializable)Activator.CreateInstance(type);
+            }
+            catch (MissingMethodException)
+            {
+                throw new SerializationException(
+                    $"Unable to create an object of type {type.FullName}. It must either have a parameterless constructor or have been registered with the deserializer via RegisterFactory.");
+            }
         }
 
         // For FromStream method bodies, reading tagged values (for post V1 field additions)
@@ -1979,49 +2024,31 @@ namespace FastSerialization
 
         internal Func<IFastSerializable> GetFactory(string fullName)
         {
-            Func<IFastSerializable> ret;
-            if (factories.TryGetValue(fullName, out ret))
+            // Check for a registered factory.
+            Func<IFastSerializable> factory = null;
+            if (factories.TryGetValue(fullName, out factory))
             {
-                return ret;
+                return factory;
             }
 
-            Type type;
-            if (TypeResolver != null)
+            // If there is not a registered factory, give the implementation of IFastSerializable an opportunity to create a factory.
+            if (OnUnregisteredType != null)
             {
-                type = TypeResolver(fullName);
-            }
-            else
-            {
-                type = Type.GetType(fullName);
-            }
-
-            if (type == null)
-            {
-                throw new TypeLoadException("Could not find type " + fullName);
+                factory = OnUnregisteredType(fullName);
+                if (factory != null)
+                {
+                    // Save the factory for future encounters of this type name.
+                    RegisterFactory(fullName, factory);
+                }
             }
 
-            return delegate
+            if (factory == null)
             {
-                // If we have a default factory, use it.  
-                if (defaultFactory != null)
-                {
-                    IFastSerializable instance = defaultFactory(type);
-                    if (instance != null)
-                    {
-                        return instance;
-                    }
-                }
-                // Factory of last resort.  
-                try
-                {
-                    return (IFastSerializable)Activator.CreateInstance(type);
-                }
-                catch (MissingMethodException)
-                {
-                    throw new SerializationException("Failure deserializing " + type.FullName +
-                        ".\r\nIt must either have a parameterless constructor or been registered with the serializer.");
-                }
-            };
+                throw new TypeLoadException(
+                    $"Could not create an instance of type {fullName}.  The type must be registered with the deserializer via a call to RegisterFactory or RegisterType.");
+            }
+
+            return factory;
         }
 
         private void FindEndTag(SerializationType type, IFastSerializable objectBeingDeserialized)
@@ -2159,7 +2186,6 @@ namespace FastSerialization
         /// </summary>
         internal bool deferForwardReferences;
         private Dictionary<string, Func<IFastSerializable>> factories;
-        private Func<Type, IFastSerializable> defaultFactory;
         #endregion
     };
 
@@ -2557,111 +2583,4 @@ namespace FastSerialization
         Limit,              // Just past the last valid tag, used for asserts.  
     }
     #endregion
-
-#if false
-    public class SerializationTests
-    {
-        public class MyClass1 : IFastSerializable, IFastSerializableVersion
-        {
-            DeferedRegion lazy;
-            private int value;
-            private string str;
-            private MyClass1 left;
-            private MyClass1 right;
-            private MyClass1 other;
-
-            public int Value { get { lazy.FinishRead(); return value; } }
-            public string Str { get { lazy.FinishRead(); return str; } }
-            public MyClass1 Left { get { lazy.FinishRead(); return left; } }
-            public MyClass1 Right { get { lazy.FinishRead(); return right; } }
-            internal MyClass1 Other
-            {
-                get { lazy.FinishRead(); return other; }
-                set { lazy.FinishRead(); other = Other; }
-            }
-
-            public MyClass1() { }       // Needed for the IFastSerializable contract.  
-            public MyClass1(int value, string str, MyClass1 left, MyClass1 right, MyClass1 other)
-            {
-                this.value = value;
-                this.str = str;
-                this.left = left;
-                this.right = right;
-                this.other = other;
-            }
-            public override string ToString()
-            {
-                lazy.FinishRead();
-                return value.ToString() + " : " + str;
-            }
-
-            int IFastSerializableVersion.Version
-            {
-                get { return 1; }
-            }
-            int IFastSerializableVersion.MinimumVersion
-            {
-                get { return 0; }
-            }
-            void IFastSerializable.ToStream(Serializer serializer)
-            {
-                serializer.Write(str);
-                serializer.Write(value);
-                lazy.Write(serializer, delegate
-                {
-                    serializer.Write(left);
-                    serializer.Write(right);
-                    serializer.Write(other);
-                });
-
-                // Add a few more fields, simulating V2
-                serializer.WriteTagged(7);
-                serializer.WriteTagged("Testing");
-                serializer.WriteDefered(this);
-                serializer.WriteDefered(left);
-            }
-            void IFastSerializable.FromStream(Deserializer deserializer)
-            {
-                deserializer.Read(out str);
-                deserializer.Read(out value);
-                lazy.Read(deserializer, delegate
-                {
-                    deserializer.Read(out left);
-                    deserializer.Read(out right);
-                    deserializer.Read(out other);
-                });
-            }
-        }
-
-        public static void Tests(string fileName)
-        {
-            Console.WriteLine("Writing serialized data to " + fileName);
-            MyClass1 obj = MakeTree();
-            Serializer serializer = new Serializer(fileName, obj);
-            serializer.Close();
-
-            Deserializer deserializer = new Deserializer(fileName);
-            //deserializer.AllowLazyDeserialization = false;
-            MyClass1 objRoundTrip;
-   Assert(obj1.Str == obj2.Str);
-            Comparer(obj1.Left, obj2.Left, depth - 1);
-            Comparer(obj1.Right, obj2.Right, depth - 1);
-            Comparer(obj1.Other, obj2.Other, depth - 1);
-        }
-
-        private static MyClass1 MakeTree()
-        {
-            MyClass1 bottomleft = new MyClass1(1, "Bottom left", null, null, null);
-            MyClass1 bottomMiddle = new MyClass1(2, "Bottom Middle", null, null, bottomleft);
-            MyClass1 bottomright = new MyClass1(3, "Bottom Right", null, null, bottomleft);
-
-            MyClass1 Mid1 = new MyClass1(4, "Mid1", bottomleft, bottomMiddle, null);
-            MyClass1 Mid2 = new MyClass1(5, "Mid2", Mid1, bottomright, null);
-
-            MyClass1 ret = new MyClass1(6, "Ret", Mid1, bottomright, null);
-            bottomleft.Other = ret;
-            return ret;
-        }
-    }
-#endif
 }

@@ -18,7 +18,7 @@
 
   <PropertyGroup>
     <!-- NuGet won't know to restore the x64 build unless we add it explicitly -->
-    <RuntimeIdentifiers>win7-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x64;win7-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
@@ -31,11 +31,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
+    <PackageReference Include="PerfView.SupportFiles" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'">
-    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" />
   </ItemGroup>
   <ItemGroup Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' == 'local'">
     <Reference Include="Microsoft.Diagnostics.Runtime">
@@ -43,11 +43,16 @@
     </Reference>
   </ItemGroup>
 
+  <!-- Override the version of System.Text.Json that is transitively included to address security issues. -->
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
     <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
     <!-- *** SourceLink Support *** -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All"/>
   </ItemGroup>
 
   <ItemGroup>
@@ -63,7 +68,10 @@
     <Compile Include="..\Utilities\StringUtilities.cs">
       <Link>Utilities\StringUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
+    <Compile Include="..\Utilities\SymbolsAuthenticationUtilities.cs">
+      <Link>Utilities\SymbolsAuthenticationUtilities.cs</Link>
+    </Compile>
+      <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
     <Compile Include="..\HeapDumpCommon\GCHeapDumpNames.cs" />
     <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
     <Compile Include="..\PerfView\memory\JavaScriptDumpGraph.cs" />
@@ -87,7 +95,7 @@
     <FilesToSign Include="$(TargetPath)">
         <Authenticode>Microsoft400</Authenticode>
     </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
+    <PackageReference Include="MicroBuild.Core" />
   </ItemGroup>
 
 </Project>

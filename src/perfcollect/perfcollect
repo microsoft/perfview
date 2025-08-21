@@ -931,7 +931,6 @@ DiscoverCommands()
     lttngcmd=`GetCommandFullPath "lttng"`
     zipcmd=`GetCommandFullPath "zip"`
     unzipcmd=`GetCommandFullPath "unzip"`
-    objdumpcmd=`GetCommandFullPath "objdump"`
 }
 
 GetCommandFullPath()
@@ -949,7 +948,7 @@ IsMariner()
     if [ -f /etc/lsb-release ]
     then
         local flavor=`cat /etc/lsb-release | grep DISTRIB_ID`
-        if [ "$flavor" == "DISTRIB_ID=\"Mariner\"" ]
+        if [ "$flavor" == "DISTRIB_ID=\"Mariner\"" ] || [ "$flavor" == "DISTRIB_ID=\"azurelinux\"" ]
         then
             mariner=1
         fi
@@ -1694,7 +1693,6 @@ ProcessCollectedData()
     then
         # Get any perf-$pid.map files that were used by the
         # trace and store them alongside the trace.
-        local writeCrossgenWarning=1
         LogAppend "Saving perf.map files."
         RunSilent "$perfcmd buildid-list --with-hits"
         local mapFiles=`$perfcmd buildid-list --with-hits | grep /tmp/perf- | cut -d ' ' -f 2`
@@ -1708,19 +1706,6 @@ ProcessCollectedData()
                 # in this script when running perf script.
                 RunSilent "chown root $mapFile"
                 RunSilent "cp $mapFile ."
-
-                local perfinfoFile=${mapFile/perf/perfinfo}
-
-                LogAppend "Attempting to find ${perfinfoFile}"
-
-                if [ -f $perfinfoFile ]
-                then
-                    LogAppend "Saving $perfinfoFile"
-                    RunSilent "chown root $perfinfoFile"
-                    RunSilent "cp $perfinfoFile ."
-                else
-                    LogAppend "Skipping ${perfinfoFile}."
-                fi
             else
                 LogAppend "Skipping $mapFile.  Some managed symbols may not be resolvable, but trace is still valid."
             fi
@@ -1735,134 +1720,8 @@ ProcessCollectedData()
             then
                 LogAppend "Saving $jitDumpFile"
                 RunSilent "cp $jitDumpFile ."
-                writeCrossgenWarning=0
             fi
         done
-
-        WriteStatus "Generating native image symbol files"
-
-        # Get the list of loaded images and use the path to libcoreclr.so to find crossgen.
-        # crossgen is expected to sit next to libcoreclr.so.
-        local buildidList=`$perfcmd buildid-list | grep libcoreclr.so | cut -d ' ' -f 2`
-        local crossgenCmd=''
-        local crossgenDir=''
-        for file in $buildidList
-        do
-            crossgenDir=`dirname "${file}"`
-            if [ -f ${crossgenDir}/crossgen ]
-            then
-                crossgenCmd=${crossgenDir}/crossgen
-                LogAppend "Found crossgen at ${crossgenCmd}"
-                break
-            fi
-        done
-
-        OLDIFS=$IFS
-
-        imagePaths=""
-
-        if [ "$crossgenCmd" != "" ]
-        then
-                local perfinfos=`ls . | grep perfinfo | cut -d ' ' -f 2`
-                for perfinfo in $perfinfos
-                do
-                    if [ -f $perfinfo ]
-                    then
-                        IFS=";"
-                        while read command dll guid; do
-                            if [ $command ]; then
-                                if [ $command = "ImageLoad" ]; then
-                                    if [ -f $dll ]; then
-                                        imagePaths="${dll}:${imagePaths}"
-                                    fi
-                                fi
-                            fi
-                        done < $perfinfo
-                        IFS=$OLDIFS
-                    fi
-                done
-
-                IFS=":"
-                LogAppend "Generating PerfMaps for native images"
-                for path in $imagePaths
-                do
-                    if [ `echo ${path} | grep ^.*\.dll$` ]
-                    then
-                        IFS=""
-                        LogAppend "Generating PerfMap for ${path}"
-                        LogAppend "Running ${crossgenCmd} /r $imagePaths /CreatePerfMap . ${path}"
-                        ${crossgenCmd} /r $imagePaths /CreatePerfMap . ${path} >> $logFile 2>&1
-                        IFS=":"
-                    else
-                        LogAppend "Skipping ${path}"
-                    fi
-                done
-        else
-        if [ "$buildidList" != "" ] && [ $writeCrossgenWarning -eq 1 ]
-        then
-            LogAppend "crossgen not found, skipping native image map generation."
-            WriteStatus "...SKIPPED"
-            WriteWarning "Crossgen not found.  Framework symbols will be unavailable."
-            WriteWarning "See https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/linux-performance-tracing.md#resolving-framework-symbols for details."
-        fi
-        fi
-
-        IFS=$OLDIFS
-
-        WriteStatus "...FINISHED"
-
-        if [ "$objdumpcmd" != "" ]
-        then
-            # Create debuginfo files (separate symbols) for all modules in the trace.
-            WriteStatus "Saving native symbols"
-
-            # Get the list of DSOs with hits in the trace file (those that are actually used).
-            # Filter out /tmp/perf-$pid.map files and files that end in .dll.
-            local dsosWithHits=`$perfcmd buildid-list --with-hits | grep -v /tmp/perf- | grep -v .dll$`
-            for dso in $dsosWithHits
-            do
-                # Build up tuples of buildid and binary path.
-                local processEntry=0
-                if [ -f $dso ]
-                then
-                    local pathToBinary=$dso
-                    processEntry=1
-                else
-                    local buildid=$dso
-                    pathToBinary=''
-                fi
-
-                # Once we have a tuple for a binary path that exists, process it.
-                if [ "$processEntry" == "1" ]
-                then
-                    # Get the binary name without path.
-                    local binaryName=`basename $pathToBinary`
-
-                    # Build the debuginfo file name.
-                    local destFileName=$binaryName.debuginfo
-
-                    # Build the destination directory for the debuginfo file.
-                    local currentDir=`pwd`
-                    local destDir=$currentDir/debuginfo/$buildid
-
-                    # Build the full path to the debuginfo file.
-                    local destPath=$destDir/$destFileName
-
-                    # Check to see if the DSO contains symbols, and if so, build the debuginfo file.
-                    local noSymbols=`$objdumpcmd -t $pathToBinary | grep "no symbols" -c`
-                    if [ "$noSymbols" == "0" ]
-                    then
-                        LogAppend "Generating debuginfo for $binaryName with buildid=$buildid"
-                        RunSilent "mkdir -p $destDir"
-                        RunSilent "objcopy --only-keep-debug $pathToBinary $destPath"
-                    else
-                        LogAppend "Skipping $binaryName with buildid=$buildid.  No symbol information."
-                    fi
-                fi
-            done
-
-            WriteStatus "...FINISHED"
-        fi
 
         WriteStatus "Resolving JIT and R2R symbols"
 
@@ -2025,7 +1884,13 @@ BuildPerfRecordArgs()
     # Filter to a single process if desired
     if [ "$collectionPid" != "" ]
     then
-        collectionArgs="$collectionArgs --pid=$collectionPid"
+        if ps -p "$collectionPid" > /dev/null;
+        then
+            collectionArgs="$collectionArgs --pid=$collectionPid"
+        else
+            WriteWarning "Process with PID '$collectionPid' does not exist.  Please specify a valid PID."
+            exit 1
+        fi
     else
         collectionArgs="$collectionArgs -a"
     fi

@@ -29,7 +29,6 @@
         <CommandBinding Command="{x:Static src:MainWindow.MergeCommand}" Executed="DoMerge"/>
         <CommandBinding Command="{x:Static src:MainWindow.ZipCommand}" Executed="DoZip"/>
         <CommandBinding Command="{x:Static src:MainWindow.UnZipCommand}" Executed="DoUnZip"/>
-        <CommandBinding Command="{x:Static src:MainWindow.HideCommand}" Executed="DoHide" CanExecute="CanHide" />
         <CommandBinding Command="{x:Static src:MainWindow.UserCommand}" Executed="DoUserCommand"/>
         <CommandBinding Command="{x:Static src:MainWindow.RefreshDirCommand}" Executed="DoRefreshDir"/>
         <CommandBinding Command="{x:Static src:MainWindow.OpenCommand}" Executed="DoOpen"/>
@@ -72,16 +71,13 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Menu Grid.Column="0" Background="{DynamicResource ControlDefaultBackground}">
+            <Menu Grid.Column="0" Background="{DynamicResource ControlDefaultBackground}" AutomationProperties.Name="Navigation">
                 <MenuItem Header="_File">
                     <MenuItem Header="_Clear Temp Files" Click="DoClearTempFiles" ToolTip="Some operations create temporary files.  This command clears all of these."/>
                     <MenuItem Header="Clear User Config" Click="DoClearUserConfig" ToolTip="Reset all user preferences back to their defaults when PerfView was first installed."/>
                     <MenuItem Header="Set Symbol _Path" Click="DoSetSymbolPath" ToolTip="Sets the locations to look for symbolic information (PDB files)."/>
                     <MenuItem Header="_User Command" Command="{x:Static src:MainWindow.UserCommand}" ToolTip="Run a User Defined Command."/>
                     <MenuItem Header="Go to Directory" Command="{x:Static src:MainWindow.FocusDirectoryCommand}" ToolTip="Focus and select the directory textbox."/>
-                    <Separator/>
-                    <MenuItem Header="_Hide" Command="{x:Static src:MainWindow.HideCommand}" ToolTip="Hides the current window (can reopen using windows explorer)"/>
-                    <Separator/>
                     <MenuItem Header="_Exit" Click="DoExit"/>
                 </MenuItem>
                 <MenuItem Header="_Collect">
@@ -98,26 +94,26 @@
                 <MenuItem Header="Si_ze">
                     <MenuItem Header="_DirectorySize"  Command="{x:Static src:MainWindow.DirectorySizeCommand}" ToolTip="Computes the disk usage (recursively) for a directory.">
                         <MenuItem.Icon>
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="DirectorySize">?</Hyperlink></TextBlock>
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="DirectorySize" AutomationProperties.Name="Help for Directory Size">?</Hyperlink></TextBlock>
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem Name="ImageSizeMenuItem" Visibility="Collapsed" Header="_ImageSize" Command="{x:Static src:MainWindow.ImageSizeCommand}"  ToolTip="Displays the breakdown of what is in a DLL or EXE by symbol. (needs PDB for DLL or EXE).">
                         <MenuItem.Icon>
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="ImageSize">?</Hyperlink></TextBlock>
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="ImageSize" AutomationProperties.Name="Help for Image Size">?</Hyperlink></TextBlock>
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem Name="ILSizeMenuItem" Visibility="Collapsed" Header="ILSize" Command="{x:Static src:MainWindow.ILSizeCommand}"  ToolTip="Displays the breakdown of what is in a DLL or EXE by symbol. (needs PDB for DLL or EXE).">
                         <MenuItem.Icon>
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="ILSize">?</Hyperlink></TextBlock>
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="ILSize" AutomationProperties.Name="Help for IL Size">?</Hyperlink></TextBlock>
                         </MenuItem.Icon>
                     </MenuItem>
                 </MenuItem>
                 <MenuItem Header="_Options">
                     <MenuItem Header="_Authentication">
-                        <MenuItem Header="Use _Git Credential Manager" x:Name="Authentication_UseGitCredentialManager" IsChecked="{Binding Path=AuthenticationViewModel.IsGitCredentialManagerEnabled}" Command="{x:Static src:AuthenticationCommands.UseGitCredentialManager}" ToolTip="Use the Git Credential Manager to authenticate to GitHub and Azure DevOps."/>
-                        <MenuItem Header="Use _Developer Identity for Azure DevOps"  x:Name="Authentication_UseManagedIdentityForAzureDevOps" IsChecked="{Binding Path=AuthenticationViewModel.IsDeveloperIdentityEnabled}" Command="{x:Static src:AuthenticationCommands.UseDeveloperIdentity}" ToolTip="Use Visual Studio or VS Code sign-in information to authenticate to Azure DevOps instances."/>
-                        <MenuItem Header="Use Device _Code for GitHub" x:Name="Authentication_UseGitHubDeviceFlow" IsChecked="{Binding Path=AuthenticationViewModel.IsGitHubDeviceFlowEnabled}" Command="{x:Static src:AuthenticationCommands.UseGitHubDeviceFlow}" ToolTip="Use a device code to authenticate with GitHub."/>
-                        <MenuItem Header="Use Basic Http Auth" x:Name="Authentication_UseBasicHttpAuth" IsChecked="{Binding Path=AuthenticationViewModel.IsBasicHttpAuthEnabled}" Command="{x:Static src:AuthenticationCommands.UseBasicHttpAuth}" ToolTip="Use basic HTTP authentication to access a symbol server"/>
+                        <MenuItem Header="Use _Git Credential Manager" x:Name="Authentication_UseGitCredentialManager" IsCheckable="True" IsChecked="{Binding Path=AuthenticationViewModel.IsGitCredentialManagerEnabled}" Command="{x:Static src:AuthenticationCommands.UseGitCredentialManager}" ToolTip="Use the Git Credential Manager to authenticate to GitHub and Azure DevOps."/>
+                        <MenuItem Header="Use _Developer Identity for Azure DevOps"  x:Name="Authentication_UseManagedIdentityForAzureDevOps" IsCheckable="True" IsChecked="{Binding Path=AuthenticationViewModel.IsDeveloperIdentityEnabled}" Command="{x:Static src:AuthenticationCommands.UseDeveloperIdentity}" ToolTip="Use Visual Studio or VS Code sign-in information to authenticate to Azure DevOps instances."/>
+                        <MenuItem Header="Use Device _Code for GitHub" x:Name="Authentication_UseGitHubDeviceFlow" IsCheckable="True" IsChecked="{Binding Path=AuthenticationViewModel.IsGitHubDeviceFlowEnabled}" Command="{x:Static src:AuthenticationCommands.UseGitHubDeviceFlow}" ToolTip="Use a device code to authenticate with GitHub."/>
+                        <MenuItem Header="Use Basic Http Auth" x:Name="Authentication_UseBasicHttpAuth" IsCheckable="True" IsChecked="{Binding Path=AuthenticationViewModel.IsBasicHttpAuthEnabled}" Command="{x:Static src:AuthenticationCommands.UseBasicHttpAuth}" ToolTip="Use basic HTTP authentication to access a symbol server"/>
                     </MenuItem>
                     <MenuItem Header="Do not shorten frames copied from stack windows" x:Name="Option_DoNotCompressStackFramesOnCopy" IsCheckable="True" Click="ToggleDoNotCompressStackFramesOnCopy" ToolTip="When pasting stack frame lines copied from the Stack Viewer window, paste the full contents of each line instead of a minimized version." />
                     <MenuItem Header="_Experimental">
@@ -126,9 +122,9 @@
                     <MenuItem Header="Navigate to last used directory on launch." x:Name="Option_OpenToLastUsedDirectory" IsCheckable="true" Click="ToggleOpenToLastUsedDirectory" ToolTip="When launching PerfView, navigate to the last opened directory instead of the current working directory."/>
                     <MenuItem Header="Truncate raw data when dumping an event" x:Name="Option_TruncateRawEventData" IsCheckable="True" Click="ToggleTruncateRawEventData" ToolTip="Controls whether or not a raw event dumped from the events view is truncated." />
                     <MenuItem Header="Theme">
-                        <MenuItem Header="Light" x:Name="Theme_Light" IsChecked="{Binding Path=ThemeViewModel.IsLightTheme}" Command="{x:Static src:ThemeViewModel.SetLightThemeCommand}"/>
-                        <MenuItem Header="Dark" x:Name="Theme_Dark" IsChecked="{Binding Path=ThemeViewModel.IsDarkTheme}" Command="{x:Static src:ThemeViewModel.SetDarkThemeCommand}"/>
-                        <MenuItem Header="System" x:Name="Theme_System" IsChecked="{Binding Path=ThemeViewModel.IsSystemTheme}" Command="{x:Static src:ThemeViewModel.SetSystemThemeCommand}"/>
+                        <MenuItem Header="Light" x:Name="Theme_Light" IsCheckable="True" IsChecked="{Binding Path=ThemeViewModel.IsLightTheme}" Command="{x:Static src:ThemeViewModel.SetLightThemeCommand}"/>
+                        <MenuItem Header="Dark" x:Name="Theme_Dark" IsCheckable="True" IsChecked="{Binding Path=ThemeViewModel.IsDarkTheme}" Command="{x:Static src:ThemeViewModel.SetDarkThemeCommand}"/>
+                        <MenuItem Header="System" x:Name="Theme_System" IsCheckable="True" IsChecked="{Binding Path=ThemeViewModel.IsSystemTheme}" Command="{x:Static src:ThemeViewModel.SetSystemThemeCommand}"/>
                     </MenuItem>
                 </MenuItem>
                 <MenuItem Header="_Help">
@@ -150,22 +146,22 @@
                 </MenuItem>
             </Menu>
             <Rectangle Grid.Column="1" Grid.ColumnSpan="11" Fill="{DynamicResource ControlDefaultBackground}"/>
-            <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0">
+            <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="MainViewerQuickStart">Main View Help (F1)</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0,0,0">
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"  Margin="3,0,0,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="Tutorial">Tutorial</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0">
+            <TextBlock Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="MainViewerTroubleshooting">Troubleshooting</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0">
+            <TextBlock Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="FAQ">FAQ</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="5" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0">
+            <TextBlock Grid.Column="5" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0" TextWrapping="Wrap">
                 <Hyperlink Command="Help" CommandParameter="MainViewerTips">Tips</Hyperlink>
             </TextBlock>
-            <TextBlock Grid.Column="6" Name="VideoLink" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="10,0">
+            <TextBlock Grid.Column="6" Name="VideoLink" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="10,0" TextWrapping="Wrap">
                 <Hyperlink Click="DoVideoClick">Videos</Hyperlink>
             </TextBlock>
             <Button Name="WikiButton" Grid.Column="7" Margin="5,1,10,1" Content="Wiki" FontSize="9"
@@ -178,8 +174,8 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="619*"/>
             </Grid.ColumnDefinitions>
-            <DockPanel Background="Gray" Grid.Column="0">
-                <controls:HistoryComboBox x:Name="Directory" DockPanel.Dock="Top"
+            <DockPanel Background="{DynamicResource ContainerBackground}" Grid.Column="0">
+                <controls:HistoryComboBox x:Name="Directory" DockPanel.Dock="Top" AutomationProperties.Name="Directory Search Bar"
                          ToolTip="This is the directory to search for performance data files." TextEntered="DoTextEnteredInDirectoryTextBox" />
                 <Grid DockPanel.Dock="Top" >
                     <Grid.ColumnDefinitions>
@@ -190,11 +186,17 @@
                     <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="5,0,0,0" ToolTip="Only files that match this RegEx filter pattern are displayed.">
                     <Hyperlink Command="Help" CommandParameter="FileFilterTextBox">Filter:</Hyperlink>
                     </TextBlock>
-                    <TextBox Name="FileFilterTextBox" TextChanged="FilterTextChanged" KeyDown="FilterKeyDown" Grid.Column="1" Margin="5,2,0,2" />
+                    <TextBox Name="FileFilterTextBox" TextChanged="FilterTextChanged" KeyDown="FilterKeyDown" Grid.Column="1" Margin="5,2,0,2" AutomationProperties.Name="File Filter"/>
                 </Grid>
-                <TreeView x:Name="TreeView" Grid.Column="0" MouseDoubleClick="DoMouseDoubleClickInTreeView" KeyDown="KeyDownInTreeView" SelectedItemChanged="SelectedItemChangedInTreeView" PreviewMouseRightButtonDown="TreeView_PreviewMouseRightButtonDown"
+                <TreeView x:Name="TreeView" AutomationProperties.Name="File Explorer" Grid.Column="0" MouseDoubleClick="DoMouseDoubleClickInTreeView" KeyDown="KeyDownInTreeView" SelectedItemChanged="SelectedItemChangedInTreeView" PreviewMouseRightButtonDown="TreeView_PreviewMouseRightButtonDown"
                           ToolTip="Double Click to open.  Right click contains additional help and additional options."
                           IsEnabled="{Binding ElementName=StatusBar, Path=IsNotWorking}" AllowDrop="True" Drop="DoDrop">
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="TreeViewItem">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
+                        </Style>
+                    </TreeView.ItemContainerStyle>
                     <TreeView.ItemTemplate>
                         <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                             <StackPanel Orientation="Horizontal">
@@ -225,7 +227,7 @@
             <GridSplitter Grid.Column="1" Width="3"  HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
             <RichTextBox Name="Body" Grid.Column="2" IsReadOnly="True" IsDocumentEnabled="True"
                          IsEnabled="{Binding ElementName=StatusBar, Path=IsNotWorking}"
-                         VerticalScrollBarVisibility="auto" >
+                         VerticalScrollBarVisibility="auto" AutomationProperties.Name="Usage Information">
                 <RichTextBox.Resources>
                     <Style TargetType="{x:Type Paragraph}">
                         <Setter Property="Margin" Value="0"/>

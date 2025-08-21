@@ -150,7 +150,7 @@ public class Commands : CommandEnvironment
                 // We are not on the GUI thread, so any time we interact with the GUI thread we must dispatch to it.  
                 window.Dispatcher.BeginInvoke((Action)delegate
                 {
-                    window.Navigate(htmlFileName);
+                    window.Source = new Uri(htmlFileName);
                 });
                 // You can also get the window.Browser DOM object and fiddle with elements directly.   
                 return;

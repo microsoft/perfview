@@ -17,7 +17,9 @@ using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 using Microsoft.Diagnostics.Tracing.Parsers.JScript;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
+using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.SourceConverters;
 using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using System;
@@ -25,6 +27,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -154,11 +157,32 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session)
         {
+            return CreateFromTraceEventSession(session, 1000);
+        }
+
+        /// <summary>
+        /// From a TraceEventSession, create a real time TraceLog Event Source.   Like a ETWTraceEventSource a TraceLogEventSource
+        /// will deliver events in real time.   However an TraceLogEventSource has an underlying Tracelog (which you can access with
+        /// the .Log Property) which lets you get at aggregated information (Processes, threads, images loaded, and perhaps most
+        /// importantly TraceEvent.CallStack() will work.  Thus you can get real time stacks from events).
+        ///
+        /// Note that in order for native stacks to resolve symbolically, you need to have some Kernel events turned on (Image, and Process)
+        /// and only windows 8 has a session that allows both kernel and user mode events simultaneously.   Thus this is most useful
+        /// on Win 8 systems.
+        /// </summary>
+        /// <param name="minDispatchDelayMSec">The delay in milliseconds between when an event is received in TraceLog and when it is dispatched to the real time event source.</param>
+        public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session, int minDispatchDelayMSec)
+        {
+            if (minDispatchDelayMSec < 10)
+            {
+                throw new ArgumentOutOfRangeException(nameof(minDispatchDelayMSec), "The minimum dispatch delay is too small.");
+            }
+
             var traceLog = new TraceLog(session.Source);
             traceLog.pointerSize = ETWTraceEventSource.GetOSPointerSize();
 
             traceLog.realTimeQueue = new Queue<QueueEntry>();
-            traceLog.realTimeFlushTimer = new Timer(_ => traceLog.FlushRealTimeEvents(1000), null, 1000, 1000);
+            traceLog.realTimeFlushTimer = new Timer(_ => traceLog.FlushRealTimeEvents(minDispatchDelayMSec), null, minDispatchDelayMSec, minDispatchDelayMSec);
             traceLog.rawEventSourceToConvert.AllEvents += traceLog.onAllEventsRealTime;
 
             // See if we are on Win7 and have a separate kernel session associated with 'session'
@@ -213,7 +237,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // rundown events and shut down immediately and feed this as an additional session to the TraceLog.
                 // Note: it doesn't matter what the actual provider is, just that we request rundown in the constructor.
                 using (var rundownSession = rundownDiagnosticsClient.StartEventPipeSession(
-                    new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long)ClrTraceEventParser.Keywords.Default),
+                    rundownConfiguration.m_providers?.AsEnumerable() ?? new[]{
+                        new EventPipeProvider(ClrTraceEventParser.ProviderName, EventLevel.Informational, (long)ClrTraceEventParser.Keywords.Default)
+                    },
                     requestRundown: true
                 ))
                 {
@@ -230,6 +256,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public class EventPipeRundownConfiguration
         {
             internal readonly DiagnosticsClient m_client;
+            internal List<EventPipeProvider> m_providers;
 
             private EventPipeRundownConfiguration(DiagnosticsClient client) { m_client = client; }
 
@@ -250,6 +277,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             public static EventPipeRundownConfiguration Enable(DiagnosticsClient client)
             {
                 return new EventPipeRundownConfiguration(client);
+            }
+
+            /// <summary>
+            /// Adds a provider to use when initializing the rundown session.
+            /// The first call resets the list, removing the default provider (CLR).
+            /// You can use this if you need to tune the event level, keywords, etc.
+            /// </summary>
+            public void AddProvider(EventPipeProvider provider)
+            {
+                if (m_providers == null)
+                {
+                    m_providers = new List<EventPipeProvider>();
+                }
+                m_providers.Add(provider);
             }
         }
 
@@ -407,6 +448,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             InitializeFromFile(etlxFilePath);
         }
+
+        /// <summary>
+        /// Open an ETLX file from a stream.  This is internal and currently just used for testing ETLX files stored in in-memory streams.
+        /// </summary>
+        internal TraceLog(Stream etlxStream)
+            : this()
+        {
+            InitializeFromStream(etlxStream);
+        }
+
+
         /// <summary>
         /// All the events in the ETLX file. The returned TraceEvents instance supports IEnumerable so it can be used
         /// in foreach statements, but it also supports other methods to further filter the evens before enumerating over them.
@@ -749,6 +801,25 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             rawEventSourceToConvert = source;
             SetupCallbacks(rawEventSourceToConvert);
             rawEventSourceToConvert.unhandledEventTemplate.traceEventSource = this;       // Make everything point to the log as its source.
+
+            // Self describing metadata doesn't make it to realTimeSource because TraceLog overwrites the event's extended data.
+            // To address this, we use the event from the raw source, which contains the metadata,
+            // and convert it to a template that can be registered with realTimeSource.
+            realTimeSource.RegisterUnhandledEventImpl(te =>
+            {
+                var toSend = realTimeEvent;
+                if (toSend == null)
+                {
+                    return false;
+                }
+                if (toSend.containsSelfDescribingMetadata)
+                {
+                    var template = toSend.CloneToTemplate();
+                    realTimeSource.Dynamic.OnNewEventDefintion(template, true);
+                    return true;
+                }
+                return false;
+            });
         }
 
         private unsafe void onAllEventsRealTime(TraceEvent data)
@@ -813,24 +884,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         private unsafe void DispatchClonedEvent(TraceEvent toSend)
         {
-            // Self describing metadata doesn't make it to realTimeSource because TraceLog overwrites the event's extended data.
-            // To address this, we use the event from the raw source, which contains the metadata,
-            // and convert it to a template that can be registered with realTimeSource.
-            realTimeSource.RegisterUnhandledEventImpl(te =>
+            realTimeEvent = toSend;
+            TraceEvent eventInRealTimeSource = null;
+            try
             {
-                if (toSend.containsSelfDescribingMetadata)
-                {
-                    var template = toSend.CloneToTemplate();
-                    realTimeSource.Dynamic.OnNewEventDefintion(template, true);
-                    return true;
-                }
-                return false;
-            });
-            TraceEvent eventInRealTimeSource = realTimeSource.Lookup(toSend.eventRecord);
-            eventInRealTimeSource.userData = toSend.userData;
-            eventInRealTimeSource.eventIndex = toSend.eventIndex;           // Lookup assigns the EventIndex, but we want to keep the original.
-            eventInRealTimeSource.myBuffer = toSend.myBuffer;
-            realTimeSource.Dispatch(eventInRealTimeSource);
+                eventInRealTimeSource = realTimeSource.Lookup(toSend.eventRecord);
+                eventInRealTimeSource.userData = toSend.userData;
+                eventInRealTimeSource.eventIndex = toSend.eventIndex;           // Lookup assigns the EventIndex, but we want to keep the original.
+                eventInRealTimeSource.myBuffer = toSend.myBuffer;
+                realTimeSource.Dispatch(eventInRealTimeSource);
+            }
+            finally
+            {
+                realTimeEvent = null;
+            }
 
             // Optimization, remove 'toSend' from the finalization queue.
             Debug.Assert(toSend.myBuffer != IntPtr.Zero);
@@ -846,47 +913,65 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         internal void FlushRealTimeEvents(int minimumAgeMs = 0)
         {
-            lock (realTimeQueue)
+            // we need to guard our data structures from concurrent access.  TraceLog data
+            // is modified by this code as well as code in FlushRealTimeEvents.
+            if (!isFlushingRealTimeEvents)
             {
-                var nowTicks = Environment.TickCount;
-                // TODO review.
-                while (realTimeQueue.Count > 0)
+                lock (realTimeQueue)
                 {
-                    QueueEntry entry = realTimeQueue.Peek();
-                    // If it has been in the queue less than 1 second, we we wait until next time) & 3FFFFFF does wrap around subtraction.
-                    if (minimumAgeMs > 0 && ((nowTicks - entry.enqueueTick) & 0x3FFFFFFF) < minimumAgeMs)
+                    isFlushingRealTimeEvents = true;
+                    try
                     {
-                        break;
+                        FlushRealTimeEventsNoLock(minimumAgeMs);
                     }
-
-                    DispatchClonedEvent(entry.data);
-                    realTimeQueue.Dequeue();
+                    finally
+                    {
+                        isFlushingRealTimeEvents = false;
+                    }
                 }
+            }
+        }
 
-                // Try to keep our memory under control by removing old data.
-                // Lots of data structures in TraceLog can grow over time.
-                // However currently we only trim three, all CAN grow on every event (so they grow most quickly of all data structures)
-                // and we know they are not needed after dispatched the events they are for.
-
-                // To keep overhead reasonable, we assume the worst case (every event has an entry) and we allow the tables to grow
-                // to 3X what is needed, and then we slide down the 1X of entries we need.
-                // We could be more accurate, but this at least keeps THESE arrays under control.
-                int MaxEventCountBeforeReset = Math.Max(realTimeQueue.Count * 3, 1000);
-
-                if (eventsToStacks.Count > MaxEventCountBeforeReset)
+        private void FlushRealTimeEventsNoLock(int minimumAgeMs)
+        {
+            var nowTicks = Environment.TickCount;
+            // TODO review.
+            while (realTimeQueue.Count > 0)
+            {
+                QueueEntry entry = realTimeQueue.Peek();
+                // If it has been in the queue less than 1 second, we we wait until next time) & 3FFFFFF does wrap around subtraction.
+                if (minimumAgeMs > 0 && ((nowTicks - entry.enqueueTick) & 0x3FFFFFFF) < minimumAgeMs)
                 {
-                    RemoveAllButLastEntries(ref eventsToStacks, realTimeQueue.Count);
+                    break;
                 }
 
-                if (eventsToCodeAddresses.Count > MaxEventCountBeforeReset)
-                {
-                    RemoveAllButLastEntries(ref eventsToCodeAddresses, realTimeQueue.Count);
-                }
+                DispatchClonedEvent(entry.data);
+                realTimeQueue.Dequeue();
+            }
 
-                if (cswitchBlockingEventsToStacks.Count > MaxEventCountBeforeReset)
-                {
-                    RemoveAllButLastEntries(ref cswitchBlockingEventsToStacks, realTimeQueue.Count);
-                }
+            // Try to keep our memory under control by removing old data.
+            // Lots of data structures in TraceLog can grow over time.
+            // However currently we only trim three, all CAN grow on every event (so they grow most quickly of all data structures)
+            // and we know they are not needed after dispatched the events they are for.
+
+            // To keep overhead reasonable, we assume the worst case (every event has an entry) and we allow the tables to grow
+            // to 3X what is needed, and then we slide down the 1X of entries we need.
+            // We could be more accurate, but this at least keeps THESE arrays under control.
+            int MaxEventCountBeforeReset = Math.Max(realTimeQueue.Count * 3, 1000);
+
+            if (eventsToStacks.Count > MaxEventCountBeforeReset)
+            {
+                RemoveAllButLastEntries(ref eventsToStacks, realTimeQueue.Count);
+            }
+
+            if (eventsToCodeAddresses.Count > MaxEventCountBeforeReset)
+            {
+                RemoveAllButLastEntries(ref eventsToCodeAddresses, realTimeQueue.Count);
+            }
+
+            if (cswitchBlockingEventsToStacks.Count > MaxEventCountBeforeReset)
+            {
+                RemoveAllButLastEntries(ref cswitchBlockingEventsToStacks, realTimeQueue.Count);
             }
         }
 
@@ -996,6 +1081,23 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal static void CreateFromEventPipeEventSources(TraceEventDispatcher source, string etlxFilePath, TraceLogOptions options)
         {
+            // Avoid partially written files by writing to a temp and moving atomically to the final destination.
+            string etlxTempPath = etlxFilePath + ".new";
+            try
+            {
+                IOStreamStreamWriter streamWriter = new IOStreamStreamWriter(etlxTempPath, SerializationSettings.Default, FileShare.Read | FileShare.Delete);
+                CreateFromEventPipeEventSources(source, streamWriter, options);
+                File.Delete(etlxFilePath);
+                File.Move(etlxTempPath, etlxFilePath);
+            }
+            finally
+            {
+                File.Delete(etlxTempPath);
+            }
+        }
+
+        internal static void CreateFromEventPipeEventSources(TraceEventDispatcher source, IOStreamStreamWriter streamWriter, TraceLogOptions options)
+        {
             if (options == null)
             {
                 options = new TraceLogOptions();
@@ -1016,21 +1118,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     newLog.UserData[key] = source.UserData[key];
                 }
 
-                // Avoid partially written files by writing to a temp and moving atomically to the final destination.
-                string etlxTempPath = etlxFilePath + ".new";
-                try
-                {
-                    //****************************************************************************************************
-                    // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
-                    using (Serializer serializer = new Serializer(etlxTempPath, newLog, FileShare.Read | FileShare.Delete)) { }
-
-                    File.Delete(etlxFilePath);
-                    File.Move(etlxTempPath, etlxFilePath);
-                }
-                finally
-                {
-                    File.Delete(etlxTempPath);
-                }
+                //****************************************************************************************************
+                // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
+                using (Serializer serializer = new Serializer(streamWriter, newLog)) { }
             }
         }
 
@@ -1143,12 +1233,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             new SampleProfilerTraceEventParser(this);
             new WpfTraceEventParser(this);
-#if false
-            new AppHostTraceEventParser(newLog);
-            new ImmersiveShellTraceEventParser(newLog);
-            new XamlTraceEventParser(newLog);
-#endif
+
             var dynamicParser = Dynamic;
+
+            NettraceUniversalConverter.RegisterParsers(this);
+
             registeringStandardParsers = false;
 
         }
@@ -1276,6 +1365,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             jittedMethods = new List<MethodLoadUnloadVerboseTraceData>();
             jsJittedMethods = new List<MethodLoadUnloadJSTraceData>();
             sourceFilesByID = new Dictionary<JavaScriptSourceKey, string>();
+
+            universalConverter = new NettraceUniversalConverter();
 
             // We need to copy some information from the event source.
             // An EventPipeEventSource won't have headers set until Process() is called, so we wait for the event trigger instead of copying right away.
@@ -1626,13 +1717,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             Action<MethodLoadUnloadVerboseTraceData> onMethodDCStop = delegate (MethodLoadUnloadVerboseTraceData data)
             {
-#if false // TODO this is a hack for VS traces that only did DCStarts but no DCStops.
-                if (data.IsJitted && data.TimeStampRelativeMSec < 4000)
-                {
-                    jittedMethods.Add((MethodLoadUnloadVerboseTraceData)data.Clone());
-                }
-#endif
-
                 codeAddresses.AddMethod(data);
                 bookKeepingEvent = true;
             };
@@ -2031,6 +2115,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
                 };
             }
+
+            universalConverter.BeforeProcess(this, rawEvents);
         }
 
         /// <summary>
@@ -2093,7 +2179,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // While scanning over the stream, copy all data to the file.
             rawEvents.AllEvents += delegate (TraceEvent data)
             {
-                Debug.Assert(_syncTimeQPC != 0);         // We should have set this in the Header event (or on session start if it is read time
 #if DEBUG
                 Debug.Assert(lastTimeStamp <= data.TimeStampQPC);     // Ensure they are in order
                 lastTimeStamp = data.TimeStampQPC;
@@ -2345,6 +2430,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 codeAddresses.AddMethod(jsJittedMethod, sourceFilesByID);
             }
 
+            universalConverter.AfterProcess(this);
+
             // Make sure that all threads have a process
             foreach (var curThread in Threads)
             {
@@ -2472,7 +2559,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             options.ConversionLog.WriteLine("  {0,8:n0} unique code addresses. ", codeAddresses.Count);
             options.ConversionLog.WriteLine("  {0,8:n0} unique stacks.", callStacks.Count);
             options.ConversionLog.WriteLine("  {0,8:n0} unique managed methods parsed.", codeAddresses.Methods.Count);
-            options.ConversionLog.WriteLine("  {0,8:n0} CLR method event records.", codeAddresses.ManagedMethodRecordCount);
+            options.ConversionLog.WriteLine("  {0,8:n0} dynamic methods.", codeAddresses.DynamicMethods);
             options.ConversionLog.WriteLine("[Conversion complete {0:n0} events.  Conversion took {1:n0} sec.]",
                 eventCount, (DateTime.Now - startTime).TotalSeconds);
         }
@@ -3543,19 +3630,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 AddTemplatesForParser(parser, etlxSource);
             }
 
-            // Debug.WriteLine("Got a TraceLog dispatcher");
-            // etlxSource.DumpToDebugString();
             return etlxSource;
-#if false
-                // TODO FIX NOW ACTIVITIES: review
-            if (this.HasActivitySubscriptions)
-            {
-                ret.activityScheduled = this.activityScheduled;
-                ret.activityStarted = this.activityStarted;
-                ret.activityCompleted = this.activityCompleted;
-                Log.TraceActivities.SubscribeToActivityTracingEvents(ret, true);
-            }
-#endif
         }
 
         private void AddTemplatesForParser(TraceEventParser parser, TraceLogEventSource ret)
@@ -3597,14 +3672,24 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
-        private unsafe void InitializeFromFile(string etlxFilePath)
+        private void InitializeFromFile(string etlxFilePath)
+        {
+            PinnedStreamReader reader = new PinnedStreamReader(etlxFilePath, SerializationSettings.Default, 0x10000);
+            InitializeFromStreamReader(reader, etlxFilePath);
+        }
+
+        private void InitializeFromStream(Stream stream)
+        {
+            PinnedStreamReader reader = new PinnedStreamReader(stream, SerializationSettings.Default, 0x10000);
+            InitializeFromStreamReader(reader, "Stream");
+        }
+
+        private unsafe void InitializeFromStreamReader(PinnedStreamReader reader, string path)
         {
             // If this Assert files, fix the declaration of headerSize to match
             Debug.Assert(sizeof(TraceEventNativeMethods.EVENT_HEADER) == 0x50 && sizeof(TraceEventNativeMethods.ETW_BUFFER_CONTEXT) == 4);
 
-            // As of TraceLog version 74, all StreamLabels are 64-bit.  See IFastSerializableVersion for details.
-            Deserializer deserializer = new Deserializer(new PinnedStreamReader(etlxFilePath, 0x10000), etlxFilePath);
-            deserializer.TypeResolver = typeName => System.Type.GetType(typeName);  // resolve types in this assembly (and mscorlib)
+            Deserializer deserializer = new Deserializer(reader, path);
 
             // when the deserializer needs a TraceLog we return the current instance.  We also assert that
             // we only do this once.
@@ -3639,18 +3724,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 return new DynamicTraceEventData(null, 0, 0, null, Guid.Empty, 0, null, Guid.Empty, null);
             });
 
-            // when the serializer needs any TraceEventParser class, we assume that its constructor
-            // takes an argument of type TraceEventSource and that you can pass null to make an
-            // 'empty' parser to fill in with FromStream.
-            deserializer.RegisterDefaultFactory(delegate (Type typeToMake)
-            {
-                if (typeToMake.GetTypeInfo().IsSubclassOf(typeof(TraceEventParser)))
-                {
-                    return (IFastSerializable)Activator.CreateInstance(typeToMake, new object[] { null });
-                }
-
-                return null;
-            });
+            deserializer.RegisterType(typeof(KernelTraceEventParserState));
+            deserializer.RegisterType(typeof(KernelToUserDriveMapping));
+            deserializer.RegisterType(typeof(DynamicTraceEventParserState));
+            deserializer.RegisterType(typeof(ExternalTraceEventParserState));
+            deserializer.RegisterType(typeof(ClrTraceEventParserState));
+            deserializer.RegisterType(typeof(TraceCodeAddresses.ILToNativeMap));
 
             IFastSerializable entry = deserializer.GetEntryObject();
 
@@ -3661,16 +3740,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Our deserializer is now attached to our deferred events.
             Debug.Assert(lazyRawEvents.Deserializer == deserializer);
 
-            this.etlxFilePath = etlxFilePath;
+            this.etlxFilePath = path;
 
             // Sanity checking.
             Debug.Assert(pointerSize == 4 || pointerSize == 8, "Bad pointer size");
             Debug.Assert(10 <= cpuSpeedMHz && cpuSpeedMHz <= 100000, "Bad cpu speed");
-            Debug.Assert(0 < numberOfProcessors && numberOfProcessors < 1024, "Bad number of processors");
+            Debug.Assert(0 <= numberOfProcessors && numberOfProcessors < 1024, "Bad number of processors");
             Debug.Assert(0 < MaxEventIndex);
         }
 
         private static char[] s_directorySeparators = { '\\', '/' };
+        private static HashSet<string> s_validExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".dll", ".exe" };
 
         // Path  GetFileNameWithoutExtension will throw on illegal chars, which is too strong, so avoid that here.
         internal static string GetFileNameWithoutExtensionNoIllegalChars(string filePath)
@@ -3686,12 +3766,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             int dotIdx = filePath.LastIndexOf('.');
-            if (dotIdx < lastDirectorySep)
+            if (dotIdx > lastDirectorySep)
             {
-                dotIdx = filePath.Length;
+                string extension = filePath.Substring(dotIdx);
+                if (s_validExtensions.Contains(extension))
+                {
+                    return filePath.Substring(lastDirectorySep, dotIdx - lastDirectorySep);
+                }
             }
 
-            return filePath.Substring(lastDirectorySep, dotIdx - lastDirectorySep);
+            return filePath.Substring(lastDirectorySep);
         }
 
 #if DEBUG
@@ -3711,6 +3795,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return true;
         }
 #endif
+
         void IFastSerializable.ToStream(Serializer serializer)
         {
             // Write out the events themselves, Before we do this we write a reference past the end of the
@@ -4049,7 +4134,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 74; }
+            get { return 76; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -4459,6 +4544,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal TraceEventDispatcher rawKernelEventSource;         // Only used by real time TraceLog on Win7.   It is the
         internal TraceLogOptions options;
         internal bool registeringStandardParsers;                   // Are we registering
+        internal NettraceUniversalConverter universalConverter;
 
         // Used for Real Time
         private struct QueueEntry
@@ -4470,6 +4556,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal TraceLogEventSource realTimeSource;               // used to call back in real time case.
         private Queue<QueueEntry> realTimeQueue;                   // We have to wait a bit to hook up stacks, so we put real time entries in the queue
+        private TraceEvent realTimeEvent;                          // The current event being processed.
+        private bool isFlushingRealTimeEvents;                     // Are we in the middle of dispatching the real time events.
 
         // These can ONLY be accessed by the thread calling RealTimeEventSource.Process();
         private Timer realTimeFlushTimer;                          // Ensures the queue gets flushed even if there are no incoming events.
@@ -4562,69 +4650,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// override
         /// </summary>
         public override int EventsLost { get { return TraceLog.EventsLost; } }
-
-#if false // TODO FIX NOW use or remove 4/2014
-        // TODO FIX NOW ACTIVITIES: review
-        /// <summary>
-        /// Fires when a new activity is scheduled. Client code should register to this
-        /// event to get one unified notification for all ETW events marking the
-        /// "scheduling" of some future work.
-        ///   (o) The first argument can be used with this[newActivityIndex] to
-        ///       inspect details related to the activity.
-        ///   (o) The second argument represents the ETW event that marked the scheduling
-        ///       of work. If client code needs this for future reference it should call
-        ///       TraceEvent.Clone() to store a copy.
-        /// </summary>
-        public event Action<ActivityIndex, TraceEvent> ActivityScheduled
-        {
-            add
-            { activityScheduled += value; Log.TraceActivities.SubscribeToActivityTracingEvents(this, true); }
-            remove
-            { activityScheduled -= value; if (!HasActivitySubscriptions) Log.TraceActivities.SubscribeToActivityTracingEvents(this, false); }
-        }
-    /// <summary>
-        /// Fires when a new activity is starting. Client code should register to this
-        /// event to get one unified notification for all ETW events marking the
-        /// "beginning" of work for the scheduled activity.
-        ///   (o) The first argument can be used with this[ActivityIndex] to
-        ///       inspect details related to the activity starting execution.
-        ///   (o) The second argument represents the ETW event that marked the beginning
-        ///       of work. If client code needs this for future reference it should call
-        ///       TraceEvent.Clone() to store a copy.
-        /// </summary>
-        public event Action<ActivityIndex, TraceEvent> ActivityStarted
-        {
-            add
-            { activityStarted += value; Log.TraceActivities.SubscribeToActivityTracingEvents(this, true); }
-            remove
-            { activityStarted -= value; if (!HasActivitySubscriptions) Log.TraceActivities.SubscribeToActivityTracingEvents(this, false); }
-        }
-        /// <summary>
-        /// Fires when an activity has completed. Client code should register to this
-        /// event to get one unified notification for all ETW events marking the
-        /// "completion" of work for the scheduled activity.
-        ///   (o) The first argument can be used with this[ActivityIndex] to
-        ///       inspect details related to the activity that just completed.
-        ///   (o) The second argument represents the ETW event that marked the beginning
-        ///       of work. If client code needs this for future reference it should call
-        ///       TraceEvent.Clone() to store a copy.
-        /// </summary>
-        public event Action<ActivityIndex, TraceEvent> ActivityCompleted
-        {
-            add
-            { activityCompleted += value; Log.TraceActivities.SubscribeToActivityTracingEvents(this, true); }
-            remove
-            { activityCompleted -= value; if (!HasActivitySubscriptions) Log.TraceActivities.SubscribeToActivityTracingEvents(this, false); }
-        }
-
-        internal void OnActivityScheduled(ActivityIndex uai, TraceEvent data)
-        { if (activityScheduled != null) activityScheduled(uai, data); }
-        internal void OnActivityStarted(ActivityIndex uai, TraceEvent data)
-        { if (activityScheduled != null) activityStarted(uai, data); }
-        internal void OnActivityCompleted(ActivityIndex uai, TraceEvent data)
-        { if (activityCompleted != null) activityCompleted(uai, data); }
-        internal bool HasActivitySubscriptions { get { return activityScheduled != null || activityStarted != null || activityCompleted != null; } }
-#endif
 
         #region private
         /// <summary>
@@ -5300,12 +5325,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 Debug.Assert(ret.Level <= (TraceEventLevel)64);
                 Debug.Assert(ret.Version <= 10 || ret.Version == 255);  // some events had a wacky version number
 
-#if false // TODO FIX NOW remove or fix
-                // TODO 50000000 arbitrary.   Fix underlying problem with merged ETL files.
-                Debug.Assert(ret.TimeStampQPC == long.MaxValue ||
-                    events.Log.sessionStartTimQPC <= ret.TimeStampQPC && ret.TimeStampQPC <= events.Log.sessionEndTimeQPC + 50000000);
-#endif
-
                 // We have to ensure we have a pointer to the whole blob, not just the header.
                 int totalLength = TraceLog.headerSize + (ret.EventDataLength + 3 & ~3);
                 Debug.Assert(totalLength < 0x10000);
@@ -5951,6 +5970,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     imageFileName = cmd;
                 }
             }
+        }
+        internal void UniversalProcessStart(ProcessCreateTraceData data)
+        {
+            startTimeQPC = data.TimeStampQPC;
+            commandLine = data.Name;
+            imageFileName = data.Name;
+            parentID = -1;
+        }
+        internal void UniversalProcessStop(EmptyTraceData data)
+        {
+            endTimeQPC = data.TimeStampQPC;
         }
 
         /// <summary>
@@ -7075,6 +7105,74 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             CheckClassInvarients();
         }
 
+        internal TraceModuleFile UniversalMapping(ProcessMappingTraceData data, ProcessMappingMetadataTraceData metadata)
+        {
+            return UniversalMapping(data.FileName, data.StartAddress, data.EndAddress, data.TimeStampQPC, metadata);
+        }
+
+        internal TraceModuleFile UniversalMapping(string fileName, Address startAddress, Address endAddress, long timeStampQPC, ProcessMappingMetadataTraceData metadata)
+        {
+            int index;
+
+            // A loaded and managed modules depend on a module file, so get or create one.
+            // The key is the file name.  For jitted code on Linux, this will be a memfd with a static name, which is OK
+            // because this path will use the StartAddress to ensure that we get the right one.
+            // TODO: We'll need to store FileOffset as well to handle elf images.
+            TraceModuleFile moduleFile = process.Log.ModuleFiles.GetOrCreateModuleFile(fileName, startAddress);
+            long newImageSize = (long)(endAddress - startAddress);
+            
+            // New mappings will have an imageSize of 0 and will get set.
+            // Existing mappings that have the same StartAddress but increase in length will get updated here.
+            if (moduleFile.imageSize < newImageSize)
+            {
+                moduleFile.imageSize = newImageSize;
+            }
+
+            // The loaded module is looked up by StartAddress and time to ensure that we don't use a module that hasn't been loaded yet.
+            // If the StartAddress or size don't match, then create a new one.  This handles overlapping cases.
+            TraceLoadedModule loadedModule = FindModuleAndIndexContainingAddress(startAddress, timeStampQPC, out index);
+            if (loadedModule == null || loadedModule.ImageBase != startAddress || loadedModule.ModuleFile.imageSize != newImageSize)
+            {
+                // The module file is what is used when looking up the module for an arbitrary address, so it must save both the start address and image size.
+                loadedModule = new TraceLoadedModule(process, moduleFile, startAddress);
+
+                // Set the timestamp from the mapping data
+                loadedModule.loadTimeQPC = timeStampQPC;
+
+                InsertAndSetOverlap(index + 1, loadedModule);
+            }
+
+            // Get or create a managed module.  This module is the container for dynamic symbols.
+            TraceManagedModule managedModule = FindManagedModuleAndIndex((long)startAddress, timeStampQPC, out index);
+            if (managedModule == null)
+            {
+                managedModule = new TraceManagedModule(process, moduleFile, (long)startAddress);
+                managedModule.loadTimeQPC = timeStampQPC;
+                modules.Insert(index + 1, managedModule);
+            }
+
+            process.anyModuleLoaded = true;
+
+            // Get the latest version to return.
+            moduleFile = loadedModule.ModuleFile;
+            Debug.Assert(moduleFile != null);
+            CheckClassInvarients();
+
+            PEProcessMappingSymbolMetadata symbolMetadata = metadata?.ParsedSymbolMetadata as PEProcessMappingSymbolMetadata;
+            if (symbolMetadata != null)
+            {
+                moduleFile.pdbName = symbolMetadata.PdbName;
+                moduleFile.pdbAge = symbolMetadata.PdbAge;
+                moduleFile.pdbSignature = symbolMetadata.PdbSignature;
+                moduleFile.r2rPerfMapSignature = symbolMetadata.PerfmapSignature;
+                moduleFile.r2rPerfMapVersion = symbolMetadata.PerfmapVersion;
+                moduleFile.r2rPerfMapName = symbolMetadata.PerfmapName;
+                moduleFile.r2rImageTextVirtualOffset = (uint)symbolMetadata.TextOffset;
+            }
+
+            return moduleFile;
+        }
+
         internal TraceManagedModule GetOrCreateManagedModule(long managedModuleID, long timeQPC)
         {
             int index;
@@ -7147,7 +7245,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // We only care about the native case.
                 if (canidateModule.key == canidateModule.ImageBase)
                 {
-                    ulong candidateImageEnd = (ulong)canidateModule.ImageBase + (uint)canidateModule.ModuleFile.ImageSize;
+                    ulong candidateImageEnd = (ulong)canidateModule.ImageBase + (ulong)canidateModule.ModuleFile.ImageSize;
                     if ((ulong)address < candidateImageEnd)
                     {
                         // Have we found a match?
@@ -7234,10 +7332,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 else
                 {
                     Debug.Assert((ulong)module.ImageBase == module.key);
-#if false // TODO FIX NOW enable fails on eventSourceDemo.etl file
-                    if (lastModule != null && (ulong)lastModule.ImageBase + (uint)lastModule.ModuleFile.ImageSize > (ulong)module.ImageBase)
-                        Debug.Assert(lastModule.overlaps && module.overlaps, "Modules overlap but don't delcare that they do");
-#endif
                 }
                 lastkey = module.key;
                 lastModule = module;
@@ -8084,9 +8178,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public TraceModuleFiles ModuleFiles { get { return moduleFiles; } }
         /// <summary>
-        /// Indicates the number of managed method records that were encountered.  This is useful to understand if symbolic information 'mostly works'.
+        /// Indicates the number of dynamic method records that were encountered.  This is useful to understand if symbolic information 'mostly works'.
         /// </summary>
-        public int ManagedMethodRecordCount { get { return managedMethodRecordCount; } }
+        public int DynamicMethods { get { return dynamicMethodCount; } }
         /// <summary>
         /// Initially CodeAddresses for unmanaged code will have no useful name.  Calling LookupSymbolsForModule
         /// lets you resolve the symbols for a particular file so that the TraceCodeAddresses for that DLL
@@ -8396,7 +8490,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         internal void AddMethod(MethodLoadUnloadVerboseTraceData data)
         {
-            managedMethodRecordCount++;
+            dynamicMethodCount++;
             MethodIndex methodIndex = Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid;
             ILMapIndex ilMap = ILMapIndex.Invalid;
             ModuleFileIndex moduleFileIndex = Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid;
@@ -8426,6 +8520,60 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         info.SetILMapIndex(this, ilMap);
                     }
                     info.SetOptimizationTier(data.OptimizationTier);
+                }
+            });
+        }
+
+        internal void AddUniversalDynamicSymbol(ProcessSymbolTraceData data, TraceProcess process)
+        {
+            Debug.Assert(process != null);
+            dynamicMethodCount++;
+            MethodIndex methodIndex = Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid;
+            ModuleFileIndex moduleFileIndex = Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid;
+            TraceManagedModule module = null;
+            ForAllUnresolvedCodeAddressesInRange(process, data.StartAddress, (int)(data.EndAddress - data.StartAddress), true, delegate (ref CodeAddressInfo info)
+            {
+                // If we already resolved, that means that the address was reused, so only add something if it does not already have
+                // information associated with it.
+                if (info.GetMethodIndex(this) == Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid)
+                {
+                    // Lazily create the method since many methods never have code samples in them.
+                    if (module == null)
+                    {
+                        int index;
+                        string moduleName = "UNKNOWN";
+                        string methodName = data.Name;
+                        TraceLoadedModule loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
+
+                        // Try to parse the symbol as a universal symbol.
+                        var parsed = NettraceUniversalConverter.ParseDotnetJittedSymbolName(data.Name);
+                        if (parsed.HasValue)
+                        {
+                            moduleName = parsed.Value.moduleName;
+                            methodName = parsed.Value.methodSignature;
+                        }
+
+                        // We don't create a blanket jitted code module, so create one here.
+                        // Non-jitted symbols will already have a module, so loadedModule will not be null.
+                        if (loadedModule == null)
+                        {
+                            TraceModuleFile moduleFile = process.LoadedModules.UniversalMapping(moduleName, data.StartAddress, data.EndAddress, data.TimeStampQPC, null);
+                            loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
+                        }
+
+                        module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
+                        moduleFileIndex = module.ModuleFile.ModuleFileIndex;
+                            
+                        methodIndex = methods.NewMethod(methodName, moduleFileIndex, (int)data.Id);
+                        
+                        // When universal traces support re-use of address space, we'll need to support it here.
+                    }
+
+                    // Set the info (only if we found a module)
+                    if (module != null)
+                    {
+                        info.SetMethodIndex(this, methodIndex);
+                    }
                 }
             });
         }
@@ -8487,7 +8635,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// start+length within the process 'process'.   If 'considerResolved' is true' then the address range
         /// is considered resolved and future calls to this routine will not find the addresses (since they are resolved).
         /// </summary>
-        internal void ForAllUnresolvedCodeAddressesInRange(TraceProcess process, Address start, int length, bool considerResolved, ForAllCodeAddrAction body)
+        internal void ForAllUnresolvedCodeAddressesInRange(TraceProcess process, Address start, long length, bool considerResolved, ForAllCodeAddrAction body)
         {
             if (process.codeAddressesInProcess == null)
             {
@@ -8723,11 +8871,26 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             reader.m_log.WriteLine("[Loading symbols for " + moduleFile.FilePath + "]");
 
-            NativeSymbolModule moduleReader = OpenPdbForModuleFile(reader, moduleFile) as NativeSymbolModule;
-            if (moduleReader == null)
+            // There is where we hook up R2R symbol lookup for Linux.  These symbol modules are .r2rmap files.
+            // The R2R modules that are used on Linux still have a pointer to the IL PDB, so we need to look for a R2R symbol module
+            // before attempting to lookup a PDB, or we may end up with an IL PDB, which won't be helpful for symbol lookup.
+            // For Windows traces this call will always return immediately because the module won't have any R2R perfmap information.
+            ISymbolLookup symbolLookup = null;
+            R2RPerfMapSymbolModule r2rSymbolModule = OpenR2RPerfMapForModuleFile(reader, moduleFile);
+            if (r2rSymbolModule != null)
             {
-                reader.m_log.WriteLine("Could not find PDB file.");
-                return;
+                symbolLookup = r2rSymbolModule;
+            }
+            else
+            {
+                NativeSymbolModule moduleReader = OpenPdbForModuleFile(reader, moduleFile) as NativeSymbolModule;
+                if (moduleReader == null)
+                {
+                    reader.m_log.WriteLine("Could not find PDB file.");
+                    return;
+                }
+
+                symbolLookup = moduleReader;
             }
 
             reader.m_log.WriteLine("Loaded, resolving symbols");
@@ -8758,7 +8921,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     else
                     {
                         uint symbolStart = 0;
-                        var newMethodName = moduleReader.FindNameForRva((uint)(address - moduleFile.ImageBase), ref symbolStart);
+                        var newMethodName = symbolLookup.FindNameForRva((uint)(address - moduleFile.ImageBase), ref symbolStart);
                         if (newMethodName.Length > 0)
                         {
                             // TODO FIX NOW
@@ -8935,6 +9098,37 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             symReader.m_log.WriteLine("Opened Pdb file {0}", pdbFileName);
             return symbolReaderModule;
+        }
+
+        /// <summary>
+        /// Look up the SymbolModule (open R2R perfmap) for a given moduleFile.
+        /// </summary>
+        private unsafe R2RPerfMapSymbolModule OpenR2RPerfMapForModuleFile(SymbolReader symReader, TraceModuleFile moduleFile)
+        {
+            // If we have a signature, use it
+            if (moduleFile.r2rPerfMapSignature != Guid.Empty)
+            {
+                string filePath = symReader.FindR2RPerfMapSymbolFilePath(moduleFile.R2RPerfMapName, moduleFile.R2RPerfMapSignature, moduleFile.R2RPerfMapVersion);
+                if (filePath != null)
+                {
+                    R2RPerfMapSymbolModule symbolModule = symReader.OpenR2RPerfMapSymbolFile(filePath, moduleFile.R2RImageTextVirtualOffset);
+                    if (symbolModule != null && symbolModule.Signature == moduleFile.R2RPerfMapSignature && symbolModule.Version == moduleFile.R2RPerfMapVersion)
+                    {
+                        return symbolModule;
+                    }
+                    else
+                    {
+                        symReader.m_log.WriteLine("ERROR: The R2R perfmap does not match the loaded module.  Actual Signature = " + symbolModule.Signature + " Requested Signature = " + moduleFile.R2RPerfMapSignature);
+                        return null;
+                    }
+                }
+            }
+            else
+            {
+                symReader.m_log.WriteLine("No R2R perfmap signature for {0} in trace.", moduleFile.FilePath);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -9456,7 +9650,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         private TraceCodeAddress[][] codeAddressObjects;  // If we were asked for TraceCodeAddresses (instead of indexes) we cache them, in sparse array
         private string[] names;                         // A cache (one per code address) of the string name of the address
-        private int managedMethodRecordCount;           // Remembers how many code addresses are managed methods (currently not serialized)
+        private int dynamicMethodCount;           // Remembers how many code addresses are managed methods (currently not serialized)
         internal int totalCodeAddresses;                 // Count of the number of times a code address appears in the log.
 
         // These are actually serialized.
@@ -10217,7 +10411,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Returns the size of the DLL when loaded in memory
         /// </summary>
-        public int ImageSize { get { return imageSize; } }
+        public long ImageSize { get { return imageSize; } }
         /// <summary>
         /// Returns the address just past the memory the module uses.
         /// </summary>
@@ -10235,6 +10429,26 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Returns the age (which is a small integer), that is also needed to look up the symbol file (PDB file) on a symbol server.
         /// </summary>
         public int PdbAge { get { return pdbAge; } }
+
+        /// <summary>
+        /// Returns the GUID that uniquely identifies the R2R perfmap file for this DLL
+        /// </summary>
+        public Guid R2RPerfMapSignature { get { return r2rPerfMapSignature; } }
+
+        /// <summary>
+        /// Returns the version number of the R2R perfmap file format.
+        /// </summary>
+        public int R2RPerfMapVersion { get { return r2rPerfMapVersion; } }
+
+        /// <summary>
+        /// Returns the name of the R2R perfmap file.
+        /// </summary>
+        public string R2RPerfMapName { get { return r2rPerfMapName; } }
+
+        /// <summary>
+        /// Returns the offset in bytes between the beginning of the PE image and the beginning of the text section according to the loaded layout.
+        /// </summary>
+        public uint R2RImageTextVirtualOffset { get { return r2rImageTextVirtualOffset; } }
 
         /// <summary>
         /// Returns the file version string that is optionally embedded in the DLL's resources.   Returns the empty string if not present.
@@ -10368,7 +10582,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         internal string fileName;
-        internal int imageSize;
+        internal long imageSize;
         internal Address imageBase;
         internal string name;
         private ModuleFileIndex moduleFileIndex;
@@ -10378,6 +10592,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal string pdbName;
         internal Guid pdbSignature;
         internal int pdbAge;
+        internal Guid r2rPerfMapSignature;
+        internal int r2rPerfMapVersion;
+        internal string r2rPerfMapName;
+        internal uint r2rImageTextVirtualOffset;
         internal string fileVersion;
         internal string productName;
         internal string productVersion;
@@ -10396,6 +10614,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Write(pdbName);
             serializer.Write(pdbSignature);
             serializer.Write(pdbAge);
+            serializer.Write(r2rPerfMapSignature);
+            serializer.Write(r2rPerfMapVersion);
+            serializer.Write(r2rPerfMapName);
+            serializer.Write((int)r2rImageTextVirtualOffset);
             serializer.Write(fileVersion);
             serializer.Write(productVersion);
             serializer.Write(timeDateStamp);
@@ -10413,6 +10635,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out pdbName);
             deserializer.Read(out pdbSignature);
             deserializer.Read(out pdbAge);
+            deserializer.Read(out r2rPerfMapSignature);
+            deserializer.Read(out r2rPerfMapVersion);
+            deserializer.Read(out r2rPerfMapName);
+            r2rImageTextVirtualOffset = (uint)deserializer.ReadInt();
             deserializer.Read(out fileVersion);
             deserializer.Read(out productVersion);
             deserializer.Read(out timeDateStamp);

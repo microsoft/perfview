@@ -20,11 +20,14 @@ namespace Stats
 
         public static void ToHtml(TextWriter writer, TraceProcess stats, TraceLoadedDotNetRuntime runtime, string fileName, bool doServerGCReport = false)
         {
-            writer.WriteLine("<H3><A Name=\"Stats_{0}\"><font color=\"blue\">GC Stats for Process {1,5}: {2}</font><A></H3>", stats.ProcessID, stats.ProcessID, stats.Name);
-            writer.WriteLine("<UL>");
+            writer.WriteLine($"""
+                <H3><A Name="Stats_{stats.ProcessID}"><font color="blue">GC Stats for Process {stats.ProcessID,5}: {stats.Name}</font><A></H3>
+                <UL>
+                """);
+
             if (runtime.GC.Stats().GCVersionInfoMismatch)
             {
-                writer.WriteLine("<LI><Font size=3 color=\"red\">Warning: Did not recognize the V4.0 GC Information events.  Falling back to V2.0 behavior.</font></LI>");
+                writer.WriteLine("""<LI><Font class=".error">Warning: Did not recognize the V4.0 GC Information events.  Falling back to V2.0 behavior.</font></LI>""");
             }
 
             if (!string.IsNullOrEmpty(stats.CommandLine))
@@ -33,7 +36,7 @@ namespace Stats
             }
 
             var runtimeBuiltTime = "";
-            if (runtime.RuntimeBuiltTime != default(DateTime))
+            if (runtime.RuntimeBuiltTime != default)
             {
                 runtimeBuiltTime = string.Format(" (built on {0})", runtime.RuntimeBuiltTime);
             }
@@ -481,30 +484,6 @@ namespace Stats
                 writer.WriteLine("/>");
             }
 
-            if (gc.HeapCountTuning != null || gc.HeapCountSample != null)
-            {
-                writer.Write("      <DynamicData");
-                if (gc.HeapCountTuning != null)
-                {
-                    writer.Write(" NewHeapCount={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.NewHeapCount.ToString("n0"), 10));
-                    writer.Write(" MedianThroughputCostPercent={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.MedianThroughputCostPercent.ToString("n3"), 10));
-                    writer.Write(" SmoothedMedianThroughputCostPercent={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.SmoothedMedianThroughputCostPercent.ToString("n3"), 10));
-                    writer.Write(" ThroughputCostPercentReductionPerStepUp={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.ThroughputCostPercentReductionPerStepUp.ToString("n3"), 10));
-                    writer.Write(" ThroughputCostPercentIncreasePerStepDown={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.ThroughputCostPercentIncreasePerStepDown.ToString("n3"), 10));
-                    writer.Write(" SpaceCostPercentIncreasePerStepUp={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.SpaceCostPercentIncreasePerStepUp.ToString("n3"), 10));
-                    writer.Write(" SpaceCostPercentDecreasePerStepDown={0}", StringUtilities.QuotePadLeft(gc.HeapCountTuning.SpaceCostPercentDecreasePerStepDown.ToString("n3"), 10));
-                }
-
-                if (gc.HeapCountSample != null)
-                {
-                    writer.Write(" ElapsedTimeBetweenGCsMSec={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.ElapsedTimeBetweenGCsMSec.ToString("n3"), 10));
-                    writer.Write(" GCPauseTimeMSec={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.GCPauseTimeMSec.ToString("n3"), 10));
-                    writer.Write(" MslWaitTimeMSec={0}", StringUtilities.QuotePadLeft(gc.HeapCountSample.MslWaitTimeMSec.ToString("n3"), 10));
-                }
-
-                writer.WriteLine("/>");
-            }
-
             if (gc.HeapStats != null)
             {
                 writer.Write("      <HeapStats");
@@ -539,6 +518,7 @@ namespace Stats
                 {
                     if (gc.TimingInfo[(int)TraceGC.TimingType.MarkRoot].HasValue) { writer.Write(" MarkRoot=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkRoot].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization].HasValue) { writer.Write(" MarkScanFinalization=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization].Value); }
+                    if (gc.TimingInfo[(int)TraceGC.TimingType.MarkShortWeak].HasValue) { writer.Write(" MarkShortWeak=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkShortWeak].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak].HasValue) { writer.Write(" MarkLongWeak=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.Plan].HasValue) { writer.Write(" Plan=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Plan].Value); }
                     if (gc.TimingInfo[(int)TraceGC.TimingType.Relocate].HasValue) { writer.Write(" Relocate=\"{0}\"", gc.TimingInfo[(int)TraceGC.TimingType.Relocate].Value); }
@@ -560,60 +540,40 @@ namespace Stats
                 foreach (var perHeapHistory in gc.PerHeapHistories)
                 {
                     writer.Write("      <PerHeapHistory");
-#if false // TODO FIX NOW
-                    writer.Write(" MemoryPressure=\"{0:n0}\"", gc.perHeapHistory.MemoryPressure);
-                    writer.Write(" MechanismHeapExpand=\"{0}\"", gc.perHeapHistory.MechanismHeapExpand);
-                    writer.Write(" MechanismHeapCompact=\"{0}\"", gc.perHeapHistory.MechanismHeapCompact);
-                    writer.Write(" InitialGenCondemned=\"{0}\"", gc.perHeapHistory.InitialGenCondemned);
-                    writer.Write(" FinalGenCondemned=\"{0}\"", gc.perHeapHistory.FinalGenCondemned);
-                    writer.Write(" GenWithExceededBudget=\"{0}\"", gc.perHeapHistory.GenWithExceededBudget);
-                    writer.Write(" GenWithTimeTuning=\"{0}\"", gc.perHeapHistory.GenWithTimeTuning);
-                    writer.Write(" GenCondemnedReasons=\"{0}\"", gc.perHeapHistory.GenCondemnedReasons);
-#endif
                     if ((gc.PerHeapMarkTimes != null) && (gc.PerHeapMarkTimes.ContainsKey(HeapNum)))
                     {
                         MarkInfo mt = gc.PerHeapMarkTimes[HeapNum];
 
                         if (mt != null)
                         {
-                            writer.Write(" MarkStack =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkStack]);
-                            if (mt.MarkPromoted != null)
+                            void WriteMarkRootTypeInfo(MarkRootType type)
                             {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkStack]);
-                            }
+                                int markRootIndex = (int)type;
 
-                            writer.Write("\" MarkFQ =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkFQ]);
-                            if (mt.MarkPromoted != null)
-                            {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkFQ]);
-                            }
-
-                            writer.Write("\" MarkHandles =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkHandles]);
-                            if (mt.MarkPromoted != null)
-                            {
-                                writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkHandles]);
-                            }
-
-                            writer.Write("\"");
-                            if (gc.Generation != 2)
-                            {
-                                writer.Write(" MarkOldGen =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOlder]);
-                                if (mt.MarkPromoted != null)
+                                if (markRootIndex >= mt.MarkTimes.Length)
                                 {
-                                    writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOlder]);
+                                    return;
                                 }
 
+                                if (mt.MarkTimes[markRootIndex] == -1)
+                                {
+                                    return;
+                                }
+
+                                writer.Write(" {0} =\"{1:n3}", type, mt.MarkTimes[markRootIndex]);
+                                if (mt.MarkPromoted != null)
+                                {
+                                    writer.Write("({0})", mt.MarkPromoted[markRootIndex]);
+                                }
                                 writer.Write("\"");
                             }
-                            if (mt.MarkTimes[(int)MarkRootType.MarkOverflow] != 0.0)
+
+                            foreach (MarkRootType markRootType in Enum.GetValues(typeof(MarkRootType)))
                             {
-                                writer.Write(" MarkOverflow =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOverflow]);
-                                if (mt.MarkPromoted != null)
-                                {
-                                    writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOverflow]);
-                                }
+                                WriteMarkRootTypeInfo(markRootType);
                             }
                         }
+
                         if (gc.LOHCompactInfos.Count > 0)
                         {
                             GCLOHCompactInfo lohCompactInfo = gc.LOHCompactInfos[HeapNum];
@@ -1258,11 +1218,11 @@ namespace Stats
             switch (gen)
             {
                 case 2:
-                    return "bgcolor=#56A5EC";
+                    return "class=\"row-vibrant\"";
                 case 1:
-                    return "bgcolor=#82CAFF";
+                    return "class=\"row-medium\"";
                 default:
-                    return "bgcolor=#BDEDFF";
+                    return "class=\"row-subtle\"";
             }
         }
         #endregion

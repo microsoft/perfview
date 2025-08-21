@@ -313,13 +313,6 @@ namespace CSVReader
 
                             if (moduleName.Length > 4 && moduleName[moduleName.Length - 4] == '.')
                             {
-#if false // TODO decide if we want to ignore the .NI.DLL and if so do it uniformly.  
-                                if (moduleName.Length > 7 && moduleName[moduleName.Length - 7] == '.' && 
-                                    moduleName[moduleName.Length - 6] == 'n' &&
-                                    moduleName[moduleName.Length - 5] == 'i')
-                                    moduleName = moduleName.Substring(0, moduleName.Length - 7);
-                                else 
-#endif
                                 moduleName = moduleName.Substring(0, moduleName.Length - 4);
                             }
 
@@ -532,6 +525,7 @@ namespace CSVReader
         public override double TimeStampRelatveMSec { get { return m_TimeStampRelativeMSec; } }
         public override string ProcessName { get { return m_ProcessName; } }
         public override string Rest { get { return m_Data; } set { } }
+        public override List<Payload> Payloads => throw new NotImplementedException();
         #region private
         internal CsvEventRecord(ByteWindow window, CsvEventSource source, string[] colNames, Dictionary<string, int> columnOrder, double[] columnSums) : base(4)
         {

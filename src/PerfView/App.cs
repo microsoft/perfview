@@ -3,6 +3,10 @@ using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Utilities;
+
+#if !PERFVIEW_COLLECT
+using PerfView.Dialogs;
+#endif
 using PerfView.Properties;
 using System;
 using System.Diagnostics;
@@ -41,10 +45,11 @@ namespace PerfView
         public static int Main(string[] args)
         {
             CommandProcessor = new CommandProcessor();
+            App.SetAccessibilitySwitchOverrides();
 
-            StreamWriter writerToCleanup = null;   // If we create a log file, we need to clean it up.  
+            StreamWriter writerToCleanup = null;   // If we create a log file, we need to clean it up.
             int retCode = -1;
-            bool newConsoleCreated = false;        // If we create a new console, we need to wait before existing            
+            bool newConsoleCreated = false;        // If we create a new console, we need to wait before existing
             try
             {
 #if !PERFVIEW_COLLECT
@@ -54,14 +59,33 @@ namespace PerfView
                     (string.Compare(args[0], "/noGui", StringComparison.OrdinalIgnoreCase) == 0 ||
                      string.Compare(args[0], 0, "/logFile", 0, 8, StringComparison.OrdinalIgnoreCase) == 0));
 
+                // Users will need to check the return code for failure because there is no console setup yet and we can't log any status.
+                var buildLayout = args.Length > 1 && string.Compare(args[0], "/buildLayout", StringComparison.OrdinalIgnoreCase) == 0;
+                if (buildLayout)
+                {
+                    string destDirectory = args[1];
+                    if (Directory.Exists(destDirectory))
+                    {
+                        return retCode;
+                    }
+
+                    SupportFiles.SetSupportFilesDir(destDirectory);
+                    App.Unpack();
+                    App.WriteDefaultAppConfigDataFile(destDirectory);
+
+                    retCode = 0;
+                    return retCode;
+                }
+
+
                 // If we need to install, display the splash screen early, otherwise wait
                 if (!Directory.Exists(SupportFiles.SupportFileDir) && !noGui)
                 {
                     DisplaySplashScreen();
                 }
 #endif
-                App.Unpack();                   // Install the program if it is not done already 
-                App.RelaunchIfNeeded(args);     // If we are running from a a network share, relaunch locally. 
+                App.Unpack();                   // Install the program if it is not done already
+                App.RelaunchIfNeeded(args);     // If we are running from a a network share, relaunch locally.
 
                 // This does the real work
                 retCode = DoMain(args, ref newConsoleCreated, ref writerToCleanup);
@@ -394,6 +418,11 @@ namespace PerfView
             }
         }
 
+        public static void WriteDefaultAppConfigDataFile(string directoryPath)
+        {
+            string defaultConfig = "<ConfigData>\r\n  <SupportFilesDir>.\\</SupportFilesDir>\r\n</ConfigData>";
+            File.WriteAllText(Path.Combine(directoryPath, "AppConfig.xml"), defaultConfig);
+        }
 
         // Logfile
         /// <summary>
@@ -866,10 +895,13 @@ namespace PerfView
 #if !PERFVIEW_COLLECT
             if (!App.CommandLineArgs.TrustPdbs)
             {
-                ret.SecurityCheck = delegate (string pdbFile)
+                ret.SecurityCheck = pdbFile =>
                 {
-                    var result = System.Windows.MessageBox.Show("Found " + pdbFile + " in a location that may not be trustworthy, do you trust this file?",
-                        "Security Check", System.Windows.MessageBoxButton.YesNo);
+                    var result = XamlMessageBox.Show(
+                        $"Found {pdbFile} on your local machine.  Do you want to use it?",
+                        "Security Check",
+                        System.Windows.MessageBoxButton.YesNo);
+
                     return result == System.Windows.MessageBoxResult.Yes;
                 };
             }
@@ -933,6 +965,17 @@ namespace PerfView
                     }
 
                     var localPdbPath = Path.Combine(localPdbDir, fileName);
+                    
+                    // If the source file is from an msfz0 subdirectory, also create the msfz0 subdirectory in the local cache
+                    var sourceDirectory = Path.GetDirectoryName(pdbPath);
+                    var sourceParentDir = Path.GetFileName(sourceDirectory);
+                    if (sourceParentDir == "msfz0")
+                    {
+                        localPdbDir = Path.Combine(localPdbDir, "msfz0");
+                        Directory.CreateDirectory(localPdbDir);
+                        localPdbPath = Path.Combine(localPdbDir, fileName);
+                    }
+                    
                     var fileExists = File.Exists(localPdbPath);
                     if (!fileExists || File.GetLastWriteTimeUtc(localPdbPath) != File.GetLastWriteTimeUtc(pdbPath))
                     {
@@ -1054,6 +1097,20 @@ namespace PerfView
         }
         private static string m_SymbolPath;
         private static string m_SourcePath;
+
+        /// <summary>
+        /// This enables using new accessibility features that were implemented on .NET Framework 4.7.1 or later 
+        /// despite the application targeting an earlier framework version. This resolves a few accessibility issues
+        /// that were fixed in later versions of .NET Framework. For more information, see below: 
+        ///   https://learn.microsoft.com/en-us/dotnet/framework/whats-new/whats-new-in-accessibility#accessibility-switches
+        /// </summary>
+        private static void SetAccessibilitySwitchOverrides()
+        {
+            AppContext.SetSwitch("Switch.UseLegacyAccessibilityFeatures", false);
+            AppContext.SetSwitch("Switch.UseLegacyAccessibilityFeatures.2", false);
+            AppContext.SetSwitch("Switch.UseLegacyAccessibilityFeatures.3", false);
+            AppContext.SetSwitch("Switch.UseLegacyAccessibilityFeatures.4", false);
+        }
 
 #region CreateConsole
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
@@ -1215,6 +1272,7 @@ namespace PerfView
             m_terseLog.Dispose();
             m_verboseLog.Dispose();
         }
+
 #region private
         private TextWriter m_verboseLog;
         private TextWriter m_terseLog;

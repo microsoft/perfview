@@ -29,16 +29,18 @@ namespace FastSerialization
         private long _capacity;
         private long _offset;
 
-        public MemoryMappedFileStreamReader(string mapName, long length)
-            : this(MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read), length, leaveOpen: false)
+        public MemoryMappedFileStreamReader(string mapName, long length, SerializationSettings settings)
+            : this(MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read), length, leaveOpen: false, settings)
         {
         }
 
-        public MemoryMappedFileStreamReader(MemoryMappedFile file, long length, bool leaveOpen)
+        public MemoryMappedFileStreamReader(MemoryMappedFile file, long length, bool leaveOpen, SerializationSettings settings)
         {
             _file = file;
             _fileLength = length;
             _leaveOpen = leaveOpen;
+
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
             if (IntPtr.Size == 4)
             {
@@ -53,11 +55,17 @@ namespace FastSerialization
             _viewAddress = _view.SafeMemoryMappedViewHandle.DangerousGetHandle();
         }
 
-        public static MemoryMappedFileStreamReader CreateFromFile(string path)
+        public static MemoryMappedFileStreamReader CreateFromFile(string path, SerializationSettings settings)
         {
             long capacity = new FileInfo(path).Length;
             MemoryMappedFile file = MemoryMappedFile.CreateFromFile(path, FileMode.Open, Guid.NewGuid().ToString("N"), capacity, MemoryMappedFileAccess.Read);
-            return new MemoryMappedFileStreamReader(file, capacity, leaveOpen: false);
+            return new MemoryMappedFileStreamReader(file, capacity, leaveOpen: false, settings);
+        }
+
+        public SerializationSettings Settings
+        {
+            get;
+            private set;
         }
 
         public DeferedStreamLabel Current

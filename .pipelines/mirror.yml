@@ -60,70 +60,60 @@ extends:
               artifactFeeds: 'DevDiv/PerfView-Mirror'
 
           - task: UsePythonVersion@0
-            displayName: 'Use Python 3.11.x'
+            displayName: 'Use Python 3.11'
             inputs:
-              versionSpec: 3.11.x
+              versionSpec: '3.11'
 
-          - task: CmdLine@1
+          - task: CmdLine@2
             displayName: 'Update pip to latest'
             inputs:
-              filename: python
-              arguments: '-m pip install --upgrade pip'
+              script: 'python -m pip install --upgrade pip'
 
-          - task: CmdLine@1
+          - task: CmdLine@2
             displayName: 'Install Azure CLI'
             inputs:
-              filename: pip
-              arguments: 'install --pre azure-cli'
+              script: 'pip install --pre azure-cli'
 
-          - task: CmdLine@1
+          - task: CmdLine@2
             displayName: 'Install Azure DevOps Extension'
             inputs:
-              filename: az
-              arguments: 'extension add -n azure-devops'
+              script: 'az extension add -n azure-devops'
 
-          - task: CmdLine@1
+          - task: CmdLine@2
             displayName: 'Configure Git user.email'
             inputs:
-              filename: git
-              arguments: 'config user.email "dn-bot@microsoft.com"'
+              script: 'git config user.email "dn-bot@microsoft.com"'
 
-          - task: CmdLine@1
+          - task: CmdLine@2
             displayName: 'Configure git user.name'
             inputs:
-              filename: git
-              arguments: 'config user.name "dotnet-bot"'
+              script: 'git config user.name "dotnet-bot"'
 
-          - task: CmdLine@1
+          - task: CmdLine@2
             displayName: 'Checkout GitHub main Branch'
             inputs:
-              filename: git
-              arguments: 'checkout $(SourceBranch)'
+              script: 'git checkout $(SourceBranch)'
 
-          - task: CmdLine@1
+          - task: CmdLine@2
             displayName: 'Create Mirror Branch'
             inputs:
-              filename: git
-              arguments: 'checkout -b $(MirrorBranch)'
+              script: 'git checkout -b $(MirrorBranch)'
 
-          - task: CmdLine@1
+          - task: CmdLine@2
             displayName: 'Run git reset'
             inputs:
-              filename: git
-              arguments: 'reset --hard origin/$(SourceBranch)'
+              script: 'git reset --hard origin/$(SourceBranch)'
             enabled: false
 
-          - task: CmdLine@1
+          - task: CmdLine@2
             displayName: 'Pull AzDO SourceBranch'
             inputs:
-              filename: 'git '
-              arguments: 'pull https://dn-bot:$(dn-bot-devdiv-build-rw-code-rw)@devdiv.visualstudio.com/DevDiv/_git/perfView $(SourceBranch)'
+              script: 'git pull --strategy=recursive --strategy-option no-renames https://dn-bot:$(dn-bot-devdiv-build-rw-code-rw)@devdiv.visualstudio.com/DevDiv/_git/perfView $(SourceBranch)'
 
-          - task: CmdLine@1
-            displayName: 'Run git push '
+          - task: CmdLine@2
+            displayName: 'Run git push'
             inputs:
-              filename: 'git '
-              arguments: 'push https://dn-bot:$(dn-bot-devdiv-build-rw-code-rw)@devdiv.visualstudio.com/DevDiv/_git/perfView $(MirrorBranch)'
+              script: 'git push https://dn-bot:$(dn-bot-devdiv-build-rw-code-rw)@devdiv.visualstudio.com/DevDiv/_git/perfView $(MirrorBranch)'
 
           - task: PowerShell@1
             displayName: 'Create Pull Request'

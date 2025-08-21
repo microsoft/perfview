@@ -1,12 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using Azure.Core;
 using Azure.Identity;
 using Microsoft.Diagnostics.Symbols.Authentication;
+using Microsoft.Diagnostics.Utilities;
 using Utilities;
 
 namespace PerfView
@@ -256,13 +259,7 @@ namespace PerfView
         /// <returns>This instance for fluent chaining.</returns>
         public static SymbolReaderAuthenticationHandler AddSymwebAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, bool silent = false)
         {
-            DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
-            {
-                ExcludeInteractiveBrowserCredential = silent,
-                ExcludeManagedIdentityCredential = true // This is not designed to be used in a service.
-            };
-
-            return httpHandler.AddHandler(new SymwebHandler(log, new DefaultAzureCredential(options)));
+            return httpHandler.AddHandler(new SymwebHandler(log, CreateTokenCredential(App.CommandLineArgs.SymbolsAuth)));
         }
 
         /// <summary>
@@ -285,13 +282,7 @@ namespace PerfView
         /// <returns>This instance for fluent chaining.</returns>
         public static SymbolReaderAuthenticationHandler AddAzureDevOpsAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, bool silent = false)
         {
-            DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
-            {
-                ExcludeInteractiveBrowserCredential = silent,
-                ExcludeManagedIdentityCredential = true // This is not designed to be used in a service.
-            };
-
-            return httpHandler.AddHandler(new AzureDevOpsHandler(log, new DefaultAzureCredential(options)));
+            return httpHandler.AddHandler(new AzureDevOpsHandler(log, CreateTokenCredential(App.CommandLineArgs.SymbolsAuth)));
         }
 
         /// <summary>
@@ -306,6 +297,39 @@ namespace PerfView
 
         public static SymbolReaderAuthenticationHandler AddBasicHttpAuthentication(this SymbolReaderAuthenticationHandler httpHandler, TextWriter log, Window mainWindow)
             => httpHandler.AddHandler(new BasicHttpAuthHandler(log));
+
+        private static ChainedTokenCredential CreateTokenCredential(SymbolsAuthenticationType authTypes)
+        {
+            var credentials = new List<TokenCredential>();
+
+            if (authTypes.HasFlag(SymbolsAuthenticationType.Environment))
+            {
+                credentials.Add(new EnvironmentCredential());
+            }
+            
+            if (authTypes.HasFlag(SymbolsAuthenticationType.AzureCli))
+            {
+                credentials.Add(new AzureCliCredential());
+            }
+            
+            if (authTypes.HasFlag(SymbolsAuthenticationType.VisualStudio))
+            {
+                credentials.Add(new VisualStudioCredential());
+            }
+            
+            if (authTypes.HasFlag(SymbolsAuthenticationType.Interactive))
+            {
+                credentials.Add(new InteractiveBrowserCredential());
+            }
+
+            // If no credentials are specified, default to Interactive
+            if (credentials.Count == 0)
+            {
+                credentials.Add(new InteractiveBrowserCredential());
+            }
+
+            return new ChainedTokenCredential(credentials.ToArray());
+        }
 
         /// <summary>
         /// Get the HWND of the given WPF window in a way that honors WPF

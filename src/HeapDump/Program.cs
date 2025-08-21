@@ -1,7 +1,7 @@
-﻿using Azure.Core;
-using Azure.Identity;
-using Microsoft.Diagnostics.Runtime;
+﻿using Microsoft.Diagnostics.Runtime;
+using Microsoft.Diagnostics.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -60,14 +60,7 @@ internal class Program
             string inputSpec = null;
             int minSecForTrigger = -1;
 
-            DefaultAzureCredential symbolsTokenCredential = new DefaultAzureCredential(
-                new DefaultAzureCredentialOptions()
-                {
-                    ExcludeInteractiveBrowserCredential = false,
-                    ExcludeManagedIdentityCredential = true,
-                });
-
-            var dumper = new GCHeapDumper(Console.Out, symbolsTokenCredential);
+            var dumper = new GCHeapDumper(Console.Out);
 
             for (int curArgIdx = 0; curArgIdx < args.Length; curArgIdx++)
             {
@@ -176,6 +169,22 @@ internal class Program
                             goto Usage;
                         }
                         Console.WriteLine("Generation To Trigger: " + dumper.GenerationToTrigger);
+                    }
+                    else if (arg.StartsWith("/SymbolsAuth:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string authTypesStr = arg.Substring(13);
+                        if (TryParseSymbolsAuthenticationTypes(authTypesStr, out SymbolsAuthenticationType parsedAuthTypes))
+                        {
+                            dumper.SymbolsAuthTokenCredential = SymbolsAuthenticationUtilities.CreateTokenCredential(parsedAuthTypes);
+                            Console.WriteLine("Set symbols authentication credentials to {0}", authTypesStr);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid value for /SymbolsAuth: {0}", authTypesStr);
+                            var validValues = string.Join(", ", Enum.GetNames(typeof(SymbolsAuthenticationType)));
+                            Console.WriteLine("Valid values are: {0} (can be combined with commas)", validValues);
+                            goto Usage;
+                        }
                     }
                     else
                     {
@@ -335,6 +344,34 @@ internal class Program
 
         return -1;
     }
+
+    private static bool TryParseSymbolsAuthenticationTypes(string authTypesStr, out SymbolsAuthenticationType result)
+    {
+        result = (SymbolsAuthenticationType)0;
+        
+        if (string.IsNullOrWhiteSpace(authTypesStr))
+        {
+            return false;
+        }
+
+        var parts = authTypesStr.Split(',');
+        foreach (var part in parts)
+        {
+            var trimmedPart = part.Trim();
+            if (Enum.TryParse<SymbolsAuthenticationType>(trimmedPart, true, out var parsedType))
+            {
+                result |= parsedType;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        return result != (SymbolsAuthenticationType)0;
+    }
+
+
 
     private static int PointerSizeForProcess(int processID)
     {

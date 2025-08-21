@@ -310,6 +310,7 @@ namespace PerfView
                 Title = "Collecting data over a user specified interval";
                 CommandToRunTextBox.IsEnabled = false;
                 CommandToRunTextBox.Visibility = Visibility.Hidden;
+                CommandToRunLabel.IsEnabled = false;
                 CommandToRunLabel.Visibility = Visibility.Hidden;
                 FocusProcessCheckBox.Visibility = Visibility.Visible;
                 FocusProcessTextBox.Visibility = Visibility.Visible;
@@ -345,6 +346,7 @@ namespace PerfView
                 FocusProcessCheckBox.Visibility = Visibility.Hidden;
                 FocusProcessTextBox.Visibility = Visibility.Hidden;
                 FocusProcessLabel.Visibility = Visibility.Hidden;
+                FocusProcessLabel.IsEnabled = false;
 
                 CommandToRunTextBox.Focus();
             }
@@ -939,12 +941,11 @@ namespace PerfView
 
         private void DoExpand(object sender, RoutedEventArgs e)
         {
-            // TODO I am trying to make the expander just grow the window, I do this by forcing the window height
-            // to change.  However this causes double-redraw, and it also requires me to figure out the right constant
-            // to add any time I change what is in the expander.   There is undoubtedly a better way...
             m_originalHeight = (int)Height;
-            Height = m_originalHeight + 180;
+            AdvancedOptionsGrid.Measure(new Size(AdvancedOptionsExpander.ActualWidth, double.PositiveInfinity));
+            Height += AdvancedOptionsGrid.DesiredSize.Height;
         }
+
         private void DoCollapsed(object sender, RoutedEventArgs e)
         {
             Height = m_originalHeight;
@@ -967,6 +968,7 @@ namespace PerfView
             }
             CpuCountersListBox.ItemsSource = cpuCounterSpecs;
             CpuCountersPopup.IsOpen = true;
+            Keyboard.Focus(CpuCountersListBox);
         }
         private void DoCpuCountersListBoxKey(object sender, KeyEventArgs e)
         {
@@ -981,6 +983,7 @@ namespace PerfView
             else if (e.Key == Key.Escape)
             {
                 CpuCountersPopup.IsOpen = false;
+                Keyboard.Focus(CpuCountersTextBox);
             }
         }
         private void DoCpuCountersListBoxDoubleClick(object sender, MouseButtonEventArgs e)
@@ -998,6 +1001,7 @@ namespace PerfView
                 sep = " ";
             }
             CpuCountersTextBox.Text = CpuCounters;
+            Keyboard.Focus(CpuCountersTextBox);
         }
 
         private static string MergeProvider(string providerList, string additionalProvider, string providerKeys, string providerLevel)

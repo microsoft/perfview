@@ -8,21 +8,24 @@
     <Window.CommandBindings>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp" />
     </Window.CommandBindings>
+    <Window.Resources>
+        <Style x:Key="ColumnHeaderStyle" TargetType="{x:Type WPFToolKit:DataGridColumnHeader}">
+            <Setter Property="Focusable" Value="True" />
+            <Setter Property="Background" Value="{DynamicResource ControlDefaultBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource ControlText}" />
+        </Style>
+    </Window.Resources>
     <DockPanel>
-        <RichTextBox DockPanel.Dock="Top" IsReadOnly="True" Background="{DynamicResource HelpRibbonBackground}" IsDocumentEnabled="True">
-            <RichTextBox.Document>
-                <FlowDocument>
-                    <Paragraph>
-                        The data collected was machine wide, but typically you are interested in only one process.
-                        This dialog box allows you to choose a particular process to focus on by either double clicking on a
-                        process or by selecting a process and hitting OK.
-                        The 'All Procs' button can be used if you wish to look at all data.
-                        See
-                        <Hyperlink Command="Help" CommandParameter="SelectProcessDialog">Selecting A Process Help</Hyperlink> for more.
-                    </Paragraph>
-                </FlowDocument>
-            </RichTextBox.Document>
-        </RichTextBox>
+        <Border DockPanel.Dock="Top" BorderBrush="#ABADB3" BorderThickness="1">
+            <TextBlock Background="{DynamicResource HelpRibbonBackground}" TextWrapping="Wrap" AutomationProperties.Name="Select process help">
+                The data collected was machine wide, but typically you are interested in only one process.
+                This dialog box allows you to choose a particular process to focus on by either double clicking on a
+                process or by selecting a process and hitting OK.
+                The 'All Procs' button can be used if you wish to look at all data.
+                See
+                <Hyperlink Command="Help" CommandParameter="SelectProcessDialog">Selecting A Process Help</Hyperlink> for more.
+            </TextBlock>
+        </Border>
         <Grid DockPanel.Dock="Top" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -36,6 +39,7 @@
         </Grid>
         <Grid DockPanel.Dock="Bottom" Background="{DynamicResource BackgroundColour}" >
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -45,10 +49,12 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Button Name="OKButton" Margin="5,4" Grid.Column="1" Width="80" Content="OK" Click="OKClicked" IsDefault="True" />
-            <Button Name="AllProcsButton" Margin="5,4" Grid.Column="3" Width="80" Content="All Procs" Click="AllProcsClicked"
+            <CheckBox Name="IncludeChildProcessesCheckBox" Grid.Column="0" Margin="5,0,0,0" VerticalAlignment="Center" 
+                     ToolTip="Include all descendant processes of selected processes">Include descendant processes</CheckBox>
+            <Button Name="OKButton" Margin="5,4" Grid.Column="2" MinWidth="80" Content="OK" Click="OKClicked" IsDefault="True" />
+            <Button Name="AllProcsButton" Margin="5,4" Grid.Column="4" MinWidth="80" Content="All Procs" Click="AllProcsClicked"
                     ToolTip="Investigate all processes"/>
-            <Button Margin="5,4" Grid.Column="5" Width="80" Content="Cancel" Click="CancelClicked" IsCancel="True" />
+            <Button Margin="5,4" Grid.Column="6" MinWidth="80" Content="Cancel" Click="CancelClicked" IsCancel="True" />
         </Grid>
         <Grid PreviewKeyDown="GridKeyDownHander">
             <WPFToolKit:DataGrid Name="Grid"
@@ -56,7 +62,9 @@
               Background="{DynamicResource BackgroundColour}"
               AutoGenerateColumns="False"
               MouseDoubleClick="OKClicked"
-              IsReadOnly="True">
+              IsReadOnly="True"
+              ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
+              AutomationProperties.Name="Process Selection Table">
                 <WPFToolKit:DataGrid.Resources>
                     <Style x:Key="RightAlign">
                         <Setter Property="TextBlock.TextAlignment" Value="Right"/>
@@ -85,6 +93,7 @@
                     <WPFToolKit:DataGridTextColumn
                 Header="Duration"
                 Binding="{Binding Duration}"
+                SortMemberPath="TotalDurationSeconds"
                 ElementStyle="{StaticResource RightAlign}"/>
                     <WPFToolKit:DataGridTextColumn
                 Header="CommandLine"

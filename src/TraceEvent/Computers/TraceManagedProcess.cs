@@ -3,7 +3,7 @@
 //
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin
-// using Microsoft.Diagnostics.Tracing.Parsers;
+
 using Microsoft.Diagnostics.Tracing.Analysis.GC;
 using Microsoft.Diagnostics.Tracing.Analysis.JIT;
 using Microsoft.Diagnostics.Tracing.Etlx;
@@ -692,9 +692,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         // is an int???
                         stats.GC.m_stats.allocTickCurrentMB[0] += valueMB;
                     }
-                    else
+                    else if (data.AllocationKind == GCAllocationKind.Large)
                     {
                         stats.GC.m_stats.allocTickCurrentMB[1] += valueMB;
+                    }
+
+                    else // POH
+                    {
+                        stats.GC.m_stats.allocTickCurrentMB[2] += valueMB;
                     }
                 };
 
@@ -874,16 +879,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     GCStats.ProcessCommittedUsage(stats, committedUsage);
                 };
 
-                source.Clr.GCDynamicEvent.GCHeapCountTuning += delegate (HeapCountTuningTraceEvent heapCountTuning)
+                source.Clr.GCDynamicEvent.GCDynamicTraceEvent += delegate (GCDynamicTraceEvent gcDynamic)
                 {
-                    var stats = currentManagedProcess(heapCountTuning.UnderlyingEvent);
-                    GCStats.ProcessHeapCountTuning(stats, heapCountTuning);
-                };
-
-                source.Clr.GCDynamicEvent.GCHeapCountSample += delegate (HeapCountSampleTraceEvent heapCountSample)
-                {
-                    var stats = currentManagedProcess(heapCountSample.UnderlyingEvent);
-                    GCStats.ProcessHeapCountSample(stats, heapCountSample);
+                    var stats = currentManagedProcess(gcDynamic.UnderlyingEvent);
+                    GCStats.ProcessGCDynamicEvent(stats, gcDynamic);
                 };
 
                 source.Clr.GCGlobalHeapHistory += delegate (GCGlobalHeapHistoryTraceData data)
@@ -1178,6 +1177,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             _gc.HasAllocTickEvents = true;
                             _gc.AllocedSinceLastGCBasedOnAllocTickMB[0] = stats.GC.m_stats.allocTickCurrentMB[0] - stats.GC.m_stats.allocTickAtLastGC[0];
                             _gc.AllocedSinceLastGCBasedOnAllocTickMB[1] = stats.GC.m_stats.allocTickCurrentMB[1] - stats.GC.m_stats.allocTickAtLastGC[1];
+                            _gc.AllocedSinceLastGCBasedOnAllocTickMB[2] = stats.GC.m_stats.allocTickCurrentMB[2] - stats.GC.m_stats.allocTickAtLastGC[2];
                         }
 
                         // This is where a background GC ends.
@@ -1211,6 +1211,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     stats.GC.m_stats.ProcessCpuAtLastGC = process.CPUMSec;
                     stats.GC.m_stats.allocTickAtLastGC[0] = stats.GC.m_stats.allocTickCurrentMB[0];
                     stats.GC.m_stats.allocTickAtLastGC[1] = stats.GC.m_stats.allocTickCurrentMB[1];
+                    stats.GC.m_stats.allocTickAtLastGC[2] = stats.GC.m_stats.allocTickCurrentMB[2];
                     stats.GC.m_stats.lastRestartEndTimeRelativeMSec = data.TimeStampRelativeMSec;
                 };
 
@@ -1978,7 +1979,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Amount of memory allocated since last GC.  Requires GCAllocationTicks enabled.  The
         /// data is split into small and large heaps
         /// </summary>
-        public double[] AllocedSinceLastGCBasedOnAllocTickMB = { 0.0, 0.0 };// Set in HeapStats
+        public double[] AllocedSinceLastGCBasedOnAllocTickMB = { 0.0, 0.0, 0.0 };// Set in HeapStats
         /// <summary>
         /// Number of heaps.  -1 is the default
         /// </summary>
@@ -2143,8 +2144,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        public HeapCountTuning HeapCountTuning { get; internal set; }
-        public HeapCountSample HeapCountSample { get; internal set; }
         public CommittedUsage CommittedUsageBefore { get; internal set; }
         public CommittedUsage CommittedUsageAfter { get; internal set; }
 
@@ -2157,9 +2156,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             double retSurvRate = double.NaN;
 
+            if (!ValidGenData(PerHeapHistories, gen))
+            {
+                return retSurvRate;
+            }
+
             long SurvRate = 0;
 
-            if (gen == Gens.GenLargeObj)
+            if (gen == Gens.GenLargeObj || gen == Gens.GenPinObj)
             {
                 if (Generation < 2)
                 {
@@ -2171,15 +2175,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 return retSurvRate;
             }
 
-            if (PerHeapHistories != null && PerHeapHistories.Count > 0)
+            for (int i = 0; i < PerHeapHistories.Count; i++)
             {
-                for (int i = 0; i < PerHeapHistories.Count; i++)
-                {
-                    SurvRate += PerHeapHistories[i].GenData[(int)gen].SurvRate;
-                }
-
-                SurvRate /= PerHeapHistories.Count;
+                SurvRate += PerHeapHistories[i].GenData[(int)gen].SurvRate;
             }
+
+            SurvRate /= PerHeapHistories.Count;
 
             retSurvRate = SurvRate;
 
@@ -2192,6 +2193,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public double GenSizeAfterMB(Gens gen)
         {
+            if (HeapStats == null)
+            {
+                return double.NaN;
+            }
+            
             if (gen == Gens.GenPinObj)
             {
                 return HeapStats.GenerationSize4 / 1000000.0;
@@ -2220,6 +2226,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Debug.Assert(false);
             return double.NaN;
         }
+
+
         /// <summary>
         /// Heap fragmentation by generation (mb)
         /// </summary>
@@ -2227,7 +2235,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public double GenFragmentationMB(Gens gen)
         {
-            if (PerHeapHistories == null)
+            if (!ValidGenData(PerHeapHistories, gen))
             {
                 return double.NaN;
             }
@@ -2256,7 +2264,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public double GenInMB(Gens gen)
         {
-            if (PerHeapHistories == null)
+            if (!ValidGenData(PerHeapHistories, gen))
             {
                 return double.NaN;
             }
@@ -2276,7 +2284,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public double GenOutMB(Gens gen)
         {
-            if (PerHeapHistories == null)
+            if (!ValidGenData(PerHeapHistories, gen))
             {
                 return double.NaN;
             }
@@ -2335,7 +2343,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public double GenBudgetMB(Gens gen)
         {
-            if (PerHeapHistories == null)
+            if (!ValidGenData(PerHeapHistories, gen))
             {
                 return double.NaN;
             }
@@ -2355,7 +2363,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public double GenObjSizeAfterMB(Gens gen)
         {
-            if (PerHeapHistories == null)
+            if (!ValidGenData(PerHeapHistories, gen))
             {
                 return double.NaN;
             }
@@ -2415,8 +2423,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
+        internal static bool ValidGenData(List<GCPerHeapHistory> perHeapHistories, Gens gen)
+            => !(perHeapHistories == null || perHeapHistories.Count == 0 || perHeapHistories[0].GenData.Length <= (int)gen);
+
         public enum TimingType
-        {            
+        {
             /// <summary>
             /// This field records the time spent for marking roots (except objects pointed by sizedref handle and their descendents)
             ///
@@ -2522,7 +2533,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 if (gen == GenNumberHighest)
                 {
                     return HeapIndex;
-                }            }
+                }
+            }
 
             return 0;
         }
@@ -2687,8 +2699,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             HeapSizePeakMB = GetHeapSizePeakMB(details.GCs, this);
             UserAllocated[(int)Gens.Gen0] = GetUserAllocated(details.GCs, this, Gens.Gen0);
             UserAllocated[(int)Gens.GenLargeObj] = GetUserAllocated(details.GCs, this, Gens.GenLargeObj);
+            UserAllocated[(int)Gens.GenPinObj] = GetUserAllocated(details.GCs, this, Gens.GenPinObj);
             HeapSizeBeforeMB = GetHeapSizeBeforeMB(details.GCs, this);
-            for (int gen = (int)Gens.Gen0; gen <= (int)Gens.GenLargeObj; gen++)
+            for (int gen = (int)Gens.Gen0; gen <= (int)Gens.GenPinObj; gen++)
             {
                 GenSizeBeforeMB[gen] = GetGenSizeBeforeMB(details.GCs, this, (Gens)gen);
             }
@@ -2776,12 +2789,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             Gens gen = Gens.Gen2;
             FreeListEfficiency freeList = new FreeListEfficiency();
 
-            // I am not worried about gen0 or LOH's free list efficiency right now - it's
+            // I am not worried about gen0 or LOH's or POH's free list efficiency right now - it's
             // calculated differently.
             if ((gc.PerHeapHistories == null) ||
                 (gc.PerHeapHistories.Count == 0) ||
                 (gen == Gens.Gen0) ||
                 (gen == Gens.GenLargeObj) ||
+                (gen == Gens.GenPinObj) ||
                 (gc.Index <= 0) ||
                 !(gc.PerHeapHistories[0].VersionRecognized))
             {
@@ -2861,7 +2875,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
         internal static double GetAllocedSinceLastGCMB(List<TraceGC> GCs, TraceGC gc)
         {
-            return GetUserAllocated(GCs, gc, Gens.Gen0) + GetUserAllocated(GCs, gc, Gens.GenLargeObj);
+            return GetUserAllocated(GCs, gc, Gens.Gen0) + GetUserAllocated(GCs, gc, Gens.GenLargeObj) + GetUserAllocated(GCs, gc, Gens.GenPinObj);
         }
 
         internal static double GetRatioPeakAfter(List<TraceGC> GCs, TraceGC gc) { if (gc.HeapSizeAfterMB == 0) { return 0; } return GetHeapSizePeakMB(GCs, gc) / gc.HeapSizeAfterMB; }
@@ -2893,7 +2907,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// </summary>
         internal static double GetUserAllocated(List<TraceGC> GCs, TraceGC gc, Gens gen)
         {
-            Debug.Assert((gen == Gens.Gen0) || (gen == Gens.GenLargeObj));
+            Debug.Assert((gen == Gens.Gen0) || (gen == Gens.GenLargeObj) || (gen == Gens.GenPinObj));
 
             if ((gc.Type == GCType.BackgroundGC) && (gen == Gens.Gen0))
             {
@@ -2926,7 +2940,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         internal static double GetHeapSizeBeforeMB(List<TraceGC> GCs, TraceGC gc)
         {
             double ret = 0;
-            for (Gens gen = Gens.Gen0; gen <= Gens.GenLargeObj; gen++)
+            for (Gens gen = Gens.Gen0; gen <= Gens.GenPinObj; gen++)
             {
                 ret += GetGenSizeBeforeMB(GCs, gc, gen);
             }
@@ -2937,18 +2951,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         // Per generation stats.
         internal static double GetGenSizeBeforeMB(List<TraceGC> GCs, TraceGC gc, Gens gen)
         {
-            if (gc.PerHeapHistories != null && gc.PerHeapHistories.Count > 0)
+            if (ValidGenData(gc.PerHeapHistories, gen))
             {
                 double ret = 0.0;
                 for (int HeapIndex = 0; HeapIndex < gc.PerHeapHistories.Count; HeapIndex++)
                 {
-                    ret += gc.PerHeapHistories[HeapIndex].GenData[(int)gen].SizeBefore / 1000000.0;
+                    if (gc.PerHeapHistories[HeapIndex].GenData.Length > (int)gen)
+                    {
+                        ret += gc.PerHeapHistories[HeapIndex].GenData[(int)gen].SizeBefore / 1000000.0;
+                    }
                 }
 
                 return ret;
             }
 
-            // When we don't have perheap history we can only estimate for gen0 and gen3.
+            // When we don't have perheap history we can only estimate for gen0, gen3 and gen4.
             double Gen0SizeBeforeMB = 0;
             if (gen == Gens.Gen0)
             {
@@ -3026,23 +3043,30 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             Debug.Assert(HeapIndex < gc.PerHeapHistories.Count);
 
+            // If the gen data isn't available for the specific PerHeapHistory, we can't calculate.
+            if (!ValidGenData(gc.PerHeapHistories, gen))
+            {
+                return 0;
+            }
+
             long prevObjSize = 0;
             if (gc.Index > 0)
             {
-                // If the prevous GC has that heap get its size.
+                // If the previous GC has that heap get its size.
                 var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
                 if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
                 {
                     prevObjSize = perHeapGenData[HeapIndex].GenData[(int)gen].ObjSizeAfter;
-                    // Note that for gen3 we need to do something extra as its after data may not be updated if the last
+                    // Note that for gen3 or gen4 we need to do something extra as its after data may not be updated if the last
                     // GC was a gen0 GC (A GC will update its size after data up to (Generation + 1) because that's all
                     // it would change).
-                    if ((gen == Gens.GenLargeObj) && (prevObjSize == 0) && (GCs[gc.Index - 1].Generation < (int)Gens.Gen1))
+                    if ((gen == Gens.GenLargeObj || gen == Gens.GenPinObj) && (prevObjSize == 0) && (GCs[gc.Index - 1].Generation < (int)Gens.Gen1))
                     {
                         prevObjSize = perHeapGenData[HeapIndex].GenData[(int)gen].ObjSpaceBefore;
                     }
                 }
             }
+
             GCPerHeapHistoryGenData currentGenData = gc.PerHeapHistories[HeapIndex].GenData[(int)gen];
             double Allocated;
 
@@ -3082,7 +3106,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 {
                     // If the prevous GC has that heap get its size.
                     var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
-                    if (perHeapGenData?.Count > 0 && HeapIndex < perHeapGenData.Count)
+                    if (ValidGenData(perHeapGenData, gen))
                     {
                         return perHeapGenData[HeapIndex].GenData[(int)gen].Budget;
                     }
@@ -3182,40 +3206,40 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
             if (PerHeapMarkTimes != null)
             {
+                List<(MarkRootType, double)> perRootMarkTime = new List<(MarkRootType, double)>((int)MarkRootType.MarkMax);
+
                 foreach (KeyValuePair<int, MarkInfo> item in PerHeapMarkTimes)
                 {
-                    if (item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] == 0.0)
+                    // Accumulate all the times that have a corresponding mark event.
+                    for (int i = 0; i < item.Value.MarkTimes.Length; i++)
                     {
-                        item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] = StartRelativeMSec;
+                        if (item.Value.MarkTimes[i] != -1)
+                        {
+                            perRootMarkTime.Add(((MarkRootType)i, item.Value.MarkTimes[i]));
+                        }
                     }
 
-                    if (item.Value.MarkTimes[(int)MarkRootType.MarkOverflow] > StartRelativeMSec)
+                    // Sort the perRootMarkTime in place so we can accumulate the times.
+                    perRootMarkTime.Sort((first, second) => first.Item2.CompareTo(second.Item2));
+
+                    for (int orderedDataIdx = 0; orderedDataIdx < perRootMarkTime.Count; orderedDataIdx++)
                     {
-                        if (item.Value.MarkTimes[(int)MarkRootType.MarkOlder] == 0.0)
+                        var orderedItem = perRootMarkTime[orderedDataIdx];
+                        if (orderedDataIdx == 0)
                         {
-                            item.Value.MarkTimes[(int)MarkRootType.MarkOverflow] -= item.Value.MarkTimes[(int)MarkRootType.MarkOlder];
+                            item.Value.MarkTimes[(int)orderedItem.Item1] = orderedItem.Item2 - StartRelativeMSec;
                         }
                         else
                         {
-                            item.Value.MarkTimes[(int)MarkRootType.MarkOverflow] -= item.Value.MarkTimes[(int)MarkRootType.MarkHandles];
+                            var prevItem = perRootMarkTime[orderedDataIdx - 1];
+                            item.Value.MarkTimes[(int)orderedItem.Item1] = orderedItem.Item2 - prevItem.Item2;
                         }
                     }
 
-                    if (Generation == 2)
-                    {
-                        item.Value.MarkTimes[(int)MarkRootType.MarkOlder] = 0;
-                    }
-                    else
-                    {
-                        item.Value.MarkTimes[(int)MarkRootType.MarkOlder] -= item.Value.MarkTimes[(int)MarkRootType.MarkHandles];
-                    }
-
-                    item.Value.MarkTimes[(int)MarkRootType.MarkHandles] -= item.Value.MarkTimes[(int)MarkRootType.MarkFQ];
-                    item.Value.MarkTimes[(int)MarkRootType.MarkFQ] -= item.Value.MarkTimes[(int)MarkRootType.MarkStack];
-                    item.Value.MarkTimes[(int)MarkRootType.MarkStack] -= item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef];
-                    item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] -= StartRelativeMSec;
+                    perRootMarkTime.Clear();
                 }
             }
+
             fMarkTimesConverted = true;
         }
 
@@ -3327,6 +3351,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         // for server background GC as the imbalance there is much less important.
 
         private float[] GCCpuServerGCThreads = null;
+
+        private List<GCDynamicEvent> dynamicEvents = new List<GCDynamicEvent>();
+
+        public List<GCDynamicEvent> DynamicEvents
+        {
+            get { return this.dynamicEvents; }
+        }
+
+        internal void AddDynamicEvent(GCDynamicEvent dynamicEvent)
+        {
+            dynamicEvents.Add(dynamicEvent);
+        }
 
         #endregion
     }
@@ -3697,9 +3733,19 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         public MarkInfo(bool initPromoted = true)
         {
             MarkTimes = new double[(int)MarkRootType.MarkMax];
+
+            for (int i = 0; i < MarkTimes.Length; i++)
+            {
+                MarkTimes[i] = -1;
+            }
+
             if (initPromoted)
             {
                 MarkPromoted = new long[(int)MarkRootType.MarkMax];
+                for (int i = 0; i < MarkPromoted.Length; i++)
+                {
+                    MarkPromoted[i] = -1;
+                }
             }
         }
     };
@@ -4667,8 +4713,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         // candidate to be made private/ex
         //
         // The amount of memory allocated by the user threads. So they are divided up into gen0 and LOH allocations.
-        internal double[] allocTickCurrentMB = { 0.0, 0.0 };
-        internal double[] allocTickAtLastGC = { 0.0, 0.0 };
+        internal double[] allocTickCurrentMB = { 0.0, 0.0, 0.0 };
+        internal double[] allocTickAtLastGC = { 0.0, 0.0, 0.0 };
         internal bool HasAllocTickEvents = false;
         internal bool SeenBadAllocTick = false;
 
@@ -4784,11 +4830,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 if (data.Times != null)
                 {
                     _event.TimingInfo = new Nullable<int>[(int)TraceGC.TimingType.Sweep + 1];
+
+                    // These are fired by all GCs and the only fields fired by BGCs.
                     _event.TimingInfo[(int)TraceGC.TimingType.MarkRoot] = data.Times[1];
                     _event.TimingInfo[(int)TraceGC.TimingType.MarkShortWeak] = data.Times[2];
                     _event.TimingInfo[(int)TraceGC.TimingType.MarkScanFinalization] = data.Times[3];
                     _event.TimingInfo[(int)TraceGC.TimingType.MarkLongWeak] = data.Times[4];
-                    if (_event.Type != GCType.BackgroundGC)
+
+                    // Instead of checking for the type we check the length of the data because we could be in
+                    // a situation where the beginning of a BGC is not in the trace and GetLastGC might not
+                    // get the actual BGC when it should.
+                    if (data.Times.Length > 5)
                     {
                         _event.TimingInfo[(int)TraceGC.TimingType.Plan] = data.Times[5];
                         if ((_event.GlobalHeapHistory.GlobalMechanisms & GCGlobalMechanisms.Compaction) != 0)
@@ -4846,7 +4898,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     hist.GenData[(int)GenIndex] = data.GenData(GenIndex);
                 }
 
-                if (_event.PerHeapHistories == null) { _event.PerHeapHistories = new List<GCPerHeapHistory>(); }
+                Debug.Assert(_event.PerHeapHistories != null);
                 _event.PerHeapHistories.Add(hist);
             }
         }
@@ -4933,12 +4985,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             {
                 CommittedUsage traceData = new CommittedUsage
                 {
-                    Version                        = committedUsage.Version,
-                    TotalCommittedInUse            = committedUsage.TotalCommittedInUse,
+                    Version = committedUsage.Version,
+                    TotalCommittedInUse = committedUsage.TotalCommittedInUse,
                     TotalCommittedInGlobalDecommit = committedUsage.TotalCommittedInGlobalDecommit,
-                    TotalCommittedInFree           = committedUsage.TotalCommittedInFree,
-                    TotalCommittedInGlobalFree     = committedUsage.TotalCommittedInGlobalFree,
-                    TotalBookkeepingCommitted      = committedUsage.TotalBookkeepingCommitted
+                    TotalCommittedInFree = committedUsage.TotalCommittedInFree,
+                    TotalCommittedInGlobalFree = committedUsage.TotalCommittedInGlobalFree,
+                    TotalBookkeepingCommitted = committedUsage.TotalBookkeepingCommitted
                 };
 
                 if (_event.CommittedUsageBefore == null)
@@ -4953,41 +5005,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        internal static void ProcessHeapCountTuning(TraceLoadedDotNetRuntime proc, HeapCountTuningTraceEvent heapCountTuning)
-        {
-            TraceGC _event = GetGC(proc, heapCountTuning.GCIndex);
-            if (_event != null)
-            {
-                // Copy over the contents of the dynamic data to prevent issues when the event is reused.
-                _event.HeapCountTuning = new HeapCountTuning
-                {
-                    Version                       = heapCountTuning.Version,
-                    NewHeapCount                  = heapCountTuning.NewHeapCount,
-                    GCIndex                       = heapCountTuning.GCIndex,
-                    MedianThroughputCostPercent         = heapCountTuning.MedianThroughputCostPercent,
-                    SmoothedMedianThroughputCostPercent = heapCountTuning.SmoothedMedianThroughputCostPercent,
-                    ThroughputCostPercentReductionPerStepUp    = heapCountTuning.ThroughputCostPercentReductionPerStepUp,
-                    ThroughputCostPercentIncreasePerStepDown   = heapCountTuning.ThroughputCostPercentIncreasePerStepDown,
-                    SpaceCostPercentIncreasePerStepUp    = heapCountTuning.SpaceCostPercentIncreasePerStepUp,
-                    SpaceCostPercentDecreasePerStepDown  = heapCountTuning.SpaceCostPercentDecreasePerStepDown
-                };
-            }
-        }
-
-        internal static void ProcessHeapCountSample(TraceLoadedDotNetRuntime proc, HeapCountSampleTraceEvent heapCountSample)
+        internal static void ProcessGCDynamicEvent(TraceLoadedDotNetRuntime proc, GCDynamicTraceEvent gcDynamic)
         {
             TraceGC _event = GetLastGC(proc);
             if (_event != null)
             {
-                _event.HeapCountSample = new HeapCountSample
-                {
-                    Version               = heapCountSample.Version,
-                    GCIndex               = heapCountSample.GCIndex,
-                    // Convert the microsecond properties to MSec to be consistent with the other time based metrics.
-                    ElapsedTimeBetweenGCsMSec = heapCountSample.ElapsedTimeBetweenGCs / 1000.0,
-                    GCPauseTimeMSec           = heapCountSample.GCPauseTime / 1000.0,
-                    MslWaitTimeMSec           = heapCountSample.MslWaitTime / 1000.0
-                };
+                _event.AddDynamicEvent(new GCDynamicEvent
+                (
+                    gcDynamic.UnderlyingEvent.Name,
+                    gcDynamic.UnderlyingEvent.TimeStamp,
+                    gcDynamic.DataField
+                ));
             }
         }
 

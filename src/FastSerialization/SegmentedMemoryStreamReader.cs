@@ -12,15 +12,15 @@ namespace FastSerialization
         /// <summary>
         /// Create a IStreamReader (reads binary data) from a given byte buffer
         /// </summary>
-        public SegmentedMemoryStreamReader(SegmentedList<byte> data, SerializationConfiguration config = null) : this(data, 0, data.Count, config) { }
+        public SegmentedMemoryStreamReader(SegmentedList<byte> data, SerializationSettings settings) : this(data, 0, data.Count, settings) { }
         /// <summary>
         /// Create a IStreamReader (reads binary data) from a given subregion of a byte buffer 
         /// </summary>
-        public SegmentedMemoryStreamReader(SegmentedList<byte> data, long start, long length, SerializationConfiguration config = null)
+        public SegmentedMemoryStreamReader(SegmentedList<byte> data, long start, long length, SerializationSettings settings)
         {
-            SerializationConfiguration = config ?? new SerializationConfiguration();
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
-            if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
             {
                 readLabel = () =>
                 {
@@ -157,7 +157,7 @@ namespace FastSerialization
         {
             Debug.Assert(label != StreamLabel.Invalid);
 
-            if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+            if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
             {
                 Debug.Assert((long)label <= int.MaxValue);
                 position = (uint)label;
@@ -174,7 +174,7 @@ namespace FastSerialization
         {
             get
             {
-                if (SerializationConfiguration.StreamLabelWidth == StreamLabelWidth.FourBytes)
+                if (Settings.StreamLabelWidth == StreamLabelWidth.FourBytes)
                 {
                     return (StreamLabel)(uint)position;
                 }
@@ -206,9 +206,9 @@ namespace FastSerialization
         protected virtual void Dispose(bool disposing) { }
 
         /// <summary>
-        /// Returns the SerializationConfiguration for this stream reader.
+        /// Returns the <code>SerializationSettings</code> for this stream reader.
         /// </summary>
-        internal SerializationConfiguration SerializationConfiguration { get; private set; }
+        internal SerializationSettings Settings { get; private set; }
         #endregion
 
         #region private 

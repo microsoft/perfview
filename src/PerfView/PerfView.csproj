@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="MSBuild.Sdk.Extras">
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
     <TargetFramework>net462</TargetFramework>
@@ -9,11 +9,15 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <ExtrasEnableWpfProjectSetup>true</ExtrasEnableWpfProjectSetup>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <UseWPF>true</UseWPF>
 
     <Description>PerfView</Description>
     <Company>Microsoft</Company>
     <Copyright>Copyright © Microsoft 2010</Copyright>
     <FileVersion>$(PerfViewVersion)</FileVersion>
+
+    <!-- WebView2 downloads the wrong drivers unless this is set -->
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
@@ -69,6 +73,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="app.manifest" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="PresentationFramework.Aero" />
@@ -80,24 +85,30 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Core" Version="$(AzureCoreVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Azure.Identity" Version="$(AzureIdentityVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" Version="$(MicrosoftDiagnosticsTracingTraceEventAutomatedAnalysisAnalyzersVersion)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Identity.Client" Version="$(MicrosoftIdentityClientVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Identity.Client.Extensions.Msal" Version="$(MicrosoftIdentityClientExtensionsMsalVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.IdentityModel.Abstractions" Version="$(MicrosoftIdentityModelAbstractionsVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="$(MicrosoftIdentityModelTokensVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="$(MicrosoftIdentityModelJsonWebTokensVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
-    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="$(SystemDiagnosticsDiagnosticSourceVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="$(SystemSecurityCryptographyProtectedDataVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Text.Encodings.Web" Version="$(SystemTextEncodingsWebVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="Azure.Core" GeneratePathProperty="true" />
+    <PackageReference Include="Azure.Identity" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Identity.Client" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Identity.Client.Extensions.Msal" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.IdentityModel.Abstractions" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Web.WebView2" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Windows.CsWin32">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="PerfView.SupportFiles" PrivateAssets="all" />
+    <PackageReference Include="System.Buffers" GeneratePathProperty="true" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" GeneratePathProperty="true" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" GeneratePathProperty="true" />
+    <PackageReference Include="System.Memory" GeneratePathProperty="true" />
+    <PackageReference Include="System.Numerics.Vectors" GeneratePathProperty="true" />
+    <PackageReference Include="System.Text.Encodings.Web" GeneratePathProperty="true" />
+    <PackageReference Include="System.Text.Json" GeneratePathProperty="true" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" GeneratePathProperty="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -108,19 +119,20 @@
       HeapDump dependencies are pulled from the HeapDump output directory because HeapDump runs out of process
       and can have a different set of dependencies.
     -->
-    <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Win32.Registry" GeneratePathProperty="true" />
+    <PackageReference Include="System.Collections.Immutable" GeneratePathProperty="true" />
+    <PackageReference Include="System.Reflection.Metadata" GeneratePathProperty="true" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" GeneratePathProperty="true" />
 
     <!-- *** SourceLink Support *** -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkGitHubVersion)" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CSVReader\CSVReader.csproj" />
     <ProjectReference Include="..\EtwClrProfilerSigning\EtwClrProfilerSigning.csproj" />
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
+    <ProjectReference Include="..\PerfView.Tutorial\PerfView.Tutorial.csproj" />
     <ProjectReference Include="..\SymbolsAuth\SymbolsAuth.csproj" />
     <ProjectReference Include="..\traceEvent\TraceEvent.csproj" />
   </ItemGroup>
@@ -167,6 +179,9 @@
     <Compile Include="..\Utilities\StringUtilities.cs">
       <Link>Utilities\StringUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\Utilities\SymbolsAuthenticationUtilities.cs">
+      <Link>Utilities\SymbolsAuthenticationUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\Utilities\XmlUtilities.cs">
       <Link>Utilities\XmlUtilities.cs</Link>
     </Compile>
@@ -178,11 +193,6 @@
     </Compile>
     <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
     <Compile Include="..\Utilities\TeeTextWriter.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- The tutorial only gets included as an embedded resource -->
-    <Compile Remove="SupportFiles\tutorial.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -300,6 +310,13 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\HeapDump\System.Collections.Immutable.dll</LogicalName>
       <Link>HeapDump\System.Collections.Immutable.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\HeapDump\$(OutDir)\System.Runtime.CompilerServices.Unsafe.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\HeapDump\System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
+      <Link>HeapDump\System.Runtime.CompilerServices.Unsafe.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\System.Memory.dll">
@@ -436,7 +453,7 @@
       <Link>x86\Microsoft.Diagnostics.Runtime.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'" Include="$(NuGetPackageRoot)\Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\netstandard2.0\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Condition="'$(MicrosoftDiagnosticsRuntimeVersion)' != 'local'" Include="$(PkgMicrosoft_Diagnostics_Runtime)\lib\netstandard2.0\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
@@ -510,28 +527,70 @@
       <Link>Microsoft.Identity.Client.Extensions.Msal.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_Abstractions)\lib\net461\Microsoft.IdentityModel.Abstractions.dll">
+    <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_Abstractions)\lib\net462\Microsoft.IdentityModel.Abstractions.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.IdentityModel.Abstractions.dll</LogicalName>
       <Link>Microsoft.IdentityModel.Abstractions.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_JsonWebTokens)\lib\net461\Microsoft.IdentityModel.JsonWebTokens.dll">
+    <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_JsonWebTokens)\lib\net462\Microsoft.IdentityModel.JsonWebTokens.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.IdentityModel.JsonWebTokens.dll</LogicalName>
       <Link>Microsoft.IdentityModel.JsonWebTokens.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_Tokens)\lib\net461\Microsoft.IdentityModel.Tokens.dll">
+    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\lib\net462\Microsoft.Web.WebView2.Core.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Web.WebView2.Core.dll</LogicalName>
+      <Link>Microsoft.Web.WebView2.Core.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\lib\net462\Microsoft.Web.WebView2.WinForms.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Web.WebView2.WinForms.dll</LogicalName>
+      <Link>Microsoft.Web.WebView2.WinForms.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\lib\net462\Microsoft.Web.WebView2.Wpf.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Web.WebView2.Wpf.dll</LogicalName>
+      <Link>Microsoft.Web.WebView2.Wpf.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x86\native\WebView2Loader.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\runtimes\win-x86\native\WebView2Loader.dll</LogicalName>
+      <Link>runtimes\win-x86\native\WebView2Loader.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x64\native\WebView2Loader.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\runtimes\win-x64\native\WebView2Loader.dll</LogicalName>
+      <Link>runtimes\win-x64\native\WebView2Loader.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-arm64\native\WebView2Loader.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\runtimes\win-arm64\native\WebView2Loader.dll</LogicalName>
+      <Link>runtimes\win-arm64\native\WebView2Loader.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_Tokens)\lib\net462\Microsoft.IdentityModel.Tokens.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.IdentityModel.Tokens.dll</LogicalName>
       <Link>Microsoft.IdentityModel.Tokens.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Buffers)\lib\net461\System.Buffers.dll">
+    <EmbeddedResource Include="$(PkgSystem_Buffers)\lib\net462\System.Buffers.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Buffers.dll</LogicalName>
@@ -545,21 +604,21 @@
       <Link>System.Diagnostics.DiagnosticSource.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Memory)\lib\net461\System.Memory.dll">
+    <EmbeddedResource Include="$(PkgSystem_Memory)\lib\net462\System.Memory.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Memory.dll</LogicalName>
       <Link>System.Memory.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Numerics_Vectors)\lib\net46\System.Numerics.Vectors.dll">
+    <EmbeddedResource Include="$(PkgSystem_Numerics_Vectors)\lib\net462\System.Numerics.Vectors.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Numerics.Vectors.dll</LogicalName>
       <Link>System.Numerics.Vectors.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Security_Cryptography_ProtectedData)\lib\net461\System.Security.Cryptography.ProtectedData.dll">
+    <EmbeddedResource Include="$(PkgSystem_Security_Cryptography_ProtectedData)\lib\net462\System.Security.Cryptography.ProtectedData.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Security.Cryptography.ProtectedData.dll</LogicalName>
@@ -580,26 +639,26 @@
       <Link>System.Text.Json.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Threading_Tasks_Extensions)\lib\net461\System.Threading.Tasks.Extensions.dll">
+    <EmbeddedResource Include="$(PkgSystem_Threading_Tasks_Extensions)\lib\net462\System.Threading.Tasks.Extensions.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Threading.Tasks.Extensions.dll</LogicalName>
       <Link>System.Threading.Tasks.Extensions.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportFiles\tutorial.exe">
+    <EmbeddedResource Include="..\PerfView.Tutorial\bin\$(Configuration)\net462\tutorial.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\tutorial.exe</LogicalName>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportFiles\tutorial.pdb">
+    <EmbeddedResource Include="..\PerfView.Tutorial\bin\$(Configuration)\net462\tutorial.pdb">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\tutorial.pdb</LogicalName>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportFiles\tutorial.cs">
+    <EmbeddedResource Include="..\PerfView.Tutorial\tutorial.cs">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\tutorial.cs.txt</LogicalName>
@@ -714,6 +773,8 @@
 
   <ItemGroup>
     <Resource Include="images\**\*.*" />
+    <Content Include="NativeMethods.txt" />
+    <Content Include="NativeMethods.json" />
     <Resource Include="GuiUtilities\TextEditor\Images\FindNext_VS.png" />
     <Resource Include="performance.ico" />
   </ItemGroup>
@@ -727,7 +788,7 @@
     <FilesToSign Include="$(TargetPath)">
         <Authenticode>Microsoft400</Authenticode>
     </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
+    <PackageReference Include="MicroBuild.Core" />
   </ItemGroup>
 
 </Project>

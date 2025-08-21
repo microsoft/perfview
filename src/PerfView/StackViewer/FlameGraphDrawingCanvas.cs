@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Microsoft.Diagnostics.Tracing.Stacks;
 using PerfView.Utilities;
 using static PerfView.FlameGraph;
 
@@ -22,6 +24,7 @@ namespace PerfView
         private List<Visual> visuals = new List<Visual>();
         private FlameBoxesMap flameBoxesMap = new FlameBoxesMap();
         private ToolTip tooltip = new ToolTip() { FontSize = 20.0 };
+        private CallTreeNode selectedNode;
         private ScaleTransform scaleTransform = new ScaleTransform(1.0f, 1.0f, 0.0f, 0.0f);
         private Cursor cursor;
 
@@ -29,6 +32,7 @@ namespace PerfView
         {
             MouseMove += OnMouseMove;
             MouseLeave += OnMouseLeave;
+            MouseRightButtonDown += (s, e) => selectedNode = flameBoxesMap.Find(e.MouseDevice.GetPosition(this)).Node;
             PreviewMouseWheel += OnPreviewMouseWheel;
             MouseLeftButtonDown += OnMouseLeftButtonDown;
             MouseLeftButtonUp += OnMouseLeftButtonUp;
@@ -38,6 +42,8 @@ namespace PerfView
 
         public bool IsEmpty => visuals.Count == 0;
 
+        public CallTreeNodeBase SelectedNode => selectedNode;
+
         protected override int VisualChildrenCount => visuals.Count;
 
         protected override Visual GetVisualChild(int index) => visuals[index];
@@ -46,25 +52,56 @@ namespace PerfView
 
         public void Draw(IEnumerable<FlameBox> boxes)
         {
+            var blackBrush = new SolidColorBrush(Color.FromRgb(12, 12, 12));
+            blackBrush.Freeze();
+
             Clear();
 
             var visual = new DrawingVisual { Transform = scaleTransform }; // we have only one visual to provide best possible perf
 
             using (DrawingContext drawingContext = visual.RenderOpen())
             {
-                int index = 0;
-                System.Drawing.Font forSize = null;
-
+                // Draw borders around flame boxes using rectangles rather than Pen for performance
+                double maxBorder = 0.5 / scaleTransform.ScaleX; // Border thickness of 0.5 at all zoom levels
+                const double MaxBorderPercent = 0.2; // For thin boxes, ensure border is not thicker than 20% of the box width
                 foreach (var box in boxes)
                 {
-                    var brush = Brushes[box.Node.InclusiveMetric < 0 ? 1 : 0][index++ % Brushes.Length]; // use second brush set (aqua theme) for negative metrics
+                    var node = box.Node;
 
-                    drawingContext.DrawRectangle(
-                        brush,
-                        null,  // no Pen is crucial for performance
-                        new Rect(box.X, box.Y, box.Width, box.Height));
+                    // Draw root border box
+                    if (node.Caller == null)
+                    {
+                        var rootBorderBox = new Rect(box.X - maxBorder, box.Y - maxBorder, box.Width + 2 * maxBorder, box.Height);
+                        drawingContext.DrawRectangle(blackBrush, null, rootBorderBox);
+                    }
 
-                    if (box.Width * scaleTransform.ScaleX > 50 && box.Height * scaleTransform.ScaleY >= 6) // we draw the text only if humans can see something
+                    // Draw a single border box around all children - assumes that all children are adjacent which is true in FlameGraph.Calculate
+                    if (node.Callees != null)
+                    {
+                        double childrenRatio = node.Callees.Sum(child => Math.Abs(child.InclusiveMetric)) / Math.Abs(node.InclusiveMetric);
+                        double childrenWidth = box.Width * childrenRatio;
+                        double childrenX = box.X + (box.Width - childrenWidth) / 2.0;
+                        double childrenY = box.Y - box.Height;
+                        var borderSize = Math.Min(maxBorder, childrenWidth * MaxBorderPercent);
+                        var borderBox = new Rect(childrenX - borderSize, childrenY - borderSize, childrenWidth + 2 * borderSize, box.Height);
+                        drawingContext.DrawRectangle(blackBrush, null, borderBox);
+                    }
+
+                    // store boxes in boxesMap to avoid multiple enumeration
+                    flameBoxesMap.Add(box);
+                }
+
+                int index = 0;
+                System.Drawing.Font forSize = null;
+                foreach (var box in flameBoxesMap.EnumerateBoxes())
+                {
+                    var brushSet = Brushes[box.Node.InclusiveMetric < 0 ? 1 : 0]; // use second brush set (aqua theme) for negative metrics
+                    var brush = brushSet[index++ % brushSet.Length];
+
+                    var boxRectangle = new Rect(box.X, box.Y, box.Width, box.Height);
+                    drawingContext.DrawRectangle(brush,null, boxRectangle);
+
+                    if (box.Width > 50 && box.Height >= 6) // we draw the text only if humans can see something
                     {
                         if (forSize == null)
                         {
@@ -85,7 +122,6 @@ namespace PerfView
                         drawingContext.DrawText(text, new Point(box.X, box.Y));
                     }
 
-                    flameBoxesMap.Add(box);
                 }
 
                 AddVisual(visual);
@@ -93,6 +129,8 @@ namespace PerfView
                 flameBoxesMap.Sort();
             }
         }
+
+        protected override AutomationPeer OnCreateAutomationPeer() => new FrameworkElementAutomationPeer(this);
 
         /// <summary>
         /// DrawingVisual provides no tooltip support, so I had to implement it myself.. I feel bad for it.
@@ -102,7 +140,7 @@ namespace PerfView
             if (!IsEmpty && e.LeftButton == MouseButtonState.Released)
             {
                 var position = scaleTransform.Inverse.Transform(Mouse.GetPosition(this));
-                var tooltipText = flameBoxesMap.Find(position);
+                var tooltipText = flameBoxesMap.Find(position).TooltipText;
                 if (tooltipText != null)
                 {
                     ShowTooltip(tooltipText);
@@ -136,6 +174,7 @@ namespace PerfView
             scaleTransform.CenterX = relativeMousePosition.X;
             scaleTransform.CenterY = relativeMousePosition.Y;
 
+            this.Draw(flameBoxesMap.EnumerateBoxes().ToList()); // redraw canvas with new scale
             Keyboard.Focus(this); // make it possible to handle Arrow keys and move CenterX & Y scaling points
         }
 
@@ -244,17 +283,11 @@ namespace PerfView
             {
                 Enumerable.Range(0, 100)
                     .Select(_ => (Brush)new SolidColorBrush(
-                        Color.FromRgb(
-                            (byte)(205.0 + 50.0 * RandomNumberGenerator.GetDouble()),
-                            (byte)(230.0 * RandomNumberGenerator.GetDouble()),
-                            (byte)(55.0 * RandomNumberGenerator.GetDouble()))))
+                        CreateRandomColor(205, 255, 0, 230, 0, 55)))
                     .ToArray(),
                 Enumerable.Range(0, 100)
                     .Select(_ => (Brush)new SolidColorBrush(
-                        Color.FromRgb(
-                            (byte)(50 + 60.0 * RandomNumberGenerator.GetDouble()),
-                            (byte)(165 + 55.0 * RandomNumberGenerator.GetDouble()),
-                            (byte)(165.0 + 55.0 * RandomNumberGenerator.GetDouble()))))
+                        CreateRandomColor(50, 110, 165, 220, 165, 220)))
                     .ToArray()
             };
 
@@ -269,9 +302,50 @@ namespace PerfView
             return brushes;
         }
 
+        private static Color CreateRandomColor(byte r1, byte r2, byte g1, byte g2, byte b1, byte b2, double contrastThreshold = 4.5)
+        {
+            while (true)
+            {
+                var r = (byte)(r1 + RandomNumberGenerator.GetDouble() * (r2 - r1 + 1));
+                var g = (byte)(g1 + RandomNumberGenerator.GetDouble() * (g2 - g1 + 1));
+                var b = (byte)(b1 + RandomNumberGenerator.GetDouble() * (b2 - b1 + 1));
+
+                var color = Color.FromRgb(r, g, b);
+                var contrastWithBlack = CalculateContrastWithBlack(color);
+                if (contrastWithBlack > contrastThreshold)
+                {
+                    return color;
+                }
+            }
+        }
+
+        private static double CalculateContrastWithBlack(Color color)
+        {
+            var luminance = CalculateLuminance(color);
+            return (luminance + 0.05) / 0.05;
+        }
+
+        private static double CalculateLuminance(Color color)
+        {
+            // Normalize RGB values to [0,1]
+            double r = color.R / 255.0;
+            double g = color.G / 255.0;
+            double b = color.B / 255.0;
+
+            // Apply gamma correction
+            r = r <= 0.03928 ? r / 12.92 : Math.Pow((r + 0.055) / 1.055, 2.4);
+            g = g <= 0.03928 ? g / 12.92 : Math.Pow((g + 0.055) / 1.055, 2.4);
+            b = b <= 0.03928 ? b / 12.92 : Math.Pow((b + 0.055) / 1.055, 2.4);
+
+            // Calculate luminance
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        }
+
         private class FlameBoxesMap
         {
             private SortedDictionary<Range, List<FlameBox>> boxesMap = new SortedDictionary<Range, List<FlameBox>>();
+
+            internal IEnumerable<FlameBox> EnumerateBoxes() => boxesMap.Values.SelectMany(x => x);
 
             internal void Clear() => boxesMap.Clear();
 
@@ -295,7 +369,7 @@ namespace PerfView
                 }
             }
 
-            internal string Find(Point point)
+            internal FlameBox Find(Point point)
             {
                 foreach (var rowData in boxesMap)
                 {
@@ -323,14 +397,14 @@ namespace PerfView
 
                         if (rowData.Value[mid].X <= point.X && point.X <= (rowData.Value[mid].X + rowData.Value[mid].Width))
                         {
-                            return rowData.Value[mid].TooltipText;
+                            return rowData.Value[mid];
                         }
 
-                        return null;
+                        return default(FlameBox);
                     }
                 }
 
-                return null;
+                return default(FlameBox);
             }
 
             private static int CompareByX(FlameBox left, FlameBox right) => left.X.CompareTo(right.X);

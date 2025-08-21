@@ -28,7 +28,7 @@
     <FilesToSign Include="$(OutDir)\amd64\EtwClrProfiler.dll">
         <Authenticode>Microsoft400</Authenticode>
     </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="$(MicroBuildCoreVersion)" />
+    <PackageReference Include="MicroBuild.Core" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EtwClrProfiler\ETWClrProfilerX64.vcxproj" />

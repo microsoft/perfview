@@ -1,0 +1,29 @@
+name: 'Stale: Label and Close Issues'
+on:
+  schedule:
+    - cron: '23 2,14 * * *' # Twice daily at 23 minutes after the hour (random/uncommon time)
+  workflow_dispatch: # Allows manual triggering
+
+permissions:
+  actions: write # For managing the operation state cache
+  issues: write
+
+jobs:
+  stale:
+    if: github.repository_owner == 'microsoft' # Do not run on forks
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9 # https://github.com/actions/stale/blob/v9/README.md
+        with:
+          ascending: true # Process the oldest issues first
+          stale-issue-label: 'stale'
+          stale-issue-message: "Due to lack of recent activity, this issue has been labeled as 'stale'. It will be closed if no further activity occurs within 30 more days. Any new comment will remove the label."
+          close-issue-message: "This issue will now be closed since it has been labeled 'stale' without activity for 30 days."
+          stale-pr-message: "Due to lack of recent activity, this PR has been labeled as 'stale'. It will be closed if no further activity occurs within 7 more days. Any new comment will remove the label."
+          close-pr-message: "This PR will now be closed since it has been labeled 'stale' without activity for 30 days."
+          days-before-stale: 2192 # 6 years
+          days-before-close: 30
+          days-before-pr-stale: 30
+          days-before-pr-close: 7
+          operations-per-run: 4000

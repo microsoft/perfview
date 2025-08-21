@@ -37,12 +37,7 @@ namespace Samples
             /*** Begin Example ***/
 
             // Setup the token credential that the handler will use to authenticate.
-            DefaultAzureCredential credential = new DefaultAzureCredential(
-                new DefaultAzureCredentialOptions()
-                {
-                    ExcludeInteractiveBrowserCredential = false,
-                    ExcludeManagedIdentityCredential = true,
-                });
+            InteractiveBrowserCredential credential = new InteractiveBrowserCredential();
 
             // Create a new symbols authentication handler and configure it for authentication to symweb.
             SymbolReaderAuthenticationHandler symbolReaderAuthHandler = new SymbolReaderAuthenticationHandler()

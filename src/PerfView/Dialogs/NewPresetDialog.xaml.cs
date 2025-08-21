@@ -30,11 +30,14 @@ namespace PerfView.Dialogs
             // Check uniqueness of the name and ask if user wants to continue
             if (m_existingPresets.Exists(x => x == PresetNameTextBox.Text))
             {
-                if (MessageBox.Show(
-                        $"Preset {PresetNameTextBox.Text} already exists in the list of presets.\r\nDo you want to overwrite it?",
-                        "Preset Name",
-                        MessageBoxButton.OKCancel,
-                        MessageBoxImage.Warning) == MessageBoxResult.Cancel)
+                if (XamlMessageBox.Show(
+                    $"""
+                    Preset {PresetNameTextBox.Text} already exists in the list of presets.
+                    Do you want to overwrite it?
+                    """,
+                    "Preset Name",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Warning) == MessageBoxResult.Cancel)
                 {
                     return;
                 }

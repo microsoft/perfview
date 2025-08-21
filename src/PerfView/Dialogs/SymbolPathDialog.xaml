@@ -18,11 +18,11 @@
 
         <TextBlock Grid.Row="0" Grid.Column="0" HorizontalAlignment="center" Margin="8,2,5,2" >
             <Hyperlink Name="TitleHyperLink" Command="Help" CommandParameter="SymbolPathTextBox">
-                <TextBlock Name="TitleHyperLinkText" Text="Symbol Path"/>
+                <Run Name="TitleHyperLinkText" Text="Symbol Path"/>
             </Hyperlink>
         </TextBlock>
-        <TextBox Grid.Row="1" Name="SymbolPathTextBox"  Margin="10,2,10,2" KeyDown="DoKeyDown" AcceptsReturn="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" TextChanged="DoTextChanged" />
-        <TextBox Grid.Row="2" Name="EnvVarTextBox"  Margin="10,2,10,10" IsReadOnly="True" />
+        <TextBox Grid.Row="1" Name="SymbolPathTextBox"  Margin="10,2,10,2" KeyDown="DoKeyDown" AcceptsReturn="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" TextChanged="DoTextChanged" AutomationProperties.Name="Symbol Path"/>
+        <TextBox Grid.Row="2" Name="EnvVarTextBox"  Margin="10,2,10,10" IsReadOnly="True" AutomationProperties.Name="Environment Variables" />
         <StackPanel Grid.Row="3" Orientation="Horizontal" FlowDirection="RightToLeft">
 
         <Button Margin="10,2,10,5" Width="80" Content="OK" Click="OKClicked"/>

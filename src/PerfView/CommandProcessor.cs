@@ -7,16 +7,19 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Utilities;
 using Microsoft.Win32;
+#if !PERFVIEW_COLLECT
+using PerfView.Dialogs;
+#endif
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using Triggers;
 using Utilities;
 using Trigger = Triggers.Trigger;
@@ -516,9 +519,15 @@ namespace PerfView
                     // Default is 256Meg and twice whatever the others are
                     heapSession.BufferSizeMB = Math.Max(256, parsedArgs.BufferSizeMB * 2);
 
-                    if (parsedArgs.CircularMB != 0)
+                    if (parsedArgs.CircularMB != 0 && parsedArgs.OSHeapMaxMB == 0)
                     {
-                        LogFile.WriteLine("[Warning: OS Heap provider does not use Circular buffering.]");
+                        LogFile.WriteLine("[Warning: OS Heap provider does not use Circular buffering. Use /OSHeapMaxMB to limit OS heap file size.]");
+                    }
+
+                    if (parsedArgs.OSHeapMaxMB > 0)
+                    {
+                        LogFile.WriteLine($"Maximum OS heap file size is {parsedArgs.OSHeapMaxMB}MB. Use /OSHeapMaxMB to change it.");
+                        heapSession.MaximumFileMB = parsedArgs.OSHeapMaxMB;
                     }
 
                     if (parsedArgs.OSHeapProcess != 0)
@@ -706,8 +715,6 @@ namespace PerfView
                                     ClrPrivateTraceEventParser.Keywords.Binding |
                                     ClrPrivateTraceEventParser.Keywords.Fusion |
                                     ClrPrivateTraceEventParser.Keywords.MulticoreJit |   /* only works on verbose */
-                                    // ClrPrivateTraceEventParser.Keywords.LoaderHeap |     /* only verbose */
-                                    //  ClrPrivateTraceEventParser.Keywords.Startup 
                                     ClrPrivateTraceEventParser.Keywords.Stack
                                 ), options);
 
@@ -828,11 +835,6 @@ namespace PerfView
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-WebIO",
                                     new Guid("50B3E73C-9370-461D-BB9F-26F32D68887D"), TraceEventLevel.Informational, ulong.MaxValue, options);
 
-                                // This provider is verbose in high volume networking scnearios and its value is dubious.  
-                                //EnableUserProvider(userModeSession, "Microsoft-Windows-Winsock-AFD",
-                                //    new Guid("E53C6823-7BB8-44BB-90DC-3F86090D48A6"),
-                                //    parsedArgs.ClrEventLevel, ulong.MaxValue);
-
                                 // This is probably too verbose, but we will see 
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-WinINet",
                                     new Guid("43D1A55C-76D6-4F7E-995C-64C711E5CAFE"), TraceEventLevel.Verbose, ulong.MaxValue, options);
@@ -841,47 +843,8 @@ namespace PerfView
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-WinHttp",
                                     new Guid("7D44233D-3055-4B9C-BA64-0D47CA40A232"), TraceEventLevel.Verbose, ulong.MaxValue, options);
 
-                                // This has proven to be too expensive.  Wait until we need it.  
-                                // EnableUserProvider(userModeSession, "Microsoft-Windows-Networking-Correlation",
-                                //     new Guid("83ED54F0-4D48-4E45-B16E-726FFD1FA4AF"), (TraceEventLevel)255, 0);
-
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-RPC",
                                     new Guid("6AD52B32-D609-4BE9-AE07-CE8DAE937E39"), TraceEventLevel.Informational, 0, options);
-
-                                // This is what WPA turns on in its 'GENERAL' setting  
-                                //Microsoft-Windows-Immersive-Shell: 0x0000000000100000: 0x04
-                                //Microsoft-Windows-Kernel-Power: 0x0000000000000004: 0xff
-                                //Microsoft-Windows-Win32k: 0x0000000000402000: 0xff
-                                //Microsoft-Windows-WLAN-AutoConfig: 0x0000000000000200: 0xff
-                                //.NET Common Language Runtime: 0x0000000000000098: 0x05
-                                //Microsoft-JScript: 0x0000000000000001: 0xff e7ef96be-969f-414f-97d7-3ddb7b558ccc: 0x0000000000002000: 0xff
-                                //MUI Resource Trace: : 0xff
-                                //Microsoft-Windows-COMRuntime: 0x0000000000000003: 0xff
-                                //Microsoft-Windows-Networking-Correlation: : 0xff
-                                //Microsoft-Windows-RPCSS: : 0x04
-                                //Microsoft-Windows-RPC: : 0x04 a669021c-c450-4609-a035-5af59af4df18: : 0x00
-                                //Microsoft-Windows-Kernel-Processor-Power: : 0xff
-                                //Microsoft-Windows-Kernel-StoreMgr: : 0xff e7ef96be-969f-414f-97d7-3ddb7b558ccc: : 0xff
-                                //Microsoft-Windows-UserModePowerService: : 0xff
-                                //Microsoft-Windows-Win32k: : 0xff
-                                //Microsoft-Windows-ReadyBoostDriver: : 0xff
-
-#if false            // TODO FIX NOW remove 
-                    var networkProviders = new List<string>();
-                    networkProviders.Add("Microsoft-Windows-WebIO:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-WinINet:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-TCPIP:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-NCSI:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-WFP:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-Iphlpsvc-Trace:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-WinHttp:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-NDIS-PacketCapture");
-                    networkProviders.Add("Microsoft-Windows-NWiFi:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-NlaSvc:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-NDIS:*:5:stack");
-
-                    EnableAdditionalProviders(userModeSession, networkProviders.ToArray());
-#endif
                             }
                         }
                         else if ((parsedArgs.ClrEvents & ClrTraceEventParser.Keywords.GC) != 0)
@@ -1721,16 +1684,19 @@ namespace PerfView
         private void InformedAboutSkippingMerge()
         {
 #if !PERFVIEW_COLLECT
-            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+            GuiApp.MainWindow.Dispatcher.BeginInvoke(() =>
             {
-                MessageBox.Show(GuiApp.MainWindow,
-                    "If you are analyzing the data on the same machine on which you collected it, in the future " +
-                    "you can avoid  the time it takes to merge and zip the file by unchecking the 'merge' checkbox " +
-                    "on the collection dialog box.\r\n\r\n" +
-                    "Be careful however, PerfView will remember this option from run to run and you will have to " +
-                    "either check the zip checkbox or use the PerfView's zip command if you wish to analyze on another machine.\r\n\r\n" +
-                    "The WPA analyzer requires merging unconditionally, so you must merge if you wish to use that tool.\r\n\n" +
-                    "See the 'Merging' section in the users guide for complete details.",
+                XamlMessageBox.Show(
+                    GuiApp.MainWindow,
+                    """
+                    If you are analyzing the data on the same machine on which you collected it, in the future you can avoid the time it takes to merge and zip the file by unchecking the 'merge' checkbox on the collection dialog box.
+
+                    Be careful however, PerfView will remember this option from run to run and you will have to either check the zip checkbox or use the PerfView's zip command if you wish to analyze on another machine.
+
+                    The WPA analyzer requires merging unconditionally, so you must merge if you wish to use that tool.
+
+                    See the 'Merging' section in the users guide for complete details.
+                    """,
                     "Skip Merging/Zipping for faster local processing.");
             });
 #endif 
@@ -3036,6 +3002,11 @@ namespace PerfView
                 cmdLineArgs += " /LogFile:" + Command.Quote(parsedArgs.LogFile);
             }
 
+            if (parsedArgs.SymbolsAuth != SymbolsAuthenticationType.Interactive)
+            {
+                cmdLineArgs += " /SymbolsAuth:" + parsedArgs.SymbolsAuth.ToString().Replace(" ", "");
+            }
+
             if (parsedArgs.NoRundown)
             {
                 cmdLineArgs += " /NoRundown";
@@ -3134,6 +3105,11 @@ namespace PerfView
             if (parsedArgs.OSHeapProcess != 0)
             {
                 cmdLineArgs += " /OSHeapProcess:" + parsedArgs.OSHeapProcess.ToString();
+            }
+
+            if (parsedArgs.OSHeapMaxMB != 0)
+            {
+                cmdLineArgs += " /OSHeapMaxMB:" + parsedArgs.OSHeapMaxMB;
             }
 
             if (parsedArgs.NetworkCapture)
@@ -3340,11 +3316,11 @@ namespace PerfView
         {
 #if !PERFVIEW_COLLECT
             // Are we activating with the GUI, then pop a dialog box
-            if (App.CommandLineArgs.LogFile == null && GuiApp.MainWindow != null)
+            if (App.CommandLineArgs.LogFile is null)
             {
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+                GuiApp.MainWindow?.Dispatcher.BeginInvoke(() =>
                 {
-                    MessageBox.Show(GuiApp.MainWindow, message, "Warning ASP.NET Tracing not installed");
+                    XamlMessageBox.Show(GuiApp.MainWindow, message, "Warning ASP.NET Tracing not installed");
                 });
             }
 #endif
@@ -3477,6 +3453,11 @@ namespace PerfView
                 using (TraceEventSession clrRundownSession = new TraceEventSession(sessionName + "Rundown", rundownFile))
                 {
                     clrRundownSession.BufferSizeMB = Math.Max(parsedArgs.BufferSizeMB, 256);
+                    if (parsedArgs.RundownMaxMB > 0)
+                    {
+                        LogFile.WriteLine($"Maximum rundown file size is {parsedArgs.RundownMaxMB}MB.  Use /RundownMaxMB to change.");
+                        clrRundownSession.MaximumFileMB = parsedArgs.RundownMaxMB;
+                    }
 
                     TraceEventProviderOptions options = null;
                     if (parsedArgs.FocusProcess != null && TraceEventProviderOptions.FilteringSupported)
@@ -3592,14 +3573,31 @@ namespace PerfView
                                                             // when we do the method rundown below.  
 
                         // Enable rundown provider. (we don't do the loader events since we have done them above
-                        EnableUserProvider(clrRundownSession, "CLRRundown", ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
-                            (ulong)(rundownKeywords & ~ClrRundownTraceEventParser.Keywords.Loader), options);
-
-                        // For V2.0 runtimes you activate the main provider so we do that too.  
-                        if (!parsedArgs.NoV2Rundown)
+                        try
                         {
-                            EnableUserProvider(clrRundownSession, "Clr", ClrTraceEventParser.ProviderGuid,
-                                TraceEventLevel.Verbose, (ulong)rundownKeywords, options);
+                            EnableUserProvider(clrRundownSession, "CLRRundown", ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
+                                (ulong)(rundownKeywords & ~ClrRundownTraceEventParser.Keywords.Loader), options);
+
+                            // For V2.0 runtimes you activate the main provider so we do that too.
+                            if (!parsedArgs.NoV2Rundown)
+                            {
+                                EnableUserProvider(clrRundownSession, "Clr", ClrTraceEventParser.ProviderGuid,
+                                    TraceEventLevel.Verbose, (ulong)rundownKeywords, options);
+                            }
+                        }
+                        catch (COMException ex)
+                        {
+                            // "The instance name passed was not recognized as valid by a WMI data provider."
+                            // This can happen during rundown when RundownMaxMB is set very low and the first enable provider call fills up the file.
+                            // Any further calls to enable providers will fail with this error because the session is stopped automatically.
+                            if (ex.HResult == unchecked((int)0x80071069) && parsedArgs.RundownMaxMB >= 0)
+                            {
+                                LogFile.WriteLine("Ignoring rundown command failure because the rundown session is size-constrained, and the session has already reached its max size.");
+                            }
+                            else
+                            {
+                                throw;
+                            }
                         }
                     }
 
@@ -3607,7 +3605,7 @@ namespace PerfView
                     PerfViewLogger.Log.WaitForIdle();
 
                     // Wait for rundown to complete.
-                    WaitForRundownIdle(parsedArgs.MinRundownTime, parsedArgs.RundownTimeout, parsedArgs.RundownMaxMB, rundownFile);
+                    WaitForRundownIdle(parsedArgs.MinRundownTime, parsedArgs.RundownTimeout, rundownFile);
 
                     // Complete perfview rundown.
                     DotNetVersionLogger.Stop();
@@ -3633,10 +3631,9 @@ namespace PerfView
         /// Currently there is no good way to know when rundown is finished.  We basically wait as long as
         /// the rundown file is growing.  
         /// </summary>
-        private void WaitForRundownIdle(int minSeconds, int maxSeconds, int maxSizeMB, string rundownFilePath)
+        private void WaitForRundownIdle(int minSeconds, int maxSeconds, string rundownFilePath)
         {
             LogFile.WriteLine("Waiting up to {0} sec for rundown events.  Use /RundownTimeout to change.", maxSeconds);
-            LogFile.WriteLine($"Maximum rundown file size is {maxSizeMB}MB.  Use /RundownMaxMB to change.");
             LogFile.WriteLine("If you know your process has exited, use /noRundown qualifer to skip this step.");
 
             long rundownFileLen = 0;
@@ -3652,12 +3649,6 @@ namespace PerfView
                 var delta = newRundownFileLen - rundownFileLen;
                 LogFile.WriteLine("Rundown File Length: {0:n1}MB delta: {1:n1}MB", newRundownFileLen / 1000000.0, delta / 1000000.0);
                 rundownFileLen = newRundownFileLen;
-
-                if ((maxSizeMB > 0) && rundownFileLen >= ((long)maxSizeMB * 1024 * 1024))
-                {
-                    LogFile.WriteLine($"Exceeded maximum rundown file size of {maxSizeMB}MB.");
-                    break;
-                }
 
                 if (i >= minSeconds)
                 {
