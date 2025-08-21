@@ -1,4 +1,4 @@
-﻿comm  0/0  [000] 0.0: event: event_properties 
+﻿comm  0/0  [000] 0.0: event/call-graph=no/: event_properties 
 
 comm  0/0  [000] 0.0: event: event_properties
 	address symbol (module)

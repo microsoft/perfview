@@ -1,0 +1,2 @@
+﻿         swapper     0/0     [009] 0.0:          1                sched:sched_wakeup: comm=fio pid=243615 prio=120 target_cpu=031 ffffffff8bad311d ttwu_do_wakeup ([kernel.kallsyms])
+         swapper     0/0     [009] 0.0:          1                sched:sched_wakeup: task fio:243615 [120] success=1 [031] ffffffff8bad311d ttwu_do_wakeup ([kernel.kallsyms])

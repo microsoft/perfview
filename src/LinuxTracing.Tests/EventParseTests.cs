@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using Xunit;
 using System.Linq.Expressions;
+using System;
 
 namespace LinuxTracingTests
 {
@@ -65,7 +66,7 @@ namespace LinuxTracingTests
                     Assert.Equal(pids[i], linuxEvent.ProcessID);
                     Assert.Equal(tids[i], linuxEvent.ThreadID);
                     Assert.Equal(cpus[i], linuxEvent.CpuNumber);
-                    Assert.Equal(times[i], linuxEvent.TimeMSec);
+                    Assert.True(Math.Abs(times[i] - linuxEvent.TimeMSec) <= 0.0001);
                     Assert.Equal(timeProperties[i], linuxEvent.TimeProperty);
                     Assert.Equal(events[i], linuxEvent.EventName);
                     Assert.Equal(eventProperties[i], linuxEvent.EventProperty);
@@ -255,6 +256,57 @@ namespace LinuxTracingTests
                 events: new string[] { "event_name", "event_name", "event_name", "event_name", "event_name", "event_name" },
                 eventProperties: new string[] { "event_properties", "event_properties", "event_properties", "event_properties", "event_properties", "event_properties" },
                 eventKinds: null,
+                switches: null);
+        }
+
+        [Fact]
+        public void DiskIoNoStacks()
+        {
+            string path = Constants.GetTestingPerfDumpPath("disk_io_no_stacks");
+            HeaderTest(path, blockedTime: false,
+                commands: new string[] { "fio", "swapper", "fio", "swapper" },
+                pids: new int[] { 236193, 0, 236193, 0 },
+                tids: new int[] { 236193, 0, 236193, 0 },
+                cpus: new int[] { 21, 12, 21, 12 },
+                times: new double[] { 1791.544, 1791.615, 1791.628, 1791.699 },
+                timeProperties: new int[] { 1, 1, 1, 1 },
+                events: new string[] { "block", "block", "block", "block" },
+                eventProperties: new string[] { "block_rq_issue: 259,76 R 4096 () 57622160 + 8 [fio] ffffffff8beead90 blk_mq_start_request ([kernel.kallsyms])", "block_rq_complete: 259,76 R () 57622160 + 8 [0] ffffffff8bee2b4c blk_update_request ([kernel.kallsyms])", "block_rq_issue: 259,76 R 4096 () 82612968 + 8 [fio] ffffffff8beead90 blk_mq_start_request ([kernel.kallsyms])", "block_rq_complete: 259,76 R () 82612968 + 8 [0] ffffffff8bee2b4c blk_update_request ([kernel.kallsyms])" },
+                eventKinds: new EventKind[] { EventKind.BlockRequestIssue, EventKind.BlockRequestComplete, EventKind.BlockRequestIssue, EventKind.BlockRequestComplete },
+                switches: null);
+        }
+
+        [Fact]
+        public void OneWakeup()
+        {
+            string path = Constants.GetTestingPerfDumpPath("one_wakeup");
+            HeaderTest(path, blockedTime: false,
+                commands: new string[] { "swapper", "swapper" },
+                pids: new int[] { 0, 0 },
+                tids: new int[] { 0, 0 },
+                cpus: new int[] { 9, 9 },
+                times: new double[] { 0.0, 0.0 },
+                timeProperties: new int[] { 1, 1 },
+                events: new string[] { "sched", "sched" },
+                eventProperties: new string[] { "sched_wakeup: comm=fio pid=243615 prio=120 target_cpu=031 ffffffff8bad311d ttwu_do_wakeup ([kernel.kallsyms])", "sched_wakeup: task fio:243615 [120] success=1 [031] ffffffff8bad311d ttwu_do_wakeup ([kernel.kallsyms])" },
+                eventKinds: new EventKind[] { EventKind.Wakeup, EventKind.Wakeup },
+                switches: null);
+        }
+
+        [Fact]
+        public void ExecProcess()
+        {
+            string path = Constants.GetTestingPerfDumpPath("exec_process");
+            HeaderTest(path, blockedTime: false,
+                commands: new string[] { "probe-bcache" },
+                pids: new int[] { 286053, 286053 },
+                tids: new int[] { 286053, 286053 },
+                cpus: new int[] { 3, 3 },
+                times: new double[] { 0.0, 0.0 },
+                timeProperties: new int[] { 1, 1 },
+                events: new string[] { "sched" },
+                eventProperties: new string[] { "sched_process_exec: filename=/lib/udev/probe-bcache pid=286053 old_pid=286053" },
+                eventKinds: new EventKind[] { EventKind.ProcessExec },
                 switches: null);
         }
     }
