@@ -2269,7 +2269,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var extendedDataCount = data.eventRecord->ExtendedDataCount;
                 if (extendedDataCount != 0)
                 {
-                    bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent);
+                    bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent, isLiveSession: false);
                 }
 
                 if (bookKeepingEvent)
@@ -3245,13 +3245,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Process any extended data (like Win7 style stack traces) associated with 'data'
         /// returns true if the event should be considered a bookkeeping event.
         /// </summary>
-        /// <param name="data">The TraceEvent to process</param>
-        /// <param name="extendedDataCount">Number of extended data items</param>
-        /// <param name="countForEvent">Event counting information</param>
-        /// <param name="isLiveSession">True for live sessions, false for file conversion. 
-        /// When true, RelatedActivityID and ContainerID are not persisted and EVENT_RECORD.ExtendedData is preserved intact 
-        /// for readers to access directly. This prevents live session data corruption.</param>
-        internal unsafe bool ProcessExtendedData(TraceEvent data, ushort extendedDataCount, TraceEventCounts countForEvent, bool isLiveSession = false)
+        internal unsafe bool ProcessExtendedData(TraceEvent data, ushort extendedDataCount, TraceEventCounts countForEvent, bool isLiveSession)
         {
             var isBookkeepingEvent = false;
             var extendedData = data.eventRecord->ExtendedData;
@@ -3340,23 +3334,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         }
                     }
                 }
-                else if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
+                // In live sessions, preserve the original ExtendedData for readers to access directly.
+                // Only persist RelatedActivityID in file conversion mode.
+                else if (!isLiveSession && extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
                 {
-                    // In live sessions, preserve the original ExtendedData for readers to access directly.
-                    // Only persist RelatedActivityID in file conversion mode.
-                    if (!isLiveSession)
-                    {
-                        relatedActivityIDPtr = (Guid*)(extendedData[i].DataPtr);
-                    }
+                    relatedActivityIDPtr = (Guid*)(extendedData[i].DataPtr);
                 }
-                else if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_CONTAINER_ID)
+                else if (!isLiveSession && extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_CONTAINER_ID)
                 {
-                    // In live sessions, preserve the original ExtendedData for readers to access directly.
-                    // Only persist ContainerID in file conversion mode.
-                    if (!isLiveSession)
-                    {
-                        containerID = Marshal.PtrToStringAnsi((IntPtr)extendedData[i].DataPtr, (int)extendedData[i].DataSize);
-                    }
+                    containerID = Marshal.PtrToStringAnsi((IntPtr)extendedData[i].DataPtr, (int)extendedData[i].DataSize);
                 }
             }
 
