@@ -374,7 +374,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var extendedDataCount = data.eventRecord->ExtendedDataCount;
             if (extendedDataCount != 0)
             {
-                bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent);
+                bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent, isLiveSession: true);
             }
 
             // This must occur after the call to ProcessExtendedData to ensure that if there is a stack for this event,
@@ -858,7 +858,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var extendedDataCount = data.eventRecord->ExtendedDataCount;
                 if (extendedDataCount != 0)
                 {
-                    bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent);
+                    bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent, isLiveSession: true);
                 }
 
                 // This must occur after the call to ProcessExtendedData to ensure that if there is a stack for this event,
@@ -2269,7 +2269,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var extendedDataCount = data.eventRecord->ExtendedDataCount;
                 if (extendedDataCount != 0)
                 {
-                    bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent);
+                    bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent, isLiveSession: false);
                 }
 
                 if (bookKeepingEvent)
@@ -3245,7 +3245,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Process any extended data (like Win7 style stack traces) associated with 'data'
         /// returns true if the event should be considered a bookkeeping event.
         /// </summary>
-        internal unsafe bool ProcessExtendedData(TraceEvent data, ushort extendedDataCount, TraceEventCounts countForEvent)
+        internal unsafe bool ProcessExtendedData(TraceEvent data, ushort extendedDataCount, TraceEventCounts countForEvent, bool isLiveSession)
         {
             var isBookkeepingEvent = false;
             var extendedData = data.eventRecord->ExtendedData;
@@ -3334,72 +3334,79 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         }
                     }
                 }
-                else if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
+                // In live sessions, preserve the original ExtendedData for readers to access directly.
+                // Only persist RelatedActivityID in file conversion mode.
+                else if (!isLiveSession && extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
                 {
                     relatedActivityIDPtr = (Guid*)(extendedData[i].DataPtr);
                 }
-                else if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_CONTAINER_ID)
+                else if (!isLiveSession && extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_CONTAINER_ID)
                 {
                     containerID = Marshal.PtrToStringAnsi((IntPtr)extendedData[i].DataPtr, (int)extendedData[i].DataSize);
                 }
             }
 
-            if (relatedActivityIDPtr != null)
+            // Only persist RelatedActivityID and modify ExtendedData during file conversion.
+            // In live sessions, preserve the original ExtendedData pointers for readers to access.
+            if (!isLiveSession)
             {
-                if (relatedActivityIDs.Count == 0)
+                if (relatedActivityIDPtr != null)
                 {
-                    // Insert a synthetic value since 0 represents "no related activity ID".
-                    relatedActivityIDs.Add(Guid.Empty);
-                }
+                    if (relatedActivityIDs.Count == 0)
+                    {
+                        // Insert a synthetic value since 0 represents "no related activity ID".
+                        relatedActivityIDs.Add(Guid.Empty);
+                    }
 
-                // TODO This is a bit of a hack.   We wack this field in place.
-                // We encode this as index into the relatedActivityID GrowableArray.
-                if (IntPtr.Size == 8)
-                {
-                    data.eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)(relatedActivityIDs.Count << 4);
+                    // TODO This is a bit of a hack.   We wack this field in place.
+                    // We encode this as index into the relatedActivityID GrowableArray.
+                    if (IntPtr.Size == 8)
+                    {
+                        data.eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)(relatedActivityIDs.Count << 4);
+                    }
+                    else
+                    {
+                        data.eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)relatedActivityIDs.Count;
+                    }
+                    relatedActivityIDs.Add(*relatedActivityIDPtr);
                 }
                 else
                 {
-                    data.eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)relatedActivityIDs.Count;
-                }
-                relatedActivityIDs.Add(*relatedActivityIDPtr);
-            }
-            else
-            {
-                data.eventRecord->ExtendedData = null;
-            }
-
-            if (containerID != null)
-            {
-                // TODO This is a bit of a hack.   We wack this field in place.
-                // We encode this as index into the containerIDs GrowableArray.
-                if (containerIDs.Count == 0)
-                {
-                    // Insert a synthetic value since 0 represents "no container ID".
-                    containerIDs.Add(null);
+                    data.eventRecord->ExtendedData = null;
                 }
 
-                // Look for the container ID.
-                bool found = false;
-                for (int i = 0; i < containerIDs.Count; i++)
+                if (containerID != null)
                 {
-                    if (containerIDs[i] == containerID)
+                    // TODO This is a bit of a hack.   We wack this field in place.
+                    // We encode this as index into the containerIDs GrowableArray.
+                    if (containerIDs.Count == 0)
                     {
-                        data.eventRecord->ExtendedDataCount = (ushort)i;
-                        found = true;
-                        break;
+                        // Insert a synthetic value since 0 represents "no container ID".
+                        containerIDs.Add(null);
+                    }
+
+                    // Look for the container ID.
+                    bool found = false;
+                    for (int i = 0; i < containerIDs.Count; i++)
+                    {
+                        if (containerIDs[i] == containerID)
+                        {
+                            data.eventRecord->ExtendedDataCount = (ushort)i;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        data.eventRecord->ExtendedDataCount = (ushort)containerIDs.Count;
+                        containerIDs.Add(containerID);
                     }
                 }
-
-                if (!found)
+                else
                 {
-                    data.eventRecord->ExtendedDataCount = (ushort)containerIDs.Count;
-                    containerIDs.Add(containerID);
+                    data.eventRecord->ExtendedDataCount = 0;
                 }
-            }
-            else
-            {
-                data.eventRecord->ExtendedDataCount = 0;
             }
 
             return isBookkeepingEvent;
