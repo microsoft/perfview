@@ -642,7 +642,6 @@ namespace Microsoft.Diagnostics.Tracing
         {
             int opcode = metadata.Opcode ?? 0;
             DynamicTraceEventData template = new DynamicTraceEventData(null, metadata.EventId, 0, metadata.EventName, Guid.Empty, opcode, null, metadata.ProviderId, metadata.ProviderName);
-            template.opcode = (TraceEventOpcode)opcode;
             template.opcodeName = template.opcode.ToString();
             template.payloadNames = metadata.ParameterNames;
             template.payloadFetches = metadata.ParameterTypes;
