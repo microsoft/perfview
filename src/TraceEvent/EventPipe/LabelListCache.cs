@@ -13,7 +13,11 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         TraceId = 3,
         SpanId = 4,
         KeyValueString = 5,
-        KeyValueVarInt = 6
+        KeyValueVarInt = 6,
+        OpCode = 7,
+        Keywords = 8,
+        Level = 9,
+        Version = 10
     }
 
     struct LabelList
@@ -59,6 +63,18 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                         }
                         otherLabels.Add(new KeyValuePair<string, object>(key, varInt));
                         break;
+                    case LabelKind.OpCode:
+                        result.OpCode = reader.ReadUInt8();
+                        break;
+                    case LabelKind.Keywords:
+                        result.Keywords = reader.ReadUInt64();
+                        break;
+                    case LabelKind.Level:
+                        result.Level = reader.ReadUInt8();
+                        break;
+                    case LabelKind.Version:
+                        result.Version = reader.ReadUInt8();
+                        break;
                     default:
                         throw new FormatException($"Unknown label kind {kind} in label list");
                 }
@@ -76,6 +92,10 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         public Guid? TraceId { get; private set; }
         public ulong? SpanId { get; private set; }
         public KeyValuePair<string, object>[] OtherLabels { get; private set; }
+        public byte? OpCode { get; private set; }
+        public ulong? Keywords { get; private set; }
+        public byte? Level { get; private set; }
+        public byte? Version { get; private set; }
 
         public IEnumerable<KeyValuePair<string, object>> AllLabels
         {
@@ -103,6 +123,22 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                     {
                         yield return label;
                     }
+                }
+                if (OpCode.HasValue)
+                {
+                    yield return new KeyValuePair<string, object>("OpCode", OpCode.Value);
+                }
+                if (Keywords.HasValue)
+                {
+                    yield return new KeyValuePair<string, object>("Keywords", Keywords.Value);
+                }
+                if (Level.HasValue)
+                {
+                    yield return new KeyValuePair<string, object>("Level", Level.Value);
+                }
+                if (Version.HasValue)
+                {
+                    yield return new KeyValuePair<string, object>("Version", Version.Value);
                 }
             }
         }

@@ -392,6 +392,7 @@ A SequencePointBlock payload is encoded:
   - SequenceNumber - varuint32
 
 If Flags & 1 == 1 then the sequence point also flushes the thread cache. Logically the flush occurs after doing any thread sequence number checks so the reader can still detect dropped events.
+If Flags & 2 == 2 then the sequence point also flushes the metadata cache.
 
 ## EndOfStreamBlock
 
@@ -465,13 +466,24 @@ The content of a LabelListBlock is:
     - if(Kind & 0x7F == 6)
       - Key - string
       - Value - varint64
+    - if(Kind & 0x7F == 7)
+      - OpCode - uint8
+    - if(Kind & 0x7F == 8)
+      - Keywords - uint64
+    - if(Kind & 0x7F == 9)
+      - Level - uint8
+    - if(Kind & 0x7F == 10)
+      - Version - uint8
 
 If the high bit of the Kind field is set that demarcates that this is the last label in a label list and the next label is part of the next list.
 
 Similar to StackBlock, references to a row in the LabelListBlock are only valid in the file after the LabelListBlock that defines it and before the next SequencePoint block.
 This prevents the reader from needing a lookup table that grows indefinitely with file length or requiring the reader to search the entire file to resolve a given label list index.
 
-An empty LabelList can't be explicitly encoded in the LabelListBlock, but implicitly the LabelList index 0 refers to an empty LabelList. 
+An empty LabelList can't be explicitly encoded in the LabelListBlock, but implicitly the LabelList index 0 refers to an empty LabelList.
+
+The OpCode, Keywords, Level, and Version fields are considered to override any value found in the metadata for the event. The trace writer is free to provide these values in either metadata
+or in a LabelList, but for the common scenario where they are the same across all events of a given type metadata is probably the more space efficient option.
 
 ## Changes relative to older file format versions
 
