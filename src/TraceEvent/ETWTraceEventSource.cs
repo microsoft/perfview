@@ -879,7 +879,7 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     foreach (TraceEventNativeMethods.SafeTraceHandle handle in handles)
                     {
-                        handle.Dispose();
+                        handle?.Dispose();
                     }
 
                     handles = null;
