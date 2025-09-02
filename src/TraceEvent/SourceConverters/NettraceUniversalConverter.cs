@@ -1,7 +1,9 @@
 ﻿using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
+using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.Diagnostics.Tracing.SourceConverters
 {
@@ -46,7 +48,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 _mappingIdToProcesses[data.Id] = process;
 
-                if (!string.IsNullOrEmpty(data.FileName) && data.FileName.StartsWith(DotnetJittedCodeMappingName))
+                if (!string.IsNullOrEmpty(data.FileName) && data.FileName.StartsWith(DotnetJittedCodeMappingName, StringComparison.Ordinal))
                 {
                     // Don't create a module for jitted code.
                     // These will be created for each jitted code symbol.
@@ -90,9 +92,9 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
         /// Format: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
         /// The return type can be multi-word (e.g., "instance void", "valuetype [Type]Type").
         /// </summary>
-        private static readonly System.Text.RegularExpressions.Regex s_jittedSymbolRegex =
-            new System.Text.RegularExpressions.Regex(@"^(?<returnType>.+?)\s+\[(?<module>[^\]]+)\]\s+(?<methodSignature>.+?)\[(?<optimizationLevel>[^\]]+)\]$",
-                System.Text.RegularExpressions.RegexOptions.Compiled);
+        private static readonly Regex s_jittedSymbolRegex =
+            new Regex(@"^(?<returnType>.+?)\s+\[(?<module>[^\]]+)\]\s+(?<methodSignature>.+?)\[(?<optimizationLevel>[^\]]+)\]$",
+                RegexOptions.Compiled);
 
         /// <summary>
         /// Parses a dotnet jitted symbol name from universal traces with format: "returnType [module] Namespace.Class::Method(args...)[OptimizationLevel]"
