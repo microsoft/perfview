@@ -2222,6 +2222,7 @@ SOFTWARE.
     </Style>
 
     <Style x:Key="{x:Type Hyperlink}" TargetType="{x:Type Hyperlink}">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}" />
         <Setter Property="Foreground" Value="{StaticResource ControlDefaultForeground}" />
         <Setter Property="TextDecorations" Value="Underline" />
         <Style.Triggers>
