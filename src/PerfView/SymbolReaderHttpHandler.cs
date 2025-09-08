@@ -436,14 +436,28 @@ namespace PerfView
         {
             foreach (string folder in Environment.GetEnvironmentVariable("PATH").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
             {
-                string path = Path.Combine(folder, fileName);
-                if (File.Exists(path))
+                if (TryCombinePaths(folder, fileName, out var path) && File.Exists(path))
                 {
                     return path;
                 }
             }
 
             return null;
+
+            // PATH environment variable may contain invalid paths/characters.
+            static bool TryCombinePaths(string path1, string path2, out string result)
+            {
+                try
+                {
+                    result = Path.Combine(path1, path2);
+                    return true;
+                }
+                catch (ArgumentException)
+                {
+                    result = default;
+                    return false;
+                }
+            }
         }
 
         /// <summary>
