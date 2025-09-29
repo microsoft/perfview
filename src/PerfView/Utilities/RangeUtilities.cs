@@ -44,7 +44,7 @@ namespace Microsoft.Diagnostics.Utilities
             // e.g., "|  1,395.251	 2,626.358 |" becomes "1,395.251	 2,626.358"
             if (!string.IsNullOrEmpty(text))
             {
-                text = text.Trim().Trim('|').Trim();
+                text = text.Trim(' ', '\t', '\n', '\r', '|');
             }
 
             // The user can set any character as a separator and that character can turn a regular expression invalid.
