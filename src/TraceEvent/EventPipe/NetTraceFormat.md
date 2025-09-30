@@ -30,8 +30,8 @@ them to be referenced by rows in other tables. There are 5 different tables in t
 In order to fully resolve all the data for one event, the reader needs to read an event row, then resolve the references to the metadata, stack, thread, and label list rows. When an event row references
 a row in another table, the referenced row must have already appeared in a block earlier in the file. The reader just needs to cache the metadata, stack, thread, and label list rows as it encounters them
 reading through the file sequentially. Also to control the size of the caches the reader maintains, the format includes some blocks that help the reader manage the cache. A 'SequencePoint' block indicates
-that that the reader can safely discard all the stacks and label lists cached so far. There is also a 'RemoveThread' block that indicates specific threads are no longer active and can be removed from the cache.
-Metadata is never flushed but the expectation is that the number of metadata rows is small enough that caching them all is not a problem.
+that that the reader can safely discard all the stacks and label lists cached so far. Optional flags on the SequencePoint can be used to flush thread and metadata caches as well. There is also a 'RemoveThread' block
+that indicates specific threads are no longer active and can be removed from the cache.
 
 ## Primitives and endianness
 
@@ -560,7 +560,7 @@ Last, we are taking the opportunity to simplify the metadata encoding format. Th
 1. Metadata rows are no longer encoded with EventHeaders.
 2. Most of the metadata fields are now optional and the top-level format of a metadata row was redesigned.
 3. The 2nd copy of field information that was added by V2Params in version 5 has been removed. It only existed to support adding array support in a non-breaking way and now arrays are supported in the same FieldDescriptions as all the other types.
-4. New payload field types were added: VarInt, VarUInt, LengthPrefixedUTF16String, LengthPrefixedUTF8String
+4. New payload field types were added: VarInt, VarUInt, FixedLengthArray, UTF8CodeUnit, RelLoc, and DataLoc. 
 5. Strings in the metadata are now UTF8 rather than UTF16
 
 #### Extended support for event labels
@@ -571,3 +571,7 @@ In particular OpenTelemetry has embraced the W3C TraceContext standard for distr
 
 1. Adds a new LabelListBlock to store key-value pairs that can be referenced by index within the EventHeader.
 2. Removes the ActivityId and RelatedActivityId fields from the EventHeader and replaces them with a LabelListIndex field. Activity ids can be stored within the LabelList.
+
+#### Support readers/writers operating with limited memory
+
+In V5 metadata ids were global across the entire trace which implies that readers and writers should maintain a dictionary that grows with the number of event types. Technically the writers could forget the ID assignments for older events and re-emit the same metadata under a new ID later but that makes the memory requirements even worse for readers who now have multiple IDs for the same metadata. In V6 the SequencePointBlock includes a flag that controls flushing the metadata cache so that writers can communicate to readers when it is safe to forget old IDs. 
