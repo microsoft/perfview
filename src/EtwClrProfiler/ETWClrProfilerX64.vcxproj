@@ -30,7 +30,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <PlatformToolset>v143</PlatformToolset>
-    <PlatformToolsetVersion>v142</PlatformToolsetVersion>
+    <PlatformToolsetVersion>143</PlatformToolsetVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
