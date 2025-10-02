@@ -18,10 +18,16 @@ namespace PerfViewTests.Utilities
         [InlineData(TestCultureInfo.enUSCulture, "XXXXXXXXXXXXXXX 234,567,890.123", default(double), default(double), false)]
         [InlineData(TestCultureInfo.enUSCulture, "123,456,789.123 XXXXXXXXXXXXXXX", default(double), default(double), false)]
         [InlineData(TestCultureInfo.enUSCulture, "123,456,789.123 234,567,890.123", 123456789.123, 234567890.123, true)]
+        // Test cases for pipe-enclosed format (markdown table format)
+        [InlineData(TestCultureInfo.enUSCulture, "|  1,395.251\t 2,626.358 |", 1395.251, 2626.358, true)]
+        [InlineData(TestCultureInfo.enUSCulture, "| 123,456,789.123 234,567,890.123 |", 123456789.123, 234567890.123, true)]
+        [InlineData(TestCultureInfo.enUSCulture, "|123,456,789.123 234,567,890.123|", 123456789.123, 234567890.123, true)]
         [InlineData(TestCultureInfo.ruRUCulture, "", default(double), default(double), false)]
         [InlineData(TestCultureInfo.ruRUCulture, "XXXXXXXXXXXXXXX|234 567\u00A0890,123", default(double), default(double), false)]
         [InlineData(TestCultureInfo.ruRUCulture, "123\u00A0456 789,123|XXXXXXXXXXXXXXX", default(double), default(double), false)]
         [InlineData(TestCultureInfo.ruRUCulture, "123\u00A0456 789,123|234\u00A0567\u00A0890,123", 123456789.123, 234567890.123, true)]
+        // Test cases for pipe-enclosed format with Russian culture
+        [InlineData(TestCultureInfo.ruRUCulture, "| 123\u00A0456 789,123|234\u00A0567\u00A0890,123 |", 123456789.123, 234567890.123, true)]
         [InlineData(TestCultureInfo.ptPTCulture, "", default(double), default(double), false)]
         [InlineData(TestCultureInfo.ptPTCulture, "XXXXXXXXXXXXXXX|234 567 890,123", default(double), default(double), false)]
         [InlineData(TestCultureInfo.ptPTCulture, "123 456 789,123|XXXXXXXXXXXXXXX", default(double), default(double), false)]
@@ -34,6 +40,8 @@ namespace PerfViewTests.Utilities
         [InlineData(TestCultureInfo.customCulture2, "XXXXXXXXXXXXXXX,234 567 890.123", default(double), default(double), false)]
         [InlineData(TestCultureInfo.customCulture2, "123 456 789.123|XXXXXXXXXXXXXXX", default(double), default(double), false)]
         [InlineData(TestCultureInfo.customCulture2, "123 456 789.123|234 567 890.123", 123456789.123, 234567890.123, true)]
+        // Test cases for pipe-enclosed format with custom culture
+        [InlineData(TestCultureInfo.customCulture2, "| 123 456 789.123|234 567 890.123 |", 123456789.123, 234567890.123, true)]
         public static void TryParseTests(string culture, string text, double expectedStart, double expectedEnd, bool expectedResult)
         {
             var runner = RangeUtilitiesRunner.Create(culture);
