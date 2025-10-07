@@ -9,8 +9,7 @@ namespace TraceParserGen.Tests
     /// </summary>
     public abstract class TestBase
     {
-        protected static string OriginalInputDir = FindInputDir();
-        protected static string TestDataDir = "inputs";
+        protected static string TestDataDir = Path.Combine(Environment.CurrentDirectory, "inputs");
 
         protected TestBase(ITestOutputHelper output)
         {
@@ -23,25 +22,6 @@ namespace TraceParserGen.Tests
         protected ITestOutputHelper Output { get; }
 
         protected string OutputDir { get; }
-
-        /// <summary>
-        /// Finds the input directory for test files
-        /// </summary>
-        private static string FindInputDir()
-        {
-            string dir = Environment.CurrentDirectory;
-            while (dir != null)
-            {
-                string candidate = Path.Combine(dir, @"TraceParserGen.Tests\inputs");
-                if (Directory.Exists(candidate))
-                {
-                    return Path.GetFullPath(candidate);
-                }
-
-                dir = Path.GetDirectoryName(dir);
-            }
-            return @"%PERFVIEW%\src\TraceParserGen.Tests\inputs";
-        }
 
         /// <summary>
         /// Gets the path to the TraceParserGen.exe executable

@@ -103,11 +103,19 @@ namespace TraceParserGen.Tests
 
         private void CreateTestConsoleApp(string projectDir, string generatedParserPath)
         {
-            // Get the path to TraceEvent assembly - it's in the test project's output directory
-            // since we have a ProjectReference
-            string traceEventAssembly = Path.Combine(Environment.CurrentDirectory, "Microsoft.Diagnostics.Tracing.TraceEvent.dll");
+            // Find the TraceEvent.csproj relative to the test assembly location
+            // The test runs from bin\Release\net462, so we go up to src and then to TraceEvent
+            string testAssemblyDir = Environment.CurrentDirectory;
+            string srcDir = Path.GetFullPath(Path.Combine(testAssemblyDir, "..", "..", "..", ".."));
+            string traceEventProjectPath = Path.Combine(srcDir, "TraceEvent", "TraceEvent.csproj");
             
-            // Create the .csproj file
+            // Verify the path exists
+            if (!File.Exists(traceEventProjectPath))
+            {
+                throw new FileNotFoundException($"Could not find TraceEvent.csproj at {traceEventProjectPath}");
+            }
+            
+            // Create the .csproj file with ProjectReference
             string csprojContent = $@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -115,9 +123,7 @@ namespace TraceParserGen.Tests
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include=""Microsoft.Diagnostics.Tracing.TraceEvent"">
-      <HintPath>{traceEventAssembly}</HintPath>
-    </Reference>
+    <ProjectReference Include=""{traceEventProjectPath}"" />
   </ItemGroup>
 </Project>";
 
