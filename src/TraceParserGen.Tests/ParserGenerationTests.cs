@@ -139,12 +139,7 @@ namespace TraceParserGen.Tests
             // Create a simple trace file to use for testing
             // We'll use one of the existing test trace files
             string sampleTracePath = Path.Combine(TestDataDir, "..", "..", "TraceEvent", "TraceEvent.Tests", "inputs", "net.4.5.x86.etl.zip");
-            if (!File.Exists(sampleTracePath))
-            {
-                // If the sample trace doesn't exist, we'll skip the trace file test
-                sampleTracePath = "";
-            }
-
+            
             // Create Program.cs that uses the generated parser with a real trace file
             string programContent = $@"using System;
 using System.Linq;
@@ -173,57 +168,38 @@ class Program
                 return 1;
             }}
 
-            // Test with a trace file if provided
+            // Get trace file path (from args or use default)
             string traceFilePath = args.Length > 0 ? args[0] : ""{sampleTracePath.Replace("\\", "\\\\")}"";
             
-            if (!string.IsNullOrEmpty(traceFilePath) && System.IO.File.Exists(traceFilePath))
+            if (!System.IO.File.Exists(traceFilePath))
             {{
-                Console.WriteLine($""Using trace file: {{traceFilePath}}"");
-                
-                using (var source = TraceEventDispatcher.GetDispatcherFromFileName(traceFilePath))
-                {{
-                    foreach (var parserType in parserTypes)
-                    {{
-                        Console.WriteLine($""  Testing parser: {{parserType.Name}}"");
-                        
-                        // Create an instance of the parser
-                        var parser = (TraceEventParser)Activator.CreateInstance(parserType, source);
-                        
-                        int eventCount = 0;
-                        
-                        // Hook the All event to count events processed by this parser
-                        parser.All += (TraceEvent data) =>
-                        {{
-                            eventCount++;
-                        }};
-                        
-                        // Process the trace (this will trigger events if any match)
-                        source.Process();
-                        
-                        Console.WriteLine($""    Processed {{eventCount}} event(s) from this parser"");
-                    }}
-                }}
+                Console.WriteLine($""ERROR: Trace file not found: {{traceFilePath}}"");
+                return 1;
             }}
-            else
+            
+            Console.WriteLine($""Using trace file: {{traceFilePath}}"");
+            
+            using (var source = TraceEventDispatcher.GetDispatcherFromFileName(traceFilePath))
             {{
-                Console.WriteLine(""No trace file available, skipping trace processing test"");
-                
-                // Just verify we can reflect on the parser types
                 foreach (var parserType in parserTypes)
                 {{
-                    Console.WriteLine($""  Validating parser: {{parserType.Name}}"");
+                    Console.WriteLine($""  Testing parser: {{parserType.Name}}"");
                     
-                    var enumerateMethod = parserType.GetMethod(""EnumerateTemplates"", 
-                        BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    // Create an instance of the parser
+                    var parser = (TraceEventParser)Activator.CreateInstance(parserType, source);
                     
-                    if (enumerateMethod != null)
+                    int eventCount = 0;
+                    
+                    // Hook the All event to count events processed by this parser
+                    parser.All += (TraceEvent data) =>
                     {{
-                        Console.WriteLine($""    Found EnumerateTemplates method"");
-                    }}
-                    else
-                    {{
-                        Console.WriteLine($""    WARNING: EnumerateTemplates method not found"");
-                    }}
+                        eventCount++;
+                    }};
+                    
+                    // Process the trace (this will trigger events if any match)
+                    source.Process();
+                    
+                    Console.WriteLine($""    Processed {{eventCount}} event(s) from this parser"");
                 }}
             }}
 
