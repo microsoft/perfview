@@ -75,33 +75,15 @@ namespace TraceParserGen.Tests
 
         private int RunTraceParserGen(string exePath, string manifestPath, string outputPath)
         {
-            ProcessStartInfo startInfo;
-            
-            // On Linux/Mac, we need to use mono to run .NET Framework executables
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            var startInfo = new ProcessStartInfo
             {
-                startInfo = new ProcessStartInfo
-                {
-                    FileName = exePath,
-                    Arguments = $"\"{manifestPath}\" \"{outputPath}\"",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                };
-            }
-            else
-            {
-                startInfo = new ProcessStartInfo
-                {
-                    FileName = "mono",
-                    Arguments = $"\"{exePath}\" \"{manifestPath}\" \"{outputPath}\"",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                };
-            }
+                FileName = exePath,
+                Arguments = $"\"{manifestPath}\" \"{outputPath}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
 
             Output.WriteLine($"Running: {startInfo.FileName} {startInfo.Arguments}");
 
@@ -130,6 +112,10 @@ namespace TraceParserGen.Tests
 
         private void CreateTestConsoleApp(string projectDir, string generatedParserPath)
         {
+            // Get the path to TraceEvent assembly - it's in the test project's output directory
+            // since we have a ProjectReference
+            string traceEventAssembly = Path.Combine(Environment.CurrentDirectory, "Microsoft.Diagnostics.Tracing.TraceEvent.dll");
+            
             // Create the .csproj file
             string csprojContent = $@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
@@ -139,7 +125,7 @@ namespace TraceParserGen.Tests
   </PropertyGroup>
   <ItemGroup>
     <Reference Include=""Microsoft.Diagnostics.Tracing.TraceEvent"">
-      <HintPath>{GetTraceEventAssemblyPath()}</HintPath>
+      <HintPath>{traceEventAssembly}</HintPath>
     </Reference>
   </ItemGroup>
 </Project>";
@@ -150,18 +136,27 @@ namespace TraceParserGen.Tests
             string destParserPath = Path.Combine(projectDir, Path.GetFileName(generatedParserPath));
             File.Copy(generatedParserPath, destParserPath, true);
 
-            // Create Program.cs that uses reflection to instantiate parsers
-            string programContent = @"using System;
+            // Create a simple trace file to use for testing
+            // We'll use one of the existing test trace files
+            string sampleTracePath = Path.Combine(TestDataDir, "..", "..", "TraceEvent", "TraceEvent.Tests", "inputs", "net.4.5.x86.etl.zip");
+            if (!File.Exists(sampleTracePath))
+            {
+                // If the sample trace doesn't exist, we'll skip the trace file test
+                sampleTracePath = "";
+            }
+
+            // Create Program.cs that uses the generated parser with a real trace file
+            string programContent = $@"using System;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Diagnostics.Tracing;
 
 class Program
-{
+{{
     static int Main(string[] args)
-    {
+    {{
         try
-        {
+        {{
             Console.WriteLine(""Starting parser test..."");
             
             // Find all TraceEventParser-derived types in the current assembly
@@ -170,41 +165,79 @@ class Program
                 .Where(t => typeof(TraceEventParser).IsAssignableFrom(t) && !t.IsAbstract)
                 .ToList();
 
-            Console.WriteLine($""Found {parserTypes.Count} parser type(s)"");
+            Console.WriteLine($""Found {{parserTypes.Count}} parser type(s)"");
 
-            foreach (var parserType in parserTypes)
-            {
-                Console.WriteLine($""  Testing parser: {parserType.Name}"");
+            if (parserTypes.Count == 0)
+            {{
+                Console.WriteLine(""ERROR: No parser types found"");
+                return 1;
+            }}
+
+            // Test with a trace file if provided
+            string traceFilePath = args.Length > 0 ? args[0] : ""{sampleTracePath.Replace("\\", "\\\\")}"";
+            
+            if (!string.IsNullOrEmpty(traceFilePath) && System.IO.File.Exists(traceFilePath))
+            {{
+                Console.WriteLine($""Using trace file: {{traceFilePath}}"");
                 
-                // Create an instance of the parser
-                // TraceEventParser constructors typically take a TraceEventSource parameter
-                // Since we don't have a real source, we'll just verify the type can be instantiated
-                // by checking if it has expected methods
+                using (var source = TraceEventDispatcher.GetDispatcherFromFileName(traceFilePath))
+                {{
+                    foreach (var parserType in parserTypes)
+                    {{
+                        Console.WriteLine($""  Testing parser: {{parserType.Name}}"");
+                        
+                        // Create an instance of the parser
+                        var parser = (TraceEventParser)Activator.CreateInstance(parserType, source);
+                        
+                        int eventCount = 0;
+                        
+                        // Hook the All event to count events processed by this parser
+                        parser.All += (TraceEvent data) =>
+                        {{
+                            eventCount++;
+                        }};
+                        
+                        // Process the trace (this will trigger events if any match)
+                        source.Process();
+                        
+                        Console.WriteLine($""    Processed {{eventCount}} event(s) from this parser"");
+                    }}
+                }}
+            }}
+            else
+            {{
+                Console.WriteLine(""No trace file available, skipping trace processing test"");
                 
-                var enumerateMethod = parserType.GetMethod(""EnumerateTemplates"", 
-                    BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-                
-                if (enumerateMethod != null)
-                {
-                    Console.WriteLine($""    Found EnumerateTemplates method"");
-                }
-                else
-                {
-                    Console.WriteLine($""    WARNING: EnumerateTemplates method not found"");
-                }
-            }
+                // Just verify we can reflect on the parser types
+                foreach (var parserType in parserTypes)
+                {{
+                    Console.WriteLine($""  Validating parser: {{parserType.Name}}"");
+                    
+                    var enumerateMethod = parserType.GetMethod(""EnumerateTemplates"", 
+                        BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    
+                    if (enumerateMethod != null)
+                    {{
+                        Console.WriteLine($""    Found EnumerateTemplates method"");
+                    }}
+                    else
+                    {{
+                        Console.WriteLine($""    WARNING: EnumerateTemplates method not found"");
+                    }}
+                }}
+            }}
 
             Console.WriteLine(""Parser test completed successfully"");
             return 0;
-        }
+        }}
         catch (Exception ex)
-        {
-            Console.WriteLine($""ERROR: {ex.Message}"");
+        {{
+            Console.WriteLine($""ERROR: {{ex.Message}}"");
             Console.WriteLine(ex.StackTrace);
             return 1;
-        }
-    }
-}";
+        }}
+    }}
+}}";
 
             File.WriteAllText(Path.Combine(projectDir, "Program.cs"), programContent);
         }
@@ -252,7 +285,7 @@ class Program
             var startInfo = new ProcessStartInfo
             {
                 FileName = "dotnet",
-                Arguments = "run -c Release --no-build",
+                Arguments = "run -c Release",
                 WorkingDirectory = projectDir,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,

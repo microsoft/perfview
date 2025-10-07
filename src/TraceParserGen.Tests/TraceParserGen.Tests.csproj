@@ -21,6 +21,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+    <ProjectReference Include="..\TraceParserGen\TraceParserGen.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -28,6 +31,14 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+  <!-- Copy TraceParserGen.exe to the output directory after build -->
+  <Target Name="CopyTraceParserGen" AfterTargets="Build">
+    <ItemGroup>
+      <TraceParserGenExe Include="..\TraceParserGen\bin\$(Configuration)\net462\TraceParserGen.exe" />
+    </ItemGroup>
+    <Copy SourceFiles="@(TraceParserGenExe)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+  </Target>
 
   <ItemGroup>
     <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />

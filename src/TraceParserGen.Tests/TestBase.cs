@@ -53,57 +53,16 @@ namespace TraceParserGen.Tests
         /// </summary>
         protected string GetTraceParserGenExePath()
         {
-            // Search for TraceParserGen.exe in common build output locations
-            string[] searchPaths = new[]
+            // TraceParserGen.exe is copied to the output directory during build
+            string exePath = Path.Combine(Environment.CurrentDirectory, "TraceParserGen.exe");
+            
+            if (!File.Exists(exePath))
             {
-                // Relative to test output directory
-                Path.Combine(Environment.CurrentDirectory, @"../../../../TraceParserGen/bin/Release/net462/TraceParserGen.exe"),
-                Path.Combine(Environment.CurrentDirectory, @"../../../../TraceParserGen/bin/Debug/net462/TraceParserGen.exe"),
-                
-                // Also try from bin directory (for net462 tests)
-                Path.Combine(Environment.CurrentDirectory, @"../../../TraceParserGen/bin/Release/net462/TraceParserGen.exe"),
-                Path.Combine(Environment.CurrentDirectory, @"../../../TraceParserGen/bin/Debug/net462/TraceParserGen.exe"),
-            };
-
-            foreach (var path in searchPaths)
-            {
-                var fullPath = Path.GetFullPath(path);
-                if (File.Exists(fullPath))
-                {
-                    return fullPath;
-                }
+                throw new FileNotFoundException($"Could not find TraceParserGen.exe at {exePath}. Please build the TraceParserGen.Tests project.");
             }
-
-            throw new FileNotFoundException("Could not find TraceParserGen.exe. Please build the TraceParserGen project first.");
+            
+            return exePath;
         }
 
-        /// <summary>
-        /// Gets the path to the TraceEvent assembly
-        /// </summary>
-        protected string GetTraceEventAssemblyPath()
-        {
-            // Search for TraceEvent DLL in common build output locations
-            string[] searchPaths = new[]
-            {
-                // Relative to test output directory  
-                Path.Combine(Environment.CurrentDirectory, @"../../../../TraceEvent/bin/Release/netstandard2.0/Microsoft.Diagnostics.Tracing.TraceEvent.dll"),
-                Path.Combine(Environment.CurrentDirectory, @"../../../../TraceEvent/bin/Debug/netstandard2.0/Microsoft.Diagnostics.Tracing.TraceEvent.dll"),
-                
-                // Also try from bin directory (for net462 tests)
-                Path.Combine(Environment.CurrentDirectory, @"../../../TraceEvent/bin/Release/netstandard2.0/Microsoft.Diagnostics.Tracing.TraceEvent.dll"),
-                Path.Combine(Environment.CurrentDirectory, @"../../../TraceEvent/bin/Debug/netstandard2.0/Microsoft.Diagnostics.Tracing.TraceEvent.dll"),
-            };
-
-            foreach (var path in searchPaths)
-            {
-                var fullPath = Path.GetFullPath(path);
-                if (File.Exists(fullPath))
-                {
-                    return fullPath;
-                }
-            }
-
-            throw new FileNotFoundException("Could not find Microsoft.Diagnostics.Tracing.TraceEvent.dll. Please build the TraceEvent project first.");
-        }
     }
 }
