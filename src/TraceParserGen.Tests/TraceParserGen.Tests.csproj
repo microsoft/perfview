@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;net8.0</TargetFrameworks>
+    <TargetFramework>net462</TargetFramework>
     <RootNamespace>TraceParserGen.Tests</RootNamespace>
     <AssemblyName>TraceParserGen.Tests</AssemblyName>
     <Description>Unit tests for TraceParserGen.</Description>
@@ -20,7 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
     <ProjectReference Include="..\TraceParserGen\TraceParserGen.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>

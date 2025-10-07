@@ -10,19 +10,14 @@ namespace TraceParserGen.Tests
     public abstract class TestBase
     {
         protected static string OriginalInputDir = FindInputDir();
-        protected static string TestDataDir = Path.GetFullPath("inputs");
-        protected static string BaseOutputDir = Path.GetFullPath("output");
+        protected static string TestDataDir = "inputs";
 
         protected TestBase(ITestOutputHelper output)
         {
             Output = output;
-            OutputDir = Path.Combine(BaseOutputDir, Guid.NewGuid().ToString("N").Substring(0, 8));
+            OutputDir = Path.Combine(Path.GetTempPath(), "TraceParserGen.Tests", Guid.NewGuid().ToString("N").Substring(0, 8));
             
-            // Ensure output directory exists
-            if (!Directory.Exists(OutputDir))
-            {
-                Directory.CreateDirectory(OutputDir);
-            }
+            Directory.CreateDirectory(OutputDir);
         }
 
         protected ITestOutputHelper Output { get; }
