@@ -343,7 +343,7 @@ namespace PEFile
 
     /// <summary>
     /// A PEHeader is a reader of the data at the beginning of a PEFile.    If the header bytes of a 
-    /// PEFile are read or mapped into memory, this class can parse it when given a poitner to it. 
+    /// PEFile are read or mapped into memory, this class can parse it when given a buffer slice to it. 
     /// It can read both 32 and 64 bit PE files.  
     /// </summary>
 #if PEFILE_PUBLIC
@@ -351,42 +351,6 @@ namespace PEFile
 #endif
     sealed unsafe class PEHeader
     {
-        /// <summary>
-        /// Returns a PEHeader for void* pointer in memory.  It does NO validity checking. 
-        /// </summary>
-        public PEHeader(void* startOfPEFile)
-        {
-            dosHeader = (IMAGE_DOS_HEADER*)startOfPEFile;
-            if (dosHeader->e_magic != IMAGE_DOS_HEADER.IMAGE_DOS_SIGNATURE)
-            {
-                goto ThrowBadHeader;
-            }
-
-            var imageHeaderOffset = dosHeader->e_lfanew;
-            if (!(sizeof(IMAGE_DOS_HEADER) <= imageHeaderOffset && imageHeaderOffset <= 512))
-            {
-                goto ThrowBadHeader;
-            }
-
-            ntHeader = (IMAGE_NT_HEADERS*)((byte*)startOfPEFile + imageHeaderOffset);
-
-            var optionalHeaderSize = ntHeader->FileHeader.SizeOfOptionalHeader;
-            if (!(sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER32) <= optionalHeaderSize))
-            {
-                goto ThrowBadHeader;
-            }
-
-            sections = (IMAGE_SECTION_HEADER*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS) + ntHeader->FileHeader.SizeOfOptionalHeader);
-            if (!((byte*)sections - (byte*)startOfPEFile < 1024))
-            {
-                goto ThrowBadHeader;
-            }
-
-            return;
-            ThrowBadHeader:
-            throw new InvalidOperationException("Bad PE Header.");
-        }
-
         /// <summary>
         /// Returns a PEHeader that references an existing buffer without copying. Validates buffer bounds.
         /// </summary>
@@ -450,35 +414,22 @@ namespace PEFile
         {
             get
             {
-                return VirtualAddressToRva(sections) + sizeof(IMAGE_SECTION_HEADER) * ntHeader->FileHeader.NumberOfSections;
+                return m_sectionsOffset + sizeof(IMAGE_SECTION_HEADER) * NtHeader.FileHeader.NumberOfSections;
             }
         }
 
-        /// <summary>
-        /// Given a virtual address to data in a mapped PE file, return the relative virtual address (displacement from start of the image)
-        /// </summary>
-        public int VirtualAddressToRva(void* ptr)
-        {
-            return (int)((byte*)ptr - (byte*)dosHeader);
-        }
-        /// <summary>
-        /// Given a relative virtual address (displacement from start of the image) return the virtual address to data in a mapped PE file
-        /// </summary>
-        public void* RvaToVirtualAddress(int rva)
-        {
-            return ((byte*)dosHeader) + rva;
-        }
         /// <summary>
         /// Given a relative virtual address (displacement from start of the image) return a offset in the file data for that data.  
         /// </summary>
         public int RvaToFileOffset(int rva)
         {
-            for (int i = 0; i < ntHeader->FileHeader.NumberOfSections; i++)
+            ushort numSections = NtHeader.FileHeader.NumberOfSections;
+            for (int i = 0; i < numSections; i++)
             {
-
-                if (sections[i].VirtualAddress <= rva && rva < sections[i].VirtualAddress + sections[i].VirtualSize)
+                ref readonly IMAGE_SECTION_HEADER section = ref GetSectionHeader(i);
+                if (section.VirtualAddress <= rva && rva < section.VirtualAddress + section.VirtualSize)
                 {
-                    return (int)sections[i].PointerToRawData + (rva - (int)sections[i].VirtualAddress);
+                    return (int)section.PointerToRawData + (rva - (int)section.VirtualAddress);
                 }
             }
             throw new InvalidOperationException("Illegal RVA 0x" + rva.ToString("x"));
@@ -487,7 +438,7 @@ namespace PEFile
         /// <summary>
         /// Returns true if this is PE file for a 64 bit architecture.  
         /// </summary>
-        public bool IsPE64 { get { return OptionalHeader32->Magic == 0x20b; } }
+        public bool IsPE64 { get { return OptionalHeader32Span.Magic == 0x20b; } }
         /// <summary>
         /// Returns true if this file contains managed code (might also contain native code). 
         /// </summary>
@@ -497,21 +448,21 @@ namespace PEFile
         /// <summary>   
         /// Returns the 'Signature' of the PE HEader PE\0\0 = 0x4550, used for sanity checking.  
         /// </summary>
-        public uint Signature { get { return ntHeader->Signature; } }
+        public uint Signature { get { return NtHeader.Signature; } }
 
         // fields of code:IMAGE_FILE_HEADER
         /// <summary>
         /// The machine this PE file is intended to run on 
         /// </summary>
-        public MachineType Machine { get { return (MachineType)ntHeader->FileHeader.Machine; } }
+        public MachineType Machine { get { return (MachineType)NtHeader.FileHeader.Machine; } }
         /// <summary>
         /// PE files have a number of sections that represent regions of memory with the access permisions.  This is the nubmer of such sections.  
         /// </summary>
-        public ushort NumberOfSections { get { return ntHeader->FileHeader.NumberOfSections; } }
+        public ushort NumberOfSections { get { return NtHeader.FileHeader.NumberOfSections; } }
         /// <summary>
         /// The the PE file was created represented as the number of seconds since Jan 1 1970 
         /// </summary>
-        public int TimeDateStampSec { get { return (int)ntHeader->FileHeader.TimeDateStamp; } }
+        public int TimeDateStampSec { get { return (int)NtHeader.FileHeader.TimeDateStamp; } }
         /// <summary>
         /// The the PE file was created represented as a DateTime object
         /// </summary>
@@ -526,53 +477,53 @@ namespace PEFile
         /// <summary>
         /// PointerToSymbolTable (see IMAGE_FILE_HEADER in PE File spec)
         /// </summary>
-        public ulong PointerToSymbolTable { get { return ntHeader->FileHeader.PointerToSymbolTable; } }
+        public ulong PointerToSymbolTable { get { return NtHeader.FileHeader.PointerToSymbolTable; } }
         /// <summary>
         /// NumberOfSymbols (see IMAGE_FILE_HEADER PE File spec)
         /// </summary>
-        public ulong NumberOfSymbols { get { return ntHeader->FileHeader.NumberOfSymbols; } }
+        public ulong NumberOfSymbols { get { return NtHeader.FileHeader.NumberOfSymbols; } }
         /// <summary>
         /// SizeOfOptionalHeader (see IMAGE_FILE_HEADER PE File spec)
         /// </summary>
-        public ushort SizeOfOptionalHeader { get { return ntHeader->FileHeader.SizeOfOptionalHeader; } }
+        public ushort SizeOfOptionalHeader { get { return NtHeader.FileHeader.SizeOfOptionalHeader; } }
         /// <summary>
         /// Characteristics (see IMAGE_FILE_HEADER PE File spec)
         /// </summary>
-        public ushort Characteristics { get { return ntHeader->FileHeader.Characteristics; } }
+        public ushort Characteristics { get { return NtHeader.FileHeader.Characteristics; } }
 
         // fields of code:IMAGE_OPTIONAL_HEADER32 (or code:IMAGE_OPTIONAL_HEADER64)
         /// <summary>
         /// Magic (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ushort Magic { get { return OptionalHeader32->Magic; } }
+        public ushort Magic { get { return OptionalHeader32Span.Magic; } }
         /// <summary>
         /// MajorLinkerVersion (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public byte MajorLinkerVersion { get { return OptionalHeader32->MajorLinkerVersion; } }
+        public byte MajorLinkerVersion { get { return OptionalHeader32Span.MajorLinkerVersion; } }
         /// <summary>
         /// MinorLinkerVersion (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public byte MinorLinkerVersion { get { return OptionalHeader32->MinorLinkerVersion; } }
+        public byte MinorLinkerVersion { get { return OptionalHeader32Span.MinorLinkerVersion; } }
         /// <summary>
         /// SizeOfCode (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint SizeOfCode { get { return OptionalHeader32->SizeOfCode; } }
+        public uint SizeOfCode { get { return OptionalHeader32Span.SizeOfCode; } }
         /// <summary>
         /// SizeOfInitializedData (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint SizeOfInitializedData { get { return OptionalHeader32->SizeOfInitializedData; } }
+        public uint SizeOfInitializedData { get { return OptionalHeader32Span.SizeOfInitializedData; } }
         /// <summary>
         /// SizeOfUninitializedData (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint SizeOfUninitializedData { get { return OptionalHeader32->SizeOfUninitializedData; } }
+        public uint SizeOfUninitializedData { get { return OptionalHeader32Span.SizeOfUninitializedData; } }
         /// <summary>
         /// AddressOfEntryPoint (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint AddressOfEntryPoint { get { return OptionalHeader32->AddressOfEntryPoint; } }
+        public uint AddressOfEntryPoint { get { return OptionalHeader32Span.AddressOfEntryPoint; } }
         /// <summary>
         /// BaseOfCode (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint BaseOfCode { get { return OptionalHeader32->BaseOfCode; } }
+        public uint BaseOfCode { get { return OptionalHeader32Span.BaseOfCode; } }
 
         // These depend on the whether you are PE32 or PE64
         /// <summary>
@@ -584,11 +535,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->ImageBase;
+                    return OptionalHeader64Span.ImageBase;
                 }
                 else
                 {
-                    return OptionalHeader32->ImageBase;
+                    return OptionalHeader32Span.ImageBase;
                 }
             }
         }
@@ -601,11 +552,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->SectionAlignment;
+                    return OptionalHeader64Span.SectionAlignment;
                 }
                 else
                 {
-                    return OptionalHeader32->SectionAlignment;
+                    return OptionalHeader32Span.SectionAlignment;
                 }
             }
         }
@@ -618,11 +569,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->FileAlignment;
+                    return OptionalHeader64Span.FileAlignment;
                 }
                 else
                 {
-                    return OptionalHeader32->FileAlignment;
+                    return OptionalHeader32Span.FileAlignment;
                 }
             }
         }
@@ -635,11 +586,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->MajorOperatingSystemVersion;
+                    return OptionalHeader64Span.MajorOperatingSystemVersion;
                 }
                 else
                 {
-                    return OptionalHeader32->MajorOperatingSystemVersion;
+                    return OptionalHeader32Span.MajorOperatingSystemVersion;
                 }
             }
         }
@@ -652,11 +603,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->MinorOperatingSystemVersion;
+                    return OptionalHeader64Span.MinorOperatingSystemVersion;
                 }
                 else
                 {
-                    return OptionalHeader32->MinorOperatingSystemVersion;
+                    return OptionalHeader32Span.MinorOperatingSystemVersion;
                 }
             }
         }
@@ -669,11 +620,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->MajorImageVersion;
+                    return OptionalHeader64Span.MajorImageVersion;
                 }
                 else
                 {
-                    return OptionalHeader32->MajorImageVersion;
+                    return OptionalHeader32Span.MajorImageVersion;
                 }
             }
         }
@@ -686,11 +637,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->MinorImageVersion;
+                    return OptionalHeader64Span.MinorImageVersion;
                 }
                 else
                 {
-                    return OptionalHeader32->MinorImageVersion;
+                    return OptionalHeader32Span.MinorImageVersion;
                 }
             }
         }
@@ -703,11 +654,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->MajorSubsystemVersion;
+                    return OptionalHeader64Span.MajorSubsystemVersion;
                 }
                 else
                 {
-                    return OptionalHeader32->MajorSubsystemVersion;
+                    return OptionalHeader32Span.MajorSubsystemVersion;
                 }
             }
         }
@@ -720,11 +671,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->MinorSubsystemVersion;
+                    return OptionalHeader64Span.MinorSubsystemVersion;
                 }
                 else
                 {
-                    return OptionalHeader32->MinorSubsystemVersion;
+                    return OptionalHeader32Span.MinorSubsystemVersion;
                 }
             }
         }
@@ -737,11 +688,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->Win32VersionValue;
+                    return OptionalHeader64Span.Win32VersionValue;
                 }
                 else
                 {
-                    return OptionalHeader32->Win32VersionValue;
+                    return OptionalHeader32Span.Win32VersionValue;
                 }
             }
         }
@@ -754,11 +705,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->SizeOfImage;
+                    return OptionalHeader64Span.SizeOfImage;
                 }
                 else
                 {
-                    return OptionalHeader32->SizeOfImage;
+                    return OptionalHeader32Span.SizeOfImage;
                 }
             }
         }
@@ -771,11 +722,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->SizeOfHeaders;
+                    return OptionalHeader64Span.SizeOfHeaders;
                 }
                 else
                 {
-                    return OptionalHeader32->SizeOfHeaders;
+                    return OptionalHeader32Span.SizeOfHeaders;
                 }
             }
         }
@@ -788,11 +739,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->CheckSum;
+                    return OptionalHeader64Span.CheckSum;
                 }
                 else
                 {
-                    return OptionalHeader32->CheckSum;
+                    return OptionalHeader32Span.CheckSum;
                 }
             }
         }
@@ -805,11 +756,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->Subsystem;
+                    return OptionalHeader64Span.Subsystem;
                 }
                 else
                 {
-                    return OptionalHeader32->Subsystem;
+                    return OptionalHeader32Span.Subsystem;
                 }
             }
         }
@@ -822,11 +773,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->DllCharacteristics;
+                    return OptionalHeader64Span.DllCharacteristics;
                 }
                 else
                 {
-                    return OptionalHeader32->DllCharacteristics;
+                    return OptionalHeader32Span.DllCharacteristics;
                 }
             }
         }
@@ -839,11 +790,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->SizeOfStackReserve;
+                    return OptionalHeader64Span.SizeOfStackReserve;
                 }
                 else
                 {
-                    return OptionalHeader32->SizeOfStackReserve;
+                    return OptionalHeader32Span.SizeOfStackReserve;
                 }
             }
         }
@@ -856,11 +807,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->SizeOfStackCommit;
+                    return OptionalHeader64Span.SizeOfStackCommit;
                 }
                 else
                 {
-                    return OptionalHeader32->SizeOfStackCommit;
+                    return OptionalHeader32Span.SizeOfStackCommit;
                 }
             }
         }
@@ -873,11 +824,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->SizeOfHeapReserve;
+                    return OptionalHeader64Span.SizeOfHeapReserve;
                 }
                 else
                 {
-                    return OptionalHeader32->SizeOfHeapReserve;
+                    return OptionalHeader32Span.SizeOfHeapReserve;
                 }
             }
         }
@@ -890,11 +841,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->SizeOfHeapCommit;
+                    return OptionalHeader64Span.SizeOfHeapCommit;
                 }
                 else
                 {
-                    return OptionalHeader32->SizeOfHeapCommit;
+                    return OptionalHeader32Span.SizeOfHeapCommit;
                 }
             }
         }
@@ -907,11 +858,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->LoaderFlags;
+                    return OptionalHeader64Span.LoaderFlags;
                 }
                 else
                 {
-                    return OptionalHeader32->LoaderFlags;
+                    return OptionalHeader32Span.LoaderFlags;
                 }
             }
         }
@@ -924,11 +875,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64->NumberOfRvaAndSizes;
+                    return OptionalHeader64Span.NumberOfRvaAndSizes;
                 }
                 else
                 {
-                    return OptionalHeader32->NumberOfRvaAndSizes;
+                    return OptionalHeader32Span.NumberOfRvaAndSizes;
                 }
             }
         }
@@ -944,7 +895,7 @@ namespace PEFile
                 return new IMAGE_DATA_DIRECTORY();
             }
 
-            return ntDirectories[idx];
+            return GetDirectory(idx);
         }
         /// <summary>
         /// Returns the data directory for DLL Exports see PE file spec for more
@@ -1035,10 +986,6 @@ namespace PEFile
         // Helper method to get a span from the buffer with bounds checking
         private ReadOnlySpan<byte> GetBufferSpan(int offset, int length)
         {
-            if (m_slice.Buffer == null)
-            {
-                throw new InvalidOperationException("Buffer not available in pointer-based PEHeader.");
-            }
             var span = m_slice.AsSpan();
             if (offset < 0 || offset + length > span.Length)
             {
@@ -1052,12 +999,8 @@ namespace PEFile
         {
             get
             {
-                if (m_slice.Buffer != null)
-                {
-                    var span = GetBufferSpan(0, sizeof(IMAGE_DOS_HEADER));
-                    return ref MemoryMarshal.Cast<byte, IMAGE_DOS_HEADER>(span)[0];
-                }
-                throw new InvalidOperationException("DosHeader property only available with span-based PEHeader.");
+                var span = GetBufferSpan(0, sizeof(IMAGE_DOS_HEADER));
+                return ref MemoryMarshal.Cast<byte, IMAGE_DOS_HEADER>(span)[0];
             }
         }
 
@@ -1065,61 +1008,25 @@ namespace PEFile
         {
             get
             {
-                if (m_slice.Buffer != null)
-                {
-                    var span = GetBufferSpan(m_ntHeaderOffset, sizeof(IMAGE_NT_HEADERS));
-                    return ref MemoryMarshal.Cast<byte, IMAGE_NT_HEADERS>(span)[0];
-                }
-                throw new InvalidOperationException("NtHeader property only available with span-based PEHeader.");
+                var span = GetBufferSpan(m_ntHeaderOffset, sizeof(IMAGE_NT_HEADERS));
+                return ref MemoryMarshal.Cast<byte, IMAGE_NT_HEADERS>(span)[0];
             }
         }
 
         private ref readonly IMAGE_SECTION_HEADER GetSectionHeader(int index)
         {
-            if (m_slice.Buffer != null)
-            {
-                int offset = m_sectionsOffset + index * sizeof(IMAGE_SECTION_HEADER);
-                var span = GetBufferSpan(offset, sizeof(IMAGE_SECTION_HEADER));
-                return ref MemoryMarshal.Cast<byte, IMAGE_SECTION_HEADER>(span)[0];
-            }
-            throw new InvalidOperationException("GetSectionHeader only available with span-based PEHeader.");
-        }
-
-        private IMAGE_OPTIONAL_HEADER32* OptionalHeader32
-        {
-            get
-            {
-                if (m_slice.Buffer != null)
-                {
-                    throw new InvalidOperationException("Use OptionalHeader32Span with span-based PEHeader.");
-                }
-                return (IMAGE_OPTIONAL_HEADER32*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS));
-            }
+            int offset = m_sectionsOffset + index * sizeof(IMAGE_SECTION_HEADER);
+            var span = GetBufferSpan(offset, sizeof(IMAGE_SECTION_HEADER));
+            return ref MemoryMarshal.Cast<byte, IMAGE_SECTION_HEADER>(span)[0];
         }
 
         private ref readonly IMAGE_OPTIONAL_HEADER32 OptionalHeader32Span
         {
             get
             {
-                if (m_slice.Buffer != null)
-                {
-                    int offset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS);
-                    var span = GetBufferSpan(offset, sizeof(IMAGE_OPTIONAL_HEADER32));
-                    return ref MemoryMarshal.Cast<byte, IMAGE_OPTIONAL_HEADER32>(span)[0];
-                }
-                throw new InvalidOperationException("OptionalHeader32Span only available with span-based PEHeader.");
-            }
-        }
-
-        private IMAGE_OPTIONAL_HEADER64* OptionalHeader64
-        {
-            get
-            {
-                if (m_slice.Buffer != null)
-                {
-                    throw new InvalidOperationException("Use OptionalHeader64Span with span-based PEHeader.");
-                }
-                return (IMAGE_OPTIONAL_HEADER64*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS));
+                int offset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS);
+                var span = GetBufferSpan(offset, sizeof(IMAGE_OPTIONAL_HEADER32));
+                return ref MemoryMarshal.Cast<byte, IMAGE_OPTIONAL_HEADER32>(span)[0];
             }
         }
 
@@ -1127,60 +1034,29 @@ namespace PEFile
         {
             get
             {
-                if (m_slice.Buffer != null)
-                {
-                    int offset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS);
-                    var span = GetBufferSpan(offset, sizeof(IMAGE_OPTIONAL_HEADER64));
-                    return ref MemoryMarshal.Cast<byte, IMAGE_OPTIONAL_HEADER64>(span)[0];
-                }
-                throw new InvalidOperationException("OptionalHeader64Span only available with span-based PEHeader.");
-            }
-        }
-
-        private IMAGE_DATA_DIRECTORY* ntDirectories
-        {
-            get
-            {
-                if (m_slice.Buffer != null)
-                {
-                    throw new InvalidOperationException("Use GetDirectory with span-based PEHeader.");
-                }
-                if (IsPE64)
-                {
-                    return (IMAGE_DATA_DIRECTORY*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER64));
-                }
-                else
-                {
-                    return (IMAGE_DATA_DIRECTORY*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER32));
-                }
+                int offset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS);
+                var span = GetBufferSpan(offset, sizeof(IMAGE_OPTIONAL_HEADER64));
+                return ref MemoryMarshal.Cast<byte, IMAGE_OPTIONAL_HEADER64>(span)[0];
             }
         }
 
         private ref readonly IMAGE_DATA_DIRECTORY GetDirectory(int index)
         {
-            if (m_slice.Buffer != null)
+            int dirOffset;
+            if (IsPE64)
             {
-                int dirOffset;
-                if (IsPE64)
-                {
-                    dirOffset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER64);
-                }
-                else
-                {
-                    dirOffset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER32);
-                }
-                dirOffset += index * sizeof(IMAGE_DATA_DIRECTORY);
-                var span = GetBufferSpan(dirOffset, sizeof(IMAGE_DATA_DIRECTORY));
-                return ref MemoryMarshal.Cast<byte, IMAGE_DATA_DIRECTORY>(span)[0];
+                dirOffset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER64);
             }
-            throw new InvalidOperationException("GetDirectory only available with span-based PEHeader.");
+            else
+            {
+                dirOffset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER32);
+            }
+            dirOffset += index * sizeof(IMAGE_DATA_DIRECTORY);
+            var span = GetBufferSpan(dirOffset, sizeof(IMAGE_DATA_DIRECTORY));
+            return ref MemoryMarshal.Cast<byte, IMAGE_DATA_DIRECTORY>(span)[0];
         }
 
-        private IMAGE_DOS_HEADER* dosHeader;
-        private IMAGE_NT_HEADERS* ntHeader;
-        private IMAGE_SECTION_HEADER* sections;
-
-        // Span-based fields (used when constructed with PEBufferedSlice)
+        // Span-based fields
         private PEBufferedSlice m_slice;
         private int m_ntHeaderOffset;
         private int m_sectionsOffset;
