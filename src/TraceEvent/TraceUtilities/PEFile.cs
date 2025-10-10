@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace PEFile
@@ -25,13 +26,13 @@ namespace PEFile
             m_stream = File.OpenRead(filePath);
             m_headerBuff = new PEBuffer(m_stream);
 
-            byte* ptr = m_headerBuff.Fetch(0, 1024);
+            ReadOnlySpan<byte> span = m_headerBuff.FetchSpan(0, 1024);
             if (m_headerBuff.Length < 512)
             {
                 goto ThrowBadHeader;
             }
 
-            Header = new PEHeader(ptr);
+            Header = new PEHeader(span);
 
             if (Header.PEHeaderSize > 1024 * 64)      // prevent insane numbers;
             {
@@ -41,13 +42,13 @@ namespace PEFile
             // We did not read in the complete header, Try again using the right sized buffer.  
             if (Header.PEHeaderSize > m_headerBuff.Length)
             {
-                ptr = m_headerBuff.Fetch(0, Header.PEHeaderSize);
+                span = m_headerBuff.FetchSpan(0, Header.PEHeaderSize);
                 if (m_headerBuff.Length < Header.PEHeaderSize)
                 {
                     goto ThrowBadHeader;
                 }
 
-                Header = new PEHeader(ptr);
+                Header = new PEHeader(span);
             }
             return;
             ThrowBadHeader:
@@ -377,6 +378,70 @@ namespace PEFile
 
             sections = (IMAGE_SECTION_HEADER*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS) + ntHeader->FileHeader.SizeOfOptionalHeader);
             if (!((byte*)sections - (byte*)startOfPEFile < 1024))
+            {
+                goto ThrowBadHeader;
+            }
+
+            return;
+            ThrowBadHeader:
+            throw new InvalidOperationException("Bad PE Header.");
+        }
+
+        /// <summary>
+        /// Returns a PEHeader for ReadOnlySpan of bytes in memory. Validates buffer bounds.
+        /// </summary>
+        public PEHeader(ReadOnlySpan<byte> peFileData)
+        {
+            // We need to copy the span data to a byte array since we can't store spans as fields
+            m_buffer = peFileData.ToArray();
+            
+            if (m_buffer.Length < sizeof(IMAGE_DOS_HEADER))
+            {
+                goto ThrowBadHeader;
+            }
+
+            IMAGE_DOS_HEADER dosHdr;
+            fixed (byte* bufferPtr = m_buffer)
+            {
+                dosHdr = *(IMAGE_DOS_HEADER*)bufferPtr;
+            }
+            
+            if (dosHdr.e_magic != IMAGE_DOS_HEADER.IMAGE_DOS_SIGNATURE)
+            {
+                goto ThrowBadHeader;
+            }
+
+            var imageHeaderOffset = dosHdr.e_lfanew;
+            if (!(sizeof(IMAGE_DOS_HEADER) <= imageHeaderOffset && imageHeaderOffset <= 512))
+            {
+                goto ThrowBadHeader;
+            }
+
+            if (m_buffer.Length < imageHeaderOffset + sizeof(IMAGE_NT_HEADERS))
+            {
+                goto ThrowBadHeader;
+            }
+
+            m_ntHeaderOffset = imageHeaderOffset;
+            IMAGE_NT_HEADERS ntHdr;
+            fixed (byte* bufferPtr = m_buffer)
+            {
+                ntHdr = *(IMAGE_NT_HEADERS*)(bufferPtr + m_ntHeaderOffset);
+            }
+
+            var optionalHeaderSize = ntHdr.FileHeader.SizeOfOptionalHeader;
+            if (!(sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER32) <= optionalHeaderSize))
+            {
+                goto ThrowBadHeader;
+            }
+
+            m_sectionsOffset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS) + ntHdr.FileHeader.SizeOfOptionalHeader;
+            if (m_sectionsOffset >= 1024)
+            {
+                goto ThrowBadHeader;
+            }
+
+            if (m_buffer.Length < m_sectionsOffset + sizeof(IMAGE_SECTION_HEADER) * ntHdr.FileHeader.NumberOfSections)
             {
                 goto ThrowBadHeader;
             }
@@ -975,12 +1040,118 @@ namespace PEFile
             }
         }
 
-        private IMAGE_OPTIONAL_HEADER32* OptionalHeader32 { get { return (IMAGE_OPTIONAL_HEADER32*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS)); } }
-        private IMAGE_OPTIONAL_HEADER64* OptionalHeader64 { get { return (IMAGE_OPTIONAL_HEADER64*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS)); } }
+        // Helper method to get a span from the buffer with bounds checking
+        private ReadOnlySpan<byte> GetBufferSpan(int offset, int length)
+        {
+            if (m_buffer == null)
+            {
+                throw new InvalidOperationException("Buffer not available in pointer-based PEHeader.");
+            }
+            if (offset < 0 || offset + length > m_buffer.Length)
+            {
+                throw new ArgumentOutOfRangeException($"Attempted to read {length} bytes at offset {offset}, but buffer is only {m_buffer.Length} bytes.");
+            }
+            return new ReadOnlySpan<byte>(m_buffer, offset, length);
+        }
+
+        // Helper properties to access structures from span with bounds checking
+        private ref readonly IMAGE_DOS_HEADER DosHeader
+        {
+            get
+            {
+                if (m_buffer != null)
+                {
+                    var span = GetBufferSpan(0, sizeof(IMAGE_DOS_HEADER));
+                    return ref MemoryMarshal.Cast<byte, IMAGE_DOS_HEADER>(span)[0];
+                }
+                throw new InvalidOperationException("DosHeader property only available with span-based PEHeader.");
+            }
+        }
+
+        private ref readonly IMAGE_NT_HEADERS NtHeader
+        {
+            get
+            {
+                if (m_buffer != null)
+                {
+                    var span = GetBufferSpan(m_ntHeaderOffset, sizeof(IMAGE_NT_HEADERS));
+                    return ref MemoryMarshal.Cast<byte, IMAGE_NT_HEADERS>(span)[0];
+                }
+                throw new InvalidOperationException("NtHeader property only available with span-based PEHeader.");
+            }
+        }
+
+        private ref readonly IMAGE_SECTION_HEADER GetSectionHeader(int index)
+        {
+            if (m_buffer != null)
+            {
+                int offset = m_sectionsOffset + index * sizeof(IMAGE_SECTION_HEADER);
+                var span = GetBufferSpan(offset, sizeof(IMAGE_SECTION_HEADER));
+                return ref MemoryMarshal.Cast<byte, IMAGE_SECTION_HEADER>(span)[0];
+            }
+            throw new InvalidOperationException("GetSectionHeader only available with span-based PEHeader.");
+        }
+
+        private IMAGE_OPTIONAL_HEADER32* OptionalHeader32
+        {
+            get
+            {
+                if (m_buffer != null)
+                {
+                    throw new InvalidOperationException("Use OptionalHeader32Span with span-based PEHeader.");
+                }
+                return (IMAGE_OPTIONAL_HEADER32*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS));
+            }
+        }
+
+        private ref readonly IMAGE_OPTIONAL_HEADER32 OptionalHeader32Span
+        {
+            get
+            {
+                if (m_buffer != null)
+                {
+                    int offset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS);
+                    var span = GetBufferSpan(offset, sizeof(IMAGE_OPTIONAL_HEADER32));
+                    return ref MemoryMarshal.Cast<byte, IMAGE_OPTIONAL_HEADER32>(span)[0];
+                }
+                throw new InvalidOperationException("OptionalHeader32Span only available with span-based PEHeader.");
+            }
+        }
+
+        private IMAGE_OPTIONAL_HEADER64* OptionalHeader64
+        {
+            get
+            {
+                if (m_buffer != null)
+                {
+                    throw new InvalidOperationException("Use OptionalHeader64Span with span-based PEHeader.");
+                }
+                return (IMAGE_OPTIONAL_HEADER64*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS));
+            }
+        }
+
+        private ref readonly IMAGE_OPTIONAL_HEADER64 OptionalHeader64Span
+        {
+            get
+            {
+                if (m_buffer != null)
+                {
+                    int offset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS);
+                    var span = GetBufferSpan(offset, sizeof(IMAGE_OPTIONAL_HEADER64));
+                    return ref MemoryMarshal.Cast<byte, IMAGE_OPTIONAL_HEADER64>(span)[0];
+                }
+                throw new InvalidOperationException("OptionalHeader64Span only available with span-based PEHeader.");
+            }
+        }
+
         private IMAGE_DATA_DIRECTORY* ntDirectories
         {
             get
             {
+                if (m_buffer != null)
+                {
+                    throw new InvalidOperationException("Use GetDirectory with span-based PEHeader.");
+                }
                 if (IsPE64)
                 {
                     return (IMAGE_DATA_DIRECTORY*)(((byte*)ntHeader) + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER64));
@@ -992,9 +1163,34 @@ namespace PEFile
             }
         }
 
+        private ref readonly IMAGE_DATA_DIRECTORY GetDirectory(int index)
+        {
+            if (m_buffer != null)
+            {
+                int dirOffset;
+                if (IsPE64)
+                {
+                    dirOffset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER64);
+                }
+                else
+                {
+                    dirOffset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER32);
+                }
+                dirOffset += index * sizeof(IMAGE_DATA_DIRECTORY);
+                var span = GetBufferSpan(dirOffset, sizeof(IMAGE_DATA_DIRECTORY));
+                return ref MemoryMarshal.Cast<byte, IMAGE_DATA_DIRECTORY>(span)[0];
+            }
+            throw new InvalidOperationException("GetDirectory only available with span-based PEHeader.");
+        }
+
         private IMAGE_DOS_HEADER* dosHeader;
         private IMAGE_NT_HEADERS* ntHeader;
         private IMAGE_SECTION_HEADER* sections;
+
+        // Span-based fields (used when constructed with ReadOnlySpan<byte>)
+        private byte[] m_buffer;
+        private int m_ntHeaderOffset;
+        private int m_sectionsOffset;
         #endregion
     }
 
@@ -1141,6 +1337,33 @@ namespace PEFile
                 }
             }
             return &m_buffPtr[filePos - m_buffPos];
+        }
+        public ReadOnlySpan<byte> FetchSpan(int filePos, int size)
+        {
+            if (size > m_buff.Length)
+            {
+                GetBuffer(size);
+            }
+            if (!(m_buffPos <= filePos && filePos + size <= m_buffPos + m_buffLen))
+            {
+                // Read in the block of 'size' bytes at filePos
+                m_buffPos = filePos;
+                m_stream.Seek(m_buffPos, SeekOrigin.Begin);
+                m_buffLen = 0;
+                while (m_buffLen < m_buff.Length)
+                {
+                    var count = m_stream.Read(m_buff, m_buffLen, size - m_buffLen);
+                    if (count == 0)
+                    {
+                        break;
+                    }
+
+                    m_buffLen += count;
+                }
+            }
+            int offset = filePos - m_buffPos;
+            int actualSize = Math.Min(size, m_buffLen - offset);
+            return new ReadOnlySpan<byte>(m_buff, offset, actualSize);
         }
         public int Length { get { return m_buffLen; } }
         public void Dispose()
