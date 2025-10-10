@@ -24,17 +24,15 @@ namespace PEFile
         public PEFile(string filePath)
         {
             m_stream = File.OpenRead(filePath);
-            m_headerBuff = new PEBuffer(m_stream);
+            m_headerBuff = new PEBufferedReader(m_stream);
 
-            byte[] buffer;
-            int offset, length;
-            m_headerBuff.GetBufferInfo(0, 1024, out buffer, out offset, out length);
+            PEBufferedSlice slice = m_headerBuff.EnsureRead(0, 1024);
             if (m_headerBuff.Length < 512)
             {
                 goto ThrowBadHeader;
             }
 
-            Header = new PEHeader(buffer, offset, length);
+            Header = new PEHeader(slice);
 
             if (Header.PEHeaderSize > 1024 * 64)      // prevent insane numbers;
             {
@@ -44,13 +42,13 @@ namespace PEFile
             // We did not read in the complete header, Try again using the right sized buffer.  
             if (Header.PEHeaderSize > m_headerBuff.Length)
             {
-                m_headerBuff.GetBufferInfo(0, Header.PEHeaderSize, out buffer, out offset, out length);
+                slice = m_headerBuff.EnsureRead(0, Header.PEHeaderSize);
                 if (m_headerBuff.Length < Header.PEHeaderSize)
                 {
                     goto ThrowBadHeader;
                 }
 
-                Header = new PEHeader(buffer, offset, length);
+                Header = new PEHeader(slice);
             }
             return;
             ThrowBadHeader:
@@ -310,26 +308,26 @@ namespace PEFile
             }
         }
 
-        private PEBuffer m_headerBuff;
-        private PEBuffer m_freeBuff;
+        private PEBufferedReader m_headerBuff;
+        private PEBufferedReader m_freeBuff;
         private FileStream m_stream;
 
-        internal byte* FetchRVA(int rva, int size, PEBuffer buffer)
+        internal byte* FetchRVA(int rva, int size, PEBufferedReader buffer)
         {
             return buffer.Fetch(Header.RvaToFileOffset(rva), size);
         }
-        internal PEBuffer AllocBuff()
+        internal PEBufferedReader AllocBuff()
         {
             var ret = m_freeBuff;
             if (ret == null)
             {
-                return new PEBuffer(m_stream);
+                return new PEBufferedReader(m_stream);
             }
 
             m_freeBuff = null;
             return ret;
         }
-        internal void FreeBuff(PEBuffer buffer)
+        internal void FreeBuff(PEBufferedReader buffer)
         {
             if (m_freeBuff != null)
             {
@@ -390,32 +388,19 @@ namespace PEFile
         }
 
         /// <summary>
-        /// Returns a PEHeader for ReadOnlySpan of bytes in memory. Validates buffer bounds.
-        /// </summary>
-        public PEHeader(ReadOnlySpan<byte> peFileData)
-            : this(peFileData.ToArray(), 0, peFileData.Length)
-        {
-        }
-
-        /// <summary>
         /// Returns a PEHeader that references an existing buffer without copying. Validates buffer bounds.
         /// </summary>
-        internal PEHeader(byte[] buffer, int offset, int length)
+        internal PEHeader(PEBufferedSlice slice)
         {
-            m_buffer = buffer;
-            m_bufferOffset = offset;
-            m_bufferLength = length;
+            m_slice = slice;
             
-            if (m_bufferLength < sizeof(IMAGE_DOS_HEADER))
+            var span = slice.AsSpan();
+            if (span.Length < sizeof(IMAGE_DOS_HEADER))
             {
                 goto ThrowBadHeader;
             }
 
-            IMAGE_DOS_HEADER dosHdr;
-            fixed (byte* bufferPtr = m_buffer)
-            {
-                dosHdr = *(IMAGE_DOS_HEADER*)(bufferPtr + m_bufferOffset);
-            }
+            IMAGE_DOS_HEADER dosHdr = MemoryMarshal.Read<IMAGE_DOS_HEADER>(span);
             
             if (dosHdr.e_magic != IMAGE_DOS_HEADER.IMAGE_DOS_SIGNATURE)
             {
@@ -428,17 +413,13 @@ namespace PEFile
                 goto ThrowBadHeader;
             }
 
-            if (m_bufferLength < imageHeaderOffset + sizeof(IMAGE_NT_HEADERS))
+            if (span.Length < imageHeaderOffset + sizeof(IMAGE_NT_HEADERS))
             {
                 goto ThrowBadHeader;
             }
 
             m_ntHeaderOffset = imageHeaderOffset;
-            IMAGE_NT_HEADERS ntHdr;
-            fixed (byte* bufferPtr = m_buffer)
-            {
-                ntHdr = *(IMAGE_NT_HEADERS*)(bufferPtr + m_bufferOffset + m_ntHeaderOffset);
-            }
+            IMAGE_NT_HEADERS ntHdr = MemoryMarshal.Read<IMAGE_NT_HEADERS>(span.Slice(m_ntHeaderOffset));
 
             var optionalHeaderSize = ntHdr.FileHeader.SizeOfOptionalHeader;
             if (!(sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_OPTIONAL_HEADER32) <= optionalHeaderSize))
@@ -452,7 +433,7 @@ namespace PEFile
                 goto ThrowBadHeader;
             }
 
-            if (m_bufferLength < m_sectionsOffset + sizeof(IMAGE_SECTION_HEADER) * ntHdr.FileHeader.NumberOfSections)
+            if (span.Length < m_sectionsOffset + sizeof(IMAGE_SECTION_HEADER) * ntHdr.FileHeader.NumberOfSections)
             {
                 goto ThrowBadHeader;
             }
@@ -1054,15 +1035,16 @@ namespace PEFile
         // Helper method to get a span from the buffer with bounds checking
         private ReadOnlySpan<byte> GetBufferSpan(int offset, int length)
         {
-            if (m_buffer == null)
+            if (m_slice.Buffer == null)
             {
                 throw new InvalidOperationException("Buffer not available in pointer-based PEHeader.");
             }
-            if (offset < 0 || offset + length > m_bufferLength)
+            var span = m_slice.AsSpan();
+            if (offset < 0 || offset + length > span.Length)
             {
-                throw new ArgumentOutOfRangeException($"Attempted to read {length} bytes at offset {offset}, but buffer is only {m_bufferLength} bytes.");
+                throw new ArgumentOutOfRangeException($"Attempted to read {length} bytes at offset {offset}, but buffer is only {span.Length} bytes.");
             }
-            return new ReadOnlySpan<byte>(m_buffer, m_bufferOffset + offset, length);
+            return span.Slice(offset, length);
         }
 
         // Helper properties to access structures from span with bounds checking
@@ -1070,7 +1052,7 @@ namespace PEFile
         {
             get
             {
-                if (m_buffer != null)
+                if (m_slice.Buffer != null)
                 {
                     var span = GetBufferSpan(0, sizeof(IMAGE_DOS_HEADER));
                     return ref MemoryMarshal.Cast<byte, IMAGE_DOS_HEADER>(span)[0];
@@ -1083,7 +1065,7 @@ namespace PEFile
         {
             get
             {
-                if (m_buffer != null)
+                if (m_slice.Buffer != null)
                 {
                     var span = GetBufferSpan(m_ntHeaderOffset, sizeof(IMAGE_NT_HEADERS));
                     return ref MemoryMarshal.Cast<byte, IMAGE_NT_HEADERS>(span)[0];
@@ -1094,7 +1076,7 @@ namespace PEFile
 
         private ref readonly IMAGE_SECTION_HEADER GetSectionHeader(int index)
         {
-            if (m_buffer != null)
+            if (m_slice.Buffer != null)
             {
                 int offset = m_sectionsOffset + index * sizeof(IMAGE_SECTION_HEADER);
                 var span = GetBufferSpan(offset, sizeof(IMAGE_SECTION_HEADER));
@@ -1107,7 +1089,7 @@ namespace PEFile
         {
             get
             {
-                if (m_buffer != null)
+                if (m_slice.Buffer != null)
                 {
                     throw new InvalidOperationException("Use OptionalHeader32Span with span-based PEHeader.");
                 }
@@ -1119,7 +1101,7 @@ namespace PEFile
         {
             get
             {
-                if (m_buffer != null)
+                if (m_slice.Buffer != null)
                 {
                     int offset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS);
                     var span = GetBufferSpan(offset, sizeof(IMAGE_OPTIONAL_HEADER32));
@@ -1133,7 +1115,7 @@ namespace PEFile
         {
             get
             {
-                if (m_buffer != null)
+                if (m_slice.Buffer != null)
                 {
                     throw new InvalidOperationException("Use OptionalHeader64Span with span-based PEHeader.");
                 }
@@ -1145,7 +1127,7 @@ namespace PEFile
         {
             get
             {
-                if (m_buffer != null)
+                if (m_slice.Buffer != null)
                 {
                     int offset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS);
                     var span = GetBufferSpan(offset, sizeof(IMAGE_OPTIONAL_HEADER64));
@@ -1159,7 +1141,7 @@ namespace PEFile
         {
             get
             {
-                if (m_buffer != null)
+                if (m_slice.Buffer != null)
                 {
                     throw new InvalidOperationException("Use GetDirectory with span-based PEHeader.");
                 }
@@ -1176,7 +1158,7 @@ namespace PEFile
 
         private ref readonly IMAGE_DATA_DIRECTORY GetDirectory(int index)
         {
-            if (m_buffer != null)
+            if (m_slice.Buffer != null)
             {
                 int dirOffset;
                 if (IsPE64)
@@ -1198,10 +1180,8 @@ namespace PEFile
         private IMAGE_NT_HEADERS* ntHeader;
         private IMAGE_SECTION_HEADER* sections;
 
-        // Span-based fields (used when constructed with ReadOnlySpan<byte>)
-        private byte[] m_buffer;
-        private int m_bufferOffset;    // Offset into m_buffer where our data starts
-        private int m_bufferLength;    // Length of valid data in m_buffer
+        // Span-based fields (used when constructed with PEBufferedSlice)
+        private PEBufferedSlice m_slice;
         private int m_ntHeaderOffset;
         private int m_sectionsOffset;
         #endregion
@@ -1317,11 +1297,33 @@ namespace PEFile
     #region private classes we may want to expose 
 
     /// <summary>
-    /// A PEBuffer represents a buffer (efficient) scanner of the 
+    /// Represents a slice of a buffered PE file with buffer, offset, and length information.
     /// </summary>
-    internal sealed unsafe class PEBuffer : IDisposable
+    internal struct PEBufferedSlice
     {
-        public PEBuffer(Stream stream, int buffSize = 512)
+        public byte[] Buffer { get; }
+        public int Offset { get; }
+        public int Length { get; }
+
+        public PEBufferedSlice(byte[] buffer, int offset, int length)
+        {
+            Buffer = buffer;
+            Offset = offset;
+            Length = length;
+        }
+
+        public ReadOnlySpan<byte> AsSpan()
+        {
+            return new ReadOnlySpan<byte>(Buffer, Offset, Length);
+        }
+    }
+
+    /// <summary>
+    /// A PEBufferedReader represents a buffer (efficient) scanner of the 
+    /// </summary>
+    internal sealed unsafe class PEBufferedReader : IDisposable
+    {
+        public PEBufferedReader(Stream stream, int buffSize = 512)
         {
             m_stream = stream;
             GetBuffer(buffSize);
@@ -1380,15 +1382,15 @@ namespace PEFile
         }
         public int Length { get { return m_buffLen; } }
 
-        // Internal method to get buffer parameters for zero-copy PEHeader construction
-        internal void GetBufferInfo(int filePos, int size, out byte[] buffer, out int offset, out int length)
+        // Internal method to ensure data is read and return buffer slice for zero-copy PEHeader construction
+        internal PEBufferedSlice EnsureRead(int filePos, int size)
         {
             // Ensure the data is fetched
             FetchSpan(filePos, size);
             
-            buffer = m_buff;
-            offset = filePos - m_buffPos;
-            length = Math.Min(size, m_buffLen - offset);
+            int offset = filePos - m_buffPos;
+            int length = Math.Min(size, m_buffLen - offset);
+            return new PEBufferedSlice(m_buff, offset, length);
         }
 
         public void Dispose()
@@ -1397,7 +1399,7 @@ namespace PEFile
             m_pinningHandle.Free();
         }
         #region private
-        ~PEBuffer()
+        ~PEBufferedReader()
         {
             FreeBuffer();
         }
@@ -1444,7 +1446,7 @@ namespace PEFile
 
         // If IsLeaf is true
         public int DataLength { get { return m_dataLen; } }
-        public byte* FetchData(int offsetInResourceData, int size, PEBuffer buff)
+        public byte* FetchData(int offsetInResourceData, int size, PEBufferedReader buff)
         {
             return buff.Fetch(m_dataFileOffset + offsetInResourceData, size);
         }
@@ -1801,7 +1803,7 @@ namespace PEFile
         private int NameOffsetAndFlag;
         private int DataOffsetAndFlag;
 
-        internal unsafe string GetName(PEBuffer buff, int resourceStartFileOffset)
+        internal unsafe string GetName(PEBufferedReader buff, int resourceStartFileOffset)
         {
             if (IsStringName)
             {
