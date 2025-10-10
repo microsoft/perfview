@@ -26,13 +26,15 @@ namespace PEFile
             m_stream = File.OpenRead(filePath);
             m_headerBuff = new PEBuffer(m_stream);
 
-            ReadOnlySpan<byte> span = m_headerBuff.FetchSpan(0, 1024);
+            byte[] buffer;
+            int offset, length;
+            m_headerBuff.GetBufferInfo(0, 1024, out buffer, out offset, out length);
             if (m_headerBuff.Length < 512)
             {
                 goto ThrowBadHeader;
             }
 
-            Header = new PEHeader(span);
+            Header = new PEHeader(buffer, offset, length);
 
             if (Header.PEHeaderSize > 1024 * 64)      // prevent insane numbers;
             {
@@ -42,13 +44,13 @@ namespace PEFile
             // We did not read in the complete header, Try again using the right sized buffer.  
             if (Header.PEHeaderSize > m_headerBuff.Length)
             {
-                span = m_headerBuff.FetchSpan(0, Header.PEHeaderSize);
+                m_headerBuff.GetBufferInfo(0, Header.PEHeaderSize, out buffer, out offset, out length);
                 if (m_headerBuff.Length < Header.PEHeaderSize)
                 {
                     goto ThrowBadHeader;
                 }
 
-                Header = new PEHeader(span);
+                Header = new PEHeader(buffer, offset, length);
             }
             return;
             ThrowBadHeader:
@@ -391,11 +393,20 @@ namespace PEFile
         /// Returns a PEHeader for ReadOnlySpan of bytes in memory. Validates buffer bounds.
         /// </summary>
         public PEHeader(ReadOnlySpan<byte> peFileData)
+            : this(peFileData.ToArray(), 0, peFileData.Length)
         {
-            // We need to copy the span data to a byte array since we can't store spans as fields
-            m_buffer = peFileData.ToArray();
+        }
+
+        /// <summary>
+        /// Returns a PEHeader that references an existing buffer without copying. Validates buffer bounds.
+        /// </summary>
+        internal PEHeader(byte[] buffer, int offset, int length)
+        {
+            m_buffer = buffer;
+            m_bufferOffset = offset;
+            m_bufferLength = length;
             
-            if (m_buffer.Length < sizeof(IMAGE_DOS_HEADER))
+            if (m_bufferLength < sizeof(IMAGE_DOS_HEADER))
             {
                 goto ThrowBadHeader;
             }
@@ -403,7 +414,7 @@ namespace PEFile
             IMAGE_DOS_HEADER dosHdr;
             fixed (byte* bufferPtr = m_buffer)
             {
-                dosHdr = *(IMAGE_DOS_HEADER*)bufferPtr;
+                dosHdr = *(IMAGE_DOS_HEADER*)(bufferPtr + m_bufferOffset);
             }
             
             if (dosHdr.e_magic != IMAGE_DOS_HEADER.IMAGE_DOS_SIGNATURE)
@@ -417,7 +428,7 @@ namespace PEFile
                 goto ThrowBadHeader;
             }
 
-            if (m_buffer.Length < imageHeaderOffset + sizeof(IMAGE_NT_HEADERS))
+            if (m_bufferLength < imageHeaderOffset + sizeof(IMAGE_NT_HEADERS))
             {
                 goto ThrowBadHeader;
             }
@@ -426,7 +437,7 @@ namespace PEFile
             IMAGE_NT_HEADERS ntHdr;
             fixed (byte* bufferPtr = m_buffer)
             {
-                ntHdr = *(IMAGE_NT_HEADERS*)(bufferPtr + m_ntHeaderOffset);
+                ntHdr = *(IMAGE_NT_HEADERS*)(bufferPtr + m_bufferOffset + m_ntHeaderOffset);
             }
 
             var optionalHeaderSize = ntHdr.FileHeader.SizeOfOptionalHeader;
@@ -441,7 +452,7 @@ namespace PEFile
                 goto ThrowBadHeader;
             }
 
-            if (m_buffer.Length < m_sectionsOffset + sizeof(IMAGE_SECTION_HEADER) * ntHdr.FileHeader.NumberOfSections)
+            if (m_bufferLength < m_sectionsOffset + sizeof(IMAGE_SECTION_HEADER) * ntHdr.FileHeader.NumberOfSections)
             {
                 goto ThrowBadHeader;
             }
@@ -1047,11 +1058,11 @@ namespace PEFile
             {
                 throw new InvalidOperationException("Buffer not available in pointer-based PEHeader.");
             }
-            if (offset < 0 || offset + length > m_buffer.Length)
+            if (offset < 0 || offset + length > m_bufferLength)
             {
-                throw new ArgumentOutOfRangeException($"Attempted to read {length} bytes at offset {offset}, but buffer is only {m_buffer.Length} bytes.");
+                throw new ArgumentOutOfRangeException($"Attempted to read {length} bytes at offset {offset}, but buffer is only {m_bufferLength} bytes.");
             }
-            return new ReadOnlySpan<byte>(m_buffer, offset, length);
+            return new ReadOnlySpan<byte>(m_buffer, m_bufferOffset + offset, length);
         }
 
         // Helper properties to access structures from span with bounds checking
@@ -1189,6 +1200,8 @@ namespace PEFile
 
         // Span-based fields (used when constructed with ReadOnlySpan<byte>)
         private byte[] m_buffer;
+        private int m_bufferOffset;    // Offset into m_buffer where our data starts
+        private int m_bufferLength;    // Length of valid data in m_buffer
         private int m_ntHeaderOffset;
         private int m_sectionsOffset;
         #endregion
@@ -1366,6 +1379,18 @@ namespace PEFile
             return new ReadOnlySpan<byte>(m_buff, offset, actualSize);
         }
         public int Length { get { return m_buffLen; } }
+
+        // Internal method to get buffer parameters for zero-copy PEHeader construction
+        internal void GetBufferInfo(int filePos, int size, out byte[] buffer, out int offset, out int length)
+        {
+            // Ensure the data is fetched
+            FetchSpan(filePos, size);
+            
+            buffer = m_buff;
+            offset = filePos - m_buffPos;
+            length = Math.Min(size, m_buffLen - offset);
+        }
+
         public void Dispose()
         {
             GC.SuppressFinalize(this);
