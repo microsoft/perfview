@@ -1124,6 +1124,42 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                 }
 
+                if (value is uint)
+                {
+                    if (formatProvider != null)
+                    {
+                        return ((uint)value).ToString(formatProvider);
+                    }
+                    else
+                    {
+                        return ((uint)value).ToString("n0");
+                    }
+                }
+
+                if (value is short)
+                {
+                    if (formatProvider != null)
+                    {
+                        return ((short)value).ToString(formatProvider);
+                    }
+                    else
+                    {
+                        return ((short)value).ToString("n0");
+                    }
+                }
+
+                if (value is ushort)
+                {
+                    if (formatProvider != null)
+                    {
+                        return ((ushort)value).ToString(formatProvider);
+                    }
+                    else
+                    {
+                        return ((ushort)value).ToString("n0");
+                    }
+                }
+
                 if (value is long)
                 {
                     if (PayloadNames[index] == "objectId")      // TODO this is a hack.  
@@ -1138,6 +1174,18 @@ namespace Microsoft.Diagnostics.Tracing
                     else
                     {
                         return ((long)value).ToString("n0");
+                    }
+                }
+
+                if (value is ulong)
+                {
+                    if (formatProvider != null)
+                    {
+                        return ((ulong)value).ToString(formatProvider);
+                    }
+                    else
+                    {
+                        return ((ulong)value).ToString("n0");
                     }
                 }
 
