@@ -1353,7 +1353,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         Size = 1;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Int16:
-                    case RegisteredTraceEventParser.TdhInputType.UInt16:
                         Size = 2;
                         if (outType == 1)       // Encoding for String
                         {
@@ -1362,16 +1361,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         }
                         Type = typeof(short);
                         break;
+                    case RegisteredTraceEventParser.TdhInputType.UInt16:
+                        Size = 2;
+                        if (outType == 1)       // Encoding for String
+                        {
+                            Type = typeof(char);
+                            break;
+                        }
+                        Type = typeof(ushort);
+                        break;
                     case RegisteredTraceEventParser.TdhInputType.Int32:
-                    case RegisteredTraceEventParser.TdhInputType.UInt32:
                     case RegisteredTraceEventParser.TdhInputType.HexInt32:
                         Type = typeof(int);
                         Size = 4;
                         break;
+                    case RegisteredTraceEventParser.TdhInputType.UInt32:
+                        Type = typeof(uint);
+                        Size = 4;
+                        break;
                     case RegisteredTraceEventParser.TdhInputType.Int64:
-                    case RegisteredTraceEventParser.TdhInputType.UInt64:
                     case RegisteredTraceEventParser.TdhInputType.HexInt64:
                         Type = typeof(long);
+                        Size = 8;
+                        break;
+                    case RegisteredTraceEventParser.TdhInputType.UInt64:
+                        Type = typeof(ulong);
                         Size = 8;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Float:
