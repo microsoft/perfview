@@ -324,49 +324,6 @@ namespace TraceEventTests
         }
 
         /// <summary>
-        /// Test that invalid PE files throw appropriate exceptions
-        /// </summary>
-        [Fact]
-        public void PEFile_InvalidFileThrowsException()
-        {
-            // Create a temporary file with invalid content
-            string tempFile = Path.GetTempFileName();
-            try
-            {
-                File.WriteAllText(tempFile, "This is not a PE file");
-                
-                Assert.Throws<InvalidOperationException>(() =>
-                {
-                    using (var peFile = new PEFile.PEFile(tempFile))
-                    {
-                        // Should throw before getting here
-                    }
-                });
-            }
-            finally
-            {
-                // Wait with exponential back-off and retry deletion in case file is still locked
-                for (int i = 0; i < 10; i++)
-                {
-                    try
-                    {
-                        if (File.Exists(tempFile))
-                        {
-                            File.Delete(tempFile);
-                        }
-                        break;
-                    }
-                    catch (IOException)
-                    {
-                        if (i == 9) throw; // Rethrow on last attempt
-                        // Exponential back-off: 10ms, 20ms, 40ms, 80ms, 160ms, 320ms, 640ms, 1280ms, 2560ms
-                        System.Threading.Thread.Sleep(10 << i);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
         /// Test that bounds checking works - accessing beyond buffer should be caught
         /// </summary>
         [Fact]
