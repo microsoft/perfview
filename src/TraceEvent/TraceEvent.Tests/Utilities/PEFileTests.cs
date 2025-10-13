@@ -249,9 +249,22 @@ namespace TraceEventTests
             }
             finally
             {
-                if (File.Exists(tempFile))
+                // Wait a bit and retry deletion in case file is still locked
+                for (int i = 0; i < 10; i++)
                 {
-                    File.Delete(tempFile);
+                    try
+                    {
+                        if (File.Exists(tempFile))
+                        {
+                            File.Delete(tempFile);
+                        }
+                        break;
+                    }
+                    catch (IOException)
+                    {
+                        if (i == 9) throw; // Rethrow on last attempt
+                        System.Threading.Thread.Sleep(50); // Wait 50ms before retry
+                    }
                 }
             }
         }
