@@ -372,7 +372,7 @@ namespace PEFile
             }
 
             var imageHeaderOffset = dosHdr.e_lfanew;
-            if (!(sizeof(IMAGE_DOS_HEADER) <= imageHeaderOffset && imageHeaderOffset <= 512))
+            if (imageHeaderOffset < sizeof(IMAGE_DOS_HEADER))
             {
                 goto ThrowBadHeader;
             }
@@ -392,10 +392,6 @@ namespace PEFile
             }
 
             m_sectionsOffset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS) + ntHdr.FileHeader.SizeOfOptionalHeader;
-            if (m_sectionsOffset >= 1024)
-            {
-                goto ThrowBadHeader;
-            }
 
             if (span.Length < m_sectionsOffset + sizeof(IMAGE_SECTION_HEADER) * ntHdr.FileHeader.NumberOfSections)
             {
