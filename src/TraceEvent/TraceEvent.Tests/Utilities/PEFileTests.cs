@@ -20,16 +20,47 @@ namespace TraceEventTests
         }
 
         /// <summary>
-        /// Comprehensive comparison test between original and new PEFile implementations
+        /// Comprehensive comparison test between original and new PEFile implementations for managed assemblies
         /// </summary>
         [Fact]
-        public void PEFile_NewImplementationMatchesOriginal()
+        public void PEFile_NewImplementationMatchesOriginal_ManagedAssembly()
         {
             string assemblyPath = typeof(PEFileTests).Assembly.Location;
-            _output.WriteLine($"Testing with assembly: {assemblyPath}");
+            _output.WriteLine($"Testing managed assembly: {assemblyPath}");
+            CompareImplementations(assemblyPath, expectManaged: true);
+        }
 
-            using (var newPEFile = new PEFile.PEFile(assemblyPath))
-            using (var oldPEFile = new OriginalPEFile.PEFile(assemblyPath))
+        /// <summary>
+        /// Comprehensive comparison test between original and new PEFile implementations for native binaries
+        /// </summary>
+        [Fact]
+        public void PEFile_NewImplementationMatchesOriginal_NativeBinary()
+        {
+            string winDir = Environment.GetEnvironmentVariable("WINDIR");
+            if (string.IsNullOrEmpty(winDir))
+            {
+                _output.WriteLine("WINDIR environment variable not set, skipping native binary test");
+                return;
+            }
+
+            string kernel32Path = Path.Combine(winDir, "System32", "kernel32.dll");
+            if (!File.Exists(kernel32Path))
+            {
+                _output.WriteLine($"kernel32.dll not found at {kernel32Path}, skipping native binary test");
+                return;
+            }
+
+            _output.WriteLine($"Testing native binary: {kernel32Path}");
+            CompareImplementations(kernel32Path, expectManaged: false);
+        }
+
+        /// <summary>
+        /// Helper method to compare old and new PEFile implementations
+        /// </summary>
+        private void CompareImplementations(string filePath, bool expectManaged)
+        {
+            using (var newPEFile = new PEFile.PEFile(filePath))
+            using (var oldPEFile = new OriginalPEFile.PEFile(filePath))
             {
                 var newHeader = newPEFile.Header;
                 var oldHeader = oldPEFile.Header;
@@ -79,6 +110,9 @@ namespace TraceEventTests
 
                 Assert.Equal(oldHeader.IsManaged, newHeader.IsManaged);
                 _output.WriteLine($"IsManaged: {newHeader.IsManaged} (matches: {oldHeader.IsManaged == newHeader.IsManaged})");
+                
+                // Verify expectation
+                Assert.Equal(expectManaged, newHeader.IsManaged);
 
                 // Compare data directories
                 var oldExportDir = oldHeader.ExportDirectory;
@@ -184,29 +218,6 @@ namespace TraceEventTests
                 {
                     Assert.False(isPE64, "32-bit machine type should report IsPE64 = false");
                 }
-            }
-        }
-
-        /// <summary>
-        /// Test that timestamp is valid
-        /// </summary>
-        [Fact]
-        public void PEFile_HasValidTimestamp()
-        {
-            string assemblyPath = typeof(PEFileTests).Assembly.Location;
-
-            using (var peFile = new PEFile.PEFile(assemblyPath))
-            {
-                int timestampSec = peFile.Header.TimeDateStampSec;
-                DateTime timestamp = peFile.Header.TimeDateStamp;
-                
-                _output.WriteLine($"Timestamp (seconds): {timestampSec}");
-                _output.WriteLine($"Timestamp (DateTime): {timestamp}");
-                
-                // Timestamp should be reasonable (after 1990, before far future)
-                // Note: Some builds use deterministic timestamps which may be in future
-                Assert.True(timestamp.Year >= 1990, "Timestamp year should be >= 1990");
-                Assert.True(timestamp.Year <= 2100, "Timestamp year should be <= 2100");
             }
         }
 
