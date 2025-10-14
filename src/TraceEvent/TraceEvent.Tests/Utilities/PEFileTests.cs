@@ -37,18 +37,10 @@ namespace TraceEventTests
         public void PEFile_NewImplementationMatchesOriginal_NativeBinary()
         {
             string winDir = Environment.GetEnvironmentVariable("WINDIR");
-            if (string.IsNullOrEmpty(winDir))
-            {
-                _output.WriteLine("WINDIR environment variable not set, skipping native binary test");
-                return;
-            }
+            Assert.False(string.IsNullOrEmpty(winDir), "WINDIR environment variable not set");
 
             string kernel32Path = Path.Combine(winDir, "System32", "kernel32.dll");
-            if (!File.Exists(kernel32Path))
-            {
-                _output.WriteLine($"kernel32.dll not found at {kernel32Path}, skipping native binary test");
-                return;
-            }
+            Assert.True(File.Exists(kernel32Path), $"kernel32.dll not found at {kernel32Path}");
 
             _output.WriteLine($"Testing native binary: {kernel32Path}");
             CompareImplementations(kernel32Path, expectManaged: false);
