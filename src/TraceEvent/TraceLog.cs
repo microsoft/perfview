@@ -9126,7 +9126,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     else
                     {
                         symReader.m_log.WriteLine("ERROR: The R2R perfmap does not match the loaded module.  Actual Signature = " + symbolModule.Signature + " Requested Signature = " + moduleFile.R2RPerfMapSignature);
-                        return null;
+                        throw new Exception("ERROR: The R2R perfmap does not match the loaded module.");
                     }
                 }
             }
