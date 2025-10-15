@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
+using System.Threading;
 using Address = System.UInt64;
 
 namespace Microsoft.Diagnostics.Tracing
@@ -49,6 +50,11 @@ namespace Microsoft.Diagnostics.Tracing
             // We assume to begin with that all processors are idle (it will fix itself shortly).  
             m_numIdleProcs = eventLog.NumberOfProcessors;
             m_threadIDUsingProc = new int[m_numIdleProcs];
+            m_threadIndexUsingProc = new ThreadIndex[m_numIdleProcs];
+            for(int i=0; i< m_threadIndexUsingProc.Length; i++)
+            {
+                m_threadIndexUsingProc[i] = ThreadIndex.Invalid;
+            }
 
             m_lastPacketForProcess = new NetworkInfo[eventLog.Processes.Count];
             for (int i = 0; i < m_lastPacketForProcess.Length; i++)
@@ -57,7 +63,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             MiniumReadiedTimeMSec = 0.5F;   // We tend to only care about this if we are being starved.  
-            m_traceHasCSwitches = ContainsCSwitchEvents(eventLog);
+            InitializeForUniversal();
         }
         /// <summary>
         /// If set we compute thread time using Tasks
@@ -447,24 +453,35 @@ namespace Microsoft.Diagnostics.Tracing
             m_threadState = null;
         }
 
-        private static bool ContainsCSwitchEvents(TraceLog traceLog)
+        private void InitializeForUniversal()
         {
-            foreach (TraceEventCounts counts in traceLog.Stats)
+            bool initialize = false;
+            foreach (TraceEventCounts counts in m_eventLog.Stats)
             {
-                if (counts.ProviderGuid == KernelTraceEventParser.ProviderGuid &&
-                    counts.EventName.Contains("CSwitch"))
-                {
-                    return true;
-                }
-
                 if (counts.ProviderGuid == UniversalEventsTraceEventParser.ProviderGuid &&
                     counts.EventName.Contains("cswitch"))
                 {
-                    return true;
+                    initialize = true;
                 }
             }
 
-            return false;
+            if (initialize)
+            {
+                // Set has cswitches, since we don't get thread start events, and the computer needs to know
+                // that there will be cswitch events.
+                m_traceHasCSwitches = true;
+
+                // Initialize all threads to blocked.  For Windows traces, this happens when a thread start event is encountered.
+                // For Linux, we don't get these events, so we must pre-initialize them.
+
+                foreach (TraceThread thread in m_eventLog.Threads)
+                {
+                    // Threads start off blocked.
+                    Debug.Assert(m_threadState[(int)thread.ThreadIndex].ThreadUninitialized);
+                    Debug.Assert(m_threadState[(int)thread.ThreadIndex].LastCPUStackRelativeMSec == 0);
+                    m_threadState[(int)thread.ThreadIndex].LogBlockingStart(timeRelativeMSec: 0, processorNumber: 0, thread, this);
+                }
+            }
         }
 
         private void Clr_GCAllocationTick(GCAllocationTickTraceData obj)
@@ -694,43 +711,83 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void OnUniversalCSwitch(SampleTraceData data)
         {
-            m_traceHasCSwitches = true;
-
             // This event fires when a thread is switched back in.
             // The timestamp is the time at which the thread was switched back in.
             // The value is the amount of time that thread was switched out.
+
             TraceThread thread = data.Thread();
-            if (thread != null)
-            {  
-                // Get the blocking stack.
-                StackSourceCallStackIndex stackIndex = GetCallStack(data, thread);
-
-                var startTimeStampRelMsec = m_eventLog.QPCTimeToRelMSec(data.TimeStampQPC - (long)data.Value);
-
-                m_threadState[(int)thread.ThreadIndex].LogBlockingStart(
-                    startTimeStampRelMsec, 0, thread, this);
-
-                m_threadState[(int)thread.ThreadIndex].LogBlockingEnd(
-                    data.TimeStampRelativeMSec, 0, stackIndex, thread, this);
-            }
-            else
+            if (thread == null)
             {
                 Debug.WriteLine("Warning, no thread at " + data.TimeStampRelativeMSec.ToString("f3"));
+                return;
             }
+
+            // Get the blocking stack.
+            StackSourceCallStackIndex stackIndex = GetCallStack(data, thread);
+
+            // If the thread wasn't previously marked as blocked, then mark it.
+            if (!m_threadState[(int)thread.ThreadIndex].ThreadBlocked)
+            {
+                double startTimeStampRelMsec = m_eventLog.QPCTimeToRelMSec(data.TimeStampQPC - (long)data.Value);
+                m_threadState[(int)thread.ThreadIndex].LogBlockingStart(
+                    startTimeStampRelMsec,
+                    data.ProcessorNumber,
+                    thread,
+                    this);
+            }
+
+            // Mark that this thread is no longer blocked.
+            m_threadState[(int)thread.ThreadIndex].LogBlockingEnd(
+                data.TimeStampRelativeMSec, data.ProcessorNumber, stackIndex, thread, this);
+
+            // Specify the CPU that is being used by this thread.
+            m_threadIndexUsingProc[data.ProcessorNumber] = thread.ThreadIndex;
         }
 
         private void OnUniversalCPUSample(SampleTraceData data)
         {
             TraceThread thread = data.Thread();
-            if (thread != null)
-            {
-                StackSourceCallStackIndex stackIndex = GetCallStack(data, thread);
-                m_threadState[(int)thread.ThreadIndex].LogCPUStack(data.TimeStampRelativeMSec, stackIndex, thread, this, isCPUSample: true);
-            }
-            else
+            if (thread == null)
             {
                 Debug.WriteLine("Warning, no thread at " + data.TimeStampRelativeMSec.ToString("f3"));
+                return;
             }
+
+            ThreadIndex oldThreadIndex = m_threadIndexUsingProc[data.ProcessorNumber];
+            if (oldThreadIndex != ThreadIndex.Invalid && oldThreadIndex != thread.ThreadIndex)
+            {
+                // Mark the old thread as blocked.
+                if (m_threadState[(int)oldThreadIndex].ThreadRunning)
+                {
+                    TraceThread oldThread = m_eventLog.Threads[oldThreadIndex];
+                    m_threadState[(int)oldThreadIndex].LogBlockingStart(
+                        data.TimeStampRelativeMSec,
+                        data.ProcessorNumber,
+                        oldThread,
+                        this);
+                }
+
+                // Mark the new thread as unblocked.
+                if (m_threadState[(int)thread.ThreadIndex].ThreadBlocked)
+                {
+                    m_threadState[(int)thread.ThreadIndex].LogBlockingEnd(
+                        data.TimeStampRelativeMSec,
+                        data.ProcessorNumber,
+                        m_threadState[(int)thread.ThreadIndex].LastCPUCallStack,
+                        thread,
+                        this);
+                }
+            }
+
+            StackSourceCallStackIndex stackIndex = GetCallStack(data, thread);
+            m_threadState[(int)thread.ThreadIndex].LogCPUStack(
+                data.TimeStampRelativeMSec,
+                stackIndex,
+                thread,
+                this,
+                isCPUSample: true);
+
+            m_threadIndexUsingProc[data.ProcessorNumber] = thread.ThreadIndex;
         }
 
         // THis is for the TaskWaitEnd.  We want to have a stack event if 'data' does not have one, we lose the fact that
@@ -1136,7 +1193,7 @@ namespace Microsoft.Diagnostics.Tracing
             public ushort ProcessorNumberWhereAwakened;
 
             internal double LastCPUStackRelativeMSec;
-            private StackSourceCallStackIndex LastCPUCallStack;
+            internal StackSourceCallStackIndex LastCPUCallStack;
 
             private double ReadyThreadRelativeMSec;
             private CallStackIndex ReadyThreadCallStack;
@@ -1416,6 +1473,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// Using m_threadIDUsingProc, we compute how many processor are current doing nothing 
         /// </summary>
         private int m_numIdleProcs;                     // Count of bits idle threads in m_threadIDUsingProc
+
+        /// <summary>
+        /// For universal traces, we need to keep track of the ThreadIndex because the context switch events only come in when a thread switches back in.
+        /// This allows us to keep track of what thread was using a processor when a different thread starts using a processor.
+        /// </summary>
+        private ThreadIndex[] m_threadIndexUsingProc;
 
         private bool m_traceHasCSwitches;               // Does the trace have CSwitches (decide what kind of view to create)
 
