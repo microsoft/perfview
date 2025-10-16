@@ -393,7 +393,12 @@ namespace PEFile
 
             m_sectionsOffset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS) + ntHdr.FileHeader.SizeOfOptionalHeader;
 
-            if (span.Length < m_sectionsOffset + sizeof(IMAGE_SECTION_HEADER) * ntHdr.FileHeader.NumberOfSections)
+            // Calculate the total size needed for the complete header including all sections
+            int requiredSize = m_sectionsOffset + sizeof(IMAGE_SECTION_HEADER) * ntHdr.FileHeader.NumberOfSections;
+            
+            // If we don't have enough data, this is not necessarily an error - PEFile will re-read with proper size
+            // We only validate that what we DO have is not obviously corrupt
+            if (span.Length < m_sectionsOffset)
             {
                 goto ThrowBadHeader;
             }
