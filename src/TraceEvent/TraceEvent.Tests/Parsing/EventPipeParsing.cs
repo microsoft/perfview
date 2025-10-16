@@ -980,7 +980,7 @@ namespace TraceEventTests
             writer.WriteHeaders();
             writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
                                           new MetadataParameter("Param1", MetadataTypeCode.Int16),
-                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean)),
+                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean32)),
                                       new EventMetadata(2, "TestProvider", "TestEvent2", 16),
                                       new EventMetadata(3, "TestProvider", "TestEvent3", 17));
             writer.WriteThreadBlock(w =>
@@ -1383,7 +1383,7 @@ namespace TraceEventTests
                                           new MetadataParameter("Param1", new ObjectMetadataType(
                                               new MetadataParameter("NestedParam1", MetadataTypeCode.Int32),
                                               new MetadataParameter("NestedParam2", MetadataTypeCode.Byte))),
-                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean)));
+                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean32)));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, 0, 0);
@@ -1409,6 +1409,100 @@ namespace TraceEventTests
                 Assert.Equal(3, o["NestedParam1"]);
                 Assert.Equal((byte)19, o["NestedParam2"]);
                 Assert.Equal(true, e.PayloadValue(1));
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact]
+        public void ParseV6MetadataBoolean8Param()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                          new MetadataParameter("Param1", MetadataTypeCode.Boolean8),
+                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean8)));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, new byte[] { 1, 0 });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal($"TestEvent1", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+                Assert.Equal(2, e.PayloadNames.Length);
+                Assert.Equal("Param1", e.PayloadNames[0]);
+                Assert.Equal("Param2", e.PayloadNames[1]);
+                Assert.Equal(true, e.PayloadValue(0));
+                Assert.Equal(false, e.PayloadValue(1));
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact]
+        public void ParseV6MetadataBoolean8ArrayAndObjectParam()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                          new MetadataParameter("Param1", new ArrayMetadataType(new MetadataType(MetadataTypeCode.Boolean8))),
+                                          new MetadataParameter("Param2", new ObjectMetadataType(
+                                              new MetadataParameter("HasValue", MetadataTypeCode.Boolean8),
+                                              new MetadataParameter("Value", new MetadataType(MetadataTypeCode.Int32))))));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                // Param1 = [true, false, true]
+                // Param2 = { NestedParam1 = false, NestedParam2 = [false, true] }
+                w.WriteEventBlob(1, 999, 1, p =>
+                {
+                    // Param1
+                    p.Write((ushort)3);
+                    p.Write((byte)1);
+                    p.Write((byte)0);
+                    p.Write((byte)1);
+                    // Param2
+                    p.Write((byte)1);
+                    p.Write((int)184);
+                });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal($"TestEvent1", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+                Assert.Equal(2, e.PayloadNames.Length);
+                Assert.Equal("Param1", e.PayloadNames[0]);
+                Assert.Equal("Param2", e.PayloadNames[1]);
+                // Param1
+                Assert.Equal(typeof(bool[]), e.PayloadValue(0).GetType());
+                bool[] param1 = (bool[])e.PayloadValue(0);
+                Assert.Equal(3, param1.Length);
+                Assert.True(param1[0]);
+                Assert.False(param1[1]);
+                Assert.True(param1[2]);
+                // Param2
+                var o = (DynamicTraceEventData.StructValue)e.PayloadValue(1);
+                Assert.Equal(2, o.Count);
+                Assert.True((bool)o["HasValue"]);
+                Assert.Equal(184, (int)o["Value"]);
             };
             source.Process();
             Assert.Equal(1, eventCount);
@@ -2696,7 +2790,7 @@ namespace TraceEventTests
     public enum MetadataTypeCode
     {
         Object = 1,                        // Concatenate together all of the encoded fields
-        Boolean = 3,                       // A 4-byte LE integer with value 0=false and 1=true.  
+        Boolean32 = 3,                     // A 4-byte LE integer with value 0=false and 1=true.  
         UTF16CodeUnit = 4,                 // a 2-byte UTF16 code unit
         SByte = 5,                         // 1-byte signed integer
         Byte = 6,                          // 1-byte unsigned integer
@@ -2717,7 +2811,8 @@ namespace TraceEventTests
         FixedLengthArray = 22,             // New in V6: A fixed-length array of elements. The size is determined by the metadata.
         UTF8CodeUnit = 23,                 // New in V6: A single UTF8 code unit (1 byte).
         RelLoc = 24,                       // New in V6: An array at a relative location within the payload.
-        DataLoc = 25                       // New in V6: An absolute data location within the payload.
+        DataLoc = 25,                      // New in V6: An absolute data location within the payload.
+        Boolean8 = 26                      // New in V6: A 1-byte boolean with value 0=false and 1=true.
     }
 
     public class EventPayloadWriter

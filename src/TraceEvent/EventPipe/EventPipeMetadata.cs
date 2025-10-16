@@ -453,7 +453,7 @@ namespace Microsoft.Diagnostics.Tracing
             // Fill out the payload fetch object based on the TypeCode.
             switch (typeCode)
             {
-                case EventPipeTypeCode.Boolean:
+                case EventPipeTypeCode.Boolean32:
                     {
                         payloadFetch.Type = typeof(bool);
                         payloadFetch.Size = 4; // We follow windows conventions and use 4 bytes for bool.
@@ -667,6 +667,13 @@ namespace Microsoft.Diagnostics.Tracing
                         payloadFetch = DynamicTraceEventData.PayloadFetch.DataLocPayloadFetch(offset, elementType);
                         break;
                     }
+                case EventPipeTypeCode.Boolean8:
+                    {
+                        payloadFetch.Type = typeof(bool);
+                        payloadFetch.Size = 1;
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
                 default:
                     {
                         throw new FormatException($"Field {fieldName}: Typecode {typeCode} is not supported.");
@@ -679,7 +686,7 @@ namespace Microsoft.Diagnostics.Tracing
         enum EventPipeTypeCode
         {
             Object = 1,                        // Concatenate together all of the encoded fields
-            Boolean = 3,                       // A 4-byte LE integer with value 0=false and 1=true.  
+            Boolean32 = 3,                     // A 4-byte LE integer with value 0=false and 1=true.  
             UTF16CodeUnit = 4,                 // a 2-byte UTF16 code unit
             SByte = 5,                         // 1-byte signed integer
             Byte = 6,                          // 1-byte unsigned integer
@@ -701,7 +708,8 @@ namespace Microsoft.Diagnostics.Tracing
             FixedLengthArray = 22,             // New in V6: A fixed-length array of elements. The length is determined by the metadata.
             UTF8CodeUnit = 23,                 // New in V6: A single UTF8 code unit (1 byte).
             RelLoc = 24,                       // New in V6: An array at a relative location within the payload. 
-            DataLoc = 25                       // New in V6: An absolute data location within the payload.
+            DataLoc = 25,                      // New in V6: An absolute data location within the payload.
+            Boolean8 = 26                      // New in V6: A 1 byte boolean with value 0=false and 1=true.
         }
 
         private void ParseOptionalMetadataV6OrGreater(ref SpanReader reader)
