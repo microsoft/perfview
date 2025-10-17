@@ -42,7 +42,7 @@ namespace Microsoft.Diagnostics.Tracing
         public static EventPipeMetadata ReadV5OrLower(ref SpanReader reader, int pointerSize, int processId, int fileFormatVersionNumber)
         {
             // Read in the header (The header does not include payload parameter information)
-            var metadata = new EventPipeMetadata(pointerSize, processId);
+            var metadata = new EventPipeMetadata(pointerSize, processId, EventPipeFieldLayoutVersion.FileFormatV5OrLess);
             metadata.ParseHeader(ref reader, fileFormatVersionNumber);
 
             // If the metadata contains no parameter metadata, don't attempt to read it.
@@ -83,7 +83,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public static EventPipeMetadata ReadV6OrGreater(ref SpanReader reader, int pointerSize)
         {
-            var metadata = new EventPipeMetadata(pointerSize);
+            var metadata = new EventPipeMetadata(pointerSize, EventPipeFieldLayoutVersion.FileFormatV6OrGreater);
             int metadataLength = reader.ReadUInt16();
             long offset = reader.StreamOffset;
             SpanReader metadataReader = new SpanReader(reader.ReadBytes(metadataLength), offset);
@@ -94,16 +94,18 @@ namespace Microsoft.Diagnostics.Tracing
             return metadata;
         }
 
-        private EventPipeMetadata(int pointerSize)
-            : this(pointerSize, -1)
+        private EventPipeMetadata(int pointerSize, EventPipeFieldLayoutVersion fieldLayoutVersion)
+            : this(pointerSize, -1, fieldLayoutVersion)
         {
         }
 
         /// <summary>
         /// 'processID' is the process ID for the whole stream or -1 is this is a V6+ stream that can support multiple processes.
         /// </summary>
-        private EventPipeMetadata(int pointerSize, int processId)
+        private EventPipeMetadata(int pointerSize, int processId, EventPipeFieldLayoutVersion fieldLayoutVersion)
         {
+            _fieldLayoutVersion = fieldLayoutVersion;
+
             // Get the event record and fill in fields that we can without deserializing anything.
             _eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
             ClearMemory(_eventRecord, sizeof(TraceEventNativeMethods.EVENT_RECORD));
@@ -175,7 +177,12 @@ namespace Microsoft.Diagnostics.Tracing
             // ID. We'll need to refactor up the stack if we want to expose a bigger ID.
             _eventRecord->EventHeader.ThreadId = unchecked((int)eventData.ThreadId);
             _eventRecord->EventHeader.ProcessId = unchecked((int)eventData.ProcessId);
-            if (eventData.ThreadIndexOrId == eventData.CaptureThreadIndexOrId && eventData.CaptureProcNumber != -1)
+
+            // Set the processor number for V6+ file formats.  For V5 and below we only set it if the ThreadId == CaptureThreadId
+            // to ensure that we don't surface a thread ID as a processor ID.
+            if ((eventData.CaptureProcNumber != -1) &&
+                ((_fieldLayoutVersion == EventPipeFieldLayoutVersion.FileFormatV5OrLess && eventData.ThreadIndexOrId == eventData.CaptureThreadIndexOrId) ||
+                (_fieldLayoutVersion == EventPipeFieldLayoutVersion.FileFormatV6OrGreater)))
             {
                 // Its not clear how the caller is supposed to distinguish between events that we know were on
                 // processor 0 vs. lacking information about what processor number the thread is on and
@@ -967,6 +974,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
+        private EventPipeFieldLayoutVersion _fieldLayoutVersion;
         private TraceEventNativeMethods.EVENT_RECORD* _eventRecord;
         private TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM* _extendedDataBuffer;
         private Guid* _relatedActivityBuffer;

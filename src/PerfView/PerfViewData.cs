@@ -9479,6 +9479,7 @@ namespace PerfView
         public override bool SupportsProcesses => m_supportsProcesses;
 
         private bool m_supportsProcesses;
+        private bool m_hasUniversal;
 
         public override List<IProcess> GetProcesses(TextWriter log)
         {
@@ -9532,6 +9533,7 @@ namespace PerfView
             bool hasExceptions = false;
             bool hasUniversalSystem = false;
             bool hasUniversalCPU = false;
+            bool hasUniversalCSwitch = false;
             if (m_traceLog != null)
             {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
@@ -9591,12 +9593,18 @@ namespace PerfView
                     }
                     else if (eventStats.ProviderGuid == UniversalSystemTraceEventParser.ProviderGuid)
                     {
+                        m_hasUniversal = true;
                         hasUniversalSystem = true;
                         m_supportsProcesses = true;
                     }
                     else if (eventStats.ProviderGuid == UniversalEventsTraceEventParser.ProviderGuid && eventStats.EventName.StartsWith("cpu"))
                     {
                         hasUniversalCPU = true;
+                        m_supportsProcesses = true;
+                    }
+                    else if (eventStats.ProviderGuid == UniversalEventsTraceEventParser.ProviderGuid && eventStats.EventName.StartsWith("cswitch"))
+                    {
+                        hasUniversalCSwitch = true;
                         m_supportsProcesses = true;
                     }
                 }
@@ -9615,6 +9623,11 @@ namespace PerfView
                     if (hasUniversalCPU)
                     {
                         m_Children.Add(new PerfViewStackSource(this, "CPU"));
+                    }
+
+                    if (hasUniversalCSwitch)
+                    {
+                        m_Children.Add(new PerfViewStackSource(this, "Thread Time"));
                     }
                 }
                 else // dotnet-trace
@@ -9908,6 +9921,11 @@ namespace PerfView
 
                         return stackSource;
                     }
+                case "Thread Time":
+                    {
+                        var eventLog = GetTraceLog(log);
+                        return eventLog.ThreadTimeStacks();
+                    }
                 default:
                     {
                         var eventLog = GetTraceLog(log);
@@ -10103,7 +10121,7 @@ namespace PerfView
                 stackWindow.ExcludeRegExTextBox.Text = excludePat;
             }
 
-            if (stackSourceName.Contains("Thread Time"))
+            if (!m_hasUniversal && stackSourceName.Contains("Thread Time"))
             {
                 stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
                 stackWindow.FoldRegExTextBox.Text += ";UNMANAGED_CODE_TIME;CPU";
