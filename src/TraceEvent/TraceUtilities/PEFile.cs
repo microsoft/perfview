@@ -393,9 +393,13 @@ namespace PEFile
 
             m_sectionsOffset = m_ntHeaderOffset + sizeof(IMAGE_NT_HEADERS) + ntHdr.FileHeader.SizeOfOptionalHeader;
 
-            // Note: We don't validate that the span contains all section headers here.
-            // The PEFile constructor will check Header.PEHeaderSize and re-read with a larger buffer if needed.
-            // ReadOnlySpan bounds checking will catch any actual out-of-bounds reads when accessing sections.
+            // Note: We don't validate that the span contains all section headers at this point.
+            // This is intentional to support the progressive read pattern in PEFile:
+            // 1. PEFile creates PEHeader with initial 1024-byte buffer
+            // 2. PEFile checks Header.PEHeaderSize (which needs m_sectionsOffset + section count)
+            // 3. If PEHeaderSize > buffer length, PEFile re-reads with correct size
+            // 4. ReadOnlySpan bounds checking catches any out-of-bounds access when sections are actually read
+            // This pattern allows PE files with large headers (>1024 bytes) to work correctly.
 
             return;
             ThrowBadHeader:
