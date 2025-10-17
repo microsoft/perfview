@@ -9593,6 +9593,7 @@ namespace PerfView
                     }
                     else if (eventStats.ProviderGuid == UniversalSystemTraceEventParser.ProviderGuid)
                     {
+                        m_hasUniversal = true;
                         hasUniversalSystem = true;
                         m_supportsProcesses = true;
                     }
@@ -9712,7 +9713,6 @@ namespace PerfView
                 m_Children.Add(advanced);
             }
 
-            m_hasUniversal = hasUniversalSystem || hasUniversalCPU || hasUniversalCSwitch;
             return null;
         }
 

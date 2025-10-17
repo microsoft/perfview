@@ -4735,6 +4735,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return sb.ToString();
         }
 
+        internal bool Contains(Guid providerId, string eventNameSearchVal)
+        {
+            foreach (var counts in m_counts.Values)
+            {
+                if (counts.ProviderGuid == providerId &&
+                    counts.EventName.Contains(eventNameSearchVal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         #region private
         /// <summary>
         /// Given an event 'data' look up the statistics for events that type.

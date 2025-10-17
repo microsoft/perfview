@@ -455,17 +455,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void InitializeForUniversal()
         {
-            bool initialize = false;
-            foreach (TraceEventCounts counts in m_eventLog.Stats)
-            {
-                if (counts.ProviderGuid == UniversalEventsTraceEventParser.ProviderGuid &&
-                    counts.EventName.Contains("cswitch"))
-                {
-                    initialize = true;
-                }
-            }
-
-            if (initialize)
+            if (m_eventLog.Stats.Contains(UniversalEventsTraceEventParser.ProviderGuid, "cswitch"))
             {
                 // Set has cswitches, since we don't get thread start events, and the computer needs to know
                 // that there will be cswitch events.
