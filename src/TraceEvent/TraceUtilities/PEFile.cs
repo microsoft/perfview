@@ -18,6 +18,10 @@ namespace PEFile
 #endif
     sealed unsafe class PEFile : IDisposable
     {
+        private const int InitialReadSize = 1024;
+        private const int MinimumHeaderSize = 512;
+        private const int MaxHeaderSize = 1024 * 1024;
+
         /// <summary>
         /// Create a new PEFile header reader that inspects the 
         /// </summary>
@@ -26,15 +30,15 @@ namespace PEFile
             m_stream = File.OpenRead(filePath);
             m_headerBuff = new PEBufferedReader(m_stream);
 
-            PEBufferedSlice slice = m_headerBuff.EnsureRead(0, 1024);
-            if (m_headerBuff.Length < 512)
+            PEBufferedSlice slice = m_headerBuff.EnsureRead(0, InitialReadSize);
+            if (m_headerBuff.Length < MinimumHeaderSize)
             {
                 goto ThrowBadHeader;
             }
 
             Header = new PEHeader(slice);
 
-            if (Header.PEHeaderSize > 1024 * 64)      // prevent insane numbers;
+            if (Header.PEHeaderSize > MaxHeaderSize)
             {
                 goto ThrowBadHeader;
             }
