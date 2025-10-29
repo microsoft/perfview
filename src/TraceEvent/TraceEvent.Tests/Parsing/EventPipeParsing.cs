@@ -2649,11 +2649,7 @@ namespace TraceEventTests
 
         [Fact]
         public void EventSourceEventsDispatchedUsingGetDispatcherFromFileName()
-        {
-            // This test reproduces the issue where EventSource events from EventPipe files
-            // are not dispatched properly when using TraceEventDispatcher.GetDispatcherFromFileName()
-            // directly, as opposed to using TraceLog.Events.GetSource().
-            
+        {            
             // Create a simple EventPipe file with EventSource-like events
             EventPipeWriterV6 writer = new EventPipeWriterV6();
             writer.WriteHeaders();
