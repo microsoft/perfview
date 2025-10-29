@@ -2646,6 +2646,88 @@ namespace TraceEventTests
             Assert.Equal(4, eventCount);
 
         }
+
+        [Fact]
+        public void EventSourceEventsDispatchedUsingGetDispatcherFromFileName()
+        {            
+            // Create a simple EventPipe file with EventSource-like events
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(
+                new EventMetadata(1, "MyEventSource", "AppStarted", 1),
+                new EventMetadata(2, "MyEventSource", "ProcessingItem", 2),
+                new EventMetadata(3, "MyEventSource", "AppStopped", 3));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 100, processId: 1000);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, Array.Empty<byte>());
+                w.WriteEventBlob(2, 999, 2, Array.Empty<byte>());
+                w.WriteEventBlob(2, 999, 3, Array.Empty<byte>());
+                w.WriteEventBlob(3, 999, 4, Array.Empty<byte>());
+            });
+            writer.WriteEndBlock();
+            
+            // Write to a temporary file
+            string tempFile = Path.Combine(Path.GetTempPath(), $"test_eventsource_{Guid.NewGuid()}.nettrace");
+            try
+            {
+                File.WriteAllBytes(tempFile, writer.ToArray());
+                
+                // Test 1: Using TraceEventDispatcher.GetDispatcherFromFileName()
+                int eventsFromDispatcher = 0;
+                List<string> dispatcherEventNames = new List<string>();
+                using (var source = TraceEventDispatcher.GetDispatcherFromFileName(tempFile))
+                {
+                    source.Dynamic.All += e =>
+                    {
+                        if (e.ProviderName == "MyEventSource")
+                        {
+                            eventsFromDispatcher++;
+                            dispatcherEventNames.Add(e.EventName);
+                        }
+                    };
+                    source.Process();
+                }
+                
+                Output.WriteLine($"Events from Dispatcher: {eventsFromDispatcher}");
+                Output.WriteLine($"Event names: {string.Join(", ", dispatcherEventNames)}");
+                
+                // Test 2: Using TraceLog.Events.GetSource() for comparison
+                int eventsFromTraceLog = 0;
+                List<string> traceLogEventNames = new List<string>();
+                using (var traceLog = new TraceLog(TraceLog.CreateFromEventPipeDataFile(tempFile)))
+                {
+                    var traceSource = traceLog.Events.GetSource();
+                    traceSource.Dynamic.All += e =>
+                    {
+                        if (e.ProviderName == "MyEventSource")
+                        {
+                            eventsFromTraceLog++;
+                            traceLogEventNames.Add(e.EventName);
+                        }
+                    };
+                    traceSource.Process();
+                }
+                
+                Output.WriteLine($"Events from TraceLog: {eventsFromTraceLog}");
+                Output.WriteLine($"Event names: {string.Join(", ", traceLogEventNames)}");
+                
+                // Both methods should see the same number of events
+                Assert.Equal(eventsFromTraceLog, eventsFromDispatcher);
+                // We should have seen 4 events
+                Assert.Equal(4, eventsFromDispatcher);
+            }
+            finally
+            {
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+            }
+        }
     }
 
 
