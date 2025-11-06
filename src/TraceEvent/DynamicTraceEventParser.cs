@@ -529,7 +529,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 for (int i = 0; i < arrayCount; i++)
                 {
                     object value = GetPayloadValueAt(ref arrayInfo.Element, offset, payloadLength);
-                    if (value.GetType() != elementType)
+                    // Some events have metadata of the form:
+                    // input=Array of ulong
+                    // output=Array of IntPtr
+                    // This is common for bitmasks.  To address this, we special case it here.
+                    if (value is ulong && elementType == typeof(IntPtr))
+                    {
+                        ulong uintVal = (ulong)value;
+                        value = new IntPtr(unchecked((long)uintVal));
+                    }
+                    else if (value.GetType() != elementType)
                     {
                         value = ((IConvertible)value).ToType(elementType, null);
                     }
