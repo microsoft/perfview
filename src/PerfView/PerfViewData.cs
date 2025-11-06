@@ -8472,7 +8472,7 @@ namespace PerfView
                 foreach (var stats in traceLog.Stats)
                 {
                     // Look for Runtime/Start event from the main CLR provider (not rundown)
-                    if (stats.ProviderGuid == ClrTraceEventParser.ProviderGuid && stats.EventName.Equals("Runtime/Start"))
+                    if (stats.ProviderGuid == ClrTraceEventParser.ProviderGuid && stats.EventName == "Runtime/Start")
                     {
                         m_hasRuntimeStart = true;
                         break;
@@ -8510,7 +8510,7 @@ namespace PerfView
                     Without these type definitions, many types will appear as "UNKNOWN" in the allocation view.
 
                     To fix this issue:
-                      • Re-capture the trace with a shorter duration, OR
+                      • Re-capture the trace with a shorter duration
                       • Re-capture the trace with a larger circular buffer size (e.g., /BufferSize:1024)
                       • Ensure the .NET process starts AFTER tracing begins
                     """;
