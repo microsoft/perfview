@@ -7600,6 +7600,15 @@ namespace PerfView
                     App.UserConfigData["WarnedAboutOsHeapAllocTypes"] = "true";
                 }
             }
+
+            // Warn about potentially missing type information due to circular buffer overflow
+            // This affects views that use GCSampledObjectAllocation (needs BulkType) or GCAllocationTick (needs type info)
+            if (stackSourceName.StartsWith("GC Heap Alloc Ignore Free") || 
+                stackSourceName.StartsWith("GC Heap Net Mem") || 
+                stackSourceName.StartsWith("Gen 2 Object Deaths"))
+            {
+                WarnAboutMissingTypeInfo(stackWindow, stackSourceName);
+            }
         }
 
         public override bool SupportsProcesses { get { return true; } }
@@ -8450,8 +8459,76 @@ namespace PerfView
             return m_hasVSEvents;
         }
 
+        /// <summary>
+        /// Checks if the trace has a RuntimeStart event from the Microsoft-Windows-DotNETRuntime provider (not rundown).
+        /// This indicates that the process was started after tracing began, which is required for proper type information
+        /// in allocation traces.
+        /// </summary>
+        private bool HasRuntimeStartEvent(TraceLog traceLog)
+        {
+            if (!m_checkedForRuntimeStart)
+            {
+                // Check for RuntimeStart event from the Microsoft-Windows-DotNETRuntime provider
+                // The CLR GUID is {e13c0d23-ccbc-4e12-931b-d9cc2eee27e4}
+                var clrProviderGuid = new Guid(0xe13c0d23, 0xccbc, 0x4e12, 0x93, 0x1b, 0xd9, 0xcc, 0x2e, 0xee, 0x27, 0xe4);
+                
+                foreach (var stats in traceLog.Stats)
+                {
+                    // Look for Runtime/Start event from the main CLR provider (not rundown)
+                    if (stats.ProviderGuid == clrProviderGuid && stats.EventName.Equals("Runtime/Start"))
+                    {
+                        m_hasRuntimeStart = true;
+                        break;
+                    }
+                }
+                
+                m_checkedForRuntimeStart = true;
+            }
+            return m_hasRuntimeStart;
+        }
+
+        /// <summary>
+        /// Shows a warning if the trace may be missing type information due to circular buffer overflow.
+        /// This checks for the RuntimeStart event which indicates the process started after tracing began.
+        /// </summary>
+        private void WarnAboutMissingTypeInfo(StackWindow stackWindow, string viewName)
+        {
+            if (m_notifiedAboutMissingTypeInfo)
+            {
+                return;
+            }
+
+            var traceLog = TryGetTraceLog();
+            if (traceLog != null && !HasRuntimeStartEvent(traceLog))
+            {
+                m_notifiedAboutMissingTypeInfo = true;
+                
+                var warning = $@"WARNING: The '{viewName}' view may be missing type information.
+
+This trace does not contain a Runtime/Start event from the Microsoft-Windows-DotNETRuntime provider,
+which indicates that the .NET process was likely already running when tracing started.
+
+This can happen when the ETW circular buffer wraps and loses early events including type definitions.
+Without these type definitions, many types will appear as ""UNKNOWN"" in the allocation view.
+
+To fix this issue:
+  • Re-capture the trace with a shorter duration, OR
+  • Re-capture the trace with a larger circular buffer size (e.g., /BufferSize:1024)
+  • Ensure the .NET process starts AFTER tracing begins";
+
+                XamlMessageBox.Show(
+                    stackWindow.Owner,
+                    warning,
+                    "Trace May Be Missing Type Information",
+                    MessageBoxButton.OK);
+            }
+        }
+
         private bool m_checkedForVSEvents;
         private bool m_hasVSEvents;
+        private bool m_checkedForRuntimeStart;
+        private bool m_hasRuntimeStart;
+        private bool m_notifiedAboutMissingTypeInfo;
         private TraceLog m_traceLog;
         private bool m_notifiedAboutLostEvents;
         private bool m_notifiedAboutWin8;
