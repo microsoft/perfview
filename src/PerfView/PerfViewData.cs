@@ -8503,8 +8503,6 @@ namespace PerfView
                 var warning = $"""
                     WARNING: The '{viewName}' view may be missing type information.
 
-                    The .NET process was likely already running when tracing started.
-
                     This can happen when the ETW circular buffer wraps and loses early events including type definitions.
                     Without these type definitions, many types will appear as "UNKNOWN" in the allocation view.
 
