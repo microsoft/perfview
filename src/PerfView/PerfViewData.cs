@@ -8503,16 +8503,14 @@ namespace PerfView
                 var warning = $"""
                     WARNING: The '{viewName}' view may be missing type information.
 
-                    This trace does not contain a Runtime/Start event from the Microsoft-Windows-DotNETRuntime provider,
-                    which indicates that the .NET process was likely already running when tracing started.
+                    The .NET process was likely already running when tracing started.
 
                     This can happen when the ETW circular buffer wraps and loses early events including type definitions.
                     Without these type definitions, many types will appear as "UNKNOWN" in the allocation view.
 
-                    To fix this issue:
+                    To fix this issue, perform one of the following:
                       • Re-capture the trace with a shorter duration
                       • Re-capture the trace with a larger circular buffer size (e.g., /BufferSize:1024)
-                      • Ensure the .NET process starts AFTER tracing begins
                     """;
 
                 XamlMessageBox.Show(
