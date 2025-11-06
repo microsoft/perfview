@@ -4646,6 +4646,9 @@ namespace PerfView
                                 SetProcessFilter(incPat);
                             }
 
+                            // Call the launch hook to perform any initialization needed after process selection
+                            OnStackWindowLaunch(parentWindow, processIDs);
+
                             Viewer.StatusBar.StartWork("Looking up high importance PDBs that are locally cached", delegate
                             {
                                 // TODO This is probably a hack that it is here.  
@@ -4742,6 +4745,19 @@ namespace PerfView
         {
             DataFile.FirstAction(stackWindow);
         }
+
+        /// <summary>
+        /// Called after process selection but before the stack window is fully initialized.
+        /// This is a good place to perform validation or show warnings based on the selected processes.
+        /// </summary>
+        /// <param name="parentWindow">The parent window for any dialogs</param>
+        /// <param name="processIDs">The list of selected process IDs, or null if no specific processes were selected</param>
+        protected internal virtual void OnStackWindowLaunch(Window parentWindow, List<int> processIDs)
+        {
+            // Check for RuntimeStart events for the selected processes and warn if missing
+            WarnAboutMissingTypeInfoForProcesses(parentWindow, processIDs, SourceName);
+        }
+
         public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["StackSourceBitmapImage"] as ImageSource; } }
 
         // If set, we don't show the process selection dialog.  
@@ -4805,6 +4821,88 @@ namespace PerfView
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Checks if RuntimeStart events exist for the selected processes and warns if missing.
+        /// This indicates whether the processes were started after tracing began, which is required
+        /// for proper type information in allocation traces.
+        /// </summary>
+        private void WarnAboutMissingTypeInfoForProcesses(Window parentWindow, List<int> processIDs, string viewName)
+        {
+            // Only check for allocation-related views
+            if (!SourceName.StartsWith("GC Heap Alloc Ignore Free") && 
+                !SourceName.StartsWith("GC Heap Net Mem") && 
+                !SourceName.StartsWith("Gen 2 Object Deaths"))
+            {
+                return;
+            }
+
+            var etlDataFile = DataFile as ETLPerfViewData;
+            if (etlDataFile == null)
+            {
+                return;
+            }
+
+            var traceLog = etlDataFile.TryGetTraceLog();
+            if (traceLog == null)
+            {
+                return;
+            }
+
+            // Check if we have RuntimeStart events for the selected processes
+            bool hasRuntimeStartForSelectedProcesses = false;
+            
+            if (processIDs != null && processIDs.Count > 0)
+            {
+                // Get the event source to iterate through events
+                var source = traceLog.Events.GetSource();
+                
+                // Subscribe to RuntimeStart events
+                source.Clr.RuntimeStart += delegate (RuntimeInformationTraceData data)
+                {
+                    if (processIDs.Contains(data.ProcessID))
+                    {
+                        hasRuntimeStartForSelectedProcesses = true;
+                    }
+                };
+                
+                // Process all events to check for RuntimeStart
+                source.Process();
+            }
+            else
+            {
+                // If no specific processes selected, check if any RuntimeStart exists
+                foreach (var stats in traceLog.Stats)
+                {
+                    if (stats.ProviderGuid == ClrTraceEventParser.ProviderGuid && stats.EventName == "Runtime/Start")
+                    {
+                        hasRuntimeStartForSelectedProcesses = true;
+                        break;
+                    }
+                }
+            }
+
+            // Show warning if RuntimeStart not found for selected processes
+            if (!hasRuntimeStartForSelectedProcesses)
+            {
+                var warning = $"""
+                    WARNING: The '{viewName}' view may be missing type information.
+
+                    This can happen when the ETW circular buffer wraps and loses early events including type definitions.
+                    Without these type definitions, many types will appear as "UNKNOWN" in the allocation view.
+
+                    To fix this issue, perform one of the following:
+                      • Re-capture the trace with a shorter duration
+                      • Re-capture the trace with a larger circular buffer size (e.g., /BufferSize:1024)
+                    """;
+
+                XamlMessageBox.Show(
+                    parentWindow,
+                    warning,
+                    "Trace May Be Missing Type Information",
+                    MessageBoxButton.OK);
+            }
         }
 
         internal StackSource m_StackSource;
@@ -7600,15 +7698,6 @@ namespace PerfView
                     App.UserConfigData["WarnedAboutOsHeapAllocTypes"] = "true";
                 }
             }
-
-            // Warn about potentially missing type information due to circular buffer overflow
-            // This affects views that use GCSampledObjectAllocation (needs BulkType) or GCAllocationTick (needs type info)
-            if (stackSourceName.StartsWith("GC Heap Alloc Ignore Free") || 
-                stackSourceName.StartsWith("GC Heap Net Mem") || 
-                stackSourceName.StartsWith("Gen 2 Object Deaths"))
-            {
-                WarnAboutMissingTypeInfo(stackWindow, stackSourceName);
-            }
         }
 
         public override bool SupportsProcesses { get { return true; } }
@@ -8459,71 +8548,8 @@ namespace PerfView
             return m_hasVSEvents;
         }
 
-        /// <summary>
-        /// Checks if the trace has a RuntimeStart event from the Microsoft-Windows-DotNETRuntime provider (not rundown).
-        /// This indicates that the process was started after tracing began, which is required for proper type information
-        /// in allocation traces.
-        /// </summary>
-        private bool HasRuntimeStartEvent(TraceLog traceLog)
-        {
-            if (!m_checkedForRuntimeStart)
-            {
-                // Check for RuntimeStart event from the Microsoft-Windows-DotNETRuntime provider
-                foreach (var stats in traceLog.Stats)
-                {
-                    // Look for Runtime/Start event from the main CLR provider (not rundown)
-                    if (stats.ProviderGuid == ClrTraceEventParser.ProviderGuid && stats.EventName == "Runtime/Start")
-                    {
-                        m_hasRuntimeStart = true;
-                        break;
-                    }
-                }
-                
-                m_checkedForRuntimeStart = true;
-            }
-            return m_hasRuntimeStart;
-        }
-
-        /// <summary>
-        /// Shows a warning if the trace may be missing type information due to circular buffer overflow.
-        /// This checks for the RuntimeStart event which indicates the process started after tracing began.
-        /// </summary>
-        private void WarnAboutMissingTypeInfo(StackWindow stackWindow, string viewName)
-        {
-            if (m_notifiedAboutMissingTypeInfo)
-            {
-                return;
-            }
-
-            var traceLog = TryGetTraceLog();
-            if (traceLog != null && !HasRuntimeStartEvent(traceLog))
-            {
-                m_notifiedAboutMissingTypeInfo = true;
-                
-                var warning = $"""
-                    WARNING: The '{viewName}' view may be missing type information.
-
-                    This can happen when the ETW circular buffer wraps and loses early events including type definitions.
-                    Without these type definitions, many types will appear as "UNKNOWN" in the allocation view.
-
-                    To fix this issue, perform one of the following:
-                      • Re-capture the trace with a shorter duration
-                      • Re-capture the trace with a larger circular buffer size (e.g., /BufferSize:1024)
-                    """;
-
-                XamlMessageBox.Show(
-                    stackWindow.Owner,
-                    warning,
-                    "Trace May Be Missing Type Information",
-                    MessageBoxButton.OK);
-            }
-        }
-
         private bool m_checkedForVSEvents;
         private bool m_hasVSEvents;
-        private bool m_checkedForRuntimeStart;
-        private bool m_hasRuntimeStart;
-        private bool m_notifiedAboutMissingTypeInfo;
         private TraceLog m_traceLog;
         private bool m_notifiedAboutLostEvents;
         private bool m_notifiedAboutWin8;
