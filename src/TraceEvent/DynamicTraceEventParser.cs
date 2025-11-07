@@ -533,9 +533,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     // input=Array of ulong
                     // output=Array of IntPtr
                     // This is common for bitmasks.  To address this, we special case it here.
-                    if (value is ulong && elementType == typeof(IntPtr))
+                    if (elementType == typeof(IntPtr) && value is ulong uintVal)
                     {
-                        ulong uintVal = (ulong)value;
                         value = new IntPtr(unchecked((long)uintVal));
                     }
                     else if (value.GetType() != elementType)
