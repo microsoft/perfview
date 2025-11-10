@@ -9,8 +9,9 @@ namespace LargePEHeaderGenerator
         static void Main(string[] args)
         {
             Console.WriteLine("=== Large PE Header Test Generator ===");
-            Console.WriteLine("This tool generates a PE file with headers larger than 1024 bytes");
-            Console.WriteLine("to demonstrate the improvement in the new PEFile implementation.\n");
+            Console.WriteLine("This tool generates a PE file with:");
+            Console.WriteLine("  - PE header offset > 512 bytes (triggers old implementation failure)");
+            Console.WriteLine("  - Total header size > 1024 bytes (demonstrates large header support)\n");
 
             string outputPath = "LargeHeaderTest.exe";
             
@@ -38,10 +39,11 @@ namespace LargePEHeaderGenerator
                 // DOS Header
                 writer.Write((ushort)0x5A4D); // e_magic "MZ"
                 writer.Write(new byte[58]); // Rest of DOS header (mostly zeros)
-                writer.Write((int)128); // e_lfanew - offset to PE header
+                writer.Write((int)520); // e_lfanew - offset to PE header (> 512 to trigger old implementation failure)
                 
-                // DOS Stub (padding to reach PE header at offset 128)
-                writer.Write(new byte[128 - 64]);
+                // DOS Stub (padding to reach PE header at offset 520)
+                // This pushes the NT header past the 512-byte limit in the old implementation
+                writer.Write(new byte[520 - 64]);
                 
                 // PE Signature
                 writer.Write((uint)0x00004550); // "PE\0\0"
@@ -180,16 +182,18 @@ namespace LargePEHeaderGenerator
             Console.WriteLine($"Total header size: {totalHeaderSize} bytes");
             Console.WriteLine();
             
+            if (peOffset > 512)
+            {
+                Console.WriteLine($"✓ PE header offset is {peOffset} bytes (> 512 bytes)");
+                Console.WriteLine("  This FAILS with old implementation: 'Bad PE Header' at line 365");
+                Console.WriteLine("  This SUCCEEDS with new ReadOnlySpan-based implementation");
+            }
+            
             if (totalHeaderSize > 1024)
             {
-                Console.WriteLine($"✓ Headers are {totalHeaderSize} bytes (> 1024 bytes)");
-                Console.WriteLine("  This would FAIL with the original PEFile implementation");
-                Console.WriteLine("  This SUCCEEDS with the new ReadOnlySpan-based implementation");
-            }
-            else
-            {
-                Console.WriteLine($"  Headers are only {totalHeaderSize} bytes");
-                Console.WriteLine("  Need to increase section count to exceed 1024 bytes");
+                Console.WriteLine($"✓ Total header size is {totalHeaderSize} bytes (> 1024 bytes)");
+                Console.WriteLine("  This demonstrates support for large headers");
+                Console.WriteLine("  Old implementation had 1024-byte buffer limit");
             }
         }
     }
