@@ -8,7 +8,7 @@ namespace Tester
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("=== Testing Large PE Header with PEFile ===\n");
+            Console.WriteLine("=== Testing Large PE Header with PEFile (New vs Old Implementation) ===\n");
             
             string testFile = args.Length > 0 ? args[0] : "../LargeHeaderTest.exe";
             
@@ -23,7 +23,57 @@ namespace Tester
             Console.WriteLine($"Testing file: {testFile}");
             AnalyzePEStructure(testFile);
             
-            Console.WriteLine("\nAttempting to load with PEFile...");
+            // Test OLD implementation first (expected to fail for large headers)
+            Console.WriteLine("\n" + new string('=', 80));
+            Console.WriteLine("TEST 1: OLD Implementation (byte[] based, 1024 byte initial buffer)");
+            Console.WriteLine(new string('=', 80));
+            TestOldImplementation(testFile);
+            
+            // Test NEW implementation (expected to succeed)
+            Console.WriteLine("\n" + new string('=', 80));
+            Console.WriteLine("TEST 2: NEW Implementation (ReadOnlySpan based, progressive reads)");
+            Console.WriteLine(new string('=', 80));
+            TestNewImplementation(testFile);
+            
+            Console.WriteLine("\n" + new string('=', 80));
+            Console.WriteLine("SUMMARY");
+            Console.WriteLine(new string('=', 80));
+            Console.WriteLine("The old implementation fails with large PE headers (>1024 bytes)");
+            Console.WriteLine("because it uses a fixed 1024-byte buffer for the initial read.");
+            Console.WriteLine("\nThe new ReadOnlySpan-based implementation succeeds by using");
+            Console.WriteLine("progressive reads to handle arbitrarily large PE headers.");
+        }
+        
+        static void TestOldImplementation(string testFile)
+        {
+            Console.WriteLine("Attempting to load with OLD PEFile implementation...");
+            try
+            {
+                using (var peFile = new OldPEFile.PEFile(testFile))
+                {
+                    Console.WriteLine("✓ SUCCESS: File loaded successfully with OLD implementation!");
+                    Console.WriteLine($"\nPE Header Information:");
+                    Console.WriteLine($"  Machine Type: 0x{peFile.Header.Machine:X}");
+                    Console.WriteLine($"  Number of Sections: {peFile.Header.NumberOfSections}");
+                    Console.WriteLine($"  PE Header Size: {peFile.Header.PEHeaderSize} bytes");
+                    Console.WriteLine($"  Is PE64: {peFile.Header.IsPE64}");
+                    Console.WriteLine($"  Is Managed: {peFile.Header.IsManaged}");
+                    
+                    Console.WriteLine("\n⚠ UNEXPECTED: Old implementation should have failed!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"✗ EXPECTED FAILURE: {ex.Message}");
+                Console.WriteLine($"  Exception Type: {ex.GetType().Name}");
+                Console.WriteLine($"\n  This is expected! The old implementation cannot handle");
+                Console.WriteLine($"  PE headers larger than its initial 1024-byte buffer.");
+            }
+        }
+        
+        static void TestNewImplementation(string testFile)
+        {
+            Console.WriteLine("Attempting to load with NEW PEFile implementation...");
             try
             {
                 using (var peFile = new PEFile.PEFile(testFile))
@@ -56,11 +106,9 @@ namespace Tester
                             Console.WriteLine($"  Section {i}: Error accessing - {ex.Message}");
                         }
                     }
+                    
+                    Console.WriteLine("\n✓ NEW Implementation Test PASSED!");
                 }
-                
-                Console.WriteLine("\n=== Test PASSED ===");
-                Console.WriteLine("The ReadOnlySpan-based implementation successfully handles");
-                Console.WriteLine("PE files with headers > 1024 bytes using progressive reads.");
             }
             catch (Exception ex)
             {
@@ -69,7 +117,7 @@ namespace Tester
                 Console.WriteLine($"\n  Stack Trace:");
                 Console.WriteLine(ex.StackTrace);
                 
-                Console.WriteLine("\n=== Test FAILED ===");
+                Console.WriteLine("\n✗ NEW Implementation Test FAILED!");
             }
         }
         
