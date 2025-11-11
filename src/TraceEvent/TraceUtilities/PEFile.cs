@@ -441,7 +441,7 @@ namespace PEFile
         /// <summary>
         /// Returns true if this is PE file for a 64 bit architecture.  
         /// </summary>
-        public bool IsPE64 { get { return OptionalHeader32Span.Magic == 0x20b; } }
+        public bool IsPE64 { get { return OptionalHeader32.Magic == 0x20b; } }
         /// <summary>
         /// Returns true if this file contains managed code (might also contain native code). 
         /// </summary>
@@ -498,35 +498,35 @@ namespace PEFile
         /// <summary>
         /// Magic (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public ushort Magic { get { return OptionalHeader32Span.Magic; } }
+        public ushort Magic { get { return OptionalHeader32.Magic; } }
         /// <summary>
         /// MajorLinkerVersion (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public byte MajorLinkerVersion { get { return OptionalHeader32Span.MajorLinkerVersion; } }
+        public byte MajorLinkerVersion { get { return OptionalHeader32.MajorLinkerVersion; } }
         /// <summary>
         /// MinorLinkerVersion (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public byte MinorLinkerVersion { get { return OptionalHeader32Span.MinorLinkerVersion; } }
+        public byte MinorLinkerVersion { get { return OptionalHeader32.MinorLinkerVersion; } }
         /// <summary>
         /// SizeOfCode (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint SizeOfCode { get { return OptionalHeader32Span.SizeOfCode; } }
+        public uint SizeOfCode { get { return OptionalHeader32.SizeOfCode; } }
         /// <summary>
         /// SizeOfInitializedData (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint SizeOfInitializedData { get { return OptionalHeader32Span.SizeOfInitializedData; } }
+        public uint SizeOfInitializedData { get { return OptionalHeader32.SizeOfInitializedData; } }
         /// <summary>
         /// SizeOfUninitializedData (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint SizeOfUninitializedData { get { return OptionalHeader32Span.SizeOfUninitializedData; } }
+        public uint SizeOfUninitializedData { get { return OptionalHeader32.SizeOfUninitializedData; } }
         /// <summary>
         /// AddressOfEntryPoint (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint AddressOfEntryPoint { get { return OptionalHeader32Span.AddressOfEntryPoint; } }
+        public uint AddressOfEntryPoint { get { return OptionalHeader32.AddressOfEntryPoint; } }
         /// <summary>
         /// BaseOfCode (see IMAGE_OPTIONAL_HEADER32 or IMAGE_OPTIONAL_HEADER64 in PE File spec)
         /// </summary>
-        public uint BaseOfCode { get { return OptionalHeader32Span.BaseOfCode; } }
+        public uint BaseOfCode { get { return OptionalHeader32.BaseOfCode; } }
 
         // These depend on the whether you are PE32 or PE64
         /// <summary>
@@ -538,11 +538,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.ImageBase;
+                    return OptionalHeader64.ImageBase;
                 }
                 else
                 {
-                    return OptionalHeader32Span.ImageBase;
+                    return OptionalHeader32.ImageBase;
                 }
             }
         }
@@ -555,11 +555,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.SectionAlignment;
+                    return OptionalHeader64.SectionAlignment;
                 }
                 else
                 {
-                    return OptionalHeader32Span.SectionAlignment;
+                    return OptionalHeader32.SectionAlignment;
                 }
             }
         }
@@ -572,11 +572,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.FileAlignment;
+                    return OptionalHeader64.FileAlignment;
                 }
                 else
                 {
-                    return OptionalHeader32Span.FileAlignment;
+                    return OptionalHeader32.FileAlignment;
                 }
             }
         }
@@ -589,11 +589,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.MajorOperatingSystemVersion;
+                    return OptionalHeader64.MajorOperatingSystemVersion;
                 }
                 else
                 {
-                    return OptionalHeader32Span.MajorOperatingSystemVersion;
+                    return OptionalHeader32.MajorOperatingSystemVersion;
                 }
             }
         }
@@ -606,11 +606,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.MinorOperatingSystemVersion;
+                    return OptionalHeader64.MinorOperatingSystemVersion;
                 }
                 else
                 {
-                    return OptionalHeader32Span.MinorOperatingSystemVersion;
+                    return OptionalHeader32.MinorOperatingSystemVersion;
                 }
             }
         }
@@ -623,11 +623,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.MajorImageVersion;
+                    return OptionalHeader64.MajorImageVersion;
                 }
                 else
                 {
-                    return OptionalHeader32Span.MajorImageVersion;
+                    return OptionalHeader32.MajorImageVersion;
                 }
             }
         }
@@ -640,11 +640,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.MinorImageVersion;
+                    return OptionalHeader64.MinorImageVersion;
                 }
                 else
                 {
-                    return OptionalHeader32Span.MinorImageVersion;
+                    return OptionalHeader32.MinorImageVersion;
                 }
             }
         }
@@ -657,11 +657,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.MajorSubsystemVersion;
+                    return OptionalHeader64.MajorSubsystemVersion;
                 }
                 else
                 {
-                    return OptionalHeader32Span.MajorSubsystemVersion;
+                    return OptionalHeader32.MajorSubsystemVersion;
                 }
             }
         }
@@ -674,11 +674,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.MinorSubsystemVersion;
+                    return OptionalHeader64.MinorSubsystemVersion;
                 }
                 else
                 {
-                    return OptionalHeader32Span.MinorSubsystemVersion;
+                    return OptionalHeader32.MinorSubsystemVersion;
                 }
             }
         }
@@ -691,11 +691,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.Win32VersionValue;
+                    return OptionalHeader64.Win32VersionValue;
                 }
                 else
                 {
-                    return OptionalHeader32Span.Win32VersionValue;
+                    return OptionalHeader32.Win32VersionValue;
                 }
             }
         }
@@ -708,11 +708,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.SizeOfImage;
+                    return OptionalHeader64.SizeOfImage;
                 }
                 else
                 {
-                    return OptionalHeader32Span.SizeOfImage;
+                    return OptionalHeader32.SizeOfImage;
                 }
             }
         }
@@ -725,11 +725,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.SizeOfHeaders;
+                    return OptionalHeader64.SizeOfHeaders;
                 }
                 else
                 {
-                    return OptionalHeader32Span.SizeOfHeaders;
+                    return OptionalHeader32.SizeOfHeaders;
                 }
             }
         }
@@ -742,11 +742,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.CheckSum;
+                    return OptionalHeader64.CheckSum;
                 }
                 else
                 {
-                    return OptionalHeader32Span.CheckSum;
+                    return OptionalHeader32.CheckSum;
                 }
             }
         }
@@ -759,11 +759,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.Subsystem;
+                    return OptionalHeader64.Subsystem;
                 }
                 else
                 {
-                    return OptionalHeader32Span.Subsystem;
+                    return OptionalHeader32.Subsystem;
                 }
             }
         }
@@ -776,11 +776,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.DllCharacteristics;
+                    return OptionalHeader64.DllCharacteristics;
                 }
                 else
                 {
-                    return OptionalHeader32Span.DllCharacteristics;
+                    return OptionalHeader32.DllCharacteristics;
                 }
             }
         }
@@ -793,11 +793,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.SizeOfStackReserve;
+                    return OptionalHeader64.SizeOfStackReserve;
                 }
                 else
                 {
-                    return OptionalHeader32Span.SizeOfStackReserve;
+                    return OptionalHeader32.SizeOfStackReserve;
                 }
             }
         }
@@ -810,11 +810,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.SizeOfStackCommit;
+                    return OptionalHeader64.SizeOfStackCommit;
                 }
                 else
                 {
-                    return OptionalHeader32Span.SizeOfStackCommit;
+                    return OptionalHeader32.SizeOfStackCommit;
                 }
             }
         }
@@ -827,11 +827,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.SizeOfHeapReserve;
+                    return OptionalHeader64.SizeOfHeapReserve;
                 }
                 else
                 {
-                    return OptionalHeader32Span.SizeOfHeapReserve;
+                    return OptionalHeader32.SizeOfHeapReserve;
                 }
             }
         }
@@ -844,11 +844,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.SizeOfHeapCommit;
+                    return OptionalHeader64.SizeOfHeapCommit;
                 }
                 else
                 {
-                    return OptionalHeader32Span.SizeOfHeapCommit;
+                    return OptionalHeader32.SizeOfHeapCommit;
                 }
             }
         }
@@ -861,11 +861,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.LoaderFlags;
+                    return OptionalHeader64.LoaderFlags;
                 }
                 else
                 {
-                    return OptionalHeader32Span.LoaderFlags;
+                    return OptionalHeader32.LoaderFlags;
                 }
             }
         }
@@ -878,11 +878,11 @@ namespace PEFile
             {
                 if (IsPE64)
                 {
-                    return OptionalHeader64Span.NumberOfRvaAndSizes;
+                    return OptionalHeader64.NumberOfRvaAndSizes;
                 }
                 else
                 {
-                    return OptionalHeader32Span.NumberOfRvaAndSizes;
+                    return OptionalHeader32.NumberOfRvaAndSizes;
                 }
             }
         }
@@ -1023,7 +1023,7 @@ namespace PEFile
             return ref MemoryMarshal.Cast<byte, IMAGE_SECTION_HEADER>(span)[0];
         }
 
-        private ref readonly IMAGE_OPTIONAL_HEADER32 OptionalHeader32Span
+        private ref readonly IMAGE_OPTIONAL_HEADER32 OptionalHeader32
         {
             get
             {
@@ -1033,7 +1033,7 @@ namespace PEFile
             }
         }
 
-        private ref readonly IMAGE_OPTIONAL_HEADER64 OptionalHeader64Span
+        private ref readonly IMAGE_OPTIONAL_HEADER64 OptionalHeader64
         {
             get
             {
