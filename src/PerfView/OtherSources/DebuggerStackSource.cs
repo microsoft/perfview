@@ -102,6 +102,7 @@ namespace Diagnostics.Tracing.StackSources
 
                             stack.Clear();
 
+                            sample.Metric = 1;
                             sample.StackIndex = parent;
                             sample.TimeRelativeMSec = time;
                             time++;
@@ -112,6 +113,25 @@ namespace Diagnostics.Tracing.StackSources
                     }
                 }
             }
+            
+            // Handle the last sample if there are any remaining frames
+            if (stack.Count != 0)
+            {
+                StackSourceCallStackIndex parent = StackSourceCallStackIndex.Invalid;
+                for (int i = stack.Count - 1; i >= 0; --i)
+                {
+                    parent = Interner.CallStackIntern(stack[i].frame, parent);
+                }
+
+                stack.Clear();
+
+                sample.Metric = 1;
+                sample.StackIndex = parent;
+                sample.TimeRelativeMSec = time;
+                time++;
+                AddSample(sample);
+            }
+            
             Interner.DoneInterning();
         }
         #endregion
