@@ -30,6 +30,23 @@ namespace Diagnostics.Tracing.StackSources
             public StackSourceFrameIndex frame;
         }
 
+        private void AddSampleFromStack(GrowableArray<DebuggerCallStackFrame> stack, StackSourceSample sample, ref float time)
+        {
+            StackSourceCallStackIndex parent = StackSourceCallStackIndex.Invalid;
+            for (int i = stack.Count - 1; i >= 0; --i)
+            {
+                parent = Interner.CallStackIntern(stack[i].frame, parent);
+            }
+
+            stack.Clear();
+
+            sample.Metric = 1;
+            sample.StackIndex = parent;
+            sample.TimeRelativeMSec = time;
+            time++;
+            AddSample(sample);
+        }
+
         private void Read(TextReader reader)
         {
             var framePattern = new Regex(@"\b(\w+?)\!(\S\(?[\S\s]*\)?)");
@@ -93,20 +110,7 @@ namespace Diagnostics.Tracing.StackSources
                         // clear the stack
                         if (stack.Count != 0)
                         {
-
-                            StackSourceCallStackIndex parent = StackSourceCallStackIndex.Invalid;
-                            for (int i = stack.Count - 1; i >= 0; --i)
-                            {
-                                parent = Interner.CallStackIntern(stack[i].frame, parent);
-                            }
-
-                            stack.Clear();
-
-                            sample.Metric = 1;
-                            sample.StackIndex = parent;
-                            sample.TimeRelativeMSec = time;
-                            time++;
-                            AddSample(sample);
+                            AddSampleFromStack(stack, sample, ref time);
                         }
                         newCallStackFound = true;
 
@@ -117,19 +121,7 @@ namespace Diagnostics.Tracing.StackSources
             // Handle the last sample if there are any remaining frames
             if (stack.Count != 0)
             {
-                StackSourceCallStackIndex parent = StackSourceCallStackIndex.Invalid;
-                for (int i = stack.Count - 1; i >= 0; --i)
-                {
-                    parent = Interner.CallStackIntern(stack[i].frame, parent);
-                }
-
-                stack.Clear();
-
-                sample.Metric = 1;
-                sample.StackIndex = parent;
-                sample.TimeRelativeMSec = time;
-                time++;
-                AddSample(sample);
+                AddSampleFromStack(stack, sample, ref time);
             }
             
             Interner.DoneInterning();
