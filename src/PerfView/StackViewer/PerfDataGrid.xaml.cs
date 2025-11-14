@@ -63,8 +63,9 @@ namespace PerfView
                         morphedContent = PadForColumn(morphedContent, i + e.StartColumnDisplayIndex);
                     }
 
-                    // Add markdown table formatting only when multiple columns are selected
-                    if (e.ClipboardRowContent.Count > 1)
+                    // Add markdown table formatting only when more than 2 cells are selected
+                    // Single cell and 2-cell selections (for ranges) should not have markdown formatting
+                    if (m_numSelectedCells > 2)
                     {
                         // Add a leading | character to the first column to ensure GitHub renders the content as table
                         if (i == 0)
@@ -524,6 +525,7 @@ namespace PerfView
             {
                 // We don't want the header for single values, or for 2 (for cutting and pasting ranges).  
                 int numSelectedCells = window.SelectedCellsChanged(sender, e);
+                m_numSelectedCells = numSelectedCells;
                 if (numSelectedCells <= 2)
                 {
                     if (numSelectedCells == 2)
@@ -563,6 +565,7 @@ namespace PerfView
         /// </summary>
         private string m_clipboardRangeStart;
         private string m_clipboardRangeEnd;
+        private int m_numSelectedCells;
         private int[] m_maxColumnInSelection;
         private int m_FindEnd;
         private Regex m_findPat;
