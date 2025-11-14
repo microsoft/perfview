@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrumentationManifest xmlns="http://schemas.microsoft.com/win/2004/08/events">
+  <instrumentation xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events">
+
+    <events xmlns="http://schemas.microsoft.com/win/2004/08/events">
+      <provider name="SimpleTestProvider"
+                guid="{12345678-1234-1234-1234-123456789012}"
+                symbol="SIMPLE_TEST_PROVIDER"
+                messageFileName="SimpleTest.dll"
+                resourceFileName="SimpleTest.dll">
+
+        <keywords>
+          <keyword name="Diagnostics" mask="0x1" message="Diagnostics events" />
+        </keywords>
+
+        <templates>
+          <template tid="StringTemplate">
+            <data name="Message" inType="win:UnicodeString" />
+          </template>
+          <template tid="IntTemplate">
+            <data name="Value" inType="win:Int32" />
+          </template>
+        </templates>
+
+        <events>
+          <event value="1" 
+                 symbol="SimpleEvent" 
+                 template="StringTemplate" 
+                 keywords="Diagnostics" 
+                 level="win:Informational" 
+                 message="$(string.SimpleTestProvider.SimpleEvent.EventMessage)" />
+          <event value="2" 
+                 symbol="ValueEvent" 
+                 template="IntTemplate" 
+                 keywords="Diagnostics" 
+                 level="win:Informational" 
+                 message="$(string.SimpleTestProvider.ValueEvent.EventMessage)" />
+        </events>
+
+      </provider>
+    </events>
+  </instrumentation>
+
+  <localization>
+    <resources culture="en-US">
+      <stringTable>
+        <string id="SimpleTestProvider.SimpleEvent.EventMessage" value="Simple event: %1" />
+        <string id="SimpleTestProvider.ValueEvent.EventMessage" value="Value event: %1" />
+      </stringTable>
+    </resources>
+  </localization>
+</instrumentationManifest>
