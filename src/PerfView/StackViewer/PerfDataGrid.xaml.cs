@@ -63,16 +63,23 @@ namespace PerfView
                         morphedContent = PadForColumn(morphedContent, i + e.StartColumnDisplayIndex);
                     }
 
-                    // Add a leading | character to the first column to ensure GitHub renders the content as table
-                    if (i == 0)
+                    // Add markdown table formatting (| symbols) only when:
+                    // - Multiple columns AND multiple rows selected
+                    // Single column (any rows) or multiple columns in single row: no pipes
+                    bool shouldAddPipes = (m_numSelectedColumns > 1 && m_numSelectedRows > 1);
+                    if (shouldAddPipes)
                     {
-                        morphedContent = "| " + morphedContent;
-                    }
-                    
-                    // Add a trailing | character to the last column to complete the markdown table row
-                    if (i == e.ClipboardRowContent.Count - 1)
-                    {
-                        morphedContent = morphedContent + " |";
+                        // Add a leading | character to the first column to ensure GitHub renders the content as table
+                        if (i == 0)
+                        {
+                            morphedContent = "| " + morphedContent;
+                        }
+                        
+                        // Add a trailing | character to the last column to complete the markdown table row
+                        if (i == e.ClipboardRowContent.Count - 1)
+                        {
+                            morphedContent = morphedContent + " |";
+                        }
                     }
 
                     // TODO Ugly, morph two cells on different rows into one line for the correct cut/paste experience 
@@ -520,26 +527,70 @@ namespace PerfView
             {
                 // We don't want the header for single values, or for 2 (for cutting and pasting ranges).  
                 int numSelectedCells = window.SelectedCellsChanged(sender, e);
-                if (numSelectedCells <= 2)
+                m_numSelectedCells = numSelectedCells;
+                
+                // Calculate the number of unique columns and rows selected
+                var dataGrid = sender as DataGrid;
+                if (dataGrid != null && dataGrid.SelectedCells.Count > 0)
                 {
-                    if (numSelectedCells == 2)
+                    var uniqueColumns = new HashSet<DataGridColumn>();
+                    var uniqueRows = new HashSet<object>();
+                    foreach (var cell in dataGrid.SelectedCells)
                     {
-                        var dataGrid = sender as DataGrid;
-                        if (dataGrid != null)
-                        {
-                            var cells = dataGrid.SelectedCells;
-                            if (cells != null)
-                            {
-                                m_clipboardRangeStart = GetCellStringValue(cells[0]);
-                                m_clipboardRangeEnd = GetCellStringValue(cells[1]);
-                            }
-                        }
+                        uniqueColumns.Add(cell.Column);
+                        uniqueRows.Add(cell.Item);
                     }
-                    Grid.ClipboardCopyMode = DataGridClipboardCopyMode.ExcludeHeader;
+                    m_numSelectedColumns = uniqueColumns.Count;
+                    m_numSelectedRows = uniqueRows.Count;
                 }
                 else
                 {
+                    m_numSelectedColumns = 0;
+                    m_numSelectedRows = 0;
+                }
+                
+                // Determine whether to include headers based on selection:
+                // - Single cell: no header
+                // - 2 cells (range): no header
+                // - Single column, multiple cells: include header
+                // - Multiple columns, single row: no header
+                // - Multiple columns, multiple rows: include header
+                bool shouldIncludeHeader = false;
+                if (numSelectedCells > 2)
+                {
+                    if (m_numSelectedColumns == 1)
+                    {
+                        // Single column, multiple rows: include header
+                        shouldIncludeHeader = true;
+                    }
+                    else if (m_numSelectedRows > 1)
+                    {
+                        // Multiple columns, multiple rows: include header
+                        shouldIncludeHeader = true;
+                    }
+                    // Multiple columns, single row: no header (shouldIncludeHeader stays false)
+                }
+                
+                if (shouldIncludeHeader)
+                {
                     Grid.ClipboardCopyMode = DataGridClipboardCopyMode.IncludeHeader;
+                }
+                else
+                {
+                    Grid.ClipboardCopyMode = DataGridClipboardCopyMode.ExcludeHeader;
+                }
+                
+                if (numSelectedCells == 2)
+                {
+                    if (dataGrid != null)
+                    {
+                        var cells = dataGrid.SelectedCells;
+                        if (cells != null)
+                        {
+                            m_clipboardRangeStart = GetCellStringValue(cells[0]);
+                            m_clipboardRangeEnd = GetCellStringValue(cells[1]);
+                        }
+                    }
                 }
             }
             m_maxColumnInSelection = null;
@@ -559,6 +610,9 @@ namespace PerfView
         /// </summary>
         private string m_clipboardRangeStart;
         private string m_clipboardRangeEnd;
+        private int m_numSelectedCells;
+        private int m_numSelectedColumns;
+        private int m_numSelectedRows;
         private int[] m_maxColumnInSelection;
         private int m_FindEnd;
         private Regex m_findPat;
