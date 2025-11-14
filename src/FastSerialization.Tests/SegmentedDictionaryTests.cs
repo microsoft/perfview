@@ -236,10 +236,15 @@ namespace FastSerializationTests
             var array = new KeyValuePair<string, int>[4];
             dict.CopyTo(array, 1);
             
+            // First and last elements should be default (null, 0)
             Assert.Equal(new KeyValuePair<string, int>(null, 0), array[0]);
-            Assert.NotEqual(new KeyValuePair<string, int>(null, 0), array[1]);
-            Assert.NotEqual(new KeyValuePair<string, int>(null, 0), array[2]);
             Assert.Equal(new KeyValuePair<string, int>(null, 0), array[3]);
+            
+            // Middle two elements should contain our dictionary entries
+            // Order is not guaranteed, so check both are present
+            var copiedItems = new[] { array[1], array[2] };
+            Assert.Contains(new KeyValuePair<string, int>("one", 1), copiedItems);
+            Assert.Contains(new KeyValuePair<string, int>("two", 2), copiedItems);
         }
     }
 }
