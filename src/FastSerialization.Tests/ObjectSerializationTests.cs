@@ -52,11 +52,7 @@ namespace FastSerializationTests
         
         public void ToStream(Serializer serializer)
         {
-            serializer.Write(NestedObject != null);
-            if (NestedObject != null)
-            {
-                NestedObject.ToStream(serializer);
-            }
+            serializer.Write(NestedObject);
             
             serializer.Write(IntArray != null);
             if (IntArray != null)
@@ -71,12 +67,7 @@ namespace FastSerializationTests
         
         public void FromStream(Deserializer deserializer)
         {
-            bool hasNestedObject = deserializer.ReadBool();
-            if (hasNestedObject)
-            {
-                NestedObject = new SimpleObject();
-                NestedObject.FromStream(deserializer);
-            }
+            NestedObject = (SimpleObject)deserializer.ReadObject();
             
             bool hasIntArray = deserializer.ReadBool();
             if (hasIntArray)

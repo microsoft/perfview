@@ -86,7 +86,9 @@ namespace FastSerializationTests
             Assert.Equal("Third", list[2]);
             
             list[1] = "Modified";
+            Assert.Equal("First", list[0]);
             Assert.Equal("Modified", list[1]);
+            Assert.Equal("Third", list[2]);
         }
 
         [Fact]

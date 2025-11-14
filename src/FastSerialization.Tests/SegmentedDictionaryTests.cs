@@ -87,6 +87,8 @@ namespace FastSerializationTests
             dict.Clear();
             Assert.Empty(dict);
             Assert.False(dict.ContainsKey("a"));
+            Assert.False(dict.ContainsKey("b"));
+            Assert.False(dict.ContainsKey("c"));
         }
 
         [Fact]
@@ -155,14 +157,28 @@ namespace FastSerializationTests
             dict.Add("two", 2);
             dict.Add("three", 3);
             
-            int count = 0;
+            var foundKeys = new HashSet<string>();
             foreach (var kvp in dict)
             {
                 Assert.NotNull(kvp.Key);
-                Assert.True(kvp.Value >= 1 && kvp.Value <= 3);
-                count++;
+                foundKeys.Add(kvp.Key);
+                
+                // Verify the correct value for each key
+                if (kvp.Key == "one")
+                    Assert.Equal(1, kvp.Value);
+                else if (kvp.Key == "two")
+                    Assert.Equal(2, kvp.Value);
+                else if (kvp.Key == "three")
+                    Assert.Equal(3, kvp.Value);
+                else
+                    Assert.Fail($"Unexpected key: {kvp.Key}");
             }
-            Assert.Equal(3, count);
+            
+            // Verify we found each key exactly once
+            Assert.Equal(3, foundKeys.Count);
+            Assert.Contains("one", foundKeys);
+            Assert.Contains("two", foundKeys);
+            Assert.Contains("three", foundKeys);
         }
 
         [Fact]
@@ -220,10 +236,10 @@ namespace FastSerializationTests
             var array = new KeyValuePair<string, int>[4];
             dict.CopyTo(array, 1);
             
-            Assert.Equal(default(KeyValuePair<string, int>), array[0]);
-            Assert.NotEqual(default(KeyValuePair<string, int>), array[1]);
-            Assert.NotEqual(default(KeyValuePair<string, int>), array[2]);
-            Assert.Equal(default(KeyValuePair<string, int>), array[3]);
+            Assert.Equal(new KeyValuePair<string, int>(null, 0), array[0]);
+            Assert.NotEqual(new KeyValuePair<string, int>(null, 0), array[1]);
+            Assert.NotEqual(new KeyValuePair<string, int>(null, 0), array[2]);
+            Assert.Equal(new KeyValuePair<string, int>(null, 0), array[3]);
         }
     }
 }
