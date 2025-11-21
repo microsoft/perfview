@@ -173,7 +173,7 @@ namespace TraceEventTests
             try
             {
                 // Extract the nettrace file
-                using (var archive = System.IO.Compression.ZipFile.OpenRead(zipFile))
+                using (var archive = ZipFile.OpenRead(zipFile))
                 {
                     var entry = archive.Entries.First(e => e.Name.EndsWith(".nettrace"));
                     entry.ExtractToFile(unzippedFile, true);
