@@ -904,28 +904,14 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         private bool PdbMatches(string filePath, Guid pdbGuid, int pdbAge, bool checkSecurity = true)
         {
-            bool fileExists = false;
-            bool securityCheckPassed = false;
-            
             try
             {
                 if (File.Exists(filePath))
                 {
-                    fileExists = true;
-                    
-                    if (checkSecurity)
+                    if (checkSecurity && !CheckSecurity(filePath))
                     {
-                        if (!CheckSecurity(filePath))
-                        {
-                            m_log.WriteLine("FindSymbolFilePath: Aborting, security check failed on {0}", filePath);
-                            return false;
-                        }
-                        securityCheckPassed = true;
-                    }
-                    else
-                    {
-                        // Security check not required, so it's implicitly passed
-                        securityCheckPassed = true;
+                        m_log.WriteLine("FindSymbolFilePath: Aborting, security check failed on {0}", filePath);
+                        return false;
                     }
 
                     if (pdbGuid == Guid.Empty)
@@ -952,13 +938,32 @@ namespace Microsoft.Diagnostics.Symbols
             catch (Exception e)
             {
                 // Check if this is an STA threading issue when trying to open a Windows PDB with DIA
-                // DIA COM objects require STA threading. If we can't verify the GUID/Age due to threading,
-                // we accept the file match if it exists and passes security checks (if applicable).
-                if (e.Message != null && e.Message.Contains("STA") && fileExists && securityCheckPassed)
+                // DIA COM objects require STA threading. Common HResults for threading issues:
+                // - RPC_E_WRONG_THREAD (0x8001010E): The application called an interface that was marshalled for a different thread
+                // - CO_E_NOTINITIALIZED (0x800401F0): CoInitialize has not been called
+                // - RPC_E_CHANGED_MODE (0x80010106): Cannot change thread mode after it is set
+                const int RPC_E_WRONG_THREAD = unchecked((int)0x8001010E);
+                const int CO_E_NOTINITIALIZED = unchecked((int)0x800401F0);
+                const int RPC_E_CHANGED_MODE = unchecked((int)0x80010106);
+                
+                bool isStaThreadingIssue = e.HResult == RPC_E_WRONG_THREAD || 
+                                          e.HResult == CO_E_NOTINITIALIZED || 
+                                          e.HResult == RPC_E_CHANGED_MODE ||
+                                          (e.Message != null && e.Message.Contains("STA"));
+                
+                if (isStaThreadingIssue && File.Exists(filePath))
                 {
-                    m_log.WriteLine("FindSymbolFilePath: Warning - Cannot verify PDB GUID/Age for {0} due to STA threading requirement: {1}", filePath, e.Message);
-                    m_log.WriteLine("FindSymbolFilePath: Accepting PDB match based on file existence and location since GUID verification failed due to threading.");
-                    return true;
+                    // If security check is required, ensure it passed before accepting the file
+                    if (checkSecurity && !CheckSecurity(filePath))
+                    {
+                        m_log.WriteLine("FindSymbolFilePath: Aborting pdbMatch of {0}, security check failed", filePath);
+                    }
+                    else
+                    {
+                        m_log.WriteLine("FindSymbolFilePath: Warning - Cannot verify PDB GUID/Age for {0} due to STA threading requirement: {1}", filePath, e.Message);
+                        m_log.WriteLine("FindSymbolFilePath: Accepting PDB match based on file existence and location since GUID verification failed due to threading.");
+                        return true;
+                    }
                 }
                 m_log.WriteLine("FindSymbolFilePath: Aborting pdbMatch of {0} Exception thrown: {1}", filePath, e.Message);
             }
