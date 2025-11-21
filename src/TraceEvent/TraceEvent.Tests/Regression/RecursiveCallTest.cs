@@ -179,58 +179,58 @@ namespace TraceEventTests
             writer.WriteEndBlock();
             
             // Convert nettrace to EventPipeEventSource
-            MemoryStream nettraceStream = new MemoryStream(writer.ToArray());
+            using MemoryStream nettraceStream = new MemoryStream(writer.ToArray());
             TraceEventDispatcher eventSource = new EventPipeEventSource(nettraceStream);
             
             // Convert to in-memory ETLX
-            MemoryStream etlxStream = new MemoryStream();
+            using MemoryStream etlxStream = new MemoryStream();
             TraceLog.CreateFromEventPipeEventSources(eventSource, new IOStreamStreamWriter(etlxStream, SerializationSettings.Default, leaveOpen: true), null);
             etlxStream.Position = 0;
             
             // Create TraceLog from in-memory ETLX
             using (var traceLog = new TraceLog(etlxStream))
             {
-                    // Create MutableTraceEventStackSource and reproduce the exact issue scenario
-                    var stackSource = new MutableTraceEventStackSource(traceLog);
-                    
-                    // This reproduces the exact code from the issue:
-                    var sample = new StackSourceSample(stackSource);
-                    sample.StackIndex = stackSource.Interner.CallStackIntern(
-                        stackSource.Interner.FrameIntern("X"), sample.StackIndex);
-                    sample.StackIndex = stackSource.Interner.CallStackIntern(
-                        stackSource.Interner.FrameIntern("X"), sample.StackIndex);
-                    sample.TimeRelativeMSec = 1.0;
-                    sample.Metric = 1.0f;
-                    sample.Count = 1;
-                    stackSource.AddSample(sample);
-                    stackSource.DoneAddingSamples();
-                    
-                    // Build CallTree and verify structure
-                    var callTree = new CallTree(ScalingPolicyKind.ScaleToData);
-                    callTree.StackSource = stackSource;
-                    
-                    var root = callTree.Root;
-                    Assert.NotNull(root);
-                    
-                    // Test CallerCalleeNode for "X" - this is the main test
-                    // The CallerCalleeNode should correctly identify recursive relationships
-                    var callerCalleeNode = new CallerCalleeNode("X", callTree);
-                    
-                    // The key assertions: X should appear as both caller and callee
-                    // This tests that the recursive call (X -> X) is properly represented
-                    var xCaller = callerCalleeNode.Callers.FirstOrDefault(c => c.Name == "X");
-                    Assert.NotNull(xCaller);
-                    Assert.True(xCaller.InclusiveMetric > 0, 
-                        $"Recursive caller 'X' should have positive metric, got {xCaller.InclusiveMetric}");
-                    Assert.False(float.IsNaN(xCaller.InclusiveMetric), 
-                        "Recursive caller 'X' has NaN inclusive metric");
-                    
-                    var xCallee = callerCalleeNode.Callees.FirstOrDefault(c => c.Name == "X");
-                    Assert.NotNull(xCallee);
-                    Assert.True(xCallee.InclusiveMetric > 0, 
-                        $"Recursive callee 'X' should have positive metric, got {xCallee.InclusiveMetric}");
-                    Assert.False(float.IsNaN(xCallee.InclusiveMetric), 
-                        "Recursive callee 'X' has NaN inclusive metric");
+                // Create MutableTraceEventStackSource and reproduce the exact issue scenario
+                var stackSource = new MutableTraceEventStackSource(traceLog);
+                
+                // This reproduces the exact code from the issue:
+                var sample = new StackSourceSample(stackSource);
+                sample.StackIndex = stackSource.Interner.CallStackIntern(
+                    stackSource.Interner.FrameIntern("X"), sample.StackIndex);
+                sample.StackIndex = stackSource.Interner.CallStackIntern(
+                    stackSource.Interner.FrameIntern("X"), sample.StackIndex);
+                sample.TimeRelativeMSec = 1.0;
+                sample.Metric = 1.0f;
+                sample.Count = 1;
+                stackSource.AddSample(sample);
+                stackSource.DoneAddingSamples();
+                
+                // Build CallTree and verify structure
+                var callTree = new CallTree(ScalingPolicyKind.ScaleToData);
+                callTree.StackSource = stackSource;
+                
+                var root = callTree.Root;
+                Assert.NotNull(root);
+                
+                // Test CallerCalleeNode for "X" - this is the main test
+                // The CallerCalleeNode should correctly identify recursive relationships
+                var callerCalleeNode = new CallerCalleeNode("X", callTree);
+                
+                // The key assertions: X should appear as both caller and callee
+                // This tests that the recursive call (X -> X) is properly represented
+                var xCaller = callerCalleeNode.Callers.FirstOrDefault(c => c.Name == "X");
+                Assert.NotNull(xCaller);
+                Assert.True(xCaller.InclusiveMetric > 0, 
+                    $"Recursive caller 'X' should have positive metric, got {xCaller.InclusiveMetric}");
+                Assert.False(float.IsNaN(xCaller.InclusiveMetric), 
+                    "Recursive caller 'X' has NaN inclusive metric");
+                
+                var xCallee = callerCalleeNode.Callees.FirstOrDefault(c => c.Name == "X");
+                Assert.NotNull(xCallee);
+                Assert.True(xCallee.InclusiveMetric > 0, 
+                    $"Recursive callee 'X' should have positive metric, got {xCallee.InclusiveMetric}");
+                Assert.False(float.IsNaN(xCallee.InclusiveMetric), 
+                    "Recursive callee 'X' has NaN inclusive metric");
             }
         }
         
