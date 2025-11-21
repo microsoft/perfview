@@ -91,7 +91,7 @@ namespace PerfView
             {
                 throw new ArgumentOutOfRangeException(
                     "flameGraphCanvas",
-                    $"Canvas has an invalid size (width={width}, height={height}). Please ensure the flame graph is visible and has been rendered before attempting to export.");
+                    $"canvas has an invalid size (width={width}, height={height}). Please ensure the flame graph is visible and has been rendered before attempting to export.");
             }
 
             var renderTargetBitmap = new RenderTargetBitmap(width, height, 96d, 96d, PixelFormats.Default);
