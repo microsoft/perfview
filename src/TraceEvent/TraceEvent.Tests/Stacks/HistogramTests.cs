@@ -90,5 +90,35 @@ namespace TraceEventTests.Stacks
             Assert.Equal(0.0f, histogram[0]);
             Assert.Equal(0.0f, histogram[10]);
         }
+
+        /// <summary>
+        /// Test AddScaled works correctly after histogram transition to array mode.
+        /// </summary>
+        [Fact]
+        public void AddScaled_AfterArrayTransition_ValuesCorrect()
+        {
+            var stackSource = new CopyStackSource();
+            var callTree = new CallTree(ScalingPolicyKind.TimeMetric)
+            {
+                StackSource = stackSource
+            };
+            var controller = new TimeHistogramController(callTree, 0, 100);
+            
+            // Create source histogram with multiple buckets
+            var sourceHistogram = new Histogram(controller);
+            sourceHistogram.AddMetric(10.0f, 5);
+            sourceHistogram.AddMetric(20.0f, 10);
+            
+            // Create target histogram that starts in single-bucket mode
+            var targetHistogram = new Histogram(controller);
+            targetHistogram.AddMetric(5.0f, 5);
+            
+            // Add scaled source to target - this should transition target to array mode
+            targetHistogram.AddScaled(sourceHistogram);
+            
+            // Verify values
+            Assert.Equal(15.0f, targetHistogram[5]);  // 5 + 10
+            Assert.Equal(20.0f, targetHistogram[10]); // 0 + 20
+        }
     }
 }
