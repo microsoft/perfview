@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -964,13 +965,7 @@ namespace Microsoft.Diagnostics.Symbols
             catch (COMException e) when (IsStaThreadingError(e))
             {
                 // COM threading error - need to retry on STA thread
-                m_log.WriteLine("FindSymbolFilePath: COM threading error detected, retrying on STA thread for {0}", pdbFilePath);
-                return OpenSymbolFileOnStaThread(pdbFilePath);
-            }
-            catch (InvalidOperationException e) when (e.Message != null && e.Message.Contains("STA"))
-            {
-                // STA threading error from .NET - need to retry on STA thread
-                m_log.WriteLine("FindSymbolFilePath: STA threading error detected, retrying on STA thread for {0}", pdbFilePath);
+                m_log.WriteLine("FindSymbolFilePath: COM threading error detected (HResult: 0x{0:X}), retrying on STA thread for {1}", e.HResult, pdbFilePath);
                 return OpenSymbolFileOnStaThread(pdbFilePath);
             }
         }
@@ -1027,7 +1022,7 @@ namespace Microsoft.Diagnostics.Symbols
                 if (thrownException != null)
                 {
                     // Preserve the original exception and stack trace using ExceptionDispatchInfo
-                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(thrownException).Throw();
+                    ExceptionDispatchInfo.Capture(thrownException).Throw();
                 }
             }
             
