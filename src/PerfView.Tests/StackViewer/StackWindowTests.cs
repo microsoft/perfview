@@ -881,7 +881,7 @@ namespace PerfViewTests.StackViewer
                 });
 
                 // Verify the exception message is helpful
-                Assert.Contains("canvas has an invalid size", exception.Message);
+                Assert.Contains("Canvas has an invalid size", exception.Message);
                 Assert.Contains("width=0", exception.Message);
                 Assert.Contains("height=0", exception.Message);
             }
