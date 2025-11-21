@@ -89,9 +89,9 @@ namespace PerfView
             // Validate that the canvas has a valid size before attempting to export
             if (width <= 0 || height <= 0)
             {
-                throw new InvalidOperationException(
-                    $"Cannot export flame graph: the canvas has an invalid size (width={width}, height={height}). " +
-                    "Please ensure the flame graph is visible and has been rendered before attempting to export.");
+                throw new ArgumentOutOfRangeException(
+                    "flameGraphCanvas",
+                    $"Canvas has an invalid size (width={width}, height={height}). Please ensure the flame graph is visible and has been rendered before attempting to export.");
             }
 
             var renderTargetBitmap = new RenderTargetBitmap(width, height, 96d, 96d, PixelFormats.Default);

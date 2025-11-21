@@ -874,8 +874,8 @@ namespace PerfViewTests.StackViewer
             var tempFile = Path.GetTempFileName();
             try
             {
-                // Attempt to export should throw InvalidOperationException with a meaningful message
-                var exception = Assert.Throws<InvalidOperationException>(() =>
+                // Attempt to export should throw ArgumentOutOfRangeException with a meaningful message
+                var exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
                 {
                     FlameGraph.Export(canvas, tempFile);
                 });
