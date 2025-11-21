@@ -161,11 +161,8 @@ namespace TraceEventTests
                 "..", "..", "..", "inputs");
             string zipFile = Path.Combine(testDataDir, "eventpipe-dotnetcore6.0-win-x64-executioncheckpoints.nettrace.zip");
             
-            // Skip test if file doesn't exist (CI environments may not have test data)
-            if (!File.Exists(zipFile))
-            {
-                return; // Skip test
-            }
+            // Test data files should always be present
+            Assert.True(File.Exists(zipFile), $"Test data file not found: {zipFile}");
             
             string unzippedFile = Path.Combine(Path.GetTempPath(), $"test_recursive_{Guid.NewGuid()}.nettrace");
             string tempEtlxFile = null;
