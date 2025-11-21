@@ -90,7 +90,7 @@ namespace PerfView
             if (width <= 0 || height <= 0)
             {
                 throw new ArgumentOutOfRangeException(
-                    "flameGraphCanvas",
+                    nameof(flameGraphCanvas),
                     $"Canvas has an invalid size (width={width}, height={height}). Please ensure the flame graph is visible and has been rendered before attempting to export.");
             }
 
