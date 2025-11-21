@@ -9,6 +9,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -527,7 +529,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
 
                 // TODO this is very inefficient for blitable types. Optimize that.
-                var ret = new object[arrayCount];
+                var ret = FetchTypeHelpers.CreateArrayOfType(elementType, arrayCount);
                 for (int i = 0; i < arrayCount; i++)
                 {
                     object value = GetPayloadValueAt(ref arrayInfo.Element, offset, payloadLength);
@@ -547,6 +549,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     ret.SetValue(value, i);
                     offset = OffsetOfNextField(ref arrayInfo.Element, offset, payloadLength);
                 }
+
                 return ret;
             }
 
@@ -1755,6 +1758,36 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         FetchType.System_Guid => System.Guid.Parse(System.Convert.ToString(value)),
                         FetchType.System_IntPtr => new IntPtr(System.Convert.ToInt64(value)),
                         FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue => (StructValue)value,
+                    };
+                }
+
+                internal static Array CreateArrayOfType(FetchType? typeOpt, int count)
+                {
+                    if (typeOpt is not { } type)
+                    {
+                        throw new InvalidOperationException("Cannot create array when type is null.");
+                    }
+
+                    return type switch
+                    {
+                        FetchType.System_Boolean => new bool[count],
+                        FetchType.System_Char => new char[count],
+                        FetchType.System_String => new string[count],
+                        FetchType.System_SByte => new sbyte[count],
+                        FetchType.System_Int16 => new short[count],
+                        FetchType.System_Int32 => new int[count],
+                        FetchType.System_Int64 => new long[count],
+                        FetchType.System_Byte => new byte[count],
+                        FetchType.System_UInt16 => new ushort[count],
+                        FetchType.System_UInt32 => new uint[count],
+                        FetchType.System_UInt64 => new ulong[count],
+                        FetchType.System_Single => new float[count],
+                        FetchType.System_Double => new double[count],
+                        FetchType.System_Decimal => new decimal[count],
+                        FetchType.System_DateTime => new DateTime[count],
+                        FetchType.System_Guid => new Guid[count],
+                        FetchType.System_IntPtr => new IntPtr[count],
+                        FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue => new StructValue[count],
                     };
                 }
             }
