@@ -859,5 +859,39 @@ namespace PerfViewTests.StackViewer
                 return frameIndex.ToString();
             }
         }
+
+        [WpfFact]
+        [WorkItem(2308, "https://github.com/Microsoft/perfview/issues/2308")]
+        public void TestExportFlameGraphWithInvalidCanvasSize()
+        {
+            // Create a canvas with zero size (simulating an unrendered or collapsed canvas)
+            var canvas = new Canvas();
+            canvas.Width = 0;
+            canvas.Height = 0;
+            canvas.Measure(new Size(0, 0));
+            canvas.Arrange(new Rect(0, 0, 0, 0));
+
+            var tempFile = Path.GetTempFileName();
+            try
+            {
+                // Attempt to export should throw ArgumentOutOfRangeException with a meaningful message
+                var exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
+                {
+                    FlameGraph.Export(canvas, tempFile);
+                });
+
+                // Verify the exception message is helpful
+                Assert.Contains("Canvas has an invalid size", exception.Message);
+                Assert.Contains("width=0", exception.Message);
+                Assert.Contains("height=0", exception.Message);
+            }
+            finally
+            {
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+            }
+        }
     }
 }

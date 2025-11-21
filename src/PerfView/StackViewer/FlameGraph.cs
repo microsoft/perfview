@@ -83,7 +83,18 @@ namespace PerfView
         public static void Export(Canvas flameGraphCanvas, string filePath)
         {
             var rectangle = new Rect(flameGraphCanvas.RenderSize);
-            var renderTargetBitmap = new RenderTargetBitmap((int)rectangle.Right, (int)rectangle.Bottom, 96d, 96d, PixelFormats.Default);
+            int width = (int)rectangle.Right;
+            int height = (int)rectangle.Bottom;
+
+            // Validate that the canvas has a valid size before attempting to export
+            if (width <= 0 || height <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(flameGraphCanvas),
+                    $"Canvas has an invalid size (width={width}, height={height}). Please ensure the flame graph is visible and has been rendered before attempting to export.");
+            }
+
+            var renderTargetBitmap = new RenderTargetBitmap(width, height, 96d, 96d, PixelFormats.Default);
             renderTargetBitmap.Render(flameGraphCanvas);
 
             var pngEncoder = new PngBitmapEncoder();
