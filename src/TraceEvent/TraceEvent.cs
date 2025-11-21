@@ -1840,14 +1840,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Returns a byte value that was serialized at 'offset' in the payload bytes
         /// </summary>
-        protected internal int GetByteAt(int offset)
+        protected internal byte GetByteAt(int offset)
         {
             return TraceEventRawReaders.ReadByte(DataStart, offset);
         }
         /// <summary>
         /// Returns a short value that was serialized at 'offset' in the payload bytes
         /// </summary>
-        protected internal int GetInt16At(int offset)
+        protected internal short GetInt16At(int offset)
         {
             return TraceEventRawReaders.ReadInt16(DataStart, offset);
         }
