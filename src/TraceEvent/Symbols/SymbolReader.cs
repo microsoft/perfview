@@ -946,11 +946,12 @@ namespace Microsoft.Diagnostics.Symbols
                 const int CO_E_NOTINITIALIZED = unchecked((int)0x800401F0);
                 const int RPC_E_CHANGED_MODE = unchecked((int)0x80010106);
                 
-                bool isStaThreadingIssue = e.HResult == RPC_E_WRONG_THREAD || 
-                                          e.HResult == CO_E_NOTINITIALIZED || 
-                                          e.HResult == RPC_E_CHANGED_MODE ||
-                                          // Fallback to string check for English error messages (may not work in localized Windows)
-                                          (e.Message != null && e.Message.Contains("STA"));
+                bool isStaThreadingIssue = (e is COMException && 
+                                           (e.HResult == RPC_E_WRONG_THREAD || 
+                                            e.HResult == CO_E_NOTINITIALIZED || 
+                                            e.HResult == RPC_E_CHANGED_MODE)) ||
+                                           // Fallback for non-COM exceptions with STA in message (English Windows only)
+                                           (e.Message != null && e.Message.Contains("STA"));
                 
                 if (isStaThreadingIssue && File.Exists(filePath))
                 {
