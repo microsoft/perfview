@@ -919,7 +919,7 @@ namespace Microsoft.Diagnostics.Symbols
                         m_log.WriteLine("FindSymbolFilePath: No PDB Guid = Guid.Empty provided, assuming an unsafe PDB match for {0}", filePath);
                         return true;
                     }
-                    ManagedSymbolModule module = OpenSymbolFile(filePath);
+                    ManagedSymbolModule module = OpenSymbolFileWithStaFallback(filePath);
                     if ((module.PdbGuid == pdbGuid) && (module.PdbAge == pdbAge))
                     {
                         return true;
@@ -937,45 +937,89 @@ namespace Microsoft.Diagnostics.Symbols
             }
             catch (Exception e)
             {
-                // Check if this is an STA threading issue when trying to open a Windows PDB with DIA.
-                // DIA COM objects require STA threading. Common HResults for threading issues:
-                // - RPC_E_WRONG_THREAD (0x8001010E): The application called an interface that was marshalled for a different thread
-                // - CO_E_NOTINITIALIZED (0x800401F0): CoInitialize has not been called
-                // - RPC_E_CHANGED_MODE (0x80010106): Cannot change thread mode after it is set
-                const int RPC_E_WRONG_THREAD = unchecked((int)0x8001010E);
-                const int CO_E_NOTINITIALIZED = unchecked((int)0x800401F0);
-                const int RPC_E_CHANGED_MODE = unchecked((int)0x80010106);
-                
-                bool isStaThreadingIssue = (e is COMException && 
-                                           (e.HResult == RPC_E_WRONG_THREAD || 
-                                            e.HResult == CO_E_NOTINITIALIZED || 
-                                            e.HResult == RPC_E_CHANGED_MODE)) ||
-                                           // Fallback for non-COM exceptions with STA in message (English Windows only)
-                                           (e.Message != null && e.Message.Contains("STA"));
-                
-                if (isStaThreadingIssue && File.Exists(filePath))
-                {
-                    // If security check is required, ensure it passed before accepting the file
-                    if (checkSecurity && !CheckSecurity(filePath))
-                    {
-                        m_log.WriteLine("FindSymbolFilePath: Aborting pdbMatch of {0}, security check failed", filePath);
-                        return false;
-                    }
-                    
-                    // SECURITY NOTE: Accepting a PDB without GUID/Age verification is a security tradeoff.
-                    // The alternative is to fail symbol loading entirely when the calling thread is not STA.
-                    // This is deemed acceptable because:
-                    // 1. The file location has passed security checks (if required)
-                    // 2. The file is typically in a trusted location (next to the DLL)
-                    // 3. The user explicitly requested symbol loading via the symbol path
-                    // 4. The GUID/Age check is an integrity check, not an authentication/authorization check
-                    m_log.WriteLine("FindSymbolFilePath: Warning - Cannot verify PDB GUID/Age for {0} due to STA threading requirement: {1}", filePath, e.Message);
-                    m_log.WriteLine("FindSymbolFilePath: Accepting PDB match based on file existence and location since GUID verification failed due to threading.");
-                    return true;
-                }
                 m_log.WriteLine("FindSymbolFilePath: Aborting pdbMatch of {0} Exception thrown: {1}", filePath, e.Message);
             }
             return false;
+        }
+
+        /// <summary>
+        /// Opens a symbol file, automatically handling STA thread requirements for Windows PDBs.
+        /// If the current thread is not STA and opening fails with a COM threading error,
+        /// this method will retry the operation on a dedicated STA thread.
+        /// </summary>
+        private ManagedSymbolModule OpenSymbolFileWithStaFallback(string pdbFilePath)
+        {
+            // Check if current thread is STA
+            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
+            {
+                // Already on STA thread, just call directly
+                return OpenSymbolFile(pdbFilePath);
+            }
+
+            // Not on STA thread. Try direct call first (portable PDBs don't need STA)
+            try
+            {
+                return OpenSymbolFile(pdbFilePath);
+            }
+            catch (COMException e) when (IsStaThreadingError(e))
+            {
+                // COM threading error - need to retry on STA thread
+                m_log.WriteLine("FindSymbolFilePath: COM threading error detected, retrying on STA thread for {0}", pdbFilePath);
+                return OpenSymbolFileOnStaThread(pdbFilePath);
+            }
+            catch (InvalidOperationException e) when (e.Message != null && e.Message.Contains("STA"))
+            {
+                // STA threading error from .NET - need to retry on STA thread
+                m_log.WriteLine("FindSymbolFilePath: STA threading error detected, retrying on STA thread for {0}", pdbFilePath);
+                return OpenSymbolFileOnStaThread(pdbFilePath);
+            }
+        }
+
+        /// <summary>
+        /// Helper to check if a COMException is due to threading issues.
+        /// </summary>
+        private static bool IsStaThreadingError(COMException e)
+        {
+            const int RPC_E_WRONG_THREAD = unchecked((int)0x8001010E);
+            const int CO_E_NOTINITIALIZED = unchecked((int)0x800401F0);
+            const int RPC_E_CHANGED_MODE = unchecked((int)0x80010106);
+            
+            return e.HResult == RPC_E_WRONG_THREAD ||
+                   e.HResult == CO_E_NOTINITIALIZED ||
+                   e.HResult == RPC_E_CHANGED_MODE;
+        }
+
+        /// <summary>
+        /// Opens a symbol file on a dedicated STA thread.
+        /// Windows PDBs require COM/DIA which needs STA threading.
+        /// </summary>
+        private ManagedSymbolModule OpenSymbolFileOnStaThread(string pdbFilePath)
+        {
+            ManagedSymbolModule result = null;
+            Exception thrownException = null;
+            
+            var staThread = new Thread(() =>
+            {
+                try
+                {
+                    result = OpenSymbolFile(pdbFilePath);
+                }
+                catch (Exception e)
+                {
+                    thrownException = e;
+                }
+            });
+            
+            staThread.SetApartmentState(ApartmentState.STA);
+            staThread.Start();
+            staThread.Join();
+            
+            if (thrownException != null)
+            {
+                throw thrownException;
+            }
+            
+            return result;
         }
 
         /// <summary>
