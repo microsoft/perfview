@@ -904,15 +904,22 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         private bool PdbMatches(string filePath, Guid pdbGuid, int pdbAge, bool checkSecurity = true)
         {
+            bool fileExists = false;
+            bool securityCheckPassed = false;
+            
             try
             {
                 if (File.Exists(filePath))
                 {
+                    fileExists = true;
+                    
                     if (checkSecurity && !CheckSecurity(filePath))
                     {
                         m_log.WriteLine("FindSymbolFilePath: Aborting, security check failed on {0}", filePath);
                         return false;
                     }
+                    
+                    securityCheckPassed = true;
 
                     if (pdbGuid == Guid.Empty)
                     {
@@ -937,6 +944,15 @@ namespace Microsoft.Diagnostics.Symbols
             }
             catch (Exception e)
             {
+                // Check if this is an STA threading issue when trying to open a Windows PDB with DIA
+                // DIA COM objects require STA threading. If we can't verify the GUID/Age due to threading,
+                // we accept the file match if it exists and passes security checks (if applicable).
+                if (e.Message != null && e.Message.Contains("STA") && fileExists && securityCheckPassed)
+                {
+                    m_log.WriteLine("FindSymbolFilePath: Warning - Cannot verify PDB GUID/Age for {0} due to STA threading requirement: {1}", filePath, e.Message);
+                    m_log.WriteLine("FindSymbolFilePath: Accepting PDB match based on file existence and location since GUID verification failed due to threading.");
+                    return true;
+                }
                 m_log.WriteLine("FindSymbolFilePath: Aborting pdbMatch of {0} Exception thrown: {1}", filePath, e.Message);
             }
             return false;
