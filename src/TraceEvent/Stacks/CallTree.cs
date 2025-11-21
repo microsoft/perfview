@@ -450,15 +450,18 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 return;
             }
 
+            // Use the canonical ID stored in the node for grouping in the ByID view
+            var canonicalID = treeNode.m_canonicalID;
+
             CallTreeNodeBase byIDNode;
-            if (!m_sumByID.TryGetValue((int)treeNode.m_id, out byIDNode))
+            if (!m_sumByID.TryGetValue((int)canonicalID, out byIDNode))
             {
-                byIDNode = new CallTreeNodeBase(treeNode.Name, treeNode.m_id, this);
+                byIDNode = new CallTreeNodeBase(treeNode.Name, canonicalID, this);
                 byIDNode.m_isByIdNode = true;
-                m_sumByID.Add((int)treeNode.m_id, byIDNode);
+                m_sumByID.Add((int)canonicalID, byIDNode);
             }
 
-            bool newOnStack = !callersOnStack.ContainsKey((int)treeNode.m_id);
+            bool newOnStack = !callersOnStack.ContainsKey((int)canonicalID);
             // Add in the tree treeNode's contribution
             byIDNode.CombineByIdSamples(treeNode, newOnStack);
 
@@ -470,7 +473,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 if (newOnStack)
                 {
-                    callersOnStack.Add((int)treeNode.m_id, null);
+                    callersOnStack.Add((int)canonicalID, null);
                 }
 
                 foreach (var child in treeNode.m_callees)
@@ -480,7 +483,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
                 if (newOnStack)
                 {
-                    callersOnStack.Remove((int)treeNode.m_id);
+                    callersOnStack.Remove((int)canonicalID);
                 }
             }
         }
@@ -976,6 +979,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
 
         internal StackSourceFrameIndex m_id;
+        internal StackSourceFrameIndex m_canonicalID;  // For grouping in ByID view
         internal string m_name;
         internal CallTree m_callTree;                                   // The call tree this node belongs to. 
         internal float m_inclusiveMetric;
@@ -1484,7 +1488,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                             });
 
                         // Finally look up the child quickly using the table
-                        if (calleeLookup.TryGetValue(canonicalFrameID, out callee))
+                        if (calleeLookup.TryGetValue(frameID, out callee))
                         {
                             Debug.Assert(callee.Caller == this);
                             return callee;
@@ -1496,7 +1500,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                         {
                             --i;
                             callee = m_callees[i];
-                            if (callee != null && callee.m_id == canonicalFrameID)
+                            if (callee != null && callee.m_id == frameID)
                             {
                                 return callee;
                             }
@@ -1507,10 +1511,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 // No luck, add a new node. 
                 if (frameName == null)
                 {
-                    frameName = m_callTree.m_SampleInfo.GetFrameName(canonicalFrameID, false);
+                    frameName = m_callTree.m_SampleInfo.GetFrameName(frameID, false);
                 }
 
-                callee = new CallTreeNode(frameName, canonicalFrameID, this, m_callTree);
+                callee = new CallTreeNode(frameName, frameID, this, m_callTree);
+                callee.m_canonicalID = canonicalFrameID;  // Store for later use in ByID grouping
 
                 if (m_callees == null)
                 {
