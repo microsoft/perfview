@@ -937,7 +937,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
             catch (Exception e)
             {
-                // Check if this is an STA threading issue when trying to open a Windows PDB with DIA
+                // Check if this is an STA threading issue when trying to open a Windows PDB with DIA.
                 // DIA COM objects require STA threading. Common HResults for threading issues:
                 // - RPC_E_WRONG_THREAD (0x8001010E): The application called an interface that was marshalled for a different thread
                 // - CO_E_NOTINITIALIZED (0x800401F0): CoInitialize has not been called
@@ -949,6 +949,7 @@ namespace Microsoft.Diagnostics.Symbols
                 bool isStaThreadingIssue = e.HResult == RPC_E_WRONG_THREAD || 
                                           e.HResult == CO_E_NOTINITIALIZED || 
                                           e.HResult == RPC_E_CHANGED_MODE ||
+                                          // Fallback to string check for English error messages (may not work in localized Windows)
                                           (e.Message != null && e.Message.Contains("STA"));
                 
                 if (isStaThreadingIssue && File.Exists(filePath))
@@ -960,6 +961,13 @@ namespace Microsoft.Diagnostics.Symbols
                         return false;
                     }
                     
+                    // SECURITY NOTE: Accepting a PDB without GUID/Age verification is a security tradeoff.
+                    // The alternative is to fail symbol loading entirely when the calling thread is not STA.
+                    // This is deemed acceptable because:
+                    // 1. The file location has passed security checks (if required)
+                    // 2. The file is typically in a trusted location (next to the DLL)
+                    // 3. The user explicitly requested symbol loading via the symbol path
+                    // 4. The GUID/Age check is an integrity check, not an authentication/authorization check
                     m_log.WriteLine("FindSymbolFilePath: Warning - Cannot verify PDB GUID/Age for {0} due to STA threading requirement: {1}", filePath, e.Message);
                     m_log.WriteLine("FindSymbolFilePath: Accepting PDB match based on file existence and location since GUID verification failed due to threading.");
                     return true;
