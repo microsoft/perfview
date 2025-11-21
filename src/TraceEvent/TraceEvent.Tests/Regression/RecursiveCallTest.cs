@@ -18,10 +18,7 @@ namespace TraceEventTests
             
             try
             {
-                // Create a minimal ETL file using TraceEventSession (skip for now, use existing trace)
-                // For this test, we'll create a MutableTraceEventStackSource without a real trace log
-                
-                // Actually, let's use a simpler approach - directly test the interning and CallTree behavior
+                // Create a simple stack source for testing
                 var source = new SimpleStackSource();
                 
                 // Create two frames with the same name "X"
@@ -62,6 +59,30 @@ namespace TraceEventTests
                 
                 var secondX = firstX.Callees.First();
                 Assert.Equal("X", secondX.Name);
+                
+                // Now test the CallerCalleeNode for "X"
+                var callerCalleeNode = new CallerCalleeNode("X", callTree);
+                
+                // The CallerCalleeNode should show "X" as both a caller and callee
+                Assert.NotNull(callerCalleeNode.Callers);
+                Assert.NotNull(callerCalleeNode.Callees);
+                
+                // Should have ROOT as a caller
+                Assert.Contains(callerCalleeNode.Callers, c => c.Name == "ROOT");
+                
+                // Should have X as a caller (recursive call from X to X)
+                var xCaller = callerCalleeNode.Callers.FirstOrDefault(c => c.Name == "X");
+                Assert.NotNull(xCaller);
+                // The recursive caller should have non-zero metrics
+                Assert.True(xCaller.InclusiveMetric > 0, $"Recursive caller 'X' has zero inclusive metric");
+                Assert.False(float.IsNaN(xCaller.InclusiveMetric), "Recursive caller 'X' has NaN inclusive metric");
+                
+                // Should have X as a callee (recursive call from X to X)
+                var xCallee = callerCalleeNode.Callees.FirstOrDefault(c => c.Name == "X");
+                Assert.NotNull(xCallee);
+                // The recursive callee should have non-zero metrics - THIS IS THE BUG
+                Assert.True(xCallee.InclusiveMetric > 0, $"Recursive callee 'X' has zero inclusive metric (expected > 0, got {xCallee.InclusiveMetric})");
+                Assert.False(float.IsNaN(xCallee.InclusiveMetric), "Recursive callee 'X' has NaN inclusive metric");
             }
             finally
             {
