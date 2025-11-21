@@ -997,16 +997,24 @@ namespace Microsoft.Diagnostics.Symbols
         {
             ManagedSymbolModule result = null;
             Exception thrownException = null;
+            var syncLock = new object();
             
             var staThread = new Thread(() =>
             {
                 try
                 {
-                    result = OpenSymbolFile(pdbFilePath);
+                    var module = OpenSymbolFile(pdbFilePath);
+                    lock (syncLock)
+                    {
+                        result = module;
+                    }
                 }
                 catch (Exception e)
                 {
-                    thrownException = e;
+                    lock (syncLock)
+                    {
+                        thrownException = e;
+                    }
                 }
             });
             
@@ -1014,9 +1022,13 @@ namespace Microsoft.Diagnostics.Symbols
             staThread.Start();
             staThread.Join();
             
-            if (thrownException != null)
+            lock (syncLock)
             {
-                throw thrownException;
+                if (thrownException != null)
+                {
+                    // Preserve the original exception and stack trace using ExceptionDispatchInfo
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(thrownException).Throw();
+                }
             }
             
             return result;
