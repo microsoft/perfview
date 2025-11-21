@@ -9,6 +9,12 @@ namespace TraceEventTests
 {
     public class RecursiveCallTest
     {
+        /// <summary>
+        /// Regression test for recursive function calls showing incorrect metrics.
+        /// Verifies that when a function X calls itself recursively (X -> X), 
+        /// both the CallTree structure and CallerCalleeNode correctly represent
+        /// the recursion with non-zero metrics.
+        /// </summary>
         [Fact]
         public void RecursiveCallsShowInCallTree()
         {
@@ -74,11 +80,16 @@ namespace TraceEventTests
             // Should have X as a callee (recursive call from X to X)
             var xCallee = callerCalleeNode.Callees.FirstOrDefault(c => c.Name == "X");
             Assert.NotNull(xCallee);
-            // The recursive callee should have non-zero metrics - THIS IS THE BUG
+            // Verify recursive callee has non-zero metrics (issue showed NaN/0.0)
             Assert.True(xCallee.InclusiveMetric > 0, $"Recursive callee 'X' has zero inclusive metric (expected > 0, got {xCallee.InclusiveMetric})");
             Assert.False(float.IsNaN(xCallee.InclusiveMetric), "Recursive callee 'X' has NaN inclusive metric");
         }
         
+        /// <summary>
+        /// Tests three levels of recursion (X -> X -> X) to verify correct metric weighting.
+        /// With deeper recursion, the weighting algorithm should properly split metrics:
+        /// recursionCount=1 gets weight 1.0, recursionCount=2 gets weight 0.5, recursionCount=3 gets weight 0.33, etc.
+        /// </summary>
         [Fact]
         public void ThreeLevelRecursiveCallsShowCorrectMetrics()
         {
@@ -132,7 +143,11 @@ namespace TraceEventTests
             Assert.True(xCallee.InclusiveMetric > 0, $"Recursive callee 'X' should have positive metric, got {xCallee.InclusiveMetric}");
         }
         
-        // Simple StackSource implementation for testing
+        /// <summary>
+        /// Simple StackSource implementation for testing recursive call scenarios.
+        /// This minimal implementation allows creating call stacks with interned frames
+        /// without requiring a full TraceLog or ETL file.
+        /// </summary>
         private class SimpleStackSource : StackSource
         {
             private StackSourceInterner m_interner;
