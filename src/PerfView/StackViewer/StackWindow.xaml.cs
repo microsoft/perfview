@@ -2770,11 +2770,11 @@ namespace PerfView
                         RedrawFlameGraph();
 
                     FlameGraph.Export(FlameGraphCanvas, saveDialog.FileName);
-                    StatusBar.Log("Saved flame graph to " + saveDialog.FileName);
+                    StatusBar.Log($"Saved flame graph to {saveDialog.FileName}");
                 }
                 catch (InvalidOperationException ex)
                 {
-                    StatusBar.LogError("Failed to save flame graph: " + ex.Message);
+                    StatusBar.LogError($"Failed to save flame graph: {ex.Message}");
                 }
             }
         }

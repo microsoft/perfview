@@ -871,7 +871,7 @@ namespace PerfViewTests.StackViewer
             canvas.Measure(new Size(0, 0));
             canvas.Arrange(new Rect(0, 0, 0, 0));
 
-            var tempFile = System.IO.Path.GetTempFileName();
+            var tempFile = Path.GetTempFileName();
             try
             {
                 // Attempt to export should throw InvalidOperationException with a meaningful message
