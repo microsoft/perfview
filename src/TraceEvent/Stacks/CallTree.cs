@@ -979,7 +979,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
 
         internal StackSourceFrameIndex m_id;
-        internal StackSourceFrameIndex m_canonicalID;  // For grouping in ByID view
+        internal StackSourceFrameIndex m_canonicalID;  // Used for grouping frames with identical names in the ByID view, while m_id preserves unique node identity for tree structure
         internal string m_name;
         internal CallTree m_callTree;                                   // The call tree this node belongs to. 
         internal float m_inclusiveMetric;
