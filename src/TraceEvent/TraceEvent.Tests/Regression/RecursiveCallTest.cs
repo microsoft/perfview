@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
+using FastSerialization;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.EventPipe;
@@ -149,37 +149,47 @@ namespace TraceEventTests
         
         /// <summary>
         /// Regression test using MutableTraceEventStackSource to reproduce the exact issue scenario.
-        /// This test uses an existing test nettrace file, converts it to a TraceLog, and then uses
+        /// This test generates an in-memory nettrace file, converts it to a TraceLog in memory, and then uses
         /// MutableTraceEventStackSource to add recursive frames, matching the original issue repro code.
         /// </summary>
         [Fact]
         public void RecursiveCallsWithMutableTraceEventStackSource()
         {
-            // Use an existing test nettrace file
-            string testDataDir = Path.Combine(
-                Path.GetDirectoryName(typeof(RecursiveCallTest).Assembly.Location),
-                "..", "..", "..", "inputs");
-            string zipFile = Path.Combine(testDataDir, "eventpipe-dotnetcore6.0-win-x64-executioncheckpoints.nettrace.zip");
+            // Generate a minimal in-memory nettrace file with basic metadata
+            var writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
             
-            // Test data files should always be present
-            Assert.True(File.Exists(zipFile), $"Test data file not found: {zipFile}");
+            // Add minimal metadata to make the file valid for TraceLog processing
+            writer.WriteMetadataBlock(
+                new EventMetadata(1, "Microsoft-Windows-DotNETRuntime", "EventSource", 0));
             
-            string unzippedFile = Path.Combine(Path.GetTempPath(), $"test_recursive_{Guid.NewGuid()}.nettrace");
-            string tempEtlxFile = null;
-            
-            try
+            // Add thread block to define thread index 1
+            writer.WriteThreadBlock(w =>
             {
-                // Extract the nettrace file
-                using (var archive = ZipFile.OpenRead(zipFile))
-                {
-                    var entry = archive.Entries.First(e => e.Name.EndsWith(".nettrace"));
-                    entry.ExtractToFile(unzippedFile, true);
-                }
-                
-                // Create TraceLog from nettrace
-                tempEtlxFile = TraceLog.CreateFromEventPipeDataFile(unzippedFile, null, new TraceLogOptions() { ContinueOnError = true });
-                using (var traceLog = new TraceLog(tempEtlxFile))
-                {
+                w.WriteThreadEntry(1, 0, 0);
+            });
+            
+            // Add a minimal event block
+            writer.WriteEventBlock(w =>
+            {
+                // Write a simple event using thread index 1
+                w.WriteEventBlob(1, 1, 1, new byte[0]);
+            });
+            
+            writer.WriteEndBlock();
+            
+            // Convert nettrace to EventPipeEventSource
+            MemoryStream nettraceStream = new MemoryStream(writer.ToArray());
+            TraceEventDispatcher eventSource = new EventPipeEventSource(nettraceStream);
+            
+            // Convert to in-memory ETLX
+            MemoryStream etlxStream = new MemoryStream();
+            TraceLog.CreateFromEventPipeEventSources(eventSource, new IOStreamStreamWriter(etlxStream, SerializationSettings.Default, leaveOpen: true), null);
+            etlxStream.Position = 0;
+            
+            // Create TraceLog from in-memory ETLX
+            using (var traceLog = new TraceLog(etlxStream))
+            {
                     // Create MutableTraceEventStackSource and reproduce the exact issue scenario
                     var stackSource = new MutableTraceEventStackSource(traceLog);
                     
@@ -221,15 +231,6 @@ namespace TraceEventTests
                         $"Recursive callee 'X' should have positive metric, got {xCallee.InclusiveMetric}");
                     Assert.False(float.IsNaN(xCallee.InclusiveMetric), 
                         "Recursive callee 'X' has NaN inclusive metric");
-                }
-            }
-            finally
-            {
-                // Clean up temp files
-                if (File.Exists(unzippedFile))
-                    File.Delete(unzippedFile);
-                if (tempEtlxFile != null && File.Exists(tempEtlxFile))
-                    File.Delete(tempEtlxFile);
             }
         }
         
