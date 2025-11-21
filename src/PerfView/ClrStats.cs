@@ -16,20 +16,41 @@ namespace Stats
         {
             if (!justBody)
             {
-                writer.WriteLine("<html>");
-                writer.WriteLine("<head>");
-                writer.WriteLine("<title>{0}</title>", Path.GetFileNameWithoutExtension(fileName));
-                writer.WriteLine("<meta charset=\"UTF-8\"/>");
-                writer.WriteLine("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>");
-                writer.WriteLine("</head>");
-                writer.WriteLine("<body>");
+                writer.WriteLine($$"""
+                    <html>
+                      <head>
+                        <title>{{Path.GetFileNameWithoutExtension(fileName)}}</title>
+                        <meta charset="UTF-8"/>
+                        <style>
+                          :root[data-theme="light"] {
+                            color-scheme: light;
+                            --error-color: #B3261E;   /* dark red for light mode (accessible on white) */
+                            --hover-color: #eeeeee;   /* light grey for hover on light bg */
+                          }
+                    
+                          :root[data-theme="dark"] {
+                            color-scheme: dark;
+                            --error-color: #ffb4ab;   /* soft red/pink for dark mode (better on dark) */
+                            --hover-color: #333333;   /* dark grey for hover on dark bg */
+                          }
+
+                          .error {
+                            color: var(--error-color);
+                            font-weight: bold;
+                          }
+                        </style>
+                      </head>
+                      <body>
+                        <H2>{{title}}</H2>
+                    """);
             }
-            writer.WriteLine("<H2>{0}</H2>", title);
+
             List<TraceProcess> sortedProcs = perProc;
             if (type == ReportType.JIT)
             {
                 sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return -p1.LoadedDotNetRuntime().JIT.Stats().TotalCpuTimeMSec.CompareTo(p2.LoadedDotNetRuntime().JIT.Stats().TotalCpuTimeMSec); });
             }
+
             else if (type == ReportType.GC)
             {
                 sortedProcs.Sort((TraceProcess p1, TraceProcess p2) => { return -p1.LoadedDotNetRuntime().GC.Stats().MaxSizePeakMB.CompareTo(p2.LoadedDotNetRuntime().GC.Stats().MaxSizePeakMB); });
@@ -110,8 +131,15 @@ namespace Stats
             writer.WriteLine("<BR/><BR/><BR/><BR/><BR/><BR/><BR/><BR/><BR/><BR/>");
             if (!justBody)
             {
-                writer.WriteLine("</body>");
-                writer.WriteLine("</html>");
+                writer.WriteLine("""
+                    <script>
+                      // Set theme based on user preference
+                      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+                    </script>
+                  </body>
+                </html>
+                """);
             }
         }
 

@@ -75,7 +75,14 @@ namespace PerfView
                 options.AddOutputStream(log);
             }
 
-            var commandLine = string.Format("\"{0}\" /ForceGC {1}", heapDumpExe, processID.ToString());
+            // Add SymbolsAuth argument if specified
+            var symbolsAuthArg = "";
+            if (App.CommandLineArgs.SymbolsAuth != SymbolsAuthenticationType.Interactive)
+            {
+                symbolsAuthArg = $" /SymbolsAuth:{App.CommandLineArgs.SymbolsAuth.ToString().Replace(" ", "")}";
+            }
+
+            var commandLine = string.Format("\"{0}\"{1} /ForceGC {2}", heapDumpExe, symbolsAuthArg, processID.ToString());
             log.WriteLine("Exec: {0}", commandLine);
             var cmd = Command.Run(commandLine, options);
             if (cmd.ExitCode != 0)
@@ -168,7 +175,14 @@ namespace PerfView
             options.AddEnvironmentVariable("_NT_SYMBOL_PATH", App.SymbolPath);
             log.WriteLine("set _NT_SYMBOL_PATH={0}", App.SymbolPath);
 
-            var commandLine = string.Format("\"{0}\" {1} \"{2}\" \"{3}\"", heapDumpExe, qualifiers, inputArg, outputFile);
+            // Add SymbolsAuth argument if specified
+            var symbolsAuthArg = "";
+            if (App.CommandLineArgs.SymbolsAuth != SymbolsAuthenticationType.Interactive)
+            {
+                symbolsAuthArg = $" /SymbolsAuth:{App.CommandLineArgs.SymbolsAuth.ToString().Replace(" ", "")}";
+            }
+
+            var commandLine = string.Format("\"{0}\"{1} {2} \"{3}\" \"{4}\"", heapDumpExe, symbolsAuthArg, qualifiers, inputArg, outputFile);
             log.WriteLine("Exec: {0}", commandLine);
             PerfViewLogger.Log.TriggerHeapSnapshot(outputFile, inputArg, qualifiers);
             var cmd = Command.Run(commandLine, options);

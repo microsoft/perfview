@@ -16,11 +16,9 @@ using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Navigation;
 using Utilities;
 
 namespace PerfView
@@ -91,20 +89,35 @@ namespace PerfView
             {
                 if (NumWindowsNeedingSaving != 0)
                 {
-                    var result = MessageBox.Show(this, "You have unsaved notes in some Stack Views.\r\nDo you wish to exit anyway?", "Unsaved Data", MessageBoxButton.OKCancel);
+                    var result = XamlMessageBox.Show(
+                        this,
+                        """
+                        You have unsaved notes in some Stack Views.
+                        Do you wish to exit anyway?
+                        """,
+                        "Unsaved Data",
+                        MessageBoxButton.OKCancel);
+
                     if (result == MessageBoxResult.Cancel)
                     {
                         e.Cancel = true;
                         return;
                     }
                 }
+
                 if (StatusBar.IsWorking)
                 {
                     if (App.CommandProcessor.StopInProgress)
                     {
-                        var result = MessageBox.Show(this,
-                            "Closing PerfView while the trace is being processed will result in a trace that is unusable if copied off of this machine.\r\nWould you still like to close PerfView?",
-                            "Collecting data in progress", MessageBoxButton.YesNo);
+                        var result = XamlMessageBox.Show(
+                            this,
+                            """
+                            Closing PerfView while the trace is being processed will result in a trace that is unusable if copied off of this machine.
+                            Would you still like to close PerfView?
+                            """,
+                            "Collecting data in progress",
+                            MessageBoxButton.YesNo);
+
                         if (result == MessageBoxResult.No)
                         {
                             e.Cancel = true;
@@ -700,8 +713,12 @@ namespace PerfView
 
         private void DoAbout(object sender, RoutedEventArgs e)
         {
-            string versionString = "PerfView Version " + AppInfo.VersionNumber + " \r\nBuildDate: " + AppInfo.BuildDate;
-            MessageBox.Show(versionString, versionString);
+            string versionString = $"""
+                PerfView Version {AppInfo.VersionNumber}
+                BuildDate: {AppInfo.BuildDate}
+                """;
+
+            XamlMessageBox.Show(versionString, versionString);
         }
 
         // Gui actions in the TreeView pane
@@ -826,8 +843,11 @@ namespace PerfView
                 throw new ApplicationException("No file selected.");
             }
 
-            var response = MessageBox.Show(this,
-                "Delete " + Path.GetFileName(selectedFile.FilePath) + "?", "Delete Confirmation", MessageBoxButton.OKCancel);
+            var response = XamlMessageBox.Show(
+                this,
+                $"Delete {Path.GetFileName(selectedFile.FilePath)}?",
+                "Delete Confirmation",
+                MessageBoxButton.OKCancel);
 
             // TODO does not work with the unmerged files
             if (response == MessageBoxResult.OK)
@@ -1297,9 +1317,14 @@ namespace PerfView
                     m_AllowNavigateToWeb = allowNavigateToWeb == "true";
                     if (!m_AllowNavigateToWeb)
                     {
-                        var result = MessageBox.Show(
-                            "PerfView is about to open content on the web.\r\nIs this OK?",
-                            "Navigate to Web", MessageBoxButton.YesNo);
+                        var result = XamlMessageBox.Show(
+                            """
+                            PerfView is about to open content on the web.
+                            Is this OK?
+                            """,
+                            "Navigate to Web",
+                            MessageBoxButton.YesNo);
+
                         if (result == MessageBoxResult.Yes)
                         {
                             m_AllowNavigateToWeb = true;
@@ -1424,7 +1449,7 @@ namespace PerfView
             Theme theme = ((ThemeViewModel.SetThemeCommand)e.Command).Theme;
             ThemeViewModel.SetTheme(theme);
 
-            MessageBox.Show("Restart PerfView to apply theme changes.");
+            XamlMessageBox.Show("Restart PerfView to apply theme changes.");
 
             e.Handled = true;
         }

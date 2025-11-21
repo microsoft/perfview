@@ -201,6 +201,15 @@ namespace PerfView.Dialogs
         }
         private void LevelSelected(object sender, SelectionChangedEventArgs e)
         {
+            // Ensure at least one level is always selected
+            if (LevelListBox.SelectedItem == null)
+            {
+                // If nothing is selected, reselect the previous level or default to "Verbose"
+                string levelToSelect = !string.IsNullOrEmpty(m_level) ? m_level : "Verbose";
+                LevelListBox.SelectedItem = levelToSelect;
+                return;
+            }
+            
             m_level = LevelListBox.SelectedItem.ToString();
             updateDisplays();
         }

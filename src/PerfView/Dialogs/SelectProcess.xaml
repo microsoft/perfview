@@ -11,6 +11,8 @@
     <Window.Resources>
         <Style x:Key="ColumnHeaderStyle" TargetType="{x:Type WPFToolKit:DataGridColumnHeader}">
             <Setter Property="Focusable" Value="True" />
+            <Setter Property="Background" Value="{DynamicResource ControlDefaultBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource ControlText}" />
         </Style>
     </Window.Resources>
     <DockPanel>

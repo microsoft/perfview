@@ -27,7 +27,6 @@
     <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);SetNuspecProperties</GenerateNuspecDependsOn>
     <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">true</IsAotCompatible>
     <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
-    <LangVersion>9.0</LangVersion>
     <!-- Baseline analyzer warnings from NET 9.0 -->
     <NoWarn>$(NoWarn);CA2014;CS8524</NoWarn>
   </PropertyGroup>

@@ -30,8 +30,8 @@ them to be referenced by rows in other tables. There are 5 different tables in t
 In order to fully resolve all the data for one event, the reader needs to read an event row, then resolve the references to the metadata, stack, thread, and label list rows. When an event row references
 a row in another table, the referenced row must have already appeared in a block earlier in the file. The reader just needs to cache the metadata, stack, thread, and label list rows as it encounters them
 reading through the file sequentially. Also to control the size of the caches the reader maintains, the format includes some blocks that help the reader manage the cache. A 'SequencePoint' block indicates
-that that the reader can safely discard all the stacks and label lists cached so far. There is also a 'RemoveThread' block that indicates specific threads are no longer active and can be removed from the cache.
-Metadata is never flushed but the expectation is that the number of metadata rows is small enough that caching them all is not a problem.
+that that the reader can safely discard all the stacks and label lists cached so far. Optional flags on the SequencePoint can be used to flush thread and metadata caches as well. There is also a 'RemoveThread' block
+that indicates specific threads are no longer active and can be removed from the cache.
 
 ## Primitives and endianness
 
@@ -282,7 +282,7 @@ Type format is:
 enum TypeCode
 {
   Object = 1,                        // Concatenate together all of the encoded fields
-  Boolean = 3,                       // A 4-byte LE integer with value 0=false and 1=true.  
+  Boolean32 = 3,                     // A 4-byte LE integer with value 0=false and 1=true.  
   UTF16CodeUnit = 4,                 // a 2-byte UTF16 code unit (Often this is a character, but some characters need more than one code unit to encode)
   SByte = 5,                         // 1-byte signed integer
   Byte = 6,                          // 1-byte unsigned integer
@@ -306,9 +306,10 @@ enum TypeCode
   RelLoc = 24,                       // New in V6: An array at a relative location within the payload. 
                                      // Format: 4 bytes where the high 16 bits are size and low 16 bits are position relative to after this field.
                                      // Size is measured in bytes, not elements. The element type must be fixed sized.
-  DataLoc = 25                       // New in V6: An absolute data location within the payload.
+  DataLoc = 25,                      // New in V6: An absolute data location within the payload.
                                      // Format: 4 bytes where the high 16 bits are size and low 16 bits are position relative to start of the event parameters buffer.
                                      // Size is measured in bytes, not elements. The element type must be fixed sized.
+  Boolean8 = 26                      // New in V6: A 1-byte boolean where 0=false and 1=true.
 }
 ```
 
@@ -392,6 +393,7 @@ A SequencePointBlock payload is encoded:
   - SequenceNumber - varuint32
 
 If Flags & 1 == 1 then the sequence point also flushes the thread cache. Logically the flush occurs after doing any thread sequence number checks so the reader can still detect dropped events.
+If Flags & 2 == 2 then the sequence point also flushes the metadata cache.
 
 ## EndOfStreamBlock
 
@@ -446,7 +448,7 @@ The LabelList block, BlockHeader.Kind=8, contains a set of key-value pairs that 
 
 The content of a LabelListBlock is:
 
-- firstIndex - uint32  // The index of the first entry in the block. Each successive entry is implicitly indexed by the previous entry's index + 1.
+- firstIndex - uint32  // The index of the first entry in the block. Each successive entry is implicitly indexed by the previous entry's index + 1. firstIndex must be >= 1.
 - count - uint32       // The number of entries in the block.
 - Concatenated sequence of label_lists, each of which is:
   - one or more Label entries each of which is:
@@ -465,11 +467,24 @@ The content of a LabelListBlock is:
     - if(Kind & 0x7F == 6)
       - Key - string
       - Value - varint64
+    - if(Kind & 0x7F == 7)
+      - OpCode - uint8
+    - if(Kind & 0x7F == 8)
+      - Keywords - uint64
+    - if(Kind & 0x7F == 9)
+      - Level - uint8
+    - if(Kind & 0x7F == 10)
+      - Version - uint8
 
 If the high bit of the Kind field is set that demarcates that this is the last label in a label list and the next label is part of the next list.
 
 Similar to StackBlock, references to a row in the LabelListBlock are only valid in the file after the LabelListBlock that defines it and before the next SequencePoint block.
 This prevents the reader from needing a lookup table that grows indefinitely with file length or requiring the reader to search the entire file to resolve a given label list index.
+
+An empty LabelList can't be explicitly encoded in the LabelListBlock, but implicitly the LabelList index 0 refers to an empty LabelList.
+
+The OpCode, Keywords, Level, and Version fields are considered to override any value found in the metadata for the event. The trace writer is free to provide these values in either metadata
+or in a LabelList, but for the common scenario where they are the same across all events of a given type metadata is probably the more space efficient option.
 
 ## Changes relative to older file format versions
 
@@ -546,7 +561,7 @@ Last, we are taking the opportunity to simplify the metadata encoding format. Th
 1. Metadata rows are no longer encoded with EventHeaders.
 2. Most of the metadata fields are now optional and the top-level format of a metadata row was redesigned.
 3. The 2nd copy of field information that was added by V2Params in version 5 has been removed. It only existed to support adding array support in a non-breaking way and now arrays are supported in the same FieldDescriptions as all the other types.
-4. New payload field types were added: VarInt, VarUInt, LengthPrefixedUTF16String, LengthPrefixedUTF8String
+4. New payload field types were added: VarInt, VarUInt, FixedLengthArray, UTF8CodeUnit, RelLoc, DataLoc, and Boolean8. The existing Boolean type was renamed to Boolean32 to avoid ambiguity. 
 5. Strings in the metadata are now UTF8 rather than UTF16
 
 #### Extended support for event labels
@@ -557,3 +572,7 @@ In particular OpenTelemetry has embraced the W3C TraceContext standard for distr
 
 1. Adds a new LabelListBlock to store key-value pairs that can be referenced by index within the EventHeader.
 2. Removes the ActivityId and RelatedActivityId fields from the EventHeader and replaces them with a LabelListIndex field. Activity ids can be stored within the LabelList.
+
+#### Support readers/writers operating with limited memory
+
+In V5 metadata ids were global across the entire trace which implies that readers and writers should maintain a dictionary that grows with the number of event types. Technically the writers could forget the ID assignments for older events and re-emit the same metadata under a new ID later but that makes the memory requirements even worse for readers who now have multiple IDs for the same metadata. In V6 the SequencePointBlock includes a flag that controls flushing the metadata cache so that writers can communicate to readers when it is safe to forget old IDs. 

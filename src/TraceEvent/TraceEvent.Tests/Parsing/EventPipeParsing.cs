@@ -980,7 +980,7 @@ namespace TraceEventTests
             writer.WriteHeaders();
             writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
                                           new MetadataParameter("Param1", MetadataTypeCode.Int16),
-                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean)),
+                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean32)),
                                       new EventMetadata(2, "TestProvider", "TestEvent2", 16),
                                       new EventMetadata(3, "TestProvider", "TestEvent3", 17));
             writer.WriteThreadBlock(w =>
@@ -1383,7 +1383,7 @@ namespace TraceEventTests
                                           new MetadataParameter("Param1", new ObjectMetadataType(
                                               new MetadataParameter("NestedParam1", MetadataTypeCode.Int32),
                                               new MetadataParameter("NestedParam2", MetadataTypeCode.Byte))),
-                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean)));
+                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean32)));
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, 0, 0);
@@ -1409,6 +1409,100 @@ namespace TraceEventTests
                 Assert.Equal(3, o["NestedParam1"]);
                 Assert.Equal((byte)19, o["NestedParam2"]);
                 Assert.Equal(true, e.PayloadValue(1));
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact]
+        public void ParseV6MetadataBoolean8Param()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                          new MetadataParameter("Param1", MetadataTypeCode.Boolean8),
+                                          new MetadataParameter("Param2", MetadataTypeCode.Boolean8)));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, new byte[] { 1, 0 });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal($"TestEvent1", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+                Assert.Equal(2, e.PayloadNames.Length);
+                Assert.Equal("Param1", e.PayloadNames[0]);
+                Assert.Equal("Param2", e.PayloadNames[1]);
+                Assert.Equal(true, e.PayloadValue(0));
+                Assert.Equal(false, e.PayloadValue(1));
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact]
+        public void ParseV6MetadataBoolean8ArrayAndObjectParam()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                          new MetadataParameter("Param1", new ArrayMetadataType(new MetadataType(MetadataTypeCode.Boolean8))),
+                                          new MetadataParameter("Param2", new ObjectMetadataType(
+                                              new MetadataParameter("HasValue", MetadataTypeCode.Boolean8),
+                                              new MetadataParameter("Value", new MetadataType(MetadataTypeCode.Int32))))));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                // Param1 = [true, false, true]
+                // Param2 = { NestedParam1 = false, NestedParam2 = [false, true] }
+                w.WriteEventBlob(1, 999, 1, p =>
+                {
+                    // Param1
+                    p.Write((ushort)3);
+                    p.Write((byte)1);
+                    p.Write((byte)0);
+                    p.Write((byte)1);
+                    // Param2
+                    p.Write((byte)1);
+                    p.Write((int)184);
+                });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal($"TestEvent1", e.EventName);
+                Assert.Equal("TestProvider", e.ProviderName);
+                Assert.Equal(2, e.PayloadNames.Length);
+                Assert.Equal("Param1", e.PayloadNames[0]);
+                Assert.Equal("Param2", e.PayloadNames[1]);
+                // Param1
+                Assert.Equal(typeof(bool[]), e.PayloadValue(0).GetType());
+                bool[] param1 = (bool[])e.PayloadValue(0);
+                Assert.Equal(3, param1.Length);
+                Assert.True(param1[0]);
+                Assert.False(param1[1]);
+                Assert.True(param1[2]);
+                // Param2
+                var o = (DynamicTraceEventData.StructValue)e.PayloadValue(1);
+                Assert.Equal(2, o.Count);
+                Assert.True((bool)o["HasValue"]);
+                Assert.Equal(184, (int)o["Value"]);
             };
             source.Process();
             Assert.Equal(1, eventCount);
@@ -1441,10 +1535,10 @@ namespace TraceEventTests
             source.Process();
 
             Assert.True(source.TryGetMetadata(1, out EventPipeMetadata metadata));
-            Assert.Equal(20, metadata.Opcode);
             Assert.Equal((ulong)0x00ff00ff00ff00ff, metadata.Keywords);
             Assert.Equal(4, metadata.Level);
             Assert.Equal(22, metadata.EventVersion);
+            Assert.Equal(20, metadata.Opcode.Value);
             Assert.Equal("Thing happened param1={param1} param2={param2}", metadata.MessageTemplate);
             Assert.Equal("Yet another test event", metadata.Description);
             Assert.Equal(2, metadata.Attributes.Count);
@@ -1910,18 +2004,18 @@ namespace TraceEventTests
             });
             writer.WriteLabelListBlock(99, 2, w =>
             {
-                w.WriteV6LabelListActivityIdLabel(activityId1);
-                w.WriteV6LabelListRelatedActivityIdLabel(relatedActivityId1, isLastLabel: true);
-                w.WriteV6LabelListNameValueStringLabel("Key1", "Value1");
-                w.WriteV6LabelListNameValueVarIntLabel("Key2", 123, isLastLabel: true);
+                w.WriteActivityIdLabel(activityId1);
+                w.WriteRelatedActivityIdLabel(relatedActivityId1, isLastLabel: true);
+                w.WriteNameValueStringLabel("Key1", "Value1");
+                w.WriteNameValueVarIntLabel("Key2", 123, isLastLabel: true);
             });
             writer.WriteLabelListBlock(7, 2, w =>
             {
-                w.WriteV6LabelListNameValueStringLabel("Key3", "Value3");
-                w.WriteV6LabelListActivityIdLabel(activityId2);
-                w.WriteV6LabelListRelatedActivityIdLabel(relatedActivityId2, isLastLabel: true);
-                w.WriteV6LabelListTraceIdLabel(traceId.ToByteArray());
-                w.WriteV6LabelListSpanIdLabel(spanId, isLastLabel: true);
+                w.WriteNameValueStringLabel("Key3", "Value3");
+                w.WriteActivityIdLabel(activityId2);
+                w.WriteRelatedActivityIdLabel(relatedActivityId2, isLastLabel: true);
+                w.WriteTraceIdLabel(traceId.ToByteArray());
+                w.WriteSpanIdLabel(spanId, isLastLabel: true);
             });
             writer.WriteEventBlock(useCompressedEventHeaders, w =>
             {
@@ -2005,6 +2099,140 @@ namespace TraceEventTests
             Assert.Equal(6, eventCount);
         }
 
+        [Fact]
+        public void V6LabelListCanOverrideTemplate()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "Microsoft-Windows-DotNETRuntime", "GCEnd", 2));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
+            });
+            writer.WriteLabelListBlock(7, 2, w =>
+            {
+                w.WriteOpCodeLabel(8);
+                w.WriteKeywordsLabel(0x123456789abcef);
+                w.WriteLevelLabel(19);
+                w.WriteVersionLabel(4, isLastLabel: true);
+                w.WriteOpCodeLabel(0);
+                w.WriteKeywordsLabel(0);
+                w.WriteLevelLabel(0);
+                w.WriteVersionLabel(0, isLastLabel: true);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 1, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 7 }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 2, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 8 }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 3, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 0 }, p => { });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Clr.GCStop += e =>
+            {
+                eventCount++;
+                if (eventCount == 1)
+                {
+                    // Suspend is opcode 8
+                    Assert.Equal("GC/Suspend", e.EventName);
+                    Assert.Equal("Microsoft-Windows-DotNETRuntime", e.ProviderName);
+                    Assert.Equal(8, (int)e.Opcode);
+                    Assert.Equal(0x123456789abcefUL, (ulong)e.Keywords);
+                    Assert.Equal(19, (int)e.Level);
+                    Assert.Equal(4, e.Version);
+                }
+                else if (eventCount == 2)
+                {
+                    Assert.Equal("GC", e.EventName);
+                    Assert.Equal("Microsoft-Windows-DotNETRuntime", e.ProviderName);
+                    Assert.Equal(0, (int)e.Opcode);
+                    Assert.Equal(0UL, (ulong)e.Keywords);
+                    Assert.Equal(0, (int)e.Level);
+                    Assert.Equal(0, e.Version);
+                }
+                else if (eventCount == 3)
+                {
+                    Assert.Equal("GC/Stop", e.EventName);
+                    Assert.Equal("Microsoft-Windows-DotNETRuntime", e.ProviderName);
+                    Assert.Equal(2, (int)e.Opcode);
+                    Assert.Equal(0UL, (ulong)e.Keywords);
+                    Assert.Equal(0, (int)e.Level);
+                    Assert.Equal(0, e.Version);
+                }
+            };
+            source.Process();
+            Assert.Equal(3, eventCount);
+        }
+
+        [Fact] //V6
+        public void V6LabelListCanOverrideMetadata()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
+            });
+            writer.WriteLabelListBlock(7, 2, w =>
+            {
+                w.WriteOpCodeLabel(8);
+                w.WriteKeywordsLabel(0x123456789abcef);
+                w.WriteLevelLabel(19);
+                w.WriteVersionLabel(4, isLastLabel:true);
+                w.WriteOpCodeLabel(18);
+                w.WriteKeywordsLabel(0x234);
+                w.WriteLevelLabel(2);
+                w.WriteVersionLabel(3, isLastLabel: true);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 1, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 7 }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 2, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 8 }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 3, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, LabelListId = 0 }, p => { });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                if (eventCount == 1)
+                {
+                    // Suspend is opcode 8
+                    Assert.Equal("TestEvent1/Suspend", e.EventName);
+                    Assert.Equal("TestProvider", e.ProviderName);
+                    Assert.Equal(8, (int)e.Opcode);
+                    Assert.Equal(0x123456789abcefUL, (ulong)e.Keywords);
+                    Assert.Equal(19, (int)e.Level);
+                    Assert.Equal(4, e.Version);
+                }
+                else if (eventCount == 2)
+                {
+                    Assert.Equal("TestEvent1/Opcode(18)", e.EventName);
+                    Assert.Equal("TestProvider", e.ProviderName);
+                    Assert.Equal(18, (int)e.Opcode);
+                    Assert.Equal(0x234UL, (ulong)e.Keywords);
+                    Assert.Equal(2, (int)e.Level);
+                    Assert.Equal(3, e.Version);
+                }
+                else if (eventCount == 3)
+                {
+                    Assert.Equal("TestEvent1", e.EventName);
+                    Assert.Equal("TestProvider", e.ProviderName);
+                    Assert.Equal(0, (int)e.Opcode);
+                    Assert.Equal(0UL, (ulong)e.Keywords);
+                    Assert.Equal(0, (int)e.Level);
+                    Assert.Equal(0, e.Version);
+                }
+            };
+            source.Process();
+            Assert.Equal(3, eventCount);
+        }
+
 
         [Fact] //V6
         public void ParseV6CompressedEventHeaders()
@@ -2025,8 +2253,8 @@ namespace TraceEventTests
             });
             writer.WriteLabelListBlock(99, 2, w =>
             {
-                w.WriteV6LabelListActivityIdLabel(activityId1, isLastLabel: true);
-                w.WriteV6LabelListActivityIdLabel(activityId2, isLastLabel: true);
+                w.WriteActivityIdLabel(activityId1, isLastLabel: true);
+                w.WriteActivityIdLabel(activityId2, isLastLabel: true);
             });
             writer.WriteEventBlock(true, w =>
             {
@@ -2112,7 +2340,7 @@ namespace TraceEventTests
             {
                 w.WriteThreadEntry(999, threadId: 12, processId: 84);
             });
-            writer.WriteSequencePointBlock(0, resetThreadIndicies: false);
+            writer.WriteSequencePointBlock(0, resetThreadIndicies: false, resetMetadataIndices: false);
             writer.WriteEventBlock(true, w =>
             {
                 w.WriteEventBlob(1, 999, 1, p => { });
@@ -2142,7 +2370,7 @@ namespace TraceEventTests
             {
                 w.WriteThreadEntry(999, threadId: 12, processId: 84);
             });
-            writer.WriteSequencePointBlock(0, resetThreadIndicies: false);
+            writer.WriteSequencePointBlock(0, resetThreadIndicies: false, resetMetadataIndices: false);
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, threadId: 15, processId: 84);
@@ -2164,7 +2392,7 @@ namespace TraceEventTests
             {
                 w.WriteThreadEntry(999, threadId: 12, processId: 84);
             });
-            writer.WriteSequencePointBlock(0, resetThreadIndicies: true);
+            writer.WriteSequencePointBlock(0, resetThreadIndicies: true, resetMetadataIndices: false);
             writer.WriteThreadBlock(w =>
             {
                 w.WriteThreadEntry(999, threadId: 15, processId: 84);
@@ -2189,6 +2417,81 @@ namespace TraceEventTests
         }
 
         [Fact] //V6
+        public void V6SequencePointDoesNotFlushMetadataByDefault()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
+            });
+            writer.WriteSequencePointBlock(0, resetThreadIndicies: false, resetMetadataIndices: false);
+            writer.WriteEventBlock(true, w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p => { });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal("TestEvent1", e.EventName);
+                Assert.Equal(12, e.ThreadID);
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact] //V6
+        public void V6RedefinedMetadataIndexThrowsFormatException()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteSequencePointBlock(0, resetThreadIndicies: false, resetMetadataIndices: false);
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent2", 19));
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+
+            Assert.Throws<FormatException>(() => source.Process());
+        }
+
+        [Fact] //V6
+        public void V6SequencePointCanFlushMetadataOnDemand()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 12, processId: 84);
+            });
+            writer.WriteSequencePointBlock(0, resetThreadIndicies: false, resetMetadataIndices: true);
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent2", 19));
+            writer.WriteEventBlock(true, w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p => { });
+            });
+            writer.WriteEndBlock();
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                Assert.Equal("TestEvent2", e.EventName);
+            };
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact] //V6
         public void V6SequencePointDetectsDroppedEvents()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -2198,7 +2501,7 @@ namespace TraceEventTests
             {
                 w.WriteThreadEntry(999, threadId: 12, processId: 84);
             });
-            writer.WriteSequencePointBlock(0, resetThreadIndicies: true, new V6ThreadSequencePoint(999, 5));
+            writer.WriteSequencePointBlock(0, resetThreadIndicies: true, resetMetadataIndices: false, new V6ThreadSequencePoint(999, 5));
             writer.WriteEndBlock();
             MemoryStream stream = new MemoryStream(writer.ToArray());
             EventPipeEventSource source = new EventPipeEventSource(stream);
@@ -2342,6 +2645,88 @@ namespace TraceEventTests
             source.Process();
             Assert.Equal(4, eventCount);
 
+        }
+
+        [Fact]
+        public void EventSourceEventsDispatchedUsingGetDispatcherFromFileName()
+        {            
+            // Create a simple EventPipe file with EventSource-like events
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(
+                new EventMetadata(1, "MyEventSource", "AppStarted", 1),
+                new EventMetadata(2, "MyEventSource", "ProcessingItem", 2),
+                new EventMetadata(3, "MyEventSource", "AppStopped", 3));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 100, processId: 1000);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, Array.Empty<byte>());
+                w.WriteEventBlob(2, 999, 2, Array.Empty<byte>());
+                w.WriteEventBlob(2, 999, 3, Array.Empty<byte>());
+                w.WriteEventBlob(3, 999, 4, Array.Empty<byte>());
+            });
+            writer.WriteEndBlock();
+            
+            // Write to a temporary file
+            string tempFile = Path.Combine(Path.GetTempPath(), $"test_eventsource_{Guid.NewGuid()}.nettrace");
+            try
+            {
+                File.WriteAllBytes(tempFile, writer.ToArray());
+                
+                // Test 1: Using TraceEventDispatcher.GetDispatcherFromFileName()
+                int eventsFromDispatcher = 0;
+                List<string> dispatcherEventNames = new List<string>();
+                using (var source = TraceEventDispatcher.GetDispatcherFromFileName(tempFile))
+                {
+                    source.Dynamic.All += e =>
+                    {
+                        if (e.ProviderName == "MyEventSource")
+                        {
+                            eventsFromDispatcher++;
+                            dispatcherEventNames.Add(e.EventName);
+                        }
+                    };
+                    source.Process();
+                }
+                
+                Output.WriteLine($"Events from Dispatcher: {eventsFromDispatcher}");
+                Output.WriteLine($"Event names: {string.Join(", ", dispatcherEventNames)}");
+                
+                // Test 2: Using TraceLog.Events.GetSource() for comparison
+                int eventsFromTraceLog = 0;
+                List<string> traceLogEventNames = new List<string>();
+                using (var traceLog = new TraceLog(TraceLog.CreateFromEventPipeDataFile(tempFile)))
+                {
+                    var traceSource = traceLog.Events.GetSource();
+                    traceSource.Dynamic.All += e =>
+                    {
+                        if (e.ProviderName == "MyEventSource")
+                        {
+                            eventsFromTraceLog++;
+                            traceLogEventNames.Add(e.EventName);
+                        }
+                    };
+                    traceSource.Process();
+                }
+                
+                Output.WriteLine($"Events from TraceLog: {eventsFromTraceLog}");
+                Output.WriteLine($"Event names: {string.Join(", ", traceLogEventNames)}");
+                
+                // Both methods should see the same number of events
+                Assert.Equal(eventsFromTraceLog, eventsFromDispatcher);
+                // We should have seen 4 events
+                Assert.Equal(4, eventsFromDispatcher);
+            }
+            finally
+            {
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+            }
         }
     }
 
@@ -2487,7 +2872,7 @@ namespace TraceEventTests
     public enum MetadataTypeCode
     {
         Object = 1,                        // Concatenate together all of the encoded fields
-        Boolean = 3,                       // A 4-byte LE integer with value 0=false and 1=true.  
+        Boolean32 = 3,                     // A 4-byte LE integer with value 0=false and 1=true.  
         UTF16CodeUnit = 4,                 // a 2-byte UTF16 code unit
         SByte = 5,                         // 1-byte signed integer
         Byte = 6,                          // 1-byte unsigned integer
@@ -2508,7 +2893,8 @@ namespace TraceEventTests
         FixedLengthArray = 22,             // New in V6: A fixed-length array of elements. The size is determined by the metadata.
         UTF8CodeUnit = 23,                 // New in V6: A single UTF8 code unit (1 byte).
         RelLoc = 24,                       // New in V6: An array at a relative location within the payload.
-        DataLoc = 25                       // New in V6: An absolute data location within the payload.
+        DataLoc = 25,                      // New in V6: An absolute data location within the payload.
+        Boolean8 = 26                      // New in V6: A 1-byte boolean with value 0=false and 1=true.
     }
 
     public class EventPayloadWriter
@@ -2649,12 +3035,22 @@ namespace TraceEventTests
             _writer.WriteRemoveThreadBlock(writeThreadEntries);
         }
 
-        public void WriteSequencePointBlock(long timestamp, bool resetThreadIndicies, params V6ThreadSequencePoint[] sequencePoints)
+        public void WriteSequencePointBlock(long timestamp, bool resetThreadIndicies, bool resetMetadataIndices, params V6ThreadSequencePoint[] sequencePoints)
         {
             WriteBlock(4 /* BlockKind.SequencePoint */, w =>
             {
                 w.Write(timestamp);
-                w.Write((int)(resetThreadIndicies ? 1 : 0));
+                int flags = 0;
+                if (resetThreadIndicies)
+                {
+                    flags |= 1;
+                }
+                if (resetMetadataIndices)
+                {
+                    flags |= 2;
+                }
+                
+                w.Write(flags);
                 w.Write(sequencePoints.Length);
                 foreach (var sequencePoint in sequencePoints)
                 {
@@ -2664,7 +3060,7 @@ namespace TraceEventTests
             });
         }
 
-        public void WriteLabelListBlock(int firstIndex, int count, Action<BinaryWriter> writeLabelListEntries)
+        public void WriteLabelListBlock(int firstIndex, int count, Action<V6LabelListBlockWriter> writeLabelListEntries)
         {
             _writer.WriteV6LabelListBlock(firstIndex, count, writeLabelListEntries);
         }
@@ -3208,82 +3604,16 @@ namespace TraceEventTests
             });
         }
 
-        public static void WriteV6LabelListActivityIdLabel(this BinaryWriter writer, Guid activityId, bool isLastLabel = false)
-        {
-            byte kind = 1; // ActivityId
-            if (isLastLabel)
-            {
-                kind |= 0x80;
-            }
-            writer.Write(kind);
-            writer.Write(activityId);
-        }
 
-        public static void WriteV6LabelListRelatedActivityIdLabel(this BinaryWriter writer, Guid relatedActivityId, bool isLastLabel = false)
-        {
-            byte kind = 2; // RelatedActivityId
-            if (isLastLabel)
-            {
-                kind |= 0x80;
-            }
-            writer.Write(kind);
-            writer.Write(relatedActivityId);
-        }
 
-        public static void WriteV6LabelListTraceIdLabel(this BinaryWriter writer, byte[] traceId, bool isLastLabel = false)
-        {
-            Debug.Assert(traceId.Length == 16);
-            byte kind = 3; // TraceId
-            if (isLastLabel)
-            {
-                kind |= 0x80;
-            }
-            writer.Write(kind);
-            writer.Write(traceId);
-        }
-
-        public static void WriteV6LabelListSpanIdLabel(this BinaryWriter writer, ulong spanId, bool isLastLabel = false)
-        {
-            byte kind = 4; // SpanId
-            if (isLastLabel)
-            {
-                kind |= 0x80;
-            }
-            writer.Write(kind);
-            writer.Write(spanId);
-        }
-
-        public static void WriteV6LabelListNameValueStringLabel(this BinaryWriter writer, string name, string value, bool isLastLabel = false)
-        {
-            byte kind = 5; // NameValueString
-            if (isLastLabel)
-            {
-                kind |= 0x80;
-            }
-            writer.Write(kind);
-            writer.WriteVarUIntPrefixedUTF8String(name);
-            writer.WriteVarUIntPrefixedUTF8String(value);
-        }
-
-        public static void WriteV6LabelListNameValueVarIntLabel(this BinaryWriter writer, string name, long value, bool isLastLabel = false)
-        {
-            byte kind = 6; // NameValueVarint
-            if (isLastLabel)
-            {
-                kind |= 0x80;
-            }
-            writer.Write(kind);
-            writer.WriteVarUIntPrefixedUTF8String(name);
-            writer.WriteVarInt(value);
-        }
-
-        public static void WriteV6LabelListBlock(this BinaryWriter writer, int firstIndex, int count, Action<BinaryWriter> writeLabelLists)
+        public static void WriteV6LabelListBlock(this BinaryWriter writer, int firstIndex, int count, Action<V6LabelListBlockWriter> writeLabelLists)
         {
             WriteBlockV6OrGreater(writer, 8 /* BlockKind.LabelList */, w =>
             {
                 w.Write(firstIndex);
                 w.Write(count);
-                writeLabelLists(w);
+                V6LabelListBlockWriter labelListWriter = new V6LabelListBlockWriter(w);
+                writeLabelLists(labelListWriter);
             });
         }
 
@@ -3403,6 +3733,129 @@ namespace TraceEventTests
         public static void WriteEndObject(this BinaryWriter writer)
         {
             writer.Write(1); // null tag
+        }
+    }
+
+    public class V6LabelListBlockWriter
+    {
+        BinaryWriter _writer;
+
+        public V6LabelListBlockWriter(BinaryWriter writer)
+        {
+            _writer = writer;
+        }
+
+        public void WriteActivityIdLabel(Guid activityId, bool isLastLabel = false)
+        {
+            byte kind = 1; // ActivityId
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            _writer.Write(kind);
+            _writer.Write(activityId);
+        }
+
+        public void WriteRelatedActivityIdLabel(Guid relatedActivityId, bool isLastLabel = false)
+        {
+            byte kind = 2; // RelatedActivityId
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            _writer.Write(kind);
+            _writer.Write(relatedActivityId);
+        }
+
+        public void WriteTraceIdLabel(byte[] traceId, bool isLastLabel = false)
+        {
+            Debug.Assert(traceId.Length == 16);
+            byte kind = 3; // TraceId
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            _writer.Write(kind);
+            _writer.Write(traceId);
+        }
+
+        public void WriteSpanIdLabel(ulong spanId, bool isLastLabel = false)
+        {
+            byte kind = 4; // SpanId
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            _writer.Write(kind);
+            _writer.Write(spanId);
+        }
+
+        public void WriteNameValueStringLabel(string name, string value, bool isLastLabel = false)
+        {
+            byte kind = 5; // NameValueString
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            _writer.Write(kind);
+            _writer.WriteVarUIntPrefixedUTF8String(name);
+            _writer.WriteVarUIntPrefixedUTF8String(value);
+        }
+
+        public void WriteNameValueVarIntLabel(string name, long value, bool isLastLabel = false)
+        {
+            byte kind = 6; // NameValueVarint
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            _writer.Write(kind);
+            _writer.WriteVarUIntPrefixedUTF8String(name);
+            _writer.WriteVarInt(value);
+        }
+
+        public void WriteOpCodeLabel(byte opcode, bool isLastLabel = false)
+        {
+            byte kind = 7; // OpCode
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            _writer.Write(kind);
+            _writer.Write(opcode);
+        }
+
+        public void WriteKeywordsLabel(ulong keywords, bool isLastLabel = false)
+        {
+            byte kind = 8; // Keyword
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            _writer.Write(kind);
+            _writer.Write(keywords);
+        }
+
+        public void WriteLevelLabel(byte level, bool isLastLabel = false)
+        {
+            byte kind = 9; // Level
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            _writer.Write(kind);
+            _writer.Write(level);
+        }
+
+        public void WriteVersionLabel(byte version, bool isLastLabel = false)
+        {
+            byte kind = 10; // Version
+            if (isLastLabel)
+            {
+                kind |= 0x80;
+            }
+            _writer.Write(kind);
+            _writer.Write(version);
         }
     }
 

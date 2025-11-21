@@ -531,7 +531,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 for (int i = 0; i < arrayCount; i++)
                 {
                     object value = GetPayloadValueAt(ref arrayInfo.Element, offset, payloadLength);
-                    if (arrayInfo.Element.Type != elementType)
+                    // Some events have metadata of the form:
+                    // input=Array of ulong
+                    // output=Array of IntPtr
+                    // This is common for bitmasks.  To address this, we special case it here.
+                    if (elementType == FetchType.System_IntPtr && value is ulong uintVal)
+                    {
+                        value = new IntPtr(unchecked((long)uintVal));
+                    }
+                    else if (arrayInfo.Element.Type != elementType)
                     {
                         value = FetchTypeHelpers.Convert(elementType, value); // ((IConvertible)value).ToType(elementType, null);
                     }
@@ -2192,7 +2200,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             id = "Stream";
             int len = Math.Min((int)(manifestStream.Length - manifestStream.Position), manifestLen);
             serializedManifest = new byte[len];
-            manifestStream.Read(serializedManifest, 0, len);
+#if NET
+            manifestStream.ReadExactly(serializedManifest, 0, len);
+#else
+            if (manifestStream.Read(serializedManifest, 0, len) != len)
+            {
+                throw new EndOfStreamException("Could not read full manifest from stream");
+            }
+#endif
         }
         /// <summary>
         /// Read a ProviderManifest from a file.

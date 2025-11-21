@@ -7,6 +7,9 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Utilities;
 using Microsoft.Win32;
+#if !PERFVIEW_COLLECT
+using PerfView.Dialogs;
+#endif
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,7 +20,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using Triggers;
 using Utilities;
 using Trigger = Triggers.Trigger;
@@ -1682,16 +1684,19 @@ namespace PerfView
         private void InformedAboutSkippingMerge()
         {
 #if !PERFVIEW_COLLECT
-            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+            GuiApp.MainWindow.Dispatcher.BeginInvoke(() =>
             {
-                MessageBox.Show(GuiApp.MainWindow,
-                    "If you are analyzing the data on the same machine on which you collected it, in the future " +
-                    "you can avoid  the time it takes to merge and zip the file by unchecking the 'merge' checkbox " +
-                    "on the collection dialog box.\r\n\r\n" +
-                    "Be careful however, PerfView will remember this option from run to run and you will have to " +
-                    "either check the zip checkbox or use the PerfView's zip command if you wish to analyze on another machine.\r\n\r\n" +
-                    "The WPA analyzer requires merging unconditionally, so you must merge if you wish to use that tool.\r\n\n" +
-                    "See the 'Merging' section in the users guide for complete details.",
+                XamlMessageBox.Show(
+                    GuiApp.MainWindow,
+                    """
+                    If you are analyzing the data on the same machine on which you collected it, in the future you can avoid the time it takes to merge and zip the file by unchecking the 'merge' checkbox on the collection dialog box.
+
+                    Be careful however, PerfView will remember this option from run to run and you will have to either check the zip checkbox or use the PerfView's zip command if you wish to analyze on another machine.
+
+                    The WPA analyzer requires merging unconditionally, so you must merge if you wish to use that tool.
+
+                    See the 'Merging' section in the users guide for complete details.
+                    """,
                     "Skip Merging/Zipping for faster local processing.");
             });
 #endif 
@@ -2997,6 +3002,11 @@ namespace PerfView
                 cmdLineArgs += " /LogFile:" + Command.Quote(parsedArgs.LogFile);
             }
 
+            if (parsedArgs.SymbolsAuth != SymbolsAuthenticationType.Interactive)
+            {
+                cmdLineArgs += " /SymbolsAuth:" + parsedArgs.SymbolsAuth.ToString().Replace(" ", "");
+            }
+
             if (parsedArgs.NoRundown)
             {
                 cmdLineArgs += " /NoRundown";
@@ -3306,11 +3316,11 @@ namespace PerfView
         {
 #if !PERFVIEW_COLLECT
             // Are we activating with the GUI, then pop a dialog box
-            if (App.CommandLineArgs.LogFile == null && GuiApp.MainWindow != null)
+            if (App.CommandLineArgs.LogFile is null)
             {
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+                GuiApp.MainWindow?.Dispatcher.BeginInvoke(() =>
                 {
-                    MessageBox.Show(GuiApp.MainWindow, message, "Warning ASP.NET Tracing not installed");
+                    XamlMessageBox.Show(GuiApp.MainWindow, message, "Warning ASP.NET Tracing not installed");
                 });
             }
 #endif

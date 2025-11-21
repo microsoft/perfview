@@ -52,9 +52,9 @@ namespace PerfView.GuiUtilities
         /// </summary>
         private void Navigate()
         {
-            if (!_disposed && Source != null && _Browser.CoreWebView2 != null)
+            if (!_disposed && Source?.ToString() is { } source)
             {
-                _Browser.CoreWebView2.Navigate(Source.ToString());
+                Browser?.CoreWebView2.Navigate(source);
             }
         }
 
@@ -89,9 +89,9 @@ namespace PerfView.GuiUtilities
             else
             {
                 // Dispose WebView2 to prevent finalizer crashes
-                if (!_disposed && _Browser != null)
+                if (!_disposed)
                 {
-                    _Browser.Dispose();
+                    Browser?.Dispose();
                     _disposed = true;
                 }
             }
@@ -109,6 +109,7 @@ namespace PerfView.GuiUtilities
 
             var userDataFolder = Path.Combine(SupportFiles.SupportFileDir, "WebView2");
             Directory.CreateDirectory(userDataFolder);
+
             var environmentAwaiter = CoreWebView2Environment
                 .CreateAsync(userDataFolder: userDataFolder)
                 .ConfigureAwait(true)
@@ -122,12 +123,18 @@ namespace PerfView.GuiUtilities
                 }
 
                 var environment = environmentAwaiter.GetResult();
-                await _Browser.EnsureCoreWebView2Async(environment).ConfigureAwait(true);
+                await Browser.EnsureCoreWebView2Async(environment).ConfigureAwait(true);
+
+                // Set the preferred color scheme directly on the profile
+                Browser.CoreWebView2.Profile.PreferredColorScheme = GuiApp.MainWindow.ThemeViewModel.IsLightTheme
+                    ? CoreWebView2PreferredColorScheme.Light
+                    : CoreWebView2PreferredColorScheme.Dark;
 
                 // Navigate to the current specified source
                 Navigate();
             });
         }
+
         #endregion
     }
 }

@@ -1325,19 +1325,19 @@ namespace PerfView
 
         private void DoViewInCallerCallee(object sender, RoutedEventArgs e)
         {
-            SetFocus(GetSelectedNodes().Single());
+            SetFocus(GetSelectedNodes().Single().Name);
 
             CallerCalleeTab.IsSelected = true;
         }
         private void DoViewInCallers(object sender, ExecutedRoutedEventArgs e)
         {
-            SetFocus(GetSelectedNodes().Single());
+            SetFocus(GetSelectedNodes().Single().Name);
 
             CallersTab.IsSelected = true;
         }
         private void DoViewInCallees(object sender, ExecutedRoutedEventArgs e)
         {
-            SetFocus(GetSelectedNodes().Single());
+            SetFocus(GetSelectedNodes().Single().Name);
 
             CalleesTab.IsSelected = true;
         }
@@ -3115,7 +3115,14 @@ namespace PerfView
 
                 if (m_ViewsShouldBeSaved)
                 {
-                    var result = MessageBox.Show("You have created Notes that have not been saved\r\nDo you wish to save?", "Unsaved Notes", MessageBoxButton.YesNoCancel);
+                    var result = XamlMessageBox.Show(
+                        """
+                        You have created Notes that have not been saved.
+                        Do you wish to save?
+                        """,
+                        "Unsaved Notes",
+                        MessageBoxButton.YesNoCancel);
+
                     if (result == MessageBoxResult.Cancel)
                     {
                         e.Cancel = true;

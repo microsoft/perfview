@@ -1,0 +1,4 @@
+﻿             fio 236193/236193 [021] 1.791544:          1    block:block_rq_issue: 259,76 R 4096 () 57622160 + 8 [fio] ffffffff8beead90 blk_mq_start_request ([kernel.kallsyms])
+         swapper     0/0     [012] 1.791615:          1 block:block_rq_complete: 259,76 R () 57622160 + 8 [0] ffffffff8bee2b4c blk_update_request ([kernel.kallsyms])
+             fio 236193/236193 [021] 1.791628:          1    block:block_rq_issue: 259,76 R 4096 () 82612968 + 8 [fio] ffffffff8beead90 blk_mq_start_request ([kernel.kallsyms])
+         swapper     0/0     [012] 1.791699:          1 block:block_rq_complete: 259,76 R () 82612968 + 8 [0] ffffffff8bee2b4c blk_update_request ([kernel.kallsyms])

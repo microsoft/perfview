@@ -1,0 +1,8 @@
+schemaVersion: 0.0.1
+isProduction: true
+accountableOwners:
+  service: 2756eb21-22a5-49ff-8b78-c9ce773ae80b
+routing:
+  defaultAreaPath:
+    org: nettel
+    path: PerfView

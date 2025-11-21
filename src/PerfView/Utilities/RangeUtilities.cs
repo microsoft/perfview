@@ -40,6 +40,13 @@ namespace Microsoft.Diagnostics.Utilities
         /// <returns><see langword="true"/> if s was converted successfully; otherwise, <see langword="false"/>.</returns>
         public static bool TryParse(string text, out double start, out double end)
         {
+            // Trim whitespace and pipe symbols from the beginning and end to handle markdown table format
+            // e.g., "|  1,395.251	 2,626.358 |" becomes "1,395.251	 2,626.358"
+            if (!string.IsNullOrEmpty(text))
+            {
+                text = text.Trim(' ', '\t', '\n', '\r', '|');
+            }
+
             // The user can set any character as a separator and that character can turn a regular expression invalid.
             var parts = text.Split(rangeSeparators, StringSplitOptions.RemoveEmptyEntries);
 

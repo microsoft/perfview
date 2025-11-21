@@ -43,7 +43,7 @@ namespace Microsoft.Diagnostics.Tracing
         public static EventPipeMetadata ReadV5OrLower(ref SpanReader reader, int pointerSize, int processId, int fileFormatVersionNumber)
         {
             // Read in the header (The header does not include payload parameter information)
-            var metadata = new EventPipeMetadata(pointerSize, processId);
+            var metadata = new EventPipeMetadata(pointerSize, processId, EventPipeFieldLayoutVersion.FileFormatV5OrLess);
             metadata.ParseHeader(ref reader, fileFormatVersionNumber);
 
             // If the metadata contains no parameter metadata, don't attempt to read it.
@@ -84,7 +84,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public static EventPipeMetadata ReadV6OrGreater(ref SpanReader reader, int pointerSize)
         {
-            var metadata = new EventPipeMetadata(pointerSize);
+            var metadata = new EventPipeMetadata(pointerSize, EventPipeFieldLayoutVersion.FileFormatV6OrGreater);
             int metadataLength = reader.ReadUInt16();
             long offset = reader.StreamOffset;
             SpanReader metadataReader = new SpanReader(reader.ReadBytes(metadataLength), offset);
@@ -95,16 +95,18 @@ namespace Microsoft.Diagnostics.Tracing
             return metadata;
         }
 
-        private EventPipeMetadata(int pointerSize)
-            : this(pointerSize, -1)
+        private EventPipeMetadata(int pointerSize, EventPipeFieldLayoutVersion fieldLayoutVersion)
+            : this(pointerSize, -1, fieldLayoutVersion)
         {
         }
 
         /// <summary>
         /// 'processID' is the process ID for the whole stream or -1 is this is a V6+ stream that can support multiple processes.
         /// </summary>
-        private EventPipeMetadata(int pointerSize, int processId)
+        private EventPipeMetadata(int pointerSize, int processId, EventPipeFieldLayoutVersion fieldLayoutVersion)
         {
+            _fieldLayoutVersion = fieldLayoutVersion;
+
             // Get the event record and fill in fields that we can without deserializing anything.
             _eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
             ClearMemory(_eventRecord, sizeof(TraceEventNativeMethods.EVENT_RECORD));
@@ -163,14 +165,25 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal TraceEventNativeMethods.EVENT_RECORD* GetEventRecordForEventData(in EventPipeEventHeader eventData)
         {
-            // We have already initialize all the fields of _eventRecord that do no vary from event to event.
+            // We have already initialize all the fields of _eventRecord that do not vary from event to event.
             // Now we only have to copy over the fields that are specific to particular event.
-            //
+
+            // these events usually come from metadata, but they can be overridden by the label list
+            _eventRecord->EventHeader.Opcode = eventData.OpCodeOverride ?? Opcode ?? 0;
+            _eventRecord->EventHeader.Level = eventData.LevelOverride ?? Level;
+            _eventRecord->EventHeader.Keyword = eventData.KeywordsOverride ?? Keywords;
+            _eventRecord->EventHeader.Version = eventData.VersionOverride ?? EventVersion;
+
             // Note: ThreadId isn't 32 bit on all of our platforms but ETW EVENT_RECORD* only has room for a 32 bit
             // ID. We'll need to refactor up the stack if we want to expose a bigger ID.
             _eventRecord->EventHeader.ThreadId = unchecked((int)eventData.ThreadId);
             _eventRecord->EventHeader.ProcessId = unchecked((int)eventData.ProcessId);
-            if (eventData.ThreadIndexOrId == eventData.CaptureThreadIndexOrId && eventData.CaptureProcNumber != -1)
+
+            // Set the processor number for V6+ file formats.  For V5 and below we only set it if the ThreadId == CaptureThreadId
+            // to ensure that we don't surface a thread ID as a processor ID.
+            if ((eventData.CaptureProcNumber != -1) &&
+                ((_fieldLayoutVersion == EventPipeFieldLayoutVersion.FileFormatV5OrLess && eventData.ThreadIndexOrId == eventData.CaptureThreadIndexOrId) ||
+                (_fieldLayoutVersion == EventPipeFieldLayoutVersion.FileFormatV6OrGreater)))
             {
                 // Its not clear how the caller is supposed to distinguish between events that we know were on
                 // processor 0 vs. lacking information about what processor number the thread is on and
@@ -258,10 +271,10 @@ namespace Microsoft.Diagnostics.Tracing
         public Dictionary<string, string> Attributes { get; private set; } = new Dictionary<string, string>();
         public Guid ProviderId { get { return _eventRecord->EventHeader.ProviderId; } private set { _eventRecord->EventHeader.ProviderId = value; } }
         public int EventId { get { return _eventRecord->EventHeader.Id; } private set { _eventRecord->EventHeader.Id = (ushort)value; } }
-        public int EventVersion { get { return _eventRecord->EventHeader.Version; } private set { _eventRecord->EventHeader.Version = (byte)value; } }
-        public ulong Keywords { get { return _eventRecord->EventHeader.Keyword; } private set { _eventRecord->EventHeader.Keyword = value; } }
-        public int Level { get { return _eventRecord->EventHeader.Level; } private set { _eventRecord->EventHeader.Level = (byte)value; } }
-        public byte Opcode { get { return _eventRecord->EventHeader.Opcode; } internal set { _eventRecord->EventHeader.Opcode = (byte)value; } }
+        public byte EventVersion { get; private set; }
+        public ulong Keywords { get; private set; }
+        public byte Level { get; private set; }
+        public byte? Opcode { get; private set; }
 
         public DynamicTraceEventData.PayloadFetch[] ParameterTypes { get; internal set; }
         public string[] ParameterNames { get; internal set; }
@@ -448,7 +461,7 @@ namespace Microsoft.Diagnostics.Tracing
             // Fill out the payload fetch object based on the TypeCode.
             switch (typeCode)
             {
-                case EventPipeTypeCode.Boolean:
+                case EventPipeTypeCode.Boolean32:
                     {
                         payloadFetch.Type = FetchType.System_Boolean;
                         payloadFetch.Size = 4; // We follow windows conventions and use 4 bytes for bool.
@@ -662,6 +675,13 @@ namespace Microsoft.Diagnostics.Tracing
                         payloadFetch = DynamicTraceEventData.PayloadFetch.DataLocPayloadFetch(offset, elementType);
                         break;
                     }
+                case EventPipeTypeCode.Boolean8:
+                    {
+                        payloadFetch.Type = FetchType.System_Boolean;
+                        payloadFetch.Size = 1;
+                        payloadFetch.Offset = offset;
+                        break;
+                    }
                 default:
                     {
                         throw new FormatException($"Field {fieldName}: Typecode {typeCode} is not supported.");
@@ -674,7 +694,7 @@ namespace Microsoft.Diagnostics.Tracing
         enum EventPipeTypeCode
         {
             Object = 1,                        // Concatenate together all of the encoded fields
-            Boolean = 3,                       // A 4-byte LE integer with value 0=false and 1=true.
+            Boolean32 = 3,                     // A 4-byte LE integer with value 0=false and 1=true.
             UTF16CodeUnit = 4,                 // a 2-byte UTF16 code unit
             SByte = 5,                         // 1-byte signed integer
             Byte = 6,                          // 1-byte unsigned integer
@@ -696,7 +716,8 @@ namespace Microsoft.Diagnostics.Tracing
             FixedLengthArray = 22,             // New in V6: A fixed-length array of elements. The length is determined by the metadata.
             UTF8CodeUnit = 23,                 // New in V6: A single UTF8 code unit (1 byte).
             RelLoc = 24,                       // New in V6: An array at a relative location within the payload.
-            DataLoc = 25                       // New in V6: An absolute data location within the payload.
+            DataLoc = 25,                      // New in V6: An absolute data location within the payload.
+            Boolean8 = 26                      // New in V6: A 1 byte boolean with value 0=false and 1=true.
         }
 
         private void ParseOptionalMetadataV6OrGreater(ref SpanReader reader)
@@ -785,6 +806,8 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         // After metadata has been read we do a set of baked in transforms.
+        // None of these transforms are part of the NetTrace file format, rather they are a combination of TraceEvent/EventSource specific conventions
+        // and workarounds for well known events in historic scenarios where data was missing.
         public void ApplyTransforms()
         {
             //TraceEvent expects empty name to be canonicalized as null rather than ""
@@ -806,7 +829,7 @@ namespace Microsoft.Diagnostics.Tracing
                 PopulateWellKnownEventParameters();
             }
 
-            if (Opcode == 0)
+            if (!Opcode.HasValue)
             {
                 ExtractImpliedOpcode();
             }
@@ -952,6 +975,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
+        private EventPipeFieldLayoutVersion _fieldLayoutVersion;
         private TraceEventNativeMethods.EVENT_RECORD* _eventRecord;
         private TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM* _extendedDataBuffer;
         private Guid* _relatedActivityBuffer;

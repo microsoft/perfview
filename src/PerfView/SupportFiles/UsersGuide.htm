@@ -1,24 +1,31 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="color-scheme" content="light dark">
     <title>PerfView User's Guide</title>
     <style>
-        body {
-            font-family: Segoe UI,SegoeUI,Segoe WP,Helvetica Neue,Helvetica,Tahoma,Arial,sans-serif;
-            font-weight: 400;
-            text-rendering: optimizeLegibility;
-            -webkit-font-smoothing: antialiased;
-        }
+      :root[data-theme="light"] {
+          color-scheme: light;
+      }
+      :root[data-theme="dark"] {
+          color-scheme: dark;
+      }
 
-        hr {
-            border-top: 3px double gray;
-        }
+      body {
+        font-family: Segoe UI,SegoeUI,Segoe WP,Helvetica Neue,Helvetica,Tahoma,Arial,sans-serif;
+        font-weight: 400;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      hr {
+        border-top: 3px double gray;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <!--  ************************************************************************************* -->
     <h1>
         <a id="UsersGuide">PerfView User's Guide</a>
@@ -2441,7 +2448,7 @@
                             <strong><a id="ContentionStacks">Contention Stacks</a></strong> - This view aggregates Contention events.&nbsp;
                             Contention event is fired when a thread tries to acquire a managed lock that is currently owned
                             by another thread. Note that each event has useful event data that is folded by default.
-                            For example, unfolding <code>EventData DurationNs</code> reveals individual pauses of each thread: this can be useful 
+                            For example, unfolding <code>EventData DurationNs</code> reveals individual pauses of each thread: this can be useful
                             to correlate a particular long wait to another events in the trace. Note that not all contention events
                             are real OS-level waits: the runtime may first spin wait to try acquire the lock fast. The metric
                             represents the amount of time spent to acquire the lock in milliseconds.
@@ -8031,7 +8038,7 @@
     </h3>
     <p>
         If your symbols are on an Azure DevOps artifacts store, or your source code is not public,
-        then PerfView may prompt you to sign in. Support currently exists for Azure DevOps and private 
+        then PerfView may prompt you to sign in. Support currently exists for Azure DevOps and private
         GitHub repositories. If installed, PerfView will try to use the <a href="https://github.com/GitCredentialManager">Git Credential Manager</a>
         which is typically installed with Git For Windows. If Git Credential Manager is not installed,
         PerfView will fall back to alternate authentication mechanisms. The authentication mechanisms
@@ -8042,7 +8049,7 @@
                 <strong>Git Credential Manager</strong>. This is the most flexible option for developers
                 using Git. It works alongside your Git installation to sign into private repositories.
                 Support is currently enabled for Azure DevOps and GitHub. We hope to add GitLab and BitBucket
-                support in the future. 
+                support in the future.
                 PerfView will search for the Git Credential Manager executable (git-credential-manager-core.exe)
                 in a number of well-known locations, but if it can't be found, then the option will be
                 unavailable. If you have installed Git Credential Manager in a non-standard location, you can
@@ -8058,12 +8065,12 @@
                 into Visual Studio or VS Code using credentials that can access your Azure DevOps repo.
                 If you sign into Visual Studio with several different accounts, you may need to select the
                 right one in Tools/Options/Azure Service Authentication.
-                See the <a href="https://devblogs.microsoft.com/azure-sdk/authentication-and-the-azure-sdk/">Authentication and the Azure SDK</a> 
+                See the <a href="https://devblogs.microsoft.com/azure-sdk/authentication-and-the-azure-sdk/">Authentication and the Azure SDK</a>
                 blog posting for more information.
             </li>
             <li>
                 <strong>Device Code Flow for GitHub</strong>. This option, for GitHub only, uses a Device Code
-                to grant PerfView access to GitHub private repositories. 
+                to grant PerfView access to GitHub private repositories.
                 PerfView will prompt you with an 8 digit device code which you use to log into GitHub.com using
                 any web browser. The browser could be running on a different device, if necessary.
                 When you enter the code into the browser and approve the app, the dialog will automatically close
@@ -8071,10 +8078,10 @@
                 to access.
             </li>
             <li>
-	            <strong>Basic HTTP Authentication</strong>. This option allows you to use Basic HTTP authentication
-	            when connecting to a symbol server. To use it, you should specify the username and password in the URL for your symbol server. For example:
-	            <i>SRV*SymbolCachePath*https://username:password@symbolstore.url;</i>. This scheme is active by default but
-	            used only if the URL contains <i>username</i> and <i>password</i> information.
+                <strong>Basic HTTP Authentication</strong>. This option allows you to use Basic HTTP authentication
+                when connecting to a symbol server. To use it, you should specify the username and password in the URL for your symbol server. For example:
+                <i>SRV*SymbolCachePath*https://username:password@symbolstore.url;</i>. This scheme is active by default but
+                used only if the URL contains <i>username</i> and <i>password</i> information.
             </li>
         </ul>
     </p>
@@ -9164,63 +9171,64 @@
 }
                 </pre>
                 </li>
+            </ul>
+        <li>
+            Version 1.8.28 2/4/16
+            <ul>
                 <li>
-                    Version 1.8.28 2/4/16
-                    <ul>
-                        <li>
-                            Added support doing performance investigations with Linux Perf Events data.   Basically if
-                            collect data with the bash script https://raw.githubusercontent.com/dotnet/corefx-tools/master/src/performance/perfcollect/perfcollect
-                            it will runt the Linux 'perf' tool that will collect CPU samples, convert them to a .data.txt file
-                            (which is a textual representation of the data) and then ZIP it into a .trace.zip file PerfView
-                            knows how to decode either the uncompressed .data.txt file or the zipped .trace.zip file and
-                            display it as a stack view.   Thus you can now do linux  performance investigations with PerfView.
-                        </li>
-                    </ul>
+                    Added support doing performance investigations with Linux Perf Events data.   Basically if
+                    collect data with the bash script https://raw.githubusercontent.com/dotnet/corefx-tools/master/src/performance/perfcollect/perfcollect
+                    it will runt the Linux 'perf' tool that will collect CPU samples, convert them to a .data.txt file
+                    (which is a textual representation of the data) and then ZIP it into a .trace.zip file PerfView
+                    knows how to decode either the uncompressed .data.txt file or the zipped .trace.zip file and
+                    display it as a stack view.   Thus you can now do linux  performance investigations with PerfView.
                 </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.25 2/2/16
+            <ul>
                 <li>
-                    Version 1.8.25 2/2/16
-                    <ul>
-                        <li>
-                            Improvements in Start-Stop time.   UNKNOWN_ASYNC displayed more often, some AWAIT time shown more often.
-                        </li>
-                    </ul>
+                    Improvements in Start-Stop time.   UNKNOWN_ASYNC displayed more often, some AWAIT time shown more often.
                 </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.24 1/27/16
+            <ul>
                 <li>
-                    Version 1.8.24 1/27/16
-                    <ul>
-                        <li>
-                            When opening 'Drill Into' windows, the columns are not in the order of the parent window in the ByName view.
-                            Fixed this.
-                        </li>
-                    </ul>
+                    When opening 'Drill Into' windows, the columns are not in the order of the parent window in the ByName view.
+                    Fixed this.
                 </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.23 1/26/16
+            <ul>
                 <li>
-                    Version 1.8.23 1/26/16
-                    <ul>
-                        <li>
-                            Merging failed on Win7 and Win2k8 systems in PerfView Version 1.8.  This means you could still analyze on
-                            the machine where you collected, but symbols would fail to look up if you took the trace off the system.
-                            Fixed by including an old version of KernelTraceControl.dll an used it on Win7 systems.
-                        </li>
-                    </ul>
+                    Merging failed on Win7 and Win2k8 systems in PerfView Version 1.8.  This means you could still analyze on
+                    the machine where you collected, but symbols would fail to look up if you took the trace off the system.
+                    Fixed by including an old version of KernelTraceControl.dll an used it on Win7 systems.
                 </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.22 1/23/16
+            <ul>
                 <li>
-                    Version 1.8.22 1/23/16
-                    <ul>
-                        <li>
-                            Fixed ArgumentOutOfRange exceptions thrown in EventView for some events (strings with length prefixes)
-                        </li>
-                        <li>Don't crash if regular expressions are incorrect in Events view. </li>
-                    </ul>
+                    Fixed ArgumentOutOfRange exceptions thrown in EventView for some events (strings with length prefixes)
                 </li>
+                <li>Don't crash if regular expressions are incorrect in Events view. </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.21 1/18/16
+            <ul>
                 <li>
-                    Version 1.8.21 1/18/16
-                    <ul>
-                        <li>
-                            Extended perfView.xml file format so that it can more easily consume 'ad hoc' creation of stacks.
-                            It still accepts the 'interned' scheme where you give IDs to each frame and stack and use those
-                            to create samples, but now you can specify the samples inline with the sample like this
-                            <pre>
+                    Extended perfView.xml file format so that it can more easily consume 'ad hoc' creation of stacks.
+                    It still accepts the 'interned' scheme where you give IDs to each frame and stack and use those
+                    to create samples, but now you can specify the samples inline with the sample like this
+                    <pre>
 &lt;StackWindow&gt;
     &lt;StackSource&gt;
         &lt;Samples&gt;
@@ -9238,230 +9246,234 @@
     &lt;/StackSource&gt; 
 &lt;/StackWindow&gt;
                     </pre>
-                            While this format is inefficient (you repeat many strings in many stacks), it is sometimes
-                            convenient, and it is easy enough to support.   There are more details which I will blog about in
-                            the near future.
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.20 1/13/16
-                    <ul>
-                        <li>
-                            Improved the robustness of the UserCommand 'Listen' command in the face of bad events.
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.19 1/7/16
-                    <ul>
-                        <li>
-                            Significantly improved the Thread Time with Start-Stop Activities.  The goal here is
-                            that this view replaces the ASP.NET and Service Request view, and we are probably most of
-                            the way there now.   I need to validate this more and then probably obsolete the other views.
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.15 12/4/15
-                    <ul>
-                        <li>
-                            Fixed a fairly serious bug associated with the Events Viewer where you don't see some CLR events
-                            (They appear in the left pane, but you never see them in the right pane even though there are
-                            instances of them in the file).   Note that version 1.8.0 does not have this bug, it was introduced
-                            relatively recently.
-                        </li>
-                        <li>
-                            Added ActivityInfo and StartStopActivity fields to Events View.   ActivityInfo will show you the
-                            creation and start time (and the raw ID) of the System.Threading.Tasks.Task that logged  the event.
-                            StartStopActivity shows you the name of the start-stop activity that
-                            is logged the event.
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.15 12/4/15
-                    <ul>
-                        <li>
-                            Fixed a fairly serious bug associated with the Events Viewer where you don't see some CLR events
-                            (They appear in the left pane, but you never see them in the right pane even though there are
-                            instances of them in the file).   Note that version 1.8.0 does not have this bug, it was introduced
-                            relatively recently.
-                        </li>
-                        <li>
-                            Added ActivityInfo and StartStopActivity fields to Events View.   ActivityInfo will show you the
-                            creation and start time (and the raw ID) of the System.Threading.Tasks.Task that logged  the event.
-                            StartStopActivity shows you the name of the start-stop activity that
-                            is logged the event.
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.11 11/16/15
-                    <ul>
-                        <li>
-                            Fix excessive warnings when converting ETL files.   Might also fix some StartStop Activity issues.
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.10 11/12/15
-                    <ul>
-                        <li>
-                            Significant improvement in how activity tracking works.  Hopefully the stacks associated with 'with Tasks' views
-                            will be better.
-                        </li>
-                        <li>
-                            Added JIT Inlining feature that enables viewing all successful and failed inlining attempts, including the
-                            JIT-supplied reason for why inlining wasn't performed in the failure cases.
-                        </li>
-                        <li>
-                            Added finalization feature that tracks finalized objects and provides a table of each type with a finalized object
-                            and the associated number of times an object of that type was finalized.
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.9 11/1/15
-                    <ul>
-                        <li>
-                            There is a bug in RC candidates of V4.6.1 where NGEN createPdb only works if the path of the NGEN image
-                            is in the Native Image Cache (NIC), but V4.6.1 uses hard links for NGEN images that come from the install itself.
-                            The result is that you don't get symbols for mscorlib, system, and system.core.   This adds a work-around
-                            for this (normally all paths to the NIC path before calling NGEN CreatePdb), until the runtime is fixed.
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.8 10/31/15
-                    <ul>
-                        <li>
-                            Added support for .NET V4.6.2 convention for NGEN PDB line numbers.   This means that if data is collected on
-                            a V4.6.2 then the lack of access IL PDBS are not available at data collection time is not longer an
-                            impediment to getting line number information (that is access to the corresponding IL pdb with line number
-                            information is no longer needed to create an NGEN pdb that has line number information).
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.7 10/22/15
-                    <ul>
-                        <li>
-                            Integrated changes that allow DyanamicTraceEventParser to do everything that RegisteredTraceEventParser can do.
-                            Removed the calls to RegisteredTraceEventParser.   This could break things but should not.   So far things look
-                            OK.
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.6 10/12/15
-                    <ul>
-                        <li>
-                            Integrated Lee's update of CLRMD that should make PerfView able to extract heap dumps from debugger dumps of
-                            .NET Native processes.
-                        </li>
-                        <li>Added the DotNet (Telemetry) event ETW provider by default. </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.5 10/6/15
-                    <ul>
-                        <li>
-                            Made 'Any Stacks (with StartStop Activities)' and 'Any StartStopTree' public.
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.3 9/23/15
-                    <ul>
-                        <li>
-                            Turned off System.Threading.Tasks.Task events that are verbose and only needed for debugging.  This was
-                            useful before so that any traces I get have detailed information for debugging, but are now impacting
-                            the cost of using PerfView in production when Tasks are used heavily.
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.2 9/13/15
-                    <ul>
-                        <li> /InMemoryCircularBuffer option was broken (Would throw a file not found exception in SetFileName).  Fixed this. </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.8.1 9/3/15
-                    <ul>
-                        <li>
-                            Fixed issue where Debug versions were asserting that two stacks were attached to the same event
-                            because kernel and user mode stacks were not being stitched together properly (mostly in rare cases
-                            where thread-starts were happening)
-                        </li>
-                    </ul>
-                </li>
-
-                <li>
-                    Version 1.8.0 8/30/15
-                    <ul>
-                        <li> Release to Web. </li>
-                    </ul>
-                </li>
-                <li>
-                    Version 1.7.31 8/19/15
-                    <ul>
-                        <li>
-                            Update code that does merging so it works properly on Win10.  It does not have an effect if you look
-                            at the events with PerfView, but on Win10 until this change, data collected with PerfView would not
-                            parse EventSource events properly in WPA.
-                        </li>
-                    </ul>
+                    While this format is inefficient (you repeat many strings in many stacks), it is sometimes
+                    convenient, and it is easy enough to support.   There are more details which I will blog about in
+                    the near future.
                 </li>
             </ul>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-            <p>
-                &nbsp;
-            </p>
-</body>
+        </li>
+        <li>
+            Version 1.8.20 1/13/16
+            <ul>
+                <li>
+                    Improved the robustness of the UserCommand 'Listen' command in the face of bad events.
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.19 1/7/16
+            <ul>
+                <li>
+                    Significantly improved the Thread Time with Start-Stop Activities.  The goal here is
+                    that this view replaces the ASP.NET and Service Request view, and we are probably most of
+                    the way there now.   I need to validate this more and then probably obsolete the other views.
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.15 12/4/15
+            <ul>
+                <li>
+                    Fixed a fairly serious bug associated with the Events Viewer where you don't see some CLR events
+                    (They appear in the left pane, but you never see them in the right pane even though there are
+                    instances of them in the file).   Note that version 1.8.0 does not have this bug, it was introduced
+                    relatively recently.
+                </li>
+                <li>
+                    Added ActivityInfo and StartStopActivity fields to Events View.   ActivityInfo will show you the
+                    creation and start time (and the raw ID) of the System.Threading.Tasks.Task that logged  the event.
+                    StartStopActivity shows you the name of the start-stop activity that
+                    is logged the event.
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.15 12/4/15
+            <ul>
+                <li>
+                    Fixed a fairly serious bug associated with the Events Viewer where you don't see some CLR events
+                    (They appear in the left pane, but you never see them in the right pane even though there are
+                    instances of them in the file).   Note that version 1.8.0 does not have this bug, it was introduced
+                    relatively recently.
+                </li>
+                <li>
+                    Added ActivityInfo and StartStopActivity fields to Events View.   ActivityInfo will show you the
+                    creation and start time (and the raw ID) of the System.Threading.Tasks.Task that logged  the event.
+                    StartStopActivity shows you the name of the start-stop activity that
+                    is logged the event.
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.11 11/16/15
+            <ul>
+                <li>
+                    Fix excessive warnings when converting ETL files.   Might also fix some StartStop Activity issues.
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.10 11/12/15
+            <ul>
+                <li>
+                    Significant improvement in how activity tracking works.  Hopefully the stacks associated with 'with Tasks' views
+                    will be better.
+                </li>
+                <li>
+                    Added JIT Inlining feature that enables viewing all successful and failed inlining attempts, including the
+                    JIT-supplied reason for why inlining wasn't performed in the failure cases.
+                </li>
+                <li>
+                    Added finalization feature that tracks finalized objects and provides a table of each type with a finalized object
+                    and the associated number of times an object of that type was finalized.
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.9 11/1/15
+            <ul>
+                <li>
+                    There is a bug in RC candidates of V4.6.1 where NGEN createPdb only works if the path of the NGEN image
+                    is in the Native Image Cache (NIC), but V4.6.1 uses hard links for NGEN images that come from the install itself.
+                    The result is that you don't get symbols for mscorlib, system, and system.core.   This adds a work-around
+                    for this (normally all paths to the NIC path before calling NGEN CreatePdb), until the runtime is fixed.
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.8 10/31/15
+            <ul>
+                <li>
+                    Added support for .NET V4.6.2 convention for NGEN PDB line numbers.   This means that if data is collected on
+                    a V4.6.2 then the lack of access IL PDBS are not available at data collection time is not longer an
+                    impediment to getting line number information (that is access to the corresponding IL pdb with line number
+                    information is no longer needed to create an NGEN pdb that has line number information).
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.7 10/22/15
+            <ul>
+                <li>
+                    Integrated changes that allow DyanamicTraceEventParser to do everything that RegisteredTraceEventParser can do.
+                    Removed the calls to RegisteredTraceEventParser.   This could break things but should not.   So far things look
+                    OK.
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.6 10/12/15
+            <ul>
+                <li>
+                    Integrated Lee's update of CLRMD that should make PerfView able to extract heap dumps from debugger dumps of
+                    .NET Native processes.
+                </li>
+                <li>Added the DotNet (Telemetry) event ETW provider by default. </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.5 10/6/15
+            <ul>
+                <li>
+                    Made 'Any Stacks (with StartStop Activities)' and 'Any StartStopTree' public.
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.3 9/23/15
+            <ul>
+                <li>
+                    Turned off System.Threading.Tasks.Task events that are verbose and only needed for debugging.  This was
+                    useful before so that any traces I get have detailed information for debugging, but are now impacting
+                    the cost of using PerfView in production when Tasks are used heavily.
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.2 9/13/15
+            <ul>
+                <li> /InMemoryCircularBuffer option was broken (Would throw a file not found exception in SetFileName).  Fixed this. </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.1 9/3/15
+            <ul>
+                <li>
+                    Fixed issue where Debug versions were asserting that two stacks were attached to the same event
+                    because kernel and user mode stacks were not being stitched together properly (mostly in rare cases
+                    where thread-starts were happening)
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.0 8/30/15
+            <ul>
+                <li> Release to Web. </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.7.31 8/19/15
+            <ul>
+                <li>
+                    Update code that does merging so it works properly on Win10.  It does not have an effect if you look
+                    at the events with PerfView, but on Win10 until this change, data collected with PerfView would not
+                    parse EventSource events properly in WPA.
+                </li>
+            </ul>
+        </li>
+    </ul>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <p>
+        &nbsp;
+    </p>
+    <script>
+      // Set theme based on user preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    </script>
+  </body>
 </html>
