@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Address = System.UInt64;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
@@ -353,11 +354,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
     {
         public ulong Id { get { return GetVarUIntAt(0); } }
 
-        public string SymbolMetadata {get { return GetShortUTF8StringAt(SkipVarInt(0)); } }
+        public string SymbolMetadata { get { return GetShortUTF8StringAt(SkipVarInt(0)); } }
 
         internal ProcessMappingSymbolMetadata ParsedSymbolMetadata { get { return ProcessMappingSymbolMetadataParser.TryParse(SymbolMetadata); } }
 
-        public string VersionMetadata {get {return GetShortUTF8StringAt(SkipShortUTF8String(SkipVarInt(0))); } }
+        public string VersionMetadata { get { return GetShortUTF8StringAt(SkipShortUTF8String(SkipVarInt(0))); } }
 
         #region Private
         internal ProcessMappingMetadataTraceData(Action<ProcessMappingMetadataTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -428,17 +429,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
             PropertyNameCaseInsensitive = true,
             Converters =
             {
-                new JsonStringEnumConverter(),
+                new JsonStringEnumConverter<ProcessMappingSymbolMetadataFileType>(),
                 new GuidConverter(),
                 new ProcessMappingSymbolMetadataConverter()
-            }
+            },
+            TypeInfoResolver = UniversalSystemJsonContext.Default
         };
 
         internal static ProcessMappingSymbolMetadata TryParse(string json)
         {
             try
             {
-                return JsonSerializer.Deserialize<ProcessMappingSymbolMetadata>(json, Options);
+                return SourceGenJson.JsonDeserialize<ProcessMappingSymbolMetadata>(json, Options);
             }
             catch
             {
@@ -510,6 +512,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
     {
         public override ProcessMappingSymbolMetadata Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            // Recreate options with the custom context for serialization
+            options = new(options)
+            {
+                TypeInfoResolver = UniversalSystemJsonContext.Default
+            };
             using (JsonDocument document = JsonDocument.ParseValue(ref reader))
             {
                 JsonElement root = document.RootElement;
@@ -517,11 +524,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
 
                 if (string.Equals("PE", type, StringComparison.OrdinalIgnoreCase))
                 {
-                    return JsonSerializer.Deserialize<PEProcessMappingSymbolMetadata>(root.GetRawText(), options);
+                    return SourceGenJson.JsonDeserialize<PEProcessMappingSymbolMetadata>(root.GetRawText(), options);
                 }
                 else if (string.Equals("ELF", type, StringComparison.OrdinalIgnoreCase))
                 {
-                    return JsonSerializer.Deserialize<ELFProcessMappingSymbolMetadata>(root.GetRawText(), options);
+                    return SourceGenJson.JsonDeserialize<ELFProcessMappingSymbolMetadata>(root.GetRawText(), options);
                 }
                 else
                 {
@@ -532,7 +539,39 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
 
         public override void Write(Utf8JsonWriter writer, ProcessMappingSymbolMetadata value, JsonSerializerOptions options)
         {
-            JsonSerializer.Serialize(writer, value, value.GetType(), options);
+            SourceGenJson.JsonSerialize(writer, value, UniversalSystemJsonContext.Default, options);
         }
+    }
+
+    [JsonSerializable(typeof(PEProcessMappingSymbolMetadata))]
+    [JsonSerializable(typeof(ELFProcessMappingSymbolMetadata))]
+    [JsonSerializable(typeof(ProcessMappingSymbolMetadata))]
+    internal partial class UniversalSystemJsonContext : JsonSerializerContext
+    { }
+}
+
+internal static class SourceGenJson
+{
+    /// <summary>
+    /// Deserialize a JSON string into an object of type T using the provided JsonSerializerOptions.
+    /// Assumes that the options are already configured with the appropriate TypeInfoResolver.
+    /// </summary>
+    public static T JsonDeserialize<T>(string json, JsonSerializerOptions options)
+    {
+        return JsonSerializer.Deserialize<T>(json, (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T)));
+    }
+
+    public static void JsonSerialize<T>(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+    {
+        JsonSerializer.Serialize(writer, value, (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T)));
+    }
+
+    public static void JsonSerialize<T>(Utf8JsonWriter writer, T value, JsonSerializerContext ctx, JsonSerializerOptions options)
+    {
+        options = new JsonSerializerOptions(options)
+        {
+            TypeInfoResolver = ctx
+        };
+        JsonSerialize(writer, value, options);
     }
 }

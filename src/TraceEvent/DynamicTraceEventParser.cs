@@ -6,21 +6,25 @@ using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+using static Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData.PayloadFetch;
 using Address = System.UInt64;
 
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     /// <summary>
-    /// A DynamicTraceEventParser is a parser that understands how to read the embedded manifests that occur in the 
-    /// dataStream (System.Diagnostics.Tracing.EventSources do this).   
-    /// 
+    /// A DynamicTraceEventParser is a parser that understands how to read the embedded manifests that occur in the
+    /// dataStream (System.Diagnostics.Tracing.EventSources do this).
+    ///
     /// See also TDHDynamicTraceEventParser which knows how to read the manifest that are registered globally with
-    /// the machine.   
+    /// the machine.
     /// </summary>
     public class DynamicTraceEventParser : TraceEventParser
     {
@@ -31,12 +35,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         /// <summary>
         /// Create a new DynamicTraceEventParser (which can parse ETW providers that dump their manifests
-        /// to the ETW data stream) an attach it to the ETW data stream 'source'.  
+        /// to the ETW data stream) an attach it to the ETW data stream 'source'.
         /// </summary>
         public DynamicTraceEventParser(TraceEventSource source)
             : base(source)
         {
-            // Try to retrieve persisted state 
+            // Try to retrieve persisted state
             state = (DynamicTraceEventParserState)StateObject;
             if (state == null)
             {
@@ -45,9 +49,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 this.source.RegisterUnhandledEvent(CheckForDynamicManifest);
             }
 
-            // make a registeredParser to resolve self-describing events (and more).  
+            // make a registeredParser to resolve self-describing events (and more).
             registeredParser = new RegisteredTraceEventParser(source, true);
-            // But cause any of its new definitions to work on my subscriptions.  
+            // But cause any of its new definitions to work on my subscriptions.
             registeredParser.NewEventDefinition = OnNewEventDefintion;
             // make an eventPipeTraceEventParser to resolve EventPipe events
             eventPipeTraceEventParser = new EventPipeTraceEventParser(source, dontRegister: true);
@@ -55,7 +59,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
-        /// Returns a list of providers (their manifest) that this TraceParser knows about.   
+        /// Returns a list of providers (their manifest) that this TraceParser knows about.
         /// </summary>
         public IEnumerable<ProviderManifest> DynamicProviders
         {
@@ -66,7 +70,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
-        /// Given a manifest describing the provider add its information to the parser.  
+        /// Given a manifest describing the provider add its information to the parser.
         /// </summary>
         public void AddDynamicProvider(ProviderManifest providerManifest, bool noThrowOnError = false)
         {
@@ -76,7 +80,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             ProviderManifest prevManifest = null;
             if (state.providers.TryGetValue(providerManifest.Guid, out prevManifest))
             {
-                // If the new manifest is not strictly better than the one we already have, ignore it.   
+                // If the new manifest is not strictly better than the one we already have, ignore it.
                 if (!providerManifest.BetterThan(prevManifest))
                 {
                     // Trace.WriteLine("Dynamic: existing manifest just as good, returning");
@@ -84,7 +88,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-            // Register the new definitions. 
+            // Register the new definitions.
             providerManifest.ParseProviderEvents(delegate (DynamicTraceEventData template)
             {
                 return OnNewEventDefintion(template, prevManifest != null);
@@ -93,12 +97,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // Remember this serialized information.(do it afterward so ContainKey call above is accurate)
             state.providers[providerManifest.Guid] = providerManifest;
 
-            // Register the manifest event with myself so that I continue to get updated manifests.  
-            // TODO we are 'leaking' these today.  Clean them up on Dispose.  
+            // Register the manifest event with myself so that I continue to get updated manifests.
+            // TODO we are 'leaking' these today.  Clean them up on Dispose.
             var callback = new DynamicManifestTraceEventData(delegate (TraceEvent data) { CheckForDynamicManifest(data); }, providerManifest);
             source.RegisterEventTemplate(callback);
 
-            // Raise the event that says we found a new provider.   
+            // Raise the event that says we found a new provider.
             var newProviderCallback = DynamicProviderAdded;
             if (newProviderCallback != null)
             {
@@ -117,17 +121,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Directory.CreateDirectory(directoryPath);
             foreach (var providerManifest in DynamicProviders)
             {
-                
+
                 var filePath = Path.Combine(directoryPath, providerManifest.Name + ".manifest.xml");
                 providerManifest.WriteToFile(filePath);
             }
         }
 
         /// <summary>
-        /// Utility method that read all the manifests the directory 'directoryPath' into the parser.   
+        /// Utility method that read all the manifests the directory 'directoryPath' into the parser.
         /// Manifests must end in a .man or .manifest.xml suffix.   It will throw an error if
-        /// the manifest is incorrect or using unsupported options.  
-        /// </summary>        
+        /// the manifest is incorrect or using unsupported options.
+        /// </summary>
         public void ReadAllManifests(string directoryPath)
         {
             foreach (var fileName in Directory.GetFiles(directoryPath, "*.manifest.xml"))
@@ -141,7 +145,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
-        /// Override.  
+        /// Override.
         /// </summary>
         public override bool IsStatic { get { return false; } }
 
@@ -150,11 +154,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// of ETW providers known to this DynamicTraceEventParser.   This includes
         /// when the EventSource manifest events are encountered as well as any
         /// explicit calls to AddDynamicProvider.  (including ReadAllManifests).
-        /// 
+        ///
         /// The Parser will filter out duplicate manifest events, however if an
         /// old version of a provider's manifest is encountered, and later a newer
         /// version is encountered, you can receive this event more than once for
-        /// a single provider.  
+        /// a single provider.
         /// </summary>
         public event Action<ProviderManifest> DynamicProviderAdded;
 
@@ -164,7 +168,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         protected override string GetProviderName()
         {
-            // This parser covers more than one provider, so the convention is that you return null for the provider name. 
+            // This parser covers more than one provider, so the convention is that you return null for the provider name.
             return null;
         }
 
@@ -178,7 +182,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return false;
             }
 
-            // We also are expecting only these tasks and opcodes.  
+            // We also are expecting only these tasks and opcodes.
             if (data.Opcode != (TraceEventOpcode)0xFE || data.Task != (TraceEventTask)0xFFFE)
             {
                 return false;
@@ -192,7 +196,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return false;
             }
 
-            // Look up our information. 
+            // Look up our information.
             List<PartialManifestInfo> partialManifestsForGuid;
             if (!partialManifests.TryGetValue(data.ProviderGuid, out partialManifestsForGuid))
             {
@@ -201,7 +205,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             PartialManifestInfo partialManifest = null;
-            // PERF: Expansion of 
+            // PERF: Expansion of
             //    partialManifest = partialManifestsForGuid.Find(e => data.ProcessID == e.ProcessID && data.ThreadID == e.ThreadID);
             // that avoids the delegate allocation.
             foreach (var p in partialManifestsForGuid)
@@ -220,7 +224,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             ProviderManifest provider = partialManifest.AddChunk(data);
-            // We have a completed manifest, add it to our list.  
+            // We have a completed manifest, add it to our list.
             if (provider != null)
             {
                 partialManifestsForGuid.Remove(partialManifest);
@@ -233,17 +237,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
 
                 AddDynamicProvider(provider, true);
-                return true;  // I should have added a manifest event, so re-lookup the event 
+                return true;  // I should have added a manifest event, so re-lookup the event
             }
             return false;
         }
 
         /// <summary>
-        /// Override 
+        /// Override
         /// </summary>
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
-            // Normally state is setup in the constructor, but call can be invoked before the constructor has finished, 
+            // Normally state is setup in the constructor, but call can be invoked before the constructor has finished,
             if (state == null)
             {
                 state = (DynamicTraceEventParserState)StateObject;
@@ -262,12 +266,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         }
                     }
 
-                    // We should only return a particular template at most once.   
-                    // However registredParser can overlap with dynamicParser 
+                    // We should only return a particular template at most once.
+                    // However registredParser can overlap with dynamicParser
                     // (this can happen if the ETL was merged and has KernelTraceControler events for the provider
-                    // or someone registers an EventSource with the OS).     
+                    // or someone registers an EventSource with the OS).
                     // Since we will Enumerate all the events the registeredParser knows
-                    // about below, we filter out any duplicates here. 
+                    // about below, we filter out any duplicates here.
                     if (!registeredParser.HasDefinitionForTemplate(template))
                     {
                         callback(template);
@@ -276,7 +280,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return EventFilterResponse.AcceptEvent;
                 }, true);
             }
-            // also enumerate any events from the registeredParser.  
+            // also enumerate any events from the registeredParser.
             registeredParser.EnumerateTemplates(eventsToObserve, callback);
 
             // also enumerate any events from the eventPipeTraceEventParser
@@ -305,7 +309,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     goto Fail;
                 }
 
-                if (data.EventDataLength <= sizeof(ManifestEnvelope) || data.GetByteAt(3) != 0x5B)  // magic number 
+                if (data.EventDataLength <= sizeof(ManifestEnvelope) || data.GetByteAt(3) != 0x5B)  // magic number
                 {
                     goto Fail;
                 }
@@ -319,7 +323,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 if (Chunks == null)
                 {
-                    // To allow for resyncing at 0, otherwise we fail aggressively. 
+                    // To allow for resyncing at 0, otherwise we fail aggressively.
                     if (chunkNum != 0)
                     {
                         goto Fail;
@@ -333,7 +337,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
                 else
                 {
-                    // Chunks have to agree with the format and version information. 
+                    // Chunks have to agree with the format and version information.
                     if (format != (ManifestEnvelope.ManifestFormats)data.GetByteAt(0) ||
                         majorVersion != data.GetByteAt(1) || minorVersion != data.GetByteAt(2))
                     {
@@ -364,7 +368,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         totalLength += Chunks[i].Length;
                     }
 
-                    // Concatenate all the arrays. 
+                    // Concatenate all the arrays.
                     serializedData = new byte[totalLength];
                     int pos = 0;
                     for (int i = 0; i < Chunks.Length; i++)
@@ -389,11 +393,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private DynamicTraceEventParserState state;
         private Dictionary<Guid, List<PartialManifestInfo>> partialManifests;
 
-        // It is not intuitive that self-describing events (which are arguably 'dynamic') are resolved by 
-        // the RegisteredTraceEventParser.  This is even more wacky in a mixed EventSource where some events 
+        // It is not intuitive that self-describing events (which are arguably 'dynamic') are resolved by
+        // the RegisteredTraceEventParser.  This is even more wacky in a mixed EventSource where some events
         // are resolved by dynamic manifest and some are self-describing.     To avoid these issues DynamicTraceEventParsers
-        // be able to handle both (it can resolve anything a RegisteredTraceEventParser can).  This 
-        // RegisteredTraceEventParser is how this gets accomplished.   
+        // be able to handle both (it can resolve anything a RegisteredTraceEventParser can).  This
+        // RegisteredTraceEventParser is how this gets accomplished.
         private RegisteredTraceEventParser registeredParser;
 
         // It is enabling DynamicTraceEventParsers to handle the EventSource events from EventPipe.
@@ -405,10 +409,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     #region internal classes
     /// <summary>
     /// DynamicTraceEventData is an event that knows how to take runtime information to parse event fields (and payload)
-    /// 
+    ///
     /// This meta-data is distilled down to a array of field names and an array of PayloadFetches which contain enough
-    /// information to find the field data in the payload blob.   This meta-data is used in the 
-    /// DynamicTraceEventData.PayloadNames and DynamicTraceEventData.PayloadValue methods.  
+    /// information to find the field data in the payload blob.   This meta-data is used in the
+    /// DynamicTraceEventData.PayloadNames and DynamicTraceEventData.PayloadValue methods.
     /// </summary>
     internal class DynamicTraceEventData : TraceEvent, IFastSerializable
     {
@@ -451,7 +455,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 Debug.Assert(computedSize <= this.EventDataLength);
                 if ((int)ID != 0xFFFE) // If it is not a manifest event
                 {
-                    // TODO FIX NOW the || condition is a hack because PerfVIew.ClrEnableParameters fails.  
+                    // TODO FIX NOW the || condition is a hack because PerfVIew.ClrEnableParameters fails.
                     Debug.Assert(computedSize <= this.EventDataLength || this.ProviderName == "PerfView");
                 }
 #endif
@@ -461,7 +465,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     offset = SkipToField(payloadFetches, index, 0, EventDataLength, true);
                 }
 
-                // Fields that are simply not present, (perfectly) we simply return null for.  
+                // Fields that are simply not present, (perfectly) we simply return null for.
                 if (offset == EventDataLength)
                 {
                     return null;
@@ -481,9 +485,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 throw new ArgumentOutOfRangeException("Payload size exceeds buffer size.");
             }
-            Type type = payloadFetch.Type;
+            FetchType? typeOpt = payloadFetch.Type;
 
-            // Is this a struct field? 
+            // Is this a struct field?
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
             if (classInfo != null)
             {
@@ -502,11 +506,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 var arrayCount = GetCountForArray(payloadFetch, arrayInfo, ref offset);
                 var elementType = arrayInfo.Element.Type;
-                
+
                 // Arrays of characters can be deserialized as strings if desired.
-                if(type == typeof(string))
+                if(typeOpt == FetchType.System_String)
                 {
-                    Debug.Assert(arrayInfo.Element.Type == typeof(char));
+                    Debug.Assert(arrayInfo.Element.Type == FetchType.System_Char);
                     Debug.Assert(arrayInfo.Element.Size == 1 || arrayInfo.Element.Size == 2);
                     if (arrayInfo.Element.Size == 1)
                     {
@@ -519,13 +523,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
 
                 // Byte array short-circuit.
-                if (elementType == typeof(byte))
+                if (elementType == FetchType.System_Byte)
                 {
                     return GetByteArrayAt(offset, arrayCount);
                 }
 
                 // TODO this is very inefficient for blitable types. Optimize that.
-                var ret = Array.CreateInstance(elementType, arrayCount);
+                var ret = FetchTypeHelpers.CreateArrayOfType(elementType, arrayCount);
                 for (int i = 0; i < arrayCount; i++)
                 {
                     object value = GetPayloadValueAt(ref arrayInfo.Element, offset, payloadLength);
@@ -533,22 +537,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     // input=Array of ulong
                     // output=Array of IntPtr
                     // This is common for bitmasks.  To address this, we special case it here.
-                    if (elementType == typeof(IntPtr) && value is ulong uintVal)
+                    if (elementType == FetchType.System_IntPtr && value is ulong uintVal)
                     {
                         value = new IntPtr(unchecked((long)uintVal));
                     }
-                    else if (value.GetType() != elementType)
+                    else if (arrayInfo.Element.Type != elementType)
                     {
-                        value = ((IConvertible)value).ToType(elementType, null);
+                        value = FetchTypeHelpers.Convert(elementType, value); // ((IConvertible)value).ToType(elementType, null);
                     }
 
                     ret.SetValue(value, i);
                     offset = OffsetOfNextField(ref arrayInfo.Element, offset, payloadLength);
                 }
+
                 return ret;
             }
 
-            if (type == null)
+            if (typeOpt is not {} type)
             {
                 return "[CANT PARSE]";
             }
@@ -561,21 +566,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // CONSIDER:  The code below ensures that if you have fields that are
             // 'off the end' of a data that you return the default value.  That
             // allows the parser to gracefully handle old events that have fewer
-            // fields but does NOT guarantee we don't read past the end of the 
+            // fields but does NOT guarantee we don't read past the end of the
             // buffer in all cases (if you have corrupt/mismatched data).   The
             // code below does ensure this but is more expensive.   For now I have
-            // chosen the cheaper solution.   
+            // chosen the cheaper solution.
             //
             // if ((uint)EventDataLength < OffsetOfNextField(offset, index))
             //     return GetDefaultValueByType(payloadFetches[index].type);
 
             if ((uint)EventDataLength <= (uint)offset)
             {
-                return GetDefaultValueByType(type);
+                return FetchTypeHelpers.GetDefaultValueByType(type);
             }
 
             ushort size = payloadFetch.Size;
-            switch (Type.GetTypeCode(type))
+            switch (FetchTypeHelpers.GetTypeCode(type))
             {
                 case TypeCode.String:
                     {
@@ -609,7 +614,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 }
                                 if (unicodeByteCountString)
                                 {
-                                    size /= 2;     // Unicode string with BYTE count.   Element count is half that.  
+                                    size /= 2;     // Unicode string with BYTE count.   Element count is half that.
                                 }
                             }
                             else
@@ -617,7 +622,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 return "[CANT PARSE STRING]";
                             }
                         }
-                        else if (size > 0x8000)     // What is this? looks like a hack.  
+                        else if (size > 0x8000)     // What is this? looks like a hack.
                         {
                             size -= 0x8000;
                             isAnsi = true;
@@ -638,7 +643,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     {
                         return (char)GetByteAt(offset);
                     }
-                    else 
+                    else
                     {
                         return (char)GetInt16At(offset);
                     }
@@ -681,7 +686,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 case TypeCode.Double:
                     return GetDoubleAt(offset);
                 default:
-                    if (type == typeof(IntPtr))
+                    if (typeOpt == FetchType.System_IntPtr)
                     {
                         if (PointerSize == 4)
                         {
@@ -692,11 +697,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             return (Address)GetInt64At(offset);
                         }
                     }
-                    else if (type == typeof(Guid))
+                    else if (typeOpt == FetchType.System_Guid)
                     {
                         return GetGuidAt(offset);
                     }
-                    else if (type == typeof(DateTime))
+                    else if (typeOpt == FetchType.System_DateTime)
                     {
                         if (payloadFetch.Size == 16)
                         {
@@ -722,8 +727,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
-        ///  Used by PayloadValue to represent a structure.   It is basically a IDictionary with a ToString() that 
-        ///  returns the value as JSON. 
+        ///  Used by PayloadValue to represent a structure.   It is basically a IDictionary with a ToString() that
+        ///  returns the value as JSON.
         /// </summary>
         internal class StructValue : IDictionary<string, object>
         {
@@ -875,10 +880,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             #endregion
         }
 
-        // Return the default value for a given type  
-        private object GetDefaultValueByType(Type type)
+        // Return the default value for a given type
+        private object GetDefaultValueByType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
-            if (type == typeof(string))     // Activator.CreateInstance does not work on strings.  
+            if (type == typeof(string))     // Activator.CreateInstance does not work on strings.
             {
                 return String.Empty;
             }
@@ -893,7 +898,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public override string PayloadString(int index, IFormatProvider formatProvider = null)
         {
-            // See if you can do enumeration mapping.  
+            // See if you can do enumeration mapping.
             var map = payloadFetches[index].Map;
             if (map != null)
             {
@@ -907,7 +912,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 if (map is SortedDictionary<long, string>)
                 {
                     StringBuilder sb = new StringBuilder();
-                    // It is a bitmap, compute the bits from the bitmap.  
+                    // It is a bitmap, compute the bits from the bitmap.
                     foreach (var keyValue in map)
                     {
                         if (asLong == 0)
@@ -961,7 +966,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-            // Otherwise do the default transformations. 
+            // Otherwise do the default transformations.
             return base.PayloadString(index, formatProvider);
         }
         /// <summary>
@@ -987,24 +992,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return base.GetFormattedMessage(formatProvider);
             }
 
-            // TODO is this error handling OK?  
-            // Replace all %N with the string value for that parameter.  
+            // TODO is this error handling OK?
+            // Replace all %N with the string value for that parameter.
             return paramReplacer.Replace(MessageFormat, delegate (Match m)
             {
                 int targetIndex = int.Parse(m.Groups[1].Value) - 1;
 
                 // for some array and string values, we remove the length field.  Account
                 // for that when we are resolving the %X qualifers by searching up from
-                // 0 adjusting along the way for removed fields.  
+                // 0 adjusting along the way for removed fields.
                 int index = 0;
                 for (int fixedIndex = 0; fixedIndex < payloadFetches.Length; fixedIndex++)
                 {
-                    // This field is the length field that was removed from the payloafFetches array. 
+                    // This field is the length field that was removed from the payloafFetches array.
                     if (DynamicTraceEventData.ConsumesFields(payloadFetches[fixedIndex].Size))
                     {
                         if (index == targetIndex)
                         {
-                            // Try to output the correct length by getting the next value and computing its length.  
+                            // Try to output the correct length by getting the next value and computing its length.
                             object obj = PayloadValue(fixedIndex);
                             string asString = obj as string;
                             if (asString != null)
@@ -1018,9 +1023,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 return asArray.Length.ToString();
                             }
 
-                            return ""; // give up and return an empty string.  
+                            return ""; // give up and return an empty string.
                         }
-                        index++;        // skip the removed field.  
+                        index++;        // skip the removed field.
                     }
                     if (index == targetIndex)
                     {
@@ -1043,13 +1048,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // First find a valid fieldIdx, fieldOffset pair
             if (useCache && cachedEventId == EventIndex && cachedFieldIdx <= targetFieldIdx && startOffset == 0)
             {
-                // We fetched a previous field, great, start from there.  
+                // We fetched a previous field, great, start from there.
                 fieldOffset = cachedFieldOffset;
                 fieldIdx = cachedFieldIdx;
             }
             else
             {
-                // no cached value, search backwards for the first field that has a fixed offset. 
+                // no cached value, search backwards for the first field that has a fixed offset.
                 fieldOffset = 0;
                 fieldIdx = targetFieldIdx;
                 while (0 < fieldIdx)
@@ -1064,25 +1069,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 fieldOffset += startOffset;
             }
 
-            // If we try to skip t fields that are not present, we simply stop at the end of the buffer.  
+            // If we try to skip t fields that are not present, we simply stop at the end of the buffer.
             if (payloadLength <= fieldOffset)
             {
                 return payloadLength;
             }
 
             // This can be N*N but because of our cache, it is not in the common case when you fetch
-            // fields in order.   
+            // fields in order.
             while (fieldIdx < targetFieldIdx)
             {
                 fieldOffset = OffsetOfNextField(ref payloadFetches[fieldIdx], fieldOffset, payloadLength);
 
-                // If we try to skip to fields that are not present, we simply stop at the end of the buffer.  
+                // If we try to skip to fields that are not present, we simply stop at the end of the buffer.
                 if (fieldOffset == payloadLength)
                 {
                     return payloadLength;
                 }
 
-                // however if we truly go past the end of the buffer, something went wrong and we want to signal that. 
+                // however if we truly go past the end of the buffer, something went wrong and we want to signal that.
                 if (payloadLength < fieldOffset)
                 {
                     throw new ArgumentOutOfRangeException("Payload size exceeds buffer size.");
@@ -1091,11 +1096,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 fieldIdx++;
             }
 
-            // Remember our answer since can start there for the next field efficiently.  
+            // Remember our answer since can start there for the next field efficiently.
             if (useCache && startOffset == 0)
             {
 #if DEBUG
-                // If we computed the result using the cache,  compute it again without the cache and we should get the same answer.  
+                // If we computed the result using the cache,  compute it again without the cache and we should get the same answer.
                 if (cachedEventId == this.EventIndex)
                 {
                     cachedEventId = EventIndex.Invalid;
@@ -1111,7 +1116,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         /// <summary>
         /// Returns the count of elements for the array represented by 'arrayInfo'
-        /// It also will adjust 'offset' so that it points at the first array element. 
+        /// It also will adjust 'offset' so that it points at the first array element.
         /// </summary>
         private int GetCountForArray(PayloadFetch payloadFetch, PayloadFetchArrayInfo arrayInfo, ref int offset)
         {
@@ -1179,7 +1184,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return SkipToField(classInfo.FieldFetches, classInfo.FieldFetches.Length, offset, payloadLength, false);
             }
 
-            // TODO cache this when you parse the value so that you don't need to do it twice.  Right now it is pretty inefficient. 
+            // TODO cache this when you parse the value so that you don't need to do it twice.  Right now it is pretty inefficient.
             PayloadFetchArrayInfo arrayInfo = payloadFetch.Array;
             if (arrayInfo != null)
             {
@@ -1219,7 +1224,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 return offset + PointerSize;
             }
-            else if (IsCountedSize(size) && payloadFetch.Type == typeof(string))
+            else if (IsCountedSize(size) && payloadFetch.Type == FetchType.System_String)
             {
                 int elemSize;
                 if (((size & BIT_32) != 0))
@@ -1234,7 +1239,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
                 if ((size & IS_ANSI) == 0 && (size & ELEM_COUNT) != 0)
                 {
-                    elemSize *= 2;     // Counted (not byte counted) unicode string. chars are 2 wide. 
+                    elemSize *= 2;     // Counted (not byte counted) unicode string. chars are 2 wide.
                 }
 
                 return offset + elemSize;
@@ -1252,9 +1257,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        internal static ushort SizeOfType(Type type)
+        internal static ushort SizeOfType(FetchType type)
         {
-            switch (Type.GetTypeCode(type))
+            switch (FetchTypeHelpers.GetTypeCode(type))
             {
                 case TypeCode.String:
                     return NULL_TERMINATED;
@@ -1266,7 +1271,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return 2;
                 case TypeCode.UInt32:
                 case TypeCode.Int32:
-                case TypeCode.Boolean:      // We follow windows conventions and use 4 bytes for bool.  
+                case TypeCode.Boolean:      // We follow windows conventions and use 4 bytes for bool.
                 case TypeCode.Single:
                     return 4;
                 case TypeCode.UInt64:
@@ -1275,60 +1280,60 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 case TypeCode.DateTime:
                     return 8;
                 default:
-                    if (type == typeof(Guid))
+                    if (type == FetchType.System_Guid)
                     {
                         return 16;
                     }
 
-                    if (type == typeof(IntPtr))
+                    if (type == FetchType.System_IntPtr)
                     {
                         return POINTER_SIZE;
                     }
 
-                    throw new Exception("Unsupported type " + type.Name); // TODO 
+                    throw new Exception("Unsupported type " + FetchTypeHelpers.GetName(type)); // TODO
             }
         }
 
         // IS_ANSI can be used to modify COUNTED_SIZE as well as NULL_TERMINATED
-        internal const ushort IS_ANSI = 1;        // If set the string is ASCII, unset is UNICODE 
-        // The following 3 bits are used to modify the 'COUNTED_SIZE' constant 
+        internal const ushort IS_ANSI = 1;        // If set the string is ASCII, unset is UNICODE
+        // The following 3 bits are used to modify the 'COUNTED_SIZE' constant
         internal const ushort BIT_32 = 2;         // If set the count is a 32 bit number.  unset is 16 bit
-        internal const ushort CONSUMES_FIELD = 4; // If set there was a explicit count field in the manifest, unset means no explicit field 
-        internal const ushort ELEM_COUNT = 8;     // If set count is a char/element count.  unset means count is a count of BYTES.  Does not include the size prefix itself  
+        internal const ushort CONSUMES_FIELD = 4; // If set there was a explicit count field in the manifest, unset means no explicit field
+        internal const ushort ELEM_COUNT = 8;     // If set count is a char/element count.  unset means count is a count of BYTES.  Does not include the size prefix itself
 
         internal static bool IsNullTerminated(ushort size) { return (size & ~IS_ANSI) == NULL_TERMINATED; }
         internal static bool IsCountedSize(ushort size) { return size >= COUNTED_SIZE; }
 
         internal static bool ConsumesFields(ushort size) { return IsCountedSize(size) && (size & CONSUMES_FIELD) != 0; }
 
-        // These are special sizes 
+        // These are special sizes
         // sizes from 0xFFF0 through 0xFFFF are variations of VAR_SIZE
-        internal const ushort COUNTED_SIZE = 0xFFF0;   // The size is variable.  Size preceded the data, bits above tell more.   
+        internal const ushort COUNTED_SIZE = 0xFFF0;   // The size is variable.  Size preceded the data, bits above tell more.
 
         // Size 0xFFEF is NULL_TERMINATED | IS_ANSI
-        internal const ushort NULL_TERMINATED = 0xFFEE; // value is a null terminated string.   
+        internal const ushort NULL_TERMINATED = 0xFFEE; // value is a null terminated string.
 
         internal const ushort POINTER_SIZE = 0xFFED;        // It is the pointer size of the target machine.
         internal const ushort VARINT = 0xFFEC;
         internal const ushort UNKNOWN_SIZE = 0xFFEB;        // Generic unknown.
-        internal const ushort SPECIAL_SIZES = UNKNOWN_SIZE; // This is always the smallest size as an unsiged number.    
+        internal const ushort SPECIAL_SIZES = UNKNOWN_SIZE; // This is always the smallest size as an unsiged number.
 
         internal struct PayloadFetch
         {
             /// <summary>
             /// Constructor for normal types, (int, string) ...)   Also handles Enums (which are ints with a map)
             /// </summary>
-            public PayloadFetch(ushort offset, ushort size, Type type, IDictionary<long, string> map = null)
+            public PayloadFetch(ushort offset, ushort size, FetchType fetchType, IDictionary<long, string> map = null)
             {
                 Offset = offset;
                 Size = size;
-                Type = type;
+                Type = fetchType;
                 info = map;
             }
 
             /// <summary>
             /// Initialized a PayloadFetch for a given inType.  REturns Size = DynamicTraceEventData.UNKNOWN_SIZE
-            /// if the type is unknown.  
+            /// if the type is unknown.
             /// </summary>
 
             public PayloadFetch(ushort offset, RegisteredTraceEventParser.TdhInputType inType, int outType)
@@ -1339,25 +1344,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 switch (inType)
                 {
                     case RegisteredTraceEventParser.TdhInputType.UnicodeString:
-                        Type = typeof(string);
+                        Type = FetchType.System_String;
                         Size = DynamicTraceEventData.NULL_TERMINATED;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.AnsiString:
-                        Type = typeof(string);
+                        Type = FetchType.System_String;
                         Size = DynamicTraceEventData.NULL_TERMINATED | DynamicTraceEventData.IS_ANSI;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.UInt8:
                         if (outType == 13)       // Encoding for boolean
                         {
-                            Type = typeof(bool);
+                            Type = FetchType.System_Boolean;
                             Size = 1;
                             break;
                         }
                         goto case RegisteredTraceEventParser.TdhInputType.Int8; // Fall through
                     case RegisteredTraceEventParser.TdhInputType.Binary:
-                    // Binary is an array of bytes.  The later logic will transform it to array, thus Binary is like byte 
+                    // Binary is an array of bytes.  The later logic will transform it to array, thus Binary is like byte
                     case RegisteredTraceEventParser.TdhInputType.Int8:
-                        Type = typeof(byte);
+                        Type = FetchType.System_Byte;
                         Size = 1;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Int16:
@@ -1365,87 +1370,87 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         Size = 2;
                         if (outType == 1)       // Encoding for String
                         {
-                            Type = typeof(char);
+                            Type = FetchType.System_Char;
                             break;
                         }
-                        Type = typeof(short);
+                        Type = FetchType.System_Int16;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Int32:
                     case RegisteredTraceEventParser.TdhInputType.UInt32:
                     case RegisteredTraceEventParser.TdhInputType.HexInt32:
-                        Type = typeof(int);
+                        Type = FetchType.System_Int32;
                         Size = 4;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Int64:
                     case RegisteredTraceEventParser.TdhInputType.UInt64:
                     case RegisteredTraceEventParser.TdhInputType.HexInt64:
-                        Type = typeof(long);
+                        Type = FetchType.System_Int64;
                         Size = 8;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Float:
-                        Type = typeof(float);
+                        Type = FetchType.System_Single;
                         Size = 4;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Double:
-                        Type = typeof(double);
+                        Type = FetchType.System_Double;
                         Size = 8;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Boolean:
-                        Type = typeof(bool);
+                        Type = FetchType.System_Boolean;
                         Size = 4;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.GUID:
-                        Type = typeof(Guid);
+                        Type = FetchType.System_Guid;
                         Size = 16;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Pointer:
                     case RegisteredTraceEventParser.TdhInputType.SizeT:
-                        Type = typeof(IntPtr);
+                        Type = FetchType.System_IntPtr;
                         Size = DynamicTraceEventData.POINTER_SIZE;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.FILETIME:
-                        Type = typeof(DateTime);
+                        Type = FetchType.System_DateTime;
                         Size = 8;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.CountedUtf16String:
                     case RegisteredTraceEventParser.TdhInputType.CountedString:
-                        Type = typeof(string);
+                        Type = FetchType.System_String;
                         Size = DynamicTraceEventData.COUNTED_SIZE;  // Unicode, 16 bit, byteCount
                         break;
                     case RegisteredTraceEventParser.TdhInputType.CountedAnsiString:
                     case RegisteredTraceEventParser.TdhInputType.CountedMbcsString:
-                        Type = typeof(string);
-                        Size = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.IS_ANSI + DynamicTraceEventData.ELEM_COUNT; // 16 Bit. 
+                        Type = FetchType.System_String;
+                        Size = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.IS_ANSI + DynamicTraceEventData.ELEM_COUNT; // 16 Bit.
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Struct:
-                        Type = typeof(DynamicTraceEventData.StructValue);
+                        Type = FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue;
                         Size = DynamicTraceEventData.UNKNOWN_SIZE;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.SYSTEMTIME:
-                        Type = typeof(DateTime);
+                        Type = FetchType.System_DateTime;
                         Size = 16;
                         break;
                     default:
                         Size = DynamicTraceEventData.UNKNOWN_SIZE;
-                        Type = null;
+                        Type = null; // Unknown type.
                         break;
                 }
             }
 
             private static bool ArrayElementCanProjectToString(PayloadFetch element)
             {
-                return element.Type == typeof(char) && (element.Size == 1 || element.Size == 2);
+                return element.Type == FetchType.System_Char && (element.Size == 1 || element.Size == 2);
             }
 
             /// <summary>
-            /// Returns a payload fetch for a Array.   If you know the count, then you can give it. 
+            /// Returns a payload fetch for a Array.   If you know the count, then you can give it.
             /// </summary>
             public static PayloadFetch ArrayPayloadFetch(ushort offset, PayloadFetch element, ushort size, ushort fixedCount = 0, bool projectCharArrayAsString = true)
             {
                 var ret = new PayloadFetch();
                 ret.Offset = offset;
                 ret.Size = size;
-                ret.info = new PayloadFetchArrayInfo() 
+                ret.info = new PayloadFetchArrayInfo()
                 {
                     Element = element,
                     FixedCount = fixedCount,
@@ -1453,9 +1458,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 };
 
                 // If the array is a char array, then we can project it as a string.
-                if(projectCharArrayAsString && ArrayElementCanProjectToString(element))
+                if (projectCharArrayAsString && ArrayElementCanProjectToString(element))
                 {
-                    ret.Type = typeof(string);
+                    ret.Type = FetchType.System_String;
                 }
 
                 return ret;
@@ -1469,7 +1474,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     uint fixedSize = (uint)(elementCount * element.Size);
                     if (fixedSize >= SPECIAL_SIZES)
                     {
-                        throw new ArgumentOutOfRangeException($"FixedCountArray cannot exceed {SPECIAL_SIZES-1} bytes. ElementCount: {elementCount}, ElementTypeSize: {element.Size}");
+                        throw new ArgumentOutOfRangeException($"FixedCountArray cannot exceed {SPECIAL_SIZES - 1} bytes. ElementCount: {elementCount}, ElementTypeSize: {element.Size}");
                     }
                     size = (ushort)fixedSize;
                 }
@@ -1478,44 +1483,44 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             public static PayloadFetch RelLocPayloadFetch(ushort offset, PayloadFetch element, bool projectCharArrayAsString = true)
             {
-                if(!element.IsFixedSize)
+                if (!element.IsFixedSize)
                 {
                     throw new ArgumentException("RelLocPayloadFetch requires a fixed size element type.");
                 }
                 var ret = new PayloadFetch();
                 ret.Offset = offset;
                 ret.Size = 4;
-                ret.info = new PayloadFetchArrayInfo() 
+                ret.info = new PayloadFetchArrayInfo()
                 {
                     Element = element,
                     FixedCount = 0,
                     Kind = ArrayKind.RelLoc
                 };
-                if(projectCharArrayAsString && ArrayElementCanProjectToString(element))
+                if (projectCharArrayAsString && ArrayElementCanProjectToString(element))
                 {
-                    ret.Type = typeof(string);
+                    ret.Type = FetchType.System_String;
                 }
                 return ret;
             }
 
             public static PayloadFetch DataLocPayloadFetch(ushort offset, PayloadFetch element, bool projectCharArrayAsString = true)
             {
-                if(!element.IsFixedSize)
+                if (!element.IsFixedSize)
                 {
                     throw new ArgumentException("DataLocPayloadFetch requires a fixed size element type.");
                 }
                 var ret = new PayloadFetch();
                 ret.Offset = offset;
                 ret.Size = 4;
-                ret.info = new PayloadFetchArrayInfo() 
+                ret.info = new PayloadFetchArrayInfo()
                 {
                     Element = element,
                     FixedCount = 0,
                     Kind = ArrayKind.DataLoc
                 };
-                if(projectCharArrayAsString && ArrayElementCanProjectToString(element))
+                if (projectCharArrayAsString && ArrayElementCanProjectToString(element))
                 {
-                    ret.Type = typeof(string);
+                    ret.Type = FetchType.System_String;
                 }
                 return ret;
             }
@@ -1545,18 +1550,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     size = DynamicTraceEventData.UNKNOWN_SIZE; // We don't know the size of the field.
                 }
                 ret.Size = (ushort)size;
-                ret.Type = typeof(StructValue);
+                ret.Type = FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue;
                 ret.info = fields;
                 return ret;
             }
 
             /// <summary>
-            /// Offset from the beginning of the struct.  
+            /// Offset from the beginning of the struct.
             /// </summary>
             public ushort Offset;       // offset == MaxValue means variable size.
 
             // TODO come up with a real encoding for variable sized things
-            // See special encodings above (also size > 0x8000 means fixed length ANSI).  
+            // See special encodings above (also size > 0x8000 means fixed length ANSI).
             public ushort Size;
 
             public bool IsFixedSize => Size < SPECIAL_SIZES;
@@ -1567,13 +1572,225 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 get { return info as PayloadFetchClassInfo; }
             }
 
-            // Non null if 'Type' is an array 
+            // Non null if 'Type' is an array
             public PayloadFetchArrayInfo Array
             {
                 get { return info as PayloadFetchArrayInfo; }
             }
 
-            public Type Type;       // Currently null for arrays.  
+            public FetchType? Type;    // currently null for arrays
+
+            public enum FetchType
+            {
+                System_Boolean,
+                System_Char,
+                System_String,
+                System_SByte,
+                System_Int16,
+                System_Int32,
+                System_Int64,
+                System_Byte,
+                System_UInt16,
+                System_UInt32,
+                System_UInt64,
+                System_Single,
+                System_Double,
+                System_Decimal,
+                System_DateTime,
+                System_Guid,
+                System_IntPtr,
+                Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue,
+            }
+
+            public static class FetchTypeHelpers
+            {
+                public static FetchType Parse(string typeName)
+                {
+                    return typeName switch
+                    {
+                        "System.Boolean" => FetchType.System_Boolean,
+                        "System.Char" => FetchType.System_Char,
+                        "System.String" => FetchType.System_String,
+                        "System.SByte" => FetchType.System_SByte,
+                        "System.Int16" => FetchType.System_Int16,
+                        "System.Int32" => FetchType.System_Int32,
+                        "System.Int64" => FetchType.System_Int64,
+                        "System.Byte" => FetchType.System_Byte,
+                        "System.UInt16" => FetchType.System_UInt16,
+                        "System.UInt32" => FetchType.System_UInt32,
+                        "System.UInt64" => FetchType.System_UInt64,
+                        "System.Single" => FetchType.System_Single,
+                        "System.Double" => FetchType.System_Double,
+                        "System.Decimal" => FetchType.System_Decimal,
+                        "System.DateTime" => FetchType.System_DateTime,
+                        "System.Guid" => FetchType.System_Guid,
+                        "Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData.StructValue" => FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue,
+                        "System.IntPtr" => FetchType.System_IntPtr,
+
+                        _ => throw new InvalidDataException("Unknown FetchType: " + typeName),
+                    };
+                }
+                public static string GetName(FetchType fetchType) => fetchType switch
+                {
+                    FetchType.System_Boolean => "Boolean",
+                    FetchType.System_Char => "Char",
+                    FetchType.System_String => "String",
+                    FetchType.System_SByte => "SByte",
+                    FetchType.System_Int16 => "Int16",
+                    FetchType.System_Int32 => "Int32",
+                    FetchType.System_Int64 => "Int64",
+                    FetchType.System_Byte => "Byte",
+                    FetchType.System_UInt16 => "UInt16",
+                    FetchType.System_UInt32 => "UInt32",
+                    FetchType.System_UInt64 => "UInt64",
+                    FetchType.System_IntPtr => "IntPtr",
+                    FetchType.System_Single => "Single",
+                    FetchType.System_Double => "Double",
+                    FetchType.System_Decimal => "Decimal",
+                    FetchType.System_DateTime => "DateTime",
+                    FetchType.System_Guid => "Guid",
+                    FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue => "StructValue",
+                };
+
+                internal static TypeCode GetTypeCode(FetchType type)
+                {
+                    return type switch
+                    {
+                        FetchType.System_Boolean => TypeCode.Boolean,
+                        FetchType.System_Char => TypeCode.Char,
+                        FetchType.System_String => TypeCode.String,
+                        FetchType.System_SByte => TypeCode.SByte,
+                        FetchType.System_Int16 => TypeCode.Int16,
+                        FetchType.System_Int32 => TypeCode.Int32,
+                        FetchType.System_Int64 => TypeCode.Int64,
+                        FetchType.System_Byte => TypeCode.Byte,
+                        FetchType.System_UInt16 => TypeCode.UInt16,
+                        FetchType.System_UInt32 => TypeCode.UInt32,
+                        FetchType.System_UInt64 => TypeCode.UInt64,
+                        FetchType.System_Single => TypeCode.Single,
+                        FetchType.System_Double => TypeCode.Double,
+                        FetchType.System_Decimal => TypeCode.Decimal,
+                        FetchType.System_DateTime => TypeCode.DateTime,
+                        FetchType.System_Guid => TypeCode.Object,
+                        FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue => TypeCode.Object,
+                        FetchType.System_IntPtr => TypeCode.Object
+                    };
+                }
+
+                internal static object GetDefaultValueByType(FetchType type)
+                {
+                    return type switch
+                    {
+                        FetchType.System_Boolean => default(bool),
+                        FetchType.System_Char => default(char),
+                        FetchType.System_String => string.Empty,
+                        FetchType.System_SByte => default(sbyte),
+                        FetchType.System_Int16 => default(short),
+                        FetchType.System_Int32 => default(int),
+                        FetchType.System_Int64 => default(long),
+                        FetchType.System_Byte => default(byte),
+                        FetchType.System_UInt16 => default(ushort),
+                        FetchType.System_UInt32 => default(uint),
+                        FetchType.System_UInt64 => default(ulong),
+                        FetchType.System_Single => default(float),
+                        FetchType.System_Double => default(double),
+                        FetchType.System_Decimal => default(decimal),
+                        FetchType.System_DateTime => default(DateTime),
+                        FetchType.System_Guid => default(Guid),
+                        FetchType.System_IntPtr => IntPtr.Zero,
+                        FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue => default(StructValue),
+                    };
+                }
+
+                internal static string GetFullName(FetchType type)
+                {
+                    return type switch
+                    {
+                        FetchType.System_Boolean => "System.Boolean",
+                        FetchType.System_Char => "System.Char",
+                        FetchType.System_String => "System.String",
+                        FetchType.System_SByte => "System.SByte",
+                        FetchType.System_Int16 => "System.Int16",
+                        FetchType.System_Int32 => "System.Int32",
+                        FetchType.System_Int64 => "System.Int64",
+                        FetchType.System_Byte => "System.Byte",
+                        FetchType.System_UInt16 => "System.UInt16",
+                        FetchType.System_UInt32 => "System.UInt32",
+                        FetchType.System_UInt64 => "System.UInt64",
+                        FetchType.System_Single => "System.Single",
+                        FetchType.System_Double => "System.Double",
+                        FetchType.System_Decimal => "System.Decimal",
+                        FetchType.System_DateTime => "System.DateTime",
+                        FetchType.System_Guid => "System.Guid",
+                        FetchType.System_IntPtr => "System.IntPtr",
+                        FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue => "Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData.StructValue",
+                    };
+                }
+
+                internal static object Convert(FetchType? typeOpt, object value)
+                {
+                    if (typeOpt is not { } type)
+                    {
+                        if (value == null)
+                        {
+                            return null; // No type, no value.
+                        }
+                        throw new InvalidOperationException($"Cannot convert value '{value}' when type is null.");
+                    }
+
+                    return type switch
+                    {
+                        FetchType.System_Boolean => System.Convert.ToBoolean(value),
+                        FetchType.System_Char => System.Convert.ToChar(value),
+                        FetchType.System_String => System.Convert.ToString(value),
+                        FetchType.System_SByte => System.Convert.ToSByte(value),
+                        FetchType.System_Int16 => System.Convert.ToInt16(value),
+                        FetchType.System_Int32 => System.Convert.ToInt32(value),
+                        FetchType.System_Int64 => System.Convert.ToInt64(value),
+                        FetchType.System_Byte => System.Convert.ToByte(value),
+                        FetchType.System_UInt16 => System.Convert.ToUInt16(value),
+                        FetchType.System_UInt32 => System.Convert.ToUInt32(value),
+                        FetchType.System_UInt64 => System.Convert.ToUInt64(value),
+                        FetchType.System_Single => System.Convert.ToSingle(value),
+                        FetchType.System_Double => System.Convert.ToDouble(value),
+                        FetchType.System_Decimal => System.Convert.ToDecimal(value),
+                        FetchType.System_DateTime => System.Convert.ToDateTime(value),
+                        FetchType.System_Guid => System.Guid.Parse(System.Convert.ToString(value)),
+                        FetchType.System_IntPtr => new IntPtr(System.Convert.ToInt64(value)),
+                        FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue => (StructValue)value,
+                    };
+                }
+
+                internal static Array CreateArrayOfType(FetchType? typeOpt, int count)
+                {
+                    if (typeOpt is not { } type)
+                    {
+                        throw new InvalidOperationException("Cannot create array when type is null.");
+                    }
+
+                    return type switch
+                    {
+                        FetchType.System_Boolean => new bool[count],
+                        FetchType.System_Char => new char[count],
+                        FetchType.System_String => new string[count],
+                        FetchType.System_SByte => new sbyte[count],
+                        FetchType.System_Int16 => new short[count],
+                        FetchType.System_Int32 => new int[count],
+                        FetchType.System_Int64 => new long[count],
+                        FetchType.System_Byte => new byte[count],
+                        FetchType.System_UInt16 => new ushort[count],
+                        FetchType.System_UInt32 => new uint[count],
+                        FetchType.System_UInt64 => new ulong[count],
+                        FetchType.System_Single => new float[count],
+                        FetchType.System_Double => new double[count],
+                        FetchType.System_Decimal => new decimal[count],
+                        FetchType.System_DateTime => new DateTime[count],
+                        FetchType.System_Guid => new Guid[count],
+                        FetchType.System_IntPtr => new IntPtr[count],
+                        FetchType.Microsoft_Diagnostics_Tracing_Parsers_DynamicTraceEventData_StructValue => new StructValue[count],
+                    };
+                }
+            }
 
             // Non null of 'Type' is a enum
             public IDictionary<long, string> Map
@@ -1591,10 +1808,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         var asLazyMap = LazyMap;
                         if (asLazyMap != null)
                         {
-                            ret = asLazyMap();      // resolve it.  
+                            ret = asLazyMap();      // resolve it.
                             if (ret != null)
                             {
-                                info = ret;         // If it resolves, remember the resolution for next time.  
+                                info = ret;         // If it resolves, remember the resolution for next time.
                             }
                         }
                     }
@@ -1608,9 +1825,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             /// <summary>
-            /// LazyMap allow out to set a function that returns a map 
+            /// LazyMap allow out to set a function that returns a map
             /// instead of the map itself.   This will be evaluated when the map
-            /// is fetched (which gives time for the map table to be populated.  
+            /// is fetched (which gives time for the map table to be populated.
             /// </summary>
             public Func<IDictionary<long, string>> LazyMap
             {
@@ -1627,7 +1844,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public override string ToString()
             {
                 StringWriter sw = new StringWriter();
-                sw.Write("<PayloadFetch Size=\"{0}\" Offset=\"{1}\" Type=\"{2}\"", Size, Offset, Type != null ? Type.Name : "");
+                sw.Write("<PayloadFetch Size=\"{0}\" Offset=\"{1}\" Type=\"{2}\"", Size, Offset, Type is { } t ? FetchTypeHelpers.GetName(t) : "");
                 if (Map != null)
                 {
                     sw.Write("HasMap=\"true\"/>");
@@ -1659,13 +1876,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 serializer.Write((short)Offset);
                 serializer.Write((short)Size);
-                if (Type == null)
+                if (Type is not { } t)
                 {
                     serializer.Write((string)null);
                 }
                 else
                 {
-                    serializer.Write(Type.FullName);
+                    serializer.Write(FetchTypeHelpers.GetFullName(t));
                 }
 
                 var map = Map;
@@ -1718,6 +1935,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     serializer.Write((byte)0);
                 }
             }
+
             public void FromStream(Deserializer deserializer)
             {
                 Offset = (ushort)deserializer.ReadInt16();
@@ -1725,7 +1943,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 var typeName = deserializer.ReadString();
                 if (typeName != null)
                 {
-                    Type = Type.GetType(typeName);
+                    Type = FetchTypeHelpers.Parse(typeName);
                 }
 
                 var fetchType = deserializer.ReadByte();
@@ -1750,7 +1968,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                     Map = map;
                 }
-                else if (fetchType == 3)  // Class 
+                else if (fetchType == 3)  // Class
                 {
                     PayloadFetchClassInfo classInfo = new PayloadFetchClassInfo();
 
@@ -1785,7 +2003,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-            private object info;        // different things for enums, structs, or arrays.  
+            private object info;        // different things for enums, structs, or arrays.
             #endregion
         };
 
@@ -1882,7 +2100,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         internal string MessageFormat; // This is in ETW conventions (%N)
         internal bool registeredWithTraceEventSource;
 
-        // These are used to improve the performance of SkipToField.  
+        // These are used to improve the performance of SkipToField.
         private EventIndex cachedEventId;
         private int cachedFieldIdx;
         private int cachedFieldOffset;
@@ -1900,19 +2118,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             this.manifest = manifest;
             payloadNames = new string[] { "Format", "MajorVersion", "MinorVersion", "Magic", "TotalChunks", "ChunkNumber", "PayloadLength" };
             payloadFetches = new PayloadFetch[] {
-                new PayloadFetch(0, 1, typeof(byte)),
-                new PayloadFetch(1, 1, typeof(byte)),
-                new PayloadFetch(2, 1, typeof(byte)),
-                new PayloadFetch(3, 1, typeof(byte)),
-                new PayloadFetch(4, 2, typeof(ushort)),
-                new PayloadFetch(6, 2, typeof(ushort)),
+                new PayloadFetch(0, 1, FetchType.System_Byte),
+                new PayloadFetch(1, 1, FetchType.System_Byte),
+                new PayloadFetch(2, 1, FetchType.System_Byte),
+                new PayloadFetch(3, 1, FetchType.System_Byte),
+                new PayloadFetch(4, 2, FetchType.System_UInt16),
+                new PayloadFetch(6, 2, FetchType.System_UInt16),
             };
             m_target += action;
         }
 
         public override object PayloadValue(int index)
         {
-            // The length of the manifest chunk is useful, so we expose it as an explict 'field' 
+            // The length of the manifest chunk is useful, so we expose it as an explict 'field'
             if (index == 6)
             {
                 return EventDataLength;
@@ -1965,7 +2183,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     /// <summary>
     /// DynamicTraceEventParserState represents the state of a  DynamicTraceEventParser that needs to be
     /// serialized to a log file.  It does NOT include information about what events are chosen but DOES contain
-    /// any other necessary information that came from the ETL data file.  
+    /// any other necessary information that came from the ETL data file.
     /// </summary>
     internal class DynamicTraceEventParserState : IFastSerializable
     {
@@ -2001,7 +2219,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     #endregion
 
     /// <summary>
-    /// A ProviderManifest represents the XML manifest associated with the provider.    
+    /// A ProviderManifest represents the XML manifest associated with the provider.
     /// </summary>
     public sealed class ProviderManifest : IFastSerializable
     {
@@ -2015,10 +2233,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             id = "Stream";
             int len = Math.Min((int)(manifestStream.Length - manifestStream.Position), manifestLen);
             serializedManifest = new byte[len];
-            manifestStream.Read(serializedManifest, 0, len);
+#if NET
+            manifestStream.ReadExactly(serializedManifest, 0, len);
+#else
+            if (manifestStream.Read(serializedManifest, 0, len) != len)
+            {
+                throw new EndOfStreamException("Could not read full manifest from stream");
+            }
+#endif
         }
         /// <summary>
-        /// Read a ProviderManifest from a file. 
+        /// Read a ProviderManifest from a file.
         /// </summary>
         public ProviderManifest(string manifestFilePath)
         {
@@ -2030,14 +2255,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Normally ProviderManifest will fail silently if there is a problem with the manifest.  If
         /// you want to see this error you can all this method to force it explicitly  It will
-        /// throw if there is a problem parsing the manifest.  
+        /// throw if there is a problem parsing the manifest.
         /// </summary>
         public void ValidateManifest()
         {
             ParseProviderEvents((DynamicTraceEventData data) => EventFilterResponse.AcceptEvent, false);
         }
 
-        // write a manifest to a stream or a file.  
+        // write a manifest to a stream or a file.
         /// <summary>
         /// Writes the manifest to 'outputStream' (as UTF8 XML text)
         /// </summary>
@@ -2058,7 +2283,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
-        ///  Set if this manifest came from the ETL data stream file.  
+        ///  Set if this manifest came from the ETL data stream file.
         /// </summary>
         public bool ISDynamic { get; internal set; }
         /// <summary>
@@ -2070,14 +2295,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public Guid Guid { get { if (!inited) { Init(); } return guid; } }
         /// <summary>
-        /// The version is defined as the sum of all the version numbers of event version numbers + the number of events defined. 
-        /// This has the property that if you follow correct versioning protocol (all versions for a linear sequence where a new  
-        /// versions is only modifies is predecessor by adding new events or INCREASING the version numbers of existing events) 
-        /// then the version number defined below will always strictly increase.   
+        /// The version is defined as the sum of all the version numbers of event version numbers + the number of events defined.
+        /// This has the property that if you follow correct versioning protocol (all versions for a linear sequence where a new
+        /// versions is only modifies is predecessor by adding new events or INCREASING the version numbers of existing events)
+        /// then the version number defined below will always strictly increase.
         ///
         /// It turns out that .NET Core removed some events from the TplEtwProvider.   To allow removal of truly old events
         /// we also add 100* the largest event ID defined to the version number.  That way if you add new events, even if you
-        /// removes some (less than 100) it will consider your 'better'.   
+        /// removes some (less than 100) it will consider your 'better'.
         /// </summary>
         public int Version
         {
@@ -2121,7 +2346,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
         /// <summary>
         /// This is an arbitrary id given when the Manifest is created that
-        /// identifies where the manifest came from (e.g. a file name or an event etc). 
+        /// identifies where the manifest came from (e.g. a file name or an event etc).
         /// </summary>
         public string Id { get { return id; } }
 
@@ -2129,7 +2354,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// Returns true if the current manifest is better to use than 'otherManifest'   A manifest is
         /// better if it has a larger version number OR, they have the same version number and it is
         /// physically larger (we assume what happened is people added more properties but did not
-        /// update the version field appropriately).  
+        /// update the version field appropriately).
         /// </summary>
         public bool BetterThan(ProviderManifest otherManifest)
         {
@@ -2181,7 +2406,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         /// <summary>
         /// Call 'callback the the parsed templates for this provider.  If 'callback' returns RejectProvider, bail early
-        /// Note that the DynamicTraceEventData passed to the delegate needs to be cloned if you use subscribe to it.   
+        /// Note that the DynamicTraceEventData passed to the delegate needs to be cloned if you use subscribe to it.
         /// </summary>
         internal void ParseProviderEvents(Func<DynamicTraceEventData, EventFilterResponse> callback, bool noThrowOnError)
         {
@@ -2230,8 +2455,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                     try
                     {
-                        // TODO I currently require opcodes,and tasks BEFORE events BEFORE templates.  
-                        // Can be fixed by going multi-pass. 
+                        // TODO I currently require opcodes,and tasks BEFORE events BEFORE templates.
+                        // Can be fixed by going multi-pass.
                         switch (reader.Name)
                         {
                             case "events":
@@ -2239,8 +2464,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 break;
                             case "event":
                                 {
-                                    // Only look at event elements under the 'events' element.   This avoids 
-                                    // perfTrack elements being considered.  
+                                    // Only look at event elements under the 'events' element.   This avoids
+                                    // perfTrack elements being considered.
                                     if (!inEventsElement)
                                     {
                                         continue;
@@ -2282,7 +2507,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     {
                                         taskName = "";
                                         // This is sort of a hack but it allows people to use the symbol name as the task name
-                                        // in a pinch.   
+                                        // in a pinch.
                                         string symbolName = reader.GetAttribute("symbol");
                                         if (symbolName != null && opcodeName == "")
                                         {
@@ -2294,7 +2519,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     null, eventID, taskNum, taskName, taskGuid, opcode, opcodeName, Guid, Name);
                                     events.Add(new EventInfo(eventTemplate, reader.GetAttribute("template")));
 
-                                    // This will be looked up in the string table in a second pass.  
+                                    // This will be looked up in the string table in a second pass.
                                     eventTemplate.MessageFormat = reader.GetAttribute("message");
                                 }
                                 break;
@@ -2309,7 +2534,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 }
                                 break;
                             case "opcode":
-                                // TODO use message for opcode if it is available so it is localized.  
+                                // TODO use message for opcode if it is available so it is localized.
                                 opcodes[reader.GetAttribute("name")] = int.Parse(reader.GetAttribute("value"));
                                 break;
                             case "task":
@@ -2343,7 +2568,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                             long key;
                                             if (keyStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
                                             {
-                                                // This is a work-around because some manifests have a 0x with no number afterward.  
+                                                // This is a work-around because some manifests have a 0x with no number afterward.
                                                 key = 0;
                                                 if (keyStr.Length > 2)
                                                 {
@@ -2417,13 +2642,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                 }
 
-                reader = null;      // Save some space 
+                reader = null;      // Save some space
 
                 // Register all the events
                 foreach (var eventInfo in events)
                 {
                     var event_ = eventInfo.eventTemplate;
-                    // Set the template if there is any. 
+                    // Set the template if there is any.
                     if (eventInfo.templateName != null)
                     {
                         var templateInfo = templates[eventInfo.templateName];
@@ -2436,7 +2661,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         event_.payloadFetches = new DynamicTraceEventData.PayloadFetch[0];
                     }
 
-                    // before registering, localize any message format strings.  
+                    // before registering, localize any message format strings.
                     string message = event_.MessageFormat;
                     if (message != null)
                     {
@@ -2456,7 +2681,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         return;
                     }
                 }
-                // Log the manifest event definition as well.  
+                // Log the manifest event definition as well.
                 callback(new DynamicManifestTraceEventData(null, this));
             }
             catch (Exception e)
@@ -2509,15 +2734,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 if (reader.NodeType == XmlNodeType.Element && reader.Name == "data")
                 {
                     string inType = reader.GetAttribute("inType");
-                    Type type = GetTypeForManifestTypeName(inType);
-                    if (type == null)
+                    FetchType? typeOpt = GetTypeForManifestTypeName(inType);
+                    if (typeOpt is not { } type)
                     {
                         Trace.WriteLine("Found an unsupported type " + inType + " skipping all fields after that.");
                         break;
                     }
                     ushort size = DynamicTraceEventData.SizeOfType(type);
-                    // Strings are weird in that they are encoded multiple ways.  
-                    if (type == typeof(string) && inType == "win:AnsiString")
+                    // Strings are weird in that they are encoded multiple ways.
+                    if (type == FetchType.System_String && inType == "win:AnsiString")
                     {
                         size = DynamicTraceEventData.NULL_TERMINATED | DynamicTraceEventData.IS_ANSI;
                     }
@@ -2533,14 +2758,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     var fieldFetch = new DynamicTraceEventData.PayloadFetch(offset, size, type, map);
                     if (inType == "win:Binary")
                     {
-                        // Check to ensure that the length field is the preceding field. 
+                        // Check to ensure that the length field is the preceding field.
                         int prevFieldIdx = ret.payloadNames.Count - 1;
                         string lengthStr = reader.GetAttribute("length");
                         if (lengthStr != null && 0 <= prevFieldIdx &&
                             lengthStr == ret.payloadNames[prevFieldIdx] &&
-                                (ret.payloadFetches[prevFieldIdx].Type == typeof(int) || ret.payloadFetches[prevFieldIdx].Type == typeof(uint)))
+                                (ret.payloadFetches[prevFieldIdx].Type == FetchType.System_Int32 || ret.payloadFetches[prevFieldIdx].Type == FetchType.System_UInt32))
                         {
-                            // Remove the previous field, since it was just there to encode the length of the blob.   
+                            // Remove the previous field, since it was just there to encode the length of the blob.
                             if (offset != ushort.MaxValue)
                             {
                                 offset -= 4;
@@ -2549,7 +2774,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             ret.payloadNames.RemoveAt(prevFieldIdx);
                             ret.payloadFetches.RemoveAt(prevFieldIdx);
 
-                            // Now the length is a prefix to the bytes. 
+                            // Now the length is a prefix to the bytes.
                             ushort fetchSize = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.BIT_32 + DynamicTraceEventData.CONSUMES_FIELD + DynamicTraceEventData.ELEM_COUNT;
                             fieldFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(offset, fieldFetch, fetchSize);
                             size = fieldFetch.Size;
@@ -2581,50 +2806,50 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         /// <summary>
         /// Returns the .NET type corresponding to the manifest type 'manifestTypeName'
-        /// Returns null if it could not be found. 
+        /// Returns null if it could not be found.
         /// </summary>
-        private static Type GetTypeForManifestTypeName(string manifestTypeName)
+        private static FetchType? GetTypeForManifestTypeName(string manifestTypeName)
         {
             switch (manifestTypeName)
             {
                 case "win:Pointer":
                 case "trace:SizeT":
-                    return typeof(IntPtr);
+                    return FetchType.System_IntPtr;
                 case "win:Boolean":
-                    return typeof(bool);
+                    return FetchType.System_Boolean;
                 case "win:UInt8":
-                    return typeof(byte);
+                    return FetchType.System_Byte;
                 case "win:Int8":
-                    return typeof(sbyte);
+                    return FetchType.System_SByte;
                 case "win:Int16":
-                    return typeof(short);
+                    return FetchType.System_Int16;
                 case "win:UInt16":
                 case "trace:Port":
-                    return typeof(ushort);
+                    return FetchType.System_UInt16;
                 case "win:Int32":
-                    return typeof(int);
+                    return FetchType.System_Int32;
                 case "win:UInt32":
                 case "trace:    ":
                 case "trace:IPAddrV4":
-                    return typeof(uint);
+                    return FetchType.System_UInt32;
                 case "win:Int64":
                 case "trace:WmiTime":
-                    return typeof(long);
+                    return FetchType.System_Int64;
                 case "win:UInt64":
-                    return typeof(ulong);
+                    return FetchType.System_UInt64;
                 case "win:Double":
-                    return typeof(double);
+                    return FetchType.System_Double;
                 case "win:Float":
-                    return typeof(float);
+                    return FetchType.System_Single;
                 case "win:AnsiString":
                 case "win:UnicodeString":
-                    return typeof(string);
+                    return FetchType.System_String;
                 case "win:Binary":
-                    return typeof(byte);        // We special case this later to make it an array of this type. 
+                    return FetchType.System_Byte;        // We special case this later to make it an array of this type.
                 case "win:GUID":
-                    return typeof(Guid);
+                    return FetchType.System_Guid;
                 case "win:FILETIME":
-                    return typeof(DateTime);
+                    return FetchType.System_DateTime;
                 default:
                     return null;
             }
@@ -2669,7 +2894,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         /// <summary>
         /// Initialize the provider.  This means to advance the instance variable 'reader' until it it is at the 'provider' node
-        /// in the XML.   It also has the side effect of setting the name and guid.  The rest waits until events are registered. 
+        /// in the XML.   It also has the side effect of setting the name and guid.  The rest waits until events are registered.
         /// </summary>
         private void Init()
         {
