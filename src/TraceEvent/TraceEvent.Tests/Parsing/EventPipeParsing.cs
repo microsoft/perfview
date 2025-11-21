@@ -1007,7 +1007,7 @@ namespace TraceEventTests
                     Assert.Equal(2, e.PayloadNames.Length);
                     Assert.Equal("Param1", e.PayloadNames[0]);
                     Assert.Equal("Param2", e.PayloadNames[1]);
-                    Assert.Equal(12, e.PayloadValue(0));
+                    Assert.Equal((short)12u, e.PayloadValue(0));
                     Assert.Equal(true, e.PayloadValue(1));
                 }
             };
