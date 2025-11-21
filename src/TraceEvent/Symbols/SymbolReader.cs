@@ -957,13 +957,12 @@ namespace Microsoft.Diagnostics.Symbols
                     if (checkSecurity && !CheckSecurity(filePath))
                     {
                         m_log.WriteLine("FindSymbolFilePath: Aborting pdbMatch of {0}, security check failed", filePath);
+                        return false;
                     }
-                    else
-                    {
-                        m_log.WriteLine("FindSymbolFilePath: Warning - Cannot verify PDB GUID/Age for {0} due to STA threading requirement: {1}", filePath, e.Message);
-                        m_log.WriteLine("FindSymbolFilePath: Accepting PDB match based on file existence and location since GUID verification failed due to threading.");
-                        return true;
-                    }
+                    
+                    m_log.WriteLine("FindSymbolFilePath: Warning - Cannot verify PDB GUID/Age for {0} due to STA threading requirement: {1}", filePath, e.Message);
+                    m_log.WriteLine("FindSymbolFilePath: Accepting PDB match based on file existence and location since GUID verification failed due to threading.");
+                    return true;
                 }
                 m_log.WriteLine("FindSymbolFilePath: Aborting pdbMatch of {0} Exception thrown: {1}", filePath, e.Message);
             }
