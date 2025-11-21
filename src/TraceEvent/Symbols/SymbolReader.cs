@@ -913,13 +913,20 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     fileExists = true;
                     
-                    if (checkSecurity && !CheckSecurity(filePath))
+                    if (checkSecurity)
                     {
-                        m_log.WriteLine("FindSymbolFilePath: Aborting, security check failed on {0}", filePath);
-                        return false;
+                        if (!CheckSecurity(filePath))
+                        {
+                            m_log.WriteLine("FindSymbolFilePath: Aborting, security check failed on {0}", filePath);
+                            return false;
+                        }
+                        securityCheckPassed = true;
                     }
-                    
-                    securityCheckPassed = true;
+                    else
+                    {
+                        // Security check not required, so it's implicitly passed
+                        securityCheckPassed = true;
+                    }
 
                     if (pdbGuid == Guid.Empty)
                     {
