@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Xunit;
 
@@ -141,6 +145,95 @@ namespace TraceEventTests
             var xCallee = callerCalleeNode.Callees.FirstOrDefault(c => c.Name == "X");
             Assert.NotNull(xCallee);
             Assert.True(xCallee.InclusiveMetric > 0, $"Recursive callee 'X' should have positive metric, got {xCallee.InclusiveMetric}");
+        }
+        
+        /// <summary>
+        /// Regression test using MutableTraceEventStackSource to reproduce the exact issue scenario.
+        /// This test uses an existing test nettrace file, converts it to a TraceLog, and then uses
+        /// MutableTraceEventStackSource to add recursive frames, matching the original issue repro code.
+        /// </summary>
+        [Fact]
+        public void RecursiveCallsWithMutableTraceEventStackSource()
+        {
+            // Use an existing test nettrace file
+            string testDataDir = Path.Combine(
+                Path.GetDirectoryName(typeof(RecursiveCallTest).Assembly.Location),
+                "..", "..", "..", "inputs");
+            string zipFile = Path.Combine(testDataDir, "eventpipe-dotnetcore6.0-win-x64-executioncheckpoints.nettrace.zip");
+            
+            // Skip test if file doesn't exist (CI environments may not have test data)
+            if (!File.Exists(zipFile))
+            {
+                return; // Skip test
+            }
+            
+            string unzippedFile = Path.Combine(Path.GetTempPath(), $"test_recursive_{Guid.NewGuid()}.nettrace");
+            string tempEtlxFile = null;
+            
+            try
+            {
+                // Extract the nettrace file
+                using (var archive = System.IO.Compression.ZipFile.OpenRead(zipFile))
+                {
+                    var entry = archive.Entries.First(e => e.Name.EndsWith(".nettrace"));
+                    entry.ExtractToFile(unzippedFile, true);
+                }
+                
+                // Create TraceLog from nettrace
+                tempEtlxFile = TraceLog.CreateFromEventPipeDataFile(unzippedFile, null, new TraceLogOptions() { ContinueOnError = true });
+                using (var traceLog = new TraceLog(tempEtlxFile))
+                {
+                    // Create MutableTraceEventStackSource and reproduce the exact issue scenario
+                    var stackSource = new MutableTraceEventStackSource(traceLog);
+                    
+                    // This reproduces the exact code from the issue:
+                    var sample = new StackSourceSample(stackSource);
+                    sample.StackIndex = stackSource.Interner.CallStackIntern(
+                        stackSource.Interner.FrameIntern("X"), sample.StackIndex);
+                    sample.StackIndex = stackSource.Interner.CallStackIntern(
+                        stackSource.Interner.FrameIntern("X"), sample.StackIndex);
+                    sample.TimeRelativeMSec = 1.0;
+                    sample.Metric = 1.0f;
+                    sample.Count = 1;
+                    stackSource.AddSample(sample);
+                    stackSource.DoneAddingSamples();
+                    
+                    // Build CallTree and verify structure
+                    var callTree = new CallTree(ScalingPolicyKind.ScaleToData);
+                    callTree.StackSource = stackSource;
+                    
+                    var root = callTree.Root;
+                    Assert.NotNull(root);
+                    
+                    // Test CallerCalleeNode for "X" - this is the main test
+                    // The CallerCalleeNode should correctly identify recursive relationships
+                    var callerCalleeNode = new CallerCalleeNode("X", callTree);
+                    
+                    // The key assertions: X should appear as both caller and callee
+                    // This tests that the recursive call (X -> X) is properly represented
+                    var xCaller = callerCalleeNode.Callers.FirstOrDefault(c => c.Name == "X");
+                    Assert.NotNull(xCaller);
+                    Assert.True(xCaller.InclusiveMetric > 0, 
+                        $"Recursive caller 'X' should have positive metric, got {xCaller.InclusiveMetric}");
+                    Assert.False(float.IsNaN(xCaller.InclusiveMetric), 
+                        "Recursive caller 'X' has NaN inclusive metric");
+                    
+                    var xCallee = callerCalleeNode.Callees.FirstOrDefault(c => c.Name == "X");
+                    Assert.NotNull(xCallee);
+                    Assert.True(xCallee.InclusiveMetric > 0, 
+                        $"Recursive callee 'X' should have positive metric, got {xCallee.InclusiveMetric}");
+                    Assert.False(float.IsNaN(xCallee.InclusiveMetric), 
+                        "Recursive callee 'X' has NaN inclusive metric");
+                }
+            }
+            finally
+            {
+                // Clean up temp files
+                if (File.Exists(unzippedFile))
+                    File.Delete(unzippedFile);
+                if (tempEtlxFile != null && File.Exists(tempEtlxFile))
+                    File.Delete(tempEtlxFile);
+            }
         }
         
         /// <summary>
