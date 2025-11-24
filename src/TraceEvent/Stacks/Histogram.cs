@@ -49,20 +49,25 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             Debug.Assert(0 <= bucket && bucket < Count);
 
-            if (m_singleBucketNum < 0)
-            {
-                m_singleBucketNum = bucket;
-            }
-
-            if (m_singleBucketNum == bucket)
-            {
-                m_singleBucketValue += metric;
-                return;
-            }
             if (m_buckets == null)
             {
+                // We're in single-bucket mode
+                if (m_singleBucketNum < 0)
+                {
+                    m_singleBucketNum = bucket;
+                }
+
+                if (m_singleBucketNum == bucket)
+                {
+                    m_singleBucketValue += metric;
+                    return;
+                }
+
+                // Need to transition to array mode
                 m_buckets = new float[Count];
                 m_buckets[m_singleBucketNum] = m_singleBucketValue;
+                // Clear the single bucket tracking since we're now using the array
+                m_singleBucketNum = -1;
             }
             m_buckets[bucket] += metric;
         }
