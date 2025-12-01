@@ -6338,17 +6338,22 @@
     <!--  *************** -->
     <h5><a id="ProcessIsolationContainers">Capturing ETW Traces with Process-Isolation Windows Containers (Kubernetes)</a></h5>
     <p>
-        When running Windows containers in Kubernetes using process-isolation mode (as opposed to Hyper-V isolation), 
+        When running Windows containers in Kubernetes using process-isolation mode (the default mode, as opposed to Hyper-V isolation), 
         the containers share the host's kernel. While this enables ETW tracing from the host, it requires a specific 
         workflow to capture and analyze traces for processes running inside these containers.
     </p>
     <p>
-        <strong>Important Limitation:</strong> Because ETW is a kernel-level feature and process-isolation containers 
-        share the host kernel, you cannot start an ETW session from <em>inside</em> the container. All trace collection 
+        <strong>Note:</strong> If you are running containers in Hyper-V isolation mode, these instructions are not required. 
+        In Hyper-V mode, each container has its own kernel, so you can capture traces directly inside the container 
+        using the normal PerfView workflow.
+    </p>
+    <p>
+        <strong>Important Limitation:</strong> In process-isolation mode, kernel ETW sessions cannot be started from 
+        <em>inside</em> the container. Since PerfView almost always captures a kernel session, all trace collection 
         must be initiated from the host node.
     </p>
 
-    <h6>Step 1: Capture a Trace on the Host Node (Required)</h6>
+    <h6>Step 1: Capture a Trace on the Host Node</h6>
     <p>
         Start the trace collection on the Kubernetes host node (not inside the pod). Use the <strong>/EnableEventsInContainers</strong> 
         option to ensure that user-mode events from processes inside containers flow to the ETW session on the host.
@@ -6364,9 +6369,10 @@
     </p>
     <p>
         <strong>What happens if you don't use /EnableEventsInContainers:</strong> You will still capture all kernel 
-        events (CPU sampling, context switches, etc.) for container processes, but you will miss user-mode events 
-        like .NET garbage collection events, JIT events, exception events, and any custom EventSource events from 
-        those processes.
+        events (CPU sampling, context switches, etc.) for container processes, and you will still receive user-mode 
+        events from processes running directly on the host node (outside of containers). However, you will miss 
+        user-mode events like .NET garbage collection events, JIT events, exception events, and any custom 
+        EventSource events from processes inside containers.
     </p>
 
     <h6>Step 2a: Analyze While Container is Running (Optional)</h6>
@@ -6399,25 +6405,30 @@
         <li>PerfViewCollect merge /ImageIDsOnly MyContainerTrace.etl.zip</li>
     </ul>
     <p>
+        <strong>Note:</strong> PerfViewCollect needs to be built from source at 
+        <a href="https://github.com/microsoft/perfview">https://github.com/microsoft/perfview</a>. 
+        It is not currently shipped as a binary. See the "Windows Nanoserver and PerfViewCollect" 
+        section above for build instructions.
+    </p>
+    <p>
         <strong>What /ImageIDsOnly does:</strong> When you run merge with /ImageIDsOnly, PerfView reads through 
-        the trace and for each DLL that was loaded by processes in the trace, it looks up the DLL's unique 
-        identifier (signature/timestamp) and injects that information into the trace. This unique identifier 
-        is what allows PerfView to later download the correct PDB symbols from a symbol server. Without this 
-        information, PerfView cannot resolve method names for code in those DLLs.
+        the trace and for each DLL that was loaded by processes in the trace, it looks up the DLL's PDB signature 
+        and injects that information into the trace. This unique identifier is what allows PerfView to later 
+        download the correct PDB symbols from a symbol server. Without this information, PerfView cannot resolve 
+        method names for code in those DLLs.
     </p>
     <p>
         <strong>What happens if you don't run merge with /ImageIDsOnly:</strong> If you skip this step and later 
         try to analyze the trace on another machine after the container is gone, PerfView will be unable to find 
-        the symbol files for DLLs that were loaded inside the container. Your stack traces will show addresses 
-        like "0x7ffe12345678" instead of method names for those DLLs. The managed code (.NET) symbols may still 
-        work since they come from NGEN PDBs or crossgen2 metadata, but native code (including the runtime itself) 
-        will have missing symbols.
+        the symbol files for DLLs that were loaded inside the container. Your stack traces will show the module 
+        name with a question mark (for example: <code>MyAssembly!?</code> instead of <code>MyAssembly!MyClass.MyMethod</code>). 
+        Jitted .NET code will still resolve correctly, but nothing else from binaries inside the container will have symbols.
     </p>
     <p>
-        <strong>Why run merge inside the container:</strong> The merge command needs access to the actual DLL 
-        files to read their unique identifiers. Running merge inside the container ensures it can access the 
-        DLLs that were loaded by the container's processes. If you run merge on the host or on a different 
-        machine, those container-specific DLLs may not be accessible.
+        <strong>Why run merge inside the container:</strong> The merge component does not have access to look inside 
+        of containers when run from the host. Running merge inside the container ensures it can access the DLLs that 
+        were loaded by the container's processes. If you run merge on the host or on a different machine, those 
+        container-specific DLLs will not be accessible.
     </p>
 
     <h6>Step 3: Copy and Analyze (After Using /ImageIDsOnly)</h6>
