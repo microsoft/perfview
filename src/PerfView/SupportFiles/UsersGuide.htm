@@ -6335,6 +6335,119 @@
         put them.
     </p>
 
+    <!--  *************** -->
+    <h5><a id="ProcessIsolationContainers">Capturing ETW Traces with Process-Isolation Windows Containers (Kubernetes)</a></h5>
+    <p>
+        When running Windows containers in Kubernetes using process-isolation mode (as opposed to Hyper-V isolation), 
+        the containers share the host's kernel. While this enables ETW tracing from the host, it requires a specific 
+        workflow to capture and analyze traces for processes running inside these containers.
+    </p>
+    <p>
+        <strong>Important Limitation:</strong> Because ETW is a kernel-level feature and process-isolation containers 
+        share the host kernel, you cannot start an ETW session from <em>inside</em> the container. All trace collection 
+        must be initiated from the host node.
+    </p>
+
+    <h6>Step 1: Capture a Trace on the Host Node (Required)</h6>
+    <p>
+        Start the trace collection on the Kubernetes host node (not inside the pod). Use the <strong>/EnableEventsInContainers</strong> 
+        option to ensure that user-mode events from processes inside containers flow to the ETW session on the host.
+    </p>
+    <ul>
+        <li>PerfView collect /EnableEventsInContainers /MaxCollectSec:30 MyContainerTrace.etl</li>
+    </ul>
+    <p>
+        <strong>What /EnableEventsInContainers does:</strong> By default, an ETW session on the host only receives 
+        user-mode events from processes running directly on the host. The /EnableEventsInContainers option enables 
+        the ETW session to also receive user-mode events (such as .NET CLR events, custom EventSource events, etc.) 
+        from processes running inside process-isolation containers.
+    </p>
+    <p>
+        <strong>What happens if you don't use /EnableEventsInContainers:</strong> You will still capture all kernel 
+        events (CPU sampling, context switches, etc.) for container processes, but you will miss user-mode events 
+        like .NET garbage collection events, JIT events, exception events, and any custom EventSource events from 
+        those processes.
+    </p>
+
+    <h6>Step 2a: Analyze While Container is Running (Optional)</h6>
+    <p>
+        If the container(s) containing the process(es) of interest are still running when you stop the trace, you 
+        can open and analyze the trace directly on the host node. PerfView will be able to find binaries that it 
+        needs both on the host and inside the running containers through the container's file system view.
+    </p>
+    <p>
+        This is the simplest analysis path since no additional steps are required—just open the trace in PerfView 
+        on the host node.
+    </p>
+
+    <h6>Step 2b: Prepare Trace for Offline Analysis (Optional)</h6>
+    <p>
+        If you need to analyze the trace after the container has been shut down, or if you want to copy the trace 
+        to another machine for analysis, you need to prepare the trace while the container is still accessible. 
+        This is done using the merge command with the <strong>/ImageIDsOnly</strong> option.
+    </p>
+    <p>
+        First, copy the trace file into the container:
+    </p>
+    <ul>
+        <li>kubectl cp MyContainerTrace.etl.zip my-namespace/my-pod:/app/MyContainerTrace.etl.zip</li>
+    </ul>
+    <p>
+        Then, inside the container, run the merge command to inject the necessary image identification data:
+    </p>
+    <ul>
+        <li>PerfViewCollect merge /ImageIDsOnly MyContainerTrace.etl.zip</li>
+    </ul>
+    <p>
+        <strong>What /ImageIDsOnly does:</strong> When you run merge with /ImageIDsOnly, PerfView reads through 
+        the trace and for each DLL that was loaded by processes in the trace, it looks up the DLL's unique 
+        identifier (signature/timestamp) and injects that information into the trace. This unique identifier 
+        is what allows PerfView to later download the correct PDB symbols from a symbol server. Without this 
+        information, PerfView cannot resolve method names for code in those DLLs.
+    </p>
+    <p>
+        <strong>What happens if you don't run merge with /ImageIDsOnly:</strong> If you skip this step and later 
+        try to analyze the trace on another machine after the container is gone, PerfView will be unable to find 
+        the symbol files for DLLs that were loaded inside the container. Your stack traces will show addresses 
+        like "0x7ffe12345678" instead of method names for those DLLs. The managed code (.NET) symbols may still 
+        work since they come from NGEN PDBs or crossgen2 metadata, but native code (including the runtime itself) 
+        will have missing symbols.
+    </p>
+    <p>
+        <strong>Why run merge inside the container:</strong> The merge command needs access to the actual DLL 
+        files to read their unique identifiers. Running merge inside the container ensures it can access the 
+        DLLs that were loaded by the container's processes. If you run merge on the host or on a different 
+        machine, those container-specific DLLs may not be accessible.
+    </p>
+
+    <h6>Step 3: Copy and Analyze (After Using /ImageIDsOnly)</h6>
+    <p>
+        After running merge with /ImageIDsOnly, copy the trace out of the container:
+    </p>
+    <ul>
+        <li>kubectl cp my-namespace/my-pod:/app/MyContainerTrace.etl.zip ./MyContainerTrace.etl.zip</li>
+    </ul>
+    <p>
+        You can now open this trace on any machine with PerfView installed. With the image identification 
+        information embedded in the trace, PerfView can download symbols from symbol servers as needed.
+    </p>
+
+    <h6>Summary of Commands</h6>
+    <p>
+        Here is the complete workflow:
+    </p>
+    <ul>
+        <li><strong>On the host:</strong> PerfView collect /EnableEventsInContainers /MaxCollectSec:30 MyContainerTrace.etl</li>
+        <li><strong>Copy to container:</strong> kubectl cp MyContainerTrace.etl.zip my-namespace/my-pod:/app/</li>
+        <li><strong>In the container:</strong> PerfViewCollect merge /ImageIDsOnly MyContainerTrace.etl.zip</li>
+        <li><strong>Copy from container:</strong> kubectl cp my-namespace/my-pod:/app/MyContainerTrace.etl.zip ./</li>
+        <li><strong>Analyze anywhere:</strong> PerfView MyContainerTrace.etl.zip</li>
+    </ul>
+    <p>
+        <strong>Note:</strong> If you analyze the trace on the host while the container is still running, you 
+        can skip the copy and merge steps entirely.
+    </p>
+
     <!--  ************************ -->
     <hr />
     <h4>
