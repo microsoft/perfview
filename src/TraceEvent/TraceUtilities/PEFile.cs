@@ -290,6 +290,8 @@ namespace PEFile
                 return;
             }
 
+            getNativeInfoCalled = true;
+
             if (Header.ComDescriptorDirectory.VirtualAddress != 0 && sizeof(IMAGE_COR20_HEADER) <= Header.ComDescriptorDirectory.Size)
             {
                 var buff = AllocBuff();
