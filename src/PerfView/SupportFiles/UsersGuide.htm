@@ -6356,10 +6356,10 @@
     <h6>Step 1: Capture a Trace on the Host Node</h6>
     <p>
         Start the trace collection on the Kubernetes host node (not inside the pod). Use the <strong>/EnableEventsInContainers</strong> 
-        option to ensure that user-mode events from processes inside containers flow to the ETW session on the host.
+        option to ensure that user-mode events from processes inside containers flow to the ETW session on the host.  Example capture command:
     </p>
     <ul>
-        <li>PerfView collect /EnableEventsInContainers /MaxCollectSec:30 MyContainerTrace.etl</li>
+        <li>PerfView collect /EnableEventsInContainers MyContainerTrace.etl</li>
     </ul>
     <p>
         <strong>What /EnableEventsInContainers does:</strong> By default, an ETW session on the host only receives 
@@ -6377,9 +6377,10 @@
 
     <h6>Step 2a: Analyze While Container is Running (Optional)</h6>
     <p>
-        If the container(s) containing the process(es) of interest are still running when you stop the trace, you 
-        can open and analyze the trace directly on the host node. PerfView will be able to find binaries that it 
-        needs both on the host and inside the running containers through the container's file system view.
+        If the container(s) containing the process(es) of interest are still running when you stop the trace, you
+        can open and analyze the trace directly on the host node. PerfView will be able to find binaries that it
+        needs both on the host and inside the running containers through the container's file system view. NOTE: This only works for as long
+        as the container is running.
     </p>
     <p>
         This is the simplest analysis path since no additional steps are required—just open the trace in PerfView 
