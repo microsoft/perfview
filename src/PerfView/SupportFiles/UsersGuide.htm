@@ -6403,7 +6403,7 @@
         Then, inside the container, run the merge command to inject the necessary image identification data:
     </p>
     <ul>
-        <li>PerfViewCollect merge /ImageIDsOnly MyContainerTrace.etl.zip</li>
+        <li>PerfViewCollect merge MyContainerTrace.etl.zip /ImageIDsOnly</li>
     </ul>
     <p>
         <strong>Note:</strong> PerfViewCollect needs to be built from source at 
@@ -6451,7 +6451,7 @@
     <ul>
         <li><strong>On the host:</strong> PerfView collect /EnableEventsInContainers /MaxCollectSec:30 MyContainerTrace.etl</li>
         <li><strong>Copy to container:</strong> kubectl cp MyContainerTrace.etl.zip my-namespace/my-pod:/app/</li>
-        <li><strong>In the container:</strong> PerfViewCollect merge /ImageIDsOnly MyContainerTrace.etl.zip</li>
+        <li><strong>In the container:</strong> PerfViewCollect merge MyContainerTrace.etl.zip /ImageIDsOnly</li>
         <li><strong>Copy from container:</strong> kubectl cp my-namespace/my-pod:/app/MyContainerTrace.etl.zip ./</li>
         <li><strong>Analyze anywhere:</strong> PerfView MyContainerTrace.etl.zip</li>
     </ul>
