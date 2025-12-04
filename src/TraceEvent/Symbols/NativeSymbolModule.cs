@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Diagnostics.Utilities;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.Symbols
 {
