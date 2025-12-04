@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -25,6 +25,10 @@
 
     <NuspecFile>Microsoft.Diagnostics.Tracing.TraceEvent.nuspec</NuspecFile>
     <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);SetNuspecProperties</GenerateNuspecDependsOn>
+    <IsAotCompatible Condition="'$(TargetFramework)' != 'netstandard2.0'">true</IsAotCompatible>
+    <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
+    <!-- Baseline analyzer warnings from NET 9.0 -->
+    <NoWarn>$(NoWarn);CA2014;CS8524</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -70,6 +74,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" />
     <PackageReference Include="Microsoft.Win32.Registry" />
+    <PackageReference Include="PolySharp">
+      <IncludeAssets>build; analyzers</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="System.Collections.Immutable" />
     <PackageReference Include="System.Reflection.Metadata" />
     <PackageReference Include="System.Reflection.TypeExtensions" />

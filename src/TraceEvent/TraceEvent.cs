@@ -2,8 +2,8 @@
 // This file is best viewed using outline mode (Ctrl-M Ctrl-O)
 //
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
-// It is available from http://www.codeplex.com/hyperAddin 
-// 
+// It is available from http://www.codeplex.com/hyperAddin
+//
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
@@ -11,6 +11,7 @@ using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.IO;
 using System.Reflection;
@@ -19,50 +20,50 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Address = System.UInt64;
 
-// #Introduction 
-// 
-// Note that TraceEvent lives in a Nuget package.   See 
+// #Introduction
+//
+// Note that TraceEvent lives in a Nuget package.   See
 // http://blogs.msdn.com/b/vancem/archive/2014/03/15/walk-through-getting-started-with-etw-traceevent-nuget-samples-package.aspx
-// and 
+// and
 //  http://blogs.msdn.com/b/vancem/archive/2013/08/15/traceevent-etw-library-published-as-a-nuget-package.aspx
-// 
+//
 // For more details.  In particular the second blog post will contain the TraceEventProgrammersGuide.docx, which has
 // more background.
 //
 // Finally if you are interested in creating your own TraceEventParsers for your ETW provider, inside Microsoft you can access
-// the TraceParserGen tool at http://toolbox/TraceParserGen.   There is also a copy available externally at http://1drv.ms/1Rxk2iD 
-// in the TraceParserGen.zip file and the TraceParserGen.src.zip file.   
+// the TraceParserGen tool at http://toolbox/TraceParserGen.   There is also a copy available externally at http://1drv.ms/1Rxk2iD
+// in the TraceParserGen.zip file and the TraceParserGen.src.zip file.
 //
 // The the heart of the ETW reader are two important classes.
-// 
+//
 //     * TraceEventSource which is an abstract represents the stream of events as a whole. Thus it
 //         has holds things like session start and stop times, number of lost events etc.
-//         
+//
 //     * TraceEvent is a base class that represents an individual event payload. Because different
 //         events have different fields, this is actually the base of a class hierarchy. TraceEvent
 //         itself holds all properties that are common to all events (like TimeDateStamp, ProcessID,
 //         ThreadID, etc). Subclasses then add properties that know how to parse that specific event
 //         type.
-//         
+//
 // However these two classes are not enough. ETW has a model where there can be many independent
 // providers each of which contributed to the event stream. Since the number of providers is unknown,
 // TraceEventSource can not know the details of decoding all possible events. Instead we introduce
 // a class
-// 
+//
 //    TraceEventParser
-//  
+//
 // one for each provider. This class knows the details of taking a binary blob representing a event and
 // turning it into a TraceEvent. Since each provider has different details of how to do this,
 // TraceEventParser is actually just a base class and specific subclasses of TraceEventParser
 // like KernelTraceEventParser or ClrTraceEventParser do the real work.
-// 
+//
 // TraceEventParsers have a very ridged layout that closely parallels the data in the providers's ETW
 // manifest (in fact there is a tool for creating TraceEventParser's from a ETW manifest). A
 // TraceEventParser has a C# event (callback) for each different event the provider can generate. These
 // events callbacks have an argument that is the specific subclass of TraceEvent that represents
 // the payload for that event. This allows client code to 'subscribe' to events in a strongly typed way.
 // For example:
-// 
+//
 // * ETWTraceEventSource source = new ETWTraceEventSource("output.etl"); // open an ETL file
 // * KernelTraceEventParser kernelEvents = new KernelTraceEventParser(source); // Attach Kernel Parser.
 // *
@@ -73,7 +74,7 @@ using Address = System.UInt64;
 // *
 // * // Attach more parsers, and subscribe to more events.
 // * source.Process(); // Read through the stream, calling all the callbacks in one pass.
-// 
+//
 // In the example above, ETWTraceEventSource (a specific subclass of TraceEventSource that understand
 // ETL files) is created by opening the 'output.etl' file. Then the KernelTraceEventParser is 'attached'
 // to the source so that kernel events can be decoded. Finally a callback is registered with the
@@ -82,26 +83,26 @@ using Address = System.UInt64;
 // like 'BaseAddress' and 'FileName' which are specific to that particular event. The user can subscribe
 // to many such events (each having different event-specific data), and then finally call Process() which
 // causes the source to enumerate the event stream, calling the appropriate callbacks.
-// 
+//
 // This model has the important attribute that new TraceEventParsers (ETW providers), can be crated and
 // used by user code WITHOUT changing the code associated with TraceEventSource. Unfortunately, it
 // has a discoverability drawback. Given a TraceEventSource (like ETWTraceEventSource), it is difficult
 // discover that you need classes like KernelTraceEventParser to do anything useful with the
 // source. As a concession to discoverability, TraceEventSource provides properties ('Kernel' and CLR)
 // for two 'well known' parsers. Thus the above example can be written
-// 
+//
 // * ETWTraceEventSource source = new ETWTraceEventSource("output.etl"); // open an ETL file
 // * source.Kernel.ImageLoad += delegate(ImageLoadTraceData data) {
 //      * Console.WriteLine("Got Image Base {0} ModuleFile {1} ", data.BaseAddress, data.FileName);
 // * };
 // * source.Process(); // Read through the stream, calling all the callbacks in one pass.
-// 
+//
 // To keep efficiently high, this basic decode in Process() does NOT allocate new event every time a
 // callback is made. Instead TraceEvent passed to the callback is reused on later events, so
 // clients must copy the data out if they need to persist it past the time the callback returns. The
 // TraceEvent.Clone method can be used to form a copy of a TraceEvent that will not be reused
 // by the TraceEventSource.
-// 
+//
 // Another important attribute of the system is that decoding of the fields of TraceEvent is done
 // lazily. For example ImageLoadTraceData does not actually contain fields for things like
 // 'BaseAddress' or 'FileName', but simply a pointer to the raw bits from the file. It is only when a
@@ -110,9 +111,9 @@ using Address = System.UInt64;
 // event's payload may be ignored by any particular client. A consequence of this approach is that for
 // properties that do non-trivial work (like create a string from the raw data) it is better not to call
 // the property multiple times (instead cache it locally in a local variable).
-// 
+//
 // Supporting Sources that don't implement a callback model
-// 
+//
 // In the previous example ETWTraceEventSource supported the subscription model where the client
 // registers a set of callbacks and then calls Process() to cause the callbacks to happen. This model
 // is very efficient and allows a lot of logically distinct processing to be done in 'one pass'. However
@@ -121,9 +122,9 @@ using Address = System.UInt64;
 // as the Process()) method), is actually put in a subclass of TraceEventSource called
 // TraceEventDispatcher. Those sources that support the subscription model inherit from
 // TraceEventSource, and those that do not inherit directly from TraceEventSource.
-// 
+//
 // The Protocol between TraceEventParser and TraceEventSource
-// 
+//
 // What is common among all TraceEventSources (even if they do not support callbacks), is that parsers
 // need to be registered with the source so that the source can decode the events. This is the purpose
 // of the TraceEventSource.RegisterParser and TraceEventSource.RegisterEventTemplate methods.
@@ -132,7 +133,7 @@ using Address = System.UInt64;
 // about this new parser. Also any time a user subscribes to a particular event in the parser, the
 // source needs to know about so that its (shared) event dispatch table can be updated this is what
 // RegisterEventTemplate is for.
-// 
+//
 // * See also
 //     * code:ETWTraceEventSource a trace event source for a .ETL file or a 'real time' ETW stream.
 //     * code:ETLXTraceEventSource a trace event source for a ETLX file (post-processes ETL file).
@@ -142,12 +143,12 @@ using Address = System.UInt64;
 namespace Microsoft.Diagnostics.Tracing
 {
     /// <summary>
-    /// TraceEventSource is an abstract base class that represents the output of a ETW session (e.g. a ETL file 
+    /// TraceEventSource is an abstract base class that represents the output of a ETW session (e.g. a ETL file
     /// or ETLX file or a real time stream).   This base class is NOT responsible for actually processing
     /// the events, but contains methods for properties associated with the session
     /// like its start and end time, filename, and characteristics of the machine it was collected on.
     /// <para>This class has two main subclasses:</para>
-    /// <para>* <see cref="TraceEventDispatcher"/> which implements a 'push' (callback) model and is the only mode for ETL files.  
+    /// <para>* <see cref="TraceEventDispatcher"/> which implements a 'push' (callback) model and is the only mode for ETL files.
     /// ETWTraceEventSource is the most interesting subclass of TraceEventDispatcher.</para>
     /// <para>* see TraceLog which implements both a 'push' (callback) as well as pull (foreach) model but only works on ETLX files.</para>
     /// <para>This is the end.</para>
@@ -156,10 +157,10 @@ namespace Microsoft.Diagnostics.Tracing
     /// </summary>
     public abstract unsafe class TraceEventSource : ITraceParserServices, IDisposable
     {
-        // Properties to subscribe to find important parsers (these are convenience routines). 
+        // Properties to subscribe to find important parsers (these are convenience routines).
 
         /// <summary>
-        /// For convenience, we provide a property returns a ClrTraceEventParser that knows 
+        /// For convenience, we provide a property returns a ClrTraceEventParser that knows
         /// how to parse all the Common Language Runtime (CLR .NET) events into callbacks.
         /// </summary>
         public ClrTraceEventParser Clr
@@ -176,7 +177,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// For convenience, we provide a property returns a KernelTraceEventParser that knows 
+        /// For convenience, we provide a property returns a KernelTraceEventParser that knows
         /// how to parse all the Kernel events into callbacks.
         /// </summary>
         public KernelTraceEventParser Kernel
@@ -195,12 +196,12 @@ namespace Microsoft.Diagnostics.Tracing
 
 #if !NOT_WINDOWS && !NO_DYNAMIC_TRACEEVENTPARSER
         /// <summary>
-        /// For convenience, we provide a property returns a DynamicTraceEventParser that knows 
+        /// For convenience, we provide a property returns a DynamicTraceEventParser that knows
         /// how to parse all event providers that dynamically log their schemas into the event streams.
-        /// In particular, it knows how to parse any events from a System.Diagnostics.Tracing.EventSources. 
-        /// 
+        /// In particular, it knows how to parse any events from a System.Diagnostics.Tracing.EventSources.
+        ///
         /// Note that the DynamicTraceEventParser has subsumed the functionality of RegisteredTraceEventParser
-        /// so any registered providers are also looked up here.  
+        /// so any registered providers are also looked up here.
         /// </summary>
         public DynamicTraceEventParser Dynamic
         {
@@ -215,11 +216,11 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// For convenience, we provide a property returns a RegisteredTraceEventParser that knows 
+        /// For convenience, we provide a property returns a RegisteredTraceEventParser that knows
         /// how to parse all providers that are registered with the operating system.
-        /// 
+        ///
         /// Because the DynamicTraceEventParser has will parse all providers that that RegisteredTraceEventParser
-        /// will parse, this function is obsolete, you should use Dynamic instead.  
+        /// will parse, this function is obsolete, you should use Dynamic instead.
         /// </summary>
         [Obsolete("Use Dynamic instead.   DynamicTraceEventParser decodes everything that RegisteredTraceEventParser can.")]
         public RegisteredTraceEventParser Registered
@@ -237,7 +238,7 @@ namespace Microsoft.Diagnostics.Tracing
 #endif // !NOT_WINDOWS
 
         /// <summary>
-        /// The time when session started logging. 
+        /// The time when session started logging.
         /// </summary>
         public DateTime SessionStartTime
         {
@@ -268,7 +269,7 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 Debug.Assert(sessionStartTimeQPC <= sessionEndTimeQPC);
-                Debug.Assert((sessionEndTimeQPC - sessionStartTimeQPC) < _QPCFreq * 3600 * 24 * 10);    // less than 10 days.   
+                Debug.Assert((sessionEndTimeQPC - sessionStartTimeQPC) < _QPCFreq * 3600 * 24 * 10);    // less than 10 days.
                 var ret = QPCTimeToRelMSec(sessionEndTimeQPC);
                 return ret;
             }
@@ -279,7 +280,7 @@ namespace Microsoft.Diagnostics.Tracing
         public TimeSpan SessionDuration { get { return SessionEndTime - SessionStartTime; } }
 
         /// <summary>
-        /// The size of the trace, if it is known.  Will return 0 if it is not known.  
+        /// The size of the trace, if it is known.  Will return 0 if it is not known.
         /// </summary>
         public virtual long Size { get { return 0; } }
         /// <summary>
@@ -291,11 +292,11 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public abstract int EventsLost { get; }
         /// <summary>
-        /// The number of processors on the machine doing the logging. 
+        /// The number of processors on the machine doing the logging.
         /// </summary>
         public int NumberOfProcessors { get { return numberOfProcessors; } }
         /// <summary>
-        /// Cpu speed of the machine doing the logging. 
+        /// Cpu speed of the machine doing the logging.
         /// </summary>
         public int CpuSpeedMHz { get { return cpuSpeedMHz; } }
         /// <summary>
@@ -303,12 +304,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public Version OSVersion { get { return osVersion; } }
         /// <summary>
-        /// Returns true if this is a real time session.  
+        /// Returns true if this is a real time session.
         /// </summary>
         public bool IsRealTime { get; protected set; }
 
         /// <summary>
-        /// Time based threshold for how long data should be retained 
+        /// Time based threshold for how long data should be retained
         /// by accumulates that are processing this TraceEventSource.
         /// A value of 0, the default, indicates an infinite accumulation.
         /// </summary>
@@ -339,10 +340,10 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// TraceEventSource supports attaching arbitrary user data to the source.  This property returns a key-value bag of these attached values.  
+        /// TraceEventSource supports attaching arbitrary user data to the source.  This property returns a key-value bag of these attached values.
         /// <para>
         /// One convention that has been established is that TraceEventParsers that need additional state to parse their events should
-        /// store them in UserData under the key 'parsers\(ParserName)' 
+        /// store them in UserData under the key 'parsers\(ParserName)'
         /// </para>
         /// </summary>
         public IDictionary<string, object> UserData { get { return userData; } }
@@ -352,7 +353,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ TraceEventSource()
         {
             userData = new Dictionary<string, object>();
-            _QPCFreq = 1;   // Anything non-zero so we don't get divide by zero failures in degenerate cases.  
+            _QPCFreq = 1;   // Anything non-zero so we don't get divide by zero failures in degenerate cases.
         }
 
         // [SecuritySafeCritical]
@@ -382,7 +383,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             Debug.Assert(template.eventRecord == null);
             Debug.Assert(template.next == null);
-            template.next = null;       // Should be a no-op but I want to be extra sure. 
+            template.next = null;       // Should be a no-op but I want to be extra sure.
 
             RegisterEventTemplateImpl(template);
         }
@@ -437,7 +438,7 @@ namespace Microsoft.Diagnostics.Tracing
         // Used to convert from Query Performance Counter (QPC) units to DateTime.
         internal /*protected*/ long _QPCFreq;
         internal /*protected*/ long _syncTimeQPC;       // An instant in time measured in QPC units (of _QPCFreq)
-        internal /*protected*/ DateTime _syncTimeUTC;   // The same instant as a DateTime.  This is the only fundamental DateTime in the object. 
+        internal /*protected*/ DateTime _syncTimeUTC;   // The same instant as a DateTime.  This is the only fundamental DateTime in the object.
 
         internal /*protected*/ long sessionStartTimeQPC;
         internal /*protected*/ long sessionEndTimeQPC;
@@ -451,17 +452,17 @@ namespace Microsoft.Diagnostics.Tracing
         #endregion
         #region private
         /// <summary>
-        /// This is the high frequency tick clock on the processor (what QueryPerformanceCounter uses).  
-        /// You should not need 
+        /// This is the high frequency tick clock on the processor (what QueryPerformanceCounter uses).
+        /// You should not need
         /// </summary>
         internal long QPCFreq { get { return _QPCFreq; } }
 
         /// <summary>
-        /// Converts the Query Performance Counter (QPC) ticks to a number of milliseconds from the start of the trace.   
+        /// Converts the Query Performance Counter (QPC) ticks to a number of milliseconds from the start of the trace.
         /// </summary>
         internal double QPCTimeToRelMSec(long QPCTime)
         {
-            // Ensure that we have a certain amount of sanity (events don't occur before sessionStartTime).  
+            // Ensure that we have a certain amount of sanity (events don't occur before sessionStartTime).
             if (QPCTime < sessionStartTimeQPC)
             {
                 QPCTime = sessionStartTimeQPC;
@@ -470,19 +471,19 @@ namespace Microsoft.Diagnostics.Tracing
             // We used to have a sanity check to ensure that the time was always inside sessionEndTimeQPC
             // ETLX files enforce this, but sometimes ETWTraceEventParser (ETL) traces have bad session times.
             // After some thought, the best answer seems to be not to try to enforce this consistantancy.
-            // (it will be true for ETLX but maybe not for ETWTraceEventParser scenarios).  
+            // (it will be true for ETLX but maybe not for ETWTraceEventParser scenarios).
 
             Debug.Assert(sessionStartTimeQPC != 0 && _syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
-            // TODO this does not work for very long traces.   
+            // TODO this does not work for very long traces.
             long diff = (QPCTime - sessionStartTimeQPC);
             // For real time providers, the session start time is the time when the TraceEventSource was turned on
             // but the session was turned on before that and events might have been buffered, which means you can
-            // have negative numbers.  
+            // have negative numbers.
             return diff * 1000.0 / QPCFreq;
         }
 
         /// <summary>
-        /// Converts a Relative MSec time to the Query Performance Counter (QPC) ticks 
+        /// Converts a Relative MSec time to the Query Performance Counter (QPC) ticks
         /// </summary>
         internal long RelativeMSecToQPC(double relativeMSec)
         {
@@ -491,34 +492,34 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Converts a DateTime to the Query Performance Counter (QPC) ticks 
+        /// Converts a DateTime to the Query Performance Counter (QPC) ticks
         /// </summary>
         internal long UTCDateTimeToQPC(DateTime time)
         {
             Debug.Assert(_QPCFreq != 0);
             long ret = (long)((time.Ticks - _syncTimeUTC.Ticks) / 10000000.0 * _QPCFreq) + _syncTimeQPC;
 
-            // The sessionEndTimeQPC == 0  effectively means 'called during trace startup' and we use it here to disable the 
-            // assert.   During that time we get a wrong QPC we only use this to initialize sessionStartTimeQPC and 
-            // sessionEndTimeQPC and we fix these up when we see the first event (see kernelParser.EventTraceHeader += handler).  
+            // The sessionEndTimeQPC == 0  effectively means 'called during trace startup' and we use it here to disable the
+            // assert.   During that time we get a wrong QPC we only use this to initialize sessionStartTimeQPC and
+            // sessionEndTimeQPC and we fix these up when we see the first event (see kernelParser.EventTraceHeader += handler).
             Debug.Assert(sessionEndTimeQPC == 0 || (QPCTimeToDateTimeUTC(ret) - time).TotalMilliseconds < 1);
             return ret;
         }
 
         /// <summary>
-        /// Converts the Query Performance Counter (QPC) ticks to a DateTime  
+        /// Converts the Query Performance Counter (QPC) ticks to a DateTime
         /// </summary>
         internal DateTime QPCTimeToDateTimeUTC(long QPCTime)
         {
-            if (QPCTime == long.MaxValue)   // We treat maxvalue as a special case.  
+            if (QPCTime == long.MaxValue)   // We treat maxvalue as a special case.
             {
                 return DateTime.MaxValue;
             }
 
-            // We expect all the time variables used to compute this to be set.   
+            // We expect all the time variables used to compute this to be set.
             Debug.Assert(_syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
             long inTicks = (long)((QPCTime - _syncTimeQPC) * 10000000.0 / _QPCFreq) + _syncTimeUTC.Ticks;
-            // Avoid illegal DateTime values.   
+            // Avoid illegal DateTime values.
             if (inTicks < 0 || DateTime.MaxValue.Ticks < inTicks)
             {
                 inTicks = DateTime.MaxValue.Ticks;
@@ -535,8 +536,8 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// Some events (like HardFault) do not have a thread ID or a process ID, but they MIGHT have a Stack
-        /// If they do try to get the ThreadID for the event from that.  Return -1 if not successful.   
-        /// This is intended to be overridden by the TraceLog class that has this additional information. 
+        /// If they do try to get the ThreadID for the event from that.  Return -1 if not successful.
+        /// This is intended to be overridden by the TraceLog class that has this additional information.
         /// </summary>
         internal virtual int LastChanceGetThreadID(TraceEvent data) { return -1; }
         internal virtual int LastChanceGetProcessID(TraceEvent data) { return -1; }
@@ -545,7 +546,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (eventRecord->ExtendedDataCount != 0)
             {
                 var extendedData = eventRecord->ExtendedData;
-                Debug.Assert((ulong)extendedData > 0x10000);          // Make sure this looks like a pointer.  
+                Debug.Assert((ulong)extendedData > 0x10000);          // Make sure this looks like a pointer.
                 for (int i = 0; i < eventRecord->ExtendedDataCount; i++)
                 {
                     if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
@@ -583,16 +584,16 @@ namespace Microsoft.Diagnostics.Tracing
     }
 
     /// <summary>
-    /// TraceEvent an abstract class represents the data from one event in the stream of events in a TraceEventSource.   
+    /// TraceEvent an abstract class represents the data from one event in the stream of events in a TraceEventSource.
     /// The TraceEvent class has all the properties of an event that are common to all ETW events, including TimeStamp
     /// ProviderGuid, ProcessID etc.   Subclasses of TraceEvent then extend this abstract class to include properties
-    /// specific to a particular payload.   
+    /// specific to a particular payload.
     /// <para>
     /// An important architectural point is that TraceEvent classes are aggressively reused by default.   The TraceEvent that is
     /// passed to any TraceEventParser callback or in a foreach is ONLY valid for the duration for that callback (or one
     /// iteration of the foreach).  If you need save a copy of the event data, you must call the Clone() method to make
     /// a copy.   The IObservable interfaces (TraceEventParser.Observe* methods) however implicitly call Clone() so you
-    /// do not have to call Clone() when processing with IObservables (but these are slower).  
+    /// do not have to call Clone() when processing with IObservables (but these are slower).
     /// </para>
     /// </summary>
     public abstract unsafe class TraceEvent
@@ -603,8 +604,8 @@ namespace Microsoft.Diagnostics.Tracing
         : DynamicObject
     {
         /// <summary>
-        /// The GUID that uniquely identifies the Provider for this event.  This can return Guid.Empty for classic (Pre-VISTA) ETW providers.  
-        /// </summary>        
+        /// The GUID that uniquely identifies the Provider for this event.  This can return Guid.Empty for classic (Pre-VISTA) ETW providers.
+        /// </summary>
         public Guid ProviderGuid { get { return providerGuid; } }
 
         /// <summary>
@@ -613,7 +614,7 @@ namespace Microsoft.Diagnostics.Tracing
         public Guid TaskGuid { get { return taskGuid; } }
 
         /// <summary>
-        /// The name of the provider associated with the event.  It may be of the form Provider(GUID) or UnknownProvider in some cases but is never null.  
+        /// The name of the provider associated with the event.  It may be of the form Provider(GUID) or UnknownProvider in some cases but is never null.
         /// </summary>
         public string ProviderName
         {
@@ -649,8 +650,8 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// A name for the event.  This is simply the concatenation of the task and opcode names (separated by a /).  If the 
-        /// event has no opcode, then the event name is just the task name.  
+        /// A name for the event.  This is simply the concatenation of the task and opcode names (separated by a /).  If the
+        /// event has no opcode, then the event name is just the task name.
         /// </summary>
         public string EventName
         {
@@ -687,13 +688,13 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Events for a given provider can be given a group identifier (integer) called a Task that indicates the
         /// broad area within the provider that the event pertains to (for example the Kernel provider has
-        /// Tasks for Process, Threads, etc).   
+        /// Tasks for Process, Threads, etc).
         /// </summary>
         public TraceEventTask Task { get { return task; } }
         /// <summary>
         /// The human readable name for the event's task (group of related events) (eg. process, thread,
         /// image, GC, ...).  May return a string Task(GUID) or Task(TASK_NUM) if no good symbolic name is
-        /// available.  It never returns null.  
+        /// available.  It never returns null.
         /// </summary>
         public string TaskName
         {
@@ -716,7 +717,7 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                     else
                     {
-                        eventNameIsJustTaskName = true;     // Don't suffix this with the opcode.  
+                        eventNameIsJustTaskName = true;     // Don't suffix this with the opcode.
                         if (eventID == 0)
                         {
                             taskName = "EventWriteString";
@@ -727,7 +728,7 @@ namespace Microsoft.Diagnostics.Tracing
                         }
                     }
                 }
-                // Old EventSources did not have tasks for event names so we make an exception for these 
+                // Old EventSources did not have tasks for event names so we make an exception for these
 #if !NOT_WINDOWS && !NO_DYNAMIC_TRACEEVENTPARSER
                 Debug.Assert(!string.IsNullOrEmpty(taskName) || (this is DynamicTraceEventData && ProviderName == "TplEtwProvider"));
 #endif
@@ -735,17 +736,17 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// An opcode is a numeric identifier (integer) that identifies the particular event within the group of events 
+        /// An opcode is a numeric identifier (integer) that identifies the particular event within the group of events
         /// identified by the event's task.  Often events have opcode 'Info' (0), which is the default.   This value
         /// is interpreted as having no-opcode (the task is sufficient to identify the event).
         /// <para>
         /// Generally the most useful opcodes are the Start and Stop opcodes which are used to indicate the beginning and the
-        /// end of a interval of time.   Many tools will match up start and stop opcodes automatically and compute durations.  
+        /// end of a interval of time.   Many tools will match up start and stop opcodes automatically and compute durations.
         /// </para>
         /// </summary>
         public TraceEventOpcode Opcode { get { return opcode; } }
         /// <summary>
-        /// Returns the human-readable string name for the Opcode property. 
+        /// Returns the human-readable string name for the Opcode property.
         /// </summary>
         public string OpcodeName
         {
@@ -773,7 +774,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// The version number for this event.  The only compatible change to an event is to add new properties at the end.
-        /// When this is done the version numbers is incremented.  
+        /// When this is done the version numbers is incremented.
         /// </summary>
         public int Version
         {
@@ -781,9 +782,9 @@ namespace Microsoft.Diagnostics.Tracing
             get { return eventRecord->EventHeader.Version; }
         }
         /// <summary>
-        /// ETW Event providers can specify a 64 bit bitfield called 'keywords' that define provider-specific groups of 
-        /// events which can be enabled and disabled independently.   
-        /// Each event is given a keywords mask that identifies which groups the event belongs to.   This property returns this mask.   
+        /// ETW Event providers can specify a 64 bit bitfield called 'keywords' that define provider-specific groups of
+        /// events which can be enabled and disabled independently.
+        /// Each event is given a keywords mask that identifies which groups the event belongs to.   This property returns this mask.
         /// </summary>
         public TraceEventKeyword Keywords
         {
@@ -791,8 +792,8 @@ namespace Microsoft.Diagnostics.Tracing
             get { return (TraceEventKeyword)eventRecord->EventHeader.Keyword; }
         }
         /// <summary>
-        /// A Channel is a identifier (integer) that defines an 'audience' for the event (admin, operational, ...).   
-        /// Channels are only used for Windows Event Log integration.  
+        /// A Channel is a identifier (integer) that defines an 'audience' for the event (admin, operational, ...).
+        /// Channels are only used for Windows Event Log integration.
         /// </summary>
         public TraceEventChannel Channel
         {
@@ -801,14 +802,14 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// The time of the event. You may find TimeStampRelativeMSec more convenient.  
+        /// The time of the event. You may find TimeStampRelativeMSec more convenient.
         /// </summary>
         public DateTime TimeStamp
         {
             get { return traceEventSource.QPCTimeToDateTimeUTC(TimeStampQPC).ToLocalTime(); }
         }
         /// <summary>
-        /// Returns a double representing the number of milliseconds since the beginning of the session.     
+        /// Returns a double representing the number of milliseconds since the beginning of the session.
         /// </summary>
         public double TimeStampRelativeMSec
         {
@@ -836,7 +837,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// The process ID of the process which logged the event. 
+        /// The process ID of the process which logged the event.
         /// <para>This field may return -1 for some events when the process ID is not known.</para>
         /// </summary>
         public virtual int ProcessID
@@ -855,7 +856,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// Returns a short name for the process. This the image file name (without the path or extension),
-        /// or if that is not present, then the string 'Process(XXXX)' 
+        /// or if that is not present, then the string 'Process(XXXX)'
         /// </summary>
         public string ProcessName
         {
@@ -865,8 +866,8 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// The processor Number (from 0 to TraceEventSource.NumberOfProcessors) that logged this event. 
-        /// event. 
+        /// The processor Number (from 0 to TraceEventSource.NumberOfProcessors) that logged this event.
+        /// event.
         /// </summary>
         public int ProcessorNumber
         {
@@ -880,7 +881,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// Get the size of a pointer associated with process that logged the event (thus it is 4 for a 32 bit process). 
+        /// Get the size of a pointer associated with process that logged the event (thus it is 4 for a 32 bit process).
         /// </summary>
         public int PointerSize
         {
@@ -895,19 +896,19 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Conceptually every ETW event can be given a ActivityID (GUID) that uniquely identifies the logical
         /// work being carried out (the activity).  This property returns this GUID.   Can return Guid.Empty
-        /// if the thread logging the event has no activity ID associated with it.  
+        /// if the thread logging the event has no activity ID associated with it.
         /// </summary>
         public Guid ActivityID { get { return eventRecord->EventHeader.ActivityId; } }
         /// <summary>
         /// ETW supports the ability to take events with another GUID called the related activity that is either
         /// causes or is caused by the current activity.   This property returns that GUID (or Guid.Empty if the
-        /// event has not related activity.  
+        /// event has not related activity.
         /// </summary>
         public Guid RelatedActivityID
         {
             get
             {
-                // handle the cloned case, we put it first in the buffer. 
+                // handle the cloned case, we put it first in the buffer.
                 if (myBuffer != IntPtr.Zero)
                 {
                     if (myBuffer != (IntPtr)eventRecord)
@@ -926,7 +927,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// Event Providers can define a 'message' for each event that are meant for human consumption.   
+        /// Event Providers can define a 'message' for each event that are meant for human consumption.
         /// FormattedMessage returns this string with the values of the payload filled in at the appropriate places.
         /// <para>It will return null if the event provider did not define a 'message'  for this event</para>
         /// </summary>
@@ -934,11 +935,11 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// Creates and returns the value of the 'message' for the event with payload values substituted.
-        /// Payload values are formatted using the given formatProvider. 
+        /// Payload values are formatted using the given formatProvider.
         /// </summary>
         public virtual string GetFormattedMessage(IFormatProvider formatProvider)
         {
-            // This lets simple string payloads be shown as the FormattedMessage.  
+            // This lets simple string payloads be shown as the FormattedMessage.
             if (IsEventWriteString ||
                (eventRecord->EventHeader.Id == 0 && eventRecord->EventHeader.Opcode == 0 && eventRecord->EventHeader.Task == 0))
             {
@@ -951,7 +952,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// An EventIndex is a integer that is guaranteed to be unique for this event over the entire log.  Its
         /// primary purpose is to act as a key that allows side tables to be built up that allow value added
-        /// processing to 'attach' additional data to this particular event unambiguously.  
+        /// processing to 'attach' additional data to this particular event unambiguously.
         /// <para>This property is only set for ETLX file.  For ETL or real time streams it returns 0</para>
         /// <para>EventIndex is currently a 4 byte quantity.  This does limit this property to 4Gig of events</para>
         /// </summary>
@@ -963,7 +964,7 @@ namespace Microsoft.Diagnostics.Tracing
                 // This is a guard against code running in TraceLog.CopyRawEvents that attempts to use
                 // the EventIndex for an event returned by ETWTraceEventSource. It is unsafe to do so
                 // because the EventIndex returned represents the index in the ETW stream, but user
-                // code needs the index in the newly created ETLX stream (which does not include 
+                // code needs the index in the newly created ETLX stream (which does not include
                 // "bookkeeping" events. User code should use the captured variable eventCount instead.
                 Debug.Assert(!DisallowEventIndexAccess, "Illegal access to EventIndex");
 #endif
@@ -971,7 +972,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// The TraceEventSource associated with this event.  
+        /// The TraceEventSource associated with this event.
         /// </summary>
         public TraceEventSource Source { get { return traceEventSource; } }
         /// <summary>
@@ -1072,20 +1073,20 @@ namespace Microsoft.Diagnostics.Tracing
             return result != null;
         }
 
-        // Getting at payload values.  
+        // Getting at payload values.
         /// <summary>
-        /// Returns the names of all the manifest declared field names for the event.    May be empty if the manifest is not available.  
+        /// Returns the names of all the manifest declared field names for the event.    May be empty if the manifest is not available.
         /// </summary>
         public abstract string[] PayloadNames { get; }
         /// <summary>
-        /// Given an index from 0 to PayloadNames.Length-1, return the value for that payload item as an object (boxed if necessary).  
+        /// Given an index from 0 to PayloadNames.Length-1, return the value for that payload item as an object (boxed if necessary).
         /// </summary>
         public abstract object PayloadValue(int index);
 
         /// <summary>
         /// PayloadString is like PayloadValue(index).ToString(), however it can do a better job in some cases.  In particular
         /// if the payload is a enumeration or a bitfield and the manifest defined the enumeration values, then it will print the string name
-        /// of the enumeration value instead of the integer value.  
+        /// of the enumeration value instead of the integer value.
         /// </summary>
         public virtual string PayloadString(int index, IFormatProvider formatProvider = null)
         {
@@ -1126,7 +1127,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 if (value is long)
                 {
-                    if (PayloadNames[index] == "objectId")      // TODO this is a hack.  
+                    if (PayloadNames[index] == "objectId")      // TODO this is a hack.
                     {
                         return "0x" + ((long)value).ToString("x8");
                     }
@@ -1193,7 +1194,7 @@ namespace Microsoft.Diagnostics.Tracing
                             sb.Append('[').Append(new System.Net.IPAddress(ipV6).ToString()).Append("]:").Append(port);
                         }
                     }
-                    // If we did not find a way of pretty printing int, dump it as bytes. 
+                    // If we did not find a way of pretty printing int, dump it as bytes.
                     if (sb.Length == 0)
                     {
                         var limit = Math.Min(asByteArray.Length, 16);
@@ -1247,7 +1248,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// Returns the index in 'PayloadNames for field 'propertyName'.  Returns something less than 0 if not found. 
+        /// Returns the index in 'PayloadNames for field 'propertyName'.  Returns something less than 0 if not found.
         /// </summary>
         public int PayloadIndex(string propertyName)
         {
@@ -1263,7 +1264,7 @@ namespace Microsoft.Diagnostics.Tracing
             return -1;
         }
         /// <summary>
-        /// PayloadByName fetches the value of a payload property by the name of the property. 
+        /// PayloadByName fetches the value of a payload property by the name of the property.
         /// <para>It will return null if propertyName is not found.</para>
         /// <para>This method is not intended to be used in performance critical code.</para>
         /// </summary>
@@ -1278,7 +1279,7 @@ namespace Microsoft.Diagnostics.Tracing
             return null;
         }
         /// <summary>
-        /// PayloadStringByName functions the same as PayloadByName, but uses PayloadString instead of PayloadValue. 
+        /// PayloadStringByName functions the same as PayloadByName, but uses PayloadString instead of PayloadValue.
         /// <para>It will return null if propertyName is not found.</para>
         /// <para>This method is not intended to be used in performance critical code.</para>
         /// </summary>
@@ -1304,7 +1305,7 @@ namespace Microsoft.Diagnostics.Tracing
             get { return eventRecord->UserDataLength; }
         }
         /// <summary>
-        /// Returns an array of bytes representing the event-specific payload associated with the event.  
+        /// Returns an array of bytes representing the event-specific payload associated with the event.
         /// <para>Normally this method is not used because some TraceEventParser has built a subclass of
         /// TraceEvent that parses the payload</para>
         /// </summary>
@@ -1314,7 +1315,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// Gets the event data and puts it in 'targetBuffer' at 'targetStartIndex' and returns the resulting buffer.
-        /// If 'targetBuffer is null, it will allocate a buffer of the correct size. 
+        /// If 'targetBuffer is null, it will allocate a buffer of the correct size.
         /// <para>Normally this method is not used because some TraceEventParser has built a subclass of
         /// TraceEvent that parses the payload</para>
         /// </summary>
@@ -1348,14 +1349,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public virtual unsafe TraceEvent Clone()
         {
-            TraceEvent ret = (TraceEvent)MemberwiseClone();     // Clone myself. 
-            ret.next = null;                                    // the clone is not in any linked list.  
+            TraceEvent ret = (TraceEvent)MemberwiseClone();     // Clone myself.
+            ret.next = null;                                    // the clone is not in any linked list.
             if (eventRecord != null)
             {
                 int userDataLength = (EventDataLength + 3) / 4 * 4;            // DWORD align
                 int extendedDataLength = 0;
 
-                // We need to copy out the RelatedActivityID if it is there.  
+                // We need to copy out the RelatedActivityID if it is there.
                 Guid relatedActivityID = RelatedActivityID;
                 if (relatedActivityID != default(Guid))
                 {
@@ -1390,7 +1391,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Pretty print the event.  It uses XML syntax.. 
+        /// Pretty print the event.  It uses XML syntax..
         /// </summary>
         public override string ToString()
         {
@@ -1406,7 +1407,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Write an XML representation to the stringBuilder sb and return it.  
+        /// Write an XML representation to the stringBuilder sb and return it.
         /// </summary>
         public virtual StringBuilder ToXml(StringBuilder sb)
         {
@@ -1414,7 +1415,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Writes an XML representation of the event to a StringBuilder sb, formatting data using the passed format provider. 
+        /// Writes an XML representation of the event to a StringBuilder sb, formatting data using the passed format provider.
         /// Returns the StringBuilder.
         /// </summary>
         public virtual StringBuilder ToXml(StringBuilder sb, IFormatProvider formatProvider)
@@ -1436,7 +1437,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 string payloadName = payloadNames[i];
 
-                // XML does not allow you to repeat attributes, so we need change the name if that happens.   
+                // XML does not allow you to repeat attributes, so we need change the name if that happens.
                 // Note that this is not perfect, but avoids the likley cases
                 if (payloadName == "ProviderName" || payloadName == "FormattedMessage" || payloadName == "MSec" ||
                     payloadName == "PID" || payloadName == "PName" || payloadName == "TID" || payloadName == "ActivityID")
@@ -1551,20 +1552,23 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// EventTypeUserData is a field users get to use to attach their own data on a per-event-type basis.    
+        /// EventTypeUserData is a field users get to use to attach their own data on a per-event-type basis.
         /// </summary>
         public object EventTypeUserData;
 
         /// <summary>
         /// Returns the raw IntPtr pointer to the data blob associated with the event.  This is the way the
-        /// subclasses of TraceEvent get at the data to display it in a efficient (but unsafe) manner.  
+        /// subclasses of TraceEvent get at the data to display it in a efficient (but unsafe) manner.
         /// </summary>
         public IntPtr DataStart { get { return userData; } }
 
         #region Protected
         /// <summary>
-        /// Create a template with the given event meta-data.  Used by TraceParserGen.  
+        /// Create a template with the given event meta-data.  Used by TraceParserGen.
         /// </summary>
+        [UnconditionalSuppressMessage("Trimming", "IL3050",
+            Justification = "Warning is due to inheriting from DynamicObject, but there is only a problem if the caller uses dynamic, in which case they will receive a separate warning."
+        )]
         protected TraceEvent(int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
         {
 
@@ -1598,7 +1602,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// Skip UTF8 string starting at 'offset' bytes into the payload blob.
-        /// </summary>  
+        /// </summary>
         /// <returns>Offset just after the string</returns>
         protected internal int SkipUTF8String(int offset)
         {
@@ -1613,7 +1617,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// Skip Unicode string starting at 'offset' bytes into the payload blob.
-        /// </summary>  
+        /// </summary>
         /// <returns>Offset just after the string</returns>
         protected internal int SkipUnicodeString(int offset)
         {
@@ -1628,7 +1632,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// Skip 'stringCount' Unicode strings starting at 'offset' bytes into the payload blob.
-        /// </summary>  
+        /// </summary>
         /// <returns>Offset just after the last string</returns>
         protected internal int SkipUnicodeString(int offset, int stringCount)
         {
@@ -1641,18 +1645,18 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// Skip a Security ID (SID) starting at 'offset' bytes into the payload blob.
-        /// </summary>  
+        /// </summary>
         /// <returns>Offset just after the Security ID</returns>
         internal int SkipSID(int offset)
         {
             IntPtr mofData = DataStart;
-            // This is a Security Token.  Either it is null, which takes 4 bytes, 
+            // This is a Security Token.  Either it is null, which takes 4 bytes,
             // Otherwise it is an 8 byte structure (TOKEN_USER) followed by SID, which is variable
             // size (sigh) depending on the 2nd byte in the SID
             int sid = TraceEventRawReaders.ReadInt32(mofData, offset);
             if (sid == 0)
             {
-                return offset + 4;      // TODO confirm 
+                return offset + 4;      // TODO confirm
             }
             else
             {
@@ -1689,7 +1693,7 @@ namespace Microsoft.Diagnostics.Tracing
             return offset + (PointerSize - 4) * numPointers;
         }
         /// <summary>
-        /// Computes the size of 'numPointers' pointers on the machine where the event was collected.  
+        /// Computes the size of 'numPointers' pointers on the machine where the event was collected.
         /// </summary>
         internal int HostSizePtr(int numPointers)
         {
@@ -1749,8 +1753,8 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Given an Offset to a fixed sized string at 'offset', whose buffer size is 'charCount'
         /// Returns the string value.  A null in the string will terminate the string before the
-        /// end of the buffer. 
-        /// </summary>        
+        /// end of the buffer.
+        /// </summary>
         internal string GetFixedUnicodeStringAt(int charCount, int offset)
         {
             StringBuilder sb = new StringBuilder();
@@ -1766,7 +1770,7 @@ namespace Microsoft.Diagnostics.Tracing
             return sb.ToString();
         }
         /// <summary>
-        /// Returns the encoding of a Version 6 IP address that has been serialized at 'offset' in the payload bytes.  
+        /// Returns the encoding of a Version 6 IP address that has been serialized at 'offset' in the payload bytes.
         /// </summary>
         internal System.Net.IPAddress GetIPAddrV6At(int offset)
         {
@@ -1779,14 +1783,14 @@ namespace Microsoft.Diagnostics.Tracing
             return new System.Net.IPAddress(addrBytes);
         }
         /// <summary>
-        /// Returns the GUID serialized at 'offset' in the payload bytes. 
+        /// Returns the GUID serialized at 'offset' in the payload bytes.
         /// </summary>
         protected internal Guid GetGuidAt(int offset)
         {
             return TraceEventRawReaders.ReadGuid(DataStart, offset);
         }
         /// <summary>
-        /// Get the DateTime that serialized (as a windows FILETIME) at 'offset' in the payload bytes. 
+        /// Get the DateTime that serialized (as a windows FILETIME) at 'offset' in the payload bytes.
         /// </summary>
         protected internal DateTime GetDateTimeAt(int offset)
         {
@@ -1794,7 +1798,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// Given an Offset to a null terminated Unicode string in an payload bytes, return the string that is
-        /// held there.   
+        /// held there.
         /// </summary>
         protected internal string GetUnicodeStringAt(int offset)
         {
@@ -1836,14 +1840,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Returns a byte value that was serialized at 'offset' in the payload bytes
         /// </summary>
-        protected internal int GetByteAt(int offset)
+        protected internal byte GetByteAt(int offset)
         {
             return TraceEventRawReaders.ReadByte(DataStart, offset);
         }
         /// <summary>
         /// Returns a short value that was serialized at 'offset' in the payload bytes
         /// </summary>
-        protected internal int GetInt16At(int offset)
+        protected internal short GetInt16At(int offset)
         {
             return TraceEventRawReaders.ReadInt16(DataStart, offset);
         }
@@ -1878,7 +1882,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// Gets something that is pointer sized for the provider that collected the data.  
+        /// Gets something that is pointer sized for the provider that collected the data.
         /// </summary>
         protected internal Address GetAddressAt(int offset)
         {
@@ -2010,7 +2014,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// Prints a standard prefix for a event (includes the time of the event, the process ID and the
-        /// thread ID.  
+        /// thread ID.
         /// </summary>
         protected internal StringBuilder Prefix(StringBuilder sb)
         {
@@ -2027,7 +2031,7 @@ namespace Microsoft.Diagnostics.Tracing
             return sb;
         }
 
-        // If non-null, when reading from ETL files, call this routine to fix poorly formed Event headers.  
+        // If non-null, when reading from ETL files, call this routine to fix poorly formed Event headers.
         // Ideally this would not be needed, and is never used on ETLX files.
         internal /*protected*/ bool NeedsFixup;
         internal /*protected*/ virtual void FixupData() { }
@@ -2035,12 +2039,12 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ int ParentThread;
 
         /// <summary>
-        /// Because we want the ThreadID to be the ID of the CREATED thread, and the stack 
-        /// associated with the event is the parentThreadID 
+        /// Because we want the ThreadID to be the ID of the CREATED thread, and the stack
+        /// associated with the event is the parentThreadID
         /// </summary>
         internal int ThreadIDforStacks()
         {
-#if !NOT_WINDOWS 
+#if !NOT_WINDOWS
             if (0 <= ParentThread)
             {
                 Debug.Assert(this is ProcessTraceData || this is ThreadTraceData);
@@ -2055,13 +2059,13 @@ namespace Microsoft.Diagnostics.Tracing
 #endif
 
         /// <summary>
-        /// Returns (or sets) the delegate associated with this event.   
+        /// Returns (or sets) the delegate associated with this event.
         /// </summary>
         protected internal abstract Delegate Target { get; set; }
 
         /// <summary>
-        /// If this TraceEvent belongs to a parser that needs state, then this callback will set the state.  
-        /// Parsers with state are reasonably rare, the main examples are KernelTraceEventParser and ClrTraceEventParser.    
+        /// If this TraceEvent belongs to a parser that needs state, then this callback will set the state.
+        /// Parsers with state are reasonably rare, the main examples are KernelTraceEventParser and ClrTraceEventParser.
         /// </summary>
         protected internal virtual void SetState(object state) { }
 
@@ -2088,8 +2092,8 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// Returns the Timestamp for the event using Query Performance Counter (QPC) ticks.   
-        /// The start time for the QPC tick counter is arbitrary and the units  also vary.  
+        /// Returns the Timestamp for the event using Query Performance Counter (QPC) ticks.
+        /// The start time for the QPC tick counter is arbitrary and the units  also vary.
         /// </summary>
         [Obsolete("Not Obsolete but Discouraged.  Please use TimeStampRelativeMSec.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -2097,7 +2101,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// A standard way for events to are that certain addresses are addresses in code and ideally have
-        /// symbolic information associated with them.  Returns true if successful.  
+        /// symbolic information associated with them.  Returns true if successful.
         /// </summary>
         internal virtual bool LogCodeAddresses(Func<TraceEvent, Address, bool> callBack)
         {
@@ -2114,7 +2118,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Used for binary searching of event IDs.    Abstracts the size (currently a int, could go to long) 
+        /// Used for binary searching of event IDs.    Abstracts the size (currently a int, could go to long)
         /// </summary>
         internal static int Compare(EventIndex id1, EventIndex id2)
         {
@@ -2122,7 +2126,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Returns true if the two traceEvents have the same identity.  
+        /// Returns true if the two traceEvents have the same identity.
         /// </summary>
         internal bool Matches(TraceEvent other)
         {
@@ -2153,11 +2157,11 @@ namespace Microsoft.Diagnostics.Tracing
 
 
         /// <summary>
-        /// Normally TraceEvent does not have unmanaged data, but if you call 'Clone' it will.  
+        /// Normally TraceEvent does not have unmanaged data, but if you call 'Clone' it will.
         /// </summary>
         ~TraceEvent()
         {
-            // Most Data does not own its data, so this is usually a no-op. 
+            // Most Data does not own its data, so this is usually a no-op.
 
             if (myBuffer != IntPtr.Zero)
             {
@@ -2166,7 +2170,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// For debugging. dumps an array.   If you specify a size of 0 (the default) it dumps the whole array.  
+        /// For debugging. dumps an array.   If you specify a size of 0 (the default) it dumps the whole array.
         /// </summary>
         internal static string DumpArray(byte[] bytes, int size = 0)
         {
@@ -2188,7 +2192,7 @@ namespace Microsoft.Diagnostics.Tracing
             int rowStartIdx = 0;
             while (rowStartIdx < length)
             {
-                // if we have asked for truncation and we have written 4 rows, skip to the last 4 rows.  
+                // if we have asked for truncation and we have written 4 rows, skip to the last 4 rows.
                 if (rowStartIdx == startTruncate)
                 {
                     var afterSkipIdx = (length - startTruncate + 15) & ~0xF;  // round down to the next row of 15
@@ -2307,12 +2311,12 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             char* ptr = (char*)DataStart;
-            if (ptr[numChars - 1] != '\0')          // Needs to be null terminated. 
+            if (ptr[numChars - 1] != '\0')          // Needs to be null terminated.
             {
                 return null;
             }
 
-            for (int i = 0; i < numChars - 1; i++)  // Rest need to be printable ASCII chars.  
+            for (int i = 0; i < numChars - 1; i++)  // Rest need to be printable ASCII chars.
             {
                 char c = ptr[i];
                 if (!((' ' <= c && c <= '~') || c == '\n' || c == '\r'))
@@ -2336,14 +2340,14 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// This is a DEBUG-ONLY routine that allows a routine to do consistency checking in a debug build.  
+        /// This is a DEBUG-ONLY routine that allows a routine to do consistency checking in a debug build.
         /// </summary>
         protected internal virtual void Validate()
         {
         }
 
         /// <summary>
-        /// Validate that the events is not trash.  
+        /// Validate that the events is not trash.
         /// </summary>
         [Conditional("DEBUG")]
         protected internal void DebugValidate()
@@ -2352,9 +2356,9 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         // Note that you can't use the ExtendedData, UserData or UserContext fields, they are not set
-        // properly in all cases.  
+        // properly in all cases.
         internal TraceEventNativeMethods.EVENT_RECORD* eventRecord; // points at the record data itself.  (fixed size)
-        internal IntPtr userData;                                   // The event-specific payload.  
+        internal IntPtr userData;                                   // The event-specific payload.
 
         /// <summary>
         /// TraceEvent knows where to dispatch to. To support many subscriptions to the same event we chain
@@ -2368,7 +2372,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal bool containsSelfDescribingMetadata;
 
         // These are constant over the TraceEvent's lifetime (after setup) (except for the UnhandledTraceEvent
-        internal TraceEventID eventID;                  // The ID you should switch on.  
+        internal TraceEventID eventID;                  // The ID you should switch on.
         internal /*protected*/ TraceEventOpcode opcode;
         internal /*protected*/ string opcodeName;
         internal /*protected*/ TraceEventTask task;
@@ -2380,11 +2384,11 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ string eventName;
 
         /// <summary>
-        /// The array of names for each property in the payload (in order).  
+        /// The array of names for each property in the payload (in order).
         /// </summary>
         protected internal string[] payloadNames;
         internal TraceEventSource traceEventSource;
-        internal EventIndex eventIndex;               // something that uniquely identifies this event in the stream.  
+        internal EventIndex eventIndex;               // something that uniquely identifies this event in the stream.
         internal IntPtr myBuffer;                     // If the raw data is owned by this instance, this points at it.  Normally null.
         internal string instanceContainerID;          // If the raw data is owned by this instance (e.g. the event has been cloned), then if there is a container ID it will be saved here.  Normally null.
         #endregion
@@ -2392,19 +2396,19 @@ namespace Microsoft.Diagnostics.Tracing
 
     /// <summary>
     /// Individual event providers can supply many different types of events.  These are distinguished from each
-    /// other by a TraceEventID, which is just a 16 bit number.  Its meaning is provider-specific.  
+    /// other by a TraceEventID, which is just a 16 bit number.  Its meaning is provider-specific.
     /// </summary>
     public enum TraceEventID : ushort
     {
         /// <summary>
-        /// Illegal is a EventID that is not used by a normal event.   
+        /// Illegal is a EventID that is not used by a normal event.
         /// </summary>
         Illegal = 0xFFFF,
     }
 
     /// <summary>
     /// Providers can define different audiences or Channels for an event (eg Admin, Developer ...).
-    /// It is only used for Windows Event log support.  
+    /// It is only used for Windows Event log support.
     /// </summary>
     public enum TraceEventChannel : byte
     {
@@ -2423,7 +2427,7 @@ namespace Microsoft.Diagnostics.Tracing
     public enum TraceEventOpcode : byte
     {
         /// <summary>
-        /// Generic opcode that does not have specific semantics associated with it. 
+        /// Generic opcode that does not have specific semantics associated with it.
         /// </summary>
         Info = 0,
         /// <summary>
@@ -2442,7 +2446,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// The entity (process, thread, ...) did not terminate before data collection ended, so indicate
         /// this at data collection termination time. This is mostly for 'flight recorder' scenarios where
-        /// you only have the 'tail' of the data and would like to know about everything that existed. 
+        /// you only have the 'tail' of the data and would like to know about everything that existed.
         /// </summary>
         DataCollectionStop = 4,
         /// <summary>
@@ -2466,12 +2470,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         Transfer = 9,
         // Receive = 240,
-        // 255 is used as in 'illegal opcode' and signifies a WPP style event.  These events 
-        // use the event ID and the TASK Guid as their lookup key.  
+        // 255 is used as in 'illegal opcode' and signifies a WPP style event.  These events
+        // use the event ID and the TASK Guid as their lookup key.
     };
 
     /// <summary>
-    /// Indicates to a provider whether verbose events should be logged.  
+    /// Indicates to a provider whether verbose events should be logged.
     /// </summary>
     public enum TraceEventLevel
     {
@@ -2505,7 +2509,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// ETW defines the concept of a Keyword, which is a 64 bit bitfield. Each bit in the bitfield
     /// represents some provider defined 'area' that is useful for filtering. When processing the events, it
     /// is then possible to filter based on whether various bits in the bitfield are set.  There are some
-    /// standard keywords, but most are provider specific. 
+    /// standard keywords, but most are provider specific.
     /// </summary>
     [Flags]
     public enum TraceEventKeyword : long
@@ -2524,33 +2528,33 @@ namespace Microsoft.Diagnostics.Tracing
     }
 
     /// <summary>
-    /// Tasks are groups of related events for a given provider (for example Process, or Thread, Kernel Provider).  
-    /// They are defined by the provider.  
+    /// Tasks are groups of related events for a given provider (for example Process, or Thread, Kernel Provider).
+    /// They are defined by the provider.
     /// </summary>
     public enum TraceEventTask : ushort
     {
         /// <summary>
-        /// If you don't explicitly choose a task you get the default 
+        /// If you don't explicitly choose a task you get the default
         /// </summary>
         Default = 0
     }
 
     /// <summary>
-    /// EventIdex is a unsigned integer that is unique to a particular event. EventIndex is guaranteed to be 
-    /// unique over the whole log.  It is only used by ETLX files.  
+    /// EventIdex is a unsigned integer that is unique to a particular event. EventIndex is guaranteed to be
+    /// unique over the whole log.  It is only used by ETLX files.
     /// <para>
     /// Currently the event ID simply the index in the log file of the event.  We don't however guarantee ordering.
     /// In the future we may add new events to the log and given them IDs 'at the end' even if the events are not
-    /// at the end chronologically.  
+    /// at the end chronologically.
     /// </para>
     /// <para>
-    /// EventIndex is a 32 bit number limits it to 4Gig events in an ETLX file.  
+    /// EventIndex is a 32 bit number limits it to 4Gig events in an ETLX file.
     /// </para>
     /// </summary>
     public enum EventIndex : uint
     {
         /// <summary>
-        /// Invalid is an EventIndex that will not be used by a normal event. 
+        /// Invalid is an EventIndex that will not be used by a normal event.
         /// </summary>
         Invalid = unchecked((uint)-1)
     };
@@ -2559,52 +2563,52 @@ namespace Microsoft.Diagnostics.Tracing
     /// TraceEventSource has two roles.  The first is the obvious one of providing some properties
     /// like 'SessionStartTime' for clients.  The other role is provide an interface for TraceEventParsers
     /// to 'hook' to so that events can be decoded.  ITraceParserServices is the API service for this
-    /// second role.  It provides the methods that parsers register templates for subclasses of 
-    /// the TraceEvent class that know how to parse particular events.   
+    /// second role.  It provides the methods that parsers register templates for subclasses of
+    /// the TraceEvent class that know how to parse particular events.
     /// </summary>
     public interface ITraceParserServices
     {
         /// <summary>
-        /// RegisterEventTemplate is the mechanism a particular event payload description 'template' 
+        /// RegisterEventTemplate is the mechanism a particular event payload description 'template'
         /// (a subclass of TraceEvent) is injected into the event processing stream. Once registered, an
         /// event is 'parsed' simply by setting the 'rawData' field in the event. It is up to the template
         /// then to take this raw data an present it in a useful way to the user (via properties). Note that
         /// parsing is thus 'lazy' in no processing of the raw data is not done at event dispatch time but
         /// only when the properties of an event are accessed.
-        /// 
+        ///
         /// Ownership of the template transfers when this call is made.   The source will modify this and
-        /// assumes it has exclusive use (thus you should clone the template if necessary).  
+        /// assumes it has exclusive use (thus you should clone the template if necessary).
         /// <para>
         /// Another important aspect is that templates are reused by TraceEventSource aggressively. The
-        /// expectation is that no memory needs to be allocated during a normal dispatch 
+        /// expectation is that no memory needs to be allocated during a normal dispatch
         /// </para>
         /// </summary>
         void RegisterEventTemplate(TraceEvent template);
 
         /// <summary>
-        /// UnregisterEventTemplate undoes the action of RegisterEventTemplate.   Logically you would 
+        /// UnregisterEventTemplate undoes the action of RegisterEventTemplate.   Logically you would
         /// pass the template to unregister, but typically you don't have that at unregistration time.
         /// To avoid forcing clients to remember the templates they registered, UnregisterEventTemplate
         /// takes three things that will uniquely identify the template to unregister.   These are
-        /// the eventID, and provider ID and the Action (callback) for the template.  
+        /// the eventID, and provider ID and the Action (callback) for the template.
         /// </summary>
         void UnregisterEventTemplate(Delegate action, int eventId, Guid providerGuid);
 
         /// <summary>
         /// It is expected that when a subclass of TraceEventParser is created, it calls this
-        /// method on the source.  This allows the source to do any Parser-specific initialization.  
+        /// method on the source.  This allows the source to do any Parser-specific initialization.
         /// </summary>
         void RegisterParser(TraceEventParser parser);
 
-        // TODO should have an UnRegisterParser(TraceEventParser parser) API.  
+        // TODO should have an UnRegisterParser(TraceEventParser parser) API.
 
         /// <summary>
         /// Indicates that this callback should be called on any unhandled event.   The callback
         /// returns true if the lookup should be retried after calling this (that is there is
-        /// the unhandled event was found).  
+        /// the unhandled event was found).
         /// </summary>
         void RegisterUnhandledEvent(Func<TraceEvent, bool> callback);
-        // TODO Add an unregister API.  
+        // TODO Add an unregister API.
 
         /// <summary>
         /// Looks if any provider has registered an event with task with 'taskGuid'. Will return null if
@@ -2620,25 +2624,26 @@ namespace Microsoft.Diagnostics.Tracing
 
     /// <summary>
     /// TraceEventParser Represents a class that knows how to decode particular set of events (typically
-    /// all the events of a single ETW provider).  It is expected that subclasses of TraceEventParser 
-    /// have a constructor that takes a TraceEventSource as an argument that 'attaches' th parser 
+    /// all the events of a single ETW provider).  It is expected that subclasses of TraceEventParser
+    /// have a constructor that takes a TraceEventSource as an argument that 'attaches' th parser
     /// to the TraceEventSource.  TraceEventParsers break into two groups.
     /// <para>
     /// * Those that work on a single provider, and thus the provider name is implicit in th parser.  This is the common case.
     /// The AddCallbackForEvent* methods are meant to be used for these TraceEventParsers</para>
     /// <para>
-    /// * Those that work on multiple providers.  There are only a handful of these (DynamicTraceEventParser, ...). 
+    /// * Those that work on multiple providers.  There are only a handful of these (DynamicTraceEventParser, ...).
     /// The AddCallbackForProviderEvent* methods which take 'Provider' parameters are meant to be used for these TraceEventParsers
     /// </para>
     /// <para>
     /// In addition to the AddCallback* methods on TraceEventParser, there are also Observe* extension methods that
-    /// provide callbacks using the IObservable style.  
+    /// provide callbacks using the IObservable style.
     /// </para>
     /// </summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
     public abstract class TraceEventParser
     {
         /// <summary>
-        /// Get the source this TraceEventParser is attached to. 
+        /// Get the source this TraceEventParser is attached to.
         /// </summary>
         public TraceEventSource Source { get { return (TraceEventSource)source; } }
 
@@ -2657,11 +2662,11 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        // subscribe to a single event for parsers that handle a single provider 
+        // subscribe to a single event for parsers that handle a single provider
         /// <summary>
         /// A shortcut that adds 'callback' in the provider associated with this parser (ProvderName) and an event name 'eventName'.  'eventName'
-        /// can be null in which case any event that matches 'Action{T}' will call the callback.    
-        /// 'eventName is of the form 'TaskName/OpcodeName'   if the event has a non-trivial opcode, otherwise it is 'TaskName'.   
+        /// can be null in which case any event that matches 'Action{T}' will call the callback.
+        /// 'eventName is of the form 'TaskName/OpcodeName'   if the event has a non-trivial opcode, otherwise it is 'TaskName'.
         /// <para>
         /// The callback alone is used as the subscription id for unregistration, so the callback delegate should be unique (by delegate comparison)
         /// </para>
@@ -2679,19 +2684,19 @@ namespace Microsoft.Diagnostics.Tracing
         }
         // subscribe to a set of events for parsers that handle a single provider.  (These are more strongly typed to provider specific payloads)
         /// <summary>
-        /// Causes 'callback' to be called for any event in the provider associated with this parser (ProviderName) whose type is compatible with T and 
-        /// whose eventName will pass 'eventNameFilter'.    
+        /// Causes 'callback' to be called for any event in the provider associated with this parser (ProviderName) whose type is compatible with T and
+        /// whose eventName will pass 'eventNameFilter'.
         /// </summary>
         public virtual void AddCallbackForEvents<T>(Action<T> callback) where T : TraceEvent
         {
             AddCallbackForEvents<T>(null, null, callback);
         }
         /// <summary>
-        /// Causes 'callback' to be called for any event in the provider associated with this parser (ProviderName) whose type is compatible with T and 
-        /// whose eventName will pass 'eventNameFilter'.    The eventNameFilter parameter can be null, in which case all events that are compatible 
-        /// with T will be selected. 
-        /// 
-        /// eventNames passed to the filer are of the form 'TaskName/OpcodeName'   if the event has a non-trivial opcode, otherwise it is 'TaskName'.  
+        /// Causes 'callback' to be called for any event in the provider associated with this parser (ProviderName) whose type is compatible with T and
+        /// whose eventName will pass 'eventNameFilter'.    The eventNameFilter parameter can be null, in which case all events that are compatible
+        /// with T will be selected.
+        ///
+        /// eventNames passed to the filer are of the form 'TaskName/OpcodeName'   if the event has a non-trivial opcode, otherwise it is 'TaskName'.
         /// </summary>
         public virtual void AddCallbackForEvents<T>(Predicate<string> eventNameFilter, Action<T> callback) where T : TraceEvent
         {
@@ -2699,16 +2704,16 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Causes 'callback' to be called for any event in the provider associated with this parser (ProviderName) whose type is compatible with T and 
-        /// whose eventName will pass 'eventNameFilter'.    The eventNameFilter parameter can be null, in which case all events that are compatible 
-        /// with T will be selected.  
+        /// Causes 'callback' to be called for any event in the provider associated with this parser (ProviderName) whose type is compatible with T and
+        /// whose eventName will pass 'eventNameFilter'.    The eventNameFilter parameter can be null, in which case all events that are compatible
+        /// with T will be selected.
         /// <para>
         /// A 'subscriptionID' can be passed and this value along with the callback can be used
         /// to uniquely identify subscription to remove using the 'RemoveCallback' API.   If null is passed, then only the identity of the callback can
-        /// be used to identify the subscription to remove.  
-        /// 
-        /// eventNames passed to the filer are of the form 'TaskName/OpcodeName'   if the event has a non-trivial opcode, otherwise it is 'TaskName'. 
-        /// </para>        
+        /// be used to identify the subscription to remove.
+        ///
+        /// eventNames passed to the filer are of the form 'TaskName/OpcodeName'   if the event has a non-trivial opcode, otherwise it is 'TaskName'.
+        /// </para>
         /// </summary>
         public void AddCallbackForEvents<T>(Predicate<string> eventNameFilter, object subscriptionId, Action<T> callback) where T : TraceEvent
         {
@@ -2717,7 +2722,7 @@ namespace Microsoft.Diagnostics.Tracing
                 throw new InvalidOperationException("Need to use AddCalbackForProviderEvents for Event Parsers that handle more than one provider");
             }
 
-            // Convert the eventNameFilter to the more generic filter that take a provider name as well.   
+            // Convert the eventNameFilter to the more generic filter that take a provider name as well.
             Func<string, string, EventFilterResponse> eventsToObserve = delegate (string pName, string eName)
             {
                 if (pName != GetProviderName())
@@ -2739,7 +2744,7 @@ namespace Microsoft.Diagnostics.Tracing
             };
 
             // This is almost the same code as in AddCallbackForProviderEvents, however it is different because it
-            // checks that the template is of type T (not just that the name and provider match).  This is important.  
+            // checks that the template is of type T (not just that the name and provider match).  This is important.
             var newSubscription = new SubscriptionRequest(eventsToObserve, callback, subscriptionId);
             m_subscriptionRequests.Add(newSubscription);
             var templateState = StateObject;
@@ -2756,9 +2761,9 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// A shortcut that adds 'callback' for the event in 'providerName' and an event name 'eventName'
         /// The callback alone is used as the subscription id for unregistration, so the callback delegate should be unique (by delegate comparison)
-        /// 
-        /// eventName is of the of the form 'TaskName/OpcodeName'   if the event has a non-trivial opcode, otherwise it is 'TaskName'. 
-        /// 
+        ///
+        /// eventName is of the of the form 'TaskName/OpcodeName'   if the event has a non-trivial opcode, otherwise it is 'TaskName'.
+        ///
         /// </summary>
         public void AddCallbackForProviderEvent(string providerName, string eventName, Action<TraceEvent> callback)
         {
@@ -2784,17 +2789,17 @@ namespace Microsoft.Diagnostics.Tracing
                     return EventFilterResponse.RejectEvent;
                 }, callback);
         }
-        // subscribe to a set of events for TraceEventParsers that handle more than one provider  
+        // subscribe to a set of events for TraceEventParsers that handle more than one provider
         /// <summary>
         /// Cause 'callback' to be called for any event that this parser recognizes for which the function 'eventsToObserve'
         /// returns 'AcceptEvent'.   The 'eventsToObserve is given both the provider name (first) and the event name and can return
-        /// 'AcceptEvent' 'RejectEvent' or 'RejectProvider' (in which case it may not be called again for that provider).  
-        /// eventsToObserver can be null in which case all events that match the parser recognizes are selected. 
-        /// 
-        /// eventNames passed to the filer are of the form 'TaskName/OpcodeName'   if the event has a non-trivial opcode, otherwise it is 'TaskName'. 
-        /// 
+        /// 'AcceptEvent' 'RejectEvent' or 'RejectProvider' (in which case it may not be called again for that provider).
+        /// eventsToObserver can be null in which case all events that match the parser recognizes are selected.
+        ///
+        /// eventNames passed to the filer are of the form 'TaskName/OpcodeName'   if the event has a non-trivial opcode, otherwise it is 'TaskName'.
+        ///
         /// <para>
-        /// Thus this method works for parsers that parse more than one provider (e.g. DynamicTraceEventParser).   
+        /// Thus this method works for parsers that parse more than one provider (e.g. DynamicTraceEventParser).
         /// </para>
         /// </summary>
         public virtual void AddCallbackForProviderEvents(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
@@ -2804,15 +2809,15 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Cause 'callback' to be called for any event that this parser recognizes for which the function 'eventsToObserve'
         /// returns 'AcceptEvent'.   The 'eventsToObserve is given both the provider name (first) and the event name and can return
-        /// 'AcceptEvent' 'RejectEvent' or 'RejectProvider' (in which case it may not be called again for that provider).  
-        /// eventsToObserver can be null in which case all events that match the parser recognizes are selected. 
-        /// 
-        /// eventNames passed to the filer are of the form 'TaskName/OpcodeName'   if the event has a non-trivial opcode, otherwise it is 'TaskName'.         /// 
+        /// 'AcceptEvent' 'RejectEvent' or 'RejectProvider' (in which case it may not be called again for that provider).
+        /// eventsToObserver can be null in which case all events that match the parser recognizes are selected.
+        ///
+        /// eventNames passed to the filer are of the form 'TaskName/OpcodeName'   if the event has a non-trivial opcode, otherwise it is 'TaskName'.         ///
         /// <para>
-        /// Thus this method works for parsers that parse more than one provider (e.g. DynamicTraceEventParser).   
+        /// Thus this method works for parsers that parse more than one provider (e.g. DynamicTraceEventParser).
         /// </para><para>
         /// A subscriptionID can optionally be passed.  This is used (along with the callback identity) to identify this to the 'RemoveCallback' If you
-        /// don't need to remove the callback or you will do it in bulk, you don't need this parameter.  
+        /// don't need to remove the callback or you will do it in bulk, you don't need this parameter.
         /// </para>
         /// </summary>
         public virtual void AddCallbackForProviderEvents(Func<string, string, EventFilterResponse> eventsToObserve, object subscriptionId, Action<TraceEvent> callback)
@@ -2828,11 +2833,11 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Remove all subscriptions added with 'AddCallback' (any overload), that is compatible with T, has a callback 'callback' and subscriptionId 'subscriptionId' 
-        /// where 'subscriptionId' was the value that was optionally passed to 'AddCallback' to provide exactly this disambiguation.  
+        /// Remove all subscriptions added with 'AddCallback' (any overload), that is compatible with T, has a callback 'callback' and subscriptionId 'subscriptionId'
+        /// where 'subscriptionId' was the value that was optionally passed to 'AddCallback' to provide exactly this disambiguation.
         /// <para>
-        /// 'callback' or 'subscriptionId' can be null, in which case it acts as a wild card.  Thus RemoveCallback{TraceEvent}(null, null) will remove all callbacks 
-        /// that were registered through this parser.  
+        /// 'callback' or 'subscriptionId' can be null, in which case it acts as a wild card.  Thus RemoveCallback{TraceEvent}(null, null) will remove all callbacks
+        /// that were registered through this parser.
         /// </para>
         /// </summary>
         public virtual void RemoveCallback<T>(Action<T> callback, object subscriptionId = null) where T : TraceEvent
@@ -2861,14 +2866,14 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// A static TraceEventParser is a parser where the set of events that can be subscribed to (and their payload fields) are known at 
+        /// A static TraceEventParser is a parser where the set of events that can be subscribed to (and their payload fields) are known at
         /// compile time.  There are very few dynamic TraceEventParsers (DynamicTraceEventParser, RegisteredTraceEventParser and WPPTraceEventParser)
         /// </summary>
         public virtual bool IsStatic { get { return true; } }
 
         #region protected
         /// <summary>
-        /// All TraceEventParsers invoke this constructor.  If 'dontRegister' is true it is not registered with the source. 
+        /// All TraceEventParsers invoke this constructor.  If 'dontRegister' is true it is not registered with the source.
         /// </summary>
         protected TraceEventParser(TraceEventSource source, bool dontRegister = false)
         {
@@ -2892,14 +2897,14 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// Normally a TraceEvent parser knows how to parse only one provider.   If this is true
-        /// ProviderName returns the name of this provider.  If the parser knows how to parse 
-        /// more than one provider, this property returns null.     
+        /// ProviderName returns the name of this provider.  If the parser knows how to parse
+        /// more than one provider, this property returns null.
         /// </summary>
         protected abstract string GetProviderName();
 
         /// <summary>
-        /// If the parser needs to persist data along with the events we put it in a separate object.   
-        /// This object and then implement serialization functionality that allows it to be persisted (this is for ETLX support).  
+        /// If the parser needs to persist data along with the events we put it in a separate object.
+        /// This object and then implement serialization functionality that allows it to be persisted (this is for ETLX support).
         /// </summary>
         protected internal object StateObject
         {
@@ -2916,14 +2921,14 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Returns a list of all templates currently existing (new ones can come in, but OnNewEventDefintion must be called 
+        /// Returns a list of all templates currently existing (new ones can come in, but OnNewEventDefintion must be called
         /// whenever that happens.   Note that the returned templates MUST be cloned and do not have their source or parser state
-        /// fields set.  These must be set as part of subscription (after you know if you care about them or not).  
-        /// 
+        /// fields set.  These must be set as part of subscription (after you know if you care about them or not).
+        ///
         /// eventsToObserver is given the provider name and event name and those events that return AcceptEvent will
-        /// have the 'callback' function called on that template.   eventsToObserver can be null which mean all events.  
-        /// 
-        /// The returned template IS READ ONLY!   If you need a read-write copy (typical), clone it first.   
+        /// have the 'callback' function called on that template.   eventsToObserver can be null which mean all events.
+        ///
+        /// The returned template IS READ ONLY!   If you need a read-write copy (typical), clone it first.
         /// </summary>
         protected internal abstract void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback);
 
@@ -2940,8 +2945,8 @@ namespace Microsoft.Diagnostics.Tracing
 
 #if DEBUG
         /// <summary>
-        /// Debug-only code  Confirm that some did not add an event, but forgot to add it to the enumeration that EnumerateTemplates 
-        /// returns.  
+        /// Debug-only code  Confirm that some did not add an event, but forgot to add it to the enumeration that EnumerateTemplates
+        /// returns.
         /// </summary>
         private bool m_ConfirmedAllEventsAreInEnumeration;
 
@@ -2949,8 +2954,8 @@ namespace Microsoft.Diagnostics.Tracing
         {
             var declaredSet = new SortedDictionary<string, string>();
 
-            // TODO FIX NOW currently we have a hack where we know we are not correct 
-            // for JScriptTraceEventParser.  
+            // TODO FIX NOW currently we have a hack where we know we are not correct
+            // for JScriptTraceEventParser.
             if (GetType().Name == "JScriptTraceEventParser")
             {
                 return;
@@ -2962,7 +2967,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return;
             }
 
-            // Use reflection to see what events have declared 
+            // Use reflection to see what events have declared
             MethodInfo[] methods = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             for (int i = 0; i < methods.Length; i++)
             {
@@ -2991,22 +2996,22 @@ namespace Microsoft.Diagnostics.Tracing
                     continue;
                 }
 
-                if (eventName == "MemoryPageAccess" || eventName == "MemoryProcessMemInfo")  // One event has two templates.  
+                if (eventName == "MemoryPageAccess" || eventName == "MemoryProcessMemInfo")  // One event has two templates.
                 {
                     continue;
                 }
 
-                if (eventName == "GCSampledObjectAllocation")       // One event has two templates. 
+                if (eventName == "GCSampledObjectAllocation")       // One event has two templates.
                 {
                     continue;
                 }
 
-                if (eventName == "PerfInfoISR")                     // One event has two templates.  
+                if (eventName == "PerfInfoISR")                     // One event has two templates.
                 {
                     continue;
                 }
 
-                if (eventName == "MethodTailCallFailedAnsi")        // One event has two templates.  
+                if (eventName == "MethodTailCallFailedAnsi")        // One event has two templates.
                 {
                     continue;
                 }
@@ -3028,7 +3033,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             var enumSet = new SortedDictionary<string, string>();
 
-            // Make sure that we have all the event we should have 
+            // Make sure that we have all the event we should have
             EnumerateTemplates(null, delegate (TraceEvent template)
             {
                 // the CLR provider calls this callback twice. Rather then refactoring EnumerateTemplates for all parsers
@@ -3039,29 +3044,29 @@ namespace Microsoft.Diagnostics.Tracing
                 }
 
                 var eventName = template.EventName.Replace("/", "");
-                if (eventName == "MemoryPageAccess" || eventName == "MemoryProcessMemInfo")  // One event has two templates.  
+                if (eventName == "MemoryPageAccess" || eventName == "MemoryProcessMemInfo")  // One event has two templates.
                 {
                     return;
                 }
 
-                if (eventName == "GCSampledObjectAllocation")       // One event has two templates. 
+                if (eventName == "GCSampledObjectAllocation")       // One event has two templates.
                 {
                     return;
                 }
 
-                if (eventName == "PerfInfoISR")                     // One event has two templates. 
+                if (eventName == "PerfInfoISR")                     // One event has two templates.
                 {
                     return;
                 }
 
                 if (eventName == "FileIO")
                 {
-                    eventName = "FileIOName";       // They use opcode 0 which gets truncated.  
+                    eventName = "FileIOName";       // They use opcode 0 which gets truncated.
                 }
 
                 if (eventName == "EventTrace")
                 {
-                    eventName = "EventTraceHeader"; // They use opcode 0 which gets truncated.  
+                    eventName = "EventTraceHeader"; // They use opcode 0 which gets truncated.
                 }
 
                 if (eventName == "Jscript_GC_IdleCollect")
@@ -3124,23 +3129,23 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// If the parser can change over time (it can add new definitions),  It needs to support this interface.  See EnumerateDynamicTemplates for details.
-        /// This function should be called any time a new event is now parsable by the parser.   If it is guaranteed that the particular event is 
-        /// definitely being ADDED (it never existed in the past), then you can set 'mayHaveExistedBefore' to false and save some time.  
-        ///  
-        /// It returns false if there are no definitions for that particular Provider (and thus you can skip callback if desired).  
+        /// This function should be called any time a new event is now parsable by the parser.   If it is guaranteed that the particular event is
+        /// definitely being ADDED (it never existed in the past), then you can set 'mayHaveExistedBefore' to false and save some time.
+        ///
+        /// It returns false if there are no definitions for that particular Provider (and thus you can skip callback if desired).
         /// </summary>
         internal virtual EventFilterResponse OnNewEventDefintion(TraceEvent template, bool mayHaveExistedBefore)
         {
 #if !NOT_WINDOWS && !NO_DYNAMIC_TRACEEVENTPARSER
             Debug.Assert(template is DynamicTraceEventData || template is PredefinedDynamicEvent);
 #endif
-            EventFilterResponse combinedResponse = EventFilterResponse.RejectProvider;      // This is the combined result from all subscriptions. 
+            EventFilterResponse combinedResponse = EventFilterResponse.RejectProvider;      // This is the combined result from all subscriptions.
             var templateState = StateObject;
-            // Does it match any subscription request we already have?  
+            // Does it match any subscription request we already have?
             for (int i = 0; i < m_subscriptionRequests.Count; i++)
             {
                 var cur = m_subscriptionRequests[i];
-                // TODO sort template by provider so we can optimize.  
+                // TODO sort template by provider so we can optimize.
                 if (cur.m_eventToObserve != null)
                 {
                     var response = cur.m_eventToObserve(template.ProviderName, template.EventName);
@@ -3149,7 +3154,7 @@ namespace Microsoft.Diagnostics.Tracing
                         continue;
                     }
 
-                    // We know that we are not rejecting the provider as a whole.   
+                    // We know that we are not rejecting the provider as a whole.
                     if (combinedResponse == EventFilterResponse.RejectProvider)
                     {
                         combinedResponse = EventFilterResponse.RejectEvent;
@@ -3161,19 +3166,19 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                 }
 
-                combinedResponse = EventFilterResponse.AcceptEvent;         // There is at least one subscription for this template.  
+                combinedResponse = EventFilterResponse.AcceptEvent;         // There is at least one subscription for this template.
                 Subscribe(cur, template, templateState, mayHaveExistedBefore);
             }
             return combinedResponse;
         }
 
         /// <summary>
-        /// Given a subscription request, and a template that can now be parsed (and its state, which is just TraceEventParser.StateObj) 
-        /// If subscription states that the template should be registered with the source, then do the registration.   
-        /// 
+        /// Given a subscription request, and a template that can now be parsed (and its state, which is just TraceEventParser.StateObj)
+        /// If subscription states that the template should be registered with the source, then do the registration.
+        ///
         /// if 'mayHaveExistedBefore' means that this template definition may have been seen before (DynamicTraceEventParsers do this as
         /// you may get newer versions dynamically registering themselves).   In that case this should be set.  If you can guaranteed that
-        /// a particular template (provider-eventID pair) will only be subscribed at most once you can set this to false.  
+        /// a particular template (provider-eventID pair) will only be subscribed at most once you can set this to false.
         /// </summary>
         private void Subscribe(SubscriptionRequest cur, TraceEvent template, object templateState, bool mayHaveExistedBefore)
         {
@@ -3193,15 +3198,15 @@ namespace Microsoft.Diagnostics.Tracing
                     {
                         // Trace.WriteLine("Subscribe: Found existing subscription, removing it for update");
 
-                        // Unsubscribe 
+                        // Unsubscribe
                         source.UnregisterEventTemplate(activeSubscription.Target, (int)activeSubscription.ID, activeSubscription.ProviderGuid);
-                        // TODO support WPP.  
+                        // TODO support WPP.
                         if (activeSubscription.taskGuid != Guid.Empty)
                         {
                             source.UnregisterEventTemplate(activeSubscription.Target, (int)activeSubscription.Opcode, activeSubscription.taskGuid);
                         }
 
-                        // Update it in place the active subscription in place.  
+                        // Update it in place the active subscription in place.
                         cur.m_activeSubscriptions[i] = templateWithCallback;
                     }
                 }
@@ -3218,11 +3223,11 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                 }
 #endif
-                // we can simply add to our list of subscriptions.  
+                // we can simply add to our list of subscriptions.
                 cur.m_activeSubscriptions.Add(templateWithCallback);
             }
 
-            // Actually Register it with the source.     
+            // Actually Register it with the source.
             source.RegisterEventTemplate(templateWithCallback);
 #if !DOTNET_V35
             Debug.Assert(templateWithCallback.traceEventSource == Source ||
@@ -3232,7 +3237,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Keeps track of a single 'AddCallback' request so it can be removed later.   It also handles lazy addition of events.  
+        /// Keeps track of a single 'AddCallback' request so it can be removed later.   It also handles lazy addition of events.
         /// </summary>
         private class SubscriptionRequest
         {
@@ -3247,15 +3252,15 @@ namespace Microsoft.Diagnostics.Tracing
                 m_subscriptionId = subscriptionId;
             }
 
-            // We need the original arguments to the AddCallback so that we can repeat them when new events are discovered.  
+            // We need the original arguments to the AddCallback so that we can repeat them when new events are discovered.
             internal Func<string, string, EventFilterResponse> m_eventToObserve;    // (Gives provider name then eventName).  This is null for parsers that don't support OnNewEventDefintion (the strongly types ones)
             internal Delegate m_callback;
-            internal object m_subscriptionId;                                   // Identifies this subscription so we could delete it.  
-            internal GrowableArray<TraceEvent> m_activeSubscriptions;           // The actual TraceEvents that have been registered with the TraceEventSource for this subscription.  
+            internal object m_subscriptionId;                                   // Identifies this subscription so we could delete it.
+            internal GrowableArray<TraceEvent> m_activeSubscriptions;           // The actual TraceEvents that have been registered with the TraceEventSource for this subscription.
         }
 
         /// <summary>
-        /// The source that this parser is connected to.  
+        /// The source that this parser is connected to.
         /// </summary>
         protected internal ITraceParserServices source;
         private GrowableArray<SubscriptionRequest> m_subscriptionRequests;
@@ -3265,7 +3270,7 @@ namespace Microsoft.Diagnostics.Tracing
     }
 
     /// <summary>
-    /// EventFilterResponse is the set of responses  a user-defined filtering routine, might return.  This is used in the TraceEventParser.AddCallbackForProviderEvents method.  
+    /// EventFilterResponse is the set of responses  a user-defined filtering routine, might return.  This is used in the TraceEventParser.AddCallbackForProviderEvents method.
     /// </summary>
     public enum EventFilterResponse
     {
@@ -3300,7 +3305,7 @@ namespace Microsoft.Diagnostics.Tracing
     }
 
     /// <summary>
-    /// A TraceEventDispatcher is a TraceEventSource that supports a callback model for dispatching events.  
+    /// A TraceEventDispatcher is a TraceEventSource that supports a callback model for dispatching events.
     /// </summary>
     public abstract unsafe class TraceEventDispatcher : TraceEventSource
     {
@@ -3347,7 +3352,7 @@ namespace Microsoft.Diagnostics.Tracing
         // there are a couple of events that TraceEventDispatcher can handle directly.
         /// <summary>
         /// Subscribers to UnhandledEvent are called if no other hander has processed the event.   It is
-        /// generally used in DEBUG builds to validate that events are getting to the source at all.  
+        /// generally used in DEBUG builds to validate that events are getting to the source at all.
         /// </summary>
         public event Action<TraceEvent> UnhandledEvents
         {
@@ -3363,10 +3368,10 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Subscribers to EveryEvent are called on every event in the trace.   Normally you don't want
         /// to subscribe to this but rather use a TraceEvenParser (which knows how to decode the payloads)
-        /// and subscribe to particular events through that.   For example Using TraceEventSource.Dynamic.All 
+        /// and subscribe to particular events through that.   For example Using TraceEventSource.Dynamic.All
         /// or TraceEventSource.Dynamic.All is more likely to be what you are looking for.   AllEvents is only
         /// an event callback of last resort, that only gives you the 'raw' data (common fields but no
-        /// payload).  
+        /// payload).
         /// <para>
         /// This is called AFTER any event-specific handlers.
         /// </para>
@@ -3375,7 +3380,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// Subscribers to UnhandledEvent are called if no other hander has processed the event.   It is
-        /// generally used in DEBUG builds to validate that events are getting to the source at all.  
+        /// generally used in DEBUG builds to validate that events are getting to the source at all.
         /// </summary>
         [Obsolete("Use UnhandledEvents")]
         public event Action<TraceEvent> UnhandledEvent
@@ -3392,7 +3397,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Subscribers to EveryEvent are called on every event in the trace.   Normally you don't want
         /// to subscribe to this but rather use a TraceEvenParser and subscribe to particular events
-        /// through that.   
+        /// through that.
         /// <para>
         /// This is called AFTER any event-specific handlers.
         /// </para>
@@ -3412,44 +3417,44 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// Once a client has subscribed to the events of interest, calling Process actually causes
-        /// the callbacks to happen.   
+        /// the callbacks to happen.
         /// <para>
-        /// Subclasses implementing this method should call 'OnCompleted' 
-        /// before returning.  
+        /// Subclasses implementing this method should call 'OnCompleted'
+        /// before returning.
         /// </para>
         /// </summary>
         /// <returns>false If StopProcessing was called</returns>
         public abstract bool Process();
         /// <summary>
         /// Calling StopProcessing in a callback when 'Process()' is running will indicate that processing
-        /// should be stopped immediately and that the Process() method should return.  
-        /// 
+        /// should be stopped immediately and that the Process() method should return.
+        ///
         /// Note that this stop request will not be honored until the next event from the source.   Thus
-        /// for real time sessions there is an indeterminate delay before the stop will complete.   
-        /// If you need to force the stop you should instead call Dispose() on the session associated with 
+        /// for real time sessions there is an indeterminate delay before the stop will complete.
+        /// If you need to force the stop you should instead call Dispose() on the session associated with
         /// the real time session.  This will cause the source to be shut down and thus also stop processing
-        /// (Process() will return) but is guaranteed to complete in a timely manner.  
+        /// (Process() will return) but is guaranteed to complete in a timely manner.
         /// </summary>
         public virtual void StopProcessing()
         {
             stopProcessing = true;
         }
         /// <summary>
-        /// Subscribers of Completed will be called after processing is complete (right before TraceEventDispatcher.Process returns.    
+        /// Subscribers of Completed will be called after processing is complete (right before TraceEventDispatcher.Process returns.
         /// </summary>
         public event Action Completed;
 
         /// <summary>
-        /// Wrap (or filter) the dispatch of every event from the TraceEventDispatcher stream.   
+        /// Wrap (or filter) the dispatch of every event from the TraceEventDispatcher stream.
         /// Instead of calling the normal code it calls 'hook' with both the event to be dispatched
-        /// and the method the would normally do the processing.    Thus the routine has 
+        /// and the method the would normally do the processing.    Thus the routine has
         /// the option to call normal processing, surround it with things like a lock
         /// or skip it entirely.  This can be called more than once, in which case the last
         /// hook method gets called first (which may end up calling the second ...)
-        /// 
-        /// For example,here is an example that uses AddDispatchHook to 
-        /// take a lock is taken whenever dispatch work is being performed.  
-        /// 
+        ///
+        /// For example,here is an example that uses AddDispatchHook to
+        /// take a lock is taken whenever dispatch work is being performed.
+        ///
         /// AddDispatchHook((anEvent, dispatcher) => { lock (this) { dispatcher(anEvent); } });
         /// </summary>
         public void AddDispatchHook(Action<TraceEvent, Action<TraceEvent>> hook)
@@ -3459,20 +3464,20 @@ namespace Microsoft.Diagnostics.Tracing
                 throw new ArgumentException("Must provide a non-null callback", nameof(hook), null);
             }
 
-            // Make a new dispatcher which calls the hook with the old dispatcher.   
+            // Make a new dispatcher which calls the hook with the old dispatcher.
             Action<TraceEvent> oldUserDefinedDispatch = userDefinedDispatch ?? DoDispatch;
             userDefinedDispatch = delegate (TraceEvent anEvent) { hook(anEvent, oldUserDefinedDispatch); };
         }
 
         #region protected
         /// <summary>
-        /// Called when processing is complete.  You can call this more than once if your not sure if it has already been called.  
-        /// however we do guard against races.  
+        /// Called when processing is complete.  You can call this more than once if your not sure if it has already been called.
+        /// however we do guard against races.
         /// </summary>
         protected void OnCompleted()
         {
             var completed = Completed;
-            Completed = null;               // We set it to null so we only do it once.  
+            Completed = null;               // We set it to null so we only do it once.
             if (completed != null)
             {
                 completed();
@@ -3503,7 +3508,7 @@ namespace Microsoft.Diagnostics.Tracing
 #endif
         internal bool AllEventsHasCallback { get { return AllEvents != null; } }
         /// <summary>
-        ///  Number of different events that have callbacks associated with them 
+        ///  Number of different events that have callbacks associated with them
         /// </summary>
         internal int DistinctCallbackCount()
         {
@@ -3520,7 +3525,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Total number of callbacks that are registered.  Even if they are for the same event.  
+        /// Total number of callbacks that are registered.  Even if they are for the same event.
         /// </summary>
         /// <returns></returns>
         internal int CallbackCount()
@@ -3566,7 +3571,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal /*protected*/ TraceEventDispatcher()
         {
-            // Initialize our data structures. 
+            // Initialize our data structures.
             unhandledEventTemplate = new UnhandledTraceEvent();
             unhandledEventTemplate.traceEventSource = this;
             ReHash();       // Allocates the hash table
@@ -3579,7 +3584,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             else
             {
-                // Put it on the end of the array.  
+                // Put it on the end of the array.
                 var newLastChanceHandlers = new Func<TraceEvent, bool>[lastChanceHandlers.Length + 1];
                 Array.Copy(lastChanceHandlers, newLastChanceHandlers, lastChanceHandlers.Length);
                 newLastChanceHandlers[lastChanceHandlers.Length] = callback;
@@ -3591,8 +3596,8 @@ namespace Microsoft.Diagnostics.Tracing
         /// This is the routine that is called back when any event arrives.  Basically it looks up the GUID
         /// and the opcode associated with the event and finds right subclass of TraceEvent that
         /// knows how to decode the packet, and calls its virtual TraceEvent.Dispatch method.  Note
-        /// that TraceEvent does NOT have a copy of the data, but rather just a pointer to it. 
-        /// This data is ONLY valid during the callback. 
+        /// that TraceEvent does NOT have a copy of the data, but rather just a pointer to it.
+        /// This data is ONLY valid during the callback.
         /// </summary>
         protected internal void Dispatch(TraceEvent anEvent)
         {
@@ -3688,7 +3693,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // calculate the hash, and look it up in the table please note that this was hand
             // inlined, and is replicated in TraceEventDispatcher.Insert
-            int* guidPtr = (int*)&eventRecord->EventHeader.ProviderId;   // This is the taskGuid for Classic events.  
+            int* guidPtr = (int*)&eventRecord->EventHeader.ProviderId;   // This is the taskGuid for Classic events.
             int hash = (*guidPtr + eventID * 9) & templatesLengthMask;
             for (; ; )
             {
@@ -3702,12 +3707,12 @@ namespace Microsoft.Diagnostics.Tracing
                     if (curTemplate != null)
                     {
                         // Since provider and task guids can not overlap, we can only match if
-                        // we are using the correct format.  
+                        // we are using the correct format.
                         curTemplate.eventRecord = eventRecord;
                         curTemplate.userData = eventRecord->UserData;
                         curTemplate.eventIndex = currentID;
 
-                        if ((((int)currentID) & 0xFFFF) == 0) // Every 64K events allow Thread.Interrupt.  
+                        if ((((int)currentID) & 0xFFFF) == 0) // Every 64K events allow Thread.Interrupt.
                         {
                             System.Threading.Thread.Sleep(0);
                         }
@@ -3761,7 +3766,7 @@ namespace Microsoft.Diagnostics.Tracing
             unhandledEventTemplate.userData = eventRecord->UserData;
             unhandledEventTemplate.eventIndex = currentID;
             unhandledEventTemplate.lookupAsClassic = unhandledEventTemplate.IsClassicProvider;
-            if ((((int)currentID) & 0xFFFF) == 0)       // Every 64K events allow Thread.Interrupt.  
+            if ((((int)currentID) & 0xFFFF) == 0)       // Every 64K events allow Thread.Interrupt.
             {
                 System.Threading.Thread.Sleep(0);
             }
@@ -3778,14 +3783,14 @@ namespace Microsoft.Diagnostics.Tracing
             unhandledEventTemplate.taskGuid = Guid.Empty;
 #endif
 
-            // Allow the last chance handlers to get a crack at it.   
+            // Allow the last chance handlers to get a crack at it.
             if (lastChanceHandlers != null && lastChanceHandlerChecked < lastChanceHandlers.Length)
             {
                 unhandledEventTemplate.PrepForCallback();
                 do
                 {
-                    // Check the next last chance handler.  If it returns true it may have modified the lookup table, so retry the lookup.  
-                    // In ether case we move past the current last chance handler to the next one (ensuring termination). 
+                    // Check the next last chance handler.  If it returns true it may have modified the lookup table, so retry the lookup.
+                    // In ether case we move past the current last chance handler to the next one (ensuring termination).
                     var lastChanceHandlerModifiedLookup = lastChanceHandlers[lastChanceHandlerChecked](unhandledEventTemplate);
                     lastChanceHandlerChecked++;
                     if (lastChanceHandlerModifiedLookup)
@@ -3826,7 +3831,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Dispose pattern. 
+        /// Dispose pattern.
         /// </summary>
         protected override void Dispose(bool disposing)
         {
@@ -3836,7 +3841,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             else
             {
-                // To avoid AVs after someone calls Dispose, only clean up this memory on finalization.  
+                // To avoid AVs after someone calls Dispose, only clean up this memory on finalization.
                 if (templatesInfo != null)
                 {
                     Marshal.FreeHGlobal((IntPtr)templatesInfo);
@@ -3859,7 +3864,7 @@ namespace Microsoft.Diagnostics.Tracing
             int newLength = 256;
             if (templates != null)
             {
-                // Find the number of real entries.  
+                // Find the number of real entries.
                 int minSize = DistinctCallbackCount() * 2;
 
                 // round up to a power of 2 because we use a mask to do modulus
@@ -3874,7 +3879,7 @@ namespace Microsoft.Diagnostics.Tracing
             TraceEvent[] oldTemplates = templates;
 
             templates = new TraceEvent[newLength];
-            // Reuse the memory if you can, otherwise free what we have and allocate new.  
+            // Reuse the memory if you can, otherwise free what we have and allocate new.
             if (oldTemplates != null)
             {
                 if (newLength != oldTemplates.Length)
@@ -3909,7 +3914,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Inserts 'template' into the hash table, using 'providerGuid' and and 'eventID' as the key. 
+        /// Inserts 'template' into the hash table, using 'providerGuid' and and 'eventID' as the key.
         /// For Vista ETW events 'providerGuid' must match the provider GUID and the 'eventID' the ID filed.
         /// For PreVist ETW events 'providerGuid must match the task GUID the 'eventID' is the Opcode
         /// </summary>
@@ -3925,7 +3930,7 @@ namespace Microsoft.Diagnostics.Tracing
                 ReHash();
             }
 
-            // We need the size to be a power of two since we use a mask to do the modulus. 
+            // We need the size to be a power of two since we use a mask to do the modulus.
             Debug.Assert(((templates.Length - 1) & templates.Length) == 0, "array length must be a power of 2");
 
             // Which conventions are we using?
@@ -3973,7 +3978,7 @@ namespace Microsoft.Diagnostics.Tracing
                     {
                         Debug.Assert(curTemplate != template);
                         // In the rehash scenario we expect curTemplate to be a list (not a singleton), however we never go
-                        // in that case templates[hash] == null and we don't go down this branch.  
+                        // in that case templates[hash] == null and we don't go down this branch.
                         Debug.Assert(template.next == null);
 
                         // Normally goto the end of the list (callbacks happen
@@ -3989,11 +3994,11 @@ namespace Microsoft.Diagnostics.Tracing
                         }
                         else
                         {
-                            // However the template is null, this is the 'canonical' template 
+                            // However the template is null, this is the 'canonical' template
                             // and should be first (so that adding callbacks does not change the
                             // canonical template)  There is no point in having more than one
-                            // so ignore it if there already was one, but otherwise put it in 
-                            // the front of the list 
+                            // so ignore it if there already was one, but otherwise put it in
+                            // the front of the list
                             if (curTemplate.Target != null)
                             {
                                 template.next = curTemplate;
@@ -4024,7 +4029,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// A helper for creating a set of related guids (knowing the providerGuid can can deduce the
-        /// 'taskNumber' member of this group.  All we do is add the taskNumber to GUID as a number.  
+        /// 'taskNumber' member of this group.  All we do is add the taskNumber to GUID as a number.
         /// </summary>
         private static Guid GenTaskGuidFromProviderGuid(Guid providerGuid, ushort taskNumber)
         {
@@ -4039,13 +4044,13 @@ namespace Microsoft.Diagnostics.Tracing
         private struct TemplateEntry
         {
             public Guid eventGuid;
-            public ushort eventID;              // Event ID for Vista events, Opcode for Classic events.  
-            public bool inUse;                  // This entry is in use. 
+            public ushort eventID;              // Event ID for Vista events, Opcode for Classic events.
+            public bool inUse;                  // This entry is in use.
         }
 
-        private TemplateEntry* templatesInfo;   // unmanaged array, this is the hash able.  
+        private TemplateEntry* templatesInfo;   // unmanaged array, this is the hash able.
 
-        private TraceEvent[] templates;         // Logically a field in TemplateEntry 
+        private TraceEvent[] templates;         // Logically a field in TemplateEntry
         private struct NamesEntry
         {
             public NamesEntry(string taskName, string providerName) { this.taskName = taskName; this.providerName = providerName; }
@@ -4114,7 +4119,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                     // If the provider supports both pre-vista events (Guid non-empty), (The CLR does this)
                     // Because the template is chained, we need to clone the template to insert it
-                    // again.  
+                    // again.
                     if (template.taskGuid != Guid.Empty)
                     {
                         template = template.Clone();
@@ -4131,7 +4136,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             // Trace.WriteLine("Unregistering TEMPLATE " + providerGuid + " " + eventID);
 
-            // The dispatcher was disposed.  
+            // The dispatcher was disposed.
             if (templatesInfo == null)
             {
                 return;
@@ -4153,7 +4158,7 @@ namespace Microsoft.Diagnostics.Tracing
                     {
                         if (curTemplate.Target == action)
                         {
-                            // Remove the first matching entry from the list.  
+                            // Remove the first matching entry from the list.
                             if (prevTemplate == null)
                             {
                                 templates[hash] = curTemplate.next;
@@ -4241,7 +4246,7 @@ namespace Microsoft.Diagnostics.Tracing
 
     // Generic events for very simple cases (no payload, one value)
     /// <summary>
-    /// TraceEventParsers can use this template to define the event for the trivial case where the event has no user-defined payload  
+    /// TraceEventParsers can use this template to define the event for the trivial case where the event has no user-defined payload
     /// <para>This is only useful to TraceEventParsers.</para>
     /// </summary>
     public sealed class EmptyTraceData : TraceEvent
@@ -4256,14 +4261,14 @@ namespace Microsoft.Diagnostics.Tracing
         }
         #region Private
         /// <summary>
-        /// implementation of TraceEvent Interface. 
+        /// implementation of TraceEvent Interface.
         /// </summary>
         public override StringBuilder ToXml(StringBuilder sb)
         {
             return Prefix(sb).Append("/>");
         }
         /// <summary>
-        /// implementation of TraceEvent Interface. 
+        /// implementation of TraceEvent Interface.
         /// </summary>
         public override string[] PayloadNames
         {
@@ -4278,7 +4283,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// implementation of TraceEvent Interface. 
+        /// implementation of TraceEvent Interface.
         /// </summary>
         public override object PayloadValue(int index)
         {
@@ -4288,7 +4293,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         private event Action<EmptyTraceData> Action;
         /// <summary>
-        /// Dispatches the event to the action associated with the template. 
+        /// Dispatches the event to the action associated with the template.
         /// </summary>
         protected internal override void Dispatch()
         {
@@ -4313,7 +4318,7 @@ namespace Microsoft.Diagnostics.Tracing
     public sealed class StringTraceData : TraceEvent
     {
         /// <summary>
-        /// The value of the one string payload property.  
+        /// The value of the one string payload property.
         /// </summary>
         public string Value
         {
@@ -4340,7 +4345,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
         #region Private
         /// <summary>
-        /// implementation of TraceEvent Interface. 
+        /// implementation of TraceEvent Interface.
         /// </summary>
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -4350,7 +4355,7 @@ namespace Microsoft.Diagnostics.Tracing
             return sb;
         }
         /// <summary>
-        /// implementation of TraceEvent Interface. 
+        /// implementation of TraceEvent Interface.
         /// </summary>
         public override string[] PayloadNames
         {
@@ -4365,7 +4370,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// implementation of TraceEvent Interface. 
+        /// implementation of TraceEvent Interface.
         /// </summary>
         public override object PayloadValue(int index)
         {
@@ -4381,7 +4386,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         private event Action<StringTraceData> Action;
         /// <summary>
-        /// implementation of TraceEvent Interface. 
+        /// implementation of TraceEvent Interface.
         /// </summary>
         protected internal override void Dispatch()
         {
@@ -4401,13 +4406,13 @@ namespace Microsoft.Diagnostics.Tracing
     }
 
     /// <summary>
-    /// UnhandledTraceEvent is a TraceEvent when is used when no manifest information is available for the event. 
+    /// UnhandledTraceEvent is a TraceEvent when is used when no manifest information is available for the event.
     /// </summary>
     public unsafe class UnhandledTraceEvent : TraceEvent
     {
         #region private
         /// <summary>
-        /// implementation of TraceEvent Interface. 
+        /// implementation of TraceEvent Interface.
         /// </summary>
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -4482,7 +4487,7 @@ namespace Microsoft.Diagnostics.Tracing
             return sb;
         }
         /// <summary>
-        /// implementation of TraceEvent Interface. 
+        /// implementation of TraceEvent Interface.
         /// </summary>
         public override string[] PayloadNames
         {
@@ -4497,7 +4502,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
         /// <summary>
-        /// implementation of TraceEvent Interface. 
+        /// implementation of TraceEvent Interface.
         /// </summary>
         public override object PayloadValue(int index)
         {
@@ -4508,7 +4513,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal event Action<TraceEvent> Action;
         internal UnhandledTraceEvent() : base(0, 0, null, Guid.Empty, 0, null, Guid.Empty, null) { }
         /// <summary>
-        /// implementation of TraceEvent Interface. 
+        /// implementation of TraceEvent Interface.
         /// </summary>
         protected internal override void Dispatch()
         {
@@ -4527,11 +4532,11 @@ namespace Microsoft.Diagnostics.Tracing
             set { Action = (Action<TraceEvent>)value; }
         }
         /// <summary>
-        /// implementation of TraceEvent Interface. 
+        /// implementation of TraceEvent Interface.
         /// </summary>
         public override string ToString()
         {
-            // This is only needed so that when we print when debugging we get sane results.  
+            // This is only needed so that when we print when debugging we get sane results.
             if (eventID == TraceEventID.Illegal)
             {
                 PrepForCallback();
@@ -4542,13 +4547,13 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// There is some work needed to prepare the generic unhandledTraceEvent that we defer
-        /// late (since we often don't care about unhandled events)  
-        /// 
+        /// late (since we often don't care about unhandled events)
+        ///
         /// TODO this is probably not worth the complexity...
         /// </summary>
         internal void PrepForCallback()
         {
-            // Could not find the event, populate the shared 'unhandled event' information.   
+            // Could not find the event, populate the shared 'unhandled event' information.
             if (IsClassicProvider)
             {
                 providerGuid = Guid.Empty;
@@ -4643,17 +4648,17 @@ namespace Microsoft.Diagnostics.Tracing
         {
             // Really we should be able to count on pointers being null terminated.  However we have had instances
             // where this is not true.   To avoid scanning the string twice we first check if the last character
-            // in the buffer is a 0 if so, we KNOW we can use the 'fast path'  Otherwise we check 
+            // in the buffer is a 0 if so, we KNOW we can use the 'fast path'  Otherwise we check
             byte* ptr = (byte*)pointer;
             char* charEnd = (char*)(ptr + bufferLength);
             if (charEnd[-1] == 0)       // Is the last character a null?
             {
-                return new string((char*)(ptr + offset));       // We can count on a null, so we do an optimized path 
+                return new string((char*)(ptr + offset));       // We can count on a null, so we do an optimized path
             }
-            // (works for last string, and other times by luck). 
-            // but who cares as long as it stays in the buffer.  
+            // (works for last string, and other times by luck).
+            // but who cares as long as it stays in the buffer.
 
-            // unoptimized path.  Carefully count characters and create a string up to the null.  
+            // unoptimized path.  Carefully count characters and create a string up to the null.
             char* charStart = (char*)(ptr + offset);
             int maxPos = (bufferLength - offset) / sizeof(char);
             int curPos = 0;
@@ -4661,7 +4666,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 curPos++;
             }
-            // CurPos now points at the end (either buffer end or null terminator, make just the right sized string.  
+            // CurPos now points at the end (either buffer end or null terminator, make just the right sized string.
             return new string(charStart, 0, curPos);
         }
         internal static unsafe string ReadUTF8String(IntPtr pointer, int offset, int bufferLength)
@@ -4679,7 +4684,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 buff[i++] = c;
             }
-            return Encoding.UTF8.GetString(buff, 0, i);     // Convert to unicode.  
+            return Encoding.UTF8.GetString(buff, 0, i);     // Convert to unicode.
         }
 
         internal static unsafe string ReadShortUTF8String(IntPtr pointer, int offset, int bufferLength)
@@ -4716,12 +4721,12 @@ namespace Microsoft.Diagnostics.Tracing
     {
         /// <summary>
         /// Returns an IObservable that observes all events that 'parser' knows about that  return a T.  If eventName is
-        /// non-null, the event's name must match 'eventName', but if eventName is null, any event that returns a T is observed. 
+        /// non-null, the event's name must match 'eventName', but if eventName is null, any event that returns a T is observed.
         /// <para>
-        /// This means that Observe{TraceEvent}(parser) will observe all events that the parser can parse.  
-        /// 
-        /// Note that unlike the methods on TraceEventParser, the TraceEvent object returned is already Cloned() and thus can be 
-        /// referenced for as long as you like.  
+        /// This means that Observe{TraceEvent}(parser) will observe all events that the parser can parse.
+        ///
+        /// Note that unlike the methods on TraceEventParser, the TraceEvent object returned is already Cloned() and thus can be
+        /// referenced for as long as you like.
         /// </para>
         /// </summary>
         public static IObservable<T> Observe<T>(this TraceEventParser parser, string eventName) where T : TraceEvent
@@ -4730,10 +4735,10 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// Returns an IObservable that observes all events that 'parser' knows about that return a T and whose event
-        /// name matches the 'eventNameFilter' predicate.  
-        /// 
-        /// Note that unlike the methods on TraceEventParser, the TraceEvent object returned is already Cloned() and thus can be 
-        /// referenced for as long as you like.   
+        /// name matches the 'eventNameFilter' predicate.
+        ///
+        /// Note that unlike the methods on TraceEventParser, the TraceEvent object returned is already Cloned() and thus can be
+        /// referenced for as long as you like.
         /// </summary>
         public static IObservable<T> Observe<T>(this TraceEventParser parser, Predicate<string> eventNameFilter = null) where T : TraceEvent
         {
@@ -4745,9 +4750,9 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// Observe a particular event from a particular provider.   If eventName is null, it will return every event from the provider
-        ///  
-        /// Note that unlike the methods on TraceEventParser, the TraceEvent object returned is already Cloned() and thus can be 
-        /// referenced for as long as you like.  
+        ///
+        /// Note that unlike the methods on TraceEventParser, the TraceEvent object returned is already Cloned() and thus can be
+        /// referenced for as long as you like.
         /// </summary>
         public static IObservable<TraceEvent> Observe(this TraceEventParser parser, string providerName, string eventName)
         {
@@ -4772,12 +4777,12 @@ namespace Microsoft.Diagnostics.Tracing
             });
         }
         /// <summary>
-        /// Given a predicate 'eventToObserve' which takes the name of a provider (which may be of the form Provider(GUID)) (first) and 
+        /// Given a predicate 'eventToObserve' which takes the name of a provider (which may be of the form Provider(GUID)) (first) and
         /// an event name (which may be of the form EventID(NUM)) and indicates which events to observe, return an IObservable
-        /// that observes those events. 
-        /// 
-        /// Note that unlike the methods on TraceEventParser, the TraceEvent object returned is already Cloned() and thus can be 
-        /// referenced for as long as you like.  . 
+        /// that observes those events.
+        ///
+        /// Note that unlike the methods on TraceEventParser, the TraceEvent object returned is already Cloned() and thus can be
+        /// referenced for as long as you like.  .
         /// </summary>
         public static IObservable<TraceEvent> Observe(this TraceEventParser parser, Func<string, string, EventFilterResponse> eventsToObserve)
         {
@@ -4788,9 +4793,9 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// Returns an observable that observes all events from the event source 'source'
-        /// 
-        /// Note that unlike the methods on TraceEventParser, the TraceEvent object returned is already Cloned() and thus can be 
-        /// referenced for as long as you like.  
+        ///
+        /// Note that unlike the methods on TraceEventParser, the TraceEvent object returned is already Cloned() and thus can be
+        /// referenced for as long as you like.
         /// </summary>
         public static IObservable<TraceEvent> ObserveAll(this TraceEventDispatcher source)
         {
@@ -4800,9 +4805,9 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// Returns an observable that observes all events from the event source 'source' which are not handled by a callback connected to 'source'
-        /// 
-        /// Note that unlike the methods on TraceEventParser, the TraceEvent object returned is already Cloned() and thus can be 
-        /// referenced for as long as you like.  
+        ///
+        /// Note that unlike the methods on TraceEventParser, the TraceEvent object returned is already Cloned() and thus can be
+        /// referenced for as long as you like.
         /// </summary>
         public static IObservable<TraceEvent> ObserveUnhandled(this TraceEventDispatcher source)
         {
@@ -4813,8 +4818,8 @@ namespace Microsoft.Diagnostics.Tracing
 
         #region private
         /// <summary>
-        /// A TraceEventObservable is a helper class that implements the IObservable pattern for TraceEventDispatcher 
-        /// (like ETWTraceEventDispatcher).  It is called from the TraceEventParser.Observe*{T} methods.  
+        /// A TraceEventObservable is a helper class that implements the IObservable pattern for TraceEventDispatcher
+        /// (like ETWTraceEventDispatcher).  It is called from the TraceEventParser.Observe*{T} methods.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         internal class TraceEventObservable<T> : IObservable<T> where T : TraceEvent
@@ -4833,8 +4838,8 @@ namespace Microsoft.Diagnostics.Tracing
 
             #region private
             /// <summary>
-            /// A TraceEventSubscription is helper class that hooks 'callback' and 'completedCallback' to the 'observable' and 
-            /// unhooks them when 'Dispose' is called.  
+            /// A TraceEventSubscription is helper class that hooks 'callback' and 'completedCallback' to the 'observable' and
+            /// unhooks them when 'Dispose' is called.
             /// </summary>
             private class TraceEventSubscription : IDisposable
             {
@@ -4852,7 +4857,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
                 public void Dispose()
                 {
-                    // Clean things up.  
+                    // Clean things up.
                     m_observable.m_source.Completed -= m_completedCallback;
                     m_observable.m_removeHander(m_callback, this);
                 }

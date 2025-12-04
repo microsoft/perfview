@@ -830,7 +830,7 @@ namespace TraceEventTests
                 Assert.Equal("Param1", e.PayloadNames[0]);
                 Assert.Equal("Param2", e.PayloadNames[1]);
                 Assert.Equal(12, e.PayloadValue(0));
-                Assert.Equal(17, e.PayloadValue(1));
+                Assert.Equal((short)17, e.PayloadValue(1));
             };
             source.Process();
             Assert.Equal(1, eventCount);
@@ -1007,7 +1007,7 @@ namespace TraceEventTests
                     Assert.Equal(2, e.PayloadNames.Length);
                     Assert.Equal("Param1", e.PayloadNames[0]);
                     Assert.Equal("Param2", e.PayloadNames[1]);
-                    Assert.Equal(12, e.PayloadValue(0));
+                    Assert.Equal((short)12u, e.PayloadValue(0));
                     Assert.Equal(true, e.PayloadValue(1));
                 }
             };
@@ -1035,35 +1035,35 @@ namespace TraceEventTests
                 {
                     // UTF8 char 'A'
                     p.Write((byte)'A');
-                    
+
                     // UTF8 char array "Hello"
                     p.WriteLengthPrefixedUTF8String("Hello");
                 });
             });
             writer.WriteEndBlock();
-            
+
             MemoryStream stream = new MemoryStream(writer.ToArray());
             EventPipeEventSource source = new EventPipeEventSource(stream);
             int eventCount = 0;
-            
+
             source.Dynamic.All += e =>
             {
                 eventCount++;
                 Assert.Equal("TestEvent1", e.EventName);
                 Assert.Equal("TestProvider", e.ProviderName);
                 Assert.Equal(2, e.PayloadNames.Length);
-                
+
                 // UTF8Char
                 Assert.Equal("UTF8Char", e.PayloadNames[0]);
                 Assert.Equal(typeof(char), e.PayloadValue(0).GetType());
                 Assert.Equal('A', (char)e.PayloadValue(0));
-                
+
                 // UTF8CharArray - should convert to string
                 Assert.Equal("UTF8CharArray", e.PayloadNames[1]);
                 Assert.Equal(typeof(string), e.PayloadValue(1).GetType());
                 Assert.Equal("Hello", e.PayloadValue(1));
             };
-            
+
             source.Process();
             Assert.Equal(1, eventCount);
         }
@@ -1096,7 +1096,7 @@ namespace TraceEventTests
 
                     // UTF8 char array [A, B, C]
                     p.WriteLengthPrefixedUTF8String("ABC");
-                    
+
                     // UTF16 char array [x, y, z]
                     p.WriteLengthPrefixedUTF16String("xyz");
 
@@ -1107,7 +1107,7 @@ namespace TraceEventTests
                 });
             });
             writer.WriteEndBlock();
-            
+
             MemoryStream stream = new MemoryStream(writer.ToArray());
             TraceEventDispatcher source = new EventPipeEventSource(stream);
             if (roundTripThroughEtlx)
@@ -1118,14 +1118,14 @@ namespace TraceEventTests
                 source = new TraceLog(etlxStream).Events.GetSource();
             }
             int eventCount = 0;
-            
+
             source.Dynamic.All += e =>
             {
                 eventCount++;
                 Assert.Equal("TestEvent1", e.EventName);
                 Assert.Equal("TestProvider", e.ProviderName);
                 Assert.Equal(4, e.PayloadNames.Length);
-                
+
                 // ints
                 Assert.Equal(typeof(int[]), e.PayloadValue(0).GetType());
                 int[] array = (int[])e.PayloadValue(0);
@@ -1137,7 +1137,7 @@ namespace TraceEventTests
                 // UTF8 chars
                 Assert.Equal(typeof(string), e.PayloadValue(1).GetType());
                 Assert.Equal("ABC", (string)e.PayloadValue(1));
-                
+
                 // UTF16 chars
                 Assert.Equal(typeof(string), e.PayloadValue(2).GetType());
                 Assert.Equal("xyz", e.PayloadValue(2));
@@ -1149,7 +1149,7 @@ namespace TraceEventTests
                 Assert.Equal("Hi", stringArray[0]);
                 Assert.Equal("Bye", stringArray[1]);
             };
-            
+
             source.Process();
             Assert.Equal(1, eventCount);
         }
@@ -1181,7 +1181,7 @@ namespace TraceEventTests
 
                     // UTF8 chars
                     p.Write(Encoding.UTF8.GetBytes("ABC"));
-                    
+
                     // UTF16 chars
                     p.Write(Encoding.Unicode.GetBytes("xyz"));
 
@@ -1193,7 +1193,7 @@ namespace TraceEventTests
                 });
             });
             writer.WriteEndBlock();
-            
+
             MemoryStream stream = new MemoryStream(writer.ToArray());
             TraceEventDispatcher source = new EventPipeEventSource(stream);
             if (roundTripThroughEtlx)
@@ -1204,14 +1204,14 @@ namespace TraceEventTests
                 source = new TraceLog(etlxStream).Events.GetSource();
             }
             int eventCount = 0;
-            
+
             source.Dynamic.All += e =>
             {
                 eventCount++;
                 Assert.Equal("TestEvent1", e.EventName);
                 Assert.Equal("TestProvider", e.ProviderName);
                 Assert.Equal(4, e.PayloadNames.Length);
-                
+
                 // FixedArray
                 Assert.Equal(typeof(int[]), e.PayloadValue(0).GetType());
                 int[] array = (int[])e.PayloadValue(0);
@@ -1223,7 +1223,7 @@ namespace TraceEventTests
                 // UTF8
                 Assert.Equal(typeof(string), e.PayloadValue(1).GetType());
                 Assert.Equal("ABC", (string)e.PayloadValue(1));
-                
+
                 // UTF16
                 Assert.Equal(typeof(string), e.PayloadValue(2).GetType());
                 Assert.Equal("xyz", e.PayloadValue(2));
@@ -1235,7 +1235,7 @@ namespace TraceEventTests
                 Assert.Equal("Hi", stringArray[0]);
                 Assert.Equal("Bye", stringArray[1]);
             };
-            
+
             source.Process();
             Assert.Equal(1, eventCount);
         }
@@ -2520,7 +2520,7 @@ namespace TraceEventTests
 
             // Past versions of TraceEvent threw System.Exception instead of FormatException
             // Now we are trying to hold this behavior consistent
-            Assert.Throws<FormatException>(() => source.Process()); 
+            Assert.Throws<FormatException>(() => source.Process());
         }
 
         [Fact]
@@ -2649,7 +2649,7 @@ namespace TraceEventTests
 
         [Fact]
         public void EventSourceEventsDispatchedUsingGetDispatcherFromFileName()
-        {            
+        {
             // Create a simple EventPipe file with EventSource-like events
             EventPipeWriterV6 writer = new EventPipeWriterV6();
             writer.WriteHeaders();
@@ -2669,13 +2669,13 @@ namespace TraceEventTests
                 w.WriteEventBlob(3, 999, 4, Array.Empty<byte>());
             });
             writer.WriteEndBlock();
-            
+
             // Write to a temporary file
             string tempFile = Path.Combine(Path.GetTempPath(), $"test_eventsource_{Guid.NewGuid()}.nettrace");
             try
             {
                 File.WriteAllBytes(tempFile, writer.ToArray());
-                
+
                 // Test 1: Using TraceEventDispatcher.GetDispatcherFromFileName()
                 int eventsFromDispatcher = 0;
                 List<string> dispatcherEventNames = new List<string>();
@@ -2691,10 +2691,10 @@ namespace TraceEventTests
                     };
                     source.Process();
                 }
-                
+
                 Output.WriteLine($"Events from Dispatcher: {eventsFromDispatcher}");
                 Output.WriteLine($"Event names: {string.Join(", ", dispatcherEventNames)}");
-                
+
                 // Test 2: Using TraceLog.Events.GetSource() for comparison
                 int eventsFromTraceLog = 0;
                 List<string> traceLogEventNames = new List<string>();
@@ -2711,10 +2711,10 @@ namespace TraceEventTests
                     };
                     traceSource.Process();
                 }
-                
+
                 Output.WriteLine($"Events from TraceLog: {eventsFromTraceLog}");
                 Output.WriteLine($"Event names: {string.Join(", ", traceLogEventNames)}");
-                
+
                 // Both methods should see the same number of events
                 Assert.Equal(eventsFromTraceLog, eventsFromDispatcher);
                 // We should have seen 4 events
@@ -2794,7 +2794,7 @@ namespace TraceEventTests
         public byte Level { get; set; }
         public byte Version { get; set; }
         public Dictionary<string, string> Attributes { get; set; } = new Dictionary<string, string>();
-        
+
     }
 
     public class MetadataParameter
@@ -2872,7 +2872,7 @@ namespace TraceEventTests
     public enum MetadataTypeCode
     {
         Object = 1,                        // Concatenate together all of the encoded fields
-        Boolean32 = 3,                     // A 4-byte LE integer with value 0=false and 1=true.  
+        Boolean32 = 3,                     // A 4-byte LE integer with value 0=false and 1=true.
         UTF16CodeUnit = 4,                 // a 2-byte UTF16 code unit
         SByte = 5,                         // 1-byte signed integer
         Byte = 6,                          // 1-byte unsigned integer
@@ -3049,7 +3049,7 @@ namespace TraceEventTests
                 {
                     flags |= 2;
                 }
-                
+
                 w.Write(flags);
                 w.Write(sequencePoints.Length);
                 foreach (var sequencePoint in sequencePoints)
@@ -3377,7 +3377,7 @@ namespace TraceEventTests
             else if(type.TypeCode == MetadataTypeCode.RelLoc)
             {
                 writer.WriteV6MetadataType((type as RelLocMetadataType).ElementType);
-            } 
+            }
             else if(type.TypeCode == MetadataTypeCode.DataLoc)
             {
                 writer.WriteV6MetadataType((type as DataLocMetadataType).ElementType);
@@ -3570,7 +3570,7 @@ namespace TraceEventTests
             BinaryWriter parameterWriter = new BinaryWriter(parameterBlob);
             parameterWriter.WriteNullTerminatedUTF16String(parameterName);
             writeType(parameterWriter);
-            int payloadSize = (int)parameterBlob.Length;                   
+            int payloadSize = (int)parameterBlob.Length;
 
             writer.Write((int)(payloadSize + 4));                              // parameter size includes the leading size field
             writer.Write(parameterBlob.GetBuffer(), 0, payloadSize);
@@ -3722,7 +3722,7 @@ namespace TraceEventTests
             writer.WriteBlockV6OrGreater(7 /* RemoveThread */, writeThreadEntries);
         }
 
-        
+
 
         public static void WriteRemoveThreadEntry(this BinaryWriter writer, long threadIndex, int sequenceNumber)
         {

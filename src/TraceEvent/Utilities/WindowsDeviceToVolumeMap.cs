@@ -157,7 +157,7 @@ namespace Microsoft.Diagnostics.Utilities
                 }
                 length++;
             }
-            
+
             return length > 0 ? new string(charArray, 0, length) : string.Empty;
         }
 
@@ -169,6 +169,9 @@ namespace Microsoft.Diagnostics.Utilities
         /// </summary>
         private static void DisableLegacyPathHandling()
         {
+#if NET
+            AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", false);
+#else
             AssemblyName assemblyName = new AssemblyName("mscorlib");
             Assembly systemAssembly = Assembly.Load(assemblyName);
             if (systemAssembly != null)
@@ -195,6 +198,7 @@ namespace Microsoft.Diagnostics.Utilities
                     }
                 }
             }
+#endif
         }
     }
 

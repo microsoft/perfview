@@ -16,6 +16,7 @@
     <PackageVersion Include="Azure.Core" Version="1.38.0" />
     <PackageVersion Include="Azure.Identity" Version="1.11.4" />
     <PackageVersion Include="MicroBuild.Core" Version="0.3.1" />
+    <PackageVersion Include="PolySharp" Version="1.14.1" />
     <PackageVersion Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.510501" />
     <PackageVersion Include="Microsoft.Identity.Client" Version="4.74.1" />
     <PackageVersion Include="Microsoft.Identity.Client.Extensions.Msal" Version="4.74.1" />

@@ -1,12 +1,13 @@
 ﻿using Microsoft.Diagnostics.Tracing.Compatibility;
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
 /// <summary>
-/// Finds native DLLS next to the managed DLL that uses them.   
+/// Finds native DLLS next to the managed DLL that uses them.
 /// </summary>
 internal class NativeDlls
 {
@@ -17,14 +18,15 @@ internal class NativeDlls
 
     /// <summary>
     /// Loads a native DLL with a filename-extension of 'simpleName' by adding the path of the currently executing assembly
-    /// 
+    ///
     /// </summary>
     /// <param name="simpleName"></param>
+    [UnconditionalSuppressMessage("SingleFile", "IL3002", Justification = "This method correctly handles the case where the assembly has an unknown location")]
     public static void LoadNative(string simpleName)
     {
         // When TraceEvent is loaded as embedded assembly the manifest path is <Unknown>
         // We use as fallback in that case the process executable location to enable scenarios where TraceEvent and related dlls
-        // are loaded from byte arrays into the AppDomain to create self contained executables with no other dependent libraries. 
+        // are loaded from byte arrays into the AppDomain to create self contained executables with no other dependent libraries.
         string assemblyLocation = typeof(NativeDlls).GetTypeInfo().Assembly.ManifestModule.FullyQualifiedName;
         if (assemblyLocation == UnknownLocation)
         {
@@ -49,7 +51,7 @@ internal class NativeDlls
             return;
         }
 
-        // Try in ../native/<arch>.  This is where it will be in a nuget package. 
+        // Try in ../native/<arch>.  This is where it will be in a nuget package.
         dllName = Path.Combine(Path.GetDirectoryName(thisDllDir), "native", ProcessArchitectureDirectory, simpleName);
         ret = LoadLibraryEx(dllName, IntPtr.Zero, LoadLibraryFlags.LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
         if (ret != IntPtr.Zero)

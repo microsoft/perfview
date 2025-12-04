@@ -30,6 +30,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -155,6 +156,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// and only windows 8 has a session that allows both kernel and user mode events simultaneously.   Thus this is most useful
         /// on Win 8 systems.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session)
         {
             return CreateFromTraceEventSession(session, 1000);
@@ -171,6 +173,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// on Win 8 systems.
         /// </summary>
         /// <param name="minDispatchDelayMSec">The delay in milliseconds between when an event is received in TraceLog and when it is dispatched to the real time event source.</param>
+        [SupportedOSPlatform("windows")]
         public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session, int minDispatchDelayMSec)
         {
             if (minDispatchDelayMSec < 10)
@@ -7140,7 +7143,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // TODO: We'll need to store FileOffset as well to handle elf images.
             TraceModuleFile moduleFile = process.Log.ModuleFiles.GetOrCreateModuleFile(fileName, startAddress);
             long newImageSize = (long)(endAddress - startAddress);
-            
+
             // New mappings will have an imageSize of 0 and will get set.
             // Existing mappings that have the same StartAddress but increase in length will get updated here.
             if (moduleFile.imageSize < newImageSize)
@@ -8583,9 +8586,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                         module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
                         moduleFileIndex = module.ModuleFile.ModuleFileIndex;
-                            
+
                         methodIndex = methods.NewMethod(methodName, moduleFileIndex, (int)data.Id);
-                        
+
                         // When universal traces support re-use of address space, we'll need to support it here.
                     }
 

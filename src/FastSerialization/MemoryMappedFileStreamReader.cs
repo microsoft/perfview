@@ -2,8 +2,8 @@
 // This file is best viewed using outline mode (Ctrl-M Ctrl-O)
 //
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
-// It is available from http://www.codeplex.com/hyperAddin 
-// 
+// It is available from http://www.codeplex.com/hyperAddin
+//
 using System;
 using System.IO;
 using System.Text;      // For StringBuilder.
@@ -12,6 +12,7 @@ using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using DeferedStreamLabel = FastSerialization.StreamLabel;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace FastSerialization
 {
@@ -29,6 +30,7 @@ namespace FastSerialization
         private long _capacity;
         private long _offset;
 
+        [SupportedOSPlatform("windows")]
         public MemoryMappedFileStreamReader(string mapName, long length, SerializationSettings settings)
             : this(MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read), length, leaveOpen: false, settings)
         {
