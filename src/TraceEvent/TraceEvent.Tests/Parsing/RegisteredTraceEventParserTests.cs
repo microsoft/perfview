@@ -18,13 +18,13 @@ namespace TraceEventTests
 
         /// <summary>
         /// Test that GetManifestForRegisteredProvider does not produce duplicate string IDs in the stringTable.
-        /// This test uses the Microsoft-Windows-DotNETRuntime provider which is known to exist on all Windows machines.
+        /// This test uses the Microsoft-JScript provider which is known to exist on all Windows machines.
         /// </summary>
         [WindowsFact]
         public void GetManifestForRegisteredProvider_NoDuplicateStringTableEntries()
         {
-            // Microsoft-Windows-DotNETRuntime is a well-known provider that exists on all Windows machines
-            const string providerName = "Microsoft-Windows-DotNETRuntime";
+            // Microsoft-JScript is a well-known provider that exists on all Windows machines
+            const string providerName = "Microsoft-JScript";
 
             // Get the manifest for the provider
             string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
