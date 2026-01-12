@@ -191,7 +191,10 @@ namespace Microsoft.Diagnostics.Tracing
             short minute = reader.ReadInt16();
             short second = reader.ReadInt16();
             short milliseconds = reader.ReadInt16();
-            _syncTimeUTC = new DateTime(year, month, day, hour, minute, second, milliseconds, DateTimeKind.Utc);
+            // Clamp milliseconds to valid range [0, 999] to handle corrupted or invalid trace files
+            // Per SYSTEMTIME spec, milliseconds should be 0-999, but some traces may have invalid values
+            int clampedMilliseconds = Math.Max(0, Math.Min(999, (int)milliseconds));
+            _syncTimeUTC = new DateTime(year, month, day, hour, minute, second, clampedMilliseconds, DateTimeKind.Utc);
             _syncTimeQPC = reader.ReadInt64();
             _QPCFreq = reader.ReadInt64();
 
@@ -213,7 +216,10 @@ namespace Microsoft.Diagnostics.Tracing
             short minute = reader.ReadInt16();
             short second = reader.ReadInt16();
             short milliseconds = reader.ReadInt16();
-            _syncTimeUTC = new DateTime(year, month, day, hour, minute, second, milliseconds, DateTimeKind.Utc);
+            // Clamp milliseconds to valid range [0, 999] to handle corrupted or invalid trace files
+            // Per SYSTEMTIME spec, milliseconds should be 0-999, but some traces may have invalid values
+            int clampedMilliseconds = Math.Max(0, Math.Min(999, (int)milliseconds));
+            _syncTimeUTC = new DateTime(year, month, day, hour, minute, second, clampedMilliseconds, DateTimeKind.Utc);
             _syncTimeQPC = reader.ReadInt64();
             _QPCFreq = reader.ReadInt64();
 

@@ -953,6 +953,47 @@ namespace TraceEventTests
                 });
         }
 
+        [Fact] //V6
+        public void ParseV6TraceBlockWithInvalidMilliseconds()
+        {
+            // Test that the parser can handle trace files with invalid milliseconds values (>999 or <0)
+            // This simulates corrupted or incorrectly generated trace files
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            
+            // Write a custom trace block with milliseconds = 1500 (invalid, should be clamped to 999)
+            writer.WriteCustomTraceBlock(1500);
+            writer.WriteEndBlock();
+            
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            
+            // Should not throw ArgumentOutOfRangeException
+            source.Process();
+            
+            // Milliseconds should be clamped to 999
+            Assert.Equal(new DateTime(2025, 2, 3, 4, 5, 6, 999), source._syncTimeUTC);
+        }
+
+        [Theory] //V6
+        [InlineData(1500, 999)]   // Value > 999 should be clamped to 999
+        [InlineData(-100, 0)]     // Negative value should be clamped to 0
+        [InlineData(0, 0)]        // Valid lower bound
+        [InlineData(999, 999)]    // Valid upper bound
+        [InlineData(500, 500)]    // Valid middle value
+        public void ParseV6TraceBlockClampsMillisecondsToValidRange(short inputMilliseconds, int expectedMilliseconds)
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            
+            writer.WriteCustomTraceBlock(inputMilliseconds);
+            writer.WriteEndBlock();
+            
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            source.Process();
+            
+            Assert.Equal(new DateTime(2025, 2, 3, 4, 5, 6, expectedMilliseconds), source._syncTimeUTC);
+        }
+
         // In the V6 format readers are expected to skip over any block types they don't recognize. This allows future extensibility.
         [Fact] //V6
         public void V6UnrecognizedBlockTypesAreSkipped()
@@ -2598,6 +2639,26 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void ParseV5TraceObjectWithInvalidMilliseconds()
+        {
+            // Test that the parser can handle V3-V5 trace files with invalid milliseconds values
+            EventPipeWriterV5 writer = new EventPipeWriterV5();
+            
+            // Write custom headers with invalid milliseconds
+            writer.WriteCustomHeaders(2000); // INVALID - should be clamped to 999
+            writer.WriteEndObject();
+            
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+            
+            // Should not throw ArgumentOutOfRangeException
+            source.Process();
+            
+            // Milliseconds should be clamped to 999
+            Assert.Equal(new DateTime(2025, 3, 15, 10, 30, 45, 999), source._syncTimeUTC);
+        }
+
+        [Fact]
         void V6StartStopOpcodeRemovedFromEventNames()
         {
             EventPipeWriterV6 writer = new EventPipeWriterV6();
@@ -2976,6 +3037,36 @@ namespace TraceEventTests
         {
             _writer.WriteBlockV5OrLess(name, writeBlockData, previousBytesWritten);
         }
+
+        // Helper method to write custom headers and trace object with custom milliseconds for testing
+        public void WriteCustomHeaders(short milliseconds)
+        {
+            _writer.WriteNetTraceHeaderV5();
+            _writer.WriteFastSerializationHeader();
+            WriteCustomTraceObject(milliseconds);
+        }
+
+        // Helper method to write trace object with custom milliseconds value for testing
+        public void WriteCustomTraceObject(short milliseconds)
+        {
+            BinaryWriterExtensions.WriteObject(_writer, "Trace", 4, 4, () =>
+            {
+                _writer.Write((short)2025);
+                _writer.Write((short)3);
+                _writer.Write((short)2);  // Tuesday
+                _writer.Write((short)15);
+                _writer.Write((short)10);
+                _writer.Write((short)30);
+                _writer.Write((short)45);
+                _writer.Write(milliseconds);
+                _writer.Write((long)1_000_000);
+                _writer.Write((long)1000);
+                _writer.Write(8);
+                _writer.Write(1);
+                _writer.Write(4);
+                _writer.Write(1000);
+            });
+        }
     }
 
     public struct V6ThreadSequencePoint
@@ -3070,6 +3161,27 @@ namespace TraceEventTests
         public void WriteBlock(byte blockKind, Action<BinaryWriter> writePayload)
         {
             _writer.WriteBlockV6OrGreater(blockKind, writePayload);
+        }
+
+        // Helper method to write trace block with custom milliseconds value for testing
+        public void WriteCustomTraceBlock(short milliseconds)
+        {
+            _writer.WriteNetTraceHeaderV6OrGreater(6, 0);
+            BinaryWriterExtensions.WriteBlockV6OrGreater(_writer, 1 /* BlockKind.Trace */, w =>
+            {
+                w.Write((short)2025);
+                w.Write((short)2);
+                w.Write((short)1);
+                w.Write((short)3);
+                w.Write((short)4);
+                w.Write((short)5);
+                w.Write((short)6);
+                w.Write(milliseconds);
+                w.Write((long)0);
+                w.Write((long)1000);
+                w.Write(8);
+                w.Write(0);  // keyValuePairs count
+            });
         }
     }
 
