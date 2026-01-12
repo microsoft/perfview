@@ -63,10 +63,10 @@ namespace PerfView
                         morphedContent = PadForColumn(morphedContent, i + e.StartColumnDisplayIndex);
                     }
 
-                    // Add markdown table formatting (| symbols) only when:
-                    // - Multiple columns AND multiple rows selected
-                    // Single column (any rows) or multiple columns in single row: no pipes
-                    bool shouldAddPipes = (m_numSelectedColumns > 1 && m_numSelectedRows > 1);
+                    // Add markdown table formatting (| symbols) when:
+                    // - Multiple columns selected (except First/Last special case)
+                    // Don't add pipes for: single column or First/Last special case
+                    bool shouldAddPipes = (m_numSelectedColumns > 1 && !m_isFirstLastSelection);
                     if (shouldAddPipes)
                     {
                         // Add a leading | character to the first column to ensure GitHub renders the content as table
@@ -535,40 +535,53 @@ namespace PerfView
                 {
                     var uniqueColumns = new HashSet<DataGridColumn>();
                     var uniqueRows = new HashSet<object>();
+                    var columnNames = new HashSet<string>();
                     foreach (var cell in dataGrid.SelectedCells)
                     {
                         uniqueColumns.Add(cell.Column);
                         uniqueRows.Add(cell.Item);
+                        // Get the column name
+                        var header = cell.Column.Header as TextBlock;
+                        if (header != null)
+                        {
+                            columnNames.Add(header.Name);
+                        }
                     }
                     m_numSelectedColumns = uniqueColumns.Count;
                     m_numSelectedRows = uniqueRows.Count;
+                    
+                    // Detect special case: 1 row, 2 columns, and they are FirstColumn and LastColumn
+                    m_isFirstLastSelection = (m_numSelectedRows == 1 && m_numSelectedColumns == 2 && 
+                                              columnNames.Contains("FirstColumn") && columnNames.Contains("LastColumn"));
                 }
                 else
                 {
                     m_numSelectedColumns = 0;
                     m_numSelectedRows = 0;
+                    m_isFirstLastSelection = false;
                 }
                 
                 // Determine whether to include headers based on selection:
                 // - Single cell: no header
-                // - 2 cells (range): no header
+                // - First/Last special case: no header
                 // - Single column, multiple cells: include header
-                // - Multiple columns, single row: no header
+                // - Multiple columns, single row: include header (unless First/Last case)
                 // - Multiple columns, multiple rows: include header
                 bool shouldIncludeHeader = false;
-                if (numSelectedCells > 2)
+                if (numSelectedCells == 1 || m_isFirstLastSelection)
                 {
-                    if (m_numSelectedColumns == 1)
-                    {
-                        // Single column, multiple rows: include header
-                        shouldIncludeHeader = true;
-                    }
-                    else if (m_numSelectedRows > 1)
-                    {
-                        // Multiple columns, multiple rows: include header
-                        shouldIncludeHeader = true;
-                    }
-                    // Multiple columns, single row: no header (shouldIncludeHeader stays false)
+                    // Single cell or First/Last special case: no header
+                    shouldIncludeHeader = false;
+                }
+                else if (m_numSelectedColumns == 1 && m_numSelectedRows > 1)
+                {
+                    // Single column, multiple rows: include header
+                    shouldIncludeHeader = true;
+                }
+                else if (m_numSelectedColumns > 1)
+                {
+                    // Multiple columns: include header
+                    shouldIncludeHeader = true;
                 }
                 
                 if (shouldIncludeHeader)
@@ -613,6 +626,7 @@ namespace PerfView
         private int m_numSelectedCells;
         private int m_numSelectedColumns;
         private int m_numSelectedRows;
+        private bool m_isFirstLastSelection;
         private int[] m_maxColumnInSelection;
         private int m_FindEnd;
         private Regex m_findPat;
