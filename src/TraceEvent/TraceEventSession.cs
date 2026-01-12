@@ -3125,7 +3125,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// Returns the GUID of all event provider that either has registered itself in a running process (that is
         /// it CAN be enabled) or that a session has enabled (even if no instances of the provider exist in any process).
         /// <para>
-        /// This is a relatively small list (less than 1000), unlike GetPublishedProviders.
+        /// This list can be quite large (often 2000+ entries), potentially larger than GetPublishedProviders.
+        /// Note that not all providers returned will have names available via GetProviderName().
         /// </para>
         /// </summary>
         public static unsafe List<Guid> GetRegisteredOrEnabledProviders()
