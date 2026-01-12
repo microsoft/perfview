@@ -3169,18 +3169,18 @@ namespace TraceEventTests
             _writer.WriteNetTraceHeaderV6OrGreater(6, 0);
             BinaryWriterExtensions.WriteBlockV6OrGreater(_writer, 1 /* BlockKind.Trace */, w =>
             {
-                w.Write((short)2025);
-                w.Write((short)2);
-                w.Write((short)1);
-                w.Write((short)3);
-                w.Write((short)4);
-                w.Write((short)5);
-                w.Write((short)6);
-                w.Write(milliseconds);
-                w.Write((long)0);
-                w.Write((long)1000);
-                w.Write(8);
-                w.Write(0);  // keyValuePairs count
+                w.Write((short)2025);     // year
+                w.Write((short)2);        // month
+                w.Write((short)1);        // dayOfWeek
+                w.Write((short)3);        // day
+                w.Write((short)4);        // hour
+                w.Write((short)5);        // minute
+                w.Write((short)6);        // second
+                w.Write(milliseconds);    // milliseconds
+                w.Write((long)0);         // syncTimeQPC
+                w.Write((long)1000);      // qpcFreq
+                w.Write(8);               // pointer size
+                w.Write(0);               // keyValuePairs count
             });
         }
     }
