@@ -68,6 +68,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 m_buckets[m_singleBucketNum] = m_singleBucketValue;
                 // Clear the single bucket tracking since we're now using the array
                 m_singleBucketNum = -1;
+                m_singleBucketValue = 0;
             }
             m_buckets[bucket] += metric;
         }
