@@ -3126,7 +3126,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// it CAN be enabled) or that a session has enabled (even if no instances of the provider exist in any process).
         /// <para>
         /// This list can be quite large (often 2000+ entries), potentially larger than GetPublishedProviders.
-        /// Note that not all providers returned will have names available via GetProviderName().
         /// </para>
         /// </summary>
         public static unsafe List<Guid> GetRegisteredOrEnabledProviders()
