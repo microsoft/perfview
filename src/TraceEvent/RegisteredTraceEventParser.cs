@@ -105,6 +105,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Dictionary<string, string> enumIntern = new Dictionary<string, string>();
             StringWriter enumLocalizations = new StringWriter();
 
+            // Track emitted string IDs to prevent duplicates in the stringTable
+            HashSet<string> emittedStringIds = new HashSet<string>();
+
             // Any task names used so far 
             Dictionary<string, int> taskNames = new Dictionary<string, int>();
             // Any  es used so far 
@@ -374,7 +377,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                                     int value = mapEntries[k].Value;
                                                     string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
                                                     enumWriter.WriteLine("      <map value=\"0x{0:x}\" message=\"$(string.map_{1}{2})\"/>", value, enumName, valueName);
-                                                    enumLocalizations.WriteLine("    <string id=\"map_{0}{1}\" value=\"{2}\"/>", enumName, valueName, valueName);
+                                                    string stringId = $"map_{enumName}{valueName}";
+                                                    if (emittedStringIds.Add(stringId))
+                                                    {
+                                                        enumLocalizations.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", stringId, valueName);
+                                                    }
                                                 }
                                                 if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
                                                 {
@@ -453,7 +460,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     manifest.WriteLine("     <keyword name=\"{0}\" message=\"$(string.keyword_{1})\" mask=\"0x{2:x}\"/>",
                         keyValue.Value, keyValue.Value, keyValue.Key);
-                    localizedStrings.WriteLine("    <string id=\"keyword_{0}\" value=\"{1}\"/>", keyValue.Value, keyValue.Value);
+                    string stringId = $"keyword_{keyValue.Value}";
+                    if (emittedStringIds.Add(stringId))
+                    {
+                        localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", stringId, keyValue.Value);
+                    }
                 }
                 manifest.WriteLine("    </keywords>");
             }
@@ -464,7 +475,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 var task = tasks[taskValue];
                 manifest.WriteLine("     <task name=\"{0}\" message=\"$(string.task_{1})\" value=\"{2}\"{3}>", task.Name, task.Name, taskValue,
                     task.Opcodes == null ? "/" : "");       // If no opcodes, terminate immediately.  
-                localizedStrings.WriteLine("    <string id=\"task_{0}\" value=\"{1}\"/>", task.Name, task.Name);
+                string taskStringId = $"task_{task.Name}";
+                if (emittedStringIds.Add(taskStringId))
+                {
+                    localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", taskStringId, task.Name);
+                }
                 if (task.Opcodes != null)
                 {
                     manifest.WriteLine(">");
@@ -473,7 +488,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     {
                         manifest.WriteLine("       <opcode name=\"{0}\" message=\"$(string.opcode_{1}{2})\" value=\"{3}\"/>",
                             keyValue.Value, task.Name, keyValue.Value, keyValue.Key);
-                        localizedStrings.WriteLine("    <string id=\"opcode_{0}{1}\" value=\"{2}\"/>", task.Name, keyValue.Value, keyValue.Value);
+                        string opcodeStringId = $"opcode_{task.Name}{keyValue.Value}";
+                        if (emittedStringIds.Add(opcodeStringId))
+                        {
+                            localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", opcodeStringId, keyValue.Value);
+                        }
                     }
                     manifest.WriteLine("      </opcodes>");
                     manifest.WriteLine("     </task>");
