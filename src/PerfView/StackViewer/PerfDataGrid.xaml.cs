@@ -69,7 +69,7 @@ namespace PerfView
                     bool shouldAddPipes = (m_numSelectedColumns > 1 && !m_isFirstLastSelection);
                     if (shouldAddPipes)
                     {
-                        // Add a leading | character to the first column to ensure GitHub renders the content as table
+                        // Add a leading | character to the first column for markdown table format
                         if (i == 0)
                         {
                             morphedContent = "| " + morphedContent;
