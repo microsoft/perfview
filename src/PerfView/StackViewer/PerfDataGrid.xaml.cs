@@ -593,7 +593,9 @@ namespace PerfView
                     Grid.ClipboardCopyMode = DataGridClipboardCopyMode.ExcludeHeader;
                 }
                 
-                if (numSelectedCells == 2)
+                // Only set range values for the First/Last special case
+                // This enables the special morphing logic that combines them on one line
+                if (m_isFirstLastSelection && numSelectedCells == 2)
                 {
                     if (dataGrid != null)
                     {
