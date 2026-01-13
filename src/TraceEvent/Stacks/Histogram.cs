@@ -47,11 +47,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <param name="bucket">The bucket to add to.</param>
         public void AddMetric(float metric, int bucket)
         {
-            Debug.Assert(0 <= bucket && bucket < Count);
+            Debug.Assert(0 <= bucket && bucket < Count, $"Bucket index is out of range. Bucket: {bucket}, Count: {Count}");
 
             if (m_buckets == null)
             {
-                // We're in single-bucket mode
+                // We have not expanded to multiple buckets yet
                 if (m_singleBucketNum < 0)
                 {
                     m_singleBucketNum = bucket;
