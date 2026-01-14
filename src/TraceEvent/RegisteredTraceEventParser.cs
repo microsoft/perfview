@@ -2,6 +2,7 @@
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.Compatibility;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -361,14 +362,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                             {
                                                 StringWriter enumWriter = new StringWriter();
                                                 string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
-                                                enumAttrib = " map=\"" + enumName + "\"";
+                                                enumAttrib = " map=\"" + XmlUtilities.XmlEscape(enumName) + "\"";
                                                 if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
                                                 {
-                                                    enumWriter.WriteLine("     <valueMap name=\"{0}\">", enumName);
+                                                    enumWriter.WriteLine("     <valueMap name=\"{0}\">", XmlUtilities.XmlEscape(enumName));
                                                 }
                                                 else
                                                 {
-                                                    enumWriter.WriteLine("     <bitMap name=\"{0}\">", enumName);
+                                                    enumWriter.WriteLine("     <bitMap name=\"{0}\">", XmlUtilities.XmlEscape(enumName));
                                                 }
 
                                                 EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
@@ -376,20 +377,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                                 {
                                                     int value = mapEntries[k].Value;
                                                     string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
-                                                    enumWriter.WriteLine("      <map value=\"0x{0:x}\" message=\"$(string.map_{1}{2})\"/>", value, enumName, valueName);
                                                     string stringId = $"map_{enumName}{valueName}";
+                                                    enumWriter.WriteLine("      <map value=\"0x{0:x}\" message=\"$(string.{1})\"/>", value, stringId);
                                                     if (emittedStringIds.Add(stringId))
                                                     {
-                                                        enumLocalizations.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", stringId, valueName);
+                                                        enumLocalizations.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", XmlUtilities.XmlEscape(stringId), XmlUtilities.XmlEscape(valueName));
                                                     }
                                                 }
                                                 if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
                                                 {
-                                                    enumWriter.WriteLine("     </valueMap>", enumName);
+                                                    enumWriter.WriteLine("     </valueMap>");
                                                 }
                                                 else
                                                 {
-                                                    enumWriter.WriteLine("     </bitMap>", enumName);
+                                                    enumWriter.WriteLine("     </bitMap>");
                                                 }
 
                                                 enumIntern[mapName] = enumWriter.ToString();
@@ -458,12 +459,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 manifest.WriteLine("    <keywords>");
                 foreach (var keyValue in keywords)
                 {
-                    manifest.WriteLine("     <keyword name=\"{0}\" message=\"$(string.keyword_{1})\" mask=\"0x{2:x}\"/>",
-                        keyValue.Value, keyValue.Value, keyValue.Key);
                     string stringId = $"keyword_{keyValue.Value}";
+                    manifest.WriteLine("     <keyword name=\"{0}\" message=\"$(string.{1})\" mask=\"0x{2:x}\"/>",
+                        XmlUtilities.XmlEscape(keyValue.Value), stringId, keyValue.Key);
                     if (emittedStringIds.Add(stringId))
                     {
-                        localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", stringId, keyValue.Value);
+                        localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", XmlUtilities.XmlEscape(stringId), XmlUtilities.XmlEscape(keyValue.Value));
                     }
                 }
                 manifest.WriteLine("    </keywords>");
@@ -473,12 +474,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             foreach (var taskValue in tasks.Keys)
             {
                 var task = tasks[taskValue];
-                manifest.WriteLine("     <task name=\"{0}\" message=\"$(string.task_{1})\" value=\"{2}\"{3}>", task.Name, task.Name, taskValue,
-                    task.Opcodes == null ? "/" : "");       // If no opcodes, terminate immediately.  
                 string taskStringId = $"task_{task.Name}";
+                manifest.WriteLine("     <task name=\"{0}\" message=\"$(string.{1})\" value=\"{2}\"{3}>", XmlUtilities.XmlEscape(task.Name), taskStringId, taskValue,
+                    task.Opcodes == null ? "/" : "");       // If no opcodes, terminate immediately.  
                 if (emittedStringIds.Add(taskStringId))
                 {
-                    localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", taskStringId, task.Name);
+                    localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", XmlUtilities.XmlEscape(taskStringId), XmlUtilities.XmlEscape(task.Name));
                 }
                 if (task.Opcodes != null)
                 {
@@ -486,12 +487,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     manifest.WriteLine("      <opcodes>");
                     foreach (var keyValue in task.Opcodes)
                     {
-                        manifest.WriteLine("       <opcode name=\"{0}\" message=\"$(string.opcode_{1}{2})\" value=\"{3}\"/>",
-                            keyValue.Value, task.Name, keyValue.Value, keyValue.Key);
                         string opcodeStringId = $"opcode_{task.Name}{keyValue.Value}";
+                        manifest.WriteLine("       <opcode name=\"{0}\" message=\"$(string.{1})\" value=\"{2}\"/>",
+                            XmlUtilities.XmlEscape(keyValue.Value), opcodeStringId, keyValue.Key);
                         if (emittedStringIds.Add(opcodeStringId))
                         {
-                            localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", opcodeStringId, keyValue.Value);
+                            localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", XmlUtilities.XmlEscape(opcodeStringId), XmlUtilities.XmlEscape(keyValue.Value));
                         }
                     }
                     manifest.WriteLine("      </opcodes>");
