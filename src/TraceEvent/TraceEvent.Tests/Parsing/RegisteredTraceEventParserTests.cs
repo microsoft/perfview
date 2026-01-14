@@ -139,7 +139,6 @@ namespace TraceEventTests
             _output.WriteLine($"Found {stringElements?.Count ?? 0} string entries");
 
             // If we got here, the XML was successfully parsed and queried
-            Assert.True(true, "XML manifest is well-formed and properly escaped");
         }
     }
 }
