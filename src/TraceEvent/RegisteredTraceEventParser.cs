@@ -575,21 +575,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         /// <summary>
         /// Creates a string ID suitable for use in XML manifest string tables.
-        /// If the value starts with '&lt;' and ends with '&gt;', strips them off.
-        /// Otherwise, XML-escapes the value to make it a valid XML attribute value.
+        /// XML-escapes the value to make it a valid XML attribute value.
         /// </summary>
         private static string MakeStringId(string value)
         {
-            if (value.Length >= 2 && value[0] == '<' && value[value.Length - 1] == '>')
-            {
-                // Strip the angle brackets
-                return value.Substring(1, value.Length - 2);
-            }
-            else
-            {
-                // XML-escape the value
-                return XmlUtilities.XmlEscape(value);
-            }
+            return XmlUtilities.XmlEscape(value);
         }
 
         /// <summary>
