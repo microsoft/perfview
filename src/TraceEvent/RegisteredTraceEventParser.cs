@@ -377,11 +377,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                                 {
                                                     int value = mapEntries[k].Value;
                                                     string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
-                                                    string stringId = $"map_{MakeStringId(enumName)}{MakeStringId(valueName)}";
+                                                    string escapedValueName = XmlUtilities.XmlEscape(valueName);
+                                                    string stringId = XmlUtilities.XmlEscape($"map_{enumName}{valueName}");
                                                     enumWriter.WriteLine("      <map value=\"0x{0:x}\" message=\"$(string.{1})\"/>", value, stringId);
                                                     if (emittedStringIds.Add(stringId))
                                                     {
-                                                        enumLocalizations.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", stringId, XmlUtilities.XmlEscape(valueName));
+                                                        enumLocalizations.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", stringId, escapedValueName);
                                                     }
                                                 }
                                                 if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
@@ -459,12 +460,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 manifest.WriteLine("    <keywords>");
                 foreach (var keyValue in keywords)
                 {
-                    string stringId = $"keyword_{MakeStringId(keyValue.Value)}";
+                    string escapedValue = XmlUtilities.XmlEscape(keyValue.Value);
+                    string stringId = XmlUtilities.XmlEscape($"keyword_{keyValue.Value}");
                     manifest.WriteLine("     <keyword name=\"{0}\" message=\"$(string.{1})\" mask=\"0x{2:x}\"/>",
-                        XmlUtilities.XmlEscape(keyValue.Value), stringId, keyValue.Key);
+                        escapedValue, stringId, keyValue.Key);
                     if (emittedStringIds.Add(stringId))
                     {
-                        localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", stringId, XmlUtilities.XmlEscape(keyValue.Value));
+                        localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", stringId, escapedValue);
                     }
                 }
                 manifest.WriteLine("    </keywords>");
@@ -474,12 +476,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             foreach (var taskValue in tasks.Keys)
             {
                 var task = tasks[taskValue];
-                string taskStringId = $"task_{MakeStringId(task.Name)}";
-                manifest.WriteLine("     <task name=\"{0}\" message=\"$(string.{1})\" value=\"{2}\"{3}>", XmlUtilities.XmlEscape(task.Name), taskStringId, taskValue,
+                string escapedTaskName = XmlUtilities.XmlEscape(task.Name);
+                string taskStringId = XmlUtilities.XmlEscape($"task_{task.Name}");
+                manifest.WriteLine("     <task name=\"{0}\" message=\"$(string.{1})\" value=\"{2}\"{3}>", escapedTaskName, taskStringId, taskValue,
                     task.Opcodes == null ? "/" : "");       // If no opcodes, terminate immediately.  
                 if (emittedStringIds.Add(taskStringId))
                 {
-                    localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", taskStringId, XmlUtilities.XmlEscape(task.Name));
+                    localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", taskStringId, escapedTaskName);
                 }
                 if (task.Opcodes != null)
                 {
@@ -487,12 +490,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     manifest.WriteLine("      <opcodes>");
                     foreach (var keyValue in task.Opcodes)
                     {
-                        string opcodeStringId = $"opcode_{MakeStringId(task.Name)}{MakeStringId(keyValue.Value)}";
+                        string escapedOpcodeName = XmlUtilities.XmlEscape(keyValue.Value);
+                        string opcodeStringId = XmlUtilities.XmlEscape($"opcode_{task.Name}{keyValue.Value}");
                         manifest.WriteLine("       <opcode name=\"{0}\" message=\"$(string.{1})\" value=\"{2}\"/>",
-                            XmlUtilities.XmlEscape(keyValue.Value), opcodeStringId, keyValue.Key);
+                            escapedOpcodeName, opcodeStringId, keyValue.Key);
                         if (emittedStringIds.Add(opcodeStringId))
                         {
-                            localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", opcodeStringId, XmlUtilities.XmlEscape(keyValue.Value));
+                            localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", opcodeStringId, escapedOpcodeName);
                         }
                     }
                     manifest.WriteLine("      </opcodes>");
@@ -571,15 +575,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             name = name.Replace(" ", "");
             name = name.Replace("-", "_");
             return name;
-        }
-
-        /// <summary>
-        /// Creates a string ID suitable for use in XML manifest string tables.
-        /// XML-escapes the value to make it a valid XML attribute value.
-        /// </summary>
-        private static string MakeStringId(string value)
-        {
-            return XmlUtilities.XmlEscape(value);
         }
 
         /// <summary>
