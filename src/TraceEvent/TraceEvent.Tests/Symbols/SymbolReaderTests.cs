@@ -153,6 +153,53 @@ namespace TraceEventTests
             }
         }
 
+        [Fact]
+        public void SourceLinkSupportsWildcardAndExactPathMappings()
+        {
+            // Create a test symbol module that returns SourceLink JSON with both wildcard and exact path mappings
+            var testModule = new TestSymbolModuleWithSourceLink(_symbolReader);
+            
+            // Test wildcard pattern matching
+            bool result1 = testModule.GetUrlForFilePathUsingSourceLink(
+                @"C:\src\myproject\subfolder\file.cs", 
+                out string url1, 
+                out string relativePath1);
+            
+            Assert.True(result1, "Should match wildcard pattern");
+            Assert.Equal("https://raw.githubusercontent.com/org/repo/commit/subfolder/file.cs", url1);
+            Assert.Equal("subfolder/file.cs", relativePath1);
+            
+            // Test exact path matching
+            bool result2 = testModule.GetUrlForFilePathUsingSourceLink(
+                @"c:\external\sdk\inc\header.h", 
+                out string url2, 
+                out string relativePath2);
+            
+            Assert.True(result2, "Should match exact path");
+            Assert.Equal("https://example.com/blobs/ABC123?download=true&filename=header.h", url2);
+            Assert.Equal("", relativePath2);
+            
+            // Test another wildcard pattern with escaped characters
+            bool result3 = testModule.GetUrlForFilePathUsingSourceLink(
+                @"C:\src\myproject\some folder\another file.cs", 
+                out string url3, 
+                out string relativePath3);
+            
+            Assert.True(result3, "Should match wildcard pattern with spaces");
+            Assert.Equal("https://raw.githubusercontent.com/org/repo/commit/some%20folder/another%20file.cs", url3);
+            Assert.Equal("some folder/another file.cs", relativePath3);
+            
+            // Test non-matching path
+            bool result4 = testModule.GetUrlForFilePathUsingSourceLink(
+                @"C:\other\path\file.cs", 
+                out string url4, 
+                out string relativePath4);
+            
+            Assert.False(result4, "Should not match any pattern");
+            Assert.Null(url4);
+            Assert.Null(relativePath4);
+        }
+
         /// <summary>
         /// Tests that the checksum matching allows for different line endings.
         /// Open the PDB and try to retrieve the source code for one of the files,
@@ -577,5 +624,35 @@ namespace TraceEventTests
                 return base.SendAsync(request, cancellationToken);
             }
         }
-    }
-}
+
+        /// <summary>
+        /// A test symbol module that provides SourceLink JSON for testing.
+        /// </summary>
+        private class TestSymbolModuleWithSourceLink : ManagedSymbolModule
+        {
+            public TestSymbolModuleWithSourceLink(SymbolReader reader) 
+                : base(reader, "test.pdb")
+            {
+            }
+
+            public override SourceLocation SourceLocationForManagedCode(uint methodMetadataToken, int ilOffset)
+            {
+                // Not used in this test
+                return null;
+            }
+
+            protected override IEnumerable<string> GetSourceLinkJson()
+            {
+                // Return SourceLink JSON with both wildcard and exact path mappings
+                // This mimics the example from issue #2350
+                return new[]
+                {
+                    @"{
+                        ""documents"": {
+                            ""C:\\src\\myproject\\*"": ""https://raw.githubusercontent.com/org/repo/commit/*"",
+                            ""c:\\external\\sdk\\inc\\header.h"": ""https://example.com/blobs/ABC123?download=true&filename=header.h""
+                        }
+                    }"
+                };
+            }
+        }
