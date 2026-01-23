@@ -1760,8 +1760,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         {
                             SortedDictionary<string, Guid> providersByName = new SortedDictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
                             int buffSize = 0;
-                            byte* buffer = null;
-                            TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO* providersDesc = null;
+                            byte[] buffer = null;
                             int hr;
 
                             // Retry loop to handle the case where the buffer size changes between calls
@@ -1770,31 +1769,33 @@ namespace Microsoft.Diagnostics.Tracing.Session
                             {
                                 if (buffSize > 0)
                                 {
-                                    var space = stackalloc byte[buffSize];
-                                    buffer = space;
-                                    providersDesc = (TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO*)buffer;
+                                    buffer = new byte[buffSize];
                                 }
 
-                                hr = TraceEventNativeMethods.TdhEnumerateProviders(providersDesc, ref buffSize);
-                                if (hr == 0)
+                                fixed (byte* bufferPtr = buffer)
                                 {
-                                    break;
+                                    var providersDesc = (TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO*)bufferPtr;
+
+                                    hr = TraceEventNativeMethods.TdhEnumerateProviders(providersDesc, ref buffSize);
+                                    if (hr == 0)
+                                    {
+                                        if (providersDesc != null)
+                                        {
+                                            var providers = (TraceEventNativeMethods.TRACE_PROVIDER_INFO*)&providersDesc[1];
+                                            for (int i = 0; i < providersDesc->NumberOfProviders; i++)
+                                            {
+                                                var name = new string((char*)&bufferPtr[providers[i].ProviderNameOffset]);
+                                                providersByName[name] = providers[i].ProviderGuid;
+                                            }
+                                        }
+                                        break;
+                                    }
                                 }
 
                                 // Error 122 means buffer not big enough. For that error we retry, everything else simply fail.
                                 if (hr != 122)
                                 {
                                     throw new Exception("Failed to enumerate trace providers. TdhEnumerateProviders failed HR = " + hr);
-                                }
-                            }
-
-                            if (providersDesc != null)
-                            {
-                                var providers = (TraceEventNativeMethods.TRACE_PROVIDER_INFO*)&providersDesc[1];
-                                for (int i = 0; i < providersDesc->NumberOfProviders; i++)
-                                {
-                                    var name = new string((char*)&buffer[providers[i].ProviderNameOffset]);
-                                    providersByName[name] = providers[i].ProviderGuid;
                                 }
                             }
 
