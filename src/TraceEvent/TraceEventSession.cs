@@ -1760,13 +1760,35 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         {
                             SortedDictionary<string, Guid> providersByName = new SortedDictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
                             int buffSize = 0;
-                            var hr = TraceEventNativeMethods.TdhEnumerateProviders(null, ref buffSize);
-                            Debug.Assert(hr == 122);     // ERROR_INSUFFICIENT_BUFFER
-                            var buffer = stackalloc byte[buffSize];
-                            var providersDesc = (TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO*)buffer;
+                            byte* buffer;
+                            TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO* providersDesc;
+                            int hr;
 
-                            hr = TraceEventNativeMethods.TdhEnumerateProviders(providersDesc, ref buffSize);
-                            if ((hr == 0) && (providersDesc != null))
+                            // Retry loop to handle the case where the buffer size changes between calls
+                            // This can happen if providers are registered/unregistered between the two calls
+                            for (; ; )
+                            {
+                                hr = TraceEventNativeMethods.TdhEnumerateProviders(null, ref buffSize);
+                                Debug.Assert(hr == 122);     // ERROR_INSUFFICIENT_BUFFER
+
+                                var space = stackalloc byte[buffSize];
+                                buffer = space;
+                                providersDesc = (TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO*)buffer;
+
+                                hr = TraceEventNativeMethods.TdhEnumerateProviders(providersDesc, ref buffSize);
+                                if (hr == 0)
+                                {
+                                    break;
+                                }
+
+                                // Error 122 means buffer not big enough. For that one retry, everything else simply fail.
+                                if (hr != 122)
+                                {
+                                    throw new Exception("TdhEnumerateProviders failed HR = " + hr);
+                                }
+                            }
+
+                            if (providersDesc != null)
                             {
                                 var providers = (TraceEventNativeMethods.TRACE_PROVIDER_INFO*)&providersDesc[1];
                                 for (int i = 0; i < providersDesc->NumberOfProviders; i++)
@@ -1776,10 +1798,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
                                 }
 
                                 s_providersByName = providersByName;
-                            }
-                            else
-                            {
-                                throw new Exception("TdhEnumerateProviders failed HR = " + hr);
                             }
                         }
                     }
