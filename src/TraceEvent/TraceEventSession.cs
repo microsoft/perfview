@@ -1784,7 +1784,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                                     break;
                                 }
 
-                                // Error 122 means buffer not big enough. For that one retry, everything else simply fail.
+                                // Error 122 means buffer not big enough. For that error we retry, everything else simply fail.
                                 if (hr != 122)
                                 {
                                     throw new Exception("Failed to enumerate trace providers. TdhEnumerateProviders failed HR = " + hr);
