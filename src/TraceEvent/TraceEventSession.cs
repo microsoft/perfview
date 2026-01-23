@@ -1760,23 +1760,20 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         {
                             SortedDictionary<string, Guid> providersByName = new SortedDictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
                             int buffSize = 0;
-                            byte* buffer;
-                            TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO* providersDesc;
+                            byte* buffer = null;
+                            TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO* providersDesc = null;
                             int hr;
 
                             // Retry loop to handle the case where the buffer size changes between calls
                             // This can happen if providers are registered/unregistered between the two calls
                             for (; ; )
                             {
-                                hr = TraceEventNativeMethods.TdhEnumerateProviders(null, ref buffSize);
-                                if (hr != 122)     // ERROR_INSUFFICIENT_BUFFER
+                                if (buffSize > 0)
                                 {
-                                    throw new Exception("Failed to get buffer size for provider enumeration. TdhEnumerateProviders failed HR = " + hr);
+                                    var space = stackalloc byte[buffSize];
+                                    buffer = space;
+                                    providersDesc = (TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO*)buffer;
                                 }
-
-                                var space = stackalloc byte[buffSize];
-                                buffer = space;
-                                providersDesc = (TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO*)buffer;
 
                                 hr = TraceEventNativeMethods.TdhEnumerateProviders(providersDesc, ref buffSize);
                                 if (hr == 0)
