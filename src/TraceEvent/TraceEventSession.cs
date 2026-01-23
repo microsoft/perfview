@@ -1796,9 +1796,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
                                     var name = new string((char*)&buffer[providers[i].ProviderNameOffset]);
                                     providersByName[name] = providers[i].ProviderGuid;
                                 }
-
-                                s_providersByName = providersByName;
                             }
+
+                            // Always assign providersByName to avoid NullReferenceException on subsequent lookups
+                            s_providersByName = providersByName;
                         }
                     }
                 }
