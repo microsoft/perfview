@@ -1769,7 +1769,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
                             for (; ; )
                             {
                                 hr = TraceEventNativeMethods.TdhEnumerateProviders(null, ref buffSize);
-                                Debug.Assert(hr == 122);     // ERROR_INSUFFICIENT_BUFFER
+                                if (hr != 122)     // ERROR_INSUFFICIENT_BUFFER
+                                {
+                                    throw new Exception("Failed to get buffer size for provider enumeration. TdhEnumerateProviders failed HR = " + hr);
+                                }
 
                                 var space = stackalloc byte[buffSize];
                                 buffer = space;
@@ -1784,7 +1787,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                                 // Error 122 means buffer not big enough. For that one retry, everything else simply fail.
                                 if (hr != 122)
                                 {
-                                    throw new Exception("TdhEnumerateProviders failed HR = " + hr);
+                                    throw new Exception("Failed to enumerate trace providers. TdhEnumerateProviders failed HR = " + hr);
                                 }
                             }
 
