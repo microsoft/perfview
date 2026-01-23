@@ -8,8 +8,8 @@ namespace TraceEventTests
     public class ProviderNameToGuidTests
     {
         /// <summary>
-        /// Test that ProviderNameToGuid doesn't throw when called and correctly returns
-        /// the GUID for Microsoft-Windows-DotNETRuntime.
+        /// Test that GetProviderGuidByName (which uses ProviderNameToGuid internally) doesn't throw
+        /// when called and correctly returns the GUID for Microsoft-Windows-DotNETRuntime.
         /// This test validates the fix for the race condition that could cause
         /// ERROR_INSUFFICIENT_BUFFER (HR 122) crashes.
         /// </summary>
