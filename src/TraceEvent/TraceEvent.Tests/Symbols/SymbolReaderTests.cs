@@ -158,43 +158,43 @@ namespace TraceEventTests
         {
             // Create a test symbol module that returns SourceLink JSON with both wildcard and exact path mappings
             var testModule = new TestSymbolModuleWithSourceLink(_symbolReader);
-            
+
             // Test wildcard pattern matching
             bool result1 = testModule.GetUrlForFilePathUsingSourceLink(
-                @"C:\src\myproject\subfolder\file.cs", 
-                out string url1, 
+                @"C:\src\myproject\subfolder\file.cs",
+                out string url1,
                 out string relativePath1);
-            
+
             Assert.True(result1, "Should match wildcard pattern");
             Assert.Equal("https://raw.githubusercontent.com/org/repo/commit/subfolder/file.cs", url1);
             Assert.Equal("subfolder/file.cs", relativePath1);
-            
+
             // Test exact path matching
             bool result2 = testModule.GetUrlForFilePathUsingSourceLink(
-                @"c:\external\sdk\inc\header.h", 
-                out string url2, 
+                @"c:\external\sdk\inc\header.h",
+                out string url2,
                 out string relativePath2);
-            
+
             Assert.True(result2, "Should match exact path");
             Assert.Equal("https://example.com/blobs/ABC123?download=true&filename=header.h", url2);
             Assert.Equal("", relativePath2);
-            
+
             // Test another wildcard pattern with escaped characters
             bool result3 = testModule.GetUrlForFilePathUsingSourceLink(
-                @"C:\src\myproject\some folder\another file.cs", 
-                out string url3, 
+                @"C:\src\myproject\some folder\another file.cs",
+                out string url3,
                 out string relativePath3);
-            
+
             Assert.True(result3, "Should match wildcard pattern with spaces");
             Assert.Equal("https://raw.githubusercontent.com/org/repo/commit/some%20folder/another%20file.cs", url3);
             Assert.Equal("some folder/another file.cs", relativePath3);
-            
+
             // Test non-matching path
             bool result4 = testModule.GetUrlForFilePathUsingSourceLink(
-                @"C:\other\path\file.cs", 
-                out string url4, 
+                @"C:\other\path\file.cs",
+                out string url4,
                 out string relativePath4);
-            
+
             Assert.False(result4, "Should not match any pattern");
             Assert.Null(url4);
             Assert.Null(relativePath4);
@@ -417,31 +417,31 @@ namespace TraceEventTests
             var tempDir = Path.GetTempPath();
             var testFile = Path.Combine(tempDir, "test_msfz.pdb");
             var nonMsfzFile = Path.Combine(tempDir, "test_non_msfz.pdb");
-            
+
             try
             {
                 // Write MSFZ header followed by some dummy data
                 var msfzHeader = "Microsoft MSFZ Container";
                 var headerBytes = Encoding.UTF8.GetBytes(msfzHeader);
                 var dummyData = new byte[] { 0x01, 0x02, 0x03, 0x04 };
-                
+
                 using (var stream = File.Create(testFile))
                 {
                     stream.Write(headerBytes, 0, headerBytes.Length);
                     stream.Write(dummyData, 0, dummyData.Length);
                 }
-                
+
                 // Use reflection to call the private IsMsfzFile method
-                var method = typeof(SymbolReader).GetMethod("IsMsfzFile", 
+                var method = typeof(SymbolReader).GetMethod("IsMsfzFile",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                
+
                 var result = (bool)method.Invoke(_symbolReader, new object[] { testFile });
-                
+
                 Assert.True(result, "File with MSFZ header should be detected as MSFZ file");
-                
+
                 // Test with non-MSFZ file
                 File.WriteAllText(nonMsfzFile, "This is not an MSFZ file");
-                
+
                 result = (bool)method.Invoke(_symbolReader, new object[] { nonMsfzFile });
                 Assert.False(result, "File without MSFZ header should not be detected as MSFZ file");
             }
@@ -459,30 +459,30 @@ namespace TraceEventTests
         {
             var tempDir = Path.Combine(Path.GetTempPath(), "msfz_test_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
-            
+
             try
             {
                 var testFile = Path.Combine(tempDir, "test.pdb");
-                
+
                 // Create MSFZ file
                 var msfzHeader = "Microsoft MSFZ Container";
                 var headerBytes = Encoding.UTF8.GetBytes(msfzHeader);
                 var dummyData = new byte[] { 0x01, 0x02, 0x03, 0x04 };
-                
+
                 using (var stream = File.Create(testFile))
                 {
                     stream.Write(headerBytes, 0, headerBytes.Length);
                     stream.Write(dummyData, 0, dummyData.Length);
                 }
-                
+
                 // Since MSFZ logic is now integrated into GetFileFromServer,
                 // this test validates the MSFZ detection logic which remains the same
-                var isMsfzMethod = typeof(SymbolReader).GetMethod("IsMsfzFile", 
+                var isMsfzMethod = typeof(SymbolReader).GetMethod("IsMsfzFile",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                
+
                 var isMsfz = (bool)isMsfzMethod.Invoke(_symbolReader, new object[] { testFile });
                 Assert.True(isMsfz, "File should be detected as MSFZ file");
-                
+
                 // The file moving functionality is now tested through integration tests
                 // since it's part of the GetFileFromServer method
             }
@@ -498,39 +498,40 @@ namespace TraceEventTests
         {
             // This test verifies that our HttpRequestMessage creation includes the MSFZ accept header
             // We'll create a minimal test by checking the private method behavior indirectly
-            
+
             var tempDir = Path.Combine(Path.GetTempPath(), "msfz_http_test_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             var targetPath = Path.Combine(tempDir, "test.pdb");
-            
+
             try
             {
                 // Configure intercepting handler to capture the request with MSFZ content
-                _handler.AddIntercept(new Uri("https://test.example.com/test.pdb"), HttpMethod.Get, HttpStatusCode.OK, () => {
+                _handler.AddIntercept(new Uri("https://test.example.com/test.pdb"), HttpMethod.Get, HttpStatusCode.OK, () =>
+                {
                     var msfzContent = "Microsoft MSFZ Container\x00\x01\x02\x03";
                     return new StringContent(msfzContent, Encoding.UTF8, "application/msfz0");
                 });
-                
+
                 // This will trigger an HTTP request that should include the Accept header
-                var method = typeof(SymbolReader).GetMethod("GetPhysicalFileFromServer", 
+                var method = typeof(SymbolReader).GetMethod("GetPhysicalFileFromServer",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                
-                var result = (bool)method.Invoke(_symbolReader, new object[] { 
-                    "https://test.example.com", 
-                    "test.pdb", 
-                    targetPath, 
-                    null 
+
+                var result = (bool)method.Invoke(_symbolReader, new object[] {
+                    "https://test.example.com",
+                    "test.pdb",
+                    targetPath,
+                    null
                 });
-                
+
                 // Verify that the download was successful
                 Assert.True(result, "GetPhysicalFileFromServer should succeed with MSFZ content");
-                
+
                 // In the new architecture, GetPhysicalFileFromServer just downloads the file
                 // The MSFZ moving logic is handled by GetFileFromServer
                 Assert.True(File.Exists(targetPath), "Downloaded file should exist at target path");
-                
+
                 // Verify the content is MSFZ
-                var isMsfzMethod = typeof(SymbolReader).GetMethod("IsMsfzFile", 
+                var isMsfzMethod = typeof(SymbolReader).GetMethod("IsMsfzFile",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 var isMsfz = (bool)isMsfzMethod.Invoke(_symbolReader, new object[] { targetPath });
                 Assert.True(isMsfz, "Downloaded file should be detected as MSFZ");
@@ -630,7 +631,7 @@ namespace TraceEventTests
         /// </summary>
         private class TestSymbolModuleWithSourceLink : ManagedSymbolModule
         {
-            public TestSymbolModuleWithSourceLink(SymbolReader reader) 
+            public TestSymbolModuleWithSourceLink(SymbolReader reader)
                 : base(reader, "test.pdb")
             {
             }
@@ -656,3 +657,5 @@ namespace TraceEventTests
                 };
             }
         }
+    }
+}
