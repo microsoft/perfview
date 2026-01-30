@@ -529,7 +529,7 @@
         stacks), which typically run in the 5-10% range.&nbsp;&nbsp; In this case it seems
         to be about 6%).&nbsp;&nbsp; The &#39;When&#39; column also clearly shows how one
         instance of RecSpin runs SpinForASecond (for exactly a second) and then calls a
-        RecSpinHelper which does consumes close to 100% of the CPU for the rest of the time.
+        RecSpinHelper which consumes close to 100% of the CPU for the rest of the time.
         .&nbsp;&nbsp; The call Tree is a wonderful top-down synopsis.&nbsp;
     </p>
     <h4>Getting a &#39;coarser&#39; view</h4>
@@ -539,9 +539,9 @@
         use this fact and the &#39;Fold %&#39; functionality to get an even coarser view
         of the &#39;top&#39; of the call tree.&nbsp;&nbsp; With all nodes expanded, simply
         right click on the window and select &#39;Increase Fold %&#39; (or easier hit the
-        F7 key).&nbsp; This increases the number it the Fold % textbox by 1.6X.&nbsp;&nbsp;
+        F7 key).&nbsp; This increases the number in the Fold % textbox by 1.6X.&nbsp;&nbsp;
         By hitting the F7 key repeatedly you keep trimming down the &#39;bottoms&#39; of
-        the stacks until you only see only the methods that use a large amount of CPU time.&nbsp;&nbsp;&nbsp;
+        the stacks until you only see methods that use a large amount of CPU time.&nbsp;&nbsp;&nbsp;
         The following image shows the CallTreeView&nbsp; after hitting F7 seven times.&nbsp;&nbsp;
     </p>
     <center>
