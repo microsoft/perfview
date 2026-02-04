@@ -39,6 +39,10 @@ namespace Graphs
             // Build the spanning tree for paths to root (reuse MemoryGraphStackSource logic)
             m_underlyingStackSource = new MemoryGraphStackSource(graph, log);
             
+            // Initialize the underlying stack source's parent array by calling ForEach
+            // This builds the spanning tree that we need for GetCallerIndex to work correctly
+            m_underlyingStackSource.ForEach(_ => { });
+            
             // Build the fragmentation blame data structures
             BuildFragmentationData();
         }
@@ -52,21 +56,14 @@ namespace Graphs
 
             // Step 1: Sort all nodes by address and calculate max address
             var nodesByAddress = new List<NodeAddressPair>();
-            Address maxAddr = 0;
             for (NodeIndex nodeIdx = 0; nodeIdx < m_graph.NodeIndexLimit; nodeIdx++)
             {
                 Address addr = m_graph.GetAddress(nodeIdx);
                 if (addr != 0) // Skip nodes without addresses (pseudo-nodes, root, etc.)
                 {
                     nodesByAddress.Add(new NodeAddressPair { NodeIndex = nodeIdx, Address = addr });
-                    if (addr > maxAddr)
-                    {
-                        maxAddr = addr;
-                    }
                 }
             }
-
-            m_maxAddress = maxAddr;
 
             // Sort by address
             nodesByAddress.Sort((a, b) => a.Address.CompareTo(b.Address));
@@ -103,11 +100,7 @@ namespace Graphs
                         if (precedingNodeType.Name != "Free")
                         {
                             // Add this Free object's size to the fragmentation cost of the preceding object
-                            int currentCost;
-                            if (!m_fragmentationCost.TryGetValue(precedingNodeIdx, out currentCost))
-                            {
-                                currentCost = 0;
-                            }
+                            m_fragmentationCost.TryGetValue(precedingNodeIdx, out int currentCost);
                             m_fragmentationCost[precedingNodeIdx] = currentCost + freeSize;
                         }
                     }
@@ -147,7 +140,6 @@ namespace Graphs
                 // Create a sample for this node
                 m_sampleStorage.Metric = fragmentationCost;
                 m_sampleStorage.Count = 1;
-                m_sampleStorage.TimeRelativeMSec = m_graph.GetAddress(nodeIdx);
                 m_sampleStorage.SampleIndex = (StackSourceSampleIndex)nodeIdx;
                 m_sampleStorage.StackIndex = (StackSourceCallStackIndex)nodeIdx;
 
@@ -188,7 +180,6 @@ namespace Graphs
             m_sampleStorage.Count = 1;
             m_sampleStorage.SampleIndex = sampleIndex;
             m_sampleStorage.StackIndex = (StackSourceCallStackIndex)nodeIdx;
-            m_sampleStorage.TimeRelativeMSec = m_graph.GetAddress(nodeIdx);
 
             return m_sampleStorage;
         }
@@ -200,21 +191,17 @@ namespace Graphs
 
         public override int CallStackIndexLimit
         {
-            get { return (int)m_graph.NodeIndexLimit; }
+            get { return m_underlyingStackSource.CallStackIndexLimit; }
         }
 
         public override int CallFrameIndexLimit
         {
-            get { return (int)m_graph.NodeTypeIndexLimit; }
+            get { return m_underlyingStackSource.CallFrameIndexLimit; }
         }
 
         public override double SampleTimeRelativeMSecLimit
         {
-            get
-            {
-                // Return the cached maximum address
-                return m_maxAddress;
-            }
+            get { return 0; }
         }
 
         #region private
@@ -239,8 +226,6 @@ namespace Graphs
         // List of nodes that are blamed for fragmentation (for enumeration)
         private List<NodeIndex> m_blamedNodes;
 
-        // Cached maximum address in the heap
-        private Address m_maxAddress;
         #endregion
     }
 }

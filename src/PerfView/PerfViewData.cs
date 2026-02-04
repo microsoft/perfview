@@ -9157,7 +9157,8 @@ namespace PerfView
             }
             else if (stackSourceName.Equals(FragmentationBlameViewName))
             {
-                stackWindow.CallTreeTab.IsSelected = true;      // start with the call tree view for fragmentation blame
+                stackWindow.FoldRegExTextBox.Text = "";
+                stackWindow.ExcludeRegExTextBox.Text = "";
             }
         }
 

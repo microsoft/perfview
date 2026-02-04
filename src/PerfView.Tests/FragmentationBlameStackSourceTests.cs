@@ -5,6 +5,7 @@
 // However, it documents the expected behavior for validation on Windows.
 
 using Graphs;
+using Microsoft.Diagnostics.Tracing.Stacks;
 using System;
 using System.Collections.Generic;
 using System.IO;
