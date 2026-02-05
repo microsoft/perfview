@@ -1726,15 +1726,36 @@ namespace Microsoft.Diagnostics.Symbols
 
             if (_sourceLinkMapping != null)
             {
-                foreach (Tuple<string, string> map in _sourceLinkMapping)
+                // First, try to find an exact match for the buildTimeFilePath (non-wildcard entries)
+                foreach (Tuple<string, string, bool> map in _sourceLinkMapping)
                 {
                     string path = map.Item1;
-                    string urlReplacement = map.Item2;
+                    string urlTemplate = map.Item2;
+                    bool isWildcard = map.Item3;
 
-                    if (buildTimeFilePath.StartsWith(path, StringComparison.OrdinalIgnoreCase))
+                    if (!isWildcard && buildTimeFilePath.Equals(path, StringComparison.OrdinalIgnoreCase))
                     {
+                        // Exact match found - this is a direct file mapping without wildcards
+                        relativeFilePath = "";
+                        url = urlTemplate; // Use the URL as-is for exact matches
+                        return true;
+                    }
+                }
+
+                // If no exact match, try prefix matching (wildcard patterns only)
+                // Per spec rule 2: only paths that had a wildcard (*) should be used for prefix matching
+                foreach (Tuple<string, string, bool> map in _sourceLinkMapping)
+                {
+                    string path = map.Item1;
+                    string urlTemplate = map.Item2;
+                    bool isWildcard = map.Item3;
+
+                    // Only use wildcard patterns for prefix matching
+                    if (isWildcard && buildTimeFilePath.StartsWith(path, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Prefix match - extract the relative path and substitute into URL
                         relativeFilePath = buildTimeFilePath.Substring(path.Length, buildTimeFilePath.Length - path.Length).Replace('\\', '/');
-                        url = urlReplacement.Replace("*", string.Join("/", relativeFilePath.Split('/').Select(Uri.EscapeDataString)));
+                        url = urlTemplate.Replace("*", string.Join("/", relativeFilePath.Split('/').Select(Uri.EscapeDataString)));
                         return true;
                     }
                 }
@@ -1746,11 +1767,12 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// Parses SourceLink information and returns a list of filepath -> url Prefix tuples.  
+        /// Parses SourceLink information and returns a list of (filepath, url, isWildcard) tuples.  
+        /// Supports both wildcard patterns ("path\\*" -> "url/*") and exact path mappings ("path\\file.h" -> "url").
         /// </summary>  
-        private List<Tuple<string, string>> ParseSourceLinkJson(IEnumerable<string> sourceLinkContents)
+        private List<Tuple<string, string, bool>> ParseSourceLinkJson(IEnumerable<string> sourceLinkContents)
         {
-            List<Tuple<string, string>> ret = null;
+            List<Tuple<string, string, bool>> ret = null;
             foreach (string sourceLinkJson in sourceLinkContents)
             {
                 // TODO this is not right for corner cases (e.g. file paths with " or , } in them)
@@ -1760,24 +1782,26 @@ namespace Microsoft.Diagnostics.Symbols
                     string mappings = m.Groups[1].Value;
                     while (!string.IsNullOrWhiteSpace(mappings))
                     {
-                        m = Regex.Match(m.Groups[1].Value, "^\\s*\"(.*?)\"\\s*:\\s*\"(.*?)\"\\s*,?(.*)", RegexOptions.Singleline);
+                        m = Regex.Match(mappings, "^\\s*\"(.*?)\"\\s*:\\s*\"(.*?)\"\\s*,?(.*)", RegexOptions.Singleline);
                         if (m.Success)
                         {
                             if (ret == null)
                             {
-                                ret = new List<Tuple<string, string>>();
+                                ret = new List<Tuple<string, string, bool>>();
                             }
 
                             string pathSpec = m.Groups[1].Value.Replace("\\\\", "\\");
-                            if (pathSpec.EndsWith("*"))
+                            string urlSpec = m.Groups[2].Value;
+                            bool isWildcard = pathSpec.EndsWith("*");
+                            
+                            // Support both wildcard patterns and exact path mappings
+                            if (isWildcard)
                             {
-                                pathSpec = pathSpec.Substring(0, pathSpec.Length - 1);      // Remove the *
-                                ret.Add(new Tuple<string, string>(pathSpec, m.Groups[2].Value));
+                                // Wildcard pattern: remove the * from the path
+                                pathSpec = pathSpec.Substring(0, pathSpec.Length - 1);
                             }
-                            else
-                            {
-                                _log.WriteLine("Warning: {0} does not end in *, skipping this mapping.", pathSpec);
-                            }
+                            // Add the mapping with wildcard flag
+                            ret.Add(new Tuple<string, string, bool>(pathSpec, urlSpec, isWildcard));
 
                             mappings = m.Groups[3].Value;
                         }
@@ -1799,7 +1823,7 @@ namespace Microsoft.Diagnostics.Symbols
 
         private string _pdbPath;
         private SymbolReader _reader;
-        private List<Tuple<string, string>> _sourceLinkMapping;      // Used by SourceLink to map build paths to URLs (see GetUrlForFilePath)
+        private List<Tuple<string, string, bool>> _sourceLinkMapping;      // Used by SourceLink to map build paths to URLs (path, url, isWildcard)
         private bool _sourceLinkMappingInited;                       // Lazy init flag. 
         #endregion
     }
