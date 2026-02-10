@@ -2001,5 +2001,40 @@ namespace PerfView
             // Save preference
             App.UserConfigData["EventWindowShowTimeStampColumns"] = "false";
         }
+
+        /// <summary>
+        /// When Shift is held, redirect mouse wheel events to horizontal scrolling.
+        /// </summary>
+        private void Grid_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (Keyboard.Modifiers == ModifierKeys.Shift)
+            {
+                var scrollViewer = FindVisualChild<ScrollViewer>((DependencyObject)sender);
+                if (scrollViewer != null)
+                {
+                    scrollViewer.ScrollToHorizontalOffset(scrollViewer.HorizontalOffset - e.Delta);
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T found)
+                {
+                    return found;
+                }
+
+                T result = FindVisualChild<T>(child);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+            return null;
+        }
     }
 }

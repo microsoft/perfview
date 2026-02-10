@@ -249,6 +249,7 @@
                     ToolTip="Click on Update button to update."
                     SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
                     SelectedCellsChanged="SelectedCellsChanged"
+                    PreviewMouseWheel="Grid_PreviewMouseWheel"
                     AlternatingRowBackground="{DynamicResource AlternateRowBackground}" 
                     AutomationProperties.Name="Events Table"
                     ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}">
