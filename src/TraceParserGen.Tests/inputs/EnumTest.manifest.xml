@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrumentationManifest xmlns="http://schemas.microsoft.com/win/2004/08/events">
+  <instrumentation xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events">
+
+    <events xmlns="http://schemas.microsoft.com/win/2004/08/events">
+      <provider name="EnumTestProvider"
+                guid="{22222222-3333-4444-5555-666677778888}"
+                symbol="ENUM_TEST_PROVIDER">
+
+        <keywords>
+          <keyword name="Default" mask="0x1" />
+        </keywords>
+
+        <tasks>
+          <task name="StatusCheck" value="1" />
+        </tasks>
+
+        <valueMap name="StatusMap">
+          <map value="0" message="Unknown" />
+          <map value="1" message="Active" />
+          <map value="2" message="Inactive" />
+        </valueMap>
+
+        <bitMap name="AccessFlagsMap">
+          <map value="0x1" message="Read" />
+          <map value="0x2" message="Write" />
+          <map value="0x4" message="Execute" />
+        </bitMap>
+
+        <templates>
+          <template tid="StatusTemplate">
+            <data name="Status" inType="win:UInt32" map="StatusMap" />
+            <data name="Flags" inType="win:UInt32" map="AccessFlagsMap" />
+            <data name="Description" inType="win:UnicodeString" />
+          </template>
+        </templates>
+
+        <events>
+          <event value="1"
+                 symbol="StatusCheckEvent"
+                 task="StatusCheck"
+                 template="StatusTemplate"
+                 keywords="Default"
+                 level="win:Informational" />
+        </events>
+
+      </provider>
+    </events>
+  </instrumentation>
+</instrumentationManifest>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrumentationManifest xmlns="http://schemas.microsoft.com/win/2004/08/events">
+  <instrumentation xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events">
+
+    <events xmlns="http://schemas.microsoft.com/win/2004/08/events">
+      <!-- Provider with dashes in name: ClassNamePrefix should be "Advanced" (last segment after dash) -->
+      <provider name="Microsoft-Test-Advanced"
+                guid="{33333333-4444-5555-6666-777788889999}"
+                symbol="MS_TEST_ADVANCED">
+
+        <keywords>
+          <!-- ETW_KEYWORD_ prefix should be stripped and converted to CamelCase -->
+          <keyword name="ETW_KEYWORD_SESSION" mask="0x1" />
+          <keyword name="ETW_KEYWORD_PROCESS_LIFECYCLE" mask="0x2" />
+          <keyword name="NormalKeyword" mask="0x4" />
+        </keywords>
+
+        <tasks>
+          <task name="MemoryAlloc" value="1" />
+          <task name="EmptyEvent" value="2" />
+          <task name="PaddedEvent" value="3" />
+          <task name="PointerEvent" value="4" />
+        </tasks>
+
+        <templates>
+          <template tid="PointerTemplate">
+            <data name="Address" inType="win:Pointer" />
+            <data name="Size" inType="win:UInt64" />
+          </template>
+          <!-- tid_ prefix template: GetTemplateNameForEvent should produce "PaddedEventArgs" -->
+          <template tid="tid_PaddedEvent">
+            <data name="Id" inType="win:UInt32" />
+            <data name="Reserved1" inType="win:UInt32" />
+            <data name="Pad1" inType="win:UInt32" />
+            <data name="Value" inType="win:Int32" />
+          </template>
+        </templates>
+
+        <events>
+          <!-- Event with Pointer type field -->
+          <event value="1"
+                 symbol="MemoryAllocEvent"
+                 task="PointerEvent"
+                 template="PointerTemplate"
+                 keywords="ETW_KEYWORD_SESSION"
+                 level="win:Verbose" />
+          <!-- Event without template/fields: uses EmptyTraceData -->
+          <event value="2"
+                 symbol="EmptyEventSymbol"
+                 task="EmptyEvent"
+                 keywords="NormalKeyword"
+                 level="win:Informational" />
+          <!-- Event with tid_ prefix template and reserved/pad fields -->
+          <event value="3"
+                 symbol="PaddedEventSymbol"
+                 task="PaddedEvent"
+                 template="tid_PaddedEvent"
+                 keywords="ETW_KEYWORD_PROCESS_LIFECYCLE"
+                 level="win:Warning" />
+        </events>
+
+      </provider>
+    </events>
+  </instrumentation>
+</instrumentationManifest>

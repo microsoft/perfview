@@ -1,85 +1,48 @@
 # TraceParserGen.Tests
 
-This project contains automated tests for the TraceParserGen tool, which generates C# parser classes from ETW manifests or EventSource implementations.
+This project contains automated tests for the TraceParserGen tool, which generates C# parser classes from ETW manifests.
 
 ## Overview
 
-TraceParserGen.Tests implements a comprehensive test framework that validates the entire code generation pipeline:
+TraceParserGen.Tests validates the TraceParserGen code generation pipeline through 60 test cases covering:
 
-1. **Run TraceParserGen.exe** with test input (manifest file or EventSource DLL)
-2. **Verify successful generation** of C# parser files
-3. **Create a temporary console project** that references TraceEvent and includes the generated parser
-4. **Build the temporary project** to ensure the generated code compiles
-5. **Run the test application** to verify no runtime errors or assertions occur
+1. **Simple manifest content validation** - Class names, namespaces, provider GUIDs, constructors, usings, keywords, events, payload accessors, Dispatch/Validate/ToXml/EnumerateTemplates generation
+2. **Multi-type data field tests** - UInt8, UInt16, Int32, Int64, Float, Double, Boolean, GUID, FILETIME, UnicodeString, AnsiString, HexInt32 field accessors and correct byte offsets
+3. **Opcode tests** - Events with win:Start/win:Stop opcodes, TaskName+OpcodeName event naming, shared template deduplication
+4. **Enumeration tests** - valueMap (C# enum), bitMap ([Flags] enum), enum-typed field accessors with cast expressions
+5. **Advanced feature tests** - Special character stripping (ToCSharpName), ETW_KEYWORD_ prefix normalization (FixKeywordName), empty events (EmptyTraceData), tid_ prefix template naming, Reserved/Pad field skipping, win:Pointer/Address type with HostOffset, XmlAttribHex for Address fields
+6. **Template sharing tests** - Multiple events sharing one payload class, reserved C# keyword field renaming (object → Object)
+7. **Boolean and Pointer type tests** - win:Boolean → `GetInt32At() != 0`, win:Pointer → Address/GetAddressAt, HostOffset for subsequent fields
+8. **Qualifier flag tests** - `/Internal`, `/NeedsState`, combined `/Internal /NeedsState`, `/Verbose`
+9. **Output file tests** - Default .cs extension, explicit output path
+10. **Build integration test** - Generate, compile, and instantiate parser in a real application
+11. **Error handling tests** - Missing manifest
+12. **Field offset and sizing tests** - Correct byte offset computation for sequential fixed-size and variable-size fields
+13. **PayloadValue and static helper tests** - PayloadValue(index), GetKeywords(), GetProviderName(), GetProviderGuid()
 
-## Test Structure
+## Test Files
 
-### Test Files
-
-- **ParserGenerationTests.cs**: Main test class containing test cases for parser generation
-- **TestBase.cs**: Base class providing common test infrastructure and helper methods
-- **inputs/**: Directory containing test input files (manifests, sample DLLs)
-
-### Sample Test
-
-The `CanGenerateParserFromManifest` test demonstrates the full pipeline:
-- Uses a simple ETW manifest (`SimpleTest.manifest.xml`) as input
-- Generates a parser class from the manifest
-- Creates a temporary console app that uses reflection to find and instantiate the parser
-- Builds and runs the console app to ensure everything works
-
-## Requirements
-
-- **Windows**: Tests require Windows with .NET Framework support to run TraceParserGen.exe
-- **TraceParserGen**: The TraceParserGen project must be built before running tests
-- **TraceEvent**: The TraceEvent project must be built before running tests
+- **ParserGenerationTests.cs**: Main test class with 60 test cases across 14 categories
+- **TestBase.cs**: Base class providing TraceParserGen execution helpers and temp directory management
+- **inputs/SimpleTest.manifest.xml**: Two tasks, UnicodeString and Int32 fields, 1 keyword
+- **inputs/MultiType.manifest.xml**: 12+ field types across 3 events and 3 keywords
+- **inputs/OpcodeTest.manifest.xml**: Events with win:Start/win:Stop opcodes sharing a template
+- **inputs/EnumTest.manifest.xml**: valueMap and bitMap with enum-typed fields
+- **inputs/AdvancedFeatures.manifest.xml**: Provider with dashes, ETW_KEYWORD_ keywords, empty events, tid_ prefix templates, Reserved/Pad fields, Pointer type
+- **inputs/TemplateSharingTest.manifest.xml**: Two events sharing one template, special characters in provider name, reserved keyword field name
+- **inputs/BoolPointerTest.manifest.xml**: Boolean and Pointer fields with HostOffset offset computation
 
 ## Running Tests
 
 ```bash
-# Build dependencies first
-dotnet build src/TraceParserGen/TraceParserGen.csproj -c Release
-dotnet build src/TraceEvent/TraceEvent.csproj -c Release
-
-# Run tests
 dotnet test src/TraceParserGen.Tests/TraceParserGen.Tests.csproj -c Release
 ```
 
-## Adding New Tests
+## Known TraceParserGen Limitations
 
-To add a new test case:
+The integration test documents two known code generation issues in TraceParserGen:
 
-1. Add your test input file (manifest or DLL) to the `inputs/` directory
-2. Create a new test method in `ParserGenerationTests.cs`
-3. Follow the pattern of the existing `CanGenerateParserFromManifest` test:
-   - Call `RunTraceParserGen()` to generate the parser
-   - Call `CreateTestConsoleApp()` to create a test application
-   - Call `BuildTestApp()` to build the test application
-   - Call `RunTestApp()` to verify the generated code works
+1. **Missing TaskGuid declarations**: TraceParserGen references `XxxTaskGuid` fields but never generates their definitions (see TODO in TraceParserGen.cs ~line 307)
+2. **Wrong RegisterTemplate method**: TraceParserGen generates calls to `RegisterTemplate()` which doesn't exist on `TraceEventParser`; it should generate `source.RegisterEventTemplate()` instead
 
-## Test Console Application
-
-The test creates a temporary console application that:
-- References the Microsoft.Diagnostics.Tracing.TraceEvent library
-- Includes the generated parser C# file
-- Uses reflection to discover all TraceEventParser-derived types
-- Verifies the parsers can be instantiated and have the expected methods
-
-This approach allows us to test that the generated code:
-- Compiles successfully
-- Contains valid C# syntax
-- Implements the expected TraceEventParser interface
-- Can be used in a real application
-
-## Platform Notes
-
-Tests are designed to run on Windows where TraceParserGen.exe (a .NET Framework application) can run natively. On non-Windows platforms, tests will skip with an informational message.
-
-## Future Enhancements
-
-Potential improvements to the test framework:
-- Add tests for EventSource-based parser generation (using DLLs as input)
-- Add tests for complex manifest scenarios (multiple providers, complex templates)
-- Add validation of generated parser output against expected baselines
-- Add performance benchmarks for parser generation
-- Add tests that actually parse ETL files with the generated parsers
+The integration test applies workarounds for these issues to validate that the rest of the generated code is structurally correct.

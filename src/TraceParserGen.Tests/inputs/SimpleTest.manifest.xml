@@ -12,43 +12,39 @@
                 resourceFileName="SimpleTest.dll">
 
         <keywords>
-          <keyword name="Diagnostics" mask="0x1" message="Diagnostics events" />
+          <keyword name="Diagnostics" mask="0x1" />
         </keywords>
 
+        <tasks>
+          <task name="SimpleEvent" value="1" />
+          <task name="ValueEvent" value="2" />
+        </tasks>
+
         <templates>
-          <template tid="StringTemplate">
+          <template tid="SimpleEvent">
             <data name="Message" inType="win:UnicodeString" />
           </template>
-          <template tid="IntTemplate">
+          <template tid="ValueEvent">
             <data name="Value" inType="win:Int32" />
           </template>
         </templates>
 
         <events>
-          <event value="1" 
-                 symbol="SimpleEvent" 
-                 template="StringTemplate" 
-                 keywords="Diagnostics" 
-                 level="win:Informational" 
-                 message="$(string.SimpleTestProvider.SimpleEvent.EventMessage)" />
-          <event value="2" 
-                 symbol="ValueEvent" 
-                 template="IntTemplate" 
-                 keywords="Diagnostics" 
-                 level="win:Informational" 
-                 message="$(string.SimpleTestProvider.ValueEvent.EventMessage)" />
+          <event value="1"
+                 symbol="SimpleEvent"
+                 task="SimpleEvent"
+                 template="SimpleEvent"
+                 keywords="Diagnostics"
+                 level="win:Informational" />
+          <event value="2"
+                 symbol="ValueEvent"
+                 task="ValueEvent"
+                 template="ValueEvent"
+                 keywords="Diagnostics"
+                 level="win:Informational" />
         </events>
 
       </provider>
     </events>
   </instrumentation>
-
-  <localization>
-    <resources culture="en-US">
-      <stringTable>
-        <string id="SimpleTestProvider.SimpleEvent.EventMessage" value="Simple event: %1" />
-        <string id="SimpleTestProvider.ValueEvent.EventMessage" value="Value event: %1" />
-      </stringTable>
-    </resources>
-  </localization>
 </instrumentationManifest>
