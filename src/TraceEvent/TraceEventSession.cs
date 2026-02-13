@@ -1760,27 +1760,47 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         {
                             SortedDictionary<string, Guid> providersByName = new SortedDictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
                             int buffSize = 0;
-                            var hr = TraceEventNativeMethods.TdhEnumerateProviders(null, ref buffSize);
-                            Debug.Assert(hr == 122);     // ERROR_INSUFFICIENT_BUFFER
-                            var buffer = stackalloc byte[buffSize];
-                            var providersDesc = (TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO*)buffer;
+                            byte[] buffer = null;
+                            int hr;
 
-                            hr = TraceEventNativeMethods.TdhEnumerateProviders(providersDesc, ref buffSize);
-                            if ((hr == 0) && (providersDesc != null))
+                            // Retry loop to handle the case where the buffer size changes between calls
+                            // This can happen if providers are registered/unregistered between the two calls
+                            for (; ; )
                             {
-                                var providers = (TraceEventNativeMethods.TRACE_PROVIDER_INFO*)&providersDesc[1];
-                                for (int i = 0; i < providersDesc->NumberOfProviders; i++)
+                                if (buffSize > 0)
                                 {
-                                    var name = new string((char*)&buffer[providers[i].ProviderNameOffset]);
-                                    providersByName[name] = providers[i].ProviderGuid;
+                                    buffer = new byte[buffSize];
                                 }
 
-                                s_providersByName = providersByName;
+                                fixed (byte* bufferPtr = buffer)
+                                {
+                                    var providersDesc = (TraceEventNativeMethods.PROVIDER_ENUMERATION_INFO*)bufferPtr;
+
+                                    hr = TraceEventNativeMethods.TdhEnumerateProviders(providersDesc, ref buffSize);
+                                    if (hr == 0)
+                                    {
+                                        if (providersDesc != null)
+                                        {
+                                            var providers = (TraceEventNativeMethods.TRACE_PROVIDER_INFO*)&providersDesc[1];
+                                            for (int i = 0; i < providersDesc->NumberOfProviders; i++)
+                                            {
+                                                var name = new string((char*)&bufferPtr[providers[i].ProviderNameOffset]);
+                                                providersByName[name] = providers[i].ProviderGuid;
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+
+                                // Error 122 means buffer not big enough. For that error we retry, everything else simply fail.
+                                if (hr != 122)
+                                {
+                                    throw new Exception("Failed to enumerate trace providers. TdhEnumerateProviders failed HR = " + hr);
+                                }
                             }
-                            else
-                            {
-                                throw new Exception("TdhEnumerateProviders failed HR = " + hr);
-                            }
+
+                            // Always assign providersByName to avoid NullReferenceException on subsequent lookups
+                            s_providersByName = providersByName;
                         }
                     }
                 }
@@ -3125,7 +3145,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// Returns the GUID of all event provider that either has registered itself in a running process (that is
         /// it CAN be enabled) or that a session has enabled (even if no instances of the provider exist in any process).
         /// <para>
-        /// This is a relatively small list (less than 1000), unlike GetPublishedProviders.
+        /// This list can be quite large (often 2000+ entries), potentially larger than GetPublishedProviders.
         /// </para>
         /// </summary>
         public static unsafe List<Guid> GetRegisteredOrEnabledProviders()

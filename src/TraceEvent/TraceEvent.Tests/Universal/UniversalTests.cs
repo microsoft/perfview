@@ -105,6 +105,9 @@ namespace TraceEventTests
             ELFProcessMappingSymbolMetadata peMetadata = (ELFProcessMappingSymbolMetadata)metadata;
             Assert.Null(peMetadata.DebugLink);
             Assert.Null(peMetadata.BuildId);
+            Assert.Equal((ulong)0, peMetadata.VirtualAddress);
+            Assert.Equal((ulong)0, peMetadata.FileOffset);
+
         }
     }
 }

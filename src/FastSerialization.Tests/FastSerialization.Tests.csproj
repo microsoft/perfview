@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net462;net8.0</TargetFrameworks>
+    <RootNamespace>FastSerializationTests</RootNamespace>
+    <AssemblyName>FastSerializationTests</AssemblyName>
+    <Description>Unit tests for FastSerialization.</Description>
+    <Copyright>Copyright © Microsoft 2025</Copyright>
+
+    <!-- Test projects can automatically generate the necessary binding redirects -->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.abstractions" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PerfView.TestUtilities\PerfView.TestUtilities.csproj" />
+    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\PerfView.TestUtilities\DebugAssertionTests.cs">
+      <Link>DebugAssertionTests.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="app.config" />
+    <Content Include="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
+  </ItemGroup>
+
+</Project>

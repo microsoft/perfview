@@ -480,6 +480,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
         public string DebugLink { get; set; }
         [JsonPropertyName("build_id")]
         public string BuildId { get; set; }
+        [JsonPropertyName("p_vaddr")]
+        public ulong VirtualAddress { get; set; }
+        [JsonPropertyName("p_offset")]
+        public ulong FileOffset { get; set; }
     }
 
     internal enum ProcessMappingSymbolMetadataFileType

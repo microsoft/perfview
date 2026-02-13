@@ -282,7 +282,7 @@ Type format is:
 enum TypeCode
 {
   Object = 1,                        // Concatenate together all of the encoded fields
-  Boolean = 3,                       // A 4-byte LE integer with value 0=false and 1=true.  
+  Boolean32 = 3,                     // A 4-byte LE integer with value 0=false and 1=true.  
   UTF16CodeUnit = 4,                 // a 2-byte UTF16 code unit (Often this is a character, but some characters need more than one code unit to encode)
   SByte = 5,                         // 1-byte signed integer
   Byte = 6,                          // 1-byte unsigned integer
@@ -306,9 +306,10 @@ enum TypeCode
   RelLoc = 24,                       // New in V6: An array at a relative location within the payload. 
                                      // Format: 4 bytes where the high 16 bits are size and low 16 bits are position relative to after this field.
                                      // Size is measured in bytes, not elements. The element type must be fixed sized.
-  DataLoc = 25                       // New in V6: An absolute data location within the payload.
+  DataLoc = 25,                      // New in V6: An absolute data location within the payload.
                                      // Format: 4 bytes where the high 16 bits are size and low 16 bits are position relative to start of the event parameters buffer.
                                      // Size is measured in bytes, not elements. The element type must be fixed sized.
+  Boolean8 = 26                      // New in V6: A 1-byte boolean where 0=false and 1=true.
 }
 ```
 
@@ -560,7 +561,7 @@ Last, we are taking the opportunity to simplify the metadata encoding format. Th
 1. Metadata rows are no longer encoded with EventHeaders.
 2. Most of the metadata fields are now optional and the top-level format of a metadata row was redesigned.
 3. The 2nd copy of field information that was added by V2Params in version 5 has been removed. It only existed to support adding array support in a non-breaking way and now arrays are supported in the same FieldDescriptions as all the other types.
-4. New payload field types were added: VarInt, VarUInt, FixedLengthArray, UTF8CodeUnit, RelLoc, and DataLoc. 
+4. New payload field types were added: VarInt, VarUInt, FixedLengthArray, UTF8CodeUnit, RelLoc, DataLoc, and Boolean8. The existing Boolean type was renamed to Boolean32 to avoid ambiguity. 
 5. Strings in the metadata are now UTF8 rather than UTF16
 
 #### Extended support for event labels

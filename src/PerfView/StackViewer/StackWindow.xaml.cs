@@ -2764,10 +2764,18 @@ namespace PerfView
             var result = saveDialog.ShowDialog();
             if (result == true)
             {
-                if (FlameGraphCanvas.IsEmpty || m_RedrawFlameGraphWhenItBecomesVisible)
-                    RedrawFlameGraph();
+                try
+                {
+                    if (FlameGraphCanvas.IsEmpty || m_RedrawFlameGraphWhenItBecomesVisible)
+                        RedrawFlameGraph();
 
-                FlameGraph.Export(FlameGraphCanvas, saveDialog.FileName);
+                    FlameGraph.Export(FlameGraphCanvas, saveDialog.FileName);
+                    StatusBar.Log($"Saved flame graph to {saveDialog.FileName}");
+                }
+                catch (ArgumentOutOfRangeException ex)
+                {
+                    StatusBar.LogError($"Failed to save flame graph: {ex.Message}");
+                }
             }
         }
 
