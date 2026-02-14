@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrumentationManifest xmlns="http://schemas.microsoft.com/win/2004/08/events">
+  <instrumentation xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events">
+
+    <events xmlns="http://schemas.microsoft.com/win/2004/08/events">
+      <!-- Provider with special characters to test ToCSharpName -->
+      <provider name="My.Special-Provider (v2)"
+                guid="{44444444-5555-6666-7777-888899990000}"
+                symbol="MY_SPECIAL_PROVIDER">
+
+        <keywords>
+          <keyword name="Default" mask="0x1" />
+        </keywords>
+
+        <tasks>
+          <task name="ReadOp" value="1" />
+          <task name="WriteOp" value="2" />
+        </tasks>
+
+        <templates>
+          <!-- Shared template: used by both events -->
+          <template tid="SharedDataTemplate">
+            <data name="Id" inType="win:UInt32" />
+            <data name="object" inType="win:UnicodeString" />
+          </template>
+        </templates>
+
+        <events>
+          <!-- Two events sharing the same template -->
+          <event value="1"
+                 symbol="ReadOpEvent"
+                 task="ReadOp"
+                 template="SharedDataTemplate"
+                 keywords="Default"
+                 level="win:Informational" />
+          <event value="2"
+                 symbol="WriteOpEvent"
+                 task="WriteOp"
+                 template="SharedDataTemplate"
+                 keywords="Default"
+                 level="win:Informational" />
+        </events>
+
+      </provider>
+    </events>
+  </instrumentation>
+</instrumentationManifest>
