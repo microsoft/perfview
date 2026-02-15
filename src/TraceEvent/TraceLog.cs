@@ -342,7 +342,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             clrRundownParser.MethodDCStopVerbose += delegate (MethodLoadUnloadVerboseTraceData data)
             {
                 // Note: we need this also for non-jitted methods, otherwise we won't resolve some frames, for example:
-                //      "System.Private.CoreLib.il" - "System.Threading.Tasks.Task.Wait()"
+                //      "System.Private.CoreLib" - "System.Threading.Tasks.Task.Wait()"
                 TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 process.InsertJITTEDMethod(data.MethodStartAddress, data.MethodSize, delegate ()
                 {
@@ -7041,18 +7041,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             // This is the CoreCLR (First Generation) ReadyToRun case.   There still is a native PDB that is distinct
             // from the IL PDB.   Unlike CoreCLR NGEN, it is logged as a IL file, but it has native code (and thus an NativePdbSignature)
-            // We treat the image as a native image and dummy up a il image to hang the IL PDB information on.
+            // We treat the image as a native image.  The IL module uses the same path since there's no separate IL-only file on disk.
             else if (nativeModulePath.Length == 0 && nativePdbSignature != Guid.Empty && data.ManagedPdbSignature != Guid.Empty)
             {
-                // And make up a fake .il.dll module for the IL
-                var suffixPos = ilModulePath.LastIndexOf(".", StringComparison.OrdinalIgnoreCase);
-                if (0 < suffixPos)
-                {
-                    // We treat the image as the native path
-                    nativeModulePath = ilModulePath;
-                    // and make up a dummy IL path.
-                    ilModulePath = ilModulePath.Substring(0, suffixPos) + ".il" + ilModulePath.Substring(suffixPos);
-                }
+                nativeModulePath = ilModulePath;
             }
 
             int index;
@@ -8330,7 +8322,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         {
                             // In CoreCLR, the managed image IS the native image, so has a .ni suffix, remove it if present.
                             var moduleFileName = moduleFile.ManagedModule.Name;
-                            if (moduleFileName.EndsWith(".ni", StringComparison.OrdinalIgnoreCase) || moduleFileName.EndsWith(".il", StringComparison.OrdinalIgnoreCase))
+                            if (moduleFileName.EndsWith(".ni", StringComparison.OrdinalIgnoreCase))
                             {
                                 moduleFileName = moduleFileName.Substring(0, moduleFileName.Length - 3);
                             }
