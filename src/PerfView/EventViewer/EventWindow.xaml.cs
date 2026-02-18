@@ -2014,13 +2014,14 @@ namespace PerfView
                 if (m_gridScrollViewer == null)
                 {
                     m_gridScrollViewer = FindVisualChild<ScrollViewer>((DependencyObject)sender);
+                    if (m_gridScrollViewer == null)
+                    {
+                        return;
+                    }
                 }
 
-                if (m_gridScrollViewer != null)
-                {
-                    m_gridScrollViewer.ScrollToHorizontalOffset(m_gridScrollViewer.HorizontalOffset - e.Delta);
-                    e.Handled = true;
-                }
+                m_gridScrollViewer.ScrollToHorizontalOffset(m_gridScrollViewer.HorizontalOffset - e.Delta);
+                e.Handled = true;
             }
         }
 
