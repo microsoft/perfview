@@ -2035,6 +2035,14 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     return "MD5";
                 }
+                else if (_hashAlgorithm is SHA384)
+                {
+                    return "SHA384";
+                }
+                else if (_hashAlgorithm is SHA512)
+                {
+                    return "SHA512";
+                }
                 else
                 {
                     Debug.Fail("Missing case in get_ChecksumAlgorithm");
