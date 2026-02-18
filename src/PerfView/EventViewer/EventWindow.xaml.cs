@@ -1915,6 +1915,7 @@ namespace PerfView
         private List<DataGridColumn> m_userDefinedColumns;
         private float[] m_buckets;                              // Keep track of the counts of events.
         private double m_bucketTimeMSec;                        // Size for each bucket
+        private ScrollViewer m_gridScrollViewer;                // Cached ScrollViewer for horizontal scrolling
         #endregion
 
         private void DoUseLocalTime(object sender, RoutedEventArgs e)
@@ -2009,10 +2010,15 @@ namespace PerfView
         {
             if (Keyboard.Modifiers == ModifierKeys.Shift)
             {
-                var scrollViewer = FindVisualChild<ScrollViewer>((DependencyObject)sender);
-                if (scrollViewer != null)
+                // Cache the ScrollViewer on first use
+                if (m_gridScrollViewer == null)
                 {
-                    scrollViewer.ScrollToHorizontalOffset(scrollViewer.HorizontalOffset - e.Delta);
+                    m_gridScrollViewer = FindVisualChild<ScrollViewer>((DependencyObject)sender);
+                }
+
+                if (m_gridScrollViewer != null)
+                {
+                    m_gridScrollViewer.ScrollToHorizontalOffset(m_gridScrollViewer.HorizontalOffset - e.Delta);
                     e.Handled = true;
                 }
             }
