@@ -747,6 +747,14 @@ namespace Microsoft.Diagnostics.Symbols
                     {
                         _hashAlgorithm = System.Security.Cryptography.SHA256.Create();
                     }
+                    else if (srcFormat.Header.algorithmId == guidSHA384)
+                    {
+                        _hashAlgorithm = System.Security.Cryptography.SHA384.Create();
+                    }
+                    else if (srcFormat.Header.algorithmId == guidSHA512)
+                    {
+                        _hashAlgorithm = System.Security.Cryptography.SHA512.Create();
+                    }
 
                     if (_hashAlgorithm != null)
                     {
@@ -1546,6 +1554,8 @@ tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/V
         private static readonly Guid guidMD5 = new Guid("406ea660-64cf-4c82-b6f0-42d48172a799");
         private static readonly Guid guidSHA1 = new Guid("ff1816ec-aa5e-4d10-87f7-6f4963833460");
         private static readonly Guid guidSHA256 = new Guid("8829d00f-11b8-4213-878b-770e8597ac16");
+        private static readonly Guid guidSHA384 = new Guid("d99cfeb1-8c43-444a-8a6c-b61269d2a0bf");
+        private static readonly Guid guidSHA512 = new Guid("ef2d1afc-6550-46d6-b14b-d70afe9a5566");
 
         #endregion
     }
