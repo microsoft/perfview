@@ -130,6 +130,70 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that the manifest output does not contain double-escaped XML entities,
+        /// which would indicate that values were escaped manually before being passed to XmlWriter.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_NoDoubleEscapedEntities()
+        {
+            const string providerName = "Microsoft-Windows-DotNETRuntime";
+
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
+
+            Assert.NotNull(manifest);
+            Assert.NotEmpty(manifest);
+
+            // Double-escaping patterns that would indicate XmlEscape + XmlWriter double-escaping
+            string[] doubleEscapePatterns = new[]
+            {
+                "&amp;amp;",
+                "&amp;lt;",
+                "&amp;gt;",
+                "&amp;quot;",
+                "&amp;apos;"
+            };
+
+            foreach (var pattern in doubleEscapePatterns)
+            {
+                Assert.DoesNotContain(pattern, manifest);
+            }
+
+            // Also verify it's still well-formed XML
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+
+            // Verify that string table entries don't have escaped entities in their decoded values
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+            var stringEntries = xmlDoc.SelectNodes("//e:string", nsmgr);
+            if (stringEntries != null)
+            {
+                foreach (XmlNode entry in stringEntries)
+                {
+                    string id = entry.Attributes?["id"]?.Value;
+                    string value = entry.Attributes?["value"]?.Value;
+
+                    // Decoded attribute values should not contain XML entity references
+                    // (that would indicate double-escaping at the source)
+                    if (id != null)
+                    {
+                        Assert.DoesNotContain("&amp;", id);
+                        Assert.DoesNotContain("&lt;", id);
+                        Assert.DoesNotContain("&gt;", id);
+                    }
+                    if (value != null)
+                    {
+                        Assert.DoesNotContain("&amp;", value);
+                        Assert.DoesNotContain("&lt;", value);
+                        Assert.DoesNotContain("&gt;", value);
+                    }
+                }
+            }
+
+            _output.WriteLine($"Verified {stringEntries?.Count ?? 0} string entries have no double-escaped entities");
+        }
+
+        /// <summary>
         /// Test that the new XmlWriter-based implementation produces semantically identical output
         /// to the legacy string-based implementation. The comparison normalizes both outputs as XML
         /// to account for formatting differences.

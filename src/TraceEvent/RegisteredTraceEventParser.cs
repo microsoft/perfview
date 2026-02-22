@@ -380,7 +380,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                                 {
                                                     int value = mapEntries[k].Value;
                                                     string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
-                                                    string stringId = XmlUtilities.XmlEscape($"map_{enumName}{valueName}");
+                                                    string stringId = $"map_{enumName}{valueName}";
                                                     
                                                     mapData.Entries.Add(new MapEntry { Value = value, StringId = stringId });
                                                     
@@ -490,7 +490,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     writer.WriteStartElement("keywords");
                     foreach (var keyValue in keywords)
                     {
-                        string stringId = XmlUtilities.XmlEscape($"keyword_{keyValue.Value}");
+                        string stringId = $"keyword_{keyValue.Value}";
                         writer.WriteStartElement("keyword");
                         writer.WriteAttributeString("name", keyValue.Value);
                         writer.WriteAttributeString("message", $"$(string.{stringId})");
@@ -510,7 +510,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 foreach (var taskValue in tasks.Keys)
                 {
                     var task = tasks[taskValue];
-                    string taskStringId = XmlUtilities.XmlEscape($"task_{task.Name}");
+                    string taskStringId = $"task_{task.Name}";
                     
                     writer.WriteStartElement("task");
                     writer.WriteAttributeString("name", task.Name);
@@ -527,7 +527,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         writer.WriteStartElement("opcodes");
                         foreach (var keyValue in task.Opcodes)
                         {
-                            string opcodeStringId = XmlUtilities.XmlEscape($"opcode_{task.Name}{keyValue.Value}");
+                            string opcodeStringId = $"opcode_{task.Name}{keyValue.Value}";
                             writer.WriteStartElement("opcode");
                             writer.WriteAttributeString("name", keyValue.Value);
                             writer.WriteAttributeString("message", $"$(string.{opcodeStringId})");
