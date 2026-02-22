@@ -866,5 +866,80 @@ class Program
         }
 
         #endregion
+
+        #region Versioned event tests
+
+        [Fact]
+        public void VersionedEvent_GeneratesSinglePayloadClass()
+        {
+            string content = GenerateParserFromManifest("VersionedEvent.manifest.xml");
+
+            // Two event elements with the same ID and task but different versions
+            // should produce a single payload class (from the first template name)
+            int classCount = CountOccurrences(content, "public sealed class ProcessInfoV0TraceData : TraceEvent");
+            Assert.Equal(1, classCount);
+        }
+
+        [Fact]
+        public void VersionedEvent_GeneratesSingleEventProperty()
+        {
+            string content = GenerateParserFromManifest("VersionedEvent.manifest.xml");
+
+            // Only one event property despite two versioned event elements
+            int eventCount = CountOccurrences(content, "public event Action<ProcessInfoV0TraceData> ProcessInfo");
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact]
+        public void VersionedEvent_CommonFieldsHaveSimpleAccessors()
+        {
+            string content = GenerateParserFromManifest("VersionedEvent.manifest.xml");
+
+            // Fields present in both V0 and V1 should have simple accessors with no version guard
+            Assert.Contains("public int ProcessId { get { return GetInt32At(0); } }", content);
+            Assert.Contains("public string Name { get { return GetUnicodeStringAt(4); } }", content);
+        }
+
+        [Fact]
+        public void VersionedEvent_NewFieldHasVersionGuard()
+        {
+            string content = GenerateParserFromManifest("VersionedEvent.manifest.xml");
+
+            // CommandLine only exists in V1, so accessor should have a version guard
+            // returning empty string for V0 and the real value for V1+
+            Assert.Contains("if (Version >= 1) return GetUnicodeStringAt(SkipUnicodeString(4)); return \"\";", content);
+        }
+
+        [Fact]
+        public void VersionedEvent_ValidateHasPerVersionAsserts()
+        {
+            string content = GenerateParserFromManifest("VersionedEvent.manifest.xml");
+
+            // Validate should have separate Debug.Assert for each version's expected payload length
+            Assert.Contains("Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(4)));", content);
+            Assert.Contains("Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(4))));", content);
+            // And a forward-compat guard for versions beyond the latest known
+            Assert.Contains("Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(4))));", content);
+        }
+
+        [Fact]
+        public void VersionedEvent_PayloadNamesIncludeAllVersionFields()
+        {
+            string content = GenerateParserFromManifest("VersionedEvent.manifest.xml");
+
+            // PayloadNames should include fields from ALL versions (union)
+            Assert.Contains("payloadNames = new string[] { \"ProcessId\", \"Name\", \"CommandLine\"};", content);
+        }
+
+        [Fact]
+        public void VersionedEvent_EnumerateTemplatesHasEntryPerVersion()
+        {
+            string content = GenerateParserFromManifest("VersionedEvent.manifest.xml");
+
+            // EnumerateTemplates creates a template array sized for all event elements (2 versions)
+            Assert.Contains("var templates = new TraceEvent[2];", content);
+        }
+
+        #endregion
     }
 }
