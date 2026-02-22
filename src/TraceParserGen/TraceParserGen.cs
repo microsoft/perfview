@@ -137,6 +137,18 @@ internal class TraceParserGen
         output.WriteLine("");
         output.WriteLine("        #region private");
         output.WriteLine("        protected override string GetProviderName() { return ProviderName; }");
+
+        // Emit TaskGuid field declarations for all tasks referenced by events.
+        var emittedTaskGuids = new HashSet<string>();
+        foreach (var evnt in m_provider.Events)
+        {
+            var taskName = ToCSharpName(evnt.TaskName);
+            if (!string.IsNullOrEmpty(taskName) && emittedTaskGuids.Add(taskName))
+            {
+                output.WriteLine("        private static readonly Guid {0}TaskGuid = Guid.Empty;", taskName);
+            }
+        }
+
         output.WriteLine();
 
         // *********** GENERATE TEMPLATE DEFINTITIONS ********** //
@@ -299,12 +311,12 @@ internal class TraceParserGen
             var evnt = m_provider.Events[i];
 
             // check if the same event template has not been already defined (different versions of the same event)
-            output.WriteLine("                templates[{0}] = new {1}TraceData(null, {2}, {3}, \"{4}\", {4}TaskGuid, {5}, \"{6}\", ProviderGuid, ProviderName);",
+            var taskNameCs = TraceParserGen.ToCSharpName(evnt.TaskName);
+            var templateTaskGuid = string.IsNullOrEmpty(taskNameCs) ? "Guid.Empty" : taskNameCs + "TaskGuid";
+            output.WriteLine("                templates[{0}] = new {1}TraceData(null, {2}, {3}, \"{4}\", {5}, {6}, \"{7}\", ProviderGuid, ProviderName);",
                                               i, TraceParserGen.ToCSharpName(evnt.EventName),
-                                              evnt.Id, evnt.Task, TraceParserGen.ToCSharpName(evnt.TaskName), evnt.Opcode, TraceParserGen.ToCSharpName(evnt.OpcodeName)
+                                              evnt.Id, evnt.Task, taskNameCs, templateTaskGuid, evnt.Opcode, TraceParserGen.ToCSharpName(evnt.OpcodeName)
                                               );
-            // as of today, the generated code won't compile because the task GUID is not defined
-            // TODO: define the xxxTaskGuid based on eventGUID attribute of <task> elements of the .man file
         }
 
         output.WriteLine("                s_templates = templates;");
@@ -340,13 +352,13 @@ internal class TraceParserGen
             output.WriteLine("        {");
             output.WriteLine("            add");
             output.WriteLine("            {");
-            var taskGuid = (string.IsNullOrEmpty(evnt.TaskName))
+            var taskGuid = string.IsNullOrEmpty(evnt.TaskName)
                 ? "Guid.Empty"
-                : evnt.TaskName + "TaskGuid";
+                : TraceParserGen.ToCSharpName(evnt.TaskName) + "TaskGuid";
             var taskName = TraceParserGen.ToCSharpName(evnt.TaskName);
             if (string.IsNullOrEmpty(taskName)) taskName = evntName;
             // Call the *Template() function that does the work
-            output.WriteLine("                RegisterTemplate(new {0}(value, {1}, {2}, \"{3}\", {4}, {5}, \"{6}\", ProviderGuid, ProviderName));",
+            output.WriteLine("                source.RegisterEventTemplate(new {0}(value, {1}, {2}, \"{3}\", {4}, {5}, \"{6}\", ProviderGuid, ProviderName));",
                                               templateClassName, evnt.Id, evnt.Task, taskName, taskGuid,
                                               evnt.Opcode, TraceParserGen.ToCSharpName(evnt.OpcodeName)
                                               );

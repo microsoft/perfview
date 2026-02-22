@@ -11,7 +11,7 @@ namespace TraceParserGen.Tests
     /// </summary>
     public abstract class TestBase : IDisposable
     {
-        protected static string TestDataDir = Path.Combine(Environment.CurrentDirectory, "inputs");
+        protected static string TestDataDir = Path.Combine(AppContext.BaseDirectory, "inputs");
 
         protected TestBase(ITestOutputHelper output)
         {
@@ -26,7 +26,7 @@ namespace TraceParserGen.Tests
 
         protected string GetTraceParserGenExePath()
         {
-            string exePath = Path.Combine(Environment.CurrentDirectory, "TraceParserGen.exe");
+            string exePath = Path.Combine(AppContext.BaseDirectory, "TraceParserGen.exe");
             if (!File.Exists(exePath))
             {
                 throw new FileNotFoundException($"Could not find TraceParserGen.exe at {exePath}. Please build the TraceParserGen.Tests project.");

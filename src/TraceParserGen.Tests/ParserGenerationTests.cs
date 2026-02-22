@@ -326,10 +326,6 @@ namespace TraceParserGen.Tests
             var (exitCode, _, _) = RunTraceParserGen($"\"{manifestPath}\" \"{outputCsPath}\"");
             Assert.Equal(0, exitCode);
 
-            // TraceParserGen has known code generation limitations that prevent the
-            // generated code from compiling as-is. Apply workarounds.
-            FixKnownCodeGenIssues(outputCsPath);
-
             // Create a test console app
             string testProjectDir = Path.Combine(OutputDir, "TestApp");
             Directory.CreateDirectory(testProjectDir);
@@ -344,57 +340,6 @@ namespace TraceParserGen.Tests
             // Run the test application
             var runExitCode = RunDotnet("run -c Release --no-build", testProjectDir, timeoutMs: 60000);
             Assert.Equal(0, runExitCode);
-        }
-
-        /// <summary>
-        /// Applies workarounds for known TraceParserGen code generation limitations so the
-        /// generated code can compile. This documents issues that should eventually be fixed
-        /// in TraceParserGen itself:
-        /// 1. TaskGuid fields are referenced but never defined (TODO in TraceParserGen.cs ~line 307)
-        /// 2. RegisterTemplate() is called but doesn't exist; should be source.RegisterEventTemplate()
-        /// </summary>
-        private void FixKnownCodeGenIssues(string csFilePath)
-        {
-            string content = File.ReadAllText(csFilePath);
-
-            // Fix 1: Add missing TaskGuid declarations
-            var matches = System.Text.RegularExpressions.Regex.Matches(content, @"(\w+TaskGuid)");
-            var taskGuids = new System.Collections.Generic.HashSet<string>();
-            foreach (System.Text.RegularExpressions.Match m in matches)
-            {
-                string name = m.Groups[1].Value;
-                if (!content.Contains($"Guid {name} =") && !content.Contains($"Guid {name}="))
-                {
-                    taskGuids.Add(name);
-                }
-            }
-
-            if (taskGuids.Count > 0)
-            {
-                var sb = new StringBuilder();
-                foreach (var guid in taskGuids)
-                {
-                    sb.AppendLine($"        private static readonly Guid {guid} = Guid.Empty;");
-                }
-
-                content = content.Replace(
-                    "        #region private\r\n        protected override string GetProviderName()",
-                    "        #region private\r\n" + sb.ToString() + "        protected override string GetProviderName()");
-                content = content.Replace(
-                    "        #region private\n        protected override string GetProviderName()",
-                    "        #region private\n" + sb.ToString() + "        protected override string GetProviderName()");
-
-                Output.WriteLine($"Fixed: Added {taskGuids.Count} missing TaskGuid declaration(s)");
-            }
-
-            // Fix 2: Replace RegisterTemplate() with source.RegisterEventTemplate()
-            if (content.Contains("RegisterTemplate("))
-            {
-                content = content.Replace("RegisterTemplate(", "source.RegisterEventTemplate(");
-                Output.WriteLine("Fixed: RegisterTemplate -> source.RegisterEventTemplate");
-            }
-
-            File.WriteAllText(csFilePath, content);
         }
 
         private void CreateTestConsoleApp(string projectDir, string generatedParserPath)
