@@ -37,12 +37,3 @@ TraceParserGen.Tests validates the TraceParserGen code generation pipeline throu
 ```bash
 dotnet test src/TraceParserGen.Tests/TraceParserGen.Tests.csproj -c Release
 ```
-
-## Known TraceParserGen Limitations
-
-The integration test documents two known code generation issues in TraceParserGen:
-
-1. **Missing TaskGuid declarations**: TraceParserGen references `XxxTaskGuid` fields but never generates their definitions (see TODO in TraceParserGen.cs ~line 307)
-2. **Wrong RegisterTemplate method**: TraceParserGen generates calls to `RegisterTemplate()` which doesn't exist on `TraceEventParser`; it should generate `source.RegisterEventTemplate()` instead
-
-The integration test applies workarounds for these issues to validate that the rest of the generated code is structurally correct.
