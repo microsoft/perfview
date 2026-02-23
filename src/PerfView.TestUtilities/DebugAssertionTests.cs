@@ -11,6 +11,9 @@
     /// <remarks>
     /// <para>This file can be linked into any project which needs to validate that assertions are behaving correctly
     /// for the purpose of unit testing.</para>
+    /// <para>On .NET Framework, assertion failures throw via <see cref="ThrowingTraceListener"/> registered in
+    /// app.config. On .NET 5+, the DefaultTraceListener already throws on assertion failures, so no
+    /// additional listener configuration is needed.</para>
     /// </remarks>
     public class DebugAssertionTests
     {

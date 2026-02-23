@@ -5,7 +5,10 @@ using System.Diagnostics;
 
 namespace PerfView.TestUtilities
 {
-    // To enable this for a process, add the following to the app.config for the project:
+    // This listener converts Debug.Assert/Trace.Assert failures into xUnit test failures
+    // by throwing from the Fail() method.
+    //
+    // On .NET Framework (net462), this must be registered via app.config <system.diagnostics>:
     //
     // <configuration>
     //  <system.diagnostics>
@@ -17,6 +20,13 @@ namespace PerfView.TestUtilities
     //    </trace>
     //  </system.diagnostics>
     //</configuration>
+    //
+    // On .NET 5+, the app.config <system.diagnostics> section is NOT
+    // processed, so this listener is never registered. However, the DefaultTraceListener
+    // on .NET 5+ already throws on assert failures, so no additional configuration is
+    // needed — Debug.Assert and Trace.Assert will throw without this listener.
+    // Should this behavior change, the ThrowingTraceListener tests will fail, which will tell us we
+    // need to do something to re-enable this listener.
     public sealed class ThrowingTraceListener : TraceListener
     {
         public override void Fail(string message, string detailMessage)

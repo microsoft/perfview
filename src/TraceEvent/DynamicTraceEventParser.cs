@@ -279,8 +279,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // also enumerate any events from the registeredParser.  
             registeredParser.EnumerateTemplates(eventsToObserve, callback);
 
-            // also enumerate any events from the eventPipeTraceEventParser
-            eventPipeTraceEventParser.EnumerateTemplates(eventsToObserve, callback);
+            // also enumerate any events from the eventPipeTraceEventParser.
+            // Filter out any duplicates that the registeredParser already knows about,
+            // similar to how manifest-based templates are filtered above.
+            eventPipeTraceEventParser.EnumerateTemplates(eventsToObserve, delegate (TraceEvent template)
+            {
+                if (!registeredParser.HasDefinitionForTemplate(template))
+                {
+                    callback(template);
+                }
+            });
         }
 
         private class PartialManifestInfo
