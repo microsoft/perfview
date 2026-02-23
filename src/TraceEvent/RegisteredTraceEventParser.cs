@@ -2,13 +2,11 @@
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.Compatibility;
 using Microsoft.Diagnostics.Tracing.Session;
-using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -103,7 +101,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // We keep tasks separated by task ID
             SortedDictionary<int, TaskInfo> tasks = new SortedDictionary<int, TaskInfo>();
             // Templates where the KEY is the template string and the VALUE is the template name (backwards)  
-            Dictionary<string, TemplateData> templateIntern = new Dictionary<string, TemplateData>(8);
+            Dictionary<TemplateKey, TemplateData> templateIntern = new Dictionary<TemplateKey, TemplateData>(8);
 
             // Remember any enum types we have
             Dictionary<string, MapData> enumIntern = new Dictionary<string, MapData>();
@@ -357,7 +355,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                         enumBuffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
                                     }
 
-                                    if (!enumIntern.ContainsKey(mapName))
+                                    MapData existingMap;
+                                    if (!enumIntern.TryGetValue(mapName, out existingMap))
                                     {
                                         EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
                                         var hr = TdhGetEventMapInformation(&eventRecord, mapName, enumInfo, ref buffSize);
@@ -368,9 +367,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                                 enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_BITMAP)
                                             {
                                                 string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
-                                                mapAttrib = enumName;
-                                                
-                                                MapData mapData = new MapData();
+
+                                                var mapData = new MapData();
                                                 mapData.Name = enumName;
                                                 mapData.IsValueMap = (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP);
                                                 mapData.Entries = new List<MapEntry>();
@@ -391,8 +389,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                                 }
 
                                                 enumIntern[mapName] = mapData;
+                                                existingMap = mapData;
                                             }
                                         }
+                                    }
+
+                                    if (existingMap != null)
+                                    {
+                                        mapAttrib = existingMap.Name;
                                     }
                                 }
 
@@ -422,8 +426,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
 
                             // See if this template already exists, and if not make it 
-                            var templateKey = string.Join("|", dataFields.Select(f => 
-                                $"{f.Name}:{f.InType}{(f.Map != null ? ":" + f.Map : "")}{(f.Count != null ? ":count=" + f.Count : "")}{(f.Length != null ? ":length=" + f.Length : "")}"));
+                            var templateKey = new TemplateKey(dataFields);
                             
                             TemplateData templateData;
                             if (!templateIntern.TryGetValue(templateKey, out templateData))
@@ -770,6 +773,70 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public string Map;
             public string Count;
             public string Length;
+        }
+
+        /// <summary>
+        /// Structural key for template interning that provides collision-free value equality
+        /// across all DataField members.
+        /// 
+        /// ETW manifest templates define the payload layout for events.  Multiple events can
+        /// share the same template when their payloads are structurally identical (same field
+        /// names, types, maps, counts, and lengths).  To avoid emitting duplicate template
+        /// definitions we intern templates in a Dictionary keyed by this type.
+        /// 
+        /// The key captures a snapshot of the DataField list at construction time and
+        /// implements value equality by comparing every property of every field in order.
+        /// The hash code is computed once in the constructor (using a standard prime-multiply
+        /// scheme over each field property) and cached for fast dictionary lookups.
+        /// </summary>
+        private sealed class TemplateKey : IEquatable<TemplateKey>
+        {
+            private const int HashSeed = 17;
+            private const int HashMultiplier = 31;
+
+            private readonly DataField[] _fields;
+            private readonly int _hashCode;
+
+            public TemplateKey(List<DataField> fields)
+            {
+                _fields = fields.ToArray();
+
+                // System.HashCode would be ideal here but requires netstandard2.1 or the
+                // Microsoft.Bcl.HashCode package.  Since TraceEvent targets netstandard2.0,
+                // we use the classic prime-multiply hash-combine pattern instead.
+                unchecked
+                {
+                    int hash = HashSeed;
+                    foreach (var f in _fields)
+                    {
+                        hash = hash * HashMultiplier + (f.Name?.GetHashCode() ?? 0);
+                        hash = hash * HashMultiplier + (f.InType?.GetHashCode() ?? 0);
+                        hash = hash * HashMultiplier + (f.Map?.GetHashCode() ?? 0);
+                        hash = hash * HashMultiplier + (f.Count?.GetHashCode() ?? 0);
+                        hash = hash * HashMultiplier + (f.Length?.GetHashCode() ?? 0);
+                    }
+                    _hashCode = hash;
+                }
+            }
+
+            public bool Equals(TemplateKey other)
+            {
+                if (other == null || _fields.Length != other._fields.Length)
+                    return false;
+                for (int i = 0; i < _fields.Length; i++)
+                {
+                    if (_fields[i].Name != other._fields[i].Name ||
+                        _fields[i].InType != other._fields[i].InType ||
+                        _fields[i].Map != other._fields[i].Map ||
+                        _fields[i].Count != other._fields[i].Count ||
+                        _fields[i].Length != other._fields[i].Length)
+                        return false;
+                }
+                return true;
+            }
+
+            public override bool Equals(object obj) => Equals(obj as TemplateKey);
+            public override int GetHashCode() => _hashCode;
         }
 
         /// <summary>

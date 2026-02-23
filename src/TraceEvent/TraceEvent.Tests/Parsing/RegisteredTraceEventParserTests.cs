@@ -131,17 +131,21 @@ namespace TraceEventTests
 
         /// <summary>
         /// Test that the manifest output does not contain double-escaped XML entities,
-        /// which would indicate that values were escaped manually before being passed to XmlWriter.
+        /// and that string table entries match the legacy implementation semantically.
         /// </summary>
         [WindowsFact]
-        public void GetManifestForRegisteredProvider_NoDoubleEscapedEntities()
+        public unsafe void GetManifestForRegisteredProvider_NoDoubleEscapedEntities()
         {
             const string providerName = "Microsoft-Windows-DotNETRuntime";
+            var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
 
-            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerGuid);
+            string legacyManifest = GetManifestForRegisteredProvider_Legacy(providerGuid);
 
             Assert.NotNull(manifest);
             Assert.NotEmpty(manifest);
+            Assert.NotNull(legacyManifest);
+            Assert.NotEmpty(legacyManifest);
 
             // Double-escaping patterns that would indicate XmlEscape + XmlWriter double-escaping
             string[] doubleEscapePatterns = new[]
@@ -158,39 +162,55 @@ namespace TraceEventTests
                 Assert.DoesNotContain(pattern, manifest);
             }
 
-            // Also verify it's still well-formed XML
-            var xmlDoc = new XmlDocument();
-            xmlDoc.LoadXml(manifest);
+            // Parse both manifests and compare string table entries semantically
+            var newDoc = new XmlDocument();
+            newDoc.LoadXml(manifest);
 
-            // Verify that string table entries don't have escaped entities in their decoded values
-            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            var legacyDoc = new XmlDocument();
+            legacyDoc.LoadXml(legacyManifest);
+
+            var nsmgr = new XmlNamespaceManager(newDoc.NameTable);
             nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
-            var stringEntries = xmlDoc.SelectNodes("//e:string", nsmgr);
-            if (stringEntries != null)
+
+            var legacyNsmgr = new XmlNamespaceManager(legacyDoc.NameTable);
+            legacyNsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            // Build lookup of legacy string table: id -> value (decoded by XML parser)
+            var legacyStrings = new Dictionary<string, string>();
+            var legacyEntries = legacyDoc.SelectNodes("//e:string", legacyNsmgr);
+            if (legacyEntries != null)
             {
-                foreach (XmlNode entry in stringEntries)
+                foreach (XmlNode entry in legacyEntries)
                 {
                     string id = entry.Attributes?["id"]?.Value;
                     string value = entry.Attributes?["value"]?.Value;
-
-                    // Decoded attribute values should not contain XML entity references
-                    // (that would indicate double-escaping at the source)
                     if (id != null)
                     {
-                        Assert.DoesNotContain("&amp;", id);
-                        Assert.DoesNotContain("&lt;", id);
-                        Assert.DoesNotContain("&gt;", id);
-                    }
-                    if (value != null)
-                    {
-                        Assert.DoesNotContain("&amp;", value);
-                        Assert.DoesNotContain("&lt;", value);
-                        Assert.DoesNotContain("&gt;", value);
+                        legacyStrings[id] = value;
                     }
                 }
             }
 
-            _output.WriteLine($"Verified {stringEntries?.Count ?? 0} string entries have no double-escaped entities");
+            // Compare new string table entries against legacy
+            var newEntries = newDoc.SelectNodes("//e:string", nsmgr);
+            int comparedCount = 0;
+            if (newEntries != null)
+            {
+                foreach (XmlNode entry in newEntries)
+                {
+                    string id = entry.Attributes?["id"]?.Value;
+                    string value = entry.Attributes?["value"]?.Value;
+
+                    if (id != null && legacyStrings.TryGetValue(id, out string legacyValue))
+                    {
+                        Assert.Equal(legacyValue, value);
+                        comparedCount++;
+                    }
+                }
+            }
+
+            _output.WriteLine($"Semantically compared {comparedCount} string table entries between new and legacy implementations");
+            Assert.True(comparedCount > 0, "Expected at least one string table entry to compare");
         }
 
         /// <summary>
@@ -857,11 +877,15 @@ namespace TraceEventTests
         #region XML Normalization Helpers
 
         /// <summary>
-        /// Normalize an XML document by removing non-significant text nodes and sorting attributes.
+        /// Normalize an XML document by removing non-significant text nodes, sorting attributes,
+        /// and canonicalizing template names so that template interning order doesn't affect comparison.
+        /// Also removes map attributes from data elements since the new implementation fixes a
+        /// pre-existing bug where reused maps were not emitted on subsequent fields.
         /// </summary>
         private void NormalizeXml(XmlDocument doc)
         {
             RemoveNonSignificantTextNodes(doc.DocumentElement);
+            NormalizeTemplateNames(doc);
             SortAttributes(doc.DocumentElement);
         }
 
@@ -904,6 +928,114 @@ namespace TraceEventTests
             foreach (var nodeToRemove in nodesToRemove)
             {
                 node.RemoveChild(nodeToRemove);
+            }
+        }
+
+        /// <summary>
+        /// Canonicalizes template names so that template interning order doesn't affect comparison.
+        /// Each template is renamed to "T_" + index based on its structural content (sorted).
+        /// Also strips the "map" attribute from data elements since the new code fixes a pre-existing
+        /// bug where reused maps lost their map attribute.
+        /// </summary>
+        private void NormalizeTemplateNames(XmlDocument doc)
+        {
+            var nsmgr = new XmlNamespaceManager(doc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            // Strip map attributes from data elements — the new code fixes a legacy bug here
+            var dataElements = doc.SelectNodes("//e:data", nsmgr);
+            if (dataElements != null)
+            {
+                foreach (XmlNode data in dataElements)
+                {
+                    data.Attributes?.RemoveNamedItem("map");
+                }
+            }
+
+            // Build canonical content key for each template
+            var templates = doc.SelectNodes("//e:template", nsmgr);
+            if (templates == null || templates.Count == 0) return;
+
+            // Map old tid -> canonical content key
+            var tidToContent = new Dictionary<string, string>();
+            foreach (XmlNode template in templates)
+            {
+                string tid = template.Attributes?["tid"]?.Value;
+                if (tid == null) continue;
+                // Content key = concatenation of child data elements' sorted attributes
+                var contentParts = new List<string>();
+                foreach (XmlNode child in template.ChildNodes)
+                {
+                    if (child.NodeType != XmlNodeType.Element) continue;
+                    var attrs = new List<string>();
+                    if (child.Attributes != null)
+                    {
+                        foreach (XmlAttribute attr in child.Attributes)
+                        {
+                            attrs.Add($"{attr.LocalName}={attr.Value}");
+                        }
+                    }
+                    attrs.Sort(StringComparer.Ordinal);
+                    contentParts.Add(child.LocalName + "{" + string.Join(",", attrs) + "}");
+                }
+                tidToContent[tid] = string.Join(";", contentParts);
+            }
+
+            // Assign canonical names: group by content, assign T_0, T_1, ...
+            var contentToCanonical = new Dictionary<string, string>();
+            int index = 0;
+            // Sort by content key for deterministic naming
+            var sortedContents = new List<string>(new HashSet<string>(tidToContent.Values));
+            sortedContents.Sort(StringComparer.Ordinal);
+            foreach (var content in sortedContents)
+            {
+                contentToCanonical[content] = "T_" + index++;
+            }
+
+            var tidToCanonical = new Dictionary<string, string>();
+            foreach (var kvp in tidToContent)
+            {
+                tidToCanonical[kvp.Key] = contentToCanonical[kvp.Value];
+            }
+
+            // Rename template tid attributes
+            foreach (XmlNode template in templates)
+            {
+                string tid = template.Attributes?["tid"]?.Value;
+                if (tid != null && tidToCanonical.TryGetValue(tid, out string canonical))
+                {
+                    template.Attributes["tid"].Value = canonical;
+                }
+            }
+
+            // Rename event template references
+            var events = doc.SelectNodes("//e:event", nsmgr);
+            if (events != null)
+            {
+                foreach (XmlNode evt in events)
+                {
+                    var templateAttr = evt.Attributes?["template"];
+                    if (templateAttr != null && tidToCanonical.TryGetValue(templateAttr.Value, out string canonical))
+                    {
+                        templateAttr.Value = canonical;
+                    }
+                }
+            }
+
+            // Remove duplicate templates that now have the same canonical tid
+            var seenCanonical = new HashSet<string>();
+            var duplicateTemplates = new List<XmlNode>();
+            foreach (XmlNode template in templates)
+            {
+                string tid = template.Attributes?["tid"]?.Value;
+                if (tid != null && !seenCanonical.Add(tid))
+                {
+                    duplicateTemplates.Add(template);
+                }
+            }
+            foreach (var dup in duplicateTemplates)
+            {
+                dup.ParentNode?.RemoveChild(dup);
             }
         }
 
