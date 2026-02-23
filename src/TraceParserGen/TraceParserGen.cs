@@ -352,10 +352,11 @@ internal class TraceParserGen
             output.WriteLine("        {");
             output.WriteLine("            add");
             output.WriteLine("            {");
-            var taskGuid = string.IsNullOrEmpty(evnt.TaskName)
+            var taskNameCs = TraceParserGen.ToCSharpName(evnt.TaskName);
+            var taskGuid = string.IsNullOrEmpty(taskNameCs)
                 ? "Guid.Empty"
-                : TraceParserGen.ToCSharpName(evnt.TaskName) + "TaskGuid";
-            var taskName = TraceParserGen.ToCSharpName(evnt.TaskName);
+                : taskNameCs + "TaskGuid";
+            var taskName = taskNameCs;
             if (string.IsNullOrEmpty(taskName)) taskName = evntName;
             // Call the *Template() function that does the work
             output.WriteLine("                source.RegisterEventTemplate(new {0}(value, {1}, {2}, \"{3}\", {4}, {5}, \"{6}\", ProviderGuid, ProviderName));",

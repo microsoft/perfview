@@ -344,7 +344,7 @@ namespace TraceParserGen.Tests
 
         private void CreateTestConsoleApp(string projectDir, string generatedParserPath)
         {
-            string testAssemblyDir = Environment.CurrentDirectory;
+            string testAssemblyDir = AppContext.BaseDirectory;
             string srcDir = Path.GetFullPath(Path.Combine(testAssemblyDir, "..", "..", "..", ".."));
             string traceEventProjectPath = Path.Combine(srcDir, "TraceEvent", "TraceEvent.csproj");
 
@@ -792,6 +792,30 @@ class Program
             Assert.Contains("public static ulong GetKeywords()", content);
             Assert.Contains("public static string GetProviderName()", content);
             Assert.Contains("public static Guid GetProviderGuid()", content);
+        }
+
+        #endregion
+
+        #region Regression tests for generator bug fixes
+
+        [Fact]
+        public void SimpleManifest_GeneratesSourceRegisterEventTemplate()
+        {
+            string content = GenerateParserFromManifest("SimpleTest.manifest.xml");
+
+            // Verify the fix: must use source.RegisterEventTemplate, not bare RegisterTemplate
+            Assert.Contains("source.RegisterEventTemplate(", content);
+            Assert.DoesNotContain("RegisterTemplate(new ", content);
+        }
+
+        [Fact]
+        public void SimpleManifest_GeneratesTaskGuidDeclarations()
+        {
+            string content = GenerateParserFromManifest("SimpleTest.manifest.xml");
+
+            // Verify the fix: TaskGuid fields must be declared for each task
+            Assert.Contains("private static readonly Guid SimpleEventTaskGuid = Guid.Empty;", content);
+            Assert.Contains("private static readonly Guid ValueEventTaskGuid = Guid.Empty;", content);
         }
 
         #endregion
