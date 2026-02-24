@@ -813,8 +813,9 @@ class Program
         {
             string content = GenerateParserFromManifest("SimpleTest.manifest.xml");
 
-            // Verify the fix: TaskGuid fields must be declared for each task
-            Assert.Contains("private static readonly Guid SimpleEventTaskGuid = Guid.Empty;", content);
+            // Task with eventGUID should emit the actual GUID
+            Assert.Contains("private static readonly Guid SimpleEventTaskGuid = new Guid(", content);
+            // Task without eventGUID should emit Guid.Empty
             Assert.Contains("private static readonly Guid ValueEventTaskGuid = Guid.Empty;", content);
         }
 

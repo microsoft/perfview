@@ -16,7 +16,7 @@
         </keywords>
 
         <tasks>
-          <task name="SimpleEvent" value="1" />
+          <task name="SimpleEvent" value="1" eventGUID="{AABBCCDD-1122-3344-5566-778899AABBCC}" />
           <task name="ValueEvent" value="2" />
         </tasks>
 

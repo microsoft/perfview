@@ -145,7 +145,15 @@ internal class TraceParserGen
             var taskName = ToCSharpName(evnt.TaskName);
             if (!string.IsNullOrEmpty(taskName) && emittedTaskGuids.Add(taskName))
             {
-                output.WriteLine("        private static readonly Guid {0}TaskGuid = Guid.Empty;", taskName);
+                var taskGuid = m_provider.GetTaskGuid(evnt.Task);
+                if (taskGuid == Guid.Empty)
+                {
+                    output.WriteLine("        private static readonly Guid {0}TaskGuid = Guid.Empty;", taskName);
+                }
+                else
+                {
+                    output.WriteLine("        private static readonly Guid {0}TaskGuid = {1};", taskName, CodeForGuidLiteral(taskGuid));
+                }
             }
         }
 
