@@ -297,8 +297,8 @@ namespace Microsoft.Diagnostics.Tracing.AutomatedAnalysis
 
             // Allow the found name to be of equivalent or greater length than the requested length.
             // Example:
-            //  Requested: System.Private.CoreLib.il!System.String.Concat
-            //  Found:     System.Private.CoreLib.il!System.String.Concat(class System.String,class System.String)
+            //  Requested: System.Private.CoreLib!System.String.Concat
+            //  Found:     System.Private.CoreLib!System.String.Concat(class System.String,class System.String)
             if (foundName.Length < requestedName.Length)
             {
                 return false;
