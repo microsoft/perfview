@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrumentationManifest xmlns="http://schemas.microsoft.com/win/2004/08/events">
+  <instrumentation xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events">
+
+    <events xmlns="http://schemas.microsoft.com/win/2004/08/events">
+      <provider name="MultiTypeTestProvider"
+                guid="{AABBCCDD-1234-5678-9ABC-DEF012345678}"
+                symbol="MULTI_TYPE_TEST_PROVIDER">
+
+        <keywords>
+          <keyword name="General" mask="0x1" />
+          <keyword name="Performance" mask="0x2" />
+          <keyword name="Debug" mask="0x4" />
+        </keywords>
+
+        <tasks>
+          <task name="StringOp" value="1" />
+          <task name="NumericOp" value="2" />
+          <task name="MixedOp" value="3" />
+        </tasks>
+
+        <templates>
+          <template tid="StringFields">
+            <data name="UnicodeMessage" inType="win:UnicodeString" />
+            <data name="AnsiMessage" inType="win:AnsiString" />
+          </template>
+          <template tid="NumericFields">
+            <data name="ByteVal" inType="win:UInt8" />
+            <data name="ShortVal" inType="win:UInt16" />
+            <data name="IntVal" inType="win:Int32" />
+            <data name="LongVal" inType="win:Int64" />
+            <data name="BoolVal" inType="win:Boolean" />
+            <data name="FloatVal" inType="win:Float" />
+            <data name="DoubleVal" inType="win:Double" />
+          </template>
+          <template tid="MixedFields">
+            <data name="Id" inType="win:UInt32" />
+            <data name="Name" inType="win:UnicodeString" />
+            <data name="ActivityId" inType="win:GUID" />
+            <data name="HexValue" inType="win:HexInt32" />
+            <data name="Timestamp" inType="win:FILETIME" />
+          </template>
+        </templates>
+
+        <events>
+          <event value="1"
+                 symbol="StringOpEvent"
+                 task="StringOp"
+                 template="StringFields"
+                 keywords="General"
+                 level="win:Informational" />
+          <event value="2"
+                 symbol="NumericOpEvent"
+                 task="NumericOp"
+                 template="NumericFields"
+                 keywords="Performance"
+                 level="win:Verbose" />
+          <event value="3"
+                 symbol="MixedOpEvent"
+                 task="MixedOp"
+                 template="MixedFields"
+                 keywords="General Debug"
+                 level="win:Warning" />
+        </events>
+
+      </provider>
+    </events>
+  </instrumentation>
+</instrumentationManifest>

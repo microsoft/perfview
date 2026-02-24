@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrumentationManifest xmlns="http://schemas.microsoft.com/win/2004/08/events">
+  <instrumentation xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events">
+
+    <events xmlns="http://schemas.microsoft.com/win/2004/08/events">
+      <provider name="SimpleTestProvider"
+                guid="{12345678-1234-1234-1234-123456789012}"
+                symbol="SIMPLE_TEST_PROVIDER"
+                messageFileName="SimpleTest.dll"
+                resourceFileName="SimpleTest.dll">
+
+        <keywords>
+          <keyword name="Diagnostics" mask="0x1" />
+        </keywords>
+
+        <tasks>
+          <task name="SimpleEvent" value="1" eventGUID="{AABBCCDD-1122-3344-5566-778899AABBCC}" />
+          <task name="ValueEvent" value="2" />
+        </tasks>
+
+        <templates>
+          <template tid="SimpleEvent">
+            <data name="Message" inType="win:UnicodeString" />
+          </template>
+          <template tid="ValueEvent">
+            <data name="Value" inType="win:Int32" />
+          </template>
+        </templates>
+
+        <events>
+          <event value="1"
+                 symbol="SimpleEvent"
+                 task="SimpleEvent"
+                 template="SimpleEvent"
+                 keywords="Diagnostics"
+                 level="win:Informational" />
+          <event value="2"
+                 symbol="ValueEvent"
+                 task="ValueEvent"
+                 template="ValueEvent"
+                 keywords="Diagnostics"
+                 level="win:Informational" />
+        </events>
+
+      </provider>
+    </events>
+  </instrumentation>
+</instrumentationManifest>
