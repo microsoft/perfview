@@ -1006,6 +1006,13 @@ internal class TraceParserGen
 
             validName.Append(c);
         }
+
+        // C# identifiers cannot start with a digit - prefix with underscore if needed.
+        if (validName.Length > 0 && Char.IsDigit(validName[0]))
+        {
+            validName.Insert(0, '_');
+        }
+
         return validName.ToString();
     }
 

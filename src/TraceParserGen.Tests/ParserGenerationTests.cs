@@ -911,5 +911,19 @@ class Program
         }
 
         #endregion
+
+        #region Leading digit provider name tests
+
+        [Fact]
+        public void LeadingDigitProvider_ClassNamePrefixedWithUnderscore()
+        {
+            string content = GenerateParserFromManifest("LeadingDigitProvider.manifest.xml");
+
+            // Provider "3Scale-ETW-Provider" → ToCSharpName → "_3ScaleETWProvider"
+            // C# identifiers cannot start with a digit, so an underscore is prepended.
+            Assert.Contains("public sealed class _3ScaleETWProviderTraceEventParser : TraceEventParser", content);
+        }
+
+        #endregion
     }
 }
