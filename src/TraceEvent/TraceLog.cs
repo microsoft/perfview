@@ -4141,7 +4141,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 76; }
+            get { return 77; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -7129,7 +7129,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // A loaded and managed modules depend on a module file, so get or create one.
             // The key is the file name.  For jitted code on Linux, this will be a memfd with a static name, which is OK
             // because this path will use the StartAddress to ensure that we get the right one.
-            // TODO: We'll need to store FileOffset as well to handle elf images.
             TraceModuleFile moduleFile = process.Log.ModuleFiles.GetOrCreateModuleFile(fileName, startAddress);
             long newImageSize = (long)(endAddress - startAddress);
             
@@ -7170,16 +7169,24 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             Debug.Assert(moduleFile != null);
             CheckClassInvarients();
 
-            PEProcessMappingSymbolMetadata symbolMetadata = metadata?.ParsedSymbolMetadata as PEProcessMappingSymbolMetadata;
-            if (symbolMetadata != null)
+            PEProcessMappingSymbolMetadata peMetadata = metadata?.ParsedSymbolMetadata as PEProcessMappingSymbolMetadata;
+            if (peMetadata != null)
             {
-                moduleFile.pdbName = symbolMetadata.PdbName;
-                moduleFile.pdbAge = symbolMetadata.PdbAge;
-                moduleFile.pdbSignature = symbolMetadata.PdbSignature;
-                moduleFile.r2rPerfMapSignature = symbolMetadata.PerfmapSignature;
-                moduleFile.r2rPerfMapVersion = symbolMetadata.PerfmapVersion;
-                moduleFile.r2rPerfMapName = symbolMetadata.PerfmapName;
-                moduleFile.r2rImageTextVirtualOffset = (uint)symbolMetadata.TextOffset;
+                moduleFile.pdbName = peMetadata.PdbName;
+                moduleFile.pdbAge = peMetadata.PdbAge;
+                moduleFile.pdbSignature = peMetadata.PdbSignature;
+                moduleFile.r2rPerfMapSignature = peMetadata.PerfmapSignature;
+                moduleFile.r2rPerfMapVersion = peMetadata.PerfmapVersion;
+                moduleFile.r2rPerfMapName = peMetadata.PerfmapName;
+                moduleFile.r2rImageTextVirtualOffset = (uint)peMetadata.TextOffset;
+            }
+
+            ELFProcessMappingSymbolMetadata elfMetadata = metadata?.ParsedSymbolMetadata as ELFProcessMappingSymbolMetadata;
+            if (elfMetadata != null)
+            {
+                moduleFile.elfBuildId = elfMetadata.BuildId;
+                moduleFile.elfVirtualAddress = elfMetadata.VirtualAddress;
+                moduleFile.elfFileOffset = elfMetadata.FileOffset;
             }
 
             return moduleFile;
@@ -10463,6 +10470,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public uint R2RImageTextVirtualOffset { get { return r2rImageTextVirtualOffset; } }
 
         /// <summary>
+        /// Returns the build-id of the ELF file.
+        /// </summary>
+        public string ElfBuildId { get { return elfBuildId; } }
+
+        /// <summary>
+        /// Returns the segment virtual address.
+        /// </summary>
+        public ulong ElfVirtualAddress { get { return elfVirtualAddress; } }
+
+        /// <summary>
+        /// Returns the segment file offset.
+        /// </summary>
+        public ulong ElfFileOffset { get { return elfFileOffset; } }
+
+        /// <summary>
         /// Returns the file version string that is optionally embedded in the DLL's resources.   Returns the empty string if not present.
         /// </summary>
         public string FileVersion { get { return fileVersion; } }
@@ -10616,6 +10638,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal int codeAddressesInModule;
         internal TraceModuleFile managedModule;
 
+        internal string elfBuildId;
+        internal ulong elfVirtualAddress;
+        internal ulong elfFileOffset;
+
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
@@ -10637,6 +10663,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Write((int)moduleFileIndex);
             serializer.Write(codeAddressesInModule);
             serializer.Write(managedModule);
+
+            serializer.Write(elfBuildId);
+            serializer.Write((long)elfVirtualAddress);
+            serializer.Write((long)elfFileOffset);
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -10658,6 +10688,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             moduleFileIndex = (ModuleFileIndex)deserializer.ReadInt();
             deserializer.Read(out codeAddressesInModule);
             deserializer.Read(out managedModule);
+
+            deserializer.Read(out elfBuildId);
+            elfVirtualAddress = (ulong)deserializer.ReadInt64();
+            elfFileOffset = (ulong)deserializer.ReadInt64();
         }
         #endregion
     }
