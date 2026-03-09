@@ -8539,11 +8539,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal void AddUniversalDynamicSymbol(ProcessSymbolTraceData data, TraceProcess process)
         {
             Debug.Assert(process != null);
+
+            // Skip symbols with invalid address ranges. The length parameter to ForAllUnresolvedCodeAddressesInRange
+            // is a signed long, so ranges whose unsigned size exceeds long.MaxValue (e.g., [0x0, 0xFFFFFFFFFFFFFFFF)
+            // from zeroed /proc/kallsyms on Linux without root) would overflow to a negative value and must be rejected.
+            long symbolLength = (long)(data.EndAddress - data.StartAddress);
+            if (symbolLength <= 0)
+            {
+                return;
+            }
+
             dynamicMethodCount++;
             MethodIndex methodIndex = Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid;
             ModuleFileIndex moduleFileIndex = Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid;
             TraceManagedModule module = null;
-            ForAllUnresolvedCodeAddressesInRange(process, data.StartAddress, (int)(data.EndAddress - data.StartAddress), true, delegate (ref CodeAddressInfo info)
+            ForAllUnresolvedCodeAddressesInRange(process, data.StartAddress, symbolLength, true, delegate (ref CodeAddressInfo info)
             {
                 // If we already resolved, that means that the address was reused, so only add something if it does not already have
                 // information associated with it.
@@ -8571,6 +8581,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         {
                             TraceModuleFile moduleFile = process.LoadedModules.UniversalMapping(moduleName, data.StartAddress, data.EndAddress, data.TimeStampQPC, null);
                             loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
+                        }
+
+                        // If the module still can't be found (e.g. invalid image size), skip this symbol.
+                        if (loadedModule == null)
+                        {
+                            return;
                         }
 
                         module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
