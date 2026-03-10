@@ -25,6 +25,7 @@ steps:
       **\bin\**\SymbolsAuthTests.dll
       **\bin\**\TraceEventTests.dll
       **\bin\**\PerfViewTests.dll
+      **\bin\**\TraceParserGen.Tests.dll
     testRunTitle: 'PerfView - ${{ parameters.flavor }}'
     runTestsInIsolation: true
     otherConsoleOptions: '--blame'

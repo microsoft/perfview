@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrumentationManifest xmlns="http://schemas.microsoft.com/win/2004/08/events">
+  <instrumentation xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events">
+
+    <events xmlns="http://schemas.microsoft.com/win/2004/08/events">
+      <provider name="VersionedEventProvider"
+                guid="{66666666-7777-8888-9999-AAAA00001111}"
+                symbol="VERSIONED_EVENT_PROVIDER">
+
+        <keywords>
+          <keyword name="Default" mask="0x1" />
+        </keywords>
+
+        <tasks>
+          <task name="ProcessInfo" value="1" />
+        </tasks>
+
+        <templates>
+          <!-- V0: just ProcessId and Name -->
+          <template tid="ProcessInfoV0">
+            <data name="ProcessId" inType="win:UInt32" />
+            <data name="Name" inType="win:UnicodeString" />
+          </template>
+          <!-- V1: adds CommandLine after existing fields -->
+          <template tid="ProcessInfoV1">
+            <data name="ProcessId" inType="win:UInt32" />
+            <data name="Name" inType="win:UnicodeString" />
+            <data name="CommandLine" inType="win:UnicodeString" />
+          </template>
+        </templates>
+
+        <events>
+          <!-- Same event ID (1), same task, different versions and templates -->
+          <event value="1"
+                 version="0"
+                 symbol="ProcessInfoV0"
+                 task="ProcessInfo"
+                 template="ProcessInfoV0"
+                 keywords="Default"
+                 level="win:Informational" />
+          <event value="1"
+                 version="1"
+                 symbol="ProcessInfoV1"
+                 task="ProcessInfo"
+                 template="ProcessInfoV1"
+                 keywords="Default"
+                 level="win:Informational" />
+        </events>
+
+      </provider>
+    </events>
+  </instrumentation>
+</instrumentationManifest>

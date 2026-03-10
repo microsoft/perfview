@@ -194,6 +194,16 @@ namespace ETWManifest
 
             return "Task" + taskId.ToString();
         }
+        public Guid GetTaskGuid(ushort taskId)
+        {
+            Guid ret;
+            if (m_taskGuids != null && m_taskGuids.TryGetValue(taskId, out ret))
+            {
+                return ret;
+            }
+
+            return Guid.Empty;
+        }
 
         public string GetOpcodeName(ushort taskId, byte opcodeId)
         {
@@ -289,6 +299,16 @@ namespace ETWManifest
 
                                     m_taskNames.Add(value, message);
                                     m_taskValues.Add(name, value);
+
+                                    string eventGUID = reader.GetAttribute("eventGUID");
+                                    if (eventGUID != null)
+                                    {
+                                        if (m_taskGuids == null)
+                                        {
+                                            m_taskGuids = new Dictionary<int, Guid>();
+                                        }
+                                        m_taskGuids.Add(value, Guid.Parse(eventGUID));
+                                    }
 
                                     // Remember enuough to resolve opcodes nested inside this task.
                                     curTask = value;
@@ -556,6 +576,7 @@ namespace ETWManifest
         private List<Event> m_events = new List<Event>();
         internal string[] m_keywordNames;
         internal Dictionary<int, string> m_taskNames;
+        internal Dictionary<int, Guid> m_taskGuids;
         // Note that the key is task << 8 + opcode to allow for private opcode names
         internal Dictionary<int, string> m_opcodeNames;
 

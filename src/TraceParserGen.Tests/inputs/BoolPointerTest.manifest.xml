@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrumentationManifest xmlns="http://schemas.microsoft.com/win/2004/08/events">
+  <instrumentation xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events">
+
+    <events xmlns="http://schemas.microsoft.com/win/2004/08/events">
+      <provider name="BoolAndPointerProvider"
+                guid="{55555555-6666-7777-8888-999900001111}"
+                symbol="BOOL_POINTER_PROVIDER">
+
+        <keywords>
+          <keyword name="Default" mask="0x1" />
+        </keywords>
+
+        <tasks>
+          <task name="BoolTest" value="1" />
+        </tasks>
+
+        <templates>
+          <template tid="BoolPointerTemplate">
+            <data name="IsEnabled" inType="win:Boolean" />
+            <data name="Ptr" inType="win:Pointer" />
+            <data name="Counter" inType="win:UInt32" />
+          </template>
+        </templates>
+
+        <events>
+          <event value="1"
+                 symbol="BoolTestEvent"
+                 task="BoolTest"
+                 template="BoolPointerTemplate"
+                 keywords="Default"
+                 level="win:Informational" />
+        </events>
+
+      </provider>
+    </events>
+  </instrumentation>
+</instrumentationManifest>

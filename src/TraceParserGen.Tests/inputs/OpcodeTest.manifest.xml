@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrumentationManifest xmlns="http://schemas.microsoft.com/win/2004/08/events">
+  <instrumentation xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events">
+
+    <events xmlns="http://schemas.microsoft.com/win/2004/08/events">
+      <provider name="OpcodeTestProvider"
+                guid="{11111111-2222-3333-4444-555566667777}"
+                symbol="OPCODE_TEST_PROVIDER">
+
+        <keywords>
+          <keyword name="FileIO" mask="0x1" />
+        </keywords>
+
+        <tasks>
+          <task name="FileIO" value="1" />
+        </tasks>
+
+        <templates>
+          <template tid="FileIOTemplate">
+            <data name="FileName" inType="win:UnicodeString" />
+            <data name="FileSize" inType="win:UInt64" />
+          </template>
+        </templates>
+
+        <events>
+          <!-- Start opcode: EventName = FileIO + Start = FileIOStart -->
+          <event value="1"
+                 symbol="FileIOStartEvent"
+                 task="FileIO"
+                 opcode="win:Start"
+                 template="FileIOTemplate"
+                 keywords="FileIO"
+                 level="win:Informational" />
+          <!-- Stop opcode: EventName = FileIO + Stop = FileIOStop -->
+          <event value="2"
+                 symbol="FileIOStopEvent"
+                 task="FileIO"
+                 opcode="win:Stop"
+                 template="FileIOTemplate"
+                 keywords="FileIO"
+                 level="win:Informational" />
+        </events>
+
+      </provider>
+    </events>
+  </instrumentation>
+</instrumentationManifest>

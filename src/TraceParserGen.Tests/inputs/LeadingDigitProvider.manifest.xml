@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<instrumentationManifest xmlns="http://schemas.microsoft.com/win/2004/08/events">
+  <instrumentation xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events">
+
+    <events xmlns="http://schemas.microsoft.com/win/2004/08/events">
+      <!-- Provider name starts with a digit to test ToCSharpName leading-digit fix -->
+      <provider name="3Scale-ETW-Provider"
+                guid="{DEADBEEF-DEAD-BEEF-DEAD-BEEFDEADBEEF}"
+                symbol="THREE_SCALE_ETW_PROVIDER"
+                messageFileName="3Scale.dll"
+                resourceFileName="3Scale.dll">
+
+        <tasks>
+          <task name="Request" value="1" />
+        </tasks>
+
+        <templates>
+          <template tid="RequestArgs">
+            <data name="Url" inType="win:UnicodeString" />
+          </template>
+        </templates>
+
+        <events>
+          <event value="1"
+                 symbol="Request"
+                 task="Request"
+                 template="RequestArgs"
+                 level="win:Informational" />
+        </events>
+
+      </provider>
+    </events>
+  </instrumentation>
+</instrumentationManifest>

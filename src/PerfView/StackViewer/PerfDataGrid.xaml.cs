@@ -25,9 +25,14 @@ namespace PerfView
             InitializeComponent();
             Grid.CopyingRowClipboardContent += delegate (object sender, DataGridRowClipboardEventArgs e)
             {
-                for (int i = 0; i < e.ClipboardRowContent.Count; i++)
+                // Add markdown table formatting (| symbols) when:
+                // - Multiple columns selected (except First/Last special case)
+                // Don't add pipes for: single column or First/Last special case
+                bool shouldAddPipes = (m_numSelectedColumns > 1 && !m_isFirstLastSelection);
+
+                for (int columnIndex = 0; columnIndex < e.ClipboardRowContent.Count; columnIndex++)
                 {
-                    var clipboardContent = e.ClipboardRowContent[i];
+                    var clipboardContent = e.ClipboardRowContent[columnIndex];
 
                     string morphedContent = null;
                     if (e.IsColumnHeadersRow)
@@ -60,19 +65,22 @@ namespace PerfView
                     // Pad so that pasting into a text window works well. 
                     if (e.ClipboardRowContent.Count > 1 && !NoPadOnCopyToClipboard)
                     {
-                        morphedContent = PadForColumn(morphedContent, i + e.StartColumnDisplayIndex);
+                        morphedContent = PadForColumn(morphedContent, columnIndex + e.StartColumnDisplayIndex);
                     }
 
-                    // Add a leading | character to the first column to ensure GitHub renders the content as table
-                    if (i == 0)
+                    if (shouldAddPipes)
                     {
-                        morphedContent = "| " + morphedContent;
-                    }
-                    
-                    // Add a trailing | character to the last column to complete the markdown table row
-                    if (i == e.ClipboardRowContent.Count - 1)
-                    {
-                        morphedContent = morphedContent + " |";
+                        // Add a leading | character to the first column for markdown table format
+                        if (columnIndex == 0)
+                        {
+                            morphedContent = "| " + morphedContent;
+                        }
+                        
+                        // Add a trailing | character to the last column to complete the markdown table row
+                        if (columnIndex == e.ClipboardRowContent.Count - 1)
+                        {
+                            morphedContent = morphedContent + " |";
+                        }
                     }
 
                     // TODO Ugly, morph two cells on different rows into one line for the correct cut/paste experience 
@@ -92,7 +100,7 @@ namespace PerfView
                             return;
                         }
                     }
-                    e.ClipboardRowContent[i] = new DataGridClipboardCellContent(clipboardContent.Item, clipboardContent.Column, morphedContent);
+                    e.ClipboardRowContent[columnIndex] = new DataGridClipboardCellContent(clipboardContent.Item, clipboardContent.Column, morphedContent);
                 }
             };
 
@@ -520,26 +528,89 @@ namespace PerfView
             {
                 // We don't want the header for single values, or for 2 (for cutting and pasting ranges).  
                 int numSelectedCells = window.SelectedCellsChanged(sender, e);
-                if (numSelectedCells <= 2)
+                m_numSelectedCells = numSelectedCells;
+                
+                // Calculate the number of unique columns and rows selected
+                DataGrid dataGrid = sender as DataGrid;
+                if (dataGrid != null && dataGrid.SelectedCells.Count > 0)
                 {
-                    if (numSelectedCells == 2)
+                    var uniqueColumns = new HashSet<DataGridColumn>();
+                    var uniqueRows = new HashSet<object>();
+                    var columnNames = new HashSet<string>();
+                    foreach (var cell in dataGrid.SelectedCells)
                     {
-                        var dataGrid = sender as DataGrid;
-                        if (dataGrid != null)
+                        uniqueColumns.Add(cell.Column);
+                        uniqueRows.Add(cell.Item);
+                        // Get the column name
+                        if (cell.Column.Header is TextBlock header)
                         {
-                            var cells = dataGrid.SelectedCells;
-                            if (cells != null)
-                            {
-                                m_clipboardRangeStart = GetCellStringValue(cells[0]);
-                                m_clipboardRangeEnd = GetCellStringValue(cells[1]);
-                            }
+                            columnNames.Add(header.Name);
                         }
                     }
-                    Grid.ClipboardCopyMode = DataGridClipboardCopyMode.ExcludeHeader;
+                    m_numSelectedColumns = uniqueColumns.Count;
+                    m_numSelectedRows = uniqueRows.Count;
+
+                    // Detect special case: 1 row, 2 columns, and they are FirstColumn and LastColumn
+                    // The last two columns in the grid are "First" and "Last" which represent the time range.  It's very common
+                    // for users to select these two and copy them so that they can be used to filter the data in this or another view.
+                    // When a user does this, we don't want to add headers or '|' symbols and display as a markdown table.  We detect
+                    // this scenario here because markdown support is added in the CopyingRowClipboardContent event handler where we don't
+                    // have access to the column names.
+                    m_isFirstLastSelection = (m_numSelectedRows == 1 && m_numSelectedColumns == 2 && 
+                                              columnNames.Contains("FirstColumn") && columnNames.Contains("LastColumn"));
                 }
                 else
                 {
+                    m_numSelectedColumns = 0;
+                    m_numSelectedRows = 0;
+                    m_isFirstLastSelection = false;
+                }
+                
+                // Determine whether to include headers based on selection:
+                // - Single cell: no header
+                // - First/Last special case: no header
+                // - Single column, multiple cells: include header
+                // - Multiple columns, single row: include header (unless First/Last case)
+                // - Multiple columns, multiple rows: include header
+                bool shouldIncludeHeader = false;
+                if (numSelectedCells == 1 || m_isFirstLastSelection)
+                {
+                    // Single cell or First/Last special case: no header
+                    shouldIncludeHeader = false;
+                }
+                else if (m_numSelectedColumns == 1 && m_numSelectedRows > 1)
+                {
+                    // Single column, multiple rows: include header
+                    shouldIncludeHeader = true;
+                }
+                else if (m_numSelectedColumns > 1)
+                {
+                    // Multiple columns: include header
+                    shouldIncludeHeader = true;
+                }
+                
+                if (shouldIncludeHeader)
+                {
                     Grid.ClipboardCopyMode = DataGridClipboardCopyMode.IncludeHeader;
+                }
+                else
+                {
+                    Grid.ClipboardCopyMode = DataGridClipboardCopyMode.ExcludeHeader;
+                }
+                
+                // Only set range values for the First/Last special case
+                // This enables the special morphing logic that combines them on one line
+                if (m_isFirstLastSelection && numSelectedCells == 2)
+                {
+                    if (dataGrid != null)
+                    {
+                        var cells = dataGrid.SelectedCells;
+                        if (cells != null)
+                        {
+                            m_clipboardRangeStart = GetCellStringValue(cells[0]);
+                            m_clipboardRangeEnd = GetCellStringValue(cells[1]);
+                        }
+                    }
                 }
             }
             m_maxColumnInSelection = null;
@@ -559,6 +630,10 @@ namespace PerfView
         /// </summary>
         private string m_clipboardRangeStart;
         private string m_clipboardRangeEnd;
+        private int m_numSelectedCells;
+        private int m_numSelectedColumns;
+        private int m_numSelectedRows;
+        private bool m_isFirstLastSelection;
         private int[] m_maxColumnInSelection;
         private int m_FindEnd;
         private Regex m_findPat;

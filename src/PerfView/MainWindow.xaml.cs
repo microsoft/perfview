@@ -1070,6 +1070,17 @@ namespace PerfView
             // DO NOT call Environment.Exit(0) under tests, it will kill the test runner, and tests won't complete.
             if (!_testing)
             {
+                // Dispose all WebView2 browser controls before exiting. Environment.Exit triggers
+                // finalizers, and the WebView2 finalizer crashes if the underlying COM objects have
+                // already been torn down during process shutdown.
+                foreach (Window window in Application.Current.Windows)
+                {
+                    if (window is WebBrowserWindow browserWindow)
+                    {
+                        browserWindow.Browser?.Dispose();
+                    }
+                }
+
                 Environment.Exit(0);
             }
         }

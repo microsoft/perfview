@@ -4,20 +4,12 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using Xunit;
 
 using static Microsoft.Diagnostics.Tracing.Stacks.StackSourceWriterHelper;
-
-// For Debug.Listeners
-#if NETCOREAPP3_0_OR_GREATER
-using Trace = System.Diagnostics.Trace;
-#else
-using Trace = System.Diagnostics.Debug;
-#endif
 
 namespace TraceEventTests
 {
@@ -343,10 +335,6 @@ namespace TraceEventTests
         [InlineData("only_managed_samples.nettrace.zip")]
         public void CanConvertProvidedTraceFiles(string zippedTraceFileName)
         {
-            var debugListenersCopy = new TraceListener[Trace.Listeners.Count];
-            Trace.Listeners.CopyTo(debugListenersCopy, index: 0);
-            Trace.Listeners.Clear();
-
             string fileToUnzip = Path.Combine("inputs", "speedscope", zippedTraceFileName);
             string unzippedFile = Path.ChangeExtension(fileToUnzip, string.Empty);
 
@@ -401,10 +389,6 @@ namespace TraceEventTests
                 if (File.Exists(unzippedFile))
                 {
                     File.Delete(unzippedFile);
-                }
-                if (debugListenersCopy.Length > 0)
-                {
-                    Trace.Listeners.AddRange(debugListenersCopy);
                 }
             }
         }

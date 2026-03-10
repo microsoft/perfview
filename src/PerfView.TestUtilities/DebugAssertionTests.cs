@@ -11,11 +11,14 @@
     /// <remarks>
     /// <para>This file can be linked into any project which needs to validate that assertions are behaving correctly
     /// for the purpose of unit testing.</para>
+    /// <para>On .NET Framework, assertion failures throw via <see cref="ThrowingTraceListener"/> registered in
+    /// app.config. On .NET 5+, the DefaultTraceListener already throws on assertion failures, so no
+    /// additional listener configuration is needed.</para>
     /// </remarks>
     public class DebugAssertionTests
     {
 #if DEBUG
-        [Fact(Skip = "https://github.com/microsoft/perfview/issues/1571")]
+        [Fact]
         public void TestDebugAssertThrowsException()
         {
             Debug.Assert(true);
@@ -23,20 +26,20 @@
             Assert.ThrowsAny<Exception>(() => Debug.Assert(false));
         }
 
-        [Fact(Skip = "https://github.com/microsoft/perfview/issues/1571")]
+        [Fact]
         public void TestDebugFailThrowsException()
         {
             Assert.ThrowsAny<Exception>(() => Debug.Fail("Bad things"));
         }
 #endif
 
-        [Fact(Skip = "https://github.com/microsoft/perfview/issues/1571")]
+        [Fact]
         public void TestTraceAssertThrowsException()
         {
             Assert.ThrowsAny<Exception>(() => Trace.Assert(false));
         }
 
-        [Fact(Skip = "https://github.com/microsoft/perfview/issues/1571")]
+        [Fact]
         public void TestTraceFailThrowsException()
         {
             Assert.ThrowsAny<Exception>(() => Trace.Fail("Bad things"));

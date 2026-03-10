@@ -2,6 +2,7 @@
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.Compatibility;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -106,7 +107,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Dictionary<string, string> enumIntern = new Dictionary<string, string>();
             StringWriter enumLocalizations = new StringWriter();
 
-            // Any task names used so far
+            // Track emitted string IDs to prevent duplicates in the stringTable
+            HashSet<string> emittedStringIds = new HashSet<string>();
+
+            // Any task names used so far 
             Dictionary<string, int> taskNames = new Dictionary<string, int>();
             // Any  es used so far
             Dictionary<string, int> opcodeNames = new Dictionary<string, int>();
@@ -359,14 +363,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                             {
                                                 StringWriter enumWriter = new StringWriter();
                                                 string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
-                                                enumAttrib = " map=\"" + enumName + "\"";
+                                                enumAttrib = " map=\"" + XmlUtilities.XmlEscape(enumName) + "\"";
                                                 if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
                                                 {
-                                                    enumWriter.WriteLine("     <valueMap name=\"{0}\">", enumName);
+                                                    enumWriter.WriteLine("     <valueMap name=\"{0}\">", XmlUtilities.XmlEscape(enumName));
                                                 }
                                                 else
                                                 {
-                                                    enumWriter.WriteLine("     <bitMap name=\"{0}\">", enumName);
+                                                    enumWriter.WriteLine("     <bitMap name=\"{0}\">", XmlUtilities.XmlEscape(enumName));
                                                 }
 
                                                 EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
@@ -374,16 +378,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                                 {
                                                     int value = mapEntries[k].Value;
                                                     string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
-                                                    enumWriter.WriteLine("      <map value=\"0x{0:x}\" message=\"$(string.map_{1}{2})\"/>", value, enumName, valueName);
-                                                    enumLocalizations.WriteLine("    <string id=\"map_{0}{1}\" value=\"{2}\"/>", enumName, valueName, valueName);
+                                                    string escapedValueName = XmlUtilities.XmlEscape(valueName);
+                                                    string stringId = XmlUtilities.XmlEscape($"map_{enumName}{valueName}");
+                                                    enumWriter.WriteLine("      <map value=\"0x{0:x}\" message=\"$(string.{1})\"/>", value, stringId);
+                                                    if (emittedStringIds.Add(stringId))
+                                                    {
+                                                        enumLocalizations.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", stringId, escapedValueName);
+                                                    }
                                                 }
                                                 if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
                                                 {
-                                                    enumWriter.WriteLine("     </valueMap>", enumName);
+                                                    enumWriter.WriteLine("     </valueMap>");
                                                 }
                                                 else
                                                 {
-                                                    enumWriter.WriteLine("     </bitMap>", enumName);
+                                                    enumWriter.WriteLine("     </bitMap>");
                                                 }
 
                                                 enumIntern[mapName] = enumWriter.ToString();
@@ -452,9 +461,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 manifest.WriteLine("    <keywords>");
                 foreach (var keyValue in keywords)
                 {
-                    manifest.WriteLine("     <keyword name=\"{0}\" message=\"$(string.keyword_{1})\" mask=\"0x{2:x}\"/>",
-                        keyValue.Value, keyValue.Value, keyValue.Key);
-                    localizedStrings.WriteLine("    <string id=\"keyword_{0}\" value=\"{1}\"/>", keyValue.Value, keyValue.Value);
+                    string escapedValue = XmlUtilities.XmlEscape(keyValue.Value);
+                    string stringId = XmlUtilities.XmlEscape($"keyword_{keyValue.Value}");
+                    manifest.WriteLine("     <keyword name=\"{0}\" message=\"$(string.{1})\" mask=\"0x{2:x}\"/>",
+                        escapedValue, stringId, keyValue.Key);
+                    if (emittedStringIds.Add(stringId))
+                    {
+                        localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", stringId, escapedValue);
+                    }
                 }
                 manifest.WriteLine("    </keywords>");
             }
@@ -463,18 +477,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             foreach (var taskValue in tasks.Keys)
             {
                 var task = tasks[taskValue];
-                manifest.WriteLine("     <task name=\"{0}\" message=\"$(string.task_{1})\" value=\"{2}\"{3}>", task.Name, task.Name, taskValue,
-                    task.Opcodes == null ? "/" : "");       // If no opcodes, terminate immediately.
-                localizedStrings.WriteLine("    <string id=\"task_{0}\" value=\"{1}\"/>", task.Name, task.Name);
+
+                string escapedTaskName = XmlUtilities.XmlEscape(task.Name);
+                string taskStringId = XmlUtilities.XmlEscape($"task_{task.Name}");
+                manifest.WriteLine("     <task name=\"{0}\" message=\"$(string.{1})\" value=\"{2}\"{3}>", escapedTaskName, taskStringId, taskValue,
+                    task.Opcodes == null ? "/" : "");       // If no opcodes, terminate immediately.  
+                if (emittedStringIds.Add(taskStringId))
+                {
+                    localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", taskStringId, escapedTaskName);
+                }
                 if (task.Opcodes != null)
                 {
                     manifest.WriteLine(">");
                     manifest.WriteLine("      <opcodes>");
                     foreach (var keyValue in task.Opcodes)
                     {
-                        manifest.WriteLine("       <opcode name=\"{0}\" message=\"$(string.opcode_{1}{2})\" value=\"{3}\"/>",
-                            keyValue.Value, task.Name, keyValue.Value, keyValue.Key);
-                        localizedStrings.WriteLine("    <string id=\"opcode_{0}{1}\" value=\"{2}\"/>", task.Name, keyValue.Value, keyValue.Value);
+                        string escapedOpcodeName = XmlUtilities.XmlEscape(keyValue.Value);
+                        string opcodeStringId = XmlUtilities.XmlEscape($"opcode_{task.Name}{keyValue.Value}");
+                        manifest.WriteLine("       <opcode name=\"{0}\" message=\"$(string.{1})\" value=\"{2}\"/>",
+                            escapedOpcodeName, opcodeStringId, keyValue.Key);
+                        if (emittedStringIds.Add(opcodeStringId))
+                        {
+                            localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", opcodeStringId, escapedOpcodeName);
+                        }
                     }
                     manifest.WriteLine("      </opcodes>");
                     manifest.WriteLine("     </task>");

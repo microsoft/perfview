@@ -1915,6 +1915,7 @@ namespace PerfView
         private List<DataGridColumn> m_userDefinedColumns;
         private float[] m_buckets;                              // Keep track of the counts of events.
         private double m_bucketTimeMSec;                        // Size for each bucket
+        private ScrollViewer m_gridScrollViewer;                // Cached ScrollViewer for horizontal scrolling
         #endregion
 
         private void DoUseLocalTime(object sender, RoutedEventArgs e)
@@ -2000,6 +2001,47 @@ namespace PerfView
             
             // Save preference
             App.UserConfigData["EventWindowShowTimeStampColumns"] = "false";
+        }
+
+        /// <summary>
+        /// When Shift is held, redirect mouse wheel events to horizontal scrolling.
+        /// </summary>
+        private void Grid_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (Keyboard.Modifiers == ModifierKeys.Shift)
+            {
+                // Cache the ScrollViewer on first use
+                if (m_gridScrollViewer == null)
+                {
+                    m_gridScrollViewer = FindVisualChild<ScrollViewer>((DependencyObject)sender);
+                    if (m_gridScrollViewer == null)
+                    {
+                        return;
+                    }
+                }
+
+                m_gridScrollViewer.ScrollToHorizontalOffset(m_gridScrollViewer.HorizontalOffset - e.Delta);
+                e.Handled = true;
+            }
+        }
+
+        private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T found)
+                {
+                    return found;
+                }
+
+                T result = FindVisualChild<T>(child);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+            return null;
         }
     }
 }

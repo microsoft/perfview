@@ -1,6 +1,9 @@
 steps:
-- task: DockerInstaller@0
-  displayName: 'Install Docker'
+- task: Bash@3
+  displayName: 'Get Docker Version'
+  inputs:
+    targetType: inline
+    script: 'docker --version'
 
 - task: Bash@3
   displayName: 'Build Containers'

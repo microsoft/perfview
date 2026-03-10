@@ -2887,7 +2887,12 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
 #if DEBUG
-            if (GetProviderName() != null && !m_ConfirmedAllEventsAreInEnumeration && !(this is PredefinedDynamicTraceEventParser))
+            // ApplicationServerTraceEventParser is auto-generated and has many events sharing the same
+            // task name, producing duplicate computed event names that ConfirmAllEventsAreInEnumeration
+            // cannot handle.
+            if (GetProviderName() != null && !m_ConfirmedAllEventsAreInEnumeration &&
+                !(this is PredefinedDynamicTraceEventParser) &&
+                !(this is Parsers.ApplicationServerTraceEventParser))
             {
                 ConfirmAllEventsAreInEnumeration();
                 m_ConfirmedAllEventsAreInEnumeration = true;

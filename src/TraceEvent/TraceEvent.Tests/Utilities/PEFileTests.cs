@@ -611,6 +611,7 @@ namespace OriginalPEFile
         private short readyToRunMajor;
         private short readyToRunMinor;
 
+#pragma warning disable CS0649 // Fields are assigned via pointer casting from binary data
         private struct IMAGE_COR20_HEADER
         {
             // Header versioning
@@ -649,6 +650,7 @@ namespace OriginalPEFile
             // Array of sections follows. The array entries are sorted by Type
             // READYTORUN_SECTION   Sections[];
         };
+#pragma warning restore CS0649
 
         public void GetNativeInfo()
         {
@@ -656,6 +658,8 @@ namespace OriginalPEFile
             {
                 return;
             }
+
+            getNativeInfoCalled = true;
 
             if (Header.ComDescriptorDirectory.VirtualAddress != 0 && sizeof(IMAGE_COR20_HEADER) <= Header.ComDescriptorDirectory.Size)
             {
@@ -1406,6 +1410,7 @@ namespace OriginalPEFile
 #if PEFILE_PUBLIC
     public
 #endif
+#pragma warning disable CS0649 // Fields are assigned via pointer casting from binary data
     struct IMAGE_DATA_DIRECTORY
     {
         /// <summary>
@@ -1417,6 +1422,7 @@ namespace OriginalPEFile
         /// </summary>
         public int Size;
     }
+#pragma warning restore CS0649
 
     /// <summary>
     /// FileVersionInfo represents the extended version formation that is optionally placed in the PE file resource area. 
@@ -1835,6 +1841,7 @@ namespace OriginalPEFile
         public uint Characteristics;
     };
 
+#pragma warning disable CS0649 // Fields are assigned via pointer casting from binary data
     internal struct IMAGE_DEBUG_DIRECTORY
     {
         public int Characteristics;
@@ -1846,6 +1853,7 @@ namespace OriginalPEFile
         public int AddressOfRawData;
         public int PointerToRawData;
     };
+#pragma warning restore CS0649
 
     internal enum IMAGE_DEBUG_TYPE
     {
@@ -1857,6 +1865,7 @@ namespace OriginalPEFile
         BBT = 10,
     };
 
+#pragma warning disable CS0649 // Fields are assigned via pointer casting from binary data
     internal unsafe struct CV_INFO_PDB70
     {
         public const int PDB70CvSignature = 0x53445352; // RSDS in ascii
@@ -1876,6 +1885,7 @@ namespace OriginalPEFile
             }
         }
     };
+#pragma warning restore CS0649
 
 
     /* Resource information */
@@ -1889,6 +1899,7 @@ namespace OriginalPEFile
     //
     // This structure allows fast lookup by either name or number, but for any
     // given resource entry only one form of lookup is supported, not both.
+#pragma warning disable CS0649 // Fields are assigned via pointer casting from binary data
     internal unsafe struct IMAGE_RESOURCE_DIRECTORY
     {
         public int Characteristics;
@@ -1899,6 +1910,7 @@ namespace OriginalPEFile
         public ushort NumberOfIdEntries;
         //  IMAGE_RESOURCE_DIRECTORY_ENTRY DirectoryEntries[];
     };
+#pragma warning restore CS0649
 
     //
     // Each directory contains the 32-bit Name of the entry and an offset,
@@ -1994,6 +2006,7 @@ namespace OriginalPEFile
     // of bytes of data at that offset, a CodePage that should be used when
     // decoding code point values within the resource data.  Typically for new
     // applications the code page would be the unicode code page.
+#pragma warning disable CS0649 // Fields are assigned via pointer casting from binary data
     internal unsafe struct IMAGE_RESOURCE_DATA_ENTRY
     {
         public int RvaToData;
@@ -2001,6 +2014,7 @@ namespace OriginalPEFile
         public int CodePage;
         public int Reserved;
     };
+#pragma warning restore CS0649
 
     #endregion
 }
