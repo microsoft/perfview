@@ -426,7 +426,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             // TODO:  Currently we read all of metadata and then parse it.  We could do better by
             //        only reading one packet at a time.
-            byte[] headerBufer = new byte[Marshal.SizeOf(typeof(MetadataPacketHeader))];
+            byte[] headerBufer = new byte[Marshal.SizeOf<MetadataPacketHeader>()];
             byte[] buffer = null;
 
             StringBuilder sb = new StringBuilder();

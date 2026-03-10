@@ -4,11 +4,13 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Reflection;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Win32;
 
 using KernelKeywords = Microsoft.Diagnostics.Tracing.Parsers.KernelTraceEventParser.Keywords;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.Tracing
 {
@@ -19,7 +21,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public static int StartKernelSession(
             out ulong TraceHandle, // EVENT_TRACE_PROPERTIES
-            void* propertyBuff, 
+            void* propertyBuff,
             int propertyBuffLength,
             STACK_TRACING_EVENT_ID* stackTracingEventIds,
             int cStackTracingEventIds)
@@ -71,7 +73,7 @@ namespace Microsoft.Diagnostics.Tracing
                 List<ExtensionItem> extensions = new List<ExtensionItem>();
 
                 /* Prep Extensions */
-                // Turn on the Pids feature, selects which process to turn on. 
+                // Turn on the Pids feature, selects which process to turn on.
                 var pids = new ExtensionItem(ExtensionItemTypes.ETW_EXT_PIDS);
                 pids.Data.Add(pid);
                 extensions.Add(pids);
@@ -91,7 +93,7 @@ namespace Microsoft.Diagnostics.Tracing
                 // Save Extensions.
                 SaveExtensions(extensions, properties, extensionsOffset);
 
-                // Get the session name from the properties.  
+                // Get the session name from the properties.
                 var sessionName = new String((char*)(((byte*)properties) + properties->LoggerNameOffset));
 
                 // Actually start the session.
@@ -103,6 +105,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// Turn on windows heap logging for a particular EXE file name (just the file name, no directory).
         /// This API is OK to call from one thread while Process() is being run on another.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static int StartWindowsHeapSession(
             out ulong traceHandle,
             void* propertyBuff,
@@ -113,7 +116,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 var properties = (EVENT_TRACE_PROPERTIES*)propertyBuff;
 
-                // Get the session name from the properties.  
+                // Get the session name from the properties.
                 var sessionName = new String((char*)(((byte*)properties) + properties->LoggerNameOffset));
 
                 SetImageTracingFlags(sessionName, exeFileName, true);
@@ -125,6 +128,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// Resets any windows heap tracing flags that might be set.
         /// Called during Stop.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static void ResetWindowsHeapTracingFlags(string sessionName, bool noThrow = false)
         {
             lock ((object)s_KernelTraceControlLoaded)
@@ -153,12 +157,12 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// It is sometimes useful to merge the contents of several ETL files into a single 
-        /// output ETL file.   This routine does that.  It also will attach additional 
-        /// information that will allow correct file name and symbolic lookup if the 
+        /// It is sometimes useful to merge the contents of several ETL files into a single
+        /// output ETL file.   This routine does that.  It also will attach additional
+        /// information that will allow correct file name and symbolic lookup if the
         /// ETL file is used on a machine other than the one that the data was collected on.
-        /// If you wish to transport the file to another machine you need to merge it, even 
-        /// if you have only one file so that this extra information get incorporated.  
+        /// If you wish to transport the file to another machine you need to merge it, even
+        /// if you have only one file so that this extra information get incorporated.
         /// </summary>
         /// <param name="inputETLFileNames">The input ETL files to merge</param>
         /// <param name="outputETLFileName">The output ETL file to produce.</param>
@@ -169,7 +173,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             IntPtr state = IntPtr.Zero;
 
-            // If we happen to be in the WOW, disable file system redirection as you don't get the System32 dlls otherwise. 
+            // If we happen to be in the WOW, disable file system redirection as you don't get the System32 dlls otherwise.
             bool disableRedirection = Wow64DisableWow64FsRedirection(ref state) != 0;
             try
             {
@@ -186,7 +190,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        #region private 
+        #region private
         #region ETW Tracing from KernelTraceControl.h
 
         [DllImport("KernelTraceControl.dll", CharSet = CharSet.Unicode)]
@@ -270,8 +274,20 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 try
                 {
-                    string myAssemblyPath = typeof(ETWKernelControl).GetTypeInfo().Assembly.ManifestModule.FullyQualifiedName;
-                    string myAssemblyDir = Path.GetDirectoryName(myAssemblyPath);
+                    [UnconditionalSuppressMessage(
+                        "SingleFile",
+                        "IL3000:Avoid accessing Assembly file path when publishing as a single file",
+                        Justification = "Correctly handles the case that Location is empty"
+                    )]
+                    string GetToolsDir()
+                    {
+                        var assemblyLoc = typeof(ETWKernelControl).Assembly.Location;
+                        return string.IsNullOrEmpty(assemblyLoc)
+                            ? AppContext.BaseDirectory
+                            : Path.GetDirectoryName(assemblyLoc);
+                    }
+
+                    string myAssemblyDir = GetToolsDir();
                     string arch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
                     var kernelTraceControlPath = Path.Combine(Path.Combine(myAssemblyDir, arch), "KernelTraceControl.dll");
                     IntPtr result = LoadLibrary(kernelTraceControlPath);
@@ -291,7 +307,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Computes the location (offset) where extensions can be put in 'Properties'.  
+        /// Computes the location (offset) where extensions can be put in 'Properties'.
         /// </summary>
         private static unsafe int ExtensionsOffset(EVENT_TRACE_PROPERTIES* properties, int propertyBuffLength)
         {
@@ -372,7 +388,7 @@ namespace Microsoft.Diagnostics.Tracing
                     // First WORD is len (including header) in DWORDS, next is Type
                     *ptr++ = (extension.Data.Count + 1) + (((int)extension.Type) << 16);
 
-                    // Write the data 
+                    // Write the data
                     for (int i = 0; i < extension.Data.Count; i++)
                         *ptr++ = extension.Data[i];
                 }
@@ -394,10 +410,10 @@ namespace Microsoft.Diagnostics.Tracing
             converter[VirtualAllocTaskGuid] = 0x2;   // EVENT_TRACE_GROUP_MEMORY
             converter[MemoryTaskGuid] = 0x2;
             converter[ProcessTaskGuid] = 0x3;
-            converter[FileIOTaskGuid] = 0x4;         // EVENT_TRACE_GROUP_FILE 
+            converter[FileIOTaskGuid] = 0x4;         // EVENT_TRACE_GROUP_FILE
             converter[ThreadTaskGuid] = 0x5;
-            converter[RegistryTaskGuid] = 0x9;       // EVENT_TRACE_GROUP_REGISTRY 
-            converter[PerfInfoTaskGuid] = 0xF;       // EVENT_TRACE_GROUP_PERFINFO     
+            converter[RegistryTaskGuid] = 0x9;       // EVENT_TRACE_GROUP_REGISTRY
+            converter[PerfInfoTaskGuid] = 0xF;       // EVENT_TRACE_GROUP_PERFINFO
             converter[ObjectTaskGuid] = 0x11;        // EVENT_TRACE_GROUP_OBJECT
 
             var stackSpec = new ExtensionItem(ExtensionItemTypes.ETW_EXT_STACKWALK_FILTER);
@@ -480,6 +496,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Helper function used to implement EnableWindowsHeapProvider.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         private static void SetImageTracingFlags(string sessionName, string exeFileName, bool set)
         {
             // We always want the native registry for the OS (64 bit on a 64 bit machine).
@@ -501,7 +518,7 @@ namespace Microsoft.Diagnostics.Tracing
                 using (RegistryKey perfViewKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\TraceEvent\HeapTracing"))
                 {
                     var prevValue = perfViewKey.GetValue(sessionName, null);
-                    // Remove any old values.  
+                    // Remove any old values.
                     if (prevValue != null)
                         ResetWindowsHeapTracingFlags(sessionName);
                     perfViewKey.SetValue(sessionName, exeFileName, RegistryValueKind.String);
@@ -590,7 +607,7 @@ namespace Microsoft.Diagnostics.Tracing
     }
 
     /// <summary>
-    /// Flags to influence what happens when ETL files are Merged.  
+    /// Flags to influence what happens when ETL files are Merged.
     /// </summary>
     [Flags]
     public enum EVENT_TRACE_MERGE_EXTENDED_DATA
