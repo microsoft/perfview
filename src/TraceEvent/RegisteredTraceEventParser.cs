@@ -95,17 +95,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             TraceEventNativeMethods.EVENT_RECORD eventRecord = new TraceEventNativeMethods.EVENT_RECORD();
             eventRecord.EventHeader.ProviderId = providerGuid;
 
-            // We keep events of a given event number together in the output
+            // We keep events of a given event number together in the output (pre-rendered XML fragments)
             string providerName = null;
-            SortedDictionary<int, List<EventData>> events = new SortedDictionary<int, List<EventData>>();
+            SortedDictionary<int, List<string>> events = new SortedDictionary<int, List<string>>();
             // We keep tasks separated by task ID
             SortedDictionary<int, TaskInfo> tasks = new SortedDictionary<int, TaskInfo>();
-            // Templates where the KEY is the template string and the VALUE is the template name (backwards)  
-            Dictionary<TemplateKey, TemplateData> templateIntern = new Dictionary<TemplateKey, TemplateData>(8);
+            // Templates: KEY is the rendered XML content of the template fields, VALUE is the template name
+            Dictionary<string, string> templateIntern = new Dictionary<string, string>(8);
 
-            // Remember any enum types we have
-            Dictionary<string, MapData> enumIntern = new Dictionary<string, MapData>();
-            List<StringTableEntry> enumLocalizations = new List<StringTableEntry>();
+            // Maps: KEY is the map name, VALUE is rendered map XML
+            Dictionary<string, string> enumIntern = new Dictionary<string, string>();
+            // Maps: KEY is the map name, VALUE is the display name for the map attribute
+            Dictionary<string, string> enumDisplayNames = new Dictionary<string, string>();
+            List<KeyValuePair<string, string>> enumLocalizations = new List<KeyValuePair<string, string>>();
 
             // Track emitted string IDs to prevent duplicates in the stringTable
             HashSet<string> emittedStringIds = new HashSet<string>();
@@ -132,6 +134,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     keywords[keywordItem.Value] = MakeLegalIdentifier(keywordItem.Name);
                 }
             }
+
+            // XmlWriter settings for rendering XML fragments during enumeration
+            var fragmentSettings = new XmlWriterSettings
+            {
+                ConformanceLevel = ConformanceLevel.Fragment,
+                OmitXmlDeclaration = true
+            };
 
             int status;
 
@@ -271,23 +280,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             symbolName += "_V" + eventInfo->EventDescriptor.Version;
                         }
 
-                        EventData eventData = new EventData();
-                        List<EventData> eventList;
-                        if (!events.TryGetValue(eventInfo->EventDescriptor.Id, out eventList))
-                        {
-                            events[eventInfo->EventDescriptor.Id] = eventList = new List<EventData>();
-                        }
-                        eventList.Add(eventData);
-
-                        // Populate event data
-                        eventData.Value = eventInfo->EventDescriptor.Id;
-                        eventData.Symbol = symbolName;
-                        eventData.Version = eventInfo->EventDescriptor.Version;
-                        eventData.Task = taskName;
-                        
+                        // Compute opcode attribute and register non-reserved opcodes with task
+                        string opcodeId = null;
                         if (eventInfo->EventDescriptor.Opcode != 0)
                         {
-                            string opcodeId;
                             if (eventInfo->EventDescriptor.Opcode < 10)       // It is a reserved opcode.  
                             {
                                 // For some reason opcodeName does not have the underscore, which we need. 
@@ -317,131 +313,185 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     taskInfo.Opcodes[eventInfo->EventDescriptor.Opcode] = opcodeId;
                                 }
                             }
-                            eventData.Opcode = opcodeId;
                         }
                         
                         // TODO handle cases outside standard levels 
+                        string level = null;
                         if ((int)TraceEventLevel.Always <= eventInfo->EventDescriptor.Level && eventInfo->EventDescriptor.Level <= (int)TraceEventLevel.Verbose)
                         {
                             var asLevel = (TraceEventLevel)eventInfo->EventDescriptor.Level;
-                            eventData.Level = "win:" + asLevel;
+                            level = "win:" + asLevel;
                         }
 
                         var keywordStr = GetKeywordStr(keywords, (ulong)eventInfo->EventDescriptor.Keyword);
-                        if (keywordStr.Length > 0)
-                        {
-                            eventData.Keywords = keywordStr;
-                        }
 
+                        // Process properties and build template content using XmlWriter
+                        string templateName = null;
                         if (eventInfo->TopLevelPropertyCount != 0)
                         {
-                            List<DataField> dataFields = new List<DataField>();
                             string[] propertyNames = new string[eventInfo->TopLevelPropertyCount];
-                            
-                            for (int j = 0; j < eventInfo->TopLevelPropertyCount; j++)
+                            var templateSb = new StringBuilder();
+                            using (var tw = XmlWriter.Create(templateSb, fragmentSettings))
                             {
-                                EVENT_PROPERTY_INFO* propertyInfo = &propertyInfos[j];
-                                var propertyName = new string((char*)(&eventInfoBuff[propertyInfo->NameOffset]));
-                                propertyNames[j] = propertyName;
-                                string mapAttrib = null;
-
-                                // Deal with any maps (bit fields or enumerations)
-                                if (propertyInfo->MapNameOffset != 0)
+                                for (int j = 0; j < eventInfo->TopLevelPropertyCount; j++)
                                 {
-                                    string mapName = new string((char*)(&eventInfoBuff[propertyInfo->MapNameOffset]));
+                                    EVENT_PROPERTY_INFO* propertyInfo = &propertyInfos[j];
+                                    var propertyName = new string((char*)(&eventInfoBuff[propertyInfo->NameOffset]));
+                                    propertyNames[j] = propertyName;
+                                    string mapAttrib = null;
 
-                                    if (enumBuffer == null)
+                                    // Deal with any maps (bit fields or enumerations)
+                                    if (propertyInfo->MapNameOffset != 0)
                                     {
-                                        enumBuffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
-                                    }
+                                        string mapName = new string((char*)(&eventInfoBuff[propertyInfo->MapNameOffset]));
 
-                                    MapData existingMap;
-                                    if (!enumIntern.TryGetValue(mapName, out existingMap))
-                                    {
-                                        EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
-                                        var hr = TdhGetEventMapInformation(&eventRecord, mapName, enumInfo, ref buffSize);
-                                        if (hr == 0)
+                                        if (enumBuffer == null)
                                         {
-                                            // We only support manifest enums for now.  
-                                            if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP ||
-                                                enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_BITMAP)
+                                            enumBuffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
+                                        }
+
+                                        string existingDisplayName;
+                                        if (!enumIntern.ContainsKey(mapName))
+                                        {
+                                            EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
+                                            var hr = TdhGetEventMapInformation(&eventRecord, mapName, enumInfo, ref buffSize);
+                                            if (hr == 0)
                                             {
-                                                string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
-
-                                                var mapData = new MapData();
-                                                mapData.Name = enumName;
-                                                mapData.IsValueMap = (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP);
-                                                mapData.Entries = new List<MapEntry>();
-
-                                                EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
-                                                for (int k = 0; k < enumInfo->EntryCount; k++)
+                                                // We only support manifest enums for now.  
+                                                if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP ||
+                                                    enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_BITMAP)
                                                 {
-                                                    int value = mapEntries[k].Value;
-                                                    string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
-                                                    string stringId = $"map_{enumName}{valueName}";
-                                                    
-                                                    mapData.Entries.Add(new MapEntry { Value = value, StringId = stringId });
-                                                    
-                                                    if (emittedStringIds.Add(stringId))
-                                                    {
-                                                        enumLocalizations.Add(new StringTableEntry { Id = stringId, Value = valueName });
-                                                    }
-                                                }
+                                                    string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
 
-                                                enumIntern[mapName] = mapData;
-                                                existingMap = mapData;
+                                                    // Render map XML using XmlWriter
+                                                    var mapSb = new StringBuilder();
+                                                    using (var mw = XmlWriter.Create(mapSb, fragmentSettings))
+                                                    {
+                                                        mw.WriteStartElement(
+                                                            enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP
+                                                                ? "valueMap" : "bitMap");
+                                                        mw.WriteAttributeString("name", enumName);
+
+                                                        EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
+                                                        for (int k = 0; k < enumInfo->EntryCount; k++)
+                                                        {
+                                                            int value = mapEntries[k].Value;
+                                                            string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
+                                                            string stringId = $"map_{enumName}{valueName}";
+
+                                                            mw.WriteStartElement("map");
+                                                            mw.WriteAttributeString("value", $"0x{value:x}");
+                                                            mw.WriteAttributeString("message", $"$(string.{stringId})");
+                                                            mw.WriteEndElement();
+
+                                                            if (emittedStringIds.Add(stringId))
+                                                            {
+                                                                enumLocalizations.Add(new KeyValuePair<string, string>(stringId, valueName));
+                                                            }
+                                                        }
+
+                                                        mw.WriteEndElement(); // valueMap or bitMap
+                                                    }
+
+                                                    enumIntern[mapName] = mapSb.ToString();
+                                                    enumDisplayNames[mapName] = enumName;
+                                                }
                                             }
+                                        }
+
+                                        if (enumDisplayNames.TryGetValue(mapName, out existingDisplayName))
+                                        {
+                                            mapAttrib = existingDisplayName;
                                         }
                                     }
 
-                                    if (existingMap != null)
+                                    // Remove anything that does not look like an ID (.e.g space)
+                                    propertyName = Regex.Replace(propertyName, "[^A-Za-z0-9_]", "");
+                                    TdhInputType propertyType = propertyInfo->InType;
+                                    string countAttrib = null;
+                                    string lengthAttrib = null;
+
+                                    if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamCount) != 0)
                                     {
-                                        mapAttrib = existingMap.Name;
+                                        countAttrib = propertyNames[propertyInfo->CountOrCountIndex];
                                     }
-                                }
+                                    else if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamLength) != 0)
+                                    {
+                                        lengthAttrib = propertyNames[propertyInfo->LengthOrLengthIndex];
+                                    }
 
-                                // Remove anything that does not look like an ID (.e.g space)
-                                propertyName = Regex.Replace(propertyName, "[^A-Za-z0-9_]", "");
-                                TdhInputType propertyType = propertyInfo->InType;
-                                string countAttrib = null;
-                                string lengthAttrib = null;
-
-                                if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamCount) != 0)
-                                {
-                                    countAttrib = propertyNames[propertyInfo->CountOrCountIndex];
+                                    tw.WriteStartElement("data");
+                                    tw.WriteAttributeString("name", propertyName);
+                                    tw.WriteAttributeString("inType", "win:" + propertyType.ToString());
+                                    if (mapAttrib != null)
+                                    {
+                                        tw.WriteAttributeString("map", mapAttrib);
+                                    }
+                                    if (countAttrib != null)
+                                    {
+                                        tw.WriteAttributeString("count", countAttrib);
+                                    }
+                                    if (lengthAttrib != null)
+                                    {
+                                        tw.WriteAttributeString("length", lengthAttrib);
+                                    }
+                                    tw.WriteEndElement();
                                 }
-                                else if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamLength) != 0)
-                                {
-                                    lengthAttrib = propertyNames[propertyInfo->LengthOrLengthIndex];
-                                }
-
-                                dataFields.Add(new DataField 
-                                { 
-                                    Name = propertyName, 
-                                    InType = "win:" + propertyType.ToString(), 
-                                    Map = mapAttrib,
-                                    Count = countAttrib,
-                                    Length = lengthAttrib
-                                });
                             }
 
-                            // See if this template already exists, and if not make it 
-                            var templateKey = new TemplateKey(dataFields);
-                            
-                            TemplateData templateData;
-                            if (!templateIntern.TryGetValue(templateKey, out templateData))
+                            // Template dedup using rendered content
+                            string templateContent = templateSb.ToString();
+                            if (!templateIntern.TryGetValue(templateContent, out templateName))
                             {
-                                string templateName = eventName + "Args";
+                                templateName = eventName + "Args";
                                 if (eventInfo->EventDescriptor.Version > 0)
                                 {
                                     templateName += "_V" + eventInfo->EventDescriptor.Version;
                                 }
 
-                                templateData = new TemplateData { Name = templateName, DataFields = dataFields };
-                                templateIntern[templateKey] = templateData;
+                                templateIntern[templateContent] = templateName;
                             }
-                            eventData.Template = templateData.Name;
                         }
+
+                        // Render event element using XmlWriter
+                        var eventSb = new StringBuilder();
+                        using (var ew = XmlWriter.Create(eventSb, fragmentSettings))
+                        {
+                            ew.WriteStartElement("event");
+                            ew.WriteAttributeString("value", eventInfo->EventDescriptor.Id.ToString());
+                            ew.WriteAttributeString("symbol", symbolName);
+                            ew.WriteAttributeString("version", eventInfo->EventDescriptor.Version.ToString());
+                            ew.WriteAttributeString("task", taskName);
+                            
+                            if (opcodeId != null)
+                            {
+                                ew.WriteAttributeString("opcode", opcodeId);
+                            }
+                            
+                            if (level != null)
+                            {
+                                ew.WriteAttributeString("level", level);
+                            }
+                            
+                            if (keywordStr.Length > 0)
+                            {
+                                ew.WriteAttributeString("keywords", keywordStr);
+                            }
+                            
+                            if (templateName != null)
+                            {
+                                ew.WriteAttributeString("template", templateName);
+                            }
+                            
+                            ew.WriteEndElement();
+                        }
+
+                        List<string> eventList;
+                        if (!events.TryGetValue(eventInfo->EventDescriptor.Id, out eventList))
+                        {
+                            events[eventInfo->EventDescriptor.Id] = eventList = new List<string>();
+                        }
+                        eventList.Add(eventSb.ToString());
                     }
                 }
             }
@@ -485,7 +535,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 writer.WriteAttributeString("source", "Xml");
 
                 // Collect localized strings
-                List<StringTableEntry> localizedStrings = new List<StringTableEntry>();
+                List<KeyValuePair<string, string>> localizedStrings = new List<KeyValuePair<string, string>>();
 
                 // Keywords
                 if (keywords != null && keywords.Count > 0)
@@ -502,7 +552,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         
                         if (emittedStringIds.Add(stringId))
                         {
-                            localizedStrings.Add(new StringTableEntry { Id = stringId, Value = keyValue.Value });
+                            localizedStrings.Add(new KeyValuePair<string, string>(stringId, keyValue.Value));
                         }
                     }
                     writer.WriteEndElement(); // keywords
@@ -522,7 +572,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     
                     if (emittedStringIds.Add(taskStringId))
                     {
-                        localizedStrings.Add(new StringTableEntry { Id = taskStringId, Value = task.Name });
+                        localizedStrings.Add(new KeyValuePair<string, string>(taskStringId, task.Name));
                     }
                     
                     if (task.Opcodes != null)
@@ -539,7 +589,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             
                             if (emittedStringIds.Add(opcodeStringId))
                             {
-                                localizedStrings.Add(new StringTableEntry { Id = opcodeStringId, Value = keyValue.Value });
+                                localizedStrings.Add(new KeyValuePair<string, string>(opcodeStringId, keyValue.Value));
                             }
                         }
                         writer.WriteEndElement(); // opcodes
@@ -553,27 +603,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 if (enumIntern.Count > 0)
                 {
                     writer.WriteStartElement("maps");
-                    foreach (var map in enumIntern.Values)
+                    foreach (var mapXml in enumIntern.Values)
                     {
-                        if (map.IsValueMap)
-                        {
-                            writer.WriteStartElement("valueMap");
-                        }
-                        else
-                        {
-                            writer.WriteStartElement("bitMap");
-                        }
-                        writer.WriteAttributeString("name", map.Name);
-                        
-                        foreach (var entry in map.Entries)
-                        {
-                            writer.WriteStartElement("map");
-                            writer.WriteAttributeString("value", $"0x{entry.Value:x}");
-                            writer.WriteAttributeString("message", $"$(string.{entry.StringId})");
-                            writer.WriteEndElement();
-                        }
-                        
-                        writer.WriteEndElement(); // valueMap or bitMap
+                        writer.WriteRaw(mapXml);
                     }
                     writer.WriteEndElement(); // maps
                     
@@ -584,70 +616,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 writer.WriteStartElement("events");
                 foreach (var eventList in events.Values)
                 {
-                    foreach (var eventData in eventList)
+                    foreach (var eventXml in eventList)
                     {
-                    writer.WriteStartElement("event");
-                    writer.WriteAttributeString("value", eventData.Value.ToString());
-                    writer.WriteAttributeString("symbol", eventData.Symbol);
-                    writer.WriteAttributeString("version", eventData.Version.ToString());
-                    writer.WriteAttributeString("task", eventData.Task);
-                    
-                    if (eventData.Opcode != null)
-                    {
-                        writer.WriteAttributeString("opcode", eventData.Opcode);
-                    }
-                    
-                    if (eventData.Level != null)
-                    {
-                        writer.WriteAttributeString("level", eventData.Level);
-                    }
-                    
-                    if (eventData.Keywords != null)
-                    {
-                        writer.WriteAttributeString("keywords", eventData.Keywords);
-                    }
-                    
-                    if (eventData.Template != null)
-                    {
-                        writer.WriteAttributeString("template", eventData.Template);
-                    }
-                    
-                    writer.WriteEndElement(); // event
+                        writer.WriteRaw(eventXml);
                     }
                 }
                 writer.WriteEndElement(); // events
 
                 // Templates
                 writer.WriteStartElement("templates");
-                foreach (var templateData in templateIntern.Values)
+                foreach (var kvp in templateIntern)
                 {
                     writer.WriteStartElement("template");
-                    writer.WriteAttributeString("tid", templateData.Name);
-                    
-                    foreach (var field in templateData.DataFields)
-                    {
-                        writer.WriteStartElement("data");
-                        writer.WriteAttributeString("name", field.Name);
-                        writer.WriteAttributeString("inType", field.InType);
-                        
-                        if (field.Map != null)
-                        {
-                            writer.WriteAttributeString("map", field.Map);
-                        }
-                        
-                        if (field.Count != null)
-                        {
-                            writer.WriteAttributeString("count", field.Count);
-                        }
-                        
-                        if (field.Length != null)
-                        {
-                            writer.WriteAttributeString("length", field.Length);
-                        }
-                        
-                        writer.WriteEndElement(); // data
-                    }
-                    
+                    writer.WriteAttributeString("tid", kvp.Value);
+                    writer.WriteRaw(kvp.Key);
                     writer.WriteEndElement(); // template
                 }
                 writer.WriteEndElement(); // templates
@@ -667,7 +649,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     foreach (var entry in localizedStrings)
                     {
                         writer.WriteStartElement("string");
-                        writer.WriteAttributeString("id", entry.Id);
+                        writer.WriteAttributeString("id", entry.Key);
                         writer.WriteAttributeString("value", entry.Value);
                         writer.WriteEndElement();
                     }
@@ -739,133 +721,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             return ret;
         }
 
-        /// <summary>
-        /// Helper class to store event data for XmlWriter-based implementation
-        /// </summary>
-        private class EventData
-        {
-            public int Value;
-            public string Symbol;
-            public int Version;
-            public string Task;
-            public string Opcode;
-            public string Level;
-            public string Keywords;
-            public string Template;
-        }
-
-        /// <summary>
-        /// Helper class to store template data for XmlWriter-based implementation
-        /// </summary>
-        private class TemplateData
-        {
-            public string Name;
-            public List<DataField> DataFields;
-        }
-
-        /// <summary>
-        /// Helper class to store data field information for XmlWriter-based implementation
-        /// </summary>
-        private class DataField
-        {
-            public string Name;
-            public string InType;
-            public string Map;
-            public string Count;
-            public string Length;
-        }
-
-        /// <summary>
-        /// Structural key for template interning that provides collision-free value equality
-        /// across all DataField members.
-        /// 
-        /// ETW manifest templates define the payload layout for events.  Multiple events can
-        /// share the same template when their payloads are structurally identical (same field
-        /// names, types, maps, counts, and lengths).  To avoid emitting duplicate template
-        /// definitions we intern templates in a Dictionary keyed by this type.
-        /// 
-        /// The key captures a snapshot of the DataField list at construction time and
-        /// implements value equality by comparing every property of every field in order.
-        /// The hash code is computed once in the constructor (using a standard prime-multiply
-        /// scheme over each field property) and cached for fast dictionary lookups.
-        /// </summary>
-        private sealed class TemplateKey : IEquatable<TemplateKey>
-        {
-            private const int HashSeed = 17;
-            private const int HashMultiplier = 31;
-
-            private readonly DataField[] _fields;
-            private readonly int _hashCode;
-
-            public TemplateKey(List<DataField> fields)
-            {
-                _fields = fields.ToArray();
-
-                // System.HashCode would be ideal here but requires netstandard2.1 or the
-                // Microsoft.Bcl.HashCode package.  Since TraceEvent targets netstandard2.0,
-                // we use the classic prime-multiply hash-combine pattern instead.
-                unchecked
-                {
-                    int hash = HashSeed;
-                    foreach (var f in _fields)
-                    {
-                        hash = hash * HashMultiplier + (f.Name?.GetHashCode() ?? 0);
-                        hash = hash * HashMultiplier + (f.InType?.GetHashCode() ?? 0);
-                        hash = hash * HashMultiplier + (f.Map?.GetHashCode() ?? 0);
-                        hash = hash * HashMultiplier + (f.Count?.GetHashCode() ?? 0);
-                        hash = hash * HashMultiplier + (f.Length?.GetHashCode() ?? 0);
-                    }
-                    _hashCode = hash;
-                }
-            }
-
-            public bool Equals(TemplateKey other)
-            {
-                if (other == null || _fields.Length != other._fields.Length)
-                    return false;
-                for (int i = 0; i < _fields.Length; i++)
-                {
-                    if (_fields[i].Name != other._fields[i].Name ||
-                        _fields[i].InType != other._fields[i].InType ||
-                        _fields[i].Map != other._fields[i].Map ||
-                        _fields[i].Count != other._fields[i].Count ||
-                        _fields[i].Length != other._fields[i].Length)
-                        return false;
-                }
-                return true;
-            }
-
-            public override bool Equals(object obj) => Equals(obj as TemplateKey);
-            public override int GetHashCode() => _hashCode;
-        }
-
-        /// <summary>
-        /// Helper class to store map data for XmlWriter-based implementation
-        /// </summary>
-        private class MapData
-        {
-            public string Name;
-            public bool IsValueMap;
-            public List<MapEntry> Entries;
-        }
-
-        /// <summary>
-        /// Helper class to store map entry information for XmlWriter-based implementation
-        /// </summary>
-        private class MapEntry
-        {
-            public int Value;
-            public string StringId;
-        }
-
-        /// <summary>
-        /// Helper class to store string table entry for XmlWriter-based implementation
-        /// </summary>
-        private class StringTableEntry
-        {
-            public string Id;
-            public string Value;
-        }
 
         /// <summary>
         /// Class used to accumulate information about Tasks in the implementation of GetManifestForRegisteredProvider
