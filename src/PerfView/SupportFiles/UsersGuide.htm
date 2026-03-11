@@ -8336,7 +8336,19 @@
             Inlining.&nbsp;&nbsp; If A calls B calls C, if B is very small it is not unusual
             for the compiler to have simply &#39;inlined&#39; the body of B into the body of
             A.&nbsp;&nbsp; In this case obviously B does not appear because in a very real sense
-            B does not exist at the native code level.
+            B does not exist at the native code level.&nbsp;&nbsp; To verify whether a specific
+            missing method was inlined, you can use the
+            <a href="#JITInliningCheckBox">JIT Inlining feature</a> (the <strong>JIT Inlining</strong>
+            checkbox in the collection dialog, or the <strong>/JITInlining</strong> command-line
+            option).&nbsp;&nbsp; This causes the JIT to emit an event for every inlining decision,
+            and the results are shown in the <strong>JIT Stats</strong> report as two tables: one
+            for successful inlinings and one for failed inlinings.&nbsp;&nbsp; Each row shows the
+            method being compiled, the inliner (caller), and the inlinee (callee).&nbsp;&nbsp; To
+            capture inlining events for a given method, the trace must start before the method is
+            JIT-compiled (i.e., collect from process start).&nbsp;&nbsp; In the successful inlinings
+            table, you can search for the missing method name in the <em>Inlinee</em> column to
+            confirm it was inlined, and check the <em>Inliner</em> column to see which method it
+            was inlined into.
         </li>
         <li>
             Tail-calling.&nbsp;&nbsp; If the last thing method B does before returning is to
