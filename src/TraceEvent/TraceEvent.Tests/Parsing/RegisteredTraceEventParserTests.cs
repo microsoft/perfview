@@ -194,6 +194,7 @@ namespace TraceEventTests
             // Compare new string table entries against legacy
             var newEntries = newDoc.SelectNodes("//e:string", nsmgr);
             int comparedCount = 0;
+            int specialCharCount = 0;
             if (newEntries != null)
             {
                 foreach (XmlNode entry in newEntries)
@@ -205,12 +206,25 @@ namespace TraceEventTests
                     {
                         Assert.Equal(legacyValue, value);
                         comparedCount++;
+
+                        // Track entries that exercise XML escaping
+                        if (value != null && value.IndexOfAny(new[] { '&', '<', '>', '"', '\'' }) >= 0)
+                        {
+                            specialCharCount++;
+                        }
                     }
                 }
             }
 
             _output.WriteLine($"Semantically compared {comparedCount} string table entries between new and legacy implementations");
+            _output.WriteLine($"Of those, {specialCharCount} contained XML-special characters");
             Assert.True(comparedCount > 0, "Expected at least one string table entry to compare");
+            if (specialCharCount == 0)
+            {
+                _output.WriteLine("WARNING: No string table entries contained XML-special characters. " +
+                    "Escaping correctness is still validated by the double-escape pattern check above, " +
+                    "but a provider with special characters would provide stronger coverage.");
+            }
         }
 
         /// <summary>
