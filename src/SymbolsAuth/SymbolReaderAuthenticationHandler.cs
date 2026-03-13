@@ -633,7 +633,7 @@ namespace Microsoft.Diagnostics.Symbols.Authentication
 
                 if (logExpiration)
                 {
-                    WriteLog("The authorization token for {0} has expired (or is close to expiration).");
+                    WriteLog("The authorization token for {0} has expired (or is close to expiration).", authority);
                 }
 
                 s_tokenCache.TryRemove(authority, out _);
