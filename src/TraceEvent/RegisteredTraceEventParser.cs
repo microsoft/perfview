@@ -1403,13 +1403,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             public int GetHashCode(TraceEvent obj)
             {
-                if (obj.lookupAsClassic)
-                {
-                    return obj.taskGuid.GetHashCode() + (int)obj.Opcode;
-                }
-                else if (obj.lookupAsWPP)
+                if (obj.lookupAsWPP)
                 {
                     return obj.taskGuid.GetHashCode() + (int)obj.ID;
+                }
+                else if (obj.lookupAsClassic)
+                {
+                    return obj.taskGuid.GetHashCode() + (int)obj.Opcode;
                 }
                 else
                 {
