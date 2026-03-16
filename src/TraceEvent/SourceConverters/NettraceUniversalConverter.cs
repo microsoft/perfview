@@ -12,7 +12,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
         private const string DotnetJittedCodeMappingName = "/memfd:doublemapper";
 
         private List<ProcessSymbolTraceData> _dynamicSymbols = new List<ProcessSymbolTraceData>();
-        private Dictionary<ulong, TraceProcess> _mappingIdToProcesses = new Dictionary<ulong, TraceProcess>();
+        private Dictionary<ulong, HashSet<TraceProcess>> _mappingIdToProcesses = new Dictionary<ulong, HashSet<TraceProcess>>();
         private Dictionary<ulong, ProcessMappingMetadataTraceData> _mappingMetadata = new Dictionary<ulong, ProcessMappingMetadataTraceData>();
 
         internal NettraceUniversalConverter()
@@ -46,7 +46,12 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             universalSystemParser.ProcessMapping += delegate (ProcessMappingTraceData data)
             {
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                _mappingIdToProcesses[data.Id] = process;
+                if (!_mappingIdToProcesses.TryGetValue(data.Id, out HashSet<TraceProcess> processes))
+                {
+                    processes = new HashSet<TraceProcess>();
+                    _mappingIdToProcesses[data.Id] = processes;
+                }
+                processes.Add(process);
 
                 if (!string.IsNullOrEmpty(data.FileName) && data.FileName.StartsWith(DotnetJittedCodeMappingName, StringComparison.Ordinal))
                 {
@@ -80,9 +85,12 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
         {
             foreach (var universalProcessSymbol in _dynamicSymbols)
             {
-                if (_mappingIdToProcesses.TryGetValue(universalProcessSymbol.MappingId, out TraceProcess process))
+                if (_mappingIdToProcesses.TryGetValue(universalProcessSymbol.MappingId, out HashSet<TraceProcess> processes))
                 {
-                    traceLog.CodeAddresses.AddUniversalDynamicSymbol(universalProcessSymbol, process);
+                    foreach (TraceProcess process in processes)
+                    {
+                        traceLog.CodeAddresses.AddUniversalDynamicSymbol(universalProcessSymbol, process);
+                    }
                 }
             }
         }
