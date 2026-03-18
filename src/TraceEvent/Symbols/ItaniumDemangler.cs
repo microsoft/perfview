@@ -34,17 +34,15 @@ namespace Microsoft.Diagnostics.Symbols
                 return null;
             }
 
-            // Strip ELF symbol versioning (e.g., "@GLIBCXX_3.4", "@@CXXABI_1.3.9")
-            // and GCC/LLVM linker suffixes (e.g., ".cold", ".isra.0", ".lto_priv.1",
-            // ".constprop.0", ".localalias", ".part.0") before parsing.
-            // These annotations are not part of the Itanium C++ ABI mangling grammar.
-            mangledName = StripLinkerAnnotations(mangledName);
-            if (mangledName.Length < 3)
+            // Compute the effective end offset after stripping ELF versioning and GCC/LLVM
+            // linker suffixes. This avoids allocating a Substring.
+            int endOffset = ComputeLinkerAnnotationEnd(mangledName);
+            if (endOffset < 3)
             {
                 return null;
             }
 
-            _parser.Reset(mangledName, 2); // skip "_Z"
+            _parser.Reset(mangledName, 2, endOffset); // skip "_Z"
 
             try
             {
@@ -65,13 +63,13 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// Strips ELF symbol-versioning suffixes (e.g. "@GLIBCXX_3.4") and GCC/LLVM
+        /// Computes the effective end offset of a mangled name after stripping ELF
+        /// symbol-versioning suffixes (e.g. "@GLIBCXX_3.4") and GCC/LLVM
         /// compiler-generated suffixes (e.g. ".cold", ".isra.0", ".lto_priv.1",
-        /// ".constprop.0", ".localalias", ".part.0") from a mangled name.
-        /// These annotations are appended by the linker or compiler and are not part
-        /// of the Itanium C++ ABI mangling grammar.
+        /// ".constprop.0", ".localalias", ".part.0").
+        /// Returns the end offset (exclusive) rather than allocating a substring.
         /// </summary>
-        private static string StripLinkerAnnotations(string mangledName)
+        private static int ComputeLinkerAnnotationEnd(string mangledName)
         {
             // Strip ELF symbol versioning: "@VERSION" or "@@VERSION" at the end.
             // Track the effective end rather than creating an intermediate substring.
@@ -159,9 +157,7 @@ namespace Microsoft.Diagnostics.Symbols
                 break;
             }
 
-            if (end == mangledName.Length)
-                return mangledName;
-            return mangledName.Substring(0, end);
+            return end;
         }
 
         /// <summary>
@@ -236,6 +232,7 @@ namespace Microsoft.Diagnostics.Symbols
         {
             private string _input;
             private int _pos;
+            private int _endOffset;
             private readonly List<string> _substitutions;
             private List<string> _templateArguments;
 
@@ -265,10 +262,11 @@ namespace Microsoft.Diagnostics.Symbols
                 _templateArguments = new List<string>();
             }
 
-            public void Reset(string input, int startPos)
+            public void Reset(string input, int startPos, int endOffset)
             {
                 _input = input;
                 _pos = startPos;
+                _endOffset = endOffset;
                 _substitutions.Clear();
                 _templateArguments.Clear();
                 _functionTemplateArgs = null;
@@ -282,18 +280,18 @@ namespace Microsoft.Diagnostics.Symbols
             /// <summary>
             /// Returns true if all input has been consumed.
             /// </summary>
-            public bool IsAtEnd => _pos >= _input.Length;
+            public bool IsAtEnd => _pos >= _endOffset;
 
-            private bool HasMore => _pos < _input.Length;
+            private bool HasMore => _pos < _endOffset;
 
             private char PeekOr(char fallback)
             {
-                return _pos < _input.Length ? _input[_pos] : fallback;
+                return _pos < _endOffset ? _input[_pos] : fallback;
             }
 
             private char Consume()
             {
-                if (_pos >= _input.Length)
+                if (_pos >= _endOffset)
                 {
                     throw new InvalidOperationException("Unexpected end of input");
                 }
@@ -303,7 +301,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             private void Expect(char c)
             {
-                if (!HasMore || _input[_pos] != c)
+                if (_pos >= _endOffset || _input[_pos] != c)
                 {
                     throw new InvalidOperationException($"Expected '{c}' at position {_pos}");
                 }
@@ -324,7 +322,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             private bool LookAhead(string s)
             {
-                if (_pos + s.Length > _input.Length)
+                if (_pos + s.Length > _endOffset)
                 {
                     return false;
                 }
@@ -471,7 +469,7 @@ namespace Microsoft.Diagnostics.Symbols
                 }
 
                 // Simple case (e.g. int* , int&): just append.
-                return inner + modifier;
+                return string.Concat(inner, modifier);
             }
 
             /// <summary>
@@ -739,37 +737,37 @@ namespace Microsoft.Diagnostics.Symbols
                 if (TryConsume("TV"))
                 {
                     string type = ParseType();
-                    return type != null ? "vtable for " + type : null;
+                    return type != null ? string.Concat("vtable for ", type) : null;
                 }
 
                 if (TryConsume("TT"))
                 {
                     string type = ParseType();
-                    return type != null ? "VTT for " + type : null;
+                    return type != null ? string.Concat("VTT for ", type) : null;
                 }
 
                 if (TryConsume("TI"))
                 {
                     string type = ParseType();
-                    return type != null ? "typeinfo for " + type : null;
+                    return type != null ? string.Concat("typeinfo for ", type) : null;
                 }
 
                 if (TryConsume("TS"))
                 {
                     string type = ParseType();
-                    return type != null ? "typeinfo name for " + type : null;
+                    return type != null ? string.Concat("typeinfo name for ", type) : null;
                 }
 
                 if (TryConsume("TW"))
                 {
                     string name = ParseName();
-                    return name != null ? "TLS wrapper function for " + name : null;
+                    return name != null ? string.Concat("TLS wrapper function for ", name) : null;
                 }
 
                 if (TryConsume("TH"))
                 {
                     string name = ParseName();
-                    return name != null ? "TLS init function for " + name : null;
+                    return name != null ? string.Concat("TLS init function for ", name) : null;
                 }
 
                 if (TryConsume("Tc"))
@@ -778,7 +776,7 @@ namespace Microsoft.Diagnostics.Symbols
                     ParseCallOffset();
                     ParseCallOffset();
                     string encoding = ParseEncoding();
-                    return encoding != null ? "covariant return thunk to " + encoding : null;
+                    return encoding != null ? string.Concat("covariant return thunk to ", encoding) : null;
                 }
 
                 // Non-virtual / virtual thunk: T <call-offset> <encoding>
@@ -788,13 +786,13 @@ namespace Microsoft.Diagnostics.Symbols
                     _pos++; // consume 'T'
                     ParseCallOffset();
                     string encoding = ParseEncoding();
-                    return encoding != null ? "thunk to " + encoding : null;
+                    return encoding != null ? string.Concat("thunk to ", encoding) : null;
                 }
 
                 if (TryConsume("GV"))
                 {
                     string name = ParseName();
-                    return name != null ? "guard variable for " + name : null;
+                    return name != null ? string.Concat("guard variable for ", name) : null;
                 }
 
                 if (TryConsume("GR"))
@@ -817,7 +815,7 @@ namespace Microsoft.Diagnostics.Symbols
 
                     TryConsume('_');
 
-                    return "reference temporary for " + name;
+                    return string.Concat("reference temporary for ", name);
                 }
 
                 return null;
@@ -915,7 +913,7 @@ namespace Microsoft.Diagnostics.Symbols
                         return null;
                     }
 
-                    name = prefix + name;
+                    if (prefix.Length > 0) name = string.Concat(prefix, name);
 
                     // If template args follow, this is <unscoped-template-name> <template-args>.
                     if (HasMore && _input[_pos] == 'I')
@@ -961,7 +959,7 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     // String literal — consume optional discriminator
                     ConsumeDiscriminator();
-                    return encoding + "::string literal";
+                    return string.Concat(encoding, "::string literal");
                 }
 
                 string entity = ParseName();
@@ -973,7 +971,7 @@ namespace Microsoft.Diagnostics.Symbols
                 // Consume optional discriminator
                 ConsumeDiscriminator();
 
-                return encoding + "::" + entity;
+                return string.Concat(encoding, "::", entity);
             }
 
             /// <summary>
@@ -985,7 +983,7 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 if (HasMore && _input[_pos] == '_')
                 {
-                    if (_pos + 1 < _input.Length && _input[_pos + 1] == '_')
+                    if (_pos + 1 < _endOffset && _input[_pos + 1] == '_')
                     {
                         // Double underscore format: __ <non-negative number> _
                         _pos += 2; // skip '__'
@@ -1095,7 +1093,7 @@ namespace Microsoft.Diagnostics.Symbols
                     if (_input[_pos] == 'S')
                     {
                         // Substitution or 'St' (::std::) prefix.
-                        if (_pos + 1 < _input.Length && _input[_pos + 1] == 't')
+                        if (_pos + 1 < _endOffset && _input[_pos + 1] == 't')
                         {
                             _pos += 2; // consume "St"
                             component = "std";
@@ -1109,12 +1107,12 @@ namespace Microsoft.Diagnostics.Symbols
                     {
                         component = ParseTemplateParam();
                     }
-                    else if (_input[_pos] == 'D' && _pos + 1 < _input.Length
+                    else if (_input[_pos] == 'D' && _pos + 1 < _endOffset
                              && (_input[_pos + 1] == 't' || _input[_pos + 1] == 'T'))
                     {
                         component = ParseDecltype();
                     }
-                    else if (_input[_pos] == 'C' || (_input[_pos] == 'D' && _pos + 1 < _input.Length && char.IsDigit(_input[_pos + 1])))
+                    else if (_input[_pos] == 'C' || (_input[_pos] == 'D' && _pos + 1 < _endOffset && char.IsDigit(_input[_pos + 1])))
                     {
                         // Constructor or destructor — uses the last class name.
                         component = ParseCtorDtorName(lastSimpleName);
@@ -1130,7 +1128,7 @@ namespace Microsoft.Diagnostics.Symbols
                     }
 
                     lastSimpleName = component;
-                    accumulated = accumulated == null ? component : accumulated + "::" + component;
+                    accumulated = accumulated == null ? component : string.Concat(accumulated, "::", component);
 
                     // Every prefix component is a substitution candidate.
                     AddSubstitution(accumulated);
@@ -1167,16 +1165,16 @@ namespace Microsoft.Diagnostics.Symbols
 
                 // L <source-name> [<discriminator>] — name with internal linkage (file-scope static).
                 // The 'L' qualifier is stripped in the demangled output; only the source-name is kept.
-                if (c == 'L' && _pos + 1 < _input.Length && char.IsDigit(_input[_pos + 1]))
+                if (c == 'L' && _pos + 1 < _endOffset && char.IsDigit(_input[_pos + 1]))
                 {
                     _pos++; // consume 'L'
                     string name = ParseSourceName();
                     // Consume ABI tags if present.
-                    while (HasMore && _input[_pos] == 'B' && _pos + 1 < _input.Length && char.IsDigit(_input[_pos + 1]))
+                    while (HasMore && _input[_pos] == 'B' && _pos + 1 < _endOffset && char.IsDigit(_input[_pos + 1]))
                     {
                         _pos++;
                         string tag = ParseSourceName();
-                        name += "[abi:" + tag + "]";
+                        name = string.Concat(name, "[abi:", tag, "]");
                     }
 
                     ConsumeDiscriminator();
@@ -1189,18 +1187,18 @@ namespace Microsoft.Diagnostics.Symbols
                     string name = ParseSourceName();
                     // <abi-tag>* ::= B <source-name>  — vendor ABI tags (e.g. B5cxx11 → [abi:cxx11]).
                     // Consume and append any ABI tags that follow.
-                    while (HasMore && _input[_pos] == 'B' && _pos + 1 < _input.Length && char.IsDigit(_input[_pos + 1]))
+                    while (HasMore && _input[_pos] == 'B' && _pos + 1 < _endOffset && char.IsDigit(_input[_pos + 1]))
                     {
                         _pos++; // consume 'B'
                         string tag = ParseSourceName();
-                        name += "[abi:" + tag + "]";
+                        name = string.Concat(name, "[abi:", tag, "]");
                     }
 
                     return name;
                 }
 
                 // <ctor-dtor-name>: C (ctor) or D (dtor) followed by digit.
-                if (c == 'C' || (c == 'D' && _pos + 1 < _input.Length && char.IsDigit(_input[_pos + 1])))
+                if (c == 'C' || (c == 'D' && _pos + 1 < _endOffset && char.IsDigit(_input[_pos + 1])))
                 {
                     return ParseCtorDtorName(enclosingClass);
                 }
@@ -1228,7 +1226,7 @@ namespace Microsoft.Diagnostics.Symbols
             private string ParseSourceName()
             {
                 int length = ParsePositiveNumber();
-                if (length <= 0 || (long)_pos + length > _input.Length)
+                if (length <= 0 || (long)_pos + length > _endOffset)
                 {
                     throw new InvalidOperationException("Invalid source name length");
                 }
@@ -1278,7 +1276,7 @@ namespace Microsoft.Diagnostics.Symbols
                     if (!HasMore) return null;
                     char dVariant = Consume();
                     if (dVariant != '0' && dVariant != '1' && dVariant != '2') return null;
-                    return "~" + (enclosingClass ?? "destructor");
+                    return string.Concat("~", enclosingClass ?? "destructor");
                 }
 
                 throw new InvalidOperationException("Expected ctor/dtor name");
@@ -1297,7 +1295,7 @@ namespace Microsoft.Diagnostics.Symbols
                 string discriminator = _pos > discStart ? _input.Substring(discStart, _pos - discStart) : "";
 
                 Expect('_');
-                return "{unnamed type#" + (discriminator.Length == 0 ? "1" : (int.Parse(discriminator) + 2).ToString()) + "}";
+                return string.Concat("{unnamed type#", discriminator.Length == 0 ? "1" : (int.Parse(discriminator) + 2).ToString(), "}");
             }
 
             // <closure-type-name> ::= Ul <lambda-sig> E [<nonnegative number>] _
@@ -1371,7 +1369,7 @@ namespace Microsoft.Diagnostics.Symbols
             /// </summary>
             private string ParseOperatorName()
             {
-                if (_pos + 1 >= _input.Length)
+                if (_pos + 1 >= _endOffset)
                 {
                     return null;
                 }
@@ -1391,7 +1389,7 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     _pos += 2;
                     string targetType = ParseType();
-                    return "operator " + targetType;
+                    return string.Concat("operator ", targetType);
                 }
 
                 // li <source-name> — literal operator (operator "")
@@ -1399,7 +1397,7 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     _pos += 2;
                     string suffix = ParseSourceName();
-                    return "operator\"\"" + suffix;
+                    return string.Concat("operator\"\"", suffix);
                 }
 
                 return null;
@@ -1550,7 +1548,8 @@ namespace Microsoft.Diagnostics.Symbols
                     _pos++;
                     string inner = ParseType();
                     string baseType = StripFunctionTypeSuffixes(inner, out string exSpec, out string refQual);
-                    result = WrapModifier(baseType, "*") + exSpec + refQual;
+                    result = WrapModifier(baseType, "*");
+                    if (exSpec.Length > 0 || refQual.Length > 0) result = string.Concat(result, exSpec, refQual);
                     AddSubstitution(result);
                     return result;
                 }
@@ -1561,7 +1560,8 @@ namespace Microsoft.Diagnostics.Symbols
                     _pos++;
                     string inner = ParseType();
                     string baseType = StripFunctionTypeSuffixes(inner, out string exSpec, out string refQual);
-                    result = WrapModifier(baseType, "&") + exSpec + refQual;
+                    result = WrapModifier(baseType, "&");
+                    if (exSpec.Length > 0 || refQual.Length > 0) result = string.Concat(result, exSpec, refQual);
                     AddSubstitution(result);
                     return result;
                 }
@@ -1572,7 +1572,8 @@ namespace Microsoft.Diagnostics.Symbols
                     _pos++;
                     string inner = ParseType();
                     string baseType = StripFunctionTypeSuffixes(inner, out string exSpec, out string refQual);
-                    result = WrapModifier(baseType, "&&") + exSpec + refQual;
+                    result = WrapModifier(baseType, "&&");
+                    if (exSpec.Length > 0 || refQual.Length > 0) result = string.Concat(result, exSpec, refQual);
                     AddSubstitution(result);
                     return result;
                 }
@@ -1582,7 +1583,7 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     _pos++;
                     string inner = ParseType();
-                    result = inner + " _Complex";
+                    result = string.Concat(inner, " _Complex");
                     AddSubstitution(result);
                     return result;
                 }
@@ -1592,7 +1593,7 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     _pos++;
                     string inner = ParseType();
-                    result = inner + " _Imaginary";
+                    result = string.Concat(inner, " _Imaginary");
                     AddSubstitution(result);
                     return result;
                 }
@@ -1642,11 +1643,11 @@ namespace Microsoft.Diagnostics.Symbols
                 if (c == 'S')
                 {
                     // 'St' = "std::" prefix used in a type context (e.g., Std::string).
-                    if (_pos + 1 < _input.Length && _input[_pos + 1] == 't')
+                    if (_pos + 1 < _endOffset && _input[_pos + 1] == 't')
                     {
                         _pos += 2;
                         string innerName = ParseUnqualifiedName(null);
-                        result = "std::" + innerName;
+                        result = string.Concat("std::", innerName);
 
                         // May be followed by template args.
                         if (HasMore && _input[_pos] == 'I')
@@ -1676,7 +1677,7 @@ namespace Microsoft.Diagnostics.Symbols
                 }
 
                 // --- Decltype ---
-                if (c == 'D' && _pos + 1 < _input.Length
+                if (c == 'D' && _pos + 1 < _endOffset
                     && (_input[_pos + 1] == 't' || _input[_pos + 1] == 'T'))
                 {
                     result = ParseDecltype();
@@ -1686,12 +1687,12 @@ namespace Microsoft.Diagnostics.Symbols
 
                 // --- Pack expansion (C++11) ---
                 // Dp <type> — expands a parameter pack (T...).
-                if (c == 'D' && _pos + 1 < _input.Length && _input[_pos + 1] == 'p')
+                if (c == 'D' && _pos + 1 < _endOffset && _input[_pos + 1] == 'p')
                 {
                     _pos += 2;
                     string inner = ParseType();
                     if (inner == null) return null;
-                    result = inner + "...";
+                    result = string.Concat(inner, "...");
                     AddSubstitution(result);
                     return result;
                 }
@@ -1716,7 +1717,7 @@ namespace Microsoft.Diagnostics.Symbols
                 // Handles source-names (digit), nested names (N), local names (Z),
                 // and unnamed/lambda type names starting with Ut/Ul.
                 if (char.IsDigit(c) || c == 'N' || c == 'Z'
-                    || (c == 'U' && _pos + 1 < _input.Length && (_input[_pos + 1] == 't' || _input[_pos + 1] == 'l')))
+                    || (c == 'U' && _pos + 1 < _endOffset && (_input[_pos + 1] == 't' || _input[_pos + 1] == 'l')))
                 {
                     result = ParseName();
                     if (result != null)
@@ -1790,7 +1791,7 @@ namespace Microsoft.Diagnostics.Symbols
                     // The ABI grammar is: F [Y] <bare-function-type> [<ref-qualifier>] E
                     // Without this check, R/O would be consumed by ParseType as reference types.
                     if ((_input[_pos] == 'R' || _input[_pos] == 'O')
-                        && _pos + 1 < _input.Length && _input[_pos + 1] == 'E')
+                        && _pos + 1 < _endOffset && _input[_pos + 1] == 'E')
                     {
                         break;
                     }
@@ -1820,7 +1821,7 @@ namespace Microsoft.Diagnostics.Symbols
                 // Handle exception specifications (Itanium ABI 5.1.5).
                 // Do = noexcept, DO <expression> E = noexcept(expr), Dw <type>+ E = throw(types).
                 string exceptionSpec = "";
-                if (_pos + 1 < _input.Length && _input[_pos] == 'D')
+                if (_pos + 1 < _endOffset && _input[_pos] == 'D')
                 {
                     char next = _input[_pos + 1];
                     if (next == 'o')
@@ -1839,7 +1840,7 @@ namespace Microsoft.Diagnostics.Symbols
                             return null;
                         }
 
-                        exceptionSpec = " noexcept(" + (expr ?? "") + ")";
+                        exceptionSpec = string.Concat(" noexcept(", expr ?? "", ")");
                     }
                     else if (next == 'w')
                     {
@@ -1868,18 +1869,18 @@ namespace Microsoft.Diagnostics.Symbols
                             return null;
                         }
 
-                        exceptionSpec = " throw(" + throwSb + ")";
+                        exceptionSpec = string.Concat(" throw(", throwSb.ToString(), ")");
                     }
                 }
 
                 // Consume optional ref-qualifier before 'E'.
                 string refQualifier = "";
-                if (HasMore && _input[_pos] == 'R' && _pos + 1 < _input.Length && _input[_pos + 1] == 'E')
+                if (HasMore && _input[_pos] == 'R' && _pos + 1 < _endOffset && _input[_pos + 1] == 'E')
                 {
                     refQualifier = " &";
                     _pos++;
                 }
-                else if (HasMore && _input[_pos] == 'O' && _pos + 1 < _input.Length && _input[_pos + 1] == 'E')
+                else if (HasMore && _input[_pos] == 'O' && _pos + 1 < _endOffset && _input[_pos + 1] == 'E')
                 {
                     refQualifier = " &&";
                     _pos++;
@@ -1999,7 +2000,7 @@ namespace Microsoft.Diagnostics.Symbols
                     }
                 }
 
-                return elementType + "[" + dimension + "]";
+                return string.Concat(elementType, "[", dimension, "]");
             }
 
             // <pointer-to-member-type> ::= M <class type> <member type>
@@ -2039,7 +2040,7 @@ namespace Microsoft.Diagnostics.Symbols
                 string memberType = ParseType();
                 if (memberType == null) return null;
 
-                string modifier = classType + "::*";
+                string modifier = string.Concat(classType, "::*");
 
                 string baseMemberType = StripFunctionTypeSuffixes(memberType, out string exceptionSpecSuffix, out string refQualSuffix);
 
@@ -2048,11 +2049,11 @@ namespace Microsoft.Diagnostics.Symbols
                 if (baseMemberType != null && baseMemberType.Length > 0
                     && (baseMemberType[baseMemberType.Length - 1] == ')' || baseMemberType[baseMemberType.Length - 1] == ']'))
                 {
-                    return WrapModifier(baseMemberType, modifier) + memberFnQuals + exceptionSpecSuffix + refQualSuffix;
+                    return string.Concat(WrapModifier(baseMemberType, modifier), memberFnQuals, exceptionSpecSuffix, refQualSuffix);
                 }
 
                 // Simple types need a space separator: "int A::*".
-                return memberType + " " + modifier;
+                return string.Concat(memberType, " ", modifier);
             }
 
             #endregion
@@ -2070,7 +2071,7 @@ namespace Microsoft.Diagnostics.Symbols
                 }
 
                 // D-prefixed extended builtins
-                if (_input[_pos] == 'D' && _pos + 1 < _input.Length)
+                if (_input[_pos] == 'D' && _pos + 1 < _endOffset)
                 {
                     string dResult = TryParseDBuiltin();
                     if (dResult != null)
@@ -2298,7 +2299,7 @@ namespace Microsoft.Diagnostics.Symbols
                     {
                         _pos += 2;
                         string type = ParseType();
-                        return "sizeof(" + type + ")";
+                        return string.Concat("sizeof(", type, ")");
                     }
 
                     // sizeof...(pack): sZ <template-param>
@@ -2306,7 +2307,7 @@ namespace Microsoft.Diagnostics.Symbols
                     {
                         _pos += 2;
                         string param = ParseTemplateParam();
-                        return "sizeof...(" + param + ")";
+                        return string.Concat("sizeof...(", param, ")");
                     }
 
                     // <unresolved-name> ::= <simple-id>
@@ -2337,7 +2338,7 @@ namespace Microsoft.Diagnostics.Symbols
                             return null;
                         }
 
-                        if (_pos < _input.Length && _input[_pos] == '_')
+                        if (_pos < _endOffset && _input[_pos] == '_')
                         {
                             // List-initialization form: cv <type> _ <expr>* E
                             _pos++; // consume _
@@ -2378,7 +2379,7 @@ namespace Microsoft.Diagnostics.Symbols
                                 return null;
                             }
 
-                            return "(" + type + ")(" + expr + ")";
+                            return string.Concat("(", type, ")(", expr, ")");
                         }
                     }
 
@@ -2428,7 +2429,7 @@ namespace Microsoft.Diagnostics.Symbols
                     }
 
                     // C++ named cast operators: sc, rc, dc, cc — all have form: <cast> <type> <expression>
-                    if (_pos + 1 < _input.Length)
+                    if (_pos + 1 < _endOffset)
                     {
                         string castName = null;
                         if (LookAhead("sc")) castName = "static_cast";
@@ -2451,7 +2452,7 @@ namespace Microsoft.Diagnostics.Symbols
                                 return null;
                             }
 
-                            return castName + "<" + type + ">(" + expr + ")";
+                            return string.Concat(castName, "<", type, ">(", expr, ")");
                         }
                     }
 
@@ -2466,7 +2467,7 @@ namespace Microsoft.Diagnostics.Symbols
                         }
 
                         string name = ParseUnqualifiedName(null);
-                        return expr + "." + name;
+                        return string.Concat(expr, ".", name);
                     }
 
                     // ds: pointer-to-member dereference (expr.*expr)
@@ -2485,7 +2486,7 @@ namespace Microsoft.Diagnostics.Symbols
                             return null;
                         }
 
-                        return lhs + ".*" + rhs;
+                        return string.Concat(lhs, ".*", rhs);
                     }
 
                     // sr: scope resolution — <type>::<unqualified-name> [<template-args>]
@@ -2508,11 +2509,11 @@ namespace Microsoft.Diagnostics.Symbols
                             }
                         }
 
-                        return type + "::" + name;
+                        return string.Concat(type, "::", name);
                     }
 
                     // Two-character operator expressions: <operator> <operand(s)>
-                    if (_pos + 1 < _input.Length)
+                    if (_pos + 1 < _endOffset)
                     {
                         char c1 = _input[_pos];
                         char c2 = _input[_pos + 1];
@@ -2527,7 +2528,7 @@ namespace Microsoft.Diagnostics.Symbols
 
                             if (arity == 1)
                             {
-                                return sym + "(" + operand1 + ")";
+                                return string.Concat(sym, "(", operand1, ")");
                             }
 
                             if (arity == 3)
@@ -2535,12 +2536,12 @@ namespace Microsoft.Diagnostics.Symbols
                                 // Ternary conditional: qu = ? :
                                 string operand2 = ParseExpression();
                                 string operand3 = ParseExpression();
-                                return "(" + operand1 + ") ? (" + operand2 + ") : (" + operand3 + ")";
+                                return string.Concat("(", operand1, ") ? (", operand2, ") : (", operand3, ")");
                             }
 
                             // Binary (default)
                             string rhs = ParseExpression();
-                            return "(" + operand1 + ") " + sym + " (" + rhs + ")";
+                            return string.Concat("(", operand1, ") ", sym, " (", rhs, ")");
                         }
                     }
 
@@ -2558,12 +2559,12 @@ namespace Microsoft.Diagnostics.Symbols
                         if (c == 'T' && nestDepth == 0)
                         {
                             int peekPos = _pos + 1;
-                            while (peekPos < _input.Length && char.IsDigit(_input[peekPos]))
+                            while (peekPos < _endOffset && char.IsDigit(_input[peekPos]))
                             {
                                 peekPos++;
                             }
 
-                            if (peekPos < _input.Length && _input[peekPos] == '_')
+                            if (peekPos < _endOffset && _input[peekPos] == '_')
                             {
                                 while (_pos <= peekPos)
                                 {
@@ -2577,12 +2578,12 @@ namespace Microsoft.Diagnostics.Symbols
                         if (c == 'S' && nestDepth == 0)
                         {
                             int peekPos = _pos + 1;
-                            while (peekPos < _input.Length && char.IsLetterOrDigit(_input[peekPos]))
+                            while (peekPos < _endOffset && char.IsLetterOrDigit(_input[peekPos]))
                             {
                                 peekPos++;
                             }
 
-                            if (peekPos < _input.Length && _input[peekPos] == '_')
+                            if (peekPos < _endOffset && _input[peekPos] == '_')
                             {
                                 while (_pos <= peekPos)
                                 {
@@ -2598,7 +2599,7 @@ namespace Microsoft.Diagnostics.Symbols
 
                         // Two-character prefixes that open E-terminated scopes:
                         // Ul (lambda sig), DO (noexcept expr), Dw (throw expr).
-                        if (_pos + 1 < _input.Length &&
+                        if (_pos + 1 < _endOffset &&
                             ((c == 'U' && _input[_pos + 1] == 'l') ||
                              (c == 'D' && (_input[_pos + 1] == 'O' || _input[_pos + 1] == 'w'))))
                         {
@@ -2696,7 +2697,7 @@ namespace Microsoft.Diagnostics.Symbols
                 // Negative numbers use 'n' prefix in mangled form.
                 if (value.Length > 0 && value[0] == 'n')
                 {
-                    value = "-" + value.Substring(1);
+                    value = string.Concat("-", value.Substring(1));
                 }
 
                 if (type == "bool")
@@ -2704,7 +2705,7 @@ namespace Microsoft.Diagnostics.Symbols
                     return value == "0" ? "false" : "true";
                 }
 
-                return "(" + type + ")" + value;
+                return string.Concat("(", type, ")", value);
             }
 
             #endregion
@@ -2789,7 +2790,7 @@ namespace Microsoft.Diagnostics.Symbols
                     // Some deeply nested symbols (e.g., local entities with complex template args)
                     // may reference substitutions that our parser doesn't fully track. Return a
                     // placeholder rather than failing so the rest of the demangling can proceed.
-                    return "{S" + seqId.ToString() + "}";
+                    return string.Concat("{S", seqId.ToString(), "}");
                 }
 
                 return _substitutions[index];
@@ -2853,7 +2854,7 @@ namespace Microsoft.Diagnostics.Symbols
                 }
 
                 // Fallback: return a placeholder for unresolved template parameters.
-                return index == 0 ? "T" : "T" + (index - 1).ToString();
+                return index == 0 ? "T" : string.Concat("T", (index - 1).ToString());
             }
 
             #endregion
@@ -2871,7 +2872,7 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     string expr = ParseExpression();
                     Expect('E');
-                    return "decltype(" + expr + ")";
+                    return string.Concat("decltype(", expr, ")");
                 }
 
                 return null;

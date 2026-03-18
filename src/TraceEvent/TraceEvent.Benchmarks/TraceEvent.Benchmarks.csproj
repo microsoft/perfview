@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net462</TargetFrameworks>
     <RootNamespace>TraceEventBenchmarks</RootNamespace>
     <AssemblyName>TraceEvent.Benchmarks</AssemblyName>
     <Description>BenchmarkDotNet benchmarks for TraceEvent demanglers.</Description>

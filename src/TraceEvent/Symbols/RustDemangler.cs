@@ -570,7 +570,7 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             SkipOptionalLifetime();
                             string innerType = ParseType();
-                            return "&" + innerType;
+                            return string.Concat("&", innerType);
                         }
 
                         case 'Q': // Mutable reference &mut T
@@ -578,21 +578,21 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             SkipOptionalLifetime();
                             string innerType = ParseType();
-                            return "&mut " + innerType;
+                            return string.Concat("&mut ", innerType);
                         }
 
                         case 'P': // Raw pointer *const T
                             _pos++;
                         {
                             string innerType = ParseType();
-                            return "*const " + innerType;
+                            return string.Concat("*const ", innerType);
                         }
 
                         case 'O': // Raw pointer *mut T
                             _pos++;
                         {
                             string innerType = ParseType();
-                            return "*mut " + innerType;
+                            return string.Concat("*mut ", innerType);
                         }
 
                         case 'F': // Function pointer fn(...)
@@ -814,20 +814,20 @@ namespace Microsoft.Diagnostics.Symbols
                 }
 
                 // Integer types — display in decimal for values that fit, hex otherwise.
-                string prefix = negative ? "-" : "";
-
                 if (hexLen == 0)
                 {
-                    return prefix + "0";
+                    return negative ? "-0" : "0";
                 }
 
                 if (hexLen <= 16)
                 {
                     ulong value = ParseHexValue(_input, hexStart, hexLen);
-                    return prefix + value.ToString();
+                    string numStr = value.ToString();
+                    return negative ? string.Concat("-", numStr) : numStr;
                 }
 
-                return prefix + "0x" + _input.Substring(hexStart, hexLen);
+                string hexStr = _input.Substring(hexStart, hexLen);
+                return negative ? string.Concat("-0x", hexStr) : string.Concat("0x", hexStr);
             }
 
             private static ulong ParseHexValue(string hex, int start, int length)
@@ -862,7 +862,7 @@ namespace Microsoft.Diagnostics.Symbols
                             return string.Concat("'\\u{", codePoint.ToString("x"), "}'");
                         }
 
-                        return "'" + char.ConvertFromUtf32(codePoint) + "'";
+                        return string.Concat("'", char.ConvertFromUtf32(codePoint), "'");
                 }
             }
 

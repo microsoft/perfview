@@ -1,11 +1,9 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Diagnostics.Windows.Configs;
 using Microsoft.Diagnostics.Symbols;
 
 namespace TraceEventBenchmarks
 {
     [MemoryDiagnoser]
-    [EtwProfiler]
     public class RustDemanglerBenchmarks
     {
         private RustDemangler _demangler;
