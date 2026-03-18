@@ -1123,5 +1123,60 @@ namespace TraceEventTests
         }
 
         #endregion
+
+        #region Benchmark Symbol Regression Tests
+
+        [Theory]
+        // Benchmark: Y impl - fn pointer type implementing trait
+        [InlineData("_RNvYFEINtNtNtCs3NZLoJsOov_3std4sync5mutex5MutexNtNtCs97ToZhCJ7Fo_12thread_local9thread_id15ThreadIdManagerEINtNtNtCsiL7B6CFZHyD_4core3ops8function6FnOnceuE9call_onceBN_", "<fn() -> std::sync::mutex::Mutex<thread_local::thread_id::ThreadIdManager> as core::ops::function::FnOnce<()>>::call_once")]
+
+        // Benchmark: Y impl - extern "C" fn pointer
+        [InlineData("_RNvYFKCEuNtNtCsiL7B6CFZHyD_4core6marker5FnPtr4addrCsclAvUJFJRY0_4libc", "<extern \"C\" fn() as core::marker::FnPtr>::addr")]
+
+        // Benchmark: Y impl - unsafe extern "C" fn pointer
+        [InlineData("_RNvYFUKCNtCsi6pTmhHIU5M_9clang_sys6CXTypeEB6_NtNtCsiL7B6CFZHyD_4core6marker5FnPtr4addrB8_", "<unsafe extern \"C\" fn(clang_sys::CXType) -> clang_sys::CXType as core::marker::FnPtr>::addr")]
+
+        // Benchmark: X trait impl - primitive types (char, f32)
+        [InlineData("_RNvXCs5hFHXnc0CYL_13unicode_widthcNtB2_16UnicodeWidthChar5widthCsIOS3H4Mofs_8textwrap", "<char as unicode_width::UnicodeWidthChar>::width")]
+        [InlineData("_RNvXCsaU8YLwTUn6A_4zmijfNtB2_11FloatTraits7to_bits", "<f32 as zmij::FloatTraits>::to_bits")]
+
+        // Benchmark: X trait impl - generic types with backreferences
+        [InlineData("_RNvXCsffYwmj09FSj_9hashbrownINtNtCsaz9ix1H7t6h_5alloc5boxed3BoxeEINtB2_10EquivalentBq_E10equivalentCskmFptwX7bJS_2cc", "<alloc::boxed::Box<str> as hashbrown::Equivalent<alloc::boxed::Box<str>>>::equivalent")]
+
+        // Benchmark: Nested closures (2-3 levels)
+        [InlineData("_RNCNCNvCskdGv34WPu6C_4glob9fill_todos_00B5_", "glob::fill_todo::{closure}::{closure}")]
+        [InlineData("_RNCNCNCNvCskdGv34WPu6C_4glob9fill_todos_000B7_", "glob::fill_todo::{closure}::{closure}::{closure}")]
+
+        // Benchmark: Deep nested closures (6 levels)
+        [InlineData("_RINvMs5_NtCs6x17v5tx4u3_4pest12parser_stateINtB6_11ParserStateNtNtCs2mjHR4nEvfL_13semver_parser9generated4RuleE8optionalNCNCNCNCNCNCNvNtNtNvXs_B10_NtB12_12SemverParserINtNtB8_6parser6ParserBY_E5parse5rules7visible5range000s_000EB12_", "<pest::parser_state::ParserState<semver_parser::generated::Rule>>::optional::<<semver_parser::SemverParser as pest::parser::Parser<semver_parser::generated::Rule>>::parse::rules::visible::range::{closure}::{closure}::{closure}::{closure}::{closure}::{closure}>")]
+
+        // Benchmark: Unsafe extern "C" function pointer types in generics
+        [InlineData("_RINvCsi6pTmhHIU5M_9clang_sys12with_libraryFUKCNtB2_6CXTypeElNCNvB2_20clang_getNumArgTypes0EB2_", "clang_sys::with_library::<unsafe extern \"C\" fn(clang_sys::CXType) -> i32, clang_sys::clang_getNumArgTypes::{closure}>")]
+        [InlineData("_RINvCsi6pTmhHIU5M_9clang_sys12with_libraryFUKCNtB2_8CXCursorENtB2_8CXStringNCNvB2_38clang_Cursor_getObjCPropertySetterName0EB2_", "clang_sys::with_library::<unsafe extern \"C\" fn(clang_sys::CXCursor) -> clang_sys::CXString, clang_sys::clang_Cursor_getObjCPropertySetterName::{closure}>")]
+
+        // Benchmark: Shim vtable patterns (NS)
+        [InlineData("_RNSNvYNCINvMNtCs3NZLoJsOov_3std6threadNtBa_7Builder16spawn_unchecked_NCNvCsbudUTgWQKts_10threadpool13spawn_in_pool0uEs_0INtNtNtCsiL7B6CFZHyD_4core3ops8function6FnOnceuE9call_once6vtableB19_", "<<std::thread::Builder>::spawn_unchecked_<threadpool::spawn_in_pool::{closure}, ()>::{closure} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable}")]
+
+        // Benchmark: Array types in generics [char; N]
+        [InlineData("_RINvMNtCsb4rfMCCqXFm_10dissimilar5rangeNtB3_5Range11starts_withAcj2_EB5_", "<dissimilar::range::Range>::starts_with::<[char; 2]>")]
+        [InlineData("_RINvMNtCsiL7B6CFZHyD_4core3stre8containsAcj2_ECskvdpLI7AOSZ_5insta", "<str>::contains::<[char; 2]>")]
+
+        // Benchmark: Dyn trait with higher-ranked lifetime binder (DG0_)
+        [InlineData("_RINvNtCs5cYH0lLSdLc_4core3ptr13drop_in_placeINtNtB4_6option6OptionINtNtCsaz9ix1H7t6h_5alloc5boxed3BoxDG0_INtNtNtB4_3ops8function5FnMutTRL1_NtNtCsa1Fkj6zmIPF_7walkdir4dent8DirEntryRL0_B2d_EEp6OutputNtNtB4_3cmp8OrderingNtNtB4_6marker4SendNtB3v_4SyncEL_EEEB2h_", "core::ptr::drop_in_place::<core::option::Option<alloc::boxed::Box<dyn core::ops::function::FnMut<(&walkdir::dent::DirEntry, &walkdir::dent::DirEntry)><Output = core::cmp::Ordering> + core::marker::Send + core::marker::Sync>>>")]
+
+        // Benchmark: Multiple backreferences in complex generic context
+        [InlineData("_RINvMCslmJ0Mh1KeWG_10pkg_configNtB3_14WrappedCommand4argsRINtNtCsaz9ix1H7t6h_5alloc3vec3VecNtNtNtCs2FIVCi1Wrow_3std3ffi6os_str8OsStringERB1r_EB3_", "<pkg_config::WrappedCommand>::args::<&alloc::vec::Vec<std::ffi::os_str::OsString>, &std::ffi::os_str::OsString>")]
+
+        // Benchmark: Impl with Range generic parameter
+        [InlineData("_RINvMNtCs25ZhrkksEen_5bytes5bytesNtB3_5Bytes5sliceINtNtNtCsiL7B6CFZHyD_4core3ops5range5RangejEEB5_", "<bytes::bytes::Bytes>::slice::<core::ops::range::Range<usize>>")]
+
+        // Benchmark: Complex trait impl with nested closures and generics
+        [InlineData("_RNvXNCNvNtNtNtCs4USifnV5z1l_5tokio7runtime4task7harness11poll_future0INtB2_5GuardINtNtNtBa_8blocking4task12BlockingTaskNCNvXNtNtBc_2io8blockingINtB1Y_8BlockingNtNtNtCs3NZLoJsOov_3std2io5stdio5StdinENtNtB20_10async_read9AsyncRead9poll_read0ENtNtB1m_8schedule16BlockingScheduleENtNtNtCsiL7B6CFZHyD_4core3ops4drop4Drop4dropBc_", "<tokio::runtime::task::harness::poll_future::{closure}::Guard<tokio::runtime::blocking::task::BlockingTask<<tokio::io::blocking::Blocking<std::io::stdio::Stdin> as tokio::io::async_read::AsyncRead>::poll_read::{closure}>, tokio::runtime::blocking::schedule::BlockingSchedule> as core::ops::drop::Drop>::drop")]
+        public void WhenBenchmarkSymbolIsDemangedThenMatchesExpected(string input, string expected)
+        {
+            Assert.Equal(expected, _demangler.Demangle(input));
+        }
+
+        #endregion
     }
 }

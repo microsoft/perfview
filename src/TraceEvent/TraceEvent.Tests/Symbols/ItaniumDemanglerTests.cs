@@ -1610,5 +1610,53 @@ namespace TraceEventTests
 
         #endregion
 
+        #region Benchmark: Real-World Symbol Coverage
+
+        [Theory]
+        // Benchmark: Operator new/delete with nothrow (C++11)
+        [InlineData("_ZnwmRKSt9nothrow_t", "operator new(unsigned long, std::nothrow_t const&)")]
+        [InlineData("_ZnamRKSt9nothrow_t", "operator new[](unsigned long, std::nothrow_t const&)")]
+        [InlineData("_ZdlPvRKSt9nothrow_t", "operator delete(void*, std::nothrow_t const&)")]
+        [InlineData("_ZdaPvRKSt9nothrow_t", "operator delete[](void*, std::nothrow_t const&)")]
+
+        // Benchmark: Sized operator delete (C++14)
+        [InlineData("_ZdlPvm", "operator delete(void*, unsigned long)")]
+        [InlineData("_ZdaPvm", "operator delete[](void*, unsigned long)")]
+
+        // Benchmark: Function pointer parameters (real-world Lua/JACK library symbols)
+        [InlineData("_Z11lua_atpanicP9lua_StatePFiS0_E", "lua_atpanic(lua_State*, int (*)(lua_State*))")]
+        [InlineData("_Z11lua_sethookP9lua_StatePFvS0_P9lua_DebugEii", "lua_sethook(lua_State*, void (*)(lua_State*, lua_Debug*), int, int)")]
+        [InlineData("_Z10luaD_pcallP9lua_StatePFvS0_PvES1_ll", "luaD_pcall(lua_State*, void (*)(lua_State*, void*), void*, long, long)")]
+
+        // Benchmark: ELF versioned symbols (@GLIBCXX, @CXXABI)
+        [InlineData("_ZdlPvm@CXXABI_1.3.9", "operator delete(void*, unsigned long)")]
+        [InlineData("_ZnwmRKSt9nothrow_t@GLIBCXX_3.4", "operator new(unsigned long, std::nothrow_t const&)")]
+
+        // Benchmark: GCC linker suffixes on complex symbols
+        [InlineData("_Z10luaD_pcallP9lua_StatePFvS0_PvES1_ll.constprop.0", "luaD_pcall(lua_State*, void (*)(lua_State*, void*), void*, long, long)")]
+        [InlineData("_Z10luaD_throwP9lua_Statei.cold", "luaD_throw(lua_State*, int)")]
+
+        // Benchmark: Variadic pack expansion (Dp)
+        [InlineData("_ZN8libvisio11make_uniqueINS_11ForeignDataEJRS1_EEESt10unique_ptrIT_St14default_deleteIS4_EEDpOT0_", "libvisio::make_unique<libvisio::ForeignData, libvisio::ForeignData&>(libvisio::ForeignData&&&...)")]
+
+        // Benchmark: Address-of in template arguments (Xad + literal function references)
+        [InlineData("_ZN5Exiv28Internal19newTiffBinaryArray0IXadL_ZNS0_10canonCsCfgEEELi1EL_ZNS0_10canonCsDefEEEESt8auto_ptrINS0_13TiffComponentEEtNS0_5IfdIdE", "Exiv2::Internal::newTiffBinaryArray0<&(Exiv2::Internal::canonCsCfg), (int)1, Exiv2::Internal::canonCsDef>(unsigned short, Exiv2::Internal::IfdId)")]
+
+        // Benchmark: Real-world function signatures
+        [InlineData("_Z10luaF_closeP9lua_StateP10StackValueii", "luaF_close(lua_State*, StackValue*, int, int)")]
+        [InlineData("_Z10luaL_errorP9lua_StatePKcz", "luaL_error(lua_State*, char const*, ...)")]
+        [InlineData("_Z10luaL_unrefP9lua_Stateii", "luaL_unref(lua_State*, int, int)")]
+        [InlineData("_ZL11PutDoubleBEdPv", "PutDoubleBE(double, void*)")]
+        [InlineData("_ZL25StartNamespaceDeclHandlerPvPKcS1_", "StartNamespaceDeclHandler(void*, char const*, char const*)")]
+
+        // Benchmark: Lambda with discriminators in std::_Function_handler
+        [InlineData("_ZNSt17_Function_handlerIFbR14client_optionsRNS0_15extended_optionEEZ4mainEUlS1_S3_E0_E9_M_invokeERKSt9_Any_dataS1_S3_", "std::_Function_handler<bool (client_options&, std::_Function_handler::extended_option&), main::{lambda(client_options, std::_Function_handler::extended_option)#2}>::_M_invoke(std::_Any_data const&, client_options, std::_Function_handler::extended_option)")]
+        public void WhenBenchmarkSymbolThenDemangleMatchesExpected(string mangled, string expected)
+        {
+            Assert.Equal(expected, _demangler.Demangle(mangled));
+        }
+
+        #endregion
+
     }
 }
