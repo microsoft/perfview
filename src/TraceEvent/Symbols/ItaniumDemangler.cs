@@ -256,10 +256,38 @@ namespace Microsoft.Diagnostics.Symbols
             private int _depth;
             private const int MaxDepth = 256;
 
+            // Pool of reusable StringBuilders to avoid per-method allocations.
+            // Since the parser is recursive, multiple StringBuilders may be in use simultaneously.
+            private readonly StringBuilder[] _sbPool = new StringBuilder[8];
+            private int _sbPoolIndex;
+
             internal Parser()
             {
                 _substitutions = new List<string>();
                 _templateArguments = new List<string>();
+                for (int i = 0; i < _sbPool.Length; i++)
+                    _sbPool[i] = new StringBuilder(128);
+            }
+
+            /// <summary>
+            /// Acquires a reusable StringBuilder from the pool. Callers must call
+            /// <see cref="ReleaseSb"/> when done. Falls back to a new StringBuilder
+            /// if the pool is exhausted (deep recursion).
+            /// </summary>
+            private StringBuilder AcquireSb()
+            {
+                if (_sbPoolIndex < _sbPool.Length)
+                {
+                    var sb = _sbPool[_sbPoolIndex++];
+                    sb.Clear();
+                    return sb;
+                }
+                return new StringBuilder(128);
+            }
+
+            private void ReleaseSb()
+            {
+                if (_sbPoolIndex > 0) _sbPoolIndex--;
             }
 
             public void Reset(string input, int startPos, int endOffset)
@@ -273,6 +301,7 @@ namespace Microsoft.Diagnostics.Symbols
                 _functionQualifiers = "";
                 _encodingHasTemplateArgs = false;
                 _depth = 0;
+                _sbPoolIndex = 0;
             }
 
             #region Helpers
@@ -614,7 +643,7 @@ namespace Microsoft.Diagnostics.Symbols
                         ParseType(); // return type — discard
                     }
 
-                    var sb = new StringBuilder(name.Length + 64);
+                    var sb = AcquireSb();
                     sb.Append(name);
                     sb.Append('(');
                     int paramCount = 0;
@@ -653,7 +682,9 @@ namespace Microsoft.Diagnostics.Symbols
                     {
                         sb.Append(functionQualifiers);
                     }
-                    return sb.ToString();
+                    string result = sb.ToString();
+                    ReleaseSb();
+                    return result;
                 }
                 finally
                 {
@@ -1309,7 +1340,7 @@ namespace Microsoft.Diagnostics.Symbols
 
                 int paramCount = 0;
                 string firstParam = null;
-                var paramSb = new StringBuilder(64);
+                var paramSb = AcquireSb();
                 while (HasMore && _input[_pos] != 'E')
                 {
                     string type = ParseType();
@@ -1345,7 +1376,8 @@ namespace Microsoft.Diagnostics.Symbols
                 Expect('_');
 
                 int displayIndex = discriminator.Length == 0 ? 1 : checked(int.Parse(discriminator) + 2);
-                var result = new StringBuilder("{lambda(");
+                var result = AcquireSb();
+                result.Append("{lambda(");
                 if (paramCount >= 2)
                 {
                     result.Append(paramSb);
@@ -1357,7 +1389,10 @@ namespace Microsoft.Diagnostics.Symbols
                 result.Append(")#");
                 result.Append(displayIndex);
                 result.Append('}');
-                return result.ToString();
+                string resultStr = result.ToString();
+                ReleaseSb();
+                ReleaseSb();
+                return resultStr;
             }
 
             #endregion
@@ -1760,12 +1795,15 @@ namespace Microsoft.Diagnostics.Symbols
                     return null;
                 }
 
-                var sb = new StringBuilder(inner);
+                var sb = AcquireSb();
+                sb.Append(inner);
                 if (isRestrict) sb.Append(" restrict");
                 if (isVolatile) sb.Append(" volatile");
                 if (isConst) sb.Append(" const");
 
-                return sb.ToString();
+                string result = sb.ToString();
+                ReleaseSb();
+                return result;
             }
 
             // <function-type> ::= F [Y] <bare-function-type> E
@@ -1784,7 +1822,7 @@ namespace Microsoft.Diagnostics.Symbols
                 // Parameter types
                 int paramCount = 0;
                 string firstParam = null;
-                var paramSb = new StringBuilder(64);
+                var paramSb = AcquireSb();
                 while (HasMore && _input[_pos] != 'E')
                 {
                     // Check for ref-qualifier (R or O) immediately before the terminating 'E'.
@@ -1837,6 +1875,7 @@ namespace Microsoft.Diagnostics.Symbols
                         string expr = ParseExpression();
                         if (!TryConsume('E'))
                         {
+                            ReleaseSb();
                             return null;
                         }
 
@@ -1847,12 +1886,14 @@ namespace Microsoft.Diagnostics.Symbols
                         // Dw <type>+ E = throw(types)
                         _pos += 2;
                         bool firstThrow = true;
-                        var throwSb = new StringBuilder(32);
+                        var throwSb = AcquireSb();
                         while (HasMore && _input[_pos] != 'E')
                         {
                             string throwType = ParseType();
                             if (throwType == null)
                             {
+                                ReleaseSb();
+                                ReleaseSb();
                                 return null;
                             }
 
@@ -1866,10 +1907,13 @@ namespace Microsoft.Diagnostics.Symbols
 
                         if (!TryConsume('E'))
                         {
+                            ReleaseSb();
+                            ReleaseSb();
                             return null;
                         }
 
                         exceptionSpec = string.Concat(" throw(", throwSb.ToString(), ")");
+                        ReleaseSb();
                     }
                 }
 
@@ -1888,7 +1932,8 @@ namespace Microsoft.Diagnostics.Symbols
 
                 Expect('E');
 
-                var resultSb = new StringBuilder(returnType);
+                var resultSb = AcquireSb();
+                resultSb.Append(returnType);
                 resultSb.Append(" (");
                 if (paramCount >= 2)
                 {
@@ -1901,7 +1946,10 @@ namespace Microsoft.Diagnostics.Symbols
                 resultSb.Append(')');
                 resultSb.Append(exceptionSpec);
                 resultSb.Append(refQualifier);
-                return resultSb.ToString();
+                string funcResult = resultSb.ToString();
+                ReleaseSb();
+                ReleaseSb();
+                return funcResult;
             }
 
             // <array-type> ::= A <positive dimension number> _ <element type>
@@ -1980,23 +2028,27 @@ namespace Microsoft.Diagnostics.Symbols
                     if (bracketPos > 0 && elementType[bracketPos - 1] == ')')
                     {
                         int closeParenPos = bracketPos - 1;
-                        var sb = new StringBuilder(elementType.Length + dimension.Length + 4);
+                        var sb = AcquireSb();
                         sb.Append(elementType, 0, closeParenPos);
                         sb.Append('[');
                         sb.Append(dimension);
                         sb.Append(']');
                         sb.Append(elementType, closeParenPos, elementType.Length - closeParenPos);
-                        return sb.ToString();
+                        string result = sb.ToString();
+                        ReleaseSb();
+                        return result;
                     }
 
                     {
-                        var sb = new StringBuilder(elementType.Length + dimension.Length + 4);
+                        var sb = AcquireSb();
                         sb.Append(elementType, 0, bracketPos);
                         sb.Append('[');
                         sb.Append(dimension);
                         sb.Append(']');
                         sb.Append(elementType, bracketPos, elementType.Length - bracketPos);
-                        return sb.ToString();
+                        string result = sb.ToString();
+                        ReleaseSb();
+                        return result;
                     }
                 }
 
@@ -2181,7 +2233,7 @@ namespace Microsoft.Diagnostics.Symbols
                     // foo's signature resolves to float (from foo's args), not int (from A's args).
                     _templateArguments = args;
 
-                    var sb = new StringBuilder(args.Count * 16);
+                    var sb = AcquireSb();
                     sb.Append('<');
                     for (int i = 0; i < args.Count; i++)
                     {
@@ -2189,7 +2241,9 @@ namespace Microsoft.Diagnostics.Symbols
                         sb.Append(args[i]);
                     }
                     sb.Append('>');
-                    return sb.ToString();
+                    string result = sb.ToString();
+                    ReleaseSb();
+                    return result;
                 }
                 finally
                 {
@@ -2246,13 +2300,15 @@ namespace Microsoft.Diagnostics.Symbols
                         }
 
                         Expect('E');
-                        var packSb = new StringBuilder(packArgs.Count * 12);
+                        var packSb = AcquireSb();
                         for (int i = 0; i < packArgs.Count; i++)
                         {
                             if (i > 0) packSb.Append(", ");
                             packSb.Append(packArgs[i]);
                         }
-                        return packSb.ToString();
+                        string packResult = packSb.ToString();
+                        ReleaseSb();
+                        return packResult;
                     }
 
                     // Type
@@ -2359,7 +2415,7 @@ namespace Microsoft.Diagnostics.Symbols
                                 return null;
                             }
 
-                            var listSb = new StringBuilder(type.Length + args.Count * 12);
+                            var listSb = AcquireSb();
                             listSb.Append('(');
                             listSb.Append(type);
                             listSb.Append("){");
@@ -2369,7 +2425,9 @@ namespace Microsoft.Diagnostics.Symbols
                                 listSb.Append(args[i]);
                             }
                             listSb.Append('}');
-                            return listSb.ToString();
+                            string listResult = listSb.ToString();
+                            ReleaseSb();
+                            return listResult;
                         }
                         else
                         {
@@ -2416,7 +2474,7 @@ namespace Microsoft.Diagnostics.Symbols
                             return null;
                         }
 
-                        var callSb = new StringBuilder(callee.Length + args.Count * 12);
+                        var callSb = AcquireSb();
                         callSb.Append(callee);
                         callSb.Append('(');
                         for (int i = 0; i < args.Count; i++)
@@ -2425,7 +2483,9 @@ namespace Microsoft.Diagnostics.Symbols
                             callSb.Append(args[i]);
                         }
                         callSb.Append(')');
-                        return callSb.ToString();
+                        string callResult = callSb.ToString();
+                        ReleaseSb();
+                        return callResult;
                     }
 
                     // C++ named cast operators: sc, rc, dc, cc — all have form: <cast> <type> <expression>
@@ -2546,7 +2606,7 @@ namespace Microsoft.Diagnostics.Symbols
                     }
 
                     // Fallback: consume characters until 'E' or '_' at the correct nesting level.
-                    var sb = new StringBuilder(32);
+                    var sb = AcquireSb();
                     int nestDepth = 0;
                     while (HasMore)
                     {
@@ -2610,7 +2670,9 @@ namespace Microsoft.Diagnostics.Symbols
                         sb.Append(Consume());
                     }
 
-                    return sb.ToString();
+                    string fallbackResult = sb.ToString();
+                    ReleaseSb();
+                    return fallbackResult;
                 }
                 finally
                 {
@@ -2684,7 +2746,7 @@ namespace Microsoft.Diagnostics.Symbols
                 if (type == null) type = "?";
 
                 // Parse value (everything up to 'E')
-                var sb = new StringBuilder(16);
+                var sb = AcquireSb();
                 while (HasMore && _input[_pos] != 'E')
                 {
                     sb.Append(Consume());
@@ -2693,6 +2755,7 @@ namespace Microsoft.Diagnostics.Symbols
                 Expect('E');
 
                 string value = sb.ToString();
+                ReleaseSb();
 
                 // Negative numbers use 'n' prefix in mangled form.
                 if (value.Length > 0 && value[0] == 'n')
