@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net8.0;net462</TargetFrameworks>
+    <RootNamespace>TraceEventBenchmarks</RootNamespace>
+    <AssemblyName>TraceEvent.Benchmarks</AssemblyName>
+    <Description>BenchmarkDotNet benchmarks for TraceEvent demanglers.</Description>
+    <Copyright>Copyright © Microsoft 2025</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TraceEvent.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="inputs\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- PublicSign with MSFT.snk so TraceEvent's InternalsVisibleTo works.
+       No real signing / MicroBuild needed — this is a dev-only tool. -->
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(SIGNING_BUILD)'!= 'true'">true</PublicSign>
+    <DelaySign Condition="'$(SIGNING_BUILD)'== 'true'">true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+</Project>

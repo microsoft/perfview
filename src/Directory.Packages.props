@@ -54,6 +54,11 @@
     <PackageVersion Include="Xunit.StaFact" Version="0.3.2" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
   </ItemGroup>
+  <!-- Benchmark dependencies -->
+  <ItemGroup>
+    <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
+    <PackageVersion Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.14.0" />
+  </ItemGroup>
   <!-- Sample dependencies -->
   <ItemGroup>
     <PackageVersion Include="System.Reactive.Linq" Version="5.0.0" />
