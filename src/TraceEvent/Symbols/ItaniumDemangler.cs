@@ -1052,7 +1052,7 @@ namespace Microsoft.Diagnostics.Symbols
                     }
                 }
 
-                _functionQualifiers = cvQuals + refQual;
+                _functionQualifiers = refQual.Length == 0 ? cvQuals : string.Concat(cvQuals, refQual);
 
                 string result = ParsePrefixSequence();
 
