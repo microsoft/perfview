@@ -425,7 +425,7 @@ namespace Microsoft.Diagnostics.Symbols
             /// declarator syntax for function types and array types.
             /// For example, a pointer to "void (int)" becomes "void (*)(int)" rather than "void (int)*".
             /// </summary>
-            private static string WrapModifier(string inner, string modifier)
+            private string WrapModifier(string inner, string modifier)
             {
                 if (string.IsNullOrEmpty(inner))
                 {
@@ -444,13 +444,15 @@ namespace Microsoft.Diagnostics.Symbols
                         // Bare function type: "retType (params)" — space before the param '('
                         if (paramOpen > 0 && inner[paramOpen - 1] == ' ')
                         {
-                            var sb = new StringBuilder(inner.Length + modifier.Length + 4);
+                            var sb = AcquireSb();
                             sb.Append(inner, 0, paramOpen - 1);
                             sb.Append(" (");
                             sb.Append(modifier);
                             sb.Append(')');
                             sb.Append(inner, paramOpen, inner.Length - paramOpen);
-                            return sb.ToString();
+                            string result = sb.ToString();
+                            ReleaseSb();
+                            return result;
                         }
 
                         // Already-wrapped function type: "retType (existingMods)(params)" —
@@ -458,11 +460,13 @@ namespace Microsoft.Diagnostics.Symbols
                         if (paramOpen > 0 && inner[paramOpen - 1] == ')')
                         {
                             int modGroupClose = paramOpen - 1;
-                            var sb = new StringBuilder(inner.Length + modifier.Length);
+                            var sb = AcquireSb();
                             sb.Append(inner, 0, modGroupClose);
                             sb.Append(modifier);
                             sb.Append(inner, modGroupClose, inner.Length - modGroupClose);
-                            return sb.ToString();
+                            string result = sb.ToString();
+                            ReleaseSb();
+                            return result;
                         }
                     }
                 }
@@ -476,23 +480,27 @@ namespace Microsoft.Diagnostics.Symbols
                         // Already-wrapped array: "elemType (existingMods)[dim]"
                         if (bracketPos > 0 && inner[bracketPos - 1] == ')')
                         {
-                            var sb = new StringBuilder(inner.Length + modifier.Length + 2);
+                            var sb = AcquireSb();
                             sb.Append(inner, 0, bracketPos - 1);
                             sb.Append(modifier);
                             sb.Append(')');
                             sb.Append(inner, bracketPos, inner.Length - bracketPos);
-                            return sb.ToString();
+                            string result = sb.ToString();
+                            ReleaseSb();
+                            return result;
                         }
 
                         // Bare array: "elemType[dim]"
                         {
-                            var sb = new StringBuilder(inner.Length + modifier.Length + 4);
+                            var sb = AcquireSb();
                             sb.Append(inner, 0, bracketPos);
                             sb.Append(" (");
                             sb.Append(modifier);
                             sb.Append(')');
                             sb.Append(inner, bracketPos, inner.Length - bracketPos);
-                            return sb.ToString();
+                            string result = sb.ToString();
+                            ReleaseSb();
+                            return result;
                         }
                     }
                 }
