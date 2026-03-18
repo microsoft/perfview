@@ -86,6 +86,28 @@ namespace Microsoft.Diagnostics.Symbols
                 _parsePathDelegate = ParsePath;
                 _parseTypeDelegate = ParseType;
                 _parseConstDelegate = ParseConst;
+                for (int i = 0; i < _sbPool.Length; i++)
+                    _sbPool[i] = new StringBuilder(128);
+            }
+
+            // Pool of reusable StringBuilders for recursive methods.
+            private readonly StringBuilder[] _sbPool = new StringBuilder[8];
+            private int _sbPoolIndex;
+
+            private StringBuilder AcquireSb()
+            {
+                if (_sbPoolIndex < _sbPool.Length)
+                {
+                    var sb = _sbPool[_sbPoolIndex++];
+                    sb.Clear();
+                    return sb;
+                }
+                return new StringBuilder(128);
+            }
+
+            private void ReleaseSb()
+            {
+                if (_sbPoolIndex > 0) _sbPoolIndex--;
             }
 
             /// <summary>
@@ -108,6 +130,7 @@ namespace Microsoft.Diagnostics.Symbols
                 _pos = startOffset;
                 _endOffset = endOffset;
                 _depth = 0;
+                _sbPoolIndex = 0;
             }
 
             #region Low-level helpers
@@ -424,7 +447,7 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             string basePath = ParsePath(inValue);
                             string sep = inValue ? "::<" : "<";
-                            var sb = new StringBuilder(basePath.Length + 64);
+                            var sb = AcquireSb();
                             sb.Append(basePath);
                             sb.Append(sep);
                             bool first = true;
@@ -434,9 +457,11 @@ namespace Microsoft.Diagnostics.Symbols
                                 sb.Append(ParseGenericArg());
                                 first = false;
                             }
-                            if (first) return basePath;
+                            if (first) { ReleaseSb(); return basePath; }
                             sb.Append('>');
-                            return sb.ToString();
+                            string result = sb.ToString();
+                            ReleaseSb();
+                            return result;
                         }
 
                         case 'B': // Backref
@@ -546,7 +571,7 @@ namespace Microsoft.Diagnostics.Symbols
                         case 'T': // Tuple (T1, T2, ...)
                             _pos++;
                         {
-                            var sb = new StringBuilder(64);
+                            var sb = AcquireSb();
                             sb.Append('(');
                             int count = 0;
                             while (!Eat('E'))
@@ -555,14 +580,18 @@ namespace Microsoft.Diagnostics.Symbols
                                 sb.Append(ParseType());
                                 count++;
                             }
-                            if (count == 0) return "()";
+                            if (count == 0) { ReleaseSb(); return "()"; }
                             if (count == 1)
                             {
                                 sb.Append(",)");
-                                return sb.ToString();
+                                string r = sb.ToString();
+                                ReleaseSb();
+                                return r;
                             }
                             sb.Append(')');
-                            return sb.ToString();
+                            string result = sb.ToString();
+                            ReleaseSb();
+                            return result;
                         }
 
                         case 'R': // Reference &T or &'a T
@@ -878,7 +907,7 @@ namespace Microsoft.Diagnostics.Symbols
             /// </summary>
             private string ParseFnSig()
             {
-                var sb = new StringBuilder(64);
+                var sb = AcquireSb();
 
                 // Optional higher-ranked lifetime binder (RFC 2603: <binder> = "G" <base-62-number>).
                 if (Eat('G'))
@@ -919,7 +948,9 @@ namespace Microsoft.Diagnostics.Symbols
                     sb.Append(returnType);
                 }
 
-                return sb.ToString();
+                string result = sb.ToString();
+                ReleaseSb();
+                return result;
             }
 
             /// <summary>
@@ -951,7 +982,7 @@ namespace Microsoft.Diagnostics.Symbols
                     binderCount = ParseBase62Number();
                 }
 
-                var sb = new StringBuilder(64);
+                var sb = AcquireSb();
                 sb.Append("dyn ");                bool first = true;
                 while (!Eat('E'))
                 {
@@ -964,6 +995,7 @@ namespace Microsoft.Diagnostics.Symbols
                 // Parsed but not displayed in simplified output.
                 if (!HasMore || _input[_pos] != 'L')
                 {
+                    ReleaseSb();
                     throw new InvalidOperationException("Missing required lifetime in dyn bounds");
                 }
 
@@ -971,10 +1003,13 @@ namespace Microsoft.Diagnostics.Symbols
 
                 if (first)
                 {
+                    ReleaseSb();
                     return "dyn";
                 }
 
-                return sb.ToString();
+                string result = sb.ToString();
+                ReleaseSb();
+                return result;
             }
 
             /// <summary>
@@ -984,7 +1019,7 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 string traitPath = ParsePath(inValue: false);
 
-                var sb = new StringBuilder(traitPath.Length + 32);
+                var sb = AcquireSb();
                 sb.Append(traitPath);
                 sb.Append('<');
                 bool first = true;
@@ -1000,9 +1035,11 @@ namespace Microsoft.Diagnostics.Symbols
                     first = false;
                 }
 
-                if (first) return traitPath;
+                if (first) { ReleaseSb(); return traitPath; }
                 sb.Append('>');
-                return sb.ToString();
+                string result = sb.ToString();
+                ReleaseSb();
+                return result;
             }
 
             /// <summary>
