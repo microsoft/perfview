@@ -3662,21 +3662,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <returns></returns>
         internal unsafe TraceEventDispatcher AllocLookup()
         {
-            if (freeLookup == null)
+            // Use Interlocked.Exchange to atomically take the cached dispatcher (setting the field to null).
+            // This prevents a race where two threads both read the non-null value before either sets it to null.
+            TraceEventDispatcher ret = Interlocked.Exchange(ref freeLookup, null);
+            if (ret == null)
             {
-                freeLookup = AddAllTemplatesToDispatcher(new TraceLogEventSource(events));
+                ret = AddAllTemplatesToDispatcher(new TraceLogEventSource(events));
             }
 
-            TraceEventDispatcher ret = freeLookup;
-            freeLookup = null;
             return ret;
         }
         internal unsafe void FreeLookup(TraceEventDispatcher lookup)
         {
-            if (freeLookup == null)
-            {
-                freeLookup = lookup;
-            }
+            // Use Interlocked.CompareExchange to atomically store the dispatcher back only if the slot is empty.
+            Interlocked.CompareExchange(ref freeLookup, lookup, null);
         }
 
         private void InitializeFromFile(string etlxFilePath)
