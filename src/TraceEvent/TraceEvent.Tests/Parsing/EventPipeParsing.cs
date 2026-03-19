@@ -2728,6 +2728,119 @@ namespace TraceEventTests
                 }
             }
         }
+
+        /// <summary>
+        /// Regression test for GitHub issue: AllocationSampled (EventID 303, .NET 10+) has no typed
+        /// schema in ClrTraceEventParser.  Verifies that the event is routed through
+        /// <c>source.Clr.AllocationSampling</c> and that every payload field decodes correctly.
+        /// </summary>
+        [Fact]
+        public void AllocationSampledEventRoutesAndDecodesPayload()
+        {
+            // AllocationSampled (EventID 303) payload layout on a 64-bit trace (PointerSize=8):
+            //   AllocationKind   : UInt32      (4 bytes)
+            //   ClrInstanceID    : UInt16      (2 bytes)
+            //   TypeID           : Pointer     (8 bytes on 64-bit)
+            //   TypeName         : NullTerminated UTF-16 string
+            //   Address          : Pointer     (8 bytes)
+            //   ObjectSize       : UInt64      (8 bytes)
+            //   SampledByteOffset: UInt64      (8 bytes)
+
+            const string typeName = "System.String";
+            const ulong expectedTypeID          = 0xDEADBEEF00000001UL;
+            const ulong expectedAddress         = 0x00007F1234560000UL;
+            const long  expectedObjectSize      = 104;
+            const long  expectedSampledByteOffset = 8192;
+
+            // Build an in-memory nettrace (V6) containing one AllocationSampled event.
+            // CLR runtime events carry no embedded metadata in EventPipe traces — the
+            // ClrTraceEventParser pre-registers the schema, so we just declare the event ID.
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(
+                new EventMetadata(1, "Microsoft-Windows-DotNETRuntime", "AllocationSampled", 303));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 1, processId: 1);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p =>
+                {
+                    // AllocationSampled payload layout on a 64-bit trace (PointerSize=8):
+                    //   AllocationKind   : UInt32      (4 bytes)
+                    //   ClrInstanceID    : UInt16      (2 bytes)
+                    //   TypeID           : Pointer     (8 bytes on 64-bit)
+                    //   TypeName         : NullTerminated UTF-16 string
+                    //   Address          : Pointer     (8 bytes)
+                    //   ObjectSize       : UInt64      (8 bytes)
+                    //   SampledByteOffset: UInt64      (8 bytes)
+                    p.Write((uint)0);                               // AllocationKind = Small (0)
+                    p.Write((ushort)1);                             // ClrInstanceID  = 1
+                    p.Write(expectedTypeID);                        // TypeID (8-byte pointer)
+                    p.Write(Encoding.Unicode.GetBytes(typeName));   // TypeName chars
+                    p.Write((ushort)0);                             // null terminator
+                    p.Write(expectedAddress);                       // Address (8-byte pointer)
+                    p.Write((ulong)expectedObjectSize);
+                    p.Write((ulong)expectedSampledByteOffset);
+                });
+            });
+            writer.WriteEndBlock();
+
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            EventPipeEventSource source = new EventPipeEventSource(stream);
+
+            int clrHandlerHits    = 0;
+            int dynamicHandlerHits = 0;
+
+            // The event MUST be routed through ClrTraceEventParser (source.Clr)
+            source.Clr.AllocationSampling += data =>
+            {
+                clrHandlerHits++;
+
+                // Payload names
+                Assert.Equal(new[] { "AllocationKind", "ClrInstanceID", "TypeID", "TypeName", "Address", "ObjectSize", "SampledByteOffset" },
+                             data.PayloadNames);
+
+                // Typed accessors
+                Assert.Equal(GCAllocationKind.Small, data.AllocationKind);
+                Assert.Equal(1,                      data.ClrInstanceID);
+                Assert.Equal(expectedTypeID,         data.TypeID);
+                Assert.Equal(typeName,               data.TypeName);
+                Assert.Equal(expectedAddress,        data.Address);
+                Assert.Equal(expectedObjectSize,     data.ObjectSize);
+                Assert.Equal(expectedSampledByteOffset, data.SampledByteOffset);
+
+                // PayloadValue round-trip
+                Assert.Equal(GCAllocationKind.Small,      data.PayloadValue(0));
+                Assert.Equal(1,                           data.PayloadValue(1));
+                Assert.Equal(expectedTypeID,              data.PayloadValue(2));
+                Assert.Equal(typeName,                    data.PayloadValue(3));
+                Assert.Equal(expectedAddress,             data.PayloadValue(4));
+                Assert.Equal(expectedObjectSize,          data.PayloadValue(5));
+                Assert.Equal(expectedSampledByteOffset,   data.PayloadValue(6));
+
+                // PayloadByName
+                Assert.Equal(typeName,            data.PayloadByName("TypeName"));
+                Assert.Equal(expectedObjectSize,  data.PayloadByName("ObjectSize"));
+            };
+
+            // Also subscribe to Dynamic.All to confirm the event does fire (it might
+            // still appear in the Dynamic stream as a fallback, that is acceptable)
+            source.Dynamic.All += data =>
+            {
+                if (data.ProviderName == "Microsoft-Windows-DotNETRuntime" &&
+                    (int)data.ID == 303)
+                {
+                    dynamicHandlerHits++;
+                }
+            };
+
+            source.Process();
+
+            // The event must have been dispatched through the typed CLR handler
+            Assert.Equal(1, clrHandlerHits);
+        }
     }
 
 
