@@ -45,7 +45,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             GCSampledObjectAllocationLow = 0x2000000,
             PerfTrack = 0x20000000,
             Stack = 0x40000000,
-            AllocationSampling = 0x80000000000,
         };
 
         public ClrTraceEventParser(TraceEventSource source) : base(source) {}
@@ -1233,18 +1232,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.   UnregisterEventTemplate(value, 87, MethodTaskGuid);
             }
         }
-        public event Action<AllocationSampledTraceData> AllocationSampling
-        {
-            add
-            {
-                                                         // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new AllocationSampledTraceData(value, 303, 40, "AllocationSampling", AllocationSamplingTaskGuid, 0, "AllocationSampled", ProviderGuid, ProviderName));
-            }
-            remove
-            {
-                source.   UnregisterEventTemplate(value, 303, AllocationSamplingTaskGuid);
-            }
-        }
 
        #region Event ID Definitions
         public const TraceEventID GCStartEventID = (TraceEventID) 1;
@@ -1338,7 +1325,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public const TraceEventID MethodTailCallSucceededEventID = (TraceEventID) 188;
         public const TraceEventID MethodTailCallFailedEventID = (TraceEventID) 189;
         public const TraceEventID MethodMethodILToNativeMapEventID = (TraceEventID) 190;
-        public const TraceEventID GCAllocationSampledEventID = (TraceEventID) 303;
        #endregion
 
     #region private
@@ -1363,7 +1349,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static Guid RuntimeTaskGuid = new Guid(unchecked((int) 0xcd7d3e32), unchecked((short) 0x65fe), unchecked((short) 0x40cd), 0x92, 0x25, 0xa2, 0x57, 0x7d, 0x20, 0x3f, 0xc3);
         private static Guid ClrPerfTrackTaskGuid = new Guid(unchecked((int) 0xeac685f6), unchecked((short) 0x2104), unchecked((short) 0x4dec), 0x88, 0xfd, 0x91, 0xe4, 0x25, 0x42, 0x21, 0xec);
         private static Guid TypeTaskGuid = new Guid(unchecked((int) 0x003e5a9b), unchecked((short) 0x4757), unchecked((short) 0x4d3e), 0xb4, 0xa1, 0xe4, 0x7b, 0xfb, 0x48, 0x94, 0x08);
-        private static Guid AllocationSamplingTaskGuid = new Guid(unchecked((int) 0xcc82530e), unchecked((short) 0xa21c), unchecked((short) 0x4eb0), 0xa6, 0x8a, 0xfa, 0x4f, 0x7e, 0x66, 0x49, 0x8f);
     #endregion
     }
 }
@@ -1926,82 +1911,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
 
         private event Action<GCAllocationTickTraceData> Action;
-        #endregion
-    }
-    public sealed class AllocationSampledTraceData : TraceEvent
-    {
-        public GCAllocationKind AllocationKind { get { return (GCAllocationKind)GetInt32At(0); } }
-        public int ClrInstanceID { get { return GetInt16At(4); } }
-        public Address TypeID { get { return GetHostPointer(6); } }
-        public string TypeName { get { return GetUnicodeStringAt(HostOffset(10, 1)); } }
-        public Address Address { get { return GetHostPointer(SkipUnicodeString(HostOffset(10, 1))); } }
-        public long ObjectSize { get { return (long)GetInt64At(SkipUnicodeString(HostOffset(10, 1)) + HostOffset(4, 1)); } }
-        public long SampledByteOffset { get { return (long)GetInt64At(SkipUnicodeString(HostOffset(10, 1)) + HostOffset(4, 1) + 8); } }
-
-        #region Private
-        internal AllocationSampledTraceData(Action<AllocationSampledTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.Action = action;
-        }
-        protected internal override void Dispatch()
-        {
-            Action(this);
-        }
-        protected internal override void Validate()
-        {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(10, 1)) + HostOffset(4, 1) + 16));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(10, 1)) + HostOffset(4, 1) + 16));
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-             Prefix(sb);
-             XmlAttrib(sb, "AllocationKind", AllocationKind);
-             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
-             XmlAttribHex(sb, "TypeID", TypeID);
-             XmlAttrib(sb, "TypeName", TypeName);
-             XmlAttribHex(sb, "Address", Address);
-             XmlAttrib(sb, "ObjectSize", ObjectSize);
-             XmlAttrib(sb, "SampledByteOffset", SampledByteOffset);
-             sb.Append("/>");
-             return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "AllocationKind", "ClrInstanceID", "TypeID", "TypeName", "Address", "ObjectSize", "SampledByteOffset" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return AllocationKind;
-                case 1:
-                    return ClrInstanceID;
-                case 2:
-                    return TypeID;
-                case 3:
-                    return TypeName;
-                case 4:
-                    return Address;
-                case 5:
-                    return ObjectSize;
-                case 6:
-                    return SampledByteOffset;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<AllocationSampledTraceData> Action;
         #endregion
     }
     public sealed class GCCreateConcurrentThreadTraceData : TraceEvent

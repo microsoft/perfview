@@ -2791,7 +2791,6 @@ namespace TraceEventTests
             EventPipeEventSource source = new EventPipeEventSource(stream);
 
             int clrHandlerHits    = 0;
-            int dynamicHandlerHits = 0;
 
             // The event MUST be routed through ClrTraceEventParser (source.Clr)
             source.Clr.AllocationSampling += data =>
@@ -2823,17 +2822,6 @@ namespace TraceEventTests
                 // PayloadByName
                 Assert.Equal(typeName,            data.PayloadByName("TypeName"));
                 Assert.Equal(expectedObjectSize,  data.PayloadByName("ObjectSize"));
-            };
-
-            // Also subscribe to Dynamic.All to confirm the event does fire (it might
-            // still appear in the Dynamic stream as a fallback, that is acceptable)
-            source.Dynamic.All += data =>
-            {
-                if (data.ProviderName == "Microsoft-Windows-DotNETRuntime" &&
-                    (int)data.ID == 303)
-                {
-                    dynamicHandlerHits++;
-                }
             };
 
             source.Process();

@@ -196,7 +196,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             WaitHandle = 0x40000000000,
 
             /// <summary>
-            /// Events for randomized allocation sampling (AllocationSampled, EventID 303). Requires .NET 10+.
+            /// Events for randomized allocation sampling.
             /// </summary>
             AllocationSampling = 0x80000000000,
 
@@ -10418,9 +10418,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     }
 
     /// <summary>
-    /// Data for the AllocationSampled event (EventID 303, .NET 10+).
-    /// Emitted by the randomized allocation sampler when <see cref="ClrTraceEventParser.Keywords.AllocationSampling"/>
-    /// is enabled on the <c>Microsoft-Windows-DotNETRuntime</c> provider.
+    /// Data for the AllocationSampled event.
+    /// Emitted by the randomized allocation sampler when
+    /// is enabled.
     /// </summary>
     public sealed class AllocationSampledTraceData : TraceEvent
     {
