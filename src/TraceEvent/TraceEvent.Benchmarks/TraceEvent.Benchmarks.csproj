@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\TraceEvent.Tests\Symbols\ElfBuilder.cs" Link="ElfBuilder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="inputs\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
