@@ -32,7 +32,7 @@ namespace FastSerialization
         }
 
         public virtual long Length { get { return bytes.Count; } }
-        public virtual void Clear() { bytes = new SegmentedList<byte>(131_072); }
+        public virtual void Clear() { bytes.Count = 0; }
 
         public void Write(byte value)
         {
