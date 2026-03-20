@@ -10419,8 +10419,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
     /// <summary>
     /// Data for the AllocationSampled event.
-    /// Emitted by the randomized allocation sampler when
-    /// is enabled.
+    /// Emitted by the randomized allocation sampler when is enabled.
     /// </summary>
     public sealed class AllocationSampledTraceData : TraceEvent
     {
