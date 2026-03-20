@@ -1233,6 +1233,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             new SampleProfilerTraceEventParser(this);
             new WpfTraceEventParser(this);
+            new ApplicationServerTraceEventParser(this);
 
             var dynamicParser = Dynamic;
 
