@@ -196,6 +196,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             WaitHandle = 0x40000000000,
 
             /// <summary>
+            /// Events for randomized allocation sampling.
+            /// </summary>
+            AllocationSampling = 0x80000000000,
+
+            /// <summary>
             /// Recommend default flags (good compromise on verbosity).
             /// </summary>
             Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen
@@ -1715,6 +1720,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
+        public event Action<AllocationSampledTraceData> AllocationSampling
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(new AllocationSampledTraceData(value, 303, 40, "AllocationSampling", AllocationSamplingTaskGuid, 0, "AllocationSampled", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 303, AllocationSamplingTaskGuid);
+            }
+        }
+
         public event Action<ModuleLoadUnloadTraceData> LoaderModuleDCStartV2
         {
             add
@@ -2194,6 +2212,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new WaitHandleWaitStopTraceData(action, 302, 39, "WaitHandleWait", WaitHandleWaitTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
         }
+        static private AllocationSampledTraceData AllocationSampledTemplate(Action<AllocationSampledTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new AllocationSampledTraceData(action, 303, 40, "AllocationSampling", AllocationSamplingTaskGuid, 0, "AllocationSampled", ProviderGuid, ProviderName);
+        }
         static private JitInstrumentationDataTraceData JitInstrumentationDataTemplate(Action<JitInstrumentationDataTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new JitInstrumentationDataTraceData(action, 297, 34, "JitInstrumentationData", JitInstrumentationDataTaskGuid, 11, "InstrumentationData", ProviderGuid, ProviderName);
@@ -2224,7 +2246,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[147];
+                var templates = new TraceEvent[148];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -2382,6 +2404,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 templates[145] = new WaitHandleWaitStartTraceData(null, 301, 39, "WaitHandleWait", WaitHandleWaitTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[146] = new WaitHandleWaitStopTraceData(null, 302, 39, "WaitHandleWait", WaitHandleWaitTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
+                templates[147] = AllocationSampledTemplate(null);
 
                 s_templates = templates;
             }
@@ -2450,6 +2473,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static readonly Guid TieredCompilationTaskGuid = new Guid(unchecked((int)0xa77f474d), unchecked((short)0x9d0d), unchecked((short)0x4311), 0xb9, 0x8e, 0xcf, 0xbc, 0xf8, 0x4b, 0x9e, 0xf);
         private static readonly Guid TypeLoadTaskGuid = new Guid(unchecked((int)0x9db1562b), unchecked((short)0x512f), unchecked((short)0x475d), 0x8d, 0x4c, 0x0c, 0x6d, 0x97, 0xc1, 0xe7, 0x3c);
         private static readonly Guid WaitHandleWaitTaskGuid = new Guid(unchecked((int)0xe90049d8), unchecked((short)0x8ab8), unchecked((short)0x4799), 0xb0, 0x72, 0xee, 0xf4, 0x12, 0x65, 0xbc, 0xa4);
+        private static readonly Guid AllocationSamplingTaskGuid = new Guid(unchecked((int)0xcc82530e), unchecked((short)0xa21c), unchecked((short)0x4eb0), 0xa6, 0x8a, 0xfa, 0x4f, 0x7e, 0x66, 0x49, 0x8f);
         private static readonly Guid JitInstrumentationDataTaskGuid = new Guid(unchecked((int)0xf8666925), unchecked((short)0x22c8), unchecked((short)0x4b70), 0xa1, 0x31, 0x07, 0x38, 0x13, 0x7e, 0x7f, 0x25);
         private static readonly Guid ExecutionCheckpointTaskGuid = new Guid(unchecked((int)0x598832c8), unchecked((short)0xdf4d), unchecked((short)0x4e9e), 0xab, 0xe6, 0x2c, 0x7b, 0xf0, 0xba, 0x2d, 0xa2);
         private static readonly Guid YieldProcessorMeasurementTaskGuid = new Guid(unchecked((int)0xb4afc324), unchecked((short)0xdece), unchecked((short)0x4b02), 0x86, 0xdc, 0xaa, 0xb8, 0xf2, 0x2b, 0xc1, 0xb1);
@@ -10390,6 +10414,102 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
         public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
         private event Action<WaitHandleWaitStopTraceData> Action;
+        #endregion
+    }
+
+    /// <summary>
+    /// Data for the AllocationSampled event.
+    /// Emitted by the randomized allocation sampler when is enabled.
+    /// </summary>
+    public sealed class AllocationSampledTraceData : TraceEvent
+    {
+        /// <summary>Gets the allocation kind: Small Object Heap (0), Large Object Heap (1), or Pinned Object Heap (2).</summary>
+        public GCAllocationKind AllocationKind { get { return (GCAllocationKind)GetInt32At(0); } }
+        /// <summary>Gets the CLR instance ID.</summary>
+        public int ClrInstanceID { get { return GetInt16At(4); } }
+        /// <summary>Gets the runtime type handle (method-table pointer) of the allocated object.</summary>
+        public Address TypeID { get { return GetAddressAt(6); } }
+        /// <summary>Gets the fully qualified name of the allocated type.</summary>
+        public string TypeName { get { return GetUnicodeStringAt(HostOffset(10, 1)); } }
+        /// <summary>Gets the address of the allocated object.</summary>
+        public Address Address { get { return GetAddressAt(SkipUnicodeString(HostOffset(10, 1))); } }
+        /// <summary>Gets the size of the allocated object in bytes.</summary>
+        public long ObjectSize { get { return (long)GetInt64At(SkipUnicodeString(HostOffset(10, 1)) + HostOffset(4, 1)); } }
+        /// <summary>Gets the byte offset into the sampled interval at which this allocation was chosen.</summary>
+        public long SampledByteOffset { get { return (long)GetInt64At(SkipUnicodeString(HostOffset(10, 1)) + HostOffset(4, 1) + 8); } }
+
+        #region Private
+        internal AllocationSampledTraceData(Action<AllocationSampledTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(HostOffset(10, 1)) + HostOffset(4, 1) + 16));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(HostOffset(10, 1)) + HostOffset(4, 1) + 16));
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<AllocationSampledTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "AllocationKind", AllocationKind);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttribHex(sb, "TypeID", TypeID);
+            XmlAttrib(sb, "TypeName", TypeName);
+            XmlAttribHex(sb, "Address", Address);
+            XmlAttrib(sb, "ObjectSize", ObjectSize);
+            XmlAttrib(sb, "SampledByteOffset", SampledByteOffset);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "AllocationKind", "ClrInstanceID", "TypeID", "TypeName", "Address", "ObjectSize", "SampledByteOffset" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return AllocationKind;
+                case 1:
+                    return ClrInstanceID;
+                case 2:
+                    return TypeID;
+                case 3:
+                    return TypeName;
+                case 4:
+                    return Address;
+                case 5:
+                    return ObjectSize;
+                case 6:
+                    return SampledByteOffset;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        public static ulong GetKeywords() { return 0x80000000000; }
+        public static string GetProviderName() { return "Microsoft-Windows-DotNETRuntime"; }
+        public static Guid GetProviderGuid() { return new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"); }
+        private event Action<AllocationSampledTraceData> Action;
         #endregion
     }
 
