@@ -101,6 +101,172 @@ namespace Microsoft.Diagnostics.Symbols
             return string.Empty;
         }
 
+        /// <summary>
+        /// Reads the GNU build-id from an ELF file by scanning PT_NOTE program headers.
+        /// Uses program headers (not section headers) because they are always present
+        /// even when section headers have been stripped.
+        /// </summary>
+        /// <param name="filePath">Path to the ELF file.</param>
+        /// <returns>Lowercase hex string of the build-id, or null if not found or on any error.</returns>
+        internal static string ReadBuildId(string filePath)
+        {
+            try
+            {
+                using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    // Read the ELF header (max 64 bytes for 64-bit).
+                    byte[] header = new byte[Elf64EhdrSize];
+                    int headerRead = ReadFully(stream, header, 0, header.Length);
+                    if (headerRead < EI_NIDENT)
+                    {
+                        Debug.WriteLine("ReadBuildId: File too small.");
+                        return null;
+                    }
+
+                    // Verify ELF magic bytes: 0x7f 'E' 'L' 'F'.
+                    if (header[0] != ElfMagic0 || header[1] != ElfMagic1 || header[2] != ElfMagic2 || header[3] != ElfMagic3)
+                    {
+                        Debug.WriteLine("ReadBuildId: Invalid ELF magic.");
+                        return null;
+                    }
+
+                    byte eiClass = header[EI_CLASS];
+                    byte eiData = header[EI_DATA];
+
+                    bool is64Bit = (eiClass == ElfClass64);
+                    bool bigEndian = (eiData == ElfDataMsb);
+
+                    if (eiClass != ElfClass32 && eiClass != ElfClass64)
+                    {
+                        Debug.WriteLine("ReadBuildId: Unknown ELF class " + eiClass + ".");
+                        return null;
+                    }
+
+                    int ehSize = is64Bit ? Elf64EhdrSize : Elf32EhdrSize;
+                    if (headerRead < ehSize)
+                    {
+                        Debug.WriteLine("ReadBuildId: Header too small.");
+                        return null;
+                    }
+
+                    // Parse program header table location from ELF header.
+                    // Layout after e_ident(16): e_type(2), e_machine(2), e_version(4), e_entry(4/8), e_phoff(4/8).
+                    int pos = EI_NIDENT + 2 + 2 + 4; // skip e_ident, e_type, e_machine, e_version
+                    ulong ePhoff;
+                    if (is64Bit)
+                    {
+                        pos += 8; // skip e_entry
+                        ePhoff = ReadU64Static(header, pos, bigEndian); pos += 8;
+                    }
+                    else
+                    {
+                        pos += 4; // skip e_entry
+                        ePhoff = ReadU32Static(header, pos, bigEndian); pos += 4;
+                    }
+
+                    // Skip to e_phentsize and e_phnum.
+                    // After e_phoff: e_shoff(4/8), e_flags(4), e_ehsize(2).
+                    if (is64Bit)
+                    {
+                        pos += 8 + 4 + 2; // e_shoff(8), e_flags(4), e_ehsize(2)
+                    }
+                    else
+                    {
+                        pos += 4 + 4 + 2; // e_shoff(4), e_flags(4), e_ehsize(2)
+                    }
+
+                    ushort ePhentsize = ReadU16Static(header, pos, bigEndian); pos += 2;
+                    ushort ePhnum = ReadU16Static(header, pos, bigEndian);
+
+                    if (ePhoff == 0 || ePhentsize == 0 || ePhnum == 0)
+                    {
+                        Debug.WriteLine("ReadBuildId: No program headers found.");
+                        return null;
+                    }
+
+                    // Validate minimum program header entry size to avoid out-of-bounds reads.
+                    int minPhentsize = is64Bit ? 56 : 32; // Elf64_Phdr = 56 bytes, Elf32_Phdr = 32 bytes
+                    if (ePhentsize < minPhentsize)
+                    {
+                        Debug.WriteLine("ReadBuildId: ePhentsize too small: " + ePhentsize);
+                        return null;
+                    }
+
+                    // Guard against corrupt ELF headers with unreasonably large program header counts.
+                    if (ePhnum > 4096)
+                    {
+                        Debug.WriteLine("ReadBuildId: Program header count too large: " + ePhnum);
+                        return null;
+                    }
+
+                    // Read all program headers in one bulk read.
+                    int phTableSize = ePhnum * ePhentsize;
+                    byte[] phTable = new byte[phTableSize];
+                    stream.Seek((long)ePhoff, SeekOrigin.Begin);
+                    if (ReadFully(stream, phTable, 0, phTableSize) < phTableSize)
+                    {
+                        Debug.WriteLine("ReadBuildId: Could not read program headers.");
+                        return null;
+                    }
+
+                    // Iterate program headers looking for PT_NOTE segments.
+                    for (int i = 0; i < ePhnum; i++)
+                    {
+                        int phPos = i * ePhentsize;
+                        uint pType = ReadU32Static(phTable, phPos, bigEndian);
+
+                        if (pType != PT_NOTE)
+                        {
+                            continue;
+                        }
+
+                        // Parse p_offset and p_filesz from the program header.
+                        ulong pOffset, pFilesz;
+                        if (is64Bit)
+                        {
+                            // 64-bit: p_type(4) + p_flags(4) + p_offset(8) + p_vaddr(8) + p_paddr(8) + p_filesz(8).
+                            pOffset = ReadU64Static(phTable, phPos + 8, bigEndian);
+                            pFilesz = ReadU64Static(phTable, phPos + 8 + 8 + 8 + 8, bigEndian);
+                        }
+                        else
+                        {
+                            // 32-bit: p_type(4) + p_offset(4) + p_vaddr(4) + p_paddr(4) + p_filesz(4).
+                            pOffset = ReadU32Static(phTable, phPos + 4, bigEndian);
+                            pFilesz = ReadU32Static(phTable, phPos + 4 + 4 + 4 + 4, bigEndian);
+                        }
+
+                        if (pFilesz == 0 || pFilesz > int.MaxValue)
+                        {
+                            continue;
+                        }
+
+                        // Read the PT_NOTE segment data.
+                        byte[] noteData = new byte[(int)pFilesz];
+                        stream.Seek((long)pOffset, SeekOrigin.Begin);
+                        if (ReadFully(stream, noteData, 0, noteData.Length) < noteData.Length)
+                        {
+                            continue;
+                        }
+
+                        // Iterate notes within the segment looking for GNU build-id.
+                        string buildId = ExtractBuildId(noteData, bigEndian);
+                        if (buildId != null)
+                        {
+                            return buildId;
+                        }
+                    }
+
+                    Debug.WriteLine("ReadBuildId: No GNU build-id note found.");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("ReadBuildId: Error reading file: " + ex.Message);
+                return null;
+            }
+        }
+
         #region private
 
         // ELF identification (e_ident) constants.
@@ -123,9 +289,23 @@ namespace Microsoft.Diagnostics.Symbols
         private const int Elf32EhdrSize = 52;
         private const int Elf64EhdrSize = 64;
 
+        // Section header entry sizes.
+        private const int Elf32ShdrSize = 40;
+        private const int Elf64ShdrSize = 64;
+        private const int MaxShentsize = 256;
+
+        // Maximum section count to accept from ELF headers.
+        private const uint MaxSectionCount = 65535;
+
         // Section header types.
         private const uint SHT_SYMTAB = 2;
         private const uint SHT_DYNSYM = 11;
+
+        // Program header types.
+        private const uint PT_NOTE = 4;          // Note segment.
+
+        // Note types.
+        private const uint NT_GNU_BUILD_ID = 3;  // GNU build-id note type.
 
         // Symbol table constants.
         private const byte STT_FUNC = 2;        // Symbol type: function.
@@ -161,7 +341,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         private struct ElfSymbolEntry : IComparable<ElfSymbolEntry>
         {
-            public uint Start;          // Adjusted RVA: (st_value - pVaddr) + pOffset.
+            public uint Start;          // RVA: (st_value - pVaddr) + pOffset.
             public uint End;            // Start + size - 1 (inclusive).
             public uint StrtabOffset;   // Offset into m_strtab for lazy name decode.
             public string Name;         // Null until first lookup, then cached.
@@ -236,6 +416,16 @@ namespace Microsoft.Diagnostics.Symbols
                 return;
             }
 
+            // Valid ELF section header sizes are 40 (32-bit) or 64 (64-bit).
+            // Reject values below the minimum struct size (would cause out-of-bounds reads)
+            // and cap at 256 to guard against overflow in sectionCount * eShentsize.
+            int minShentsize = m_is64Bit ? Elf64ShdrSize : Elf32ShdrSize;
+            if (eShentsize < minShentsize || eShentsize > MaxShentsize)
+            {
+                Debug.WriteLine("ElfSymbolModule: Invalid section header entry size: " + eShentsize);
+                return;
+            }
+
             // Handle extended section count.
             uint sectionCount = eShnum;
             if (eShnum == 0)
@@ -258,6 +448,13 @@ namespace Microsoft.Diagnostics.Symbols
 
             if (sectionCount == 0)
             {
+                return;
+            }
+
+            // Guard against corrupt ELF headers with unreasonably large section counts.
+            if (sectionCount > MaxSectionCount)
+            {
+                Debug.WriteLine("ElfSymbolModule: Section count too large: " + sectionCount);
                 return;
             }
 
@@ -291,6 +488,11 @@ namespace Microsoft.Diagnostics.Symbols
                 }
 
                 // Get the linked string table size.
+                if (shLink == 0 || shLink >= sectionCount)
+                {
+                    continue;
+                }
+
                 int strtabShPos = (int)shLink * eShentsize;
                 uint strtabType;
                 long strtabOffset, strtabSize, strtabLink, strtabEntsize;
@@ -317,6 +519,11 @@ namespace Microsoft.Diagnostics.Symbols
                 }
 
                 // Load the linked string table into the SegmentedList.
+                if (shLink == 0 || shLink >= sectionCount)
+                {
+                    continue;
+                }
+
                 int strtabShPos = (int)shLink * eShentsize;
                 uint strtabType;
                 long strtabOffset, strtabSize, strtabLink, strtabEntsize;
@@ -493,6 +700,61 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
+        /// Searches a PT_NOTE segment's raw bytes for a GNU build-id note.
+        /// Note format: namesz(4) + descsz(4) + type(4) + name(aligned to 4) + desc(aligned to 4).
+        /// </summary>
+        /// <param name="noteData">Raw bytes of the PT_NOTE segment.</param>
+        /// <param name="bigEndian">True if the ELF file uses big-endian encoding.</param>
+        /// <returns>Lowercase hex string of the build-id, or null if not found.</returns>
+        private static string ExtractBuildId(byte[] noteData, bool bigEndian)
+        {
+            int pos = 0;
+            int length = noteData.Length;
+
+            while (pos + 12 <= length) // Minimum note header: namesz(4) + descsz(4) + type(4).
+            {
+                uint namesz = ReadU32Static(noteData, pos, bigEndian);
+                uint descsz = ReadU32Static(noteData, pos + 4, bigEndian);
+                uint type = ReadU32Static(noteData, pos + 8, bigEndian);
+                pos += 12;
+
+                // Align name and desc sizes to 4-byte boundaries.
+                uint nameAligned = (namesz + 3) & ~3u;
+                uint descAligned = (descsz + 3) & ~3u;
+
+                // Validate that the note fits within the segment data.
+                if (pos + nameAligned + descAligned > length)
+                {
+                    break;
+                }
+
+                // Check for GNU build-id: name == "GNU\0" (namesz == 4) and type == NT_GNU_BUILD_ID (3).
+                if (type == NT_GNU_BUILD_ID && namesz == 4 &&
+                    noteData[pos] == (byte)'G' && noteData[pos + 1] == (byte)'N' &&
+                    noteData[pos + 2] == (byte)'U' && noteData[pos + 3] == 0)
+                {
+                    if (descsz == 0)
+                    {
+                        return null;
+                    }
+
+                    // Extract the build-id descriptor bytes as lowercase hex.
+                    int descStart = pos + (int)nameAligned;
+                    var sb = new StringBuilder((int)descsz * 2);
+                    for (int j = 0; j < (int)descsz; j++)
+                    {
+                        sb.Append(noteData[descStart + j].ToString("x2"));
+                    }
+                    return sb.ToString();
+                }
+
+                pos += (int)nameAligned + (int)descAligned;
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Attempts to demangle a symbol name using available demanglers.
         /// Supports Itanium C++ ABI (_Z prefix) and Rust v0 (_R prefix) mangling.
         /// </summary>
@@ -607,6 +869,34 @@ namespace Microsoft.Diagnostics.Symbols
             if (m_bigEndian)
             {
                 return ((ulong)ReadU32(data, offset) << 32) | ReadU32(data, offset + 4);
+            }
+            return BitConverter.ToUInt64(data, offset);
+        }
+
+        // Static overloads for use in ReadBuildId (which has no instance state).
+
+        /// <summary>Static uint16 read with explicit endianness.</summary>
+        private static ushort ReadU16Static(byte[] data, int offset, bool bigEndian)
+        {
+            return bigEndian ? ReadU16BE(data, offset) : ReadU16LE(data, offset);
+        }
+
+        /// <summary>Static uint32 read with explicit endianness.</summary>
+        private static uint ReadU32Static(byte[] data, int offset, bool bigEndian)
+        {
+            if (bigEndian)
+            {
+                return (uint)(data[offset] << 24 | data[offset + 1] << 16 | data[offset + 2] << 8 | data[offset + 3]);
+            }
+            return BitConverter.ToUInt32(data, offset);
+        }
+
+        /// <summary>Static uint64 read with explicit endianness.</summary>
+        private static ulong ReadU64Static(byte[] data, int offset, bool bigEndian)
+        {
+            if (bigEndian)
+            {
+                return ((ulong)ReadU32Static(data, offset, bigEndian) << 32) | ReadU32Static(data, offset + 4, bigEndian);
             }
             return BitConverter.ToUInt64(data, offset);
         }

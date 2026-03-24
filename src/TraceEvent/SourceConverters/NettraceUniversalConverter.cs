@@ -27,6 +27,15 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
 
         public void BeforeProcess(TraceLog traceLog, TraceEventDispatcher source)
         {
+            // Extract EventPipe-specific header values (e.g., SystemPageSize for ELF RVA calculations).
+            if (source is EventPipeEventSource eventPipeSource)
+            {
+                eventPipeSource.HeadersDeserialized += delegate ()
+                {
+                    traceLog.systemPageSize = eventPipeSource._systemPageSize;
+                };
+            }
+
             UniversalSystemTraceEventParser universalSystemParser = new UniversalSystemTraceEventParser(source);
             universalSystemParser.ExistingProcess += delegate (ProcessCreateTraceData data)
             {

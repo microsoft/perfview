@@ -34,6 +34,8 @@ namespace Microsoft.Diagnostics.Symbols
             m_symbolModuleCache = new Cache<string, ManagedSymbolModule>(10);
             m_pdbPathCache = new Cache<PdbSignature, string>(10);
             m_r2rPerfMapPathCache = new Cache<R2RPerfMapSignature, string>(10);
+            m_elfPathCache = new Cache<ElfBuildIdSignature, string>(10);
+            m_elfModuleCache = new Cache<ElfModuleSignature, ElfSymbolModule>(10);
 
             m_symbolPath = nt_symbol_path;
             if (m_symbolPath == null)
@@ -380,6 +382,115 @@ namespace Microsoft.Diagnostics.Symbols
             return perfMapPath;
         }
 
+        /// <summary>
+        /// Given an ELF module's filename and GNU build-id, attempts to find the corresponding
+        /// debug symbol file (.debug) or the binary itself from symbol servers and local paths.
+        /// Tries debug symbols (_.debug/elf-buildid-sym-{buildId}/_.debug) first, then falls
+        /// back to the binary ({filename}/elf-buildid-{buildId}/{filename}).
+        /// </summary>
+        /// <param name="fileName">The simple filename of the ELF module (e.g., "libcoreclr.so")</param>
+        /// <param name="buildId">The GNU build-id as a lowercase hex string</param>
+        /// <returns>The local file path to the downloaded symbol file, or null if not found.</returns>
+        public string FindElfSymbolFilePath(string fileName, string buildId)
+        {
+            m_log.WriteLine("FindElfSymbolFilePath: *{{ Searching for {0} with BuildId {1}", fileName, buildId);
+
+            string simpleFileName = Path.GetFileName(fileName);
+
+            // Normalize the build ID to lowercase. Build IDs vary in length depending on the
+            // hash algorithm (e.g., SHA-1 = 40 hex chars, MD5/UUID = 32), so we use the exact
+            // value without padding.
+            string normalizedBuildId = buildId.ToLowerInvariant();
+
+            ElfBuildIdSignature cacheKey = new ElfBuildIdSignature() { FileName = simpleFileName, BuildId = normalizedBuildId };
+            if (m_elfPathCache.TryGet(cacheKey, out string cachedPath))
+            {
+                m_log.WriteLine("FindElfSymbolFilePath: }} Hit Cache, returning {0}", cachedPath ?? "NULL");
+                return cachedPath;
+            }
+
+            // SSQP key conventions for ELF debug symbols and binaries.
+            // Use forward slashes — these are URL path segments for SSQP servers and
+            // Path.Combine handles mixed separators when joining with a local root.
+            string debugIndexPath = $"_.debug/elf-buildid-sym-{normalizedBuildId}/_.debug";
+            string binaryIndexPath = $"{simpleFileName}/elf-buildid-{normalizedBuildId}/{simpleFileName}";
+
+            string resultPath = null;
+
+            SymbolPath path = new SymbolPath(SymbolPath);
+            foreach (SymbolPathElement element in path.Elements)
+            {
+                if (element.IsSymServer)
+                {
+                    string cache = element.Cache;
+                    if (cache == null)
+                    {
+                        cache = path.DefaultSymbolCache();
+                    }
+
+                    // Try debug symbols first (preferred — has .symtab with full symbols).
+                    resultPath = GetFileFromServer(element.Target, debugIndexPath, Path.Combine(cache, debugIndexPath));
+                    if (resultPath != null)
+                    {
+                        break;
+                    }
+
+                    // Fall back to the binary (may only have .dynsym).
+                    resultPath = GetFileFromServer(element.Target, binaryIndexPath, Path.Combine(cache, binaryIndexPath));
+                    if (resultPath != null)
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    string target = element.Target;
+                    if (target != null)
+                    {
+                        if ((Options & SymbolReaderOptions.CacheOnly) != 0 && element.IsRemote)
+                        {
+                            m_log.WriteLine("FindElfSymbolFilePath: location {0} is remote and cacheOnly set, skipping.", target);
+                            continue;
+                        }
+
+                        // Try SSQP-structured debug symbols first.
+                        string debugPath = Path.Combine(target, debugIndexPath);
+                        if (File.Exists(debugPath))
+                        {
+                            resultPath = debugPath;
+                            break;
+                        }
+
+                        // Try SSQP-structured binary.
+                        string binaryPath = Path.Combine(target, binaryIndexPath);
+                        if (File.Exists(binaryPath))
+                        {
+                            resultPath = binaryPath;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (resultPath != null)
+            {
+                m_log.WriteLine("FindElfSymbolFilePath: *}} Successfully found ELF symbols for {0} BuildId {1} at {2}", simpleFileName, normalizedBuildId, resultPath);
+            }
+            else
+            {
+                string where = "";
+                if ((Options & SymbolReaderOptions.CacheOnly) != 0)
+                {
+                    where = " in local cache";
+                }
+
+                m_log.WriteLine("FindElfSymbolFilePath: *}} Failed to find ELF symbols for {0}{1} BuildId {2}", simpleFileName, where, normalizedBuildId);
+            }
+
+            m_elfPathCache.Add(cacheKey, resultPath);
+            return resultPath;
+        }
+
         // Find an executable file path (not a PDB) based on information about the file image.  
         /// <summary>
         /// This API looks up an executable file, by its build-timestamp and size (on a symbol server),  'fileName' should be 
@@ -495,7 +606,52 @@ namespace Microsoft.Diagnostics.Symbols
 
         internal R2RPerfMapSymbolModule OpenR2RPerfMapSymbolFile(string filePath, uint loadedLayoutTextOffset)
         {
+            if (!CheckSecurity(filePath))
+            {
+                m_log.WriteLine("OpenR2RPerfMapSymbolFile: Security check failed for {0}", filePath);
+                return null;
+            }
             return new R2RPerfMapSymbolModule(filePath, loadedLayoutTextOffset);
+        }
+
+        /// <summary>
+        /// Opens an ELF symbol module, returning a cached instance if the same file and load
+        /// parameters have been seen before. This avoids re-parsing large ELF debug files when
+        /// the same binary is loaded across multiple processes in a trace.
+        /// </summary>
+        internal ElfSymbolModule OpenElfSymbolFile(string filePath, ulong pVaddr, ulong pOffset, string expectedBuildId = null)
+        {
+            var cacheKey = new ElfModuleSignature() { FilePath = filePath, VAddr = pVaddr, Offset = pOffset };
+            if (m_elfModuleCache.TryGet(cacheKey, out ElfSymbolModule cached))
+            {
+                m_log.WriteLine("OpenElfSymbolFile: Cache hit for {0}", filePath);
+                return cached;
+            }
+
+            if (!CheckSecurity(filePath))
+            {
+                m_log.WriteLine("OpenElfSymbolFile: Security check failed for {0}", filePath);
+                return null;
+            }
+
+            // Validate build-id before parsing the full symbol table.
+            if (!string.IsNullOrEmpty(expectedBuildId))
+            {
+                string actualBuildId = ElfSymbolModule.ReadBuildId(filePath);
+                if (actualBuildId == null)
+                {
+                    m_log.WriteLine("OpenElfSymbolFile: Warning: Could not read build-id from {0} (may be stripped). Accepting without validation.", filePath);
+                }
+                else if (!string.Equals(actualBuildId, expectedBuildId, StringComparison.OrdinalIgnoreCase))
+                {
+                    m_log.WriteLine("OpenElfSymbolFile: ************ ELF file {0} has build-id {1} != expected {2}", filePath, actualBuildId, expectedBuildId);
+                    return null;
+                }
+            }
+
+            var module = new ElfSymbolModule(filePath, pVaddr, pOffset);
+            m_elfModuleCache.Add(cacheKey, module);
+            return module;
         }
 
         // Various state that controls symbol and source file lookup.  
@@ -510,6 +666,9 @@ namespace Microsoft.Diagnostics.Symbols
                 m_symbolPath = value;
                 m_symbolModuleCache.Clear();
                 m_pdbPathCache.Clear();
+                m_r2rPerfMapPathCache.Clear();
+                m_elfPathCache.Clear();
+                m_elfModuleCache.Clear();
                 m_log.WriteLine("Symbol Path Updated to {0}", m_symbolPath);
                 m_log.WriteLine("Symbol Path update forces clearing Pdb lookup cache");
             }
@@ -583,6 +742,9 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 _Options = value;
                 m_pdbPathCache.Clear();
+                m_r2rPerfMapPathCache.Clear();
+                m_elfPathCache.Clear();
+                m_elfModuleCache.Clear();
                 m_log.WriteLine("Setting SymbolReaderOptions forces clearing Pdb lookup cache");
             }
         }
@@ -942,8 +1104,9 @@ namespace Microsoft.Diagnostics.Symbols
             return false;
         }
 
+
         /// <summary>
-        /// Fetches a file from the server 'serverPath' with pdb signature path 'pdbSigPath' (concatenate them with a / or \ separator
+        /// Fetches a file from the server 'serverPath' with pdb signature path 'pdbSigPath'(concatenate them with a / or \ separator
         /// to form a complete URL or path name).   It will place the file in 'fullDestPath'   It will return true if successful
         /// If 'contentTypeFilter is present, this predicate is called with the URL content type (e.g. application/octet-stream)
         /// and if it returns false, it fails.   This ensures that things that are the wrong content type (e.g. redirects to 
@@ -1642,12 +1805,32 @@ namespace Microsoft.Diagnostics.Symbols
             public int Version;
         }
 
+        // Used as the key to the m_elfPathCache.
+        private struct ElfBuildIdSignature : IEquatable<ElfBuildIdSignature>
+        {
+            public override int GetHashCode() { return FileName.GetHashCode() + BuildId.GetHashCode(); }
+            public bool Equals(ElfBuildIdSignature other) { return FileName == other.FileName && BuildId == other.BuildId; }
+            public string FileName;
+            public string BuildId;
+        }
+
+        private struct ElfModuleSignature : IEquatable<ElfModuleSignature>
+        {
+            public override int GetHashCode() { return FilePath.GetHashCode() ^ VAddr.GetHashCode() ^ Offset.GetHashCode(); }
+            public bool Equals(ElfModuleSignature other) { return FilePath == other.FilePath && VAddr == other.VAddr && Offset == other.Offset; }
+            public string FilePath;
+            public ulong VAddr;
+            public ulong Offset;
+        }
+
         internal TextWriter m_log;
         private string m_SymbolCacheDirectory;
         private string m_SourceCacheDirectory;
         private Cache<string, ManagedSymbolModule> m_symbolModuleCache;
         private Cache<PdbSignature, string> m_pdbPathCache;
         private Cache<R2RPerfMapSignature, string> m_r2rPerfMapPathCache;
+        private Cache<ElfBuildIdSignature, string> m_elfPathCache;
+        private Cache<ElfModuleSignature, ElfSymbolModule> m_elfModuleCache;
         private string m_symbolPath;
 
         #endregion

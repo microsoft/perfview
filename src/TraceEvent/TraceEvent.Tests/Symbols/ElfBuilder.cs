@@ -15,6 +15,7 @@ namespace TraceEventTests
         private bool m_bigEndian = false;
         private ulong m_pVaddr = 0x400000;
         private ulong m_pOffset = 0;
+        private byte[] m_buildId = null;
         private readonly List<SymbolDef> m_symtabSymbols = new List<SymbolDef>();
         private readonly List<SymbolDef> m_dynsymSymbols = new List<SymbolDef>();
 
@@ -32,9 +33,15 @@ namespace TraceEventTests
         private const uint SHT_SYMTAB = 2;
         private const uint SHT_DYNSYM = 11;
 
+        // ELF program header types.
+        private const uint PT_NOTE = 4;
+
         // Symbol type helpers.
         private const byte STT_FUNC = 2;
         private const byte STB_GLOBAL = 1;
+
+        // GNU build-id note type.
+        private const uint NT_GNU_BUILD_ID = 3;
 
         public ElfBuilder Set64Bit(bool is64Bit)
         {
@@ -55,6 +62,15 @@ namespace TraceEventTests
         {
             m_pVaddr = pVaddr;
             m_pOffset = pOffset;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the GNU build-id that will be embedded as a PT_NOTE program header.
+        /// </summary>
+        public ElfBuilder SetBuildId(byte[] buildId)
+        {
+            m_buildId = buildId;
             return this;
         }
 
@@ -105,7 +121,7 @@ namespace TraceEventTests
 
         /// <summary>
         /// Builds a complete ELF binary and returns it as a byte array.
-        /// Layout: [ELF Header] [Section Data...] [Section Headers]
+        /// Layout: [ELF Header] [Section Data...] [Note Data] [Program Headers] [Section Headers]
         /// </summary>
         public byte[] Build()
         {
@@ -119,10 +135,12 @@ namespace TraceEventTests
                 // [3] .dynstr (string table for .dynsym) — only if dynsym symbols exist
                 // [4] .dynsym — only if dynsym symbols exist
                 bool hasDynsym = m_dynsymSymbols.Count > 0;
+                bool hasBuildId = m_buildId != null;
                 int sectionCount = hasDynsym ? 5 : 3;
 
                 int ehSize = m_is64Bit ? 64 : 52;
                 int shEntSize = m_is64Bit ? 64 : 40;
+                int phEntSize = m_is64Bit ? 56 : 32;
 
                 // Build string table for .symtab.
                 byte[] strtab = BuildStringTable(m_symtabSymbols, out int[] strtabOffsets);
@@ -140,6 +158,13 @@ namespace TraceEventTests
                     dynsym = BuildSymbolTable(m_dynsymSymbols, dynstrOffsets);
                 }
 
+                // Build note data for GNU build-id if requested.
+                byte[] noteData = null;
+                if (hasBuildId)
+                {
+                    noteData = BuildBuildIdNote(m_buildId);
+                }
+
                 // Section data starts right after the ELF header.
                 long dataStart = ehSize;
 
@@ -148,16 +173,38 @@ namespace TraceEventTests
                 long symtabOffset = strtabOffset + strtab.Length;
                 long dynstrOffset = symtabOffset + symtab.Length;
                 long dynsymOffset = hasDynsym ? dynstrOffset + dynstr.Length : dynstrOffset;
-                long sectionHeadersOffset = hasDynsym ? dynsymOffset + dynsym.Length : dynstrOffset;
+                long afterSections = hasDynsym ? dynsymOffset + dynsym.Length : dynstrOffset;
 
-                // Align section headers to 8-byte boundary.
+                // Write note data after sections.
+                long noteOffset = afterSections;
+                long afterNote = hasBuildId ? noteOffset + noteData.Length : afterSections;
+
+                // Write program headers after note data (align to 8 bytes).
+                long phOffset = 0;
+                ushort phNum = 0;
+                if (hasBuildId)
+                {
+                    phOffset = afterNote;
+                    if (phOffset % 8 != 0)
+                    {
+                        phOffset += 8 - (phOffset % 8);
+                    }
+                    phNum = 1;
+                }
+
+                long afterPh = hasBuildId ? phOffset + phEntSize : afterNote;
+
+                // Section headers follow everything else (align to 8 bytes).
+                long sectionHeadersOffset = afterPh;
                 if (sectionHeadersOffset % 8 != 0)
                 {
                     sectionHeadersOffset += 8 - (sectionHeadersOffset % 8);
                 }
 
                 // Write ELF header.
-                WriteElfHeader(writer, (ulong)sectionHeadersOffset, (ushort)sectionCount, (ushort)shEntSize);
+                ushort headerPhEntSize = hasBuildId ? (ushort)phEntSize : (ushort)0;
+                WriteElfHeader(writer, (ulong)sectionHeadersOffset, (ushort)sectionCount, (ushort)shEntSize,
+                    (ulong)phOffset, headerPhEntSize, phNum);
 
                 // Write section data.
                 writer.BaseStream.Seek(strtabOffset, SeekOrigin.Begin);
@@ -167,6 +214,20 @@ namespace TraceEventTests
                 {
                     writer.Write(dynstr);
                     writer.Write(dynsym);
+                }
+
+                // Write note data.
+                if (hasBuildId)
+                {
+                    writer.BaseStream.Seek(noteOffset, SeekOrigin.Begin);
+                    writer.Write(noteData);
+                }
+
+                // Write program headers.
+                if (hasBuildId)
+                {
+                    writer.BaseStream.Seek(phOffset, SeekOrigin.Begin);
+                    WriteProgramHeader(writer, PT_NOTE, (ulong)noteOffset, (ulong)noteData.Length);
                 }
 
                 // Pad to section header offset.
@@ -210,7 +271,8 @@ namespace TraceEventTests
 
         #region Private helpers
 
-        private void WriteElfHeader(BinaryWriter writer, ulong eShoff, ushort eShnum, ushort eShentsize)
+        private void WriteElfHeader(BinaryWriter writer, ulong eShoff, ushort eShnum, ushort eShentsize,
+            ulong ePhoff, ushort ePhentsize, ushort ePhnum)
         {
             // e_ident: magic + class + data + version + padding (16 bytes total).
             writer.Write((byte)0x7f);
@@ -230,20 +292,20 @@ namespace TraceEventTests
             if (m_is64Bit)
             {
                 WriteUInt64(writer, 0);                 // e_entry
-                WriteUInt64(writer, 0);                 // e_phoff
+                WriteUInt64(writer, ePhoff);            // e_phoff
                 WriteUInt64(writer, eShoff);            // e_shoff
             }
             else
             {
                 WriteUInt32(writer, 0);                 // e_entry
-                WriteUInt32(writer, 0);                 // e_phoff
+                WriteUInt32(writer, (uint)ePhoff);      // e_phoff
                 WriteUInt32(writer, (uint)eShoff);      // e_shoff
             }
 
             WriteUInt32(writer, 0);                     // e_flags
             WriteUInt16(writer, (ushort)(m_is64Bit ? 64 : 52)); // e_ehsize
-            WriteUInt16(writer, 0);                     // e_phentsize
-            WriteUInt16(writer, 0);                     // e_phnum
+            WriteUInt16(writer, ePhentsize);            // e_phentsize
+            WriteUInt16(writer, ePhnum);                // e_phnum
             WriteUInt16(writer, eShentsize);            // e_shentsize
             WriteUInt16(writer, eShnum);                // e_shnum
             WriteUInt16(writer, 0);                     // e_shstrndx
@@ -344,6 +406,65 @@ namespace TraceEventTests
                 writer.Write(stInfo);
                 writer.Write((byte)0);              // st_other
                 WriteUInt16(writer, 1);             // st_shndx
+            }
+        }
+
+        /// <summary>
+        /// Builds a .note.gnu.build-id note: namesz(4) + descsz(4) + type(4) + "GNU\0" + buildId.
+        /// </summary>
+        private byte[] BuildBuildIdNote(byte[] buildId)
+        {
+            using (var ms = new MemoryStream())
+            using (var writer = new BinaryWriter(ms))
+            {
+                WriteUInt32(writer, 4);                     // namesz: length of "GNU\0"
+                WriteUInt32(writer, (uint)buildId.Length);   // descsz: length of build-id
+                WriteUInt32(writer, NT_GNU_BUILD_ID);       // type: NT_GNU_BUILD_ID (3)
+                writer.Write((byte)'G');                    // name: "GNU\0" (already 4-byte aligned)
+                writer.Write((byte)'N');
+                writer.Write((byte)'U');
+                writer.Write((byte)0);
+                writer.Write(buildId);                      // desc: build-id bytes
+
+                // Pad descriptor to 4-byte alignment.
+                int descPadding = ((buildId.Length + 3) & ~3) - buildId.Length;
+                for (int i = 0; i < descPadding; i++)
+                {
+                    writer.Write((byte)0);
+                }
+
+                return ms.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Writes a single ELF program header entry (PT_NOTE).
+        /// </summary>
+        private void WriteProgramHeader(BinaryWriter writer, uint pType, ulong pOffset, ulong pFilesz)
+        {
+            if (m_is64Bit)
+            {
+                // Elf64_Phdr: p_type(4), p_flags(4), p_offset(8), p_vaddr(8), p_paddr(8), p_filesz(8), p_memsz(8), p_align(8)
+                WriteUInt32(writer, pType);             // p_type
+                WriteUInt32(writer, 0);                 // p_flags
+                WriteUInt64(writer, pOffset);           // p_offset
+                WriteUInt64(writer, 0);                 // p_vaddr
+                WriteUInt64(writer, 0);                 // p_paddr
+                WriteUInt64(writer, pFilesz);           // p_filesz
+                WriteUInt64(writer, pFilesz);           // p_memsz
+                WriteUInt64(writer, 4);                 // p_align
+            }
+            else
+            {
+                // Elf32_Phdr: p_type(4), p_offset(4), p_vaddr(4), p_paddr(4), p_filesz(4), p_memsz(4), p_flags(4), p_align(4)
+                WriteUInt32(writer, pType);             // p_type
+                WriteUInt32(writer, (uint)pOffset);     // p_offset
+                WriteUInt32(writer, 0);                 // p_vaddr
+                WriteUInt32(writer, 0);                 // p_paddr
+                WriteUInt32(writer, (uint)pFilesz);     // p_filesz
+                WriteUInt32(writer, (uint)pFilesz);     // p_memsz
+                WriteUInt32(writer, 0);                 // p_flags
+                WriteUInt32(writer, 4);                 // p_align
             }
         }
 
