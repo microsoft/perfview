@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 namespace Microsoft.Diagnostics.Symbols
 {
@@ -85,17 +86,15 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 symbolStart = m_symbols[hi].Start;
 
-                // Lazy name decode on first access.
-                if (m_symbols[hi].Name == null)
+                // Thread-safe lazy name decode on first access.
+                if (Volatile.Read(ref m_symbolNames[hi]) == null)
                 {
                     string name = ReadNullTerminatedString(m_strtab, m_symbols[hi].StrtabOffset);
                     name = TryDemangle(name);
-                    var entry = m_symbols[hi];
-                    entry.Name = name;
-                    m_symbols[hi] = entry;
+                    Interlocked.CompareExchange(ref m_symbolNames[hi], name, null);
                 }
 
-                return m_symbols[hi].Name;
+                return m_symbolNames[hi];
             }
 
             return string.Empty;
@@ -151,16 +150,16 @@ namespace Microsoft.Diagnostics.Symbols
 
                     // Parse program header table location from ELF header.
                     // Layout after e_ident(16): e_type(2), e_machine(2), e_version(4), e_entry(4/8), e_phoff(4/8).
-                    int pos = EI_NIDENT + 2 + 2 + 4; // skip e_ident, e_type, e_machine, e_version
+                    int pos = Ehdr_Entry; // skip e_ident, e_type, e_machine, e_version
                     ulong ePhoff;
                     if (is64Bit)
                     {
-                        pos += 8; // skip e_entry
+                        pos += 8; // skip e_entry(8)
                         ePhoff = ReadU64Static(header, pos, bigEndian); pos += 8;
                     }
                     else
                     {
-                        pos += 4; // skip e_entry
+                        pos += 4; // skip e_entry(4)
                         ePhoff = ReadU32Static(header, pos, bigEndian); pos += 4;
                     }
 
@@ -185,7 +184,7 @@ namespace Microsoft.Diagnostics.Symbols
                     }
 
                     // Validate minimum program header entry size to avoid out-of-bounds reads.
-                    int minPhentsize = is64Bit ? 56 : 32; // Elf64_Phdr = 56 bytes, Elf32_Phdr = 32 bytes
+                    int minPhentsize = is64Bit ? Elf64PhdrSize : Elf32PhdrSize;
                     if (ePhentsize < minPhentsize)
                     {
                         Debug.WriteLine("ReadBuildId: ePhentsize too small: " + ePhentsize);
@@ -193,7 +192,7 @@ namespace Microsoft.Diagnostics.Symbols
                     }
 
                     // Guard against corrupt ELF headers with unreasonably large program header counts.
-                    if (ePhnum > 4096)
+                    if (ePhnum > MaxProgramHeaderCount)
                     {
                         Debug.WriteLine("ReadBuildId: Program header count too large: " + ePhnum);
                         return null;
@@ -224,18 +223,16 @@ namespace Microsoft.Diagnostics.Symbols
                         ulong pOffset, pFilesz;
                         if (is64Bit)
                         {
-                            // 64-bit: p_type(4) + p_flags(4) + p_offset(8) + p_vaddr(8) + p_paddr(8) + p_filesz(8).
-                            pOffset = ReadU64Static(phTable, phPos + 8, bigEndian);
-                            pFilesz = ReadU64Static(phTable, phPos + 8 + 8 + 8 + 8, bigEndian);
+                            pOffset = ReadU64Static(phTable, phPos + Phdr64_Offset, bigEndian);
+                            pFilesz = ReadU64Static(phTable, phPos + Phdr64_Filesz, bigEndian);
                         }
                         else
                         {
-                            // 32-bit: p_type(4) + p_offset(4) + p_vaddr(4) + p_paddr(4) + p_filesz(4).
-                            pOffset = ReadU32Static(phTable, phPos + 4, bigEndian);
-                            pFilesz = ReadU32Static(phTable, phPos + 4 + 4 + 4 + 4, bigEndian);
+                            pOffset = ReadU32Static(phTable, phPos + Phdr32_Offset, bigEndian);
+                            pFilesz = ReadU32Static(phTable, phPos + Phdr32_Filesz, bigEndian);
                         }
 
-                        if (pFilesz == 0 || pFilesz > int.MaxValue)
+                        if (pFilesz == 0 || pFilesz > MaxNoteSizeBytes)
                         {
                             continue;
                         }
@@ -320,7 +317,7 @@ namespace Microsoft.Diagnostics.Symbols
                     // Layout after e_ident(16): e_type(2), e_machine(2), e_version(4),
                     //   e_entry(4/8), e_phoff(4/8), e_shoff(4/8), e_flags(4), e_ehsize(2),
                     //   e_phentsize(2), e_phnum(2), e_shentsize(2), e_shnum(2), e_shstrndx(2).
-                    int pos = EI_NIDENT + 2 + 2 + 4; // skip e_ident, e_type, e_machine, e_version
+                    int pos = Ehdr_Entry; // skip e_ident, e_type, e_machine, e_version
                     ulong eShoff;
                     if (is64Bit)
                     {
@@ -333,7 +330,7 @@ namespace Microsoft.Diagnostics.Symbols
                         eShoff = ReadU32Static(header, pos, bigEndian); pos += 4;
                     }
 
-                    pos += 4 + 2 + 2 + 2; // e_flags(4), e_ehsize(2), e_phentsize(2), e_phnum(2)
+                    pos += Ehdr_FlagsToPhnum; // e_flags(4), e_ehsize(2), e_phentsize(2), e_phnum(2)
                     ushort eShentsize = ReadU16Static(header, pos, bigEndian); pos += 2;
                     ushort eShnum = ReadU16Static(header, pos, bigEndian); pos += 2;
                     ushort eShstrndx = ReadU16Static(header, pos, bigEndian);
@@ -378,7 +375,7 @@ namespace Microsoft.Diagnostics.Symbols
                     ulong shstrOffset, shstrSize;
                     ReadSectionOffsetAndSize(shTable, shstrPos, is64Bit, bigEndian, out shstrOffset, out shstrSize);
 
-                    if (shstrSize == 0 || shstrSize > 1024 * 1024)
+                    if (shstrSize == 0 || shstrSize > MaxShstrtabSize)
                     {
                         Debug.WriteLine("ReadDebugLink: Invalid shstrtab size.");
                         return null;
@@ -414,7 +411,7 @@ namespace Microsoft.Diagnostics.Symbols
                         ReadSectionOffsetAndSize(shTable, shPos, is64Bit, bigEndian, out secOffset, out secSize);
 
                         // The section must contain at least a filename byte + null + 4-byte CRC.
-                        if (secSize < 6 || secSize > 4096)
+                        if (secSize < MinDebugLinkSectionSize || secSize > MaxDebugLinkSectionSize)
                         {
                             Debug.WriteLine("ReadDebugLink: Invalid .gnu_debuglink section size: " + secSize);
                             return null;
@@ -464,17 +461,13 @@ namespace Microsoft.Diagnostics.Symbols
         {
             if (is64Bit)
             {
-                // 64-bit: sh_name(4) + sh_type(4) + sh_flags(8) + sh_addr(8) = 24 bytes before sh_offset(8), sh_size(8).
-                int ofsPos = shPos + 4 + 4 + 8 + 8;
-                offset = ReadU64Static(shTable, ofsPos, bigEndian);
-                size = ReadU64Static(shTable, ofsPos + 8, bigEndian);
+                offset = ReadU64Static(shTable, shPos + Shdr64_OffsetField, bigEndian);
+                size = ReadU64Static(shTable, shPos + Shdr64_SizeField, bigEndian);
             }
             else
             {
-                // 32-bit: sh_name(4) + sh_type(4) + sh_flags(4) + sh_addr(4) = 16 bytes before sh_offset(4), sh_size(4).
-                int ofsPos = shPos + 4 + 4 + 4 + 4;
-                offset = ReadU32Static(shTable, ofsPos, bigEndian);
-                size = ReadU32Static(shTable, ofsPos + 4, bigEndian);
+                offset = ReadU32Static(shTable, shPos + Shdr32_OffsetField, bigEndian);
+                size = ReadU32Static(shTable, shPos + Shdr32_SizeField, bigEndian);
             }
         }
 
@@ -521,10 +514,41 @@ namespace Microsoft.Diagnostics.Symbols
         private const int Elf32EhdrSize = 52;
         private const int Elf64EhdrSize = 64;
 
+        // Byte offset of e_entry in the ELF header (first pointer-sized field).
+        // After: e_ident(16) + e_type(2) + e_machine(2) + e_version(4) = 24.
+        private const int Ehdr_Entry = EI_NIDENT + 2 + 2 + 4;
+
+        // Size of the fixed-width fields between e_shoff and e_shentsize in the ELF header:
+        // e_flags(4) + e_ehsize(2) + e_phentsize(2) + e_phnum(2) = 10 bytes.
+        private const int Ehdr_FlagsToPhnum = 4 + 2 + 2 + 2;
+
+        // Program header sizes.
+        private const int Elf32PhdrSize = 32;
+        private const int Elf64PhdrSize = 56;
+
+        // Maximum program header count to accept from ELF headers.
+        private const int MaxProgramHeaderCount = 4096;
+
+        // Elf64_Phdr field offsets: p_type(4), p_flags(4), p_offset(8), p_vaddr(8), p_paddr(8), p_filesz(8).
+        private const int Phdr64_Offset = 8;     // byte offset of p_offset
+        private const int Phdr64_Filesz = 32;    // byte offset of p_filesz
+
+        // Elf32_Phdr field offsets: p_type(4), p_offset(4), p_vaddr(4), p_paddr(4), p_filesz(4).
+        private const int Phdr32_Offset = 4;     // byte offset of p_offset
+        private const int Phdr32_Filesz = 16;    // byte offset of p_filesz
+
         // Section header entry sizes.
         private const int Elf32ShdrSize = 40;
         private const int Elf64ShdrSize = 64;
         private const int MaxShentsize = 256;
+
+        // Byte offsets of sh_offset and sh_size within the section header structure.
+        // 64-bit: sh_name(4) + sh_type(4) + sh_flags(8) + sh_addr(8) = 24 to sh_offset, 32 to sh_size.
+        private const int Shdr64_OffsetField = 24;
+        private const int Shdr64_SizeField = 32;
+        // 32-bit: sh_name(4) + sh_type(4) + sh_flags(4) + sh_addr(4) = 16 to sh_offset, 20 to sh_size.
+        private const int Shdr32_OffsetField = 16;
+        private const int Shdr32_SizeField = 20;
 
         // Maximum section count to accept from ELF headers.
         private const uint MaxSectionCount = 65535;
@@ -538,6 +562,20 @@ namespace Microsoft.Diagnostics.Symbols
 
         // Note types.
         private const uint NT_GNU_BUILD_ID = 3;  // GNU build-id note type.
+
+        // Note header: namesz(4) + descsz(4) + type(4) = 12 bytes.
+        private const int NoteHeaderSize = 12;
+        // Expected namesz for GNU notes ("GNU\0").
+        private const uint GnuNoteNameSize = 4;
+
+        // PT_NOTE segment size limit for ReadBuildId. Real build-id notes are < 100 bytes;
+        // 64 KB is generous. Prevents OOM from crafted ELF with large p_filesz.
+        private const int MaxNoteSizeBytes = 64 * 1024;
+
+        // ReadDebugLink section size limits.
+        private const int MaxShstrtabSize = 1024 * 1024;    // 1 MB
+        private const int MinDebugLinkSectionSize = 6;       // 1-char filename + null + 4-byte CRC
+        private const int MaxDebugLinkSectionSize = 4096;
 
         // Symbol table constants.
         private const byte STT_FUNC = 2;        // Symbol type: function.
@@ -561,22 +599,25 @@ namespace Microsoft.Diagnostics.Symbols
         private readonly ulong m_pVaddr;
         private readonly ulong m_pOffset;
         private readonly bool m_demangle;
-        private readonly ItaniumDemangler m_itaniumDemangler = new ItaniumDemangler();
-        private readonly RustDemangler m_rustDemangler = new RustDemangler();
+
+        // Demanglers use mutable parser state and are not thread-safe. ThreadLocal ensures
+        // each thread gets its own instance for safe concurrent FindNameForRva calls.
+        private readonly ThreadLocal<ItaniumDemangler> m_itaniumDemangler = new ThreadLocal<ItaniumDemangler>(() => new ItaniumDemangler());
+        private readonly ThreadLocal<RustDemangler> m_rustDemangler = new ThreadLocal<RustDemangler>(() => new RustDemangler());
         private SegmentedList<byte> m_strtab; // Retained for lazy name resolution.
+        private string[] m_symbolNames;        // Thread-safe lazy name cache (parallel to m_symbols).
         private bool m_is64Bit;
         private bool m_bigEndian;
 
         /// <summary>
         /// Represents a resolved ELF symbol with its address range.
-        /// Name is decoded lazily on first FindNameForRva hit.
+        /// Name is decoded lazily on first FindNameForRva hit via m_symbolNames.
         /// </summary>
         private struct ElfSymbolEntry : IComparable<ElfSymbolEntry>
         {
             public uint Start;          // RVA: (st_value - pVaddr) + pOffset.
             public uint End;            // Start + size - 1 (inclusive).
             public uint StrtabOffset;   // Offset into m_strtab for lazy name decode.
-            public string Name;         // Null until first lookup, then cached.
 
             public int CompareTo(ElfSymbolEntry other) => Start.CompareTo(other.Start);
         }
@@ -624,7 +665,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             // Parse ELF header fields.
-            int pos = 16 + 2 + 2 + 4; // skip e_ident(16), e_type(2), e_machine(2), e_version(4)
+            int pos = Ehdr_Entry; // skip e_ident(16), e_type(2), e_machine(2), e_version(4)
 
             ulong eShoff;
             if (m_is64Bit)
@@ -638,7 +679,7 @@ namespace Microsoft.Diagnostics.Symbols
                 eShoff = ReadU32(header, pos); pos += 4;
             }
 
-            pos += 4 + 2 + 2 + 2; // e_flags, e_ehsize, e_phentsize, e_phnum
+            pos += Ehdr_FlagsToPhnum; // e_flags, e_ehsize, e_phentsize, e_phnum
             ushort eShentsize = ReadU16(header, pos); pos += 2;
             ushort eShnum = ReadU16(header, pos);
 
@@ -670,11 +711,11 @@ namespace Microsoft.Diagnostics.Symbols
                 }
                 if (m_is64Bit)
                 {
-                    sectionCount = (uint)ReadU64(firstSh, 8 + 8 + 8 + 8);
+                    sectionCount = (uint)ReadU64(firstSh, Shdr64_SizeField);
                 }
                 else
                 {
-                    sectionCount = ReadU32(firstSh, 8 + 4 + 4 + 4);
+                    sectionCount = ReadU32(firstSh, Shdr32_SizeField);
                 }
             }
 
@@ -797,6 +838,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             // Sort symbols by start address for binary search.
             m_symbols.Sort();
+            m_symbolNames = new string[m_symbols.Count];
         }
 
         /// <summary>
@@ -943,25 +985,34 @@ namespace Microsoft.Diagnostics.Symbols
             int pos = 0;
             int length = noteData.Length;
 
-            while (pos + 12 <= length) // Minimum note header: namesz(4) + descsz(4) + type(4).
+            while (pos + NoteHeaderSize <= length)
             {
                 uint namesz = ReadU32Static(noteData, pos, bigEndian);
                 uint descsz = ReadU32Static(noteData, pos + 4, bigEndian);
                 uint type = ReadU32Static(noteData, pos + 8, bigEndian);
-                pos += 12;
+                pos += NoteHeaderSize;
+
+                // Guard against uint overflow in alignment arithmetic: (x + 3) wraps
+                // when x >= 0xFFFFFFFD, producing a small aligned value and an infinite loop.
+                uint remaining = (uint)(length - pos);
+                if (namesz > remaining || descsz > remaining)
+                {
+                    break;
+                }
 
                 // Align name and desc sizes to 4-byte boundaries.
                 uint nameAligned = (namesz + 3) & ~3u;
                 uint descAligned = (descsz + 3) & ~3u;
+                uint noteSize = nameAligned + descAligned;
 
                 // Validate that the note fits within the segment data.
-                if (pos + nameAligned + descAligned > length)
+                if (noteSize > remaining)
                 {
                     break;
                 }
 
                 // Check for GNU build-id: name == "GNU\0" (namesz == 4) and type == NT_GNU_BUILD_ID (3).
-                if (type == NT_GNU_BUILD_ID && namesz == 4 &&
+                if (type == NT_GNU_BUILD_ID && namesz == GnuNoteNameSize &&
                     noteData[pos] == (byte)'G' && noteData[pos + 1] == (byte)'N' &&
                     noteData[pos + 2] == (byte)'U' && noteData[pos + 3] == 0)
                 {
@@ -980,7 +1031,7 @@ namespace Microsoft.Diagnostics.Symbols
                     return sb.ToString();
                 }
 
-                pos += (int)nameAligned + (int)descAligned;
+                pos += (int)noteSize;
             }
 
             return null;
@@ -999,7 +1050,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             if (name.StartsWith("_Z"))
             {
-                string demangled = m_itaniumDemangler.Demangle(name);
+                string demangled = m_itaniumDemangler.Value.Demangle(name);
                 if (demangled != null)
                 {
                     return demangled;
@@ -1008,7 +1059,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             if (name.StartsWith("_R"))
             {
-                string demangled = m_rustDemangler.Demangle(name);
+                string demangled = m_rustDemangler.Value.Demangle(name);
                 if (demangled != null)
                 {
                     return demangled;
