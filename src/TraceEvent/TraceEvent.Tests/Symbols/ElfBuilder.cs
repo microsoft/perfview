@@ -16,6 +16,7 @@ namespace TraceEventTests
         private ulong m_pVaddr = 0x400000;
         private ulong m_pOffset = 0;
         private byte[] m_buildId = null;
+        private string m_debugLink = null;
         private readonly List<SymbolDef> m_symtabSymbols = new List<SymbolDef>();
         private readonly List<SymbolDef> m_dynsymSymbols = new List<SymbolDef>();
 
@@ -29,6 +30,7 @@ namespace TraceEventTests
 
         // ELF section types.
         private const uint SHT_NULL = 0;
+        private const uint SHT_PROGBITS = 1;
         private const uint SHT_STRTAB = 3;
         private const uint SHT_SYMTAB = 2;
         private const uint SHT_DYNSYM = 11;
@@ -71,6 +73,16 @@ namespace TraceEventTests
         public ElfBuilder SetBuildId(byte[] buildId)
         {
             m_buildId = buildId;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the .gnu_debuglink section filename. When set, the builder adds a .shstrtab
+        /// section so ReadDebugLink can find the section by name.
+        /// </summary>
+        public ElfBuilder SetDebugLink(string filename)
+        {
+            m_debugLink = filename;
             return this;
         }
 
@@ -121,7 +133,7 @@ namespace TraceEventTests
 
         /// <summary>
         /// Builds a complete ELF binary and returns it as a byte array.
-        /// Layout: [ELF Header] [Section Data...] [Note Data] [Program Headers] [Section Headers]
+        /// Layout: [ELF Header] [Section Data...] [DebugLink Data] [ShStrTab Data] [Note Data] [Program Headers] [Section Headers]
         /// </summary>
         public byte[] Build()
         {
@@ -134,9 +146,16 @@ namespace TraceEventTests
                 // [2] .symtab (symbol table)
                 // [3] .dynstr (string table for .dynsym) — only if dynsym symbols exist
                 // [4] .dynsym — only if dynsym symbols exist
+                // [N] .gnu_debuglink — only if debuglink is set
+                // [N+1] .shstrtab — only if debuglink is set (needed for section names)
                 bool hasDynsym = m_dynsymSymbols.Count > 0;
                 bool hasBuildId = m_buildId != null;
+                bool hasDebugLink = m_debugLink != null;
                 int sectionCount = hasDynsym ? 5 : 3;
+                if (hasDebugLink)
+                {
+                    sectionCount += 2; // .gnu_debuglink + .shstrtab
+                }
 
                 int ehSize = m_is64Bit ? 64 : 52;
                 int shEntSize = m_is64Bit ? 64 : 40;
@@ -165,6 +184,23 @@ namespace TraceEventTests
                     noteData = BuildBuildIdNote(m_buildId);
                 }
 
+                // Build .gnu_debuglink and .shstrtab section data if requested.
+                byte[] debugLinkData = null;
+                byte[] shstrtab = null;
+                int debugLinkShName = 0;
+                int shstrtabShName = 0;
+                int debugLinkSectionIndex = 0;
+                int shstrtabSectionIndex = 0;
+                if (hasDebugLink)
+                {
+                    debugLinkData = BuildDebugLinkSection(m_debugLink);
+                    debugLinkSectionIndex = hasDynsym ? 5 : 3;
+                    shstrtabSectionIndex = debugLinkSectionIndex + 1;
+
+                    // Build .shstrtab: "\0.gnu_debuglink\0.shstrtab\0"
+                    shstrtab = BuildShStrTab(out debugLinkShName, out shstrtabShName);
+                }
+
                 // Section data starts right after the ELF header.
                 long dataStart = ehSize;
 
@@ -175,9 +211,14 @@ namespace TraceEventTests
                 long dynsymOffset = hasDynsym ? dynstrOffset + dynstr.Length : dynstrOffset;
                 long afterSections = hasDynsym ? dynsymOffset + dynsym.Length : dynstrOffset;
 
+                // Write debuglink and shstrtab after other section data.
+                long debugLinkOffset = afterSections;
+                long shstrtabOffset = hasDebugLink ? debugLinkOffset + debugLinkData.Length : afterSections;
+                long afterDebugLink = hasDebugLink ? shstrtabOffset + shstrtab.Length : afterSections;
+
                 // Write note data after sections.
-                long noteOffset = afterSections;
-                long afterNote = hasBuildId ? noteOffset + noteData.Length : afterSections;
+                long noteOffset = afterDebugLink;
+                long afterNote = hasBuildId ? noteOffset + noteData.Length : afterDebugLink;
 
                 // Write program headers after note data (align to 8 bytes).
                 long phOffset = 0;
@@ -203,8 +244,9 @@ namespace TraceEventTests
 
                 // Write ELF header.
                 ushort headerPhEntSize = hasBuildId ? (ushort)phEntSize : (ushort)0;
+                ushort eShstrndx = hasDebugLink ? (ushort)shstrtabSectionIndex : (ushort)0;
                 WriteElfHeader(writer, (ulong)sectionHeadersOffset, (ushort)sectionCount, (ushort)shEntSize,
-                    (ulong)phOffset, headerPhEntSize, phNum);
+                    (ulong)phOffset, headerPhEntSize, phNum, eShstrndx);
 
                 // Write section data.
                 writer.BaseStream.Seek(strtabOffset, SeekOrigin.Begin);
@@ -214,6 +256,14 @@ namespace TraceEventTests
                 {
                     writer.Write(dynstr);
                     writer.Write(dynsym);
+                }
+
+                // Write debuglink and shstrtab section data.
+                if (hasDebugLink)
+                {
+                    writer.BaseStream.Seek(debugLinkOffset, SeekOrigin.Begin);
+                    writer.Write(debugLinkData);
+                    writer.Write(shstrtab);
                 }
 
                 // Write note data.
@@ -256,6 +306,17 @@ namespace TraceEventTests
                     WriteSectionHeader(writer, 0, SHT_DYNSYM, (ulong)dynsymOffset, (ulong)dynsym.Length, 3, (ulong)symEntSize);
                 }
 
+                if (hasDebugLink)
+                {
+                    // .gnu_debuglink (SHT_PROGBITS)
+                    WriteSectionHeader(writer, (uint)debugLinkShName, SHT_PROGBITS,
+                        (ulong)debugLinkOffset, (ulong)debugLinkData.Length, 0, 0);
+
+                    // .shstrtab (SHT_STRTAB)
+                    WriteSectionHeader(writer, (uint)shstrtabShName, SHT_STRTAB,
+                        (ulong)shstrtabOffset, (ulong)shstrtab.Length, 0, 0);
+                }
+
                 return ms.ToArray();
             }
         }
@@ -272,7 +333,7 @@ namespace TraceEventTests
         #region Private helpers
 
         private void WriteElfHeader(BinaryWriter writer, ulong eShoff, ushort eShnum, ushort eShentsize,
-            ulong ePhoff, ushort ePhentsize, ushort ePhnum)
+            ulong ePhoff, ushort ePhentsize, ushort ePhnum, ushort eShstrndx = 0)
         {
             // e_ident: magic + class + data + version + padding (16 bytes total).
             writer.Write((byte)0x7f);
@@ -308,7 +369,7 @@ namespace TraceEventTests
             WriteUInt16(writer, ePhnum);                // e_phnum
             WriteUInt16(writer, eShentsize);            // e_shentsize
             WriteUInt16(writer, eShnum);                // e_shnum
-            WriteUInt16(writer, 0);                     // e_shstrndx
+            WriteUInt16(writer, eShstrndx);            // e_shstrndx
         }
 
         private void WriteSectionHeader(BinaryWriter writer, uint shName, uint shType,
@@ -465,6 +526,57 @@ namespace TraceEventTests
                 WriteUInt32(writer, (uint)pFilesz);     // p_memsz
                 WriteUInt32(writer, 0);                 // p_flags
                 WriteUInt32(writer, 4);                 // p_align
+            }
+        }
+
+        /// <summary>
+        /// Builds a .gnu_debuglink section: null-terminated filename + padding to 4 bytes + CRC32 (0).
+        /// </summary>
+        private static byte[] BuildDebugLinkSection(string filename)
+        {
+            using (var ms = new MemoryStream())
+            using (var writer = new BinaryWriter(ms))
+            {
+                byte[] nameBytes = Encoding.UTF8.GetBytes(filename);
+                writer.Write(nameBytes);
+                writer.Write((byte)0); // null terminator
+
+                // Pad to 4-byte alignment.
+                int nameLen = nameBytes.Length + 1;
+                int padding = ((nameLen + 3) & ~3) - nameLen;
+                for (int i = 0; i < padding; i++)
+                {
+                    writer.Write((byte)0);
+                }
+
+                // CRC32 (not validated by ReadDebugLink, write 0).
+                writer.Write((uint)0);
+
+                return ms.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Builds a section name string table (.shstrtab) containing ".gnu_debuglink" and ".shstrtab".
+        /// Returns the sh_name offsets for each section.
+        /// </summary>
+        private static byte[] BuildShStrTab(out int debugLinkShName, out int shstrtabShName)
+        {
+            using (var ms = new MemoryStream())
+            {
+                ms.WriteByte(0); // Index 0: empty string
+
+                debugLinkShName = (int)ms.Position;
+                byte[] dlName = Encoding.UTF8.GetBytes(".gnu_debuglink");
+                ms.Write(dlName, 0, dlName.Length);
+                ms.WriteByte(0);
+
+                shstrtabShName = (int)ms.Position;
+                byte[] ssName = Encoding.UTF8.GetBytes(".shstrtab");
+                ms.Write(ssName, 0, ssName.Length);
+                ms.WriteByte(0);
+
+                return ms.ToArray();
             }
         }
 

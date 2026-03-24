@@ -462,23 +462,33 @@ namespace Microsoft.Diagnostics.Symbols
                         }
                     }
 
-                    // If the path contains .so, strip it and try again.
+                    // Read .gnu_debuglink from the binary if it exists locally.
+                    // The debuglink section contains the exact filename of the companion debug file.
                     if (resultPath == null)
                     {
-                        int soIndex = basePath.IndexOf(".so", StringComparison.OrdinalIgnoreCase);
-                        if (soIndex >= 0)
+                        string debugLink = null;
+                        if (File.Exists(basePath))
                         {
-                            string pathWithoutSo = basePath.Substring(0, soIndex);
+                            debugLink = ElfSymbolModule.ReadDebugLink(basePath);
+                            if (debugLink != null)
+                            {
+                                m_log.WriteLine("FindElfSymbolFilePath: Binary has .gnu_debuglink = {0}", debugLink);
+                            }
+                        }
 
-                            candidate = pathWithoutSo + ".debug";
+                        if (debugLink != null)
+                        {
+                            // Try {bindir}/{debuglink}
+                            candidate = Path.Combine(elfDir, debugLink);
                             if (ElfBuildIdMatches(candidate, normalizedBuildId))
                             {
                                 resultPath = candidate;
                             }
 
+                            // Try {bindir}/.debug/{debuglink}
                             if (resultPath == null)
                             {
-                                candidate = pathWithoutSo + ".dbg";
+                                candidate = Path.Combine(elfDir, ".debug", debugLink);
                                 if (ElfBuildIdMatches(candidate, normalizedBuildId))
                                 {
                                     resultPath = candidate;

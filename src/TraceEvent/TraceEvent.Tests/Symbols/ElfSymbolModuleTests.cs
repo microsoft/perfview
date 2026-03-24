@@ -816,6 +816,116 @@ namespace TraceEventTests
 
         #endregion
 
+        #region ReadDebugLink
+
+        [Fact]
+        public void ReadDebugLink_WithDebugLink_ReturnsFilename()
+        {
+            var builder = new ElfBuilder()
+                .Set64Bit(true)
+                .SetPTLoad(0x400000, 0)
+                .SetDebugLink("libcoreclr.so.dbg");
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadDebugLink(path);
+                Assert.Equal("libcoreclr.so.dbg", result);
+            });
+        }
+
+        [Fact]
+        public void ReadDebugLink_WithDebugLinkElf32_ReturnsFilename()
+        {
+            var builder = new ElfBuilder()
+                .Set64Bit(false)
+                .SetPTLoad(0x400000, 0)
+                .SetDebugLink("mylib.debug");
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadDebugLink(path);
+                Assert.Equal("mylib.debug", result);
+            });
+        }
+
+        [Fact]
+        public void ReadDebugLink_WithDebugLinkAndBuildId_ReturnsBoth()
+        {
+            byte[] buildId = new byte[] { 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89,
+                                           0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89,
+                                           0xab, 0xcd, 0xef, 0x01 };
+            var builder = new ElfBuilder()
+                .Set64Bit(true)
+                .SetPTLoad(0x400000, 0)
+                .SetBuildId(buildId)
+                .SetDebugLink("libcoreclr.so.dbg");
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string debugLink = ElfSymbolModule.ReadDebugLink(path);
+                Assert.Equal("libcoreclr.so.dbg", debugLink);
+
+                string buildIdResult = ElfSymbolModule.ReadBuildId(path);
+                Assert.Equal("abcdef0123456789abcdef0123456789abcdef01", buildIdResult);
+            });
+        }
+
+        [Fact]
+        public void ReadDebugLink_WithoutDebugLink_ReturnsNull()
+        {
+            var builder = new ElfBuilder()
+                .Set64Bit(true)
+                .SetPTLoad(0x400000, 0)
+                .AddFunction("test", 0x401000, 0x100);
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadDebugLink(path);
+                Assert.Null(result);
+            });
+        }
+
+        [Fact]
+        public void ReadDebugLink_InvalidFile_ReturnsNull()
+        {
+            byte[] data = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadDebugLink(path);
+                Assert.Null(result);
+            });
+        }
+
+        [Fact]
+        public void ReadDebugLink_NonExistentFile_ReturnsNull()
+        {
+            string result = ElfSymbolModule.ReadDebugLink(@"C:\nonexistent\path\fake.so");
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void ReadDebugLink_BigEndianElf64_ReturnsFilename()
+        {
+            var builder = new ElfBuilder()
+                .Set64Bit(true)
+                .SetBigEndian(true)
+                .SetPTLoad(0x400000, 0)
+                .SetDebugLink("libtest.so.debug");
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadDebugLink(path);
+                Assert.Equal("libtest.so.debug", result);
+            });
+        }
+
+        #endregion
+
         #region MatchOrInit tests
 
         [Fact]

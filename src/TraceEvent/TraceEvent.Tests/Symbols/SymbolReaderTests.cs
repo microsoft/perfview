@@ -819,6 +819,98 @@ namespace TraceEventTests
             }
         }
 
+        [Fact]
+        public void FindElfSymbolFilePath_DebugLinkDiscovery()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-debuglink");
+            try
+            {
+                string buildId = "aabb0011";
+
+                // Build an ELF binary with .gnu_debuglink pointing to "libtest.so.dbg".
+                var binaryBuilder = new ElfBuilder()
+                    .Set64Bit(true)
+                    .SetPTLoad(0x400000, 0)
+                    .SetBuildId(HexToBytes(buildId))
+                    .SetDebugLink("libtest.so.dbg");
+                byte[] binaryData = binaryBuilder.Build();
+
+                // Build a debug ELF file with matching build-id.
+                byte[] debugData = CreateMinimalElfWithBuildId(buildId);
+
+                // Place the binary and debug file in the same directory.
+                Directory.CreateDirectory(tempDir);
+                string binaryPath = Path.Combine(tempDir, "libtest.so");
+                string debugPath = Path.Combine(tempDir, "libtest.so.dbg");
+                File.WriteAllBytes(binaryPath, binaryData);
+                File.WriteAllBytes(debugPath, debugData);
+
+                // Set symbol path to an empty location (no SSQP match),
+                // but provide elfFilePath so adjacent search kicks in.
+                // SecurityCheck is needed because adjacent search uses checkSecurity: true.
+                string emptyDir = Path.Combine(tempDir, "empty");
+                Directory.CreateDirectory(emptyDir);
+                _symbolReader.SymbolPath = emptyDir;
+                _symbolReader.SecurityCheck = _ => true;
+
+                string result = _symbolReader.FindElfSymbolFilePath("libtest.so", buildId, elfFilePath: binaryPath);
+
+                Assert.NotNull(result);
+                Assert.Equal(Path.GetFullPath(debugPath), Path.GetFullPath(result));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindElfSymbolFilePath_DebugLinkInSubdir()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-debuglink-subdir");
+            try
+            {
+                string buildId = "ccdd0022";
+
+                // Build an ELF binary with .gnu_debuglink pointing to "libfoo.debug".
+                var binaryBuilder = new ElfBuilder()
+                    .Set64Bit(true)
+                    .SetPTLoad(0x400000, 0)
+                    .SetBuildId(HexToBytes(buildId))
+                    .SetDebugLink("libfoo.debug");
+                byte[] binaryData = binaryBuilder.Build();
+
+                // Build a debug ELF file with matching build-id.
+                byte[] debugData = CreateMinimalElfWithBuildId(buildId);
+
+                // Place the binary in tempDir, debug file in {tempDir}/.debug/ subdir.
+                Directory.CreateDirectory(tempDir);
+                string debugSubDir = Path.Combine(tempDir, ".debug");
+                Directory.CreateDirectory(debugSubDir);
+
+                string binaryPath = Path.Combine(tempDir, "libfoo.so");
+                string debugPath = Path.Combine(debugSubDir, "libfoo.debug");
+                File.WriteAllBytes(binaryPath, binaryData);
+                File.WriteAllBytes(debugPath, debugData);
+
+                string emptyDir = Path.Combine(tempDir, "empty");
+                Directory.CreateDirectory(emptyDir);
+                _symbolReader.SymbolPath = emptyDir;
+                _symbolReader.SecurityCheck = _ => true;
+
+                string result = _symbolReader.FindElfSymbolFilePath("libfoo.so", buildId, elfFilePath: binaryPath);
+
+                Assert.NotNull(result);
+                Assert.Equal(Path.GetFullPath(debugPath), Path.GetFullPath(result));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
         #endregion
 
         #region FindR2RPerfMapSymbolFilePath Tests
@@ -1258,6 +1350,20 @@ namespace TraceEventTests
             // Version:   FFFFFFFE 0 {version}
             string content = $"FFFFFFFF 0 {signature:D}\nFFFFFFFE 0 {version}\n";
             return Encoding.UTF8.GetBytes(content);
+        }
+
+        /// <summary>
+        /// Converts a hex string to a byte array.
+        /// </summary>
+        private static byte[] HexToBytes(string hex)
+        {
+            int byteCount = hex.Length / 2;
+            byte[] bytes = new byte[byteCount];
+            for (int i = 0; i < byteCount; i++)
+            {
+                bytes[i] = byte.Parse(hex.Substring(i * 2, 2), NumberStyles.HexNumber);
+            }
+            return bytes;
         }
 
         protected void PrepareTestData()

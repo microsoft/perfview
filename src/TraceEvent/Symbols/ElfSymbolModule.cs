@@ -267,7 +267,239 @@ namespace Microsoft.Diagnostics.Symbols
             }
         }
 
+        /// <summary>
+        /// Reads the .gnu_debuglink section from an ELF file and returns the debug file name.
+        /// The .gnu_debuglink section contains a null-terminated filename followed by padding
+        /// and a CRC32 checksum. Only the filename is returned (CRC is not validated, matching
+        /// one-collect behavior).
+        /// </summary>
+        /// <param name="filePath">Path to the ELF file.</param>
+        /// <returns>The debug link filename (e.g. "libcoreclr.so.dbg"), or null if not found or on any error.</returns>
+        internal static string ReadDebugLink(string filePath)
+        {
+            try
+            {
+                using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    // Read the ELF header (max 64 bytes for 64-bit).
+                    byte[] header = new byte[Elf64EhdrSize];
+                    int headerRead = ReadFully(stream, header, 0, header.Length);
+                    if (headerRead < EI_NIDENT)
+                    {
+                        Debug.WriteLine("ReadDebugLink: File too small.");
+                        return null;
+                    }
+
+                    // Verify ELF magic bytes: 0x7f 'E' 'L' 'F'.
+                    if (header[0] != ElfMagic0 || header[1] != ElfMagic1 || header[2] != ElfMagic2 || header[3] != ElfMagic3)
+                    {
+                        Debug.WriteLine("ReadDebugLink: Invalid ELF magic.");
+                        return null;
+                    }
+
+                    byte eiClass = header[EI_CLASS];
+                    byte eiData = header[EI_DATA];
+
+                    bool is64Bit = (eiClass == ElfClass64);
+                    bool bigEndian = (eiData == ElfDataMsb);
+
+                    if (eiClass != ElfClass32 && eiClass != ElfClass64)
+                    {
+                        Debug.WriteLine("ReadDebugLink: Unknown ELF class " + eiClass + ".");
+                        return null;
+                    }
+
+                    int ehSize = is64Bit ? Elf64EhdrSize : Elf32EhdrSize;
+                    if (headerRead < ehSize)
+                    {
+                        Debug.WriteLine("ReadDebugLink: Header too small.");
+                        return null;
+                    }
+
+                    // Parse section header table location from ELF header.
+                    // Layout after e_ident(16): e_type(2), e_machine(2), e_version(4),
+                    //   e_entry(4/8), e_phoff(4/8), e_shoff(4/8), e_flags(4), e_ehsize(2),
+                    //   e_phentsize(2), e_phnum(2), e_shentsize(2), e_shnum(2), e_shstrndx(2).
+                    int pos = EI_NIDENT + 2 + 2 + 4; // skip e_ident, e_type, e_machine, e_version
+                    ulong eShoff;
+                    if (is64Bit)
+                    {
+                        pos += 8 + 8; // skip e_entry(8), e_phoff(8)
+                        eShoff = ReadU64Static(header, pos, bigEndian); pos += 8;
+                    }
+                    else
+                    {
+                        pos += 4 + 4; // skip e_entry(4), e_phoff(4)
+                        eShoff = ReadU32Static(header, pos, bigEndian); pos += 4;
+                    }
+
+                    pos += 4 + 2 + 2 + 2; // e_flags(4), e_ehsize(2), e_phentsize(2), e_phnum(2)
+                    ushort eShentsize = ReadU16Static(header, pos, bigEndian); pos += 2;
+                    ushort eShnum = ReadU16Static(header, pos, bigEndian); pos += 2;
+                    ushort eShstrndx = ReadU16Static(header, pos, bigEndian);
+
+                    if (eShoff == 0 || eShentsize == 0 || eShnum == 0)
+                    {
+                        Debug.WriteLine("ReadDebugLink: No section headers found.");
+                        return null;
+                    }
+
+                    int minShentsize = is64Bit ? Elf64ShdrSize : Elf32ShdrSize;
+                    if (eShentsize < minShentsize || eShentsize > MaxShentsize)
+                    {
+                        Debug.WriteLine("ReadDebugLink: Invalid section header entry size: " + eShentsize);
+                        return null;
+                    }
+
+                    if (eShnum > MaxSectionCount)
+                    {
+                        Debug.WriteLine("ReadDebugLink: Section count too large: " + eShnum);
+                        return null;
+                    }
+
+                    if (eShstrndx >= eShnum)
+                    {
+                        Debug.WriteLine("ReadDebugLink: Invalid shstrndx: " + eShstrndx);
+                        return null;
+                    }
+
+                    // Read all section headers in one bulk read.
+                    int shTableSize = eShnum * eShentsize;
+                    byte[] shTable = new byte[shTableSize];
+                    stream.Seek((long)eShoff, SeekOrigin.Begin);
+                    if (ReadFully(stream, shTable, 0, shTableSize) < shTableSize)
+                    {
+                        Debug.WriteLine("ReadDebugLink: Could not read section headers.");
+                        return null;
+                    }
+
+                    // Read the section name string table (shstrtab).
+                    int shstrPos = eShstrndx * eShentsize;
+                    ulong shstrOffset, shstrSize;
+                    ReadSectionOffsetAndSize(shTable, shstrPos, is64Bit, bigEndian, out shstrOffset, out shstrSize);
+
+                    if (shstrSize == 0 || shstrSize > 1024 * 1024)
+                    {
+                        Debug.WriteLine("ReadDebugLink: Invalid shstrtab size.");
+                        return null;
+                    }
+
+                    byte[] shstrtab = new byte[(int)shstrSize];
+                    stream.Seek((long)shstrOffset, SeekOrigin.Begin);
+                    if (ReadFully(stream, shstrtab, 0, shstrtab.Length) < shstrtab.Length)
+                    {
+                        Debug.WriteLine("ReadDebugLink: Could not read shstrtab.");
+                        return null;
+                    }
+
+                    // Iterate sections looking for .gnu_debuglink by name.
+                    for (int i = 0; i < eShnum; i++)
+                    {
+                        int shPos = i * eShentsize;
+                        uint shName = ReadU32Static(shTable, shPos, bigEndian);
+
+                        if (shName >= shstrtab.Length)
+                        {
+                            continue;
+                        }
+
+                        // Compare section name against ".gnu_debuglink".
+                        if (!SectionNameEquals(shstrtab, (int)shName, GnuDebugLinkName))
+                        {
+                            continue;
+                        }
+
+                        // Found .gnu_debuglink — read its contents.
+                        ulong secOffset, secSize;
+                        ReadSectionOffsetAndSize(shTable, shPos, is64Bit, bigEndian, out secOffset, out secSize);
+
+                        // The section must contain at least a filename byte + null + 4-byte CRC.
+                        if (secSize < 6 || secSize > 4096)
+                        {
+                            Debug.WriteLine("ReadDebugLink: Invalid .gnu_debuglink section size: " + secSize);
+                            return null;
+                        }
+
+                        byte[] sectionData = new byte[(int)secSize];
+                        stream.Seek((long)secOffset, SeekOrigin.Begin);
+                        if (ReadFully(stream, sectionData, 0, sectionData.Length) < sectionData.Length)
+                        {
+                            Debug.WriteLine("ReadDebugLink: Could not read .gnu_debuglink section data.");
+                            return null;
+                        }
+
+                        // Extract the null-terminated filename.
+                        int nullPos = Array.IndexOf(sectionData, (byte)0);
+                        if (nullPos <= 0)
+                        {
+                            Debug.WriteLine("ReadDebugLink: Empty or missing filename in .gnu_debuglink.");
+                            return null;
+                        }
+
+                        return Encoding.UTF8.GetString(sectionData, 0, nullPos);
+                    }
+
+                    Debug.WriteLine("ReadDebugLink: No .gnu_debuglink section found.");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("ReadDebugLink: Error reading file: " + ex.Message);
+                return null;
+            }
+        }
+
         #region private
+
+        // Name of the .gnu_debuglink section (UTF-8 bytes for fast comparison).
+        private static readonly byte[] GnuDebugLinkName = Encoding.UTF8.GetBytes(".gnu_debuglink");
+
+        /// <summary>
+        /// Reads sh_offset and sh_size from a section header at the given position.
+        /// Layout: sh_name(4), sh_type(4), sh_flags(4/8), sh_addr(4/8), sh_offset(4/8), sh_size(4/8).
+        /// </summary>
+        private static void ReadSectionOffsetAndSize(byte[] shTable, int shPos, bool is64Bit, bool bigEndian,
+            out ulong offset, out ulong size)
+        {
+            if (is64Bit)
+            {
+                // 64-bit: sh_name(4) + sh_type(4) + sh_flags(8) + sh_addr(8) = 24 bytes before sh_offset(8), sh_size(8).
+                int ofsPos = shPos + 4 + 4 + 8 + 8;
+                offset = ReadU64Static(shTable, ofsPos, bigEndian);
+                size = ReadU64Static(shTable, ofsPos + 8, bigEndian);
+            }
+            else
+            {
+                // 32-bit: sh_name(4) + sh_type(4) + sh_flags(4) + sh_addr(4) = 16 bytes before sh_offset(4), sh_size(4).
+                int ofsPos = shPos + 4 + 4 + 4 + 4;
+                offset = ReadU32Static(shTable, ofsPos, bigEndian);
+                size = ReadU32Static(shTable, ofsPos + 4, bigEndian);
+            }
+        }
+
+        /// <summary>
+        /// Compares a null-terminated string in a byte array against an expected byte sequence.
+        /// </summary>
+        private static bool SectionNameEquals(byte[] strtab, int offset, byte[] expected)
+        {
+            if (offset + expected.Length > strtab.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < expected.Length; i++)
+            {
+                if (strtab[offset + i] != expected[i])
+                {
+                    return false;
+                }
+            }
+
+            // Ensure the string in strtab is null-terminated right after the match.
+            int endPos = offset + expected.Length;
+            return endPos >= strtab.Length || strtab[endPos] == 0;
+        }
 
         // ELF identification (e_ident) constants.
         private const byte ElfMagic0 = 0x7f;
