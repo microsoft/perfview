@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Web.WebView2.Core;
@@ -98,6 +99,15 @@ namespace PerfView.GuiUtilities
         }
 
         /// <summary>
+        /// Shared WebView2 environment task. Reusing a single environment for all WebBrowserWindow
+        /// instances prevents the COMException (0x800700AA) "The requested resource is in use" that
+        /// occurs when multiple windows concurrently try to create separate environments backed by the
+        /// same user-data folder.
+        /// </summary>
+        private static Task<CoreWebView2Environment> s_environmentTask;
+        private static readonly object s_environmentLock = new object();
+
+        /// <summary>
         /// Ensure that we configure the WebView2 environment to specify where the user data is stored.
         /// </summary>
         private void Browser_Loaded(object sender, RoutedEventArgs e)
@@ -110,8 +120,18 @@ namespace PerfView.GuiUtilities
             var userDataFolder = Path.Combine(SupportFiles.SupportFileDir, "WebView2");
             Directory.CreateDirectory(userDataFolder);
 
-            var environmentAwaiter = CoreWebView2Environment
-                .CreateAsync(userDataFolder: userDataFolder)
+            // All WebBrowserWindow instances share one environment task so that
+            // CoreWebView2Environment.CreateAsync is only called once.  Concurrent calls with
+            // the same user-data folder can throw COMException 0x800700AA.
+            lock (s_environmentLock)
+            {
+                if (s_environmentTask == null)
+                {
+                    s_environmentTask = CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
+                }
+            }
+
+            var environmentAwaiter = s_environmentTask
                 .ConfigureAwait(true)
                 .GetAwaiter();
 
