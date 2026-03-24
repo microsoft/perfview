@@ -168,6 +168,78 @@ namespace Microsoft.Diagnostics.Symbols
             _symbols.Sort((a, b) => a.StartAddress.CompareTo(b.StartAddress));
         }
 
+        /// <summary>
+        /// Reads only the Signature and Version from an R2R perfmap file without parsing
+        /// the full symbol table. This is used for cheap identity validation (analogous to
+        /// <see cref="ElfSymbolModule.ReadBuildId"/> for ELF files).
+        /// Returns false if the file cannot be read or does not contain valid header metadata.
+        /// </summary>
+        internal static bool ReadSignatureAndVersion(string filePath, out Guid signature, out uint version)
+        {
+            signature = Guid.Empty;
+            version = 0;
+            bool foundSignature = false;
+            bool foundVersion = false;
+
+            using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+            using (var reader = new StreamReader(stream))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    int firstSpace = line.IndexOf(' ');
+                    if (firstSpace == -1) continue;
+
+                    string addressStr = line.Substring(0, firstSpace);
+                    if (!uint.TryParse(addressStr, System.Globalization.NumberStyles.HexNumber, null, out uint address))
+                    {
+                        continue;
+                    }
+
+                    // Signature marker
+                    if (address == 0xFFFFFFFF)
+                    {
+                        string remainder = line.Substring(firstSpace + 1);
+                        int secondSpace = remainder.IndexOf(' ');
+                        if (secondSpace >= 0)
+                        {
+                            string name = remainder.Substring(secondSpace + 1);
+                            if (Guid.TryParse(name, out signature))
+                            {
+                                foundSignature = true;
+                            }
+                        }
+                    }
+                    // Version marker
+                    else if (address == 0xFFFFFFFE)
+                    {
+                        string remainder = line.Substring(firstSpace + 1);
+                        int secondSpace = remainder.IndexOf(' ');
+                        if (secondSpace >= 0)
+                        {
+                            string name = remainder.Substring(secondSpace + 1);
+                            if (uint.TryParse(name, out version))
+                            {
+                                foundVersion = true;
+                            }
+                        }
+                    }
+                    // Once we have both, we can stop — no need to parse the symbol table.
+                    else if (address < 0xFFFFFFFB)
+                    {
+                        break;
+                    }
+
+                    if (foundSignature && foundVersion)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return foundSignature && foundVersion;
+        }
+
         private int BinarySearch(uint rva)
         {
             int left = 0;

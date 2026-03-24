@@ -274,7 +274,7 @@ namespace Microsoft.Diagnostics.Symbols
                         }
                         else
                         {
-                            m_log.WriteLine("FindSymbolFilePath: location {0} is remote and cacheOnly set, giving up.", filePath);
+                            m_log.WriteLine("FindSymbolFilePath: location {0} is remote and cacheOnly set, skipping.", filePath);
                         }
                     }
                     if (pdbPath != null)
@@ -308,19 +308,38 @@ namespace Microsoft.Diagnostics.Symbols
             return pdbPath;
         }
 
-        internal string FindR2RPerfMapSymbolFilePath(string perfMapName, Guid perfMapSignature, int perfMapVersion)
+        internal string FindR2RPerfMapSymbolFilePath(string perfMapName, Guid perfMapSignature, int perfMapVersion, string dllFilePath = null)
         {
             m_log.WriteLine("FindR2RPerfMapSymbolFile: *{{ Locating R2R perfmap symbol file {0} Signature {1} Version {2}", perfMapName, perfMapSignature, perfMapVersion);
 
             string indexPath = null;
             string perfMapPath = null;
             string symbolCacheTargetPath = null;
+            string perfMapSimpleName = Path.GetFileName(perfMapName);
             R2RPerfMapSignature cacheKey = new R2RPerfMapSignature() { Name = perfMapName, Signature = perfMapSignature, Version = perfMapVersion };
             if (m_r2rPerfMapPathCache.TryGet(cacheKey, out perfMapPath))
             {
                 m_log.WriteLine("FindR2RPerfMapSymbolFile: }} Hit Cache, returning {0}", perfMapPath);
                 return perfMapPath;
             }
+
+            // Check next to the binary first (mirrors PDB local search).
+            if (perfMapPath == null && dllFilePath != null)
+            {
+                string dllDir = Path.GetDirectoryName(dllFilePath);
+                if (!string.IsNullOrEmpty(dllDir))
+                {
+                    string candidate = Path.Combine(dllDir, perfMapSimpleName);
+                    m_log.WriteLine("FindR2RPerfMapSymbolFilePath: Checking relative to DLL path {0}", candidate);
+                    if (R2RPerfMapMatches(candidate, perfMapSignature, perfMapVersion))
+                    {
+                        perfMapPath = candidate;
+                    }
+                }
+            }
+
+            if (perfMapPath == null)
+            {
             SymbolPath path = new SymbolPath(SymbolPath);
             foreach (SymbolPathElement element in path.Elements)
             {
@@ -347,10 +366,10 @@ namespace Microsoft.Diagnostics.Symbols
                 }
                 else
                 {
-                    string filePath = Path.Combine(element.Target, perfMapName);
+                    string filePath = Path.Combine(element.Target, perfMapSimpleName);
                     if ((Options & SymbolReaderOptions.CacheOnly) == 0 || !element.IsRemote)
                     {
-                        if (File.Exists(filePath))
+                        if (R2RPerfMapMatches(filePath, perfMapSignature, perfMapVersion, checkSecurity: false))
                         {
                             perfMapPath = filePath;
                             break;
@@ -358,9 +377,10 @@ namespace Microsoft.Diagnostics.Symbols
                     }
                     else
                     {
-                        m_log.WriteLine("FindR2RPerfMapSymbolFilePath: location {0} is remote and cacheOnly set, giving up.", filePath);
+                        m_log.WriteLine("FindR2RPerfMapSymbolFilePath: location {0} is remote and cacheOnly set, skipping.", filePath);
                     }
                 }
+            }
             }
 
             if (perfMapPath != null)
@@ -391,7 +411,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <param name="fileName">The simple filename of the ELF module (e.g., "libcoreclr.so")</param>
         /// <param name="buildId">The GNU build-id as a lowercase hex string</param>
         /// <returns>The local file path to the downloaded symbol file, or null if not found.</returns>
-        public string FindElfSymbolFilePath(string fileName, string buildId)
+        public string FindElfSymbolFilePath(string fileName, string buildId, string elfFilePath = null)
         {
             m_log.WriteLine("FindElfSymbolFilePath: *{{ Searching for {0} with BuildId {1}", fileName, buildId);
 
@@ -410,13 +430,76 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             // SSQP key conventions for ELF debug symbols and binaries.
-            // Use forward slashes — these are URL path segments for SSQP servers and
-            // Path.Combine handles mixed separators when joining with a local root.
             string debugIndexPath = $"_.debug/elf-buildid-sym-{normalizedBuildId}/_.debug";
             string binaryIndexPath = $"{simpleFileName}/elf-buildid-{normalizedBuildId}/{simpleFileName}";
 
             string resultPath = null;
 
+            // Check adjacent to the binary first (mirrors PDB local search).
+            // Prefer debug symbol files before falling back to the binary itself.
+            if (elfFilePath != null)
+            {
+                string elfDir = Path.GetDirectoryName(elfFilePath);
+                if (!string.IsNullOrEmpty(elfDir))
+                {
+                    m_log.WriteLine("FindElfSymbolFilePath: Checking relative to ELF binary path {0}", elfFilePath);
+                    string basePath = elfFilePath;
+
+                    // Try {path}.debug
+                    string candidate = basePath + ".debug";
+                    if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                    {
+                        resultPath = candidate;
+                    }
+
+                    // Try {path}.dbg
+                    if (resultPath == null)
+                    {
+                        candidate = basePath + ".dbg";
+                        if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                        {
+                            resultPath = candidate;
+                        }
+                    }
+
+                    // If the path contains .so, strip it and try again.
+                    if (resultPath == null)
+                    {
+                        int soIndex = basePath.IndexOf(".so", StringComparison.OrdinalIgnoreCase);
+                        if (soIndex >= 0)
+                        {
+                            string pathWithoutSo = basePath.Substring(0, soIndex);
+
+                            candidate = pathWithoutSo + ".debug";
+                            if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                            {
+                                resultPath = candidate;
+                            }
+
+                            if (resultPath == null)
+                            {
+                                candidate = pathWithoutSo + ".dbg";
+                                if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                                {
+                                    resultPath = candidate;
+                                }
+                            }
+                        }
+                    }
+
+                    // Last resort: try the binary itself (has .dynsym at minimum).
+                    if (resultPath == null)
+                    {
+                        if (ElfBuildIdMatches(basePath, normalizedBuildId))
+                        {
+                            resultPath = basePath;
+                        }
+                    }
+                }
+            }
+
+            if (resultPath == null)
+            {
             SymbolPath path = new SymbolPath(SymbolPath);
             foreach (SymbolPathElement element in path.Elements)
             {
@@ -455,7 +538,7 @@ namespace Microsoft.Diagnostics.Symbols
 
                         // Try SSQP-structured debug symbols first.
                         string debugPath = Path.Combine(target, debugIndexPath);
-                        if (File.Exists(debugPath))
+                        if (ElfBuildIdMatches(debugPath, normalizedBuildId, checkSecurity: false))
                         {
                             resultPath = debugPath;
                             break;
@@ -463,13 +546,14 @@ namespace Microsoft.Diagnostics.Symbols
 
                         // Try SSQP-structured binary.
                         string binaryPath = Path.Combine(target, binaryIndexPath);
-                        if (File.Exists(binaryPath))
+                        if (ElfBuildIdMatches(binaryPath, normalizedBuildId, checkSecurity: false))
                         {
                             resultPath = binaryPath;
                             break;
                         }
                     }
                 }
+            }
             }
 
             if (resultPath != null)
@@ -606,11 +690,6 @@ namespace Microsoft.Diagnostics.Symbols
 
         internal R2RPerfMapSymbolModule OpenR2RPerfMapSymbolFile(string filePath, uint loadedLayoutTextOffset)
         {
-            if (!CheckSecurity(filePath))
-            {
-                m_log.WriteLine("OpenR2RPerfMapSymbolFile: Security check failed for {0}", filePath);
-                return null;
-            }
             return new R2RPerfMapSymbolModule(filePath, loadedLayoutTextOffset);
         }
 
@@ -619,34 +698,13 @@ namespace Microsoft.Diagnostics.Symbols
         /// parameters have been seen before. This avoids re-parsing large ELF debug files when
         /// the same binary is loaded across multiple processes in a trace.
         /// </summary>
-        internal ElfSymbolModule OpenElfSymbolFile(string filePath, ulong pVaddr, ulong pOffset, string expectedBuildId = null)
+        internal ElfSymbolModule OpenElfSymbolFile(string filePath, ulong pVaddr, ulong pOffset)
         {
             var cacheKey = new ElfModuleSignature() { FilePath = filePath, VAddr = pVaddr, Offset = pOffset };
             if (m_elfModuleCache.TryGet(cacheKey, out ElfSymbolModule cached))
             {
                 m_log.WriteLine("OpenElfSymbolFile: Cache hit for {0}", filePath);
                 return cached;
-            }
-
-            if (!CheckSecurity(filePath))
-            {
-                m_log.WriteLine("OpenElfSymbolFile: Security check failed for {0}", filePath);
-                return null;
-            }
-
-            // Validate build-id before parsing the full symbol table.
-            if (!string.IsNullOrEmpty(expectedBuildId))
-            {
-                string actualBuildId = ElfSymbolModule.ReadBuildId(filePath);
-                if (actualBuildId == null)
-                {
-                    m_log.WriteLine("OpenElfSymbolFile: Warning: Could not read build-id from {0} (may be stripped). Accepting without validation.", filePath);
-                }
-                else if (!string.Equals(actualBuildId, expectedBuildId, StringComparison.OrdinalIgnoreCase))
-                {
-                    m_log.WriteLine("OpenElfSymbolFile: ************ ELF file {0} has build-id {1} != expected {2}", filePath, actualBuildId, expectedBuildId);
-                    return null;
-                }
             }
 
             var module = new ElfSymbolModule(filePath, pVaddr, pOffset);
@@ -1100,6 +1158,100 @@ namespace Microsoft.Diagnostics.Symbols
             catch (Exception e)
             {
                 m_log.WriteLine("FindSymbolFilePath: Aborting pdbMatch of {0} Exception thrown: {1}", filePath, e.Message);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true if 'filePath' exists and is an R2R perfmap file whose Signature and Version match.
+        /// Analogous to <see cref="PdbMatches"/> for PDB files.
+        /// </summary>
+        private bool R2RPerfMapMatches(string filePath, Guid expectedSignature, int expectedVersion, bool checkSecurity = true)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    if (checkSecurity && !CheckSecurity(filePath))
+                    {
+                        m_log.WriteLine("FindR2RPerfMapSymbolFilePath: Aborting, security check failed on {0}", filePath);
+                        return false;
+                    }
+
+                    if (R2RPerfMapSymbolModule.ReadSignatureAndVersion(filePath, out Guid actualSignature, out uint actualVersion))
+                    {
+                        if (actualSignature == expectedSignature && actualVersion == (uint)expectedVersion)
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            m_log.WriteLine("FindR2RPerfMapSymbolFilePath: ************ FOUND R2R perfmap {0} has Signature {1} Version {2} != Desired Signature {3} Version {4}",
+                                filePath, actualSignature, actualVersion, expectedSignature, expectedVersion);
+                        }
+                    }
+                    else
+                    {
+                        m_log.WriteLine("FindR2RPerfMapSymbolFilePath: Could not read signature/version from {0}", filePath);
+                    }
+                }
+                else
+                {
+                    m_log.WriteLine("FindR2RPerfMapSymbolFilePath: Probed file location {0} does not exist", filePath);
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.WriteLine("FindR2RPerfMapSymbolFilePath: Aborting match of {0} Exception thrown: {1}", filePath, e.Message);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true if 'filePath' exists and is an ELF file whose GNU build-id matches 'expectedBuildId'.
+        /// Analogous to <see cref="PdbMatches"/> for PDB files.
+        /// </summary>
+        private bool ElfBuildIdMatches(string filePath, string expectedBuildId, bool checkSecurity = true)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    if (checkSecurity && !CheckSecurity(filePath))
+                    {
+                        m_log.WriteLine("FindElfSymbolFilePath: Aborting, security check failed on {0}", filePath);
+                        return false;
+                    }
+
+                    if (string.IsNullOrEmpty(expectedBuildId))
+                    {
+                        m_log.WriteLine("FindElfSymbolFilePath: No expected build-id provided, assuming unsafe match for {0}", filePath);
+                        return true;
+                    }
+
+                    string actualBuildId = ElfSymbolModule.ReadBuildId(filePath);
+                    if (actualBuildId != null && string.Equals(actualBuildId, expectedBuildId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                    else if (actualBuildId == null)
+                    {
+                        m_log.WriteLine("FindElfSymbolFilePath: Could not read build-id from {0} (may be stripped)", filePath);
+                    }
+                    else
+                    {
+                        m_log.WriteLine("FindElfSymbolFilePath: ************ FOUND ELF file {0} has build-id {1} != expected {2}",
+                            filePath, actualBuildId, expectedBuildId);
+                    }
+                }
+                else
+                {
+                    m_log.WriteLine("FindElfSymbolFilePath: Probed file location {0} does not exist", filePath);
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.WriteLine("FindElfSymbolFilePath: Aborting match of {0} Exception thrown: {1}", filePath, e.Message);
             }
             return false;
         }

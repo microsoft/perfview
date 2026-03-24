@@ -8971,21 +8971,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                 default:
                     {
-                        // Unknown format — try all paths: R2R, then PDB.
-                        R2RPerfMapSymbolModule r2rSymbolModule = OpenR2RPerfMapForModuleFile(reader, moduleFile);
-                        if (r2rSymbolModule != null)
-                        {
-                            symbolLookup = r2rSymbolModule;
-                        }
-                        else
-                        {
-                            NativeSymbolModule moduleReader = OpenPdbForModuleFile(reader, moduleFile) as NativeSymbolModule;
-                            if (moduleReader != null)
-                            {
-                                symbolLookup = moduleReader;
-                            }
-                        }
-                        computeRva = (address) => (uint)(address - moduleFile.ImageBase);
+                        Debug.Assert(false, "LookupSymbolsForModule: unknown binary format " + moduleFile.BinaryFormat);
+                        reader.m_log.WriteLine("LookupSymbolsForModule: Unknown binary format {0} for {1}, skipping.", moduleFile.BinaryFormat, moduleFile.FilePath);
                     }
                     break;
             }
@@ -9212,60 +9199,34 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             Debug.Assert(moduleFile.PEInfo != null, "OpenR2RPerfMapForModuleFile called with null PEInfo");
             var peInfo = moduleFile.PEInfo;
-            // If we have a signature, use it
-            if (peInfo != null && peInfo.R2RPerfMapSignature != Guid.Empty)
-            {
-                string filePath = symReader.FindR2RPerfMapSymbolFilePath(peInfo.R2RPerfMapName, peInfo.R2RPerfMapSignature, peInfo.R2RPerfMapVersion);
-                if (filePath != null)
-                {
-                    R2RPerfMapSymbolModule symbolModule = symReader.OpenR2RPerfMapSymbolFile(filePath, peInfo.R2RImageTextVirtualOffset);
-                    if (symbolModule != null && symbolModule.Signature == peInfo.R2RPerfMapSignature && symbolModule.Version == peInfo.R2RPerfMapVersion)
-                    {
-                        return symbolModule;
-                    }
-                    else
-                    {
-                        symReader.m_log.WriteLine("ERROR: The R2R perfmap does not match the loaded module.  Actual Signature = " + symbolModule.Signature + " Requested Signature = " + peInfo.R2RPerfMapSignature);
-                        throw new Exception("ERROR: The R2R perfmap does not match the loaded module.");
-                    }
-                }
-            }
-            else
+            if (peInfo == null || peInfo.R2RPerfMapSignature == Guid.Empty || string.IsNullOrEmpty(peInfo.R2RPerfMapName))
             {
                 symReader.m_log.WriteLine("No R2R perfmap signature for {0} in trace.", moduleFile.FilePath);
+                return null;
             }
 
-            // Fallback: look for an R2R perfmap file next to the binary.
-            if (peInfo != null && !string.IsNullOrEmpty(peInfo.R2RPerfMapName) && peInfo.R2RPerfMapSignature != Guid.Empty)
+            // Find handles all search: sym server, sym path, and adjacent-to-binary (via dllFilePath).
+            string filePath = symReader.FindR2RPerfMapSymbolFilePath(peInfo.R2RPerfMapName, peInfo.R2RPerfMapSignature, peInfo.R2RPerfMapVersion, moduleFile.FilePath);
+            if (filePath == null)
             {
-                string moduleDir = Path.GetDirectoryName(moduleFile.FilePath);
-                if (!string.IsNullOrEmpty(moduleDir))
-                {
-                    // Sanitize the perfmap name to prevent path traversal from trace data.
-                    string candidatePath = Path.Combine(moduleDir, Path.GetFileName(peInfo.R2RPerfMapName));
-                    if (File.Exists(candidatePath))
-                    {
-                        try
-                        {
-                            R2RPerfMapSymbolModule symbolModule = symReader.OpenR2RPerfMapSymbolFile(candidatePath, peInfo.R2RImageTextVirtualOffset);
-                            if (symbolModule != null && symbolModule.Signature == peInfo.R2RPerfMapSignature && symbolModule.Version == peInfo.R2RPerfMapVersion)
-                            {
-                                return symbolModule;
-                            }
-
-                            // Module doesn't match the expected signature; skip it.
-                            symReader.m_log.WriteLine("R2R perfmap adjacent to binary {0} does not match signature. Actual = {1}, Expected = {2}",
-                                candidatePath, symbolModule?.Signature, peInfo.R2RPerfMapSignature);
-                        }
-                        catch (Exception e)
-                        {
-                            symReader.m_log.WriteLine("Error opening R2R perfmap adjacent to binary {0}: {1}", candidatePath, e.Message);
-                        }
-                    }
-                }
+                return null;
             }
 
-            return null;
+            R2RPerfMapSymbolModule symbolModule = symReader.OpenR2RPerfMapSymbolFile(filePath, peInfo.R2RImageTextVirtualOffset);
+            if (symbolModule == null)
+            {
+                return null;
+            }
+
+            // Post-open validation (belt and suspenders — Find already validated via R2RPerfMapMatches).
+            if (symbolModule.Signature != peInfo.R2RPerfMapSignature || symbolModule.Version != peInfo.R2RPerfMapVersion)
+            {
+                symReader.m_log.WriteLine("ERROR: R2R perfmap {0} does not match. Actual Signature={1} Version={2}, Expected Signature={3} Version={4}",
+                    filePath, symbolModule.Signature, symbolModule.Version, peInfo.R2RPerfMapSignature, peInfo.R2RPerfMapVersion);
+                return null;
+            }
+
+            return symbolModule;
         }
 
         /// <summary>
@@ -9274,98 +9235,32 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         private ElfSymbolModule OpenElfSymbolsForModuleFile(SymbolReader reader, TraceModuleFile moduleFile)
         {
+            Debug.Assert(moduleFile.ElfInfo != null, "OpenElfSymbolsForModuleFile called with null ElfInfo");
             var elfInfo = moduleFile.ElfInfo;
             if (elfInfo == null || string.IsNullOrEmpty(elfInfo.BuildId))
             {
                 return null;
             }
 
-            Debug.Assert(moduleFile.ElfInfo != null, "OpenElfSymbolsForModuleFile called with null ElfInfo");
-
             ulong alignedVAddr = elfInfo.PageAlignedVirtualAddress;
 
-            // Try symbol server / symbol path first.
-            string symbolFilePath = reader.FindElfSymbolFilePath(moduleFile.Name, elfInfo.BuildId);
-            if (symbolFilePath != null)
-            {
-                try
-                {
-                    reader.m_log.WriteLine("Opening ELF symbols from {0} (pVaddr=0x{1:x}, aligned=0x{2:x}, pOffset=0x{3:x}, pageSize={4})",
-                        symbolFilePath, elfInfo.VirtualAddress, alignedVAddr, elfInfo.FileOffset, elfInfo.PageSize);
-                    ElfSymbolModule module = reader.OpenElfSymbolFile(symbolFilePath, alignedVAddr, elfInfo.FileOffset, elfInfo.BuildId);
-                    if (module != null)
-                    {
-                        return module;
-                    }
-                }
-                catch (Exception e)
-                {
-                    reader.m_log.WriteLine("Error opening ELF symbol file {0}: {1}", symbolFilePath, e.Message);
-                }
-            }
-            else
+            // Find handles all search: sym server, sym path, and adjacent-to-binary (via elfFilePath).
+            string symbolFilePath = reader.FindElfSymbolFilePath(moduleFile.Name, elfInfo.BuildId, moduleFile.FilePath);
+            if (symbolFilePath == null)
             {
                 reader.m_log.WriteLine("Could not find ELF symbol file for {0} (BuildId: {1})", moduleFile.Name, elfInfo.BuildId);
-            }
-
-            // Fallback: look for ELF symbols adjacent to the binary.
-            // Prefer debug symbol files before falling back to the binary itself.
-            string moduleDir = Path.GetDirectoryName(moduleFile.FilePath);
-            if (!string.IsNullOrEmpty(moduleDir))
-            {
-                string basePath = moduleFile.FilePath;
-
-                // Try {path}.debug
-                string candidate = basePath + ".debug";
-                ElfSymbolModule result = TryOpenElfFallback(reader, candidate, alignedVAddr, elfInfo);
-                if (result != null) return result;
-
-                // Try {path}.dbg
-                candidate = basePath + ".dbg";
-                result = TryOpenElfFallback(reader, candidate, alignedVAddr, elfInfo);
-                if (result != null) return result;
-
-                // If the path contains .so (possibly with version suffix like .so.1.2.3), strip it and try again.
-                int soIndex = basePath.IndexOf(".so", StringComparison.OrdinalIgnoreCase);
-                if (soIndex >= 0)
-                {
-                    string pathWithoutSo = basePath.Substring(0, soIndex);
-
-                    candidate = pathWithoutSo + ".debug";
-                    result = TryOpenElfFallback(reader, candidate, alignedVAddr, elfInfo);
-                    if (result != null) return result;
-
-                    candidate = pathWithoutSo + ".dbg";
-                    result = TryOpenElfFallback(reader, candidate, alignedVAddr, elfInfo);
-                    if (result != null) return result;
-                }
-
-                // Last resort: try the binary itself (has .dynsym at minimum).
-                result = TryOpenElfFallback(reader, basePath, alignedVAddr, elfInfo);
-                if (result != null) return result;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Helper to try opening an ELF file as a symbol source with build-id validation.
-        /// Returns null if the file doesn't exist or doesn't match.
-        /// </summary>
-        private ElfSymbolModule TryOpenElfFallback(SymbolReader reader, string candidatePath, ulong alignedVAddr, ElfSymbolInfo elfInfo)
-        {
-            if (!File.Exists(candidatePath))
-            {
                 return null;
             }
 
             try
             {
-                return reader.OpenElfSymbolFile(candidatePath, alignedVAddr, elfInfo.FileOffset, elfInfo.BuildId);
+                reader.m_log.WriteLine("Opening ELF symbols from {0} (pVaddr=0x{1:x}, aligned=0x{2:x}, pOffset=0x{3:x}, pageSize={4})",
+                    symbolFilePath, elfInfo.VirtualAddress, alignedVAddr, elfInfo.FileOffset, elfInfo.PageSize);
+                return reader.OpenElfSymbolFile(symbolFilePath, alignedVAddr, elfInfo.FileOffset);
             }
             catch (Exception e)
             {
-                reader.m_log.WriteLine("Error opening ELF fallback {0}: {1}", candidatePath, e.Message);
+                reader.m_log.WriteLine("Error opening ELF symbol file {0}: {1}", symbolFilePath, e.Message);
                 return null;
             }
         }

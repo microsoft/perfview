@@ -554,11 +554,11 @@ namespace TraceEventTests
                 string buildId = "abc123";
                 string normalizedBuildId = buildId.ToLowerInvariant();
 
-                // Create SSQP debug symbol directory structure.
+                // Create SSQP debug symbol directory structure with valid ELF build-id.
                 string debugDir = Path.Combine(tempDir, "_.debug", "elf-buildid-sym-" + normalizedBuildId);
                 Directory.CreateDirectory(debugDir);
                 string debugFile = Path.Combine(debugDir, "_.debug");
-                File.WriteAllBytes(debugFile, new byte[] { 0x7F, 0x45, 0x4C, 0x46 }); // ELF magic
+                File.WriteAllBytes(debugFile, CreateMinimalElfWithBuildId(normalizedBuildId));
 
                 _symbolReader.SymbolPath = tempDir;
                 string result = _symbolReader.FindElfSymbolFilePath("libcoreclr.so", buildId);
@@ -586,7 +586,7 @@ namespace TraceEventTests
                 string binaryDir = Path.Combine(tempDir, "libcoreclr.so", "elf-buildid-" + normalizedBuildId);
                 Directory.CreateDirectory(binaryDir);
                 string binaryFile = Path.Combine(binaryDir, "libcoreclr.so");
-                File.WriteAllBytes(binaryFile, new byte[] { 0x7F, 0x45, 0x4C, 0x46 });
+                File.WriteAllBytes(binaryFile, CreateMinimalElfWithBuildId(normalizedBuildId));
 
                 _symbolReader.SymbolPath = tempDir;
                 string result = _symbolReader.FindElfSymbolFilePath("libcoreclr.so", buildId);
@@ -610,16 +610,16 @@ namespace TraceEventTests
                 string buildId = "aabbcc";
                 string normalizedBuildId = buildId.ToLowerInvariant();
 
-                // Create both debug and binary directory structures.
+                // Create both debug and binary directory structures with valid ELF build-ids.
                 string debugDir = Path.Combine(tempDir, "_.debug", "elf-buildid-sym-" + normalizedBuildId);
                 Directory.CreateDirectory(debugDir);
                 string debugFile = Path.Combine(debugDir, "_.debug");
-                File.WriteAllBytes(debugFile, new byte[] { 0x7F, 0x45, 0x4C, 0x46 });
+                File.WriteAllBytes(debugFile, CreateMinimalElfWithBuildId(normalizedBuildId));
 
                 string binaryDir = Path.Combine(tempDir, "libtest.so", "elf-buildid-" + normalizedBuildId);
                 Directory.CreateDirectory(binaryDir);
                 string binaryFile = Path.Combine(binaryDir, "libtest.so");
-                File.WriteAllBytes(binaryFile, new byte[] { 0x7F, 0x45, 0x4C, 0x46 });
+                File.WriteAllBytes(binaryFile, CreateMinimalElfWithBuildId(normalizedBuildId));
 
                 _symbolReader.SymbolPath = tempDir;
                 string result = _symbolReader.FindElfSymbolFilePath("libtest.so", buildId);
@@ -655,7 +655,7 @@ namespace TraceEventTests
         }
 
         [Theory]
-        [InlineData("abc", "abc")]
+        [InlineData("abcd", "abcd")]
         [InlineData("ABC123", "abc123")]
         [InlineData("aabbccdd00112233445566778899aabbccddeeff", "aabbccdd00112233445566778899aabbccddeeff")]
         public void FindElfSymbolFilePath_BuildIdNormalization(string inputBuildId, string expectedNormalized)
@@ -663,11 +663,11 @@ namespace TraceEventTests
             string tempDir = Path.Combine(OutputDir, "elf-buildid-norm");
             try
             {
-                // Create debug symbol directory structure with normalized build ID.
+                // Create debug symbol directory structure with valid ELF build-id.
                 string debugDir = Path.Combine(tempDir, "_.debug", "elf-buildid-sym-" + expectedNormalized);
                 Directory.CreateDirectory(debugDir);
                 string debugFile = Path.Combine(debugDir, "_.debug");
-                File.WriteAllBytes(debugFile, new byte[] { 0x7F, 0x45, 0x4C, 0x46 });
+                File.WriteAllBytes(debugFile, CreateMinimalElfWithBuildId(expectedNormalized));
 
                 _symbolReader.SymbolPath = tempDir;
                 string result = _symbolReader.FindElfSymbolFilePath("libnorm.so", inputBuildId);
@@ -695,7 +695,7 @@ namespace TraceEventTests
                 string binaryDir = Path.Combine(tempDir, "libc.so.6", "elf-buildid-" + normalizedBuildId);
                 Directory.CreateDirectory(binaryDir);
                 string binaryFile = Path.Combine(binaryDir, "libc.so.6");
-                File.WriteAllBytes(binaryFile, new byte[] { 0x7F, 0x45, 0x4C, 0x46 });
+                File.WriteAllBytes(binaryFile, CreateMinimalElfWithBuildId(normalizedBuildId));
 
                 _symbolReader.SymbolPath = tempDir;
                 // Pass an absolute path — only the filename portion should be used for lookup.
@@ -729,13 +729,13 @@ namespace TraceEventTests
             string tempDir = Path.Combine(OutputDir, "elf-cache-hit");
             try
             {
-                string buildId = "cachedid123";
+                string buildId = "cacced1d12";
                 string normalizedBuildId = buildId.ToLowerInvariant();
 
                 string debugDir = Path.Combine(tempDir, "_.debug", "elf-buildid-sym-" + normalizedBuildId);
                 Directory.CreateDirectory(debugDir);
                 string debugFile = Path.Combine(debugDir, "_.debug");
-                File.WriteAllBytes(debugFile, new byte[] { 0x7F, 0x45, 0x4C, 0x46 });
+                File.WriteAllBytes(debugFile, CreateMinimalElfWithBuildId(normalizedBuildId));
 
                 _symbolReader.SymbolPath = tempDir;
 
@@ -801,7 +801,7 @@ namespace TraceEventTests
                 string debugDir2 = Path.Combine(tempDir, "_.debug", "elf-buildid-sym-" + norm2);
                 Directory.CreateDirectory(debugDir2);
                 string debugFile2 = Path.Combine(debugDir2, "_.debug");
-                File.WriteAllBytes(debugFile2, new byte[] { 0x7F });
+                File.WriteAllBytes(debugFile2, CreateMinimalElfWithBuildId(norm2));
 
                 _symbolReader.SymbolPath = tempDir;
 
@@ -830,12 +830,13 @@ namespace TraceEventTests
             try
             {
                 Directory.CreateDirectory(tempDir);
+                var sig = new Guid("a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d");
+                int version = 1;
                 string perfMapFile = Path.Combine(tempDir, "CoreLib.r2rmap");
-                File.WriteAllBytes(perfMapFile, new byte[] { 0x01, 0x02 });
+                File.WriteAllBytes(perfMapFile, CreateMinimalR2RPerfMap(sig, version));
 
                 _symbolReader.SymbolPath = tempDir;
-                var sig = new Guid("a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d");
-                string result = _symbolReader.FindR2RPerfMapSymbolFilePath("CoreLib.r2rmap", sig, 1);
+                string result = _symbolReader.FindR2RPerfMapSymbolFilePath("CoreLib.r2rmap", sig, version);
 
                 Assert.NotNull(result);
                 Assert.Equal(perfMapFile, result);
@@ -887,20 +888,21 @@ namespace TraceEventTests
             try
             {
                 Directory.CreateDirectory(tempDir);
+                var sig = new Guid("cc000000-0000-0000-0000-000000000000");
+                int version = 1;
                 string perfMapFile = Path.Combine(tempDir, "Cached.r2rmap");
-                File.WriteAllBytes(perfMapFile, new byte[] { 0x01 });
+                File.WriteAllBytes(perfMapFile, CreateMinimalR2RPerfMap(sig, version));
 
                 _symbolReader.SymbolPath = tempDir;
-                var sig = new Guid("cc000000-0000-0000-0000-000000000000");
 
                 // First call populates the cache.
-                string result1 = _symbolReader.FindR2RPerfMapSymbolFilePath("Cached.r2rmap", sig, 1);
+                string result1 = _symbolReader.FindR2RPerfMapSymbolFilePath("Cached.r2rmap", sig, version);
                 Assert.NotNull(result1);
 
                 // Remove the file so only cache can return it.
                 File.Delete(perfMapFile);
 
-                string result2 = _symbolReader.FindR2RPerfMapSymbolFilePath("Cached.r2rmap", sig, 1);
+                string result2 = _symbolReader.FindR2RPerfMapSymbolFilePath("Cached.r2rmap", sig, version);
                 Assert.Equal(result1, result2);
             }
             finally
@@ -926,9 +928,9 @@ namespace TraceEventTests
                 string result1 = _symbolReader.FindR2RPerfMapSymbolFilePath("Test.r2rmap", sig1, 1);
                 Assert.Null(result1);
 
-                // Now create the file — sig2 should find it (not negatively cached).
+                // Now create the file with sig2's identity — sig2 should find it (not negatively cached).
                 string perfMapFile = Path.Combine(tempDir, "Test.r2rmap");
-                File.WriteAllBytes(perfMapFile, new byte[] { 0x01 });
+                File.WriteAllBytes(perfMapFile, CreateMinimalR2RPerfMap(sig2, 1));
 
                 string result2 = _symbolReader.FindR2RPerfMapSymbolFilePath("Test.r2rmap", sig2, 1);
                 Assert.NotNull(result2);
@@ -1009,11 +1011,11 @@ namespace TraceEventTests
                 // Set up: first path has nothing, second path has the file.
                 Directory.CreateDirectory(tempDir1);
 
-                string buildId = "cachetest1";
+                string buildId = "cace0e0010";
                 string normalizedBuildId = buildId;
                 string debugDir = Path.Combine(tempDir2, "_.debug", "elf-buildid-sym-" + normalizedBuildId);
                 Directory.CreateDirectory(debugDir);
-                File.WriteAllBytes(Path.Combine(debugDir, "_.debug"), new byte[] { 0x7F });
+                File.WriteAllBytes(Path.Combine(debugDir, "_.debug"), CreateMinimalElfWithBuildId(normalizedBuildId));
 
                 // First search against empty path — null is cached.
                 _symbolReader.SymbolPath = tempDir1;
@@ -1039,17 +1041,17 @@ namespace TraceEventTests
             {
                 Directory.CreateDirectory(tempDir1);
                 Directory.CreateDirectory(tempDir2);
-                File.WriteAllBytes(Path.Combine(tempDir2, "Test.r2rmap"), new byte[] { 0x01 });
-
                 var sig = new Guid("12345678-1234-1234-1234-123456789abc");
+                int version = 1;
+                File.WriteAllBytes(Path.Combine(tempDir2, "Test.r2rmap"), CreateMinimalR2RPerfMap(sig, version));
 
                 // First search against empty path — null is cached.
                 _symbolReader.SymbolPath = tempDir1;
-                Assert.Null(_symbolReader.FindR2RPerfMapSymbolFilePath("Test.r2rmap", sig, 1));
+                Assert.Null(_symbolReader.FindR2RPerfMapSymbolFilePath("Test.r2rmap", sig, version));
 
                 // Change SymbolPath — cache should be cleared, so the new path is searched.
                 _symbolReader.SymbolPath = tempDir2;
-                Assert.NotNull(_symbolReader.FindR2RPerfMapSymbolFilePath("Test.r2rmap", sig, 1));
+                Assert.NotNull(_symbolReader.FindR2RPerfMapSymbolFilePath("Test.r2rmap", sig, version));
             }
             finally
             {
@@ -1064,11 +1066,11 @@ namespace TraceEventTests
             string tempDir = Path.Combine(OutputDir, "elf-cache-opt");
             try
             {
-                string buildId = "opttest1";
+                string buildId = "00ee0010";
                 string normalizedBuildId = buildId;
                 string debugDir = Path.Combine(tempDir, "_.debug", "elf-buildid-sym-" + normalizedBuildId);
                 Directory.CreateDirectory(debugDir);
-                File.WriteAllBytes(Path.Combine(debugDir, "_.debug"), new byte[] { 0x7F });
+                File.WriteAllBytes(Path.Combine(debugDir, "_.debug"), CreateMinimalElfWithBuildId(normalizedBuildId));
 
                 // First: find it successfully and cache it.
                 _symbolReader.SymbolPath = tempDir;
@@ -1103,7 +1105,6 @@ namespace TraceEventTests
                 string elfFile = Path.Combine(tempDir, "libtest.so");
                 File.WriteAllBytes(elfFile, new byte[] { 0x00 });
 
-                _symbolReader.SecurityCheck = _ => true;
                 var module1 = _symbolReader.OpenElfSymbolFile(elfFile, 0x1000, 0x0);
                 var module2 = _symbolReader.OpenElfSymbolFile(elfFile, 0x1000, 0x0);
 
@@ -1125,7 +1126,6 @@ namespace TraceEventTests
                 string elfFile = Path.Combine(tempDir, "libtest.so");
                 File.WriteAllBytes(elfFile, new byte[] { 0x00 });
 
-                _symbolReader.SecurityCheck = _ => true;
                 var module1 = _symbolReader.OpenElfSymbolFile(elfFile, 0x1000, 0x0);
                 var module2 = _symbolReader.OpenElfSymbolFile(elfFile, 0x2000, 0x0);
 
@@ -1147,7 +1147,6 @@ namespace TraceEventTests
                 string elfFile = Path.Combine(tempDir, "libtest.so");
                 File.WriteAllBytes(elfFile, new byte[] { 0x00 });
 
-                _symbolReader.SecurityCheck = _ => true;
                 var module1 = _symbolReader.OpenElfSymbolFile(elfFile, 0x1000, 0x0);
 
                 // Changing SymbolPath clears all caches including the module cache.
@@ -1165,6 +1164,101 @@ namespace TraceEventTests
         }
 
         #endregion
+
+        /// <summary>
+        /// Creates a minimal valid ELF64 little-endian binary with a GNU build-id note.
+        /// Used by tests that need a file whose build-id can be read by ReadBuildId.
+        /// </summary>
+        /// <param name="buildIdHex">Lowercase hex string (e.g., "abc123" → 3 bytes: 0xab, 0xc1, 0x23).</param>
+        private static byte[] CreateMinimalElfWithBuildId(string buildIdHex)
+        {
+            // Convert hex string to bytes.
+            int byteCount = buildIdHex.Length / 2;
+            byte[] buildIdBytes = new byte[byteCount];
+            for (int i = 0; i < byteCount; i++)
+            {
+                buildIdBytes[i] = byte.Parse(buildIdHex.Substring(i * 2, 2), NumberStyles.HexNumber);
+            }
+
+            // Build the GNU build-id note.
+            // Note header: namesz(4) + descsz(4) + type(4) = 12 bytes.
+            // Name: "GNU\0" = 4 bytes (already 4-byte aligned).
+            // Desc: buildId bytes, padded to 4-byte alignment.
+            uint descsz = (uint)buildIdBytes.Length;
+            uint descAligned = (descsz + 3) & ~3u;
+            int noteSize = 12 + 4 + (int)descAligned; // header + name + aligned desc
+
+            // ELF64 header (64 bytes) + one program header (56 bytes) + note.
+            int phOffset = 64;
+            int noteOffset = 64 + 56;
+            int totalSize = noteOffset + noteSize;
+            byte[] elf = new byte[totalSize];
+
+            // ELF header.
+            elf[0] = 0x7f; elf[1] = (byte)'E'; elf[2] = (byte)'L'; elf[3] = (byte)'F'; // magic
+            elf[4] = 2;   // ELFCLASS64
+            elf[5] = 1;   // ELFDATA2LSB
+            elf[6] = 1;   // EV_CURRENT
+            // e_type = ET_EXEC (2)
+            elf[16] = 2;
+            // e_machine = EM_X86_64 (0x3e)
+            elf[18] = 0x3e;
+            // e_version = 1
+            elf[20] = 1;
+            // e_phoff = 64 (0x40)
+            elf[32] = 0x40;
+            // e_ehsize = 64 (0x40)
+            elf[52] = 0x40;
+            // e_phentsize = 56 (0x38)
+            elf[54] = 0x38;
+            // e_phnum = 1
+            elf[56] = 1;
+
+            // Program header (PT_NOTE at offset 64).
+            // p_type = PT_NOTE (4)
+            elf[phOffset] = 4;
+            // p_flags (at +4 for ELF64)
+            // p_offset (at +8) = noteOffset
+            elf[phOffset + 8] = (byte)noteOffset;
+            // p_filesz (at +32) = noteSize
+            elf[phOffset + 32] = (byte)(noteSize & 0xFF);
+            elf[phOffset + 33] = (byte)((noteSize >> 8) & 0xFF);
+            // p_memsz (at +40) = noteSize
+            elf[phOffset + 40] = (byte)(noteSize & 0xFF);
+            elf[phOffset + 41] = (byte)((noteSize >> 8) & 0xFF);
+
+            // Note at noteOffset.
+            int np = noteOffset;
+            // namesz = 4
+            elf[np] = 4;
+            // descsz
+            elf[np + 4] = (byte)(descsz & 0xFF);
+            elf[np + 5] = (byte)((descsz >> 8) & 0xFF);
+            // type = NT_GNU_BUILD_ID (3)
+            elf[np + 8] = 3;
+            // name = "GNU\0"
+            elf[np + 12] = (byte)'G';
+            elf[np + 13] = (byte)'N';
+            elf[np + 14] = (byte)'U';
+            elf[np + 15] = 0;
+            // desc = build-id bytes
+            Array.Copy(buildIdBytes, 0, elf, np + 16, buildIdBytes.Length);
+
+            return elf;
+        }
+
+        /// <summary>
+        /// Creates a minimal valid R2R perfmap text file with the given Signature and Version.
+        /// Used by tests that need a file whose Signature/Version can be read by R2RPerfMapSymbolModule.
+        /// </summary>
+        private static byte[] CreateMinimalR2RPerfMap(Guid signature, int version)
+        {
+            // R2R perfmap format: each line is "address size name"
+            // Signature: FFFFFFFF 0 {guid}
+            // Version:   FFFFFFFE 0 {version}
+            string content = $"FFFFFFFF 0 {signature:D}\nFFFFFFFE 0 {version}\n";
+            return Encoding.UTF8.GetBytes(content);
+        }
 
         protected void PrepareTestData()
         {
