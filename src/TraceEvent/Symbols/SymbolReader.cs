@@ -435,8 +435,8 @@ namespace Microsoft.Diagnostics.Symbols
 
             string resultPath = null;
 
-            // Check adjacent to the binary first (mirrors PDB local search).
-            // Prefer debug symbol files before falling back to the binary itself.
+            // Phase 1: Check for debug symbol files adjacent to the binary (mirrors PDB local search).
+            // Only look for dedicated debug files here — the binary itself is deferred to Phase 3.
             if (elfFilePath != null)
             {
                 string elfDir = Path.GetDirectoryName(elfFilePath);
@@ -496,74 +496,77 @@ namespace Microsoft.Diagnostics.Symbols
                             }
                         }
                     }
-
-                    // Last resort: try the binary itself (has .dynsym at minimum).
-                    if (resultPath == null)
-                    {
-                        if (ElfBuildIdMatches(basePath, normalizedBuildId))
-                        {
-                            resultPath = basePath;
-                        }
-                    }
                 }
             }
 
+            // Phase 2: Search symbol servers and symbol path directories.
             if (resultPath == null)
             {
-            SymbolPath path = new SymbolPath(SymbolPath);
-            foreach (SymbolPathElement element in path.Elements)
-            {
-                if (element.IsSymServer)
+                SymbolPath path = new SymbolPath(SymbolPath);
+                foreach (SymbolPathElement element in path.Elements)
                 {
-                    string cache = element.Cache;
-                    if (cache == null)
+                    if (element.IsSymServer)
                     {
-                        cache = path.DefaultSymbolCache();
-                    }
-
-                    // Try debug symbols first (preferred — has .symtab with full symbols).
-                    resultPath = GetFileFromServer(element.Target, debugIndexPath, Path.Combine(cache, debugIndexPath));
-                    if (resultPath != null)
-                    {
-                        break;
-                    }
-
-                    // Fall back to the binary (may only have .dynsym).
-                    resultPath = GetFileFromServer(element.Target, binaryIndexPath, Path.Combine(cache, binaryIndexPath));
-                    if (resultPath != null)
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    string target = element.Target;
-                    if (target != null)
-                    {
-                        if ((Options & SymbolReaderOptions.CacheOnly) != 0 && element.IsRemote)
+                        string cache = element.Cache;
+                        if (cache == null)
                         {
-                            m_log.WriteLine("FindElfSymbolFilePath: location {0} is remote and cacheOnly set, skipping.", target);
-                            continue;
+                            cache = path.DefaultSymbolCache();
                         }
 
-                        // Try SSQP-structured debug symbols first.
-                        string debugPath = Path.Combine(target, debugIndexPath);
-                        if (ElfBuildIdMatches(debugPath, normalizedBuildId, checkSecurity: false))
+                        // Try debug symbols first (preferred — has .symtab with full symbols).
+                        resultPath = GetFileFromServer(element.Target, debugIndexPath, Path.Combine(cache, debugIndexPath));
+                        if (resultPath != null)
                         {
-                            resultPath = debugPath;
                             break;
                         }
 
-                        // Try SSQP-structured binary.
-                        string binaryPath = Path.Combine(target, binaryIndexPath);
-                        if (ElfBuildIdMatches(binaryPath, normalizedBuildId, checkSecurity: false))
+                        // Fall back to the binary (may only have .dynsym).
+                        resultPath = GetFileFromServer(element.Target, binaryIndexPath, Path.Combine(cache, binaryIndexPath));
+                        if (resultPath != null)
                         {
-                            resultPath = binaryPath;
                             break;
+                        }
+                    }
+                    else
+                    {
+                        string target = element.Target;
+                        if (target != null)
+                        {
+                            if ((Options & SymbolReaderOptions.CacheOnly) != 0 && element.IsRemote)
+                            {
+                                m_log.WriteLine("FindElfSymbolFilePath: location {0} is remote and cacheOnly set, skipping.", target);
+                                continue;
+                            }
+
+                            // Try SSQP-structured debug symbols first.
+                            string debugPath = Path.Combine(target, debugIndexPath);
+                            if (ElfBuildIdMatches(debugPath, normalizedBuildId, checkSecurity: false))
+                            {
+                                resultPath = debugPath;
+                                break;
+                            }
+
+                            // Try SSQP-structured binary.
+                            string binaryPath = Path.Combine(target, binaryIndexPath);
+                            if (ElfBuildIdMatches(binaryPath, normalizedBuildId, checkSecurity: false))
+                            {
+                                resultPath = binaryPath;
+                                break;
+                            }
                         }
                     }
                 }
             }
+
+            // Phase 3: Last resort — try the binary itself (has .dynsym at minimum).
+            // This is deferred until after symbol servers so we prefer proper debug symbols
+            // (.symtab) over the stripped binary whenever a symbol server can provide them.
+            if (resultPath == null && elfFilePath != null)
+            {
+                if (ElfBuildIdMatches(elfFilePath, normalizedBuildId))
+                {
+                    resultPath = elfFilePath;
+                }
             }
 
             if (resultPath != null)
