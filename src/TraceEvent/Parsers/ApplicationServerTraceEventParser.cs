@@ -6058,11 +6058,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new Multidata0TemplateATraceData(value, 57393, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new Multidata0TemplateATraceData(value, 57393, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57393, ProviderGuid);
             }
         }
         public event Action<ThreeStringsTemplateEATraceData> HandledException
@@ -6070,11 +6070,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new ThreeStringsTemplateEATraceData(value, 57394, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new ThreeStringsTemplateEATraceData(value, 57394, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57394, ProviderGuid);
             }
         }
         public event Action<TwoStringsTemplateATraceData> ShipAssertExceptionMessage
@@ -6082,11 +6082,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new TwoStringsTemplateATraceData(value, 57395, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new TwoStringsTemplateATraceData(value, 57395, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57395, ProviderGuid);
             }
         }
         public event Action<FourStringsTemplateEATraceData> ThrowingException
@@ -6094,11 +6094,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new FourStringsTemplateEATraceData(value, 57396, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new FourStringsTemplateEATraceData(value, 57396, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57396, ProviderGuid);
             }
         }
         public event Action<ThreeStringsTemplateEATraceData> UnhandledException
@@ -6106,11 +6106,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new ThreeStringsTemplateEATraceData(value, 57397, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new ThreeStringsTemplateEATraceData(value, 57397, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57397, ProviderGuid);
             }
         }
         public event Action<TwoStringsTemplateTATraceData> TraceCodeEventLogCritical
@@ -6118,11 +6118,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new TwoStringsTemplateTATraceData(value, 57399, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new TwoStringsTemplateTATraceData(value, 57399, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57399, ProviderGuid);
             }
         }
         public event Action<TwoStringsTemplateTATraceData> TraceCodeEventLogError
@@ -6130,11 +6130,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new TwoStringsTemplateTATraceData(value, 57400, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new TwoStringsTemplateTATraceData(value, 57400, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57400, ProviderGuid);
             }
         }
         public event Action<TwoStringsTemplateTATraceData> TraceCodeEventLogInfo
@@ -6142,11 +6142,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new TwoStringsTemplateTATraceData(value, 57401, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new TwoStringsTemplateTATraceData(value, 57401, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57401, ProviderGuid);
             }
         }
         public event Action<TwoStringsTemplateTATraceData> TraceCodeEventLogVerbose
@@ -6154,11 +6154,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new TwoStringsTemplateTATraceData(value, 57402, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new TwoStringsTemplateTATraceData(value, 57402, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57402, ProviderGuid);
             }
         }
         public event Action<TwoStringsTemplateTATraceData> TraceCodeEventLogWarning
@@ -6166,11 +6166,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new TwoStringsTemplateTATraceData(value, 57403, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new TwoStringsTemplateTATraceData(value, 57403, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57403, ProviderGuid);
             }
         }
         public event Action<ThreeStringsTemplateEATraceData> HandledExceptionWarning
@@ -6178,11 +6178,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new ThreeStringsTemplateEATraceData(value, 57404, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new ThreeStringsTemplateEATraceData(value, 57404, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57404, ProviderGuid);
             }
         }
         public event Action<ThreeStringsTemplateEATraceData> HandledExceptionError
@@ -6190,11 +6190,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new ThreeStringsTemplateEATraceData(value, 57405, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new ThreeStringsTemplateEATraceData(value, 57405, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57405, ProviderGuid);
             }
         }
         public event Action<ThreeStringsTemplateEATraceData> HandledExceptionVerbose
@@ -6202,11 +6202,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new ThreeStringsTemplateEATraceData(value, 57406, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new ThreeStringsTemplateEATraceData(value, 57406, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57406, ProviderGuid);
             }
         }
         public event Action<FourStringsTemplateEATraceData> ThrowingExceptionVerbose
@@ -6214,11 +6214,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new FourStringsTemplateEATraceData(value, 57407, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new FourStringsTemplateEATraceData(value, 57407, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57407, ProviderGuid);
             }
         }
         public event Action<ThreeStringsTemplateEATraceData> EtwUnhandledException
@@ -6226,11 +6226,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new ThreeStringsTemplateEATraceData(value, 57408, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new ThreeStringsTemplateEATraceData(value, 57408, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57408, ProviderGuid);
             }
         }
         public event Action<FourStringsTemplateEATraceData> ThrowingEtwExceptionVerbose
@@ -6238,11 +6238,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new FourStringsTemplateEATraceData(value, 57409, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new FourStringsTemplateEATraceData(value, 57409, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57409, ProviderGuid);
             }
         }
         public event Action<FourStringsTemplateEATraceData> ThrowingEtwException
@@ -6250,11 +6250,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new FourStringsTemplateEATraceData(value, 57410, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new FourStringsTemplateEATraceData(value, 57410, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 0, new Guid());
+                source.UnregisterEventTemplate(value, 57410, ProviderGuid);
             }
         }
 
@@ -7214,23 +7214,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[461] = new Multidata18TemplateATraceData(null, 39460, 2597, "TrackingProfile", TrackingProfileTaskGuid, 0, "Info", ProviderGuid, ProviderName);
                 templates[462] = new Multidata84TemplateATraceData(null, 57398, 2594, "Throttles", ThrottlesTaskGuid, 0, "Info", ProviderGuid, ProviderName);
                 templates[463] = new FourStringsTemplateATraceData(null, 62326, 2526, "CreateWorkflowServiceHost", CreateWorkflowServiceHostTaskGuid, 0, "Info", ProviderGuid, ProviderName);
-                templates[464] = new Multidata0TemplateATraceData(null, 57393, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[465] = new ThreeStringsTemplateEATraceData(null, 57394, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[466] = new TwoStringsTemplateATraceData(null, 57395, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[467] = new FourStringsTemplateEATraceData(null, 57396, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[468] = new ThreeStringsTemplateEATraceData(null, 57397, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[469] = new TwoStringsTemplateTATraceData(null, 57399, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[470] = new TwoStringsTemplateTATraceData(null, 57400, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[471] = new TwoStringsTemplateTATraceData(null, 57401, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[472] = new TwoStringsTemplateTATraceData(null, 57402, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[473] = new TwoStringsTemplateTATraceData(null, 57403, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[474] = new ThreeStringsTemplateEATraceData(null, 57404, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[475] = new ThreeStringsTemplateEATraceData(null, 57405, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[476] = new ThreeStringsTemplateEATraceData(null, 57406, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[477] = new FourStringsTemplateEATraceData(null, 57407, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[478] = new ThreeStringsTemplateEATraceData(null, 57408, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[479] = new FourStringsTemplateEATraceData(null, 57409, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
-                templates[480] = new FourStringsTemplateEATraceData(null, 57410, 0, null, new Guid(), 0, "Info", ProviderGuid, ProviderName);
+                templates[464] = new Multidata0TemplateATraceData(null, 57393, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[465] = new ThreeStringsTemplateEATraceData(null, 57394, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[466] = new TwoStringsTemplateATraceData(null, 57395, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[467] = new FourStringsTemplateEATraceData(null, 57396, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[468] = new ThreeStringsTemplateEATraceData(null, 57397, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[469] = new TwoStringsTemplateTATraceData(null, 57399, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[470] = new TwoStringsTemplateTATraceData(null, 57400, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[471] = new TwoStringsTemplateTATraceData(null, 57401, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[472] = new TwoStringsTemplateTATraceData(null, 57402, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[473] = new TwoStringsTemplateTATraceData(null, 57403, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[474] = new ThreeStringsTemplateEATraceData(null, 57404, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[475] = new ThreeStringsTemplateEATraceData(null, 57405, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[476] = new ThreeStringsTemplateEATraceData(null, 57406, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[477] = new FourStringsTemplateEATraceData(null, 57407, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[478] = new ThreeStringsTemplateEATraceData(null, 57408, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[479] = new FourStringsTemplateEATraceData(null, 57409, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
+                templates[480] = new FourStringsTemplateEATraceData(null, 57410, 0, null, Guid.Empty, 0, "Info", ProviderGuid, ProviderName);
                 s_templates = templates;
             }
             foreach (var template in s_templates)
@@ -9423,6 +9423,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer
     public sealed class Multidata22TemplateHATraceData : TraceEvent
     {
         public string SoapAction { get { return GetUnicodeStringAt(0); } }
+        [Obsolete("Use SoapAction instead.")]
+        public string ServiceAction => SoapAction;
         public string ContractName { get { return GetUnicodeStringAt(SkipUnicodeString(0)); } }
         public string Destination { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(0))); } }
         public string HostReference { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))); } }
