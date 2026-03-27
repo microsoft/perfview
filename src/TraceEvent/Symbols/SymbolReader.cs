@@ -413,6 +413,11 @@ namespace Microsoft.Diagnostics.Symbols
         /// <returns>The local file path to the downloaded symbol file, or null if not found.</returns>
         public string FindElfSymbolFilePath(string fileName, string buildId, string elfFilePath = null)
         {
+            if (buildId == null)
+            {
+                throw new ArgumentNullException(nameof(buildId));
+            }
+
             m_log.WriteLine("FindElfSymbolFilePath: *{{ Searching for {0} with BuildId {1}", fileName, buildId);
 
             string simpleFileName = Path.GetFileName(fileName);
@@ -1238,8 +1243,8 @@ namespace Microsoft.Diagnostics.Symbols
 
                     if (string.IsNullOrEmpty(expectedBuildId))
                     {
-                        m_log.WriteLine("FindElfSymbolFilePath: No expected build-id provided, assuming unsafe match for {0}", filePath);
-                        return true;
+                        m_log.WriteLine("FindElfSymbolFilePath: No expected build-id provided, cannot verify match for {0}", filePath);
+                        return false;
                     }
 
                     string actualBuildId = ElfSymbolModule.ReadBuildId(filePath);
@@ -1973,7 +1978,7 @@ namespace Microsoft.Diagnostics.Symbols
         // Used as the key to the m_elfPathCache.
         private struct ElfBuildIdSignature : IEquatable<ElfBuildIdSignature>
         {
-            public override int GetHashCode() { return FileName.GetHashCode() + BuildId.GetHashCode(); }
+            public override int GetHashCode() { return HashCode.Combine(FileName, BuildId); }
             public bool Equals(ElfBuildIdSignature other) { return FileName == other.FileName && BuildId == other.BuildId; }
             public string FileName;
             public string BuildId;
@@ -1981,7 +1986,7 @@ namespace Microsoft.Diagnostics.Symbols
 
         private struct ElfModuleSignature : IEquatable<ElfModuleSignature>
         {
-            public override int GetHashCode() { return FilePath.GetHashCode() ^ VAddr.GetHashCode() ^ Offset.GetHashCode(); }
+            public override int GetHashCode() { return HashCode.Combine(FilePath, VAddr, Offset); }
             public bool Equals(ElfModuleSignature other) { return FilePath == other.FilePath && VAddr == other.VAddr && Offset == other.Offset; }
             public string FilePath;
             public ulong VAddr;

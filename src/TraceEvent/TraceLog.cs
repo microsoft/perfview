@@ -8942,7 +8942,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                             // ELF RVA = (address - ImageBase) + FileOffset, matching ElfSymbolModule's
                             // (st_value - pVaddr) + pOffset formula.
                             ulong fileOffset = moduleFile.ElfInfo.FileOffset;
-                            computeRva = (address) => (uint)(address - moduleFile.ImageBase) + (uint)fileOffset;
+                            computeRva = (address) => checked((uint)(address - moduleFile.ImageBase) + (uint)fileOffset);
                         }
                     }
                     break;
