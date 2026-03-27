@@ -222,7 +222,7 @@ namespace TraceEventTests.Parsers
             sequenceNumber = __sequenceNumber;
         }
 
-        private void Subscribe_Chunk02(ApplicationServerTraceEventParser parser, Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Subscribe_Chunk02(ApplicationServerTraceEventParser parser, Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             parser.MessageReceivedByTransport += delegate(Multidata29TemplateHATraceData data)
             {
@@ -230,7 +230,7 @@ namespace TraceEventTests.Parsers
                 fields["ListenAddress"] = data.ListenAddress;
                 fields["HostReference"] = data.HostReference;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[215] = fields;
+                firedEvents["MessageReceivedByTransport"] = fields;
             };
 
             parser.MessageSentByTransport += delegate(Multidata30TemplateHATraceData data)
@@ -239,7 +239,7 @@ namespace TraceEventTests.Parsers
                 fields["DestinationAddress"] = data.DestinationAddress;
                 fields["HostReference"] = data.HostReference;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[216] = fields;
+                firedEvents["MessageSentByTransport"] = fields;
             };
 
             parser.ClientOperationPrepared += delegate(Multidata22TemplateHATraceData data)
@@ -250,7 +250,7 @@ namespace TraceEventTests.Parsers
                 fields["Destination"] = data.Destination;
                 fields["HostReference"] = data.HostReference;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[217] = fields;
+                firedEvents["ClientOperationPrepared"] = fields;
             };
 
             parser.ServiceChannelCallStop += delegate(Multidata22TemplateHATraceData data)
@@ -261,7 +261,7 @@ namespace TraceEventTests.Parsers
                 fields["Destination"] = data.Destination;
                 fields["HostReference"] = data.HostReference;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[218] = fields;
+                firedEvents["ServiceChannelCallStop"] = fields;
             };
 
             parser.ServiceException += delegate(Multidata31TemplateHATraceData data)
@@ -271,7 +271,7 @@ namespace TraceEventTests.Parsers
                 fields["ExceptionTypeName"] = data.ExceptionTypeName;
                 fields["HostReference"] = data.HostReference;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[219] = fields;
+                firedEvents["ServiceException"] = fields;
             };
 
             parser.MessageSentToTransport += delegate(Multidata32TemplateHATraceData data)
@@ -280,7 +280,7 @@ namespace TraceEventTests.Parsers
                 fields["CorrelationId"] = data.CorrelationId;
                 fields["HostReference"] = data.HostReference;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[220] = fields;
+                firedEvents["MessageSentToTransport"] = fields;
             };
 
             parser.MessageReceivedFromTransport += delegate(Multidata32TemplateHATraceData data)
@@ -289,7 +289,7 @@ namespace TraceEventTests.Parsers
                 fields["CorrelationId"] = data.CorrelationId;
                 fields["HostReference"] = data.HostReference;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[221] = fields;
+                firedEvents["MessageReceivedFromTransport"] = fields;
             };
 
             parser.OperationFailed += delegate(Multidata28TemplateHATraceData data)
@@ -299,7 +299,7 @@ namespace TraceEventTests.Parsers
                 fields["Duration"] = data.Duration;
                 fields["HostReference"] = data.HostReference;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[222] = fields;
+                firedEvents["OperationFailed"] = fields;
             };
 
             parser.OperationFaulted += delegate(Multidata28TemplateHATraceData data)
@@ -309,7 +309,7 @@ namespace TraceEventTests.Parsers
                 fields["Duration"] = data.Duration;
                 fields["HostReference"] = data.HostReference;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[223] = fields;
+                firedEvents["OperationFaulted"] = fields;
             };
 
             parser.MessageThrottleAtSeventyPercent += delegate(Multidata27TemplateHATraceData data)
@@ -319,7 +319,7 @@ namespace TraceEventTests.Parsers
                 fields["Limit"] = data.Limit;
                 fields["HostReference"] = data.HostReference;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[224] = fields;
+                firedEvents["MessageThrottleAtSeventyPercent"] = fields;
             };
 
             parser.TraceCorrelationKeys += delegate(Multidata86TemplateHATraceData data)
@@ -330,7 +330,7 @@ namespace TraceEventTests.Parsers
                 fields["ParentScope"] = data.ParentScope;
                 fields["HostReference"] = data.HostReference;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[225] = fields;
+                firedEvents["TraceCorrelationKeys"] = fields;
             };
 
             parser.IdleServicesClosed += delegate(Multidata73TemplateATraceData data)
@@ -339,7 +339,7 @@ namespace TraceEventTests.Parsers
                 fields["ClosedCount"] = data.ClosedCount;
                 fields["TotalCount"] = data.TotalCount;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[226] = fields;
+                firedEvents["IdleServicesClosed"] = fields;
             };
 
             parser.UserDefinedErrorOccurred += delegate(UserEventsTemplateTraceData data)
@@ -348,7 +348,7 @@ namespace TraceEventTests.Parsers
                 fields["Name"] = data.Name;
                 fields["HostReference"] = data.HostReference;
                 fields["Payload"] = data.Payload;
-                firedEvents[301] = fields;
+                firedEvents["UserDefinedErrorOccurred"] = fields;
             };
 
             parser.UserDefinedWarningOccurred += delegate(UserEventsTemplateTraceData data)
@@ -357,7 +357,7 @@ namespace TraceEventTests.Parsers
                 fields["Name"] = data.Name;
                 fields["HostReference"] = data.HostReference;
                 fields["Payload"] = data.Payload;
-                firedEvents[302] = fields;
+                firedEvents["UserDefinedWarningOccurred"] = fields;
             };
 
             parser.UserDefinedInformationEventOccured += delegate(UserEventsTemplateTraceData data)
@@ -366,7 +366,7 @@ namespace TraceEventTests.Parsers
                 fields["Name"] = data.Name;
                 fields["HostReference"] = data.HostReference;
                 fields["Payload"] = data.Payload;
-                firedEvents[303] = fields;
+                firedEvents["UserDefinedInformationEventOccured"] = fields;
             };
 
             parser.StopSignpostEvent += delegate(TwoStringsTemplateTATraceData data)
@@ -374,7 +374,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["ExtendedData"] = data.ExtendedData;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[401] = fields;
+                firedEvents["StopSignpostEvent"] = fields;
             };
 
             parser.StartSignpostEvent += delegate(TwoStringsTemplateTATraceData data)
@@ -382,7 +382,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["ExtendedData"] = data.ExtendedData;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[402] = fields;
+                firedEvents["StartSignpostEvent"] = fields;
             };
 
             parser.SuspendSignpostEvent += delegate(TwoStringsTemplateTATraceData data)
@@ -390,7 +390,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["ExtendedData"] = data.ExtendedData;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[403] = fields;
+                firedEvents["SuspendSignpostEvent"] = fields;
             };
 
             parser.ResumeSignpostEvent += delegate(TwoStringsTemplateTATraceData data)
@@ -398,7 +398,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["ExtendedData"] = data.ExtendedData;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[404] = fields;
+                firedEvents["ResumeSignpostEvent"] = fields;
             };
 
             parser.StartSignpostEvent1 += delegate(TwoStringsTemplateTATraceData data)
@@ -406,7 +406,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["ExtendedData"] = data.ExtendedData;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[440] = fields;
+                firedEvents["StartSignpostEvent1"] = fields;
             };
 
             parser.StopSignpostEvent1 += delegate(TwoStringsTemplateTATraceData data)
@@ -414,7 +414,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["ExtendedData"] = data.ExtendedData;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[441] = fields;
+                firedEvents["StopSignpostEvent1"] = fields;
             };
 
             parser.MessageLogInfo += delegate(TwoStringsTemplateATraceData data)
@@ -422,7 +422,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[451] = fields;
+                firedEvents["MessageLogInfo"] = fields;
             };
 
             parser.MessageLogWarning += delegate(TwoStringsTemplateATraceData data)
@@ -430,7 +430,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[452] = fields;
+                firedEvents["MessageLogWarning"] = fields;
             };
 
             parser.TransferEmitted += delegate(TransferEmittedTemplateTraceData data)
@@ -438,77 +438,77 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["HostReference"] = data.HostReference;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[499] = fields;
+                firedEvents["TransferEmitted"] = fields;
             };
 
             parser.CompilationStart += delegate(OneStringsTemplateATraceData data)
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[501] = fields;
+                firedEvents["CompilationStart"] = fields;
             };
 
             parser.CompilationStop += delegate(OneStringsTemplateATraceData data)
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[502] = fields;
+                firedEvents["CompilationStop"] = fields;
             };
 
             parser.ServiceHostFactoryCreationStart += delegate(OneStringsTemplateATraceData data)
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[503] = fields;
+                firedEvents["ServiceHostFactoryCreationStart"] = fields;
             };
 
             parser.ServiceHostFactoryCreationStop += delegate(OneStringsTemplateATraceData data)
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[504] = fields;
+                firedEvents["ServiceHostFactoryCreationStop"] = fields;
             };
 
             parser.CreateServiceHostStart += delegate(OneStringsTemplateATraceData data)
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[505] = fields;
+                firedEvents["CreateServiceHostStart"] = fields;
             };
 
             parser.CreateServiceHostStop += delegate(OneStringsTemplateATraceData data)
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[506] = fields;
+                firedEvents["CreateServiceHostStop"] = fields;
             };
 
             parser.HostedTransportConfigurationManagerConfigInitStart += delegate(OneStringsTemplateATraceData data)
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[507] = fields;
+                firedEvents["HostedTransportConfigurationManagerConfigInitStart"] = fields;
             };
 
             parser.HostedTransportConfigurationManagerConfigInitStop += delegate(OneStringsTemplateATraceData data)
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[508] = fields;
+                firedEvents["HostedTransportConfigurationManagerConfigInitStop"] = fields;
             };
 
             parser.ServiceHostOpenStart += delegate(OneStringsTemplateATraceData data)
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[509] = fields;
+                firedEvents["ServiceHostOpenStart"] = fields;
             };
 
             parser.ServiceHostOpenStop += delegate(OneStringsTemplateATraceData data)
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[510] = fields;
+                firedEvents["ServiceHostOpenStop"] = fields;
             };
 
             parser.WebHostRequestStart += delegate(Multidata69TemplateATraceData data)
@@ -517,14 +517,14 @@ namespace TraceEventTests.Parsers
                 fields["AppDomainFriendlyName"] = data.AppDomainFriendlyName;
                 fields["VirtualPath"] = data.VirtualPath;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[513] = fields;
+                firedEvents["WebHostRequestStart"] = fields;
             };
 
             parser.WebHostRequestStop += delegate(OneStringsTemplateATraceData data)
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[514] = fields;
+                firedEvents["WebHostRequestStop"] = fields;
             };
 
             parser.CBAEntryRead += delegate(Multidata74TemplateATraceData data)
@@ -533,249 +533,249 @@ namespace TraceEventTests.Parsers
                 fields["RelativeAddress"] = data.RelativeAddress;
                 fields["NormalizedAddress"] = data.NormalizedAddress;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[601] = fields;
+                firedEvents["CBAEntryRead"] = fields;
             };
         }
 
-        private void Validate_Chunk02(Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Validate_Chunk02(Dictionary<string, Dictionary<string, object>> firedEvents)
         {
-            // Event 215 - MessageReceivedByTransport (Multidata29TemplateHA)
-            Assert.True(firedEvents.ContainsKey(215), "Event 215 (MessageReceivedByTransport) did not fire");
-            var e215 = firedEvents[215];
-            Assert.Equal(TestString(215, "ListenAddress"), (string)e215["ListenAddress"]);
-            Assert.Equal(TestString(215, "HostReference"), (string)e215["HostReference"]);
-            Assert.Equal(TestString(215, "AppDomain"), (string)e215["AppDomain"]);
+            // MessageReceivedByTransport (Multidata29TemplateHA)
+            Assert.True(firedEvents.ContainsKey("MessageReceivedByTransport"), "Event MessageReceivedByTransport did not fire");
+            var eMessageReceivedByTransport = firedEvents["MessageReceivedByTransport"];
+            Assert.Equal(TestString(215, "ListenAddress"), (string)eMessageReceivedByTransport["ListenAddress"]);
+            Assert.Equal(TestString(215, "HostReference"), (string)eMessageReceivedByTransport["HostReference"]);
+            Assert.Equal(TestString(215, "AppDomain"), (string)eMessageReceivedByTransport["AppDomain"]);
 
-            // Event 216 - MessageSentByTransport (Multidata30TemplateHA)
-            Assert.True(firedEvents.ContainsKey(216), "Event 216 (MessageSentByTransport) did not fire");
-            var e216 = firedEvents[216];
-            Assert.Equal(TestString(216, "DestinationAddress"), (string)e216["DestinationAddress"]);
-            Assert.Equal(TestString(216, "HostReference"), (string)e216["HostReference"]);
-            Assert.Equal(TestString(216, "AppDomain"), (string)e216["AppDomain"]);
+            // MessageSentByTransport (Multidata30TemplateHA)
+            Assert.True(firedEvents.ContainsKey("MessageSentByTransport"), "Event MessageSentByTransport did not fire");
+            var eMessageSentByTransport = firedEvents["MessageSentByTransport"];
+            Assert.Equal(TestString(216, "DestinationAddress"), (string)eMessageSentByTransport["DestinationAddress"]);
+            Assert.Equal(TestString(216, "HostReference"), (string)eMessageSentByTransport["HostReference"]);
+            Assert.Equal(TestString(216, "AppDomain"), (string)eMessageSentByTransport["AppDomain"]);
 
-            // Event 217 - ClientOperationPrepared (Multidata22TemplateHA)
-            Assert.True(firedEvents.ContainsKey(217), "Event 217 (ClientOperationPrepared) did not fire");
-            var e217 = firedEvents[217];
-            Assert.Equal(TestString(217, "Action"), (string)e217["SoapAction"]);
-            Assert.Equal(TestString(217, "ContractName"), (string)e217["ContractName"]);
-            Assert.Equal(TestString(217, "Destination"), (string)e217["Destination"]);
-            Assert.Equal(TestString(217, "HostReference"), (string)e217["HostReference"]);
-            Assert.Equal(TestString(217, "AppDomain"), (string)e217["AppDomain"]);
+            // ClientOperationPrepared (Multidata22TemplateHA)
+            Assert.True(firedEvents.ContainsKey("ClientOperationPrepared"), "Event ClientOperationPrepared did not fire");
+            var eClientOperationPrepared = firedEvents["ClientOperationPrepared"];
+            Assert.Equal(TestString(217, "Action"), (string)eClientOperationPrepared["SoapAction"]);
+            Assert.Equal(TestString(217, "ContractName"), (string)eClientOperationPrepared["ContractName"]);
+            Assert.Equal(TestString(217, "Destination"), (string)eClientOperationPrepared["Destination"]);
+            Assert.Equal(TestString(217, "HostReference"), (string)eClientOperationPrepared["HostReference"]);
+            Assert.Equal(TestString(217, "AppDomain"), (string)eClientOperationPrepared["AppDomain"]);
 
-            // Event 218 - ServiceChannelCallStop (Multidata22TemplateHA)
-            Assert.True(firedEvents.ContainsKey(218), "Event 218 (ServiceChannelCallStop) did not fire");
-            var e218 = firedEvents[218];
-            Assert.Equal(TestString(218, "Action"), (string)e218["SoapAction"]);
-            Assert.Equal(TestString(218, "ContractName"), (string)e218["ContractName"]);
-            Assert.Equal(TestString(218, "Destination"), (string)e218["Destination"]);
-            Assert.Equal(TestString(218, "HostReference"), (string)e218["HostReference"]);
-            Assert.Equal(TestString(218, "AppDomain"), (string)e218["AppDomain"]);
+            // ServiceChannelCallStop (Multidata22TemplateHA)
+            Assert.True(firedEvents.ContainsKey("ServiceChannelCallStop"), "Event ServiceChannelCallStop did not fire");
+            var eServiceChannelCallStop = firedEvents["ServiceChannelCallStop"];
+            Assert.Equal(TestString(218, "Action"), (string)eServiceChannelCallStop["SoapAction"]);
+            Assert.Equal(TestString(218, "ContractName"), (string)eServiceChannelCallStop["ContractName"]);
+            Assert.Equal(TestString(218, "Destination"), (string)eServiceChannelCallStop["Destination"]);
+            Assert.Equal(TestString(218, "HostReference"), (string)eServiceChannelCallStop["HostReference"]);
+            Assert.Equal(TestString(218, "AppDomain"), (string)eServiceChannelCallStop["AppDomain"]);
 
-            // Event 219 - ServiceException (Multidata31TemplateHA)
-            Assert.True(firedEvents.ContainsKey(219), "Event 219 (ServiceException) did not fire");
-            var e219 = firedEvents[219];
-            Assert.Equal(TestString(219, "ExceptionToString"), (string)e219["ExceptionToString"]);
-            Assert.Equal(TestString(219, "ExceptionTypeName"), (string)e219["ExceptionTypeName"]);
-            Assert.Equal(TestString(219, "HostReference"), (string)e219["HostReference"]);
-            Assert.Equal(TestString(219, "AppDomain"), (string)e219["AppDomain"]);
+            // ServiceException (Multidata31TemplateHA)
+            Assert.True(firedEvents.ContainsKey("ServiceException"), "Event ServiceException did not fire");
+            var eServiceException = firedEvents["ServiceException"];
+            Assert.Equal(TestString(219, "ExceptionToString"), (string)eServiceException["ExceptionToString"]);
+            Assert.Equal(TestString(219, "ExceptionTypeName"), (string)eServiceException["ExceptionTypeName"]);
+            Assert.Equal(TestString(219, "HostReference"), (string)eServiceException["HostReference"]);
+            Assert.Equal(TestString(219, "AppDomain"), (string)eServiceException["AppDomain"]);
 
-            // Event 220 - MessageSentToTransport (Multidata32TemplateHA)
-            Assert.True(firedEvents.ContainsKey(220), "Event 220 (MessageSentToTransport) did not fire");
-            var e220 = firedEvents[220];
-            Assert.Equal(TestGuid(220, 0), (Guid)e220["CorrelationId"]);
-            Assert.Equal(TestString(220, "HostReference"), (string)e220["HostReference"]);
-            Assert.Equal(TestString(220, "AppDomain"), (string)e220["AppDomain"]);
+            // MessageSentToTransport (Multidata32TemplateHA)
+            Assert.True(firedEvents.ContainsKey("MessageSentToTransport"), "Event MessageSentToTransport did not fire");
+            var eMessageSentToTransport = firedEvents["MessageSentToTransport"];
+            Assert.Equal(TestGuid(220, 0), (Guid)eMessageSentToTransport["CorrelationId"]);
+            Assert.Equal(TestString(220, "HostReference"), (string)eMessageSentToTransport["HostReference"]);
+            Assert.Equal(TestString(220, "AppDomain"), (string)eMessageSentToTransport["AppDomain"]);
 
-            // Event 221 - MessageReceivedFromTransport (Multidata32TemplateHA)
-            Assert.True(firedEvents.ContainsKey(221), "Event 221 (MessageReceivedFromTransport) did not fire");
-            var e221 = firedEvents[221];
-            Assert.Equal(TestGuid(221, 0), (Guid)e221["CorrelationId"]);
-            Assert.Equal(TestString(221, "HostReference"), (string)e221["HostReference"]);
-            Assert.Equal(TestString(221, "AppDomain"), (string)e221["AppDomain"]);
+            // MessageReceivedFromTransport (Multidata32TemplateHA)
+            Assert.True(firedEvents.ContainsKey("MessageReceivedFromTransport"), "Event MessageReceivedFromTransport did not fire");
+            var eMessageReceivedFromTransport = firedEvents["MessageReceivedFromTransport"];
+            Assert.Equal(TestGuid(221, 0), (Guid)eMessageReceivedFromTransport["CorrelationId"]);
+            Assert.Equal(TestString(221, "HostReference"), (string)eMessageReceivedFromTransport["HostReference"]);
+            Assert.Equal(TestString(221, "AppDomain"), (string)eMessageReceivedFromTransport["AppDomain"]);
 
-            // Event 222 - OperationFailed (Multidata28TemplateHA)
-            Assert.True(firedEvents.ContainsKey(222), "Event 222 (OperationFailed) did not fire");
-            var e222 = firedEvents[222];
-            Assert.Equal(TestString(222, "MethodName"), (string)e222["MethodName"]);
-            Assert.Equal(TestInt64(222, 1), (long)e222["Duration"]);
-            Assert.Equal(TestString(222, "HostReference"), (string)e222["HostReference"]);
-            Assert.Equal(TestString(222, "AppDomain"), (string)e222["AppDomain"]);
+            // OperationFailed (Multidata28TemplateHA)
+            Assert.True(firedEvents.ContainsKey("OperationFailed"), "Event OperationFailed did not fire");
+            var eOperationFailed = firedEvents["OperationFailed"];
+            Assert.Equal(TestString(222, "MethodName"), (string)eOperationFailed["MethodName"]);
+            Assert.Equal(TestInt64(222, 1), (long)eOperationFailed["Duration"]);
+            Assert.Equal(TestString(222, "HostReference"), (string)eOperationFailed["HostReference"]);
+            Assert.Equal(TestString(222, "AppDomain"), (string)eOperationFailed["AppDomain"]);
 
-            // Event 223 - OperationFaulted (Multidata28TemplateHA)
-            Assert.True(firedEvents.ContainsKey(223), "Event 223 (OperationFaulted) did not fire");
-            var e223 = firedEvents[223];
-            Assert.Equal(TestString(223, "MethodName"), (string)e223["MethodName"]);
-            Assert.Equal(TestInt64(223, 1), (long)e223["Duration"]);
-            Assert.Equal(TestString(223, "HostReference"), (string)e223["HostReference"]);
-            Assert.Equal(TestString(223, "AppDomain"), (string)e223["AppDomain"]);
+            // OperationFaulted (Multidata28TemplateHA)
+            Assert.True(firedEvents.ContainsKey("OperationFaulted"), "Event OperationFaulted did not fire");
+            var eOperationFaulted = firedEvents["OperationFaulted"];
+            Assert.Equal(TestString(223, "MethodName"), (string)eOperationFaulted["MethodName"]);
+            Assert.Equal(TestInt64(223, 1), (long)eOperationFaulted["Duration"]);
+            Assert.Equal(TestString(223, "HostReference"), (string)eOperationFaulted["HostReference"]);
+            Assert.Equal(TestString(223, "AppDomain"), (string)eOperationFaulted["AppDomain"]);
 
-            // Event 224 - MessageThrottleAtSeventyPercent (Multidata27TemplateHA)
-            Assert.True(firedEvents.ContainsKey(224), "Event 224 (MessageThrottleAtSeventyPercent) did not fire");
-            var e224 = firedEvents[224];
-            Assert.Equal(TestString(224, "ThrottleName"), (string)e224["ThrottleName"]);
-            Assert.Equal(TestInt64(224, 1), (long)e224["Limit"]);
-            Assert.Equal(TestString(224, "HostReference"), (string)e224["HostReference"]);
-            Assert.Equal(TestString(224, "AppDomain"), (string)e224["AppDomain"]);
+            // MessageThrottleAtSeventyPercent (Multidata27TemplateHA)
+            Assert.True(firedEvents.ContainsKey("MessageThrottleAtSeventyPercent"), "Event MessageThrottleAtSeventyPercent did not fire");
+            var eMessageThrottleAtSeventyPercent = firedEvents["MessageThrottleAtSeventyPercent"];
+            Assert.Equal(TestString(224, "ThrottleName"), (string)eMessageThrottleAtSeventyPercent["ThrottleName"]);
+            Assert.Equal(TestInt64(224, 1), (long)eMessageThrottleAtSeventyPercent["Limit"]);
+            Assert.Equal(TestString(224, "HostReference"), (string)eMessageThrottleAtSeventyPercent["HostReference"]);
+            Assert.Equal(TestString(224, "AppDomain"), (string)eMessageThrottleAtSeventyPercent["AppDomain"]);
 
-            // Event 225 - TraceCorrelationKeys (Multidata86TemplateHA)
-            Assert.True(firedEvents.ContainsKey(225), "Event 225 (TraceCorrelationKeys) did not fire");
-            var e225 = firedEvents[225];
-            Assert.Equal(TestGuid(225, 0), (Guid)e225["InstanceKey"]);
-            Assert.Equal(TestString(225, "Values"), (string)e225["Values"]);
-            Assert.Equal(TestString(225, "ParentScope"), (string)e225["ParentScope"]);
-            Assert.Equal(TestString(225, "HostReference"), (string)e225["HostReference"]);
-            Assert.Equal(TestString(225, "AppDomain"), (string)e225["AppDomain"]);
+            // TraceCorrelationKeys (Multidata86TemplateHA)
+            Assert.True(firedEvents.ContainsKey("TraceCorrelationKeys"), "Event TraceCorrelationKeys did not fire");
+            var eTraceCorrelationKeys = firedEvents["TraceCorrelationKeys"];
+            Assert.Equal(TestGuid(225, 0), (Guid)eTraceCorrelationKeys["InstanceKey"]);
+            Assert.Equal(TestString(225, "Values"), (string)eTraceCorrelationKeys["Values"]);
+            Assert.Equal(TestString(225, "ParentScope"), (string)eTraceCorrelationKeys["ParentScope"]);
+            Assert.Equal(TestString(225, "HostReference"), (string)eTraceCorrelationKeys["HostReference"]);
+            Assert.Equal(TestString(225, "AppDomain"), (string)eTraceCorrelationKeys["AppDomain"]);
 
-            // Event 226 - IdleServicesClosed (Multidata73TemplateA)
-            Assert.True(firedEvents.ContainsKey(226), "Event 226 (IdleServicesClosed) did not fire");
-            var e226 = firedEvents[226];
-            Assert.Equal(TestInt32(226, 0), (int)e226["ClosedCount"]);
-            Assert.Equal(TestInt32(226, 1), (int)e226["TotalCount"]);
-            Assert.Equal(TestString(226, "AppDomain"), (string)e226["AppDomain"]);
+            // IdleServicesClosed (Multidata73TemplateA)
+            Assert.True(firedEvents.ContainsKey("IdleServicesClosed"), "Event IdleServicesClosed did not fire");
+            var eIdleServicesClosed = firedEvents["IdleServicesClosed"];
+            Assert.Equal(TestInt32(226, 0), (int)eIdleServicesClosed["ClosedCount"]);
+            Assert.Equal(TestInt32(226, 1), (int)eIdleServicesClosed["TotalCount"]);
+            Assert.Equal(TestString(226, "AppDomain"), (string)eIdleServicesClosed["AppDomain"]);
 
-            // Event 301 - UserDefinedErrorOccurred (UserEventsTemplate)
-            Assert.True(firedEvents.ContainsKey(301), "Event 301 (UserDefinedErrorOccurred) did not fire");
-            var e301 = firedEvents[301];
-            Assert.Equal(TestString(301, "Name"), (string)e301["Name"]);
-            Assert.Equal(TestString(301, "HostReference"), (string)e301["HostReference"]);
-            Assert.Equal(TestString(301, "Payload"), (string)e301["Payload"]);
+            // UserDefinedErrorOccurred (UserEventsTemplate)
+            Assert.True(firedEvents.ContainsKey("UserDefinedErrorOccurred"), "Event UserDefinedErrorOccurred did not fire");
+            var eUserDefinedErrorOccurred = firedEvents["UserDefinedErrorOccurred"];
+            Assert.Equal(TestString(301, "Name"), (string)eUserDefinedErrorOccurred["Name"]);
+            Assert.Equal(TestString(301, "HostReference"), (string)eUserDefinedErrorOccurred["HostReference"]);
+            Assert.Equal(TestString(301, "Payload"), (string)eUserDefinedErrorOccurred["Payload"]);
 
-            // Event 302 - UserDefinedWarningOccurred (UserEventsTemplate)
-            Assert.True(firedEvents.ContainsKey(302), "Event 302 (UserDefinedWarningOccurred) did not fire");
-            var e302 = firedEvents[302];
-            Assert.Equal(TestString(302, "Name"), (string)e302["Name"]);
-            Assert.Equal(TestString(302, "HostReference"), (string)e302["HostReference"]);
-            Assert.Equal(TestString(302, "Payload"), (string)e302["Payload"]);
+            // UserDefinedWarningOccurred (UserEventsTemplate)
+            Assert.True(firedEvents.ContainsKey("UserDefinedWarningOccurred"), "Event UserDefinedWarningOccurred did not fire");
+            var eUserDefinedWarningOccurred = firedEvents["UserDefinedWarningOccurred"];
+            Assert.Equal(TestString(302, "Name"), (string)eUserDefinedWarningOccurred["Name"]);
+            Assert.Equal(TestString(302, "HostReference"), (string)eUserDefinedWarningOccurred["HostReference"]);
+            Assert.Equal(TestString(302, "Payload"), (string)eUserDefinedWarningOccurred["Payload"]);
 
-            // Event 303 - UserDefinedInformationEventOccured (UserEventsTemplate)
-            Assert.True(firedEvents.ContainsKey(303), "Event 303 (UserDefinedInformationEventOccured) did not fire");
-            var e303 = firedEvents[303];
-            Assert.Equal(TestString(303, "Name"), (string)e303["Name"]);
-            Assert.Equal(TestString(303, "HostReference"), (string)e303["HostReference"]);
-            Assert.Equal(TestString(303, "Payload"), (string)e303["Payload"]);
+            // UserDefinedInformationEventOccured (UserEventsTemplate)
+            Assert.True(firedEvents.ContainsKey("UserDefinedInformationEventOccured"), "Event UserDefinedInformationEventOccured did not fire");
+            var eUserDefinedInformationEventOccured = firedEvents["UserDefinedInformationEventOccured"];
+            Assert.Equal(TestString(303, "Name"), (string)eUserDefinedInformationEventOccured["Name"]);
+            Assert.Equal(TestString(303, "HostReference"), (string)eUserDefinedInformationEventOccured["HostReference"]);
+            Assert.Equal(TestString(303, "Payload"), (string)eUserDefinedInformationEventOccured["Payload"]);
 
-            // Event 401 - StopSignpostEvent (TwoStringsTemplateTA)
-            Assert.True(firedEvents.ContainsKey(401), "Event 401 (StopSignpostEvent) did not fire");
-            var e401 = firedEvents[401];
-            Assert.Equal(TestString(401, "ExtendedData"), (string)e401["ExtendedData"]);
-            Assert.Equal(TestString(401, "AppDomain"), (string)e401["AppDomain"]);
+            // StopSignpostEvent (TwoStringsTemplateTA)
+            Assert.True(firedEvents.ContainsKey("StopSignpostEvent"), "Event StopSignpostEvent did not fire");
+            var eStopSignpostEvent = firedEvents["StopSignpostEvent"];
+            Assert.Equal(TestString(401, "ExtendedData"), (string)eStopSignpostEvent["ExtendedData"]);
+            Assert.Equal(TestString(401, "AppDomain"), (string)eStopSignpostEvent["AppDomain"]);
 
-            // Event 402 - StartSignpostEvent (TwoStringsTemplateTA)
-            Assert.True(firedEvents.ContainsKey(402), "Event 402 (StartSignpostEvent) did not fire");
-            var e402 = firedEvents[402];
-            Assert.Equal(TestString(402, "ExtendedData"), (string)e402["ExtendedData"]);
-            Assert.Equal(TestString(402, "AppDomain"), (string)e402["AppDomain"]);
+            // StartSignpostEvent (TwoStringsTemplateTA)
+            Assert.True(firedEvents.ContainsKey("StartSignpostEvent"), "Event StartSignpostEvent did not fire");
+            var eStartSignpostEvent = firedEvents["StartSignpostEvent"];
+            Assert.Equal(TestString(402, "ExtendedData"), (string)eStartSignpostEvent["ExtendedData"]);
+            Assert.Equal(TestString(402, "AppDomain"), (string)eStartSignpostEvent["AppDomain"]);
 
-            // Event 403 - SuspendSignpostEvent (TwoStringsTemplateTA)
-            Assert.True(firedEvents.ContainsKey(403), "Event 403 (SuspendSignpostEvent) did not fire");
-            var e403 = firedEvents[403];
-            Assert.Equal(TestString(403, "ExtendedData"), (string)e403["ExtendedData"]);
-            Assert.Equal(TestString(403, "AppDomain"), (string)e403["AppDomain"]);
+            // SuspendSignpostEvent (TwoStringsTemplateTA)
+            Assert.True(firedEvents.ContainsKey("SuspendSignpostEvent"), "Event SuspendSignpostEvent did not fire");
+            var eSuspendSignpostEvent = firedEvents["SuspendSignpostEvent"];
+            Assert.Equal(TestString(403, "ExtendedData"), (string)eSuspendSignpostEvent["ExtendedData"]);
+            Assert.Equal(TestString(403, "AppDomain"), (string)eSuspendSignpostEvent["AppDomain"]);
 
-            // Event 404 - ResumeSignpostEvent (TwoStringsTemplateTA)
-            Assert.True(firedEvents.ContainsKey(404), "Event 404 (ResumeSignpostEvent) did not fire");
-            var e404 = firedEvents[404];
-            Assert.Equal(TestString(404, "ExtendedData"), (string)e404["ExtendedData"]);
-            Assert.Equal(TestString(404, "AppDomain"), (string)e404["AppDomain"]);
+            // ResumeSignpostEvent (TwoStringsTemplateTA)
+            Assert.True(firedEvents.ContainsKey("ResumeSignpostEvent"), "Event ResumeSignpostEvent did not fire");
+            var eResumeSignpostEvent = firedEvents["ResumeSignpostEvent"];
+            Assert.Equal(TestString(404, "ExtendedData"), (string)eResumeSignpostEvent["ExtendedData"]);
+            Assert.Equal(TestString(404, "AppDomain"), (string)eResumeSignpostEvent["AppDomain"]);
 
-            // Event 440 - StartSignpostEvent1 (TwoStringsTemplateTA)
-            Assert.True(firedEvents.ContainsKey(440), "Event 440 (StartSignpostEvent1) did not fire");
-            var e440 = firedEvents[440];
-            Assert.Equal(TestString(440, "ExtendedData"), (string)e440["ExtendedData"]);
-            Assert.Equal(TestString(440, "AppDomain"), (string)e440["AppDomain"]);
+            // StartSignpostEvent1 (TwoStringsTemplateTA)
+            Assert.True(firedEvents.ContainsKey("StartSignpostEvent1"), "Event StartSignpostEvent1 did not fire");
+            var eStartSignpostEvent1 = firedEvents["StartSignpostEvent1"];
+            Assert.Equal(TestString(440, "ExtendedData"), (string)eStartSignpostEvent1["ExtendedData"]);
+            Assert.Equal(TestString(440, "AppDomain"), (string)eStartSignpostEvent1["AppDomain"]);
 
-            // Event 441 - StopSignpostEvent1 (TwoStringsTemplateTA)
-            Assert.True(firedEvents.ContainsKey(441), "Event 441 (StopSignpostEvent1) did not fire");
-            var e441 = firedEvents[441];
-            Assert.Equal(TestString(441, "ExtendedData"), (string)e441["ExtendedData"]);
-            Assert.Equal(TestString(441, "AppDomain"), (string)e441["AppDomain"]);
+            // StopSignpostEvent1 (TwoStringsTemplateTA)
+            Assert.True(firedEvents.ContainsKey("StopSignpostEvent1"), "Event StopSignpostEvent1 did not fire");
+            var eStopSignpostEvent1 = firedEvents["StopSignpostEvent1"];
+            Assert.Equal(TestString(441, "ExtendedData"), (string)eStopSignpostEvent1["ExtendedData"]);
+            Assert.Equal(TestString(441, "AppDomain"), (string)eStopSignpostEvent1["AppDomain"]);
 
-            // Event 451 - MessageLogInfo (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(451), "Event 451 (MessageLogInfo) did not fire");
-            var e451 = firedEvents[451];
-            Assert.Equal(TestString(451, "data1"), (string)e451["data1"]);
-            Assert.Equal(TestString(451, "AppDomain"), (string)e451["AppDomain"]);
+            // MessageLogInfo (TwoStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("MessageLogInfo"), "Event MessageLogInfo did not fire");
+            var eMessageLogInfo = firedEvents["MessageLogInfo"];
+            Assert.Equal(TestString(451, "data1"), (string)eMessageLogInfo["data1"]);
+            Assert.Equal(TestString(451, "AppDomain"), (string)eMessageLogInfo["AppDomain"]);
 
-            // Event 452 - MessageLogWarning (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(452), "Event 452 (MessageLogWarning) did not fire");
-            var e452 = firedEvents[452];
-            Assert.Equal(TestString(452, "data1"), (string)e452["data1"]);
-            Assert.Equal(TestString(452, "AppDomain"), (string)e452["AppDomain"]);
+            // MessageLogWarning (TwoStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("MessageLogWarning"), "Event MessageLogWarning did not fire");
+            var eMessageLogWarning = firedEvents["MessageLogWarning"];
+            Assert.Equal(TestString(452, "data1"), (string)eMessageLogWarning["data1"]);
+            Assert.Equal(TestString(452, "AppDomain"), (string)eMessageLogWarning["AppDomain"]);
 
-            // Event 499 - TransferEmitted (TransferEmittedTemplate)
-            Assert.True(firedEvents.ContainsKey(499), "Event 499 (TransferEmitted) did not fire");
-            var e499 = firedEvents[499];
-            Assert.Equal(TestString(499, "HostReference"), (string)e499["HostReference"]);
-            Assert.Equal(TestString(499, "AppDomain"), (string)e499["AppDomain"]);
+            // TransferEmitted (TransferEmittedTemplate)
+            Assert.True(firedEvents.ContainsKey("TransferEmitted"), "Event TransferEmitted did not fire");
+            var eTransferEmitted = firedEvents["TransferEmitted"];
+            Assert.Equal(TestString(499, "HostReference"), (string)eTransferEmitted["HostReference"]);
+            Assert.Equal(TestString(499, "AppDomain"), (string)eTransferEmitted["AppDomain"]);
 
-            // Event 501 - CompilationStart (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(501), "Event 501 (CompilationStart) did not fire");
-            var e501 = firedEvents[501];
-            Assert.Equal(TestString(501, "AppDomain"), (string)e501["AppDomain"]);
+            // CompilationStart (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("CompilationStart"), "Event CompilationStart did not fire");
+            var eCompilationStart = firedEvents["CompilationStart"];
+            Assert.Equal(TestString(501, "AppDomain"), (string)eCompilationStart["AppDomain"]);
 
-            // Event 502 - CompilationStop (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(502), "Event 502 (CompilationStop) did not fire");
-            var e502 = firedEvents[502];
-            Assert.Equal(TestString(502, "AppDomain"), (string)e502["AppDomain"]);
+            // CompilationStop (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("CompilationStop"), "Event CompilationStop did not fire");
+            var eCompilationStop = firedEvents["CompilationStop"];
+            Assert.Equal(TestString(502, "AppDomain"), (string)eCompilationStop["AppDomain"]);
 
-            // Event 503 - ServiceHostFactoryCreationStart (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(503), "Event 503 (ServiceHostFactoryCreationStart) did not fire");
-            var e503 = firedEvents[503];
-            Assert.Equal(TestString(503, "AppDomain"), (string)e503["AppDomain"]);
+            // ServiceHostFactoryCreationStart (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ServiceHostFactoryCreationStart"), "Event ServiceHostFactoryCreationStart did not fire");
+            var eServiceHostFactoryCreationStart = firedEvents["ServiceHostFactoryCreationStart"];
+            Assert.Equal(TestString(503, "AppDomain"), (string)eServiceHostFactoryCreationStart["AppDomain"]);
 
-            // Event 504 - ServiceHostFactoryCreationStop (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(504), "Event 504 (ServiceHostFactoryCreationStop) did not fire");
-            var e504 = firedEvents[504];
-            Assert.Equal(TestString(504, "AppDomain"), (string)e504["AppDomain"]);
+            // ServiceHostFactoryCreationStop (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ServiceHostFactoryCreationStop"), "Event ServiceHostFactoryCreationStop did not fire");
+            var eServiceHostFactoryCreationStop = firedEvents["ServiceHostFactoryCreationStop"];
+            Assert.Equal(TestString(504, "AppDomain"), (string)eServiceHostFactoryCreationStop["AppDomain"]);
 
-            // Event 505 - CreateServiceHostStart (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(505), "Event 505 (CreateServiceHostStart) did not fire");
-            var e505 = firedEvents[505];
-            Assert.Equal(TestString(505, "AppDomain"), (string)e505["AppDomain"]);
+            // CreateServiceHostStart (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("CreateServiceHostStart"), "Event CreateServiceHostStart did not fire");
+            var eCreateServiceHostStart = firedEvents["CreateServiceHostStart"];
+            Assert.Equal(TestString(505, "AppDomain"), (string)eCreateServiceHostStart["AppDomain"]);
 
-            // Event 506 - CreateServiceHostStop (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(506), "Event 506 (CreateServiceHostStop) did not fire");
-            var e506 = firedEvents[506];
-            Assert.Equal(TestString(506, "AppDomain"), (string)e506["AppDomain"]);
+            // CreateServiceHostStop (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("CreateServiceHostStop"), "Event CreateServiceHostStop did not fire");
+            var eCreateServiceHostStop = firedEvents["CreateServiceHostStop"];
+            Assert.Equal(TestString(506, "AppDomain"), (string)eCreateServiceHostStop["AppDomain"]);
 
-            // Event 507 - HostedTransportConfigurationManagerConfigInitStart (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(507), "Event 507 (HostedTransportConfigurationManagerConfigInitStart) did not fire");
-            var e507 = firedEvents[507];
-            Assert.Equal(TestString(507, "AppDomain"), (string)e507["AppDomain"]);
+            // HostedTransportConfigurationManagerConfigInitStart (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("HostedTransportConfigurationManagerConfigInitStart"), "Event HostedTransportConfigurationManagerConfigInitStart did not fire");
+            var eHostedTransportConfigurationManagerConfigInitStart = firedEvents["HostedTransportConfigurationManagerConfigInitStart"];
+            Assert.Equal(TestString(507, "AppDomain"), (string)eHostedTransportConfigurationManagerConfigInitStart["AppDomain"]);
 
-            // Event 508 - HostedTransportConfigurationManagerConfigInitStop (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(508), "Event 508 (HostedTransportConfigurationManagerConfigInitStop) did not fire");
-            var e508 = firedEvents[508];
-            Assert.Equal(TestString(508, "AppDomain"), (string)e508["AppDomain"]);
+            // HostedTransportConfigurationManagerConfigInitStop (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("HostedTransportConfigurationManagerConfigInitStop"), "Event HostedTransportConfigurationManagerConfigInitStop did not fire");
+            var eHostedTransportConfigurationManagerConfigInitStop = firedEvents["HostedTransportConfigurationManagerConfigInitStop"];
+            Assert.Equal(TestString(508, "AppDomain"), (string)eHostedTransportConfigurationManagerConfigInitStop["AppDomain"]);
 
-            // Event 509 - ServiceHostOpenStart (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(509), "Event 509 (ServiceHostOpenStart) did not fire");
-            var e509 = firedEvents[509];
-            Assert.Equal(TestString(509, "AppDomain"), (string)e509["AppDomain"]);
+            // ServiceHostOpenStart (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ServiceHostOpenStart"), "Event ServiceHostOpenStart did not fire");
+            var eServiceHostOpenStart = firedEvents["ServiceHostOpenStart"];
+            Assert.Equal(TestString(509, "AppDomain"), (string)eServiceHostOpenStart["AppDomain"]);
 
-            // Event 510 - ServiceHostOpenStop (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(510), "Event 510 (ServiceHostOpenStop) did not fire");
-            var e510 = firedEvents[510];
-            Assert.Equal(TestString(510, "AppDomain"), (string)e510["AppDomain"]);
+            // ServiceHostOpenStop (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ServiceHostOpenStop"), "Event ServiceHostOpenStop did not fire");
+            var eServiceHostOpenStop = firedEvents["ServiceHostOpenStop"];
+            Assert.Equal(TestString(510, "AppDomain"), (string)eServiceHostOpenStop["AppDomain"]);
 
-            // Event 513 - WebHostRequestStart (Multidata69TemplateA)
-            Assert.True(firedEvents.ContainsKey(513), "Event 513 (WebHostRequestStart) did not fire");
-            var e513 = firedEvents[513];
-            Assert.Equal(TestString(513, "AppDomainFriendlyName"), (string)e513["AppDomainFriendlyName"]);
-            Assert.Equal(TestString(513, "VirtualPath"), (string)e513["VirtualPath"]);
-            Assert.Equal(TestString(513, "AppDomain"), (string)e513["AppDomain"]);
+            // WebHostRequestStart (Multidata69TemplateA)
+            Assert.True(firedEvents.ContainsKey("WebHostRequestStart"), "Event WebHostRequestStart did not fire");
+            var eWebHostRequestStart = firedEvents["WebHostRequestStart"];
+            Assert.Equal(TestString(513, "AppDomainFriendlyName"), (string)eWebHostRequestStart["AppDomainFriendlyName"]);
+            Assert.Equal(TestString(513, "VirtualPath"), (string)eWebHostRequestStart["VirtualPath"]);
+            Assert.Equal(TestString(513, "AppDomain"), (string)eWebHostRequestStart["AppDomain"]);
 
-            // Event 514 - WebHostRequestStop (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(514), "Event 514 (WebHostRequestStop) did not fire");
-            var e514 = firedEvents[514];
-            Assert.Equal(TestString(514, "AppDomain"), (string)e514["AppDomain"]);
+            // WebHostRequestStop (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("WebHostRequestStop"), "Event WebHostRequestStop did not fire");
+            var eWebHostRequestStop = firedEvents["WebHostRequestStop"];
+            Assert.Equal(TestString(514, "AppDomain"), (string)eWebHostRequestStop["AppDomain"]);
 
-            // Event 601 - CBAEntryRead (Multidata74TemplateA)
-            Assert.True(firedEvents.ContainsKey(601), "Event 601 (CBAEntryRead) did not fire");
-            var e601 = firedEvents[601];
-            Assert.Equal(TestString(601, "RelativeAddress"), (string)e601["RelativeAddress"]);
-            Assert.Equal(TestString(601, "NormalizedAddress"), (string)e601["NormalizedAddress"]);
-            Assert.Equal(TestString(601, "AppDomain"), (string)e601["AppDomain"]);
+            // CBAEntryRead (Multidata74TemplateA)
+            Assert.True(firedEvents.ContainsKey("CBAEntryRead"), "Event CBAEntryRead did not fire");
+            var eCBAEntryRead = firedEvents["CBAEntryRead"];
+            Assert.Equal(TestString(601, "RelativeAddress"), (string)eCBAEntryRead["RelativeAddress"]);
+            Assert.Equal(TestString(601, "NormalizedAddress"), (string)eCBAEntryRead["NormalizedAddress"]);
+            Assert.Equal(TestString(601, "AppDomain"), (string)eCBAEntryRead["AppDomain"]);
         }
     }
 }

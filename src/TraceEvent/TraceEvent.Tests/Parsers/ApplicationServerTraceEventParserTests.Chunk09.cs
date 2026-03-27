@@ -263,46 +263,46 @@ namespace TraceEventTests.Parsers
             sequenceNumber = __sequenceNumber;
         }
 
-        private void Subscribe_Chunk09(ApplicationServerTraceEventParser parser, Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Subscribe_Chunk09(ApplicationServerTraceEventParser parser, Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             parser.HttpPipelineFaulted += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3410] = new Dictionary<string, object>
+                firedEvents["HttpPipelineFaulted"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
             parser.HttpPipelineTimeoutException += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3411] = new Dictionary<string, object>
+                firedEvents["HttpPipelineTimeoutException"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
             parser.HttpPipelineProcessResponseStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3412] = new Dictionary<string, object>
+                firedEvents["HttpPipelineProcessResponseStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
             parser.HttpPipelineBeginProcessResponseStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3413] = new Dictionary<string, object>
+                firedEvents["HttpPipelineBeginProcessResponseStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
             parser.HttpPipelineProcessResponseStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3414] = new Dictionary<string, object>
+                firedEvents["HttpPipelineProcessResponseStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
             parser.WebSocketConnectionRequestSendStart += delegate (Multidata62TemplateATraceData data)
             {
-                firedEvents[3415] = new Dictionary<string, object>
+                firedEvents["WebSocketConnectionRequestSendStart"] = new Dictionary<string, object>
                 {
                     { "remoteAddress", data.remoteAddress },
                     { "AppDomain", data.AppDomain },
@@ -310,7 +310,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketConnectionRequestSendStop += delegate (Multidata63TemplateATraceData data)
             {
-                firedEvents[3416] = new Dictionary<string, object>
+                firedEvents["WebSocketConnectionRequestSendStop"] = new Dictionary<string, object>
                 {
                     { "websocketId", data.websocketId },
                     { "AppDomain", data.AppDomain },
@@ -318,14 +318,14 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketConnectionAcceptStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3417] = new Dictionary<string, object>
+                firedEvents["WebSocketConnectionAcceptStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
             parser.WebSocketConnectionAccepted += delegate (Multidata63TemplateATraceData data)
             {
-                firedEvents[3418] = new Dictionary<string, object>
+                firedEvents["WebSocketConnectionAccepted"] = new Dictionary<string, object>
                 {
                     { "websocketId", data.websocketId },
                     { "AppDomain", data.AppDomain },
@@ -333,7 +333,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketConnectionDeclined += delegate (Multidata64TemplateATraceData data)
             {
-                firedEvents[3419] = new Dictionary<string, object>
+                firedEvents["WebSocketConnectionDeclined"] = new Dictionary<string, object>
                 {
                     { "errorMessage", data.errorMessage },
                     { "AppDomain", data.AppDomain },
@@ -341,7 +341,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketConnectionFailed += delegate (Multidata64TemplateATraceData data)
             {
-                firedEvents[3420] = new Dictionary<string, object>
+                firedEvents["WebSocketConnectionFailed"] = new Dictionary<string, object>
                 {
                     { "errorMessage", data.errorMessage },
                     { "AppDomain", data.AppDomain },
@@ -349,7 +349,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketConnectionAborted += delegate (Multidata63TemplateATraceData data)
             {
-                firedEvents[3421] = new Dictionary<string, object>
+                firedEvents["WebSocketConnectionAborted"] = new Dictionary<string, object>
                 {
                     { "websocketId", data.websocketId },
                     { "AppDomain", data.AppDomain },
@@ -357,7 +357,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketAsyncWriteStart += delegate (Multidata65TemplateATraceData data)
             {
-                firedEvents[3422] = new Dictionary<string, object>
+                firedEvents["WebSocketAsyncWriteStart"] = new Dictionary<string, object>
                 {
                     { "websocketId", data.websocketId },
                     { "byteCount", data.byteCount },
@@ -367,7 +367,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketAsyncWriteStop += delegate (Multidata63TemplateATraceData data)
             {
-                firedEvents[3423] = new Dictionary<string, object>
+                firedEvents["WebSocketAsyncWriteStop"] = new Dictionary<string, object>
                 {
                     { "websocketId", data.websocketId },
                     { "AppDomain", data.AppDomain },
@@ -375,7 +375,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketAsyncReadStart += delegate (Multidata63TemplateATraceData data)
             {
-                firedEvents[3424] = new Dictionary<string, object>
+                firedEvents["WebSocketAsyncReadStart"] = new Dictionary<string, object>
                 {
                     { "websocketId", data.websocketId },
                     { "AppDomain", data.AppDomain },
@@ -383,7 +383,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketAsyncReadStop += delegate (Multidata65TemplateATraceData data)
             {
-                firedEvents[3425] = new Dictionary<string, object>
+                firedEvents["WebSocketAsyncReadStop"] = new Dictionary<string, object>
                 {
                     { "websocketId", data.websocketId },
                     { "byteCount", data.byteCount },
@@ -393,7 +393,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketCloseSent += delegate (Multidata66TemplateATraceData data)
             {
-                firedEvents[3426] = new Dictionary<string, object>
+                firedEvents["WebSocketCloseSent"] = new Dictionary<string, object>
                 {
                     { "websocketId", data.websocketId },
                     { "remoteAddress", data.remoteAddress },
@@ -403,7 +403,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketCloseOutputSent += delegate (Multidata66TemplateATraceData data)
             {
-                firedEvents[3427] = new Dictionary<string, object>
+                firedEvents["WebSocketCloseOutputSent"] = new Dictionary<string, object>
                 {
                     { "websocketId", data.websocketId },
                     { "remoteAddress", data.remoteAddress },
@@ -413,7 +413,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketConnectionClosed += delegate (Multidata63TemplateATraceData data)
             {
-                firedEvents[3428] = new Dictionary<string, object>
+                firedEvents["WebSocketConnectionClosed"] = new Dictionary<string, object>
                 {
                     { "websocketId", data.websocketId },
                     { "AppDomain", data.AppDomain },
@@ -421,7 +421,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketCloseStatusReceived += delegate (Multidata67TemplateATraceData data)
             {
-                firedEvents[3429] = new Dictionary<string, object>
+                firedEvents["WebSocketCloseStatusReceived"] = new Dictionary<string, object>
                 {
                     { "websocketId", data.websocketId },
                     { "closeStatus", data.closeStatus },
@@ -430,7 +430,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketUseVersionFromClientWebSocketFactory += delegate (Multidata68TemplateATraceData data)
             {
-                firedEvents[3430] = new Dictionary<string, object>
+                firedEvents["WebSocketUseVersionFromClientWebSocketFactory"] = new Dictionary<string, object>
                 {
                     { "clientWebSocketFactoryType", data.clientWebSocketFactoryType },
                     { "AppDomain", data.AppDomain },
@@ -438,7 +438,7 @@ namespace TraceEventTests.Parsers
             };
             parser.WebSocketCreateClientWebSocketWithFactory += delegate (Multidata68TemplateATraceData data)
             {
-                firedEvents[3431] = new Dictionary<string, object>
+                firedEvents["WebSocketCreateClientWebSocketWithFactory"] = new Dictionary<string, object>
                 {
                     { "clientWebSocketFactoryType", data.clientWebSocketFactoryType },
                     { "AppDomain", data.AppDomain },
@@ -446,7 +446,7 @@ namespace TraceEventTests.Parsers
             };
             parser.InferredContractDescription += delegate (ThreeStringsTemplateATraceData data)
             {
-                firedEvents[3501] = new Dictionary<string, object>
+                firedEvents["InferredContractDescription"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "data2", data.data2 },
@@ -455,7 +455,7 @@ namespace TraceEventTests.Parsers
             };
             parser.InferredOperationDescription += delegate (FourStringsTemplateATraceData data)
             {
-                firedEvents[3502] = new Dictionary<string, object>
+                firedEvents["InferredOperationDescription"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "data2", data.data2 },
@@ -465,7 +465,7 @@ namespace TraceEventTests.Parsers
             };
             parser.DuplicateCorrelationQuery += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[3503] = new Dictionary<string, object>
+                firedEvents["DuplicateCorrelationQuery"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
@@ -473,7 +473,7 @@ namespace TraceEventTests.Parsers
             };
             parser.ServiceEndpointAdded += delegate (FourStringsTemplateATraceData data)
             {
-                firedEvents[3507] = new Dictionary<string, object>
+                firedEvents["ServiceEndpointAdded"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "data2", data.data2 },
@@ -483,7 +483,7 @@ namespace TraceEventTests.Parsers
             };
             parser.TrackingProfileNotFound += delegate (Multidata85TemplateATraceData data)
             {
-                firedEvents[3508] = new Dictionary<string, object>
+                firedEvents["TrackingProfileNotFound"] = new Dictionary<string, object>
                 {
                     { "TrackingProfile", data.TrackingProfile },
                     { "ActivityDefinitionId", data.ActivityDefinitionId },
@@ -492,7 +492,7 @@ namespace TraceEventTests.Parsers
             };
             parser.BufferOutOfOrderMessageNoInstance += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[3550] = new Dictionary<string, object>
+                firedEvents["BufferOutOfOrderMessageNoInstance"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
@@ -500,7 +500,7 @@ namespace TraceEventTests.Parsers
             };
             parser.BufferOutOfOrderMessageNoBookmark += delegate (ThreeStringsTemplateATraceData data)
             {
-                firedEvents[3551] = new Dictionary<string, object>
+                firedEvents["BufferOutOfOrderMessageNoBookmark"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "data2", data.data2 },
@@ -509,7 +509,7 @@ namespace TraceEventTests.Parsers
             };
             parser.MaxPendingMessagesPerChannelExceeded += delegate (Multidata84TemplateATraceData data)
             {
-                firedEvents[3552] = new Dictionary<string, object>
+                firedEvents["MaxPendingMessagesPerChannelExceeded"] = new Dictionary<string, object>
                 {
                     { "limit", data.limit },
                     { "AppDomain", data.AppDomain },
@@ -517,35 +517,35 @@ namespace TraceEventTests.Parsers
             };
             parser.XamlServicesLoadStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3553] = new Dictionary<string, object>
+                firedEvents["XamlServicesLoadStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
             parser.XamlServicesLoadStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3554] = new Dictionary<string, object>
+                firedEvents["XamlServicesLoadStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
             parser.CreateWorkflowServiceHostStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3555] = new Dictionary<string, object>
+                firedEvents["CreateWorkflowServiceHostStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
             parser.CreateWorkflowServiceHostStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3556] = new Dictionary<string, object>
+                firedEvents["CreateWorkflowServiceHostStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
             parser.TransactedReceiveScopeEndCommitFailed += delegate (ThreeStringsTemplateATraceData data)
             {
-                firedEvents[3557] = new Dictionary<string, object>
+                firedEvents["TransactedReceiveScopeEndCommitFailed"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "data2", data.data2 },
@@ -554,211 +554,211 @@ namespace TraceEventTests.Parsers
             };
             parser.ServiceActivationStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3558] = new Dictionary<string, object>
+                firedEvents["ServiceActivationStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
             parser.ServiceActivationStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3559] = new Dictionary<string, object>
+                firedEvents["ServiceActivationStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
         }
 
-        private void Validate_Chunk09(Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Validate_Chunk09(Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             // 3410: HttpPipelineFaulted - OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3410), "Event 3410 (HttpPipelineFaulted) did not fire.");
-            Assert.Equal(TestString(3410, "AppDomain"), firedEvents[3410]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("HttpPipelineFaulted"), "Event HttpPipelineFaulted did not fire.");
+            Assert.Equal(TestString(3410, "AppDomain"), firedEvents["HttpPipelineFaulted"]["AppDomain"]);
 
             // 3411: HttpPipelineTimeoutException - OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3411), "Event 3411 (HttpPipelineTimeoutException) did not fire.");
-            Assert.Equal(TestString(3411, "AppDomain"), firedEvents[3411]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("HttpPipelineTimeoutException"), "Event HttpPipelineTimeoutException did not fire.");
+            Assert.Equal(TestString(3411, "AppDomain"), firedEvents["HttpPipelineTimeoutException"]["AppDomain"]);
 
             // 3412: HttpPipelineProcessResponseStart - OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3412), "Event 3412 (HttpPipelineProcessResponseStart) did not fire.");
-            Assert.Equal(TestString(3412, "AppDomain"), firedEvents[3412]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("HttpPipelineProcessResponseStart"), "Event HttpPipelineProcessResponseStart did not fire.");
+            Assert.Equal(TestString(3412, "AppDomain"), firedEvents["HttpPipelineProcessResponseStart"]["AppDomain"]);
 
             // 3413: HttpPipelineBeginProcessResponseStart - OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3413), "Event 3413 (HttpPipelineBeginProcessResponseStart) did not fire.");
-            Assert.Equal(TestString(3413, "AppDomain"), firedEvents[3413]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("HttpPipelineBeginProcessResponseStart"), "Event HttpPipelineBeginProcessResponseStart did not fire.");
+            Assert.Equal(TestString(3413, "AppDomain"), firedEvents["HttpPipelineBeginProcessResponseStart"]["AppDomain"]);
 
             // 3414: HttpPipelineProcessResponseStop - OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3414), "Event 3414 (HttpPipelineProcessResponseStop) did not fire.");
-            Assert.Equal(TestString(3414, "AppDomain"), firedEvents[3414]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("HttpPipelineProcessResponseStop"), "Event HttpPipelineProcessResponseStop did not fire.");
+            Assert.Equal(TestString(3414, "AppDomain"), firedEvents["HttpPipelineProcessResponseStop"]["AppDomain"]);
 
             // 3415: WebSocketConnectionRequestSendStart - Multidata62TemplateA
-            Assert.True(firedEvents.ContainsKey(3415), "Event 3415 (WebSocketConnectionRequestSendStart) did not fire.");
-            Assert.Equal(TestString(3415, "remoteAddress"), firedEvents[3415]["remoteAddress"]);
-            Assert.Equal(TestString(3415, "AppDomain"), firedEvents[3415]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketConnectionRequestSendStart"), "Event WebSocketConnectionRequestSendStart did not fire.");
+            Assert.Equal(TestString(3415, "remoteAddress"), firedEvents["WebSocketConnectionRequestSendStart"]["remoteAddress"]);
+            Assert.Equal(TestString(3415, "AppDomain"), firedEvents["WebSocketConnectionRequestSendStart"]["AppDomain"]);
 
             // 3416: WebSocketConnectionRequestSendStop - Multidata63TemplateA
-            Assert.True(firedEvents.ContainsKey(3416), "Event 3416 (WebSocketConnectionRequestSendStop) did not fire.");
-            Assert.Equal(TestInt32(3416, 0), firedEvents[3416]["websocketId"]);
-            Assert.Equal(TestString(3416, "AppDomain"), firedEvents[3416]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketConnectionRequestSendStop"), "Event WebSocketConnectionRequestSendStop did not fire.");
+            Assert.Equal(TestInt32(3416, 0), firedEvents["WebSocketConnectionRequestSendStop"]["websocketId"]);
+            Assert.Equal(TestString(3416, "AppDomain"), firedEvents["WebSocketConnectionRequestSendStop"]["AppDomain"]);
 
             // 3417: WebSocketConnectionAcceptStart - OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3417), "Event 3417 (WebSocketConnectionAcceptStart) did not fire.");
-            Assert.Equal(TestString(3417, "AppDomain"), firedEvents[3417]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketConnectionAcceptStart"), "Event WebSocketConnectionAcceptStart did not fire.");
+            Assert.Equal(TestString(3417, "AppDomain"), firedEvents["WebSocketConnectionAcceptStart"]["AppDomain"]);
 
             // 3418: WebSocketConnectionAccepted - Multidata63TemplateA
-            Assert.True(firedEvents.ContainsKey(3418), "Event 3418 (WebSocketConnectionAccepted) did not fire.");
-            Assert.Equal(TestInt32(3418, 0), firedEvents[3418]["websocketId"]);
-            Assert.Equal(TestString(3418, "AppDomain"), firedEvents[3418]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketConnectionAccepted"), "Event WebSocketConnectionAccepted did not fire.");
+            Assert.Equal(TestInt32(3418, 0), firedEvents["WebSocketConnectionAccepted"]["websocketId"]);
+            Assert.Equal(TestString(3418, "AppDomain"), firedEvents["WebSocketConnectionAccepted"]["AppDomain"]);
 
             // 3419: WebSocketConnectionDeclined - Multidata64TemplateA
-            Assert.True(firedEvents.ContainsKey(3419), "Event 3419 (WebSocketConnectionDeclined) did not fire.");
-            Assert.Equal(TestString(3419, "errorMessage"), firedEvents[3419]["errorMessage"]);
-            Assert.Equal(TestString(3419, "AppDomain"), firedEvents[3419]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketConnectionDeclined"), "Event WebSocketConnectionDeclined did not fire.");
+            Assert.Equal(TestString(3419, "errorMessage"), firedEvents["WebSocketConnectionDeclined"]["errorMessage"]);
+            Assert.Equal(TestString(3419, "AppDomain"), firedEvents["WebSocketConnectionDeclined"]["AppDomain"]);
 
             // 3420: WebSocketConnectionFailed - Multidata64TemplateA
-            Assert.True(firedEvents.ContainsKey(3420), "Event 3420 (WebSocketConnectionFailed) did not fire.");
-            Assert.Equal(TestString(3420, "errorMessage"), firedEvents[3420]["errorMessage"]);
-            Assert.Equal(TestString(3420, "AppDomain"), firedEvents[3420]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketConnectionFailed"), "Event WebSocketConnectionFailed did not fire.");
+            Assert.Equal(TestString(3420, "errorMessage"), firedEvents["WebSocketConnectionFailed"]["errorMessage"]);
+            Assert.Equal(TestString(3420, "AppDomain"), firedEvents["WebSocketConnectionFailed"]["AppDomain"]);
 
             // 3421: WebSocketConnectionAborted - Multidata63TemplateA
-            Assert.True(firedEvents.ContainsKey(3421), "Event 3421 (WebSocketConnectionAborted) did not fire.");
-            Assert.Equal(TestInt32(3421, 0), firedEvents[3421]["websocketId"]);
-            Assert.Equal(TestString(3421, "AppDomain"), firedEvents[3421]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketConnectionAborted"), "Event WebSocketConnectionAborted did not fire.");
+            Assert.Equal(TestInt32(3421, 0), firedEvents["WebSocketConnectionAborted"]["websocketId"]);
+            Assert.Equal(TestString(3421, "AppDomain"), firedEvents["WebSocketConnectionAborted"]["AppDomain"]);
 
             // 3422: WebSocketAsyncWriteStart - Multidata65TemplateA
-            Assert.True(firedEvents.ContainsKey(3422), "Event 3422 (WebSocketAsyncWriteStart) did not fire.");
-            Assert.Equal(TestInt32(3422, 0), firedEvents[3422]["websocketId"]);
-            Assert.Equal(TestInt32(3422, 1), firedEvents[3422]["byteCount"]);
-            Assert.Equal(TestString(3422, "remoteAddress"), firedEvents[3422]["remoteAddress"]);
-            Assert.Equal(TestString(3422, "AppDomain"), firedEvents[3422]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketAsyncWriteStart"), "Event WebSocketAsyncWriteStart did not fire.");
+            Assert.Equal(TestInt32(3422, 0), firedEvents["WebSocketAsyncWriteStart"]["websocketId"]);
+            Assert.Equal(TestInt32(3422, 1), firedEvents["WebSocketAsyncWriteStart"]["byteCount"]);
+            Assert.Equal(TestString(3422, "remoteAddress"), firedEvents["WebSocketAsyncWriteStart"]["remoteAddress"]);
+            Assert.Equal(TestString(3422, "AppDomain"), firedEvents["WebSocketAsyncWriteStart"]["AppDomain"]);
 
             // 3423: WebSocketAsyncWriteStop - Multidata63TemplateA
-            Assert.True(firedEvents.ContainsKey(3423), "Event 3423 (WebSocketAsyncWriteStop) did not fire.");
-            Assert.Equal(TestInt32(3423, 0), firedEvents[3423]["websocketId"]);
-            Assert.Equal(TestString(3423, "AppDomain"), firedEvents[3423]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketAsyncWriteStop"), "Event WebSocketAsyncWriteStop did not fire.");
+            Assert.Equal(TestInt32(3423, 0), firedEvents["WebSocketAsyncWriteStop"]["websocketId"]);
+            Assert.Equal(TestString(3423, "AppDomain"), firedEvents["WebSocketAsyncWriteStop"]["AppDomain"]);
 
             // 3424: WebSocketAsyncReadStart - Multidata63TemplateA
-            Assert.True(firedEvents.ContainsKey(3424), "Event 3424 (WebSocketAsyncReadStart) did not fire.");
-            Assert.Equal(TestInt32(3424, 0), firedEvents[3424]["websocketId"]);
-            Assert.Equal(TestString(3424, "AppDomain"), firedEvents[3424]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketAsyncReadStart"), "Event WebSocketAsyncReadStart did not fire.");
+            Assert.Equal(TestInt32(3424, 0), firedEvents["WebSocketAsyncReadStart"]["websocketId"]);
+            Assert.Equal(TestString(3424, "AppDomain"), firedEvents["WebSocketAsyncReadStart"]["AppDomain"]);
 
             // 3425: WebSocketAsyncReadStop - Multidata65TemplateA
-            Assert.True(firedEvents.ContainsKey(3425), "Event 3425 (WebSocketAsyncReadStop) did not fire.");
-            Assert.Equal(TestInt32(3425, 0), firedEvents[3425]["websocketId"]);
-            Assert.Equal(TestInt32(3425, 1), firedEvents[3425]["byteCount"]);
-            Assert.Equal(TestString(3425, "remoteAddress"), firedEvents[3425]["remoteAddress"]);
-            Assert.Equal(TestString(3425, "AppDomain"), firedEvents[3425]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketAsyncReadStop"), "Event WebSocketAsyncReadStop did not fire.");
+            Assert.Equal(TestInt32(3425, 0), firedEvents["WebSocketAsyncReadStop"]["websocketId"]);
+            Assert.Equal(TestInt32(3425, 1), firedEvents["WebSocketAsyncReadStop"]["byteCount"]);
+            Assert.Equal(TestString(3425, "remoteAddress"), firedEvents["WebSocketAsyncReadStop"]["remoteAddress"]);
+            Assert.Equal(TestString(3425, "AppDomain"), firedEvents["WebSocketAsyncReadStop"]["AppDomain"]);
 
             // 3426: WebSocketCloseSent - Multidata66TemplateA
-            Assert.True(firedEvents.ContainsKey(3426), "Event 3426 (WebSocketCloseSent) did not fire.");
-            Assert.Equal(TestInt32(3426, 0), firedEvents[3426]["websocketId"]);
-            Assert.Equal(TestString(3426, "remoteAddress"), firedEvents[3426]["remoteAddress"]);
-            Assert.Equal(TestString(3426, "closeStatus"), firedEvents[3426]["closeStatus"]);
-            Assert.Equal(TestString(3426, "AppDomain"), firedEvents[3426]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketCloseSent"), "Event WebSocketCloseSent did not fire.");
+            Assert.Equal(TestInt32(3426, 0), firedEvents["WebSocketCloseSent"]["websocketId"]);
+            Assert.Equal(TestString(3426, "remoteAddress"), firedEvents["WebSocketCloseSent"]["remoteAddress"]);
+            Assert.Equal(TestString(3426, "closeStatus"), firedEvents["WebSocketCloseSent"]["closeStatus"]);
+            Assert.Equal(TestString(3426, "AppDomain"), firedEvents["WebSocketCloseSent"]["AppDomain"]);
 
             // 3427: WebSocketCloseOutputSent - Multidata66TemplateA
-            Assert.True(firedEvents.ContainsKey(3427), "Event 3427 (WebSocketCloseOutputSent) did not fire.");
-            Assert.Equal(TestInt32(3427, 0), firedEvents[3427]["websocketId"]);
-            Assert.Equal(TestString(3427, "remoteAddress"), firedEvents[3427]["remoteAddress"]);
-            Assert.Equal(TestString(3427, "closeStatus"), firedEvents[3427]["closeStatus"]);
-            Assert.Equal(TestString(3427, "AppDomain"), firedEvents[3427]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketCloseOutputSent"), "Event WebSocketCloseOutputSent did not fire.");
+            Assert.Equal(TestInt32(3427, 0), firedEvents["WebSocketCloseOutputSent"]["websocketId"]);
+            Assert.Equal(TestString(3427, "remoteAddress"), firedEvents["WebSocketCloseOutputSent"]["remoteAddress"]);
+            Assert.Equal(TestString(3427, "closeStatus"), firedEvents["WebSocketCloseOutputSent"]["closeStatus"]);
+            Assert.Equal(TestString(3427, "AppDomain"), firedEvents["WebSocketCloseOutputSent"]["AppDomain"]);
 
             // 3428: WebSocketConnectionClosed - Multidata63TemplateA
-            Assert.True(firedEvents.ContainsKey(3428), "Event 3428 (WebSocketConnectionClosed) did not fire.");
-            Assert.Equal(TestInt32(3428, 0), firedEvents[3428]["websocketId"]);
-            Assert.Equal(TestString(3428, "AppDomain"), firedEvents[3428]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketConnectionClosed"), "Event WebSocketConnectionClosed did not fire.");
+            Assert.Equal(TestInt32(3428, 0), firedEvents["WebSocketConnectionClosed"]["websocketId"]);
+            Assert.Equal(TestString(3428, "AppDomain"), firedEvents["WebSocketConnectionClosed"]["AppDomain"]);
 
             // 3429: WebSocketCloseStatusReceived - Multidata67TemplateA
-            Assert.True(firedEvents.ContainsKey(3429), "Event 3429 (WebSocketCloseStatusReceived) did not fire.");
-            Assert.Equal(TestInt32(3429, 0), firedEvents[3429]["websocketId"]);
-            Assert.Equal(TestString(3429, "closeStatus"), firedEvents[3429]["closeStatus"]);
-            Assert.Equal(TestString(3429, "AppDomain"), firedEvents[3429]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketCloseStatusReceived"), "Event WebSocketCloseStatusReceived did not fire.");
+            Assert.Equal(TestInt32(3429, 0), firedEvents["WebSocketCloseStatusReceived"]["websocketId"]);
+            Assert.Equal(TestString(3429, "closeStatus"), firedEvents["WebSocketCloseStatusReceived"]["closeStatus"]);
+            Assert.Equal(TestString(3429, "AppDomain"), firedEvents["WebSocketCloseStatusReceived"]["AppDomain"]);
 
             // 3430: WebSocketUseVersionFromClientWebSocketFactory - Multidata68TemplateA
-            Assert.True(firedEvents.ContainsKey(3430), "Event 3430 (WebSocketUseVersionFromClientWebSocketFactory) did not fire.");
-            Assert.Equal(TestString(3430, "clientWebSocketFactoryType"), firedEvents[3430]["clientWebSocketFactoryType"]);
-            Assert.Equal(TestString(3430, "AppDomain"), firedEvents[3430]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketUseVersionFromClientWebSocketFactory"), "Event WebSocketUseVersionFromClientWebSocketFactory did not fire.");
+            Assert.Equal(TestString(3430, "clientWebSocketFactoryType"), firedEvents["WebSocketUseVersionFromClientWebSocketFactory"]["clientWebSocketFactoryType"]);
+            Assert.Equal(TestString(3430, "AppDomain"), firedEvents["WebSocketUseVersionFromClientWebSocketFactory"]["AppDomain"]);
 
             // 3431: WebSocketCreateClientWebSocketWithFactory - Multidata68TemplateA
-            Assert.True(firedEvents.ContainsKey(3431), "Event 3431 (WebSocketCreateClientWebSocketWithFactory) did not fire.");
-            Assert.Equal(TestString(3431, "clientWebSocketFactoryType"), firedEvents[3431]["clientWebSocketFactoryType"]);
-            Assert.Equal(TestString(3431, "AppDomain"), firedEvents[3431]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebSocketCreateClientWebSocketWithFactory"), "Event WebSocketCreateClientWebSocketWithFactory did not fire.");
+            Assert.Equal(TestString(3431, "clientWebSocketFactoryType"), firedEvents["WebSocketCreateClientWebSocketWithFactory"]["clientWebSocketFactoryType"]);
+            Assert.Equal(TestString(3431, "AppDomain"), firedEvents["WebSocketCreateClientWebSocketWithFactory"]["AppDomain"]);
 
             // 3501: InferredContractDescription - ThreeStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3501), "Event 3501 (InferredContractDescription) did not fire.");
-            Assert.Equal(TestString(3501, "data1"), firedEvents[3501]["data1"]);
-            Assert.Equal(TestString(3501, "data2"), firedEvents[3501]["data2"]);
-            Assert.Equal(TestString(3501, "AppDomain"), firedEvents[3501]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InferredContractDescription"), "Event InferredContractDescription did not fire.");
+            Assert.Equal(TestString(3501, "data1"), firedEvents["InferredContractDescription"]["data1"]);
+            Assert.Equal(TestString(3501, "data2"), firedEvents["InferredContractDescription"]["data2"]);
+            Assert.Equal(TestString(3501, "AppDomain"), firedEvents["InferredContractDescription"]["AppDomain"]);
 
             // 3502: InferredOperationDescription - FourStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3502), "Event 3502 (InferredOperationDescription) did not fire.");
-            Assert.Equal(TestString(3502, "data1"), firedEvents[3502]["data1"]);
-            Assert.Equal(TestString(3502, "data2"), firedEvents[3502]["data2"]);
-            Assert.Equal(TestString(3502, "data3"), firedEvents[3502]["data3"]);
-            Assert.Equal(TestString(3502, "AppDomain"), firedEvents[3502]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InferredOperationDescription"), "Event InferredOperationDescription did not fire.");
+            Assert.Equal(TestString(3502, "data1"), firedEvents["InferredOperationDescription"]["data1"]);
+            Assert.Equal(TestString(3502, "data2"), firedEvents["InferredOperationDescription"]["data2"]);
+            Assert.Equal(TestString(3502, "data3"), firedEvents["InferredOperationDescription"]["data3"]);
+            Assert.Equal(TestString(3502, "AppDomain"), firedEvents["InferredOperationDescription"]["AppDomain"]);
 
             // 3503: DuplicateCorrelationQuery - TwoStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3503), "Event 3503 (DuplicateCorrelationQuery) did not fire.");
-            Assert.Equal(TestString(3503, "data1"), firedEvents[3503]["data1"]);
-            Assert.Equal(TestString(3503, "AppDomain"), firedEvents[3503]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DuplicateCorrelationQuery"), "Event DuplicateCorrelationQuery did not fire.");
+            Assert.Equal(TestString(3503, "data1"), firedEvents["DuplicateCorrelationQuery"]["data1"]);
+            Assert.Equal(TestString(3503, "AppDomain"), firedEvents["DuplicateCorrelationQuery"]["AppDomain"]);
 
             // 3507: ServiceEndpointAdded - FourStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3507), "Event 3507 (ServiceEndpointAdded) did not fire.");
-            Assert.Equal(TestString(3507, "data1"), firedEvents[3507]["data1"]);
-            Assert.Equal(TestString(3507, "data2"), firedEvents[3507]["data2"]);
-            Assert.Equal(TestString(3507, "data3"), firedEvents[3507]["data3"]);
-            Assert.Equal(TestString(3507, "AppDomain"), firedEvents[3507]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ServiceEndpointAdded"), "Event ServiceEndpointAdded did not fire.");
+            Assert.Equal(TestString(3507, "data1"), firedEvents["ServiceEndpointAdded"]["data1"]);
+            Assert.Equal(TestString(3507, "data2"), firedEvents["ServiceEndpointAdded"]["data2"]);
+            Assert.Equal(TestString(3507, "data3"), firedEvents["ServiceEndpointAdded"]["data3"]);
+            Assert.Equal(TestString(3507, "AppDomain"), firedEvents["ServiceEndpointAdded"]["AppDomain"]);
 
             // 3508: TrackingProfileNotFound - Multidata85TemplateA
-            Assert.True(firedEvents.ContainsKey(3508), "Event 3508 (TrackingProfileNotFound) did not fire.");
-            Assert.Equal(TestString(3508, "TrackingProfile"), firedEvents[3508]["TrackingProfile"]);
-            Assert.Equal(TestString(3508, "ActivityDefinitionId"), firedEvents[3508]["ActivityDefinitionId"]);
-            Assert.Equal(TestString(3508, "AppDomain"), firedEvents[3508]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TrackingProfileNotFound"), "Event TrackingProfileNotFound did not fire.");
+            Assert.Equal(TestString(3508, "TrackingProfile"), firedEvents["TrackingProfileNotFound"]["TrackingProfile"]);
+            Assert.Equal(TestString(3508, "ActivityDefinitionId"), firedEvents["TrackingProfileNotFound"]["ActivityDefinitionId"]);
+            Assert.Equal(TestString(3508, "AppDomain"), firedEvents["TrackingProfileNotFound"]["AppDomain"]);
 
             // 3550: BufferOutOfOrderMessageNoInstance - TwoStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3550), "Event 3550 (BufferOutOfOrderMessageNoInstance) did not fire.");
-            Assert.Equal(TestString(3550, "data1"), firedEvents[3550]["data1"]);
-            Assert.Equal(TestString(3550, "AppDomain"), firedEvents[3550]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("BufferOutOfOrderMessageNoInstance"), "Event BufferOutOfOrderMessageNoInstance did not fire.");
+            Assert.Equal(TestString(3550, "data1"), firedEvents["BufferOutOfOrderMessageNoInstance"]["data1"]);
+            Assert.Equal(TestString(3550, "AppDomain"), firedEvents["BufferOutOfOrderMessageNoInstance"]["AppDomain"]);
 
             // 3551: BufferOutOfOrderMessageNoBookmark - ThreeStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3551), "Event 3551 (BufferOutOfOrderMessageNoBookmark) did not fire.");
-            Assert.Equal(TestString(3551, "data1"), firedEvents[3551]["data1"]);
-            Assert.Equal(TestString(3551, "data2"), firedEvents[3551]["data2"]);
-            Assert.Equal(TestString(3551, "AppDomain"), firedEvents[3551]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("BufferOutOfOrderMessageNoBookmark"), "Event BufferOutOfOrderMessageNoBookmark did not fire.");
+            Assert.Equal(TestString(3551, "data1"), firedEvents["BufferOutOfOrderMessageNoBookmark"]["data1"]);
+            Assert.Equal(TestString(3551, "data2"), firedEvents["BufferOutOfOrderMessageNoBookmark"]["data2"]);
+            Assert.Equal(TestString(3551, "AppDomain"), firedEvents["BufferOutOfOrderMessageNoBookmark"]["AppDomain"]);
 
             // 3552: MaxPendingMessagesPerChannelExceeded - Multidata84TemplateA
-            Assert.True(firedEvents.ContainsKey(3552), "Event 3552 (MaxPendingMessagesPerChannelExceeded) did not fire.");
-            Assert.Equal(TestInt32(3552, 0), firedEvents[3552]["limit"]);
-            Assert.Equal(TestString(3552, "AppDomain"), firedEvents[3552]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("MaxPendingMessagesPerChannelExceeded"), "Event MaxPendingMessagesPerChannelExceeded did not fire.");
+            Assert.Equal(TestInt32(3552, 0), firedEvents["MaxPendingMessagesPerChannelExceeded"]["limit"]);
+            Assert.Equal(TestString(3552, "AppDomain"), firedEvents["MaxPendingMessagesPerChannelExceeded"]["AppDomain"]);
 
             // 3553: XamlServicesLoadStart - OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3553), "Event 3553 (XamlServicesLoadStart) did not fire.");
-            Assert.Equal(TestString(3553, "AppDomain"), firedEvents[3553]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("XamlServicesLoadStart"), "Event XamlServicesLoadStart did not fire.");
+            Assert.Equal(TestString(3553, "AppDomain"), firedEvents["XamlServicesLoadStart"]["AppDomain"]);
 
             // 3554: XamlServicesLoadStop - OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3554), "Event 3554 (XamlServicesLoadStop) did not fire.");
-            Assert.Equal(TestString(3554, "AppDomain"), firedEvents[3554]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("XamlServicesLoadStop"), "Event XamlServicesLoadStop did not fire.");
+            Assert.Equal(TestString(3554, "AppDomain"), firedEvents["XamlServicesLoadStop"]["AppDomain"]);
 
             // 3555: CreateWorkflowServiceHostStart - OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3555), "Event 3555 (CreateWorkflowServiceHostStart) did not fire.");
-            Assert.Equal(TestString(3555, "AppDomain"), firedEvents[3555]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("CreateWorkflowServiceHostStart"), "Event CreateWorkflowServiceHostStart did not fire.");
+            Assert.Equal(TestString(3555, "AppDomain"), firedEvents["CreateWorkflowServiceHostStart"]["AppDomain"]);
 
             // 3556: CreateWorkflowServiceHostStop - OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3556), "Event 3556 (CreateWorkflowServiceHostStop) did not fire.");
-            Assert.Equal(TestString(3556, "AppDomain"), firedEvents[3556]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("CreateWorkflowServiceHostStop"), "Event CreateWorkflowServiceHostStop did not fire.");
+            Assert.Equal(TestString(3556, "AppDomain"), firedEvents["CreateWorkflowServiceHostStop"]["AppDomain"]);
 
             // 3557: TransactedReceiveScopeEndCommitFailed - ThreeStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3557), "Event 3557 (TransactedReceiveScopeEndCommitFailed) did not fire.");
-            Assert.Equal(TestString(3557, "data1"), firedEvents[3557]["data1"]);
-            Assert.Equal(TestString(3557, "data2"), firedEvents[3557]["data2"]);
-            Assert.Equal(TestString(3557, "AppDomain"), firedEvents[3557]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TransactedReceiveScopeEndCommitFailed"), "Event TransactedReceiveScopeEndCommitFailed did not fire.");
+            Assert.Equal(TestString(3557, "data1"), firedEvents["TransactedReceiveScopeEndCommitFailed"]["data1"]);
+            Assert.Equal(TestString(3557, "data2"), firedEvents["TransactedReceiveScopeEndCommitFailed"]["data2"]);
+            Assert.Equal(TestString(3557, "AppDomain"), firedEvents["TransactedReceiveScopeEndCommitFailed"]["AppDomain"]);
 
             // 3558: ServiceActivationStart - OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3558), "Event 3558 (ServiceActivationStart) did not fire.");
-            Assert.Equal(TestString(3558, "AppDomain"), firedEvents[3558]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ServiceActivationStart"), "Event ServiceActivationStart did not fire.");
+            Assert.Equal(TestString(3558, "AppDomain"), firedEvents["ServiceActivationStart"]["AppDomain"]);
 
             // 3559: ServiceActivationStop - OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3559), "Event 3559 (ServiceActivationStop) did not fire.");
-            Assert.Equal(TestString(3559, "AppDomain"), firedEvents[3559]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ServiceActivationStop"), "Event ServiceActivationStop did not fire.");
+            Assert.Equal(TestString(3559, "AppDomain"), firedEvents["ServiceActivationStop"]["AppDomain"]);
         }
     }
 }

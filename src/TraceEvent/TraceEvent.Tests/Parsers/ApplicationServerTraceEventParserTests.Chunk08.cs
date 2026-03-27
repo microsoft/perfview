@@ -340,35 +340,35 @@ namespace TraceEventTests.Parsers
         /// <summary>
         /// Subscribes to all chunk 08 events and records their payloads.
         /// </summary>
-        private void Subscribe_Chunk08(ApplicationServerTraceEventParser parser, Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Subscribe_Chunk08(ApplicationServerTraceEventParser parser, Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             parser.MtomMessageEncodingStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["MtomMessageEncodingStart"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.TextMessageEncodingStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["TextMessageEncodingStart"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.BinaryMessageDecodingStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["BinaryMessageDecodingStart"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.MtomMessageDecodingStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["MtomMessageDecodingStart"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.TextMessageDecodingStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["TextMessageDecodingStart"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.HttpResponseReceiveStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["HttpResponseReceiveStart"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.SocketReadStop += delegate (Multidata51TemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object>
+                firedEvents["SocketReadStop"] = new Dictionary<string, object>
                 {
                     { "SocketId", data.SocketId },
                     { "Size", data.Size },
@@ -378,7 +378,7 @@ namespace TraceEventTests.Parsers
             };
             parser.SocketAsyncReadStop += delegate (Multidata51TemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object>
+                firedEvents["SocketAsyncReadStop"] = new Dictionary<string, object>
                 {
                     { "SocketId", data.SocketId },
                     { "Size", data.Size },
@@ -388,7 +388,7 @@ namespace TraceEventTests.Parsers
             };
             parser.SocketWriteStart += delegate (Multidata51TemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object>
+                firedEvents["SocketWriteStart"] = new Dictionary<string, object>
                 {
                     { "SocketId", data.SocketId },
                     { "Size", data.Size },
@@ -398,7 +398,7 @@ namespace TraceEventTests.Parsers
             };
             parser.SocketAsyncWriteStart += delegate (Multidata51TemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object>
+                firedEvents["SocketAsyncWriteStart"] = new Dictionary<string, object>
                 {
                     { "SocketId", data.SocketId },
                     { "Size", data.Size },
@@ -408,7 +408,7 @@ namespace TraceEventTests.Parsers
             };
             parser.SequenceAcknowledgementSent += delegate (Multidata52TemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object>
+                firedEvents["SequenceAcknowledgementSent"] = new Dictionary<string, object>
                 {
                     { "SessionId", data.SessionId },
                     { "AppDomain", data.AppDomain },
@@ -416,7 +416,7 @@ namespace TraceEventTests.Parsers
             };
             parser.ClientReliableSessionReconnect += delegate (Multidata52TemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object>
+                firedEvents["ClientReliableSessionReconnect"] = new Dictionary<string, object>
                 {
                     { "SessionId", data.SessionId },
                     { "AppDomain", data.AppDomain },
@@ -424,7 +424,7 @@ namespace TraceEventTests.Parsers
             };
             parser.ReliableSessionChannelFaulted += delegate (Multidata52TemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object>
+                firedEvents["ReliableSessionChannelFaulted"] = new Dictionary<string, object>
                 {
                     { "SessionId", data.SessionId },
                     { "AppDomain", data.AppDomain },
@@ -432,15 +432,15 @@ namespace TraceEventTests.Parsers
             };
             parser.WindowsStreamSecurityOnInitiateUpgrade += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["WindowsStreamSecurityOnInitiateUpgrade"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.WindowsStreamSecurityOnAcceptUpgrade += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["WindowsStreamSecurityOnAcceptUpgrade"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.SocketConnectionAbort += delegate (Multidata53TemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object>
+                firedEvents["SocketConnectionAbort"] = new Dictionary<string, object>
                 {
                     { "SocketId", data.SocketId },
                     { "AppDomain", data.AppDomain },
@@ -448,23 +448,23 @@ namespace TraceEventTests.Parsers
             };
             parser.HttpGetContextStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["HttpGetContextStart"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.ClientSendPreambleStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["ClientSendPreambleStart"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.ClientSendPreambleStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["ClientSendPreambleStop"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.HttpMessageReceiveFailed += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["HttpMessageReceiveFailed"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.TransactionScopeCreate += delegate (Multidata54TemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object>
+                firedEvents["TransactionScopeCreate"] = new Dictionary<string, object>
                 {
                     { "LocalId", data.LocalId },
                     { "Distributed", data.Distributed },
@@ -473,19 +473,19 @@ namespace TraceEventTests.Parsers
             };
             parser.StreamedMessageReadByEncoder += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["StreamedMessageReadByEncoder"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.StreamedMessageWrittenByEncoder += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["StreamedMessageWrittenByEncoder"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.MessageWrittenAsynchronouslyByEncoder += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["MessageWrittenAsynchronouslyByEncoder"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.BufferedAsyncWriteStart += delegate (Multidata55TemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object>
+                firedEvents["BufferedAsyncWriteStart"] = new Dictionary<string, object>
                 {
                     { "BufferId", data.BufferId },
                     { "Size", data.Size },
@@ -494,11 +494,11 @@ namespace TraceEventTests.Parsers
             };
             parser.BufferedAsyncWriteStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["BufferedAsyncWriteStop"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.PipeSharedMemoryCreated += delegate (Multidata60TemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object>
+                firedEvents["PipeSharedMemoryCreated"] = new Dictionary<string, object>
                 {
                     { "sharedMemoryName", data.sharedMemoryName },
                     { "AppDomain", data.AppDomain },
@@ -506,7 +506,7 @@ namespace TraceEventTests.Parsers
             };
             parser.NamedPipeCreated += delegate (Multidata61TemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object>
+                firedEvents["NamedPipeCreated"] = new Dictionary<string, object>
                 {
                     { "pipeName", data.pipeName },
                     { "AppDomain", data.AppDomain },
@@ -514,60 +514,60 @@ namespace TraceEventTests.Parsers
             };
             parser.SignatureVerificationStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["SignatureVerificationStart"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.SignatureVerificationSuccess += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["SignatureVerificationSuccess"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.WrappedKeyDecryptionStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["WrappedKeyDecryptionStart"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.WrappedKeyDecryptionSuccess += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["WrappedKeyDecryptionSuccess"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.EncryptedDataProcessingStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["EncryptedDataProcessingStart"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.EncryptedDataProcessingSuccess += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["EncryptedDataProcessingSuccess"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.HttpPipelineProcessInboundRequestStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["HttpPipelineProcessInboundRequestStart"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.HttpPipelineBeginProcessInboundRequestStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["HttpPipelineBeginProcessInboundRequestStart"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
             parser.HttpPipelineProcessInboundRequestStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[(int)data.ID] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
+                firedEvents["HttpPipelineProcessInboundRequestStop"] = new Dictionary<string, object> { { "AppDomain", data.AppDomain } };
             };
         }
 
         /// <summary>
         /// Validates all chunk 08 events fired with the expected payload values.
         /// </summary>
-        private void Validate_Chunk08(Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Validate_Chunk08(Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             // Helper to validate OneStringsTemplateA events
-            void ValidateOneString(int eventId)
+            void ValidateOneString(int eventId, string eventName)
             {
-                Assert.True(firedEvents.ContainsKey(eventId), $"Event {eventId} did not fire.");
-                var fields = firedEvents[eventId];
+                Assert.True(firedEvents.ContainsKey(eventName), $"Event {eventName} did not fire.");
+                var fields = firedEvents[eventName];
                 Assert.Equal(TestString(eventId, "AppDomain"), (string)fields["AppDomain"]);
             }
 
             // Helper to validate Multidata51TemplateA events (SocketId, Size, Endpoint, AppDomain)
-            void ValidateMultidata51(int eventId)
+            void ValidateMultidata51(int eventId, string eventName)
             {
-                Assert.True(firedEvents.ContainsKey(eventId), $"Event {eventId} did not fire.");
-                var fields = firedEvents[eventId];
+                Assert.True(firedEvents.ContainsKey(eventName), $"Event {eventName} did not fire.");
+                var fields = firedEvents[eventName];
                 Assert.Equal(TestInt32(eventId, 0), (int)fields["SocketId"]);
                 Assert.Equal(TestInt32(eventId, 1), (int)fields["Size"]);
                 Assert.Equal(TestString(eventId, "Endpoint"), (string)fields["Endpoint"]);
@@ -575,113 +575,117 @@ namespace TraceEventTests.Parsers
             }
 
             // Helper to validate Multidata52TemplateA events (SessionId, AppDomain)
-            void ValidateMultidata52(int eventId)
+            void ValidateMultidata52(int eventId, string eventName)
             {
-                Assert.True(firedEvents.ContainsKey(eventId), $"Event {eventId} did not fire.");
-                var fields = firedEvents[eventId];
+                Assert.True(firedEvents.ContainsKey(eventName), $"Event {eventName} did not fire.");
+                var fields = firedEvents[eventName];
                 Assert.Equal(TestString(eventId, "SessionId"), (string)fields["SessionId"]);
                 Assert.Equal(TestString(eventId, "AppDomain"), (string)fields["AppDomain"]);
             }
 
             // Helper to validate Multidata53TemplateA events (SocketId, AppDomain)
-            void ValidateMultidata53(int eventId)
+            void ValidateMultidata53(int eventId, string eventName)
             {
-                Assert.True(firedEvents.ContainsKey(eventId), $"Event {eventId} did not fire.");
-                var fields = firedEvents[eventId];
+                Assert.True(firedEvents.ContainsKey(eventName), $"Event {eventName} did not fire.");
+                var fields = firedEvents[eventName];
                 Assert.Equal(TestInt32(eventId, 0), (int)fields["SocketId"]);
                 Assert.Equal(TestString(eventId, "AppDomain"), (string)fields["AppDomain"]);
             }
 
             // 3371–3376: OneStringsTemplateA events
-            ValidateOneString(3371); // MtomMessageEncodingStart
-            ValidateOneString(3372); // TextMessageEncodingStart
-            ValidateOneString(3373); // BinaryMessageDecodingStart
-            ValidateOneString(3374); // MtomMessageDecodingStart
-            ValidateOneString(3375); // TextMessageDecodingStart
-            ValidateOneString(3376); // HttpResponseReceiveStart
+            ValidateOneString(3371, "MtomMessageEncodingStart"); // MtomMessageEncodingStart
+            ValidateOneString(3372, "TextMessageEncodingStart"); // TextMessageEncodingStart
+            ValidateOneString(3373, "BinaryMessageDecodingStart"); // BinaryMessageDecodingStart
+            ValidateOneString(3374, "MtomMessageDecodingStart"); // MtomMessageDecodingStart
+            ValidateOneString(3375, "TextMessageDecodingStart"); // TextMessageDecodingStart
+            ValidateOneString(3376, "HttpResponseReceiveStart"); // HttpResponseReceiveStart
 
             // 3377–3380: Multidata51TemplateA events
-            ValidateMultidata51(3377); // SocketReadStop
-            ValidateMultidata51(3378); // SocketAsyncReadStop
-            ValidateMultidata51(3379); // SocketWriteStart
-            ValidateMultidata51(3380); // SocketAsyncWriteStart
+            ValidateMultidata51(3377, "SocketReadStop"); // SocketReadStop
+            ValidateMultidata51(3378, "SocketAsyncReadStop"); // SocketAsyncReadStop
+            ValidateMultidata51(3379, "SocketWriteStart"); // SocketWriteStart
+            ValidateMultidata51(3380, "SocketAsyncWriteStart"); // SocketAsyncWriteStart
 
             // 3381–3383: Multidata52TemplateA events
-            ValidateMultidata52(3381); // SequenceAcknowledgementSent
-            ValidateMultidata52(3382); // ClientReliableSessionReconnect
-            ValidateMultidata52(3383); // ReliableSessionChannelFaulted
+            ValidateMultidata52(3381, "SequenceAcknowledgementSent"); // SequenceAcknowledgementSent
+            ValidateMultidata52(3382, "ClientReliableSessionReconnect"); // ClientReliableSessionReconnect
+            ValidateMultidata52(3383, "ReliableSessionChannelFaulted"); // ReliableSessionChannelFaulted
 
             // 3384–3385: OneStringsTemplateA events
-            ValidateOneString(3384); // WindowsStreamSecurityOnInitiateUpgrade
-            ValidateOneString(3385); // WindowsStreamSecurityOnAcceptUpgrade
+            ValidateOneString(3384, "WindowsStreamSecurityOnInitiateUpgrade"); // WindowsStreamSecurityOnInitiateUpgrade
+            ValidateOneString(3385, "WindowsStreamSecurityOnAcceptUpgrade"); // WindowsStreamSecurityOnAcceptUpgrade
 
-            // 3386: Multidata53TemplateA
-            ValidateMultidata53(3386); // SocketConnectionAbort
+            // Multidata53TemplateA
+            ValidateMultidata53(3386, "SocketConnectionAbort"); // SocketConnectionAbort
 
             // 3388–3391: OneStringsTemplateA events
-            ValidateOneString(3388); // HttpGetContextStart
-            ValidateOneString(3389); // ClientSendPreambleStart
-            ValidateOneString(3390); // ClientSendPreambleStop
-            ValidateOneString(3391); // HttpMessageReceiveFailed
+            ValidateOneString(3388, "HttpGetContextStart"); // HttpGetContextStart
+            ValidateOneString(3389, "ClientSendPreambleStart"); // ClientSendPreambleStart
+            ValidateOneString(3390, "ClientSendPreambleStop"); // ClientSendPreambleStop
+            ValidateOneString(3391, "HttpMessageReceiveFailed"); // HttpMessageReceiveFailed
 
-            // 3392: Multidata54TemplateA (LocalId, Distributed, AppDomain)
+            // Multidata54TemplateA (LocalId, Distributed, AppDomain)
             {
                 int eventId = 3392;
-                Assert.True(firedEvents.ContainsKey(eventId), $"Event {eventId} did not fire.");
-                var fields = firedEvents[eventId];
+                string eventName = "TransactionScopeCreate";
+                Assert.True(firedEvents.ContainsKey(eventName), $"Event {eventName} did not fire.");
+                var fields = firedEvents[eventName];
                 Assert.Equal(TestString(eventId, "LocalId"), (string)fields["LocalId"]);
                 Assert.Equal(TestGuid(eventId, 1), (Guid)fields["Distributed"]);
                 Assert.Equal(TestString(eventId, "AppDomain"), (string)fields["AppDomain"]);
             }
 
             // 3393–3395: OneStringsTemplateA events
-            ValidateOneString(3393); // StreamedMessageReadByEncoder
-            ValidateOneString(3394); // StreamedMessageWrittenByEncoder
-            ValidateOneString(3395); // MessageWrittenAsynchronouslyByEncoder
+            ValidateOneString(3393, "StreamedMessageReadByEncoder"); // StreamedMessageReadByEncoder
+            ValidateOneString(3394, "StreamedMessageWrittenByEncoder"); // StreamedMessageWrittenByEncoder
+            ValidateOneString(3395, "MessageWrittenAsynchronouslyByEncoder"); // MessageWrittenAsynchronouslyByEncoder
 
-            // 3396: Multidata55TemplateA (BufferId, Size, AppDomain)
+            // Multidata55TemplateA (BufferId, Size, AppDomain)
             {
                 int eventId = 3396;
-                Assert.True(firedEvents.ContainsKey(eventId), $"Event {eventId} did not fire.");
-                var fields = firedEvents[eventId];
+                string eventName = "BufferedAsyncWriteStart";
+                Assert.True(firedEvents.ContainsKey(eventName), $"Event {eventName} did not fire.");
+                var fields = firedEvents[eventName];
                 Assert.Equal(TestInt32(eventId, 0), (int)fields["BufferId"]);
                 Assert.Equal(TestInt32(eventId, 1), (int)fields["Size"]);
                 Assert.Equal(TestString(eventId, "AppDomain"), (string)fields["AppDomain"]);
             }
 
-            // 3397: OneStringsTemplateA
-            ValidateOneString(3397); // BufferedAsyncWriteStop
+            // OneStringsTemplateA
+            ValidateOneString(3397, "BufferedAsyncWriteStop"); // BufferedAsyncWriteStop
 
-            // 3398: Multidata60TemplateA (sharedMemoryName, AppDomain)
+            // Multidata60TemplateA (sharedMemoryName, AppDomain)
             {
                 int eventId = 3398;
-                Assert.True(firedEvents.ContainsKey(eventId), $"Event {eventId} did not fire.");
-                var fields = firedEvents[eventId];
+                string eventName = "PipeSharedMemoryCreated";
+                Assert.True(firedEvents.ContainsKey(eventName), $"Event {eventName} did not fire.");
+                var fields = firedEvents[eventName];
                 Assert.Equal(TestString(eventId, "sharedMemoryName"), (string)fields["sharedMemoryName"]);
                 Assert.Equal(TestString(eventId, "AppDomain"), (string)fields["AppDomain"]);
             }
 
-            // 3399: Multidata61TemplateA (pipeName, AppDomain)
+            // Multidata61TemplateA (pipeName, AppDomain)
             {
                 int eventId = 3399;
-                Assert.True(firedEvents.ContainsKey(eventId), $"Event {eventId} did not fire.");
-                var fields = firedEvents[eventId];
+                string eventName = "NamedPipeCreated";
+                Assert.True(firedEvents.ContainsKey(eventName), $"Event {eventName} did not fire.");
+                var fields = firedEvents[eventName];
                 Assert.Equal(TestString(eventId, "pipeName"), (string)fields["pipeName"]);
                 Assert.Equal(TestString(eventId, "AppDomain"), (string)fields["AppDomain"]);
             }
 
             // 3401–3406: OneStringsTemplateA events
-            ValidateOneString(3401); // SignatureVerificationStart
-            ValidateOneString(3402); // SignatureVerificationSuccess
-            ValidateOneString(3403); // WrappedKeyDecryptionStart
-            ValidateOneString(3404); // WrappedKeyDecryptionSuccess
-            ValidateOneString(3405); // EncryptedDataProcessingStart
-            ValidateOneString(3406); // EncryptedDataProcessingSuccess
+            ValidateOneString(3401, "SignatureVerificationStart"); // SignatureVerificationStart
+            ValidateOneString(3402, "SignatureVerificationSuccess"); // SignatureVerificationSuccess
+            ValidateOneString(3403, "WrappedKeyDecryptionStart"); // WrappedKeyDecryptionStart
+            ValidateOneString(3404, "WrappedKeyDecryptionSuccess"); // WrappedKeyDecryptionSuccess
+            ValidateOneString(3405, "EncryptedDataProcessingStart"); // EncryptedDataProcessingStart
+            ValidateOneString(3406, "EncryptedDataProcessingSuccess"); // EncryptedDataProcessingSuccess
 
             // 3407–3409: OneStringsTemplateA events
-            ValidateOneString(3407); // HttpPipelineProcessInboundRequestStart
-            ValidateOneString(3408); // HttpPipelineBeginProcessInboundRequestStart
-            ValidateOneString(3409); // HttpPipelineProcessInboundRequestStop
+            ValidateOneString(3407, "HttpPipelineProcessInboundRequestStart"); // HttpPipelineProcessInboundRequestStart
+            ValidateOneString(3408, "HttpPipelineBeginProcessInboundRequestStart"); // HttpPipelineBeginProcessInboundRequestStart
+            ValidateOneString(3409, "HttpPipelineProcessInboundRequestStop"); // HttpPipelineProcessInboundRequestStop
         }
     }
 }

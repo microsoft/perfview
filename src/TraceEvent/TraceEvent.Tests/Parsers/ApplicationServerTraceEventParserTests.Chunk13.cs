@@ -472,12 +472,12 @@ namespace TraceEventTests.Parsers
 
         // ── Subscribe_Chunk13 ──
 
-        private void Subscribe_Chunk13(ApplicationServerTraceEventParser parser, Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Subscribe_Chunk13(ApplicationServerTraceEventParser parser, Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             // 5402 TokenValidationStarted - Multidata103TemplateHA
             parser.TokenValidationStarted += delegate (Multidata103TemplateHATraceData data)
             {
-                firedEvents[5402] = new Dictionary<string, object>
+                firedEvents["TokenValidationStarted"] = new Dictionary<string, object>
                 {
                     { "tokenType", data.tokenType },
                     { "tokenID", data.tokenID },
@@ -489,7 +489,7 @@ namespace TraceEventTests.Parsers
             // 5403 TokenValidationSuccess - Multidata103TemplateHA
             parser.TokenValidationSuccess += delegate (Multidata103TemplateHATraceData data)
             {
-                firedEvents[5403] = new Dictionary<string, object>
+                firedEvents["TokenValidationSuccess"] = new Dictionary<string, object>
                 {
                     { "tokenType", data.tokenType },
                     { "tokenID", data.tokenID },
@@ -501,7 +501,7 @@ namespace TraceEventTests.Parsers
             // 5404 TokenValidationFailure - Multidata102TemplateHA
             parser.TokenValidationFailure += delegate (Multidata102TemplateHATraceData data)
             {
-                firedEvents[5404] = new Dictionary<string, object>
+                firedEvents["TokenValidationFailure"] = new Dictionary<string, object>
                 {
                     { "tokenType", data.tokenType },
                     { "tokenID", data.tokenID },
@@ -514,7 +514,7 @@ namespace TraceEventTests.Parsers
             // 5405 GetIssuerNameSuccess - Multidata101TemplateHA
             parser.GetIssuerNameSuccess += delegate (Multidata101TemplateHATraceData data)
             {
-                firedEvents[5405] = new Dictionary<string, object>
+                firedEvents["GetIssuerNameSuccess"] = new Dictionary<string, object>
                 {
                     { "issuerName", data.issuerName },
                     { "tokenID", data.tokenID },
@@ -526,7 +526,7 @@ namespace TraceEventTests.Parsers
             // 5406 GetIssuerNameFailure - Multidata100TemplateHA
             parser.GetIssuerNameFailure += delegate (Multidata100TemplateHATraceData data)
             {
-                firedEvents[5406] = new Dictionary<string, object>
+                firedEvents["GetIssuerNameFailure"] = new Dictionary<string, object>
                 {
                     { "tokenID", data.tokenID },
                     { "HostReference", data.HostReference },
@@ -537,7 +537,7 @@ namespace TraceEventTests.Parsers
             // 5600 FederationMessageProcessingStarted - TwoStringsTemplateVA
             parser.FederationMessageProcessingStarted += delegate (TwoStringsTemplateVATraceData data)
             {
-                firedEvents[5600] = new Dictionary<string, object>
+                firedEvents["FederationMessageProcessingStarted"] = new Dictionary<string, object>
                 {
                     { "HostReference", data.HostReference },
                     { "AppDomain", data.AppDomain },
@@ -547,7 +547,7 @@ namespace TraceEventTests.Parsers
             // 5601 FederationMessageProcessingSuccess - TwoStringsTemplateVA
             parser.FederationMessageProcessingSuccess += delegate (TwoStringsTemplateVATraceData data)
             {
-                firedEvents[5601] = new Dictionary<string, object>
+                firedEvents["FederationMessageProcessingSuccess"] = new Dictionary<string, object>
                 {
                     { "HostReference", data.HostReference },
                     { "AppDomain", data.AppDomain },
@@ -557,7 +557,7 @@ namespace TraceEventTests.Parsers
             // 5602 FederationMessageCreationStarted - TwoStringsTemplateVA
             parser.FederationMessageCreationStarted += delegate (TwoStringsTemplateVATraceData data)
             {
-                firedEvents[5602] = new Dictionary<string, object>
+                firedEvents["FederationMessageCreationStarted"] = new Dictionary<string, object>
                 {
                     { "HostReference", data.HostReference },
                     { "AppDomain", data.AppDomain },
@@ -567,7 +567,7 @@ namespace TraceEventTests.Parsers
             // 5603 FederationMessageCreationSuccess - TwoStringsTemplateVA
             parser.FederationMessageCreationSuccess += delegate (TwoStringsTemplateVATraceData data)
             {
-                firedEvents[5603] = new Dictionary<string, object>
+                firedEvents["FederationMessageCreationSuccess"] = new Dictionary<string, object>
                 {
                     { "HostReference", data.HostReference },
                     { "AppDomain", data.AppDomain },
@@ -577,7 +577,7 @@ namespace TraceEventTests.Parsers
             // 5604 SessionCookieReadingStarted - TwoStringsTemplateVA
             parser.SessionCookieReadingStarted += delegate (TwoStringsTemplateVATraceData data)
             {
-                firedEvents[5604] = new Dictionary<string, object>
+                firedEvents["SessionCookieReadingStarted"] = new Dictionary<string, object>
                 {
                     { "HostReference", data.HostReference },
                     { "AppDomain", data.AppDomain },
@@ -587,7 +587,7 @@ namespace TraceEventTests.Parsers
             // 5605 SessionCookieReadingSuccess - TwoStringsTemplateVA
             parser.SessionCookieReadingSuccess += delegate (TwoStringsTemplateVATraceData data)
             {
-                firedEvents[5605] = new Dictionary<string, object>
+                firedEvents["SessionCookieReadingSuccess"] = new Dictionary<string, object>
                 {
                     { "HostReference", data.HostReference },
                     { "AppDomain", data.AppDomain },
@@ -597,7 +597,7 @@ namespace TraceEventTests.Parsers
             // 5606 PrincipalSettingFromSessionTokenStarted - TwoStringsTemplateVA
             parser.PrincipalSettingFromSessionTokenStarted += delegate (TwoStringsTemplateVATraceData data)
             {
-                firedEvents[5606] = new Dictionary<string, object>
+                firedEvents["PrincipalSettingFromSessionTokenStarted"] = new Dictionary<string, object>
                 {
                     { "HostReference", data.HostReference },
                     { "AppDomain", data.AppDomain },
@@ -607,7 +607,7 @@ namespace TraceEventTests.Parsers
             // 5607 PrincipalSettingFromSessionTokenSuccess - TwoStringsTemplateVA
             parser.PrincipalSettingFromSessionTokenSuccess += delegate (TwoStringsTemplateVATraceData data)
             {
-                firedEvents[5607] = new Dictionary<string, object>
+                firedEvents["PrincipalSettingFromSessionTokenSuccess"] = new Dictionary<string, object>
                 {
                     { "HostReference", data.HostReference },
                     { "AppDomain", data.AppDomain },
@@ -617,7 +617,7 @@ namespace TraceEventTests.Parsers
             // 39456 TrackingRecordDropped - Multidata15TemplateA
             parser.TrackingRecordDropped += delegate (Multidata15TemplateATraceData data)
             {
-                firedEvents[39456] = new Dictionary<string, object>
+                firedEvents["TrackingRecordDropped"] = new Dictionary<string, object>
                 {
                     { "RecordNumber", data.RecordNumber },
                     { "ProviderId", data.ProviderId },
@@ -628,7 +628,7 @@ namespace TraceEventTests.Parsers
             // 39457 TrackingRecordRaised - ThreeStringsTemplateA
             parser.TrackingRecordRaised += delegate (ThreeStringsTemplateATraceData data)
             {
-                firedEvents[39457] = new Dictionary<string, object>
+                firedEvents["TrackingRecordRaised"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "data2", data.data2 },
@@ -639,7 +639,7 @@ namespace TraceEventTests.Parsers
             // 39458 TrackingRecordTruncated - Multidata15TemplateA
             parser.TrackingRecordTruncated += delegate (Multidata15TemplateATraceData data)
             {
-                firedEvents[39458] = new Dictionary<string, object>
+                firedEvents["TrackingRecordTruncated"] = new Dictionary<string, object>
                 {
                     { "RecordNumber", data.RecordNumber },
                     { "ProviderId", data.ProviderId },
@@ -650,7 +650,7 @@ namespace TraceEventTests.Parsers
             // 39459 TrackingDataExtracted - Multidata16TemplateA
             parser.TrackingDataExtracted += delegate (Multidata16TemplateATraceData data)
             {
-                firedEvents[39459] = new Dictionary<string, object>
+                firedEvents["TrackingDataExtracted"] = new Dictionary<string, object>
                 {
                     { "Data", data.Data },
                     { "Activity", data.Activity },
@@ -661,7 +661,7 @@ namespace TraceEventTests.Parsers
             // 39460 TrackingValueNotSerializable - Multidata18TemplateA
             parser.TrackingValueNotSerializable += delegate (Multidata18TemplateATraceData data)
             {
-                firedEvents[39460] = new Dictionary<string, object>
+                firedEvents["TrackingValueNotSerializable"] = new Dictionary<string, object>
                 {
                     { "name", data.name },
                     { "AppDomain", data.AppDomain },
@@ -671,7 +671,7 @@ namespace TraceEventTests.Parsers
             // 57393 AppDomainUnload - Multidata0TemplateA
             parser.AppDomainUnload += delegate (Multidata0TemplateATraceData data)
             {
-                firedEvents[57393] = new Dictionary<string, object>
+                firedEvents["AppDomainUnload"] = new Dictionary<string, object>
                 {
                     { "appdomainName", data.appdomainName },
                     { "processName", data.processName },
@@ -683,7 +683,7 @@ namespace TraceEventTests.Parsers
             // 57394 HandledException - ThreeStringsTemplateEA
             parser.HandledException += delegate (ThreeStringsTemplateEATraceData data)
             {
-                firedEvents[57394] = new Dictionary<string, object>
+                firedEvents["HandledException"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "SerializedException", data.SerializedException },
@@ -694,7 +694,7 @@ namespace TraceEventTests.Parsers
             // 57395 ShipAssertExceptionMessage - TwoStringsTemplateA
             parser.ShipAssertExceptionMessage += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[57395] = new Dictionary<string, object>
+                firedEvents["ShipAssertExceptionMessage"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
@@ -704,7 +704,7 @@ namespace TraceEventTests.Parsers
             // 57396 ThrowingException - FourStringsTemplateEA
             parser.ThrowingException += delegate (FourStringsTemplateEATraceData data)
             {
-                firedEvents[57396] = new Dictionary<string, object>
+                firedEvents["ThrowingException"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "data2", data.data2 },
@@ -716,7 +716,7 @@ namespace TraceEventTests.Parsers
             // 57397 UnhandledException - ThreeStringsTemplateEA
             parser.UnhandledException += delegate (ThreeStringsTemplateEATraceData data)
             {
-                firedEvents[57397] = new Dictionary<string, object>
+                firedEvents["UnhandledException"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "SerializedException", data.SerializedException },
@@ -727,7 +727,7 @@ namespace TraceEventTests.Parsers
             // 57398 MaxInstancesExceeded - Multidata84TemplateA
             parser.MaxInstancesExceeded += delegate (Multidata84TemplateATraceData data)
             {
-                firedEvents[57398] = new Dictionary<string, object>
+                firedEvents["MaxInstancesExceeded"] = new Dictionary<string, object>
                 {
                     { "limit", data.limit },
                     { "AppDomain", data.AppDomain },
@@ -737,7 +737,7 @@ namespace TraceEventTests.Parsers
             // 57399 TraceCodeEventLogCritical - TwoStringsTemplateTA
             parser.TraceCodeEventLogCritical += delegate (TwoStringsTemplateTATraceData data)
             {
-                firedEvents[57399] = new Dictionary<string, object>
+                firedEvents["TraceCodeEventLogCritical"] = new Dictionary<string, object>
                 {
                     { "ExtendedData", data.ExtendedData },
                     { "AppDomain", data.AppDomain },
@@ -747,7 +747,7 @@ namespace TraceEventTests.Parsers
             // 57400 TraceCodeEventLogError - TwoStringsTemplateTA
             parser.TraceCodeEventLogError += delegate (TwoStringsTemplateTATraceData data)
             {
-                firedEvents[57400] = new Dictionary<string, object>
+                firedEvents["TraceCodeEventLogError"] = new Dictionary<string, object>
                 {
                     { "ExtendedData", data.ExtendedData },
                     { "AppDomain", data.AppDomain },
@@ -757,7 +757,7 @@ namespace TraceEventTests.Parsers
             // 57401 TraceCodeEventLogInfo - TwoStringsTemplateTA
             parser.TraceCodeEventLogInfo += delegate (TwoStringsTemplateTATraceData data)
             {
-                firedEvents[57401] = new Dictionary<string, object>
+                firedEvents["TraceCodeEventLogInfo"] = new Dictionary<string, object>
                 {
                     { "ExtendedData", data.ExtendedData },
                     { "AppDomain", data.AppDomain },
@@ -767,7 +767,7 @@ namespace TraceEventTests.Parsers
             // 57402 TraceCodeEventLogVerbose - TwoStringsTemplateTA
             parser.TraceCodeEventLogVerbose += delegate (TwoStringsTemplateTATraceData data)
             {
-                firedEvents[57402] = new Dictionary<string, object>
+                firedEvents["TraceCodeEventLogVerbose"] = new Dictionary<string, object>
                 {
                     { "ExtendedData", data.ExtendedData },
                     { "AppDomain", data.AppDomain },
@@ -777,7 +777,7 @@ namespace TraceEventTests.Parsers
             // 57403 TraceCodeEventLogWarning - TwoStringsTemplateTA
             parser.TraceCodeEventLogWarning += delegate (TwoStringsTemplateTATraceData data)
             {
-                firedEvents[57403] = new Dictionary<string, object>
+                firedEvents["TraceCodeEventLogWarning"] = new Dictionary<string, object>
                 {
                     { "ExtendedData", data.ExtendedData },
                     { "AppDomain", data.AppDomain },
@@ -787,7 +787,7 @@ namespace TraceEventTests.Parsers
             // 57404 HandledExceptionWarning - ThreeStringsTemplateEA
             parser.HandledExceptionWarning += delegate (ThreeStringsTemplateEATraceData data)
             {
-                firedEvents[57404] = new Dictionary<string, object>
+                firedEvents["HandledExceptionWarning"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "SerializedException", data.SerializedException },
@@ -798,7 +798,7 @@ namespace TraceEventTests.Parsers
             // 57405 HandledExceptionError - ThreeStringsTemplateEA
             parser.HandledExceptionError += delegate (ThreeStringsTemplateEATraceData data)
             {
-                firedEvents[57405] = new Dictionary<string, object>
+                firedEvents["HandledExceptionError"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "SerializedException", data.SerializedException },
@@ -809,7 +809,7 @@ namespace TraceEventTests.Parsers
             // 57406 HandledExceptionVerbose - ThreeStringsTemplateEA
             parser.HandledExceptionVerbose += delegate (ThreeStringsTemplateEATraceData data)
             {
-                firedEvents[57406] = new Dictionary<string, object>
+                firedEvents["HandledExceptionVerbose"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "SerializedException", data.SerializedException },
@@ -820,7 +820,7 @@ namespace TraceEventTests.Parsers
             // 57407 ThrowingExceptionVerbose - FourStringsTemplateEA
             parser.ThrowingExceptionVerbose += delegate (FourStringsTemplateEATraceData data)
             {
-                firedEvents[57407] = new Dictionary<string, object>
+                firedEvents["ThrowingExceptionVerbose"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "data2", data.data2 },
@@ -832,7 +832,7 @@ namespace TraceEventTests.Parsers
             // 57408 EtwUnhandledException - ThreeStringsTemplateEA
             parser.EtwUnhandledException += delegate (ThreeStringsTemplateEATraceData data)
             {
-                firedEvents[57408] = new Dictionary<string, object>
+                firedEvents["EtwUnhandledException"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "SerializedException", data.SerializedException },
@@ -843,7 +843,7 @@ namespace TraceEventTests.Parsers
             // 57409 ThrowingEtwExceptionVerbose - FourStringsTemplateEA
             parser.ThrowingEtwExceptionVerbose += delegate (FourStringsTemplateEATraceData data)
             {
-                firedEvents[57409] = new Dictionary<string, object>
+                firedEvents["ThrowingEtwExceptionVerbose"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "data2", data.data2 },
@@ -855,7 +855,7 @@ namespace TraceEventTests.Parsers
             // 57410 ThrowingEtwException - FourStringsTemplateEA
             parser.ThrowingEtwException += delegate (FourStringsTemplateEATraceData data)
             {
-                firedEvents[57410] = new Dictionary<string, object>
+                firedEvents["ThrowingEtwException"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "data2", data.data2 },
@@ -867,7 +867,7 @@ namespace TraceEventTests.Parsers
             // 62326 HttpHandlerPickedForUrl - FourStringsTemplateA
             parser.HttpHandlerPickedForUrl += delegate (FourStringsTemplateATraceData data)
             {
-                firedEvents[62326] = new Dictionary<string, object>
+                firedEvents["HttpHandlerPickedForUrl"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "data2", data.data2 },
@@ -879,224 +879,224 @@ namespace TraceEventTests.Parsers
 
         // ── Validate_Chunk13 ──
 
-        private void Validate_Chunk13(Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Validate_Chunk13(Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             // 5402 TokenValidationStarted - Multidata103TemplateHA
-            Assert.True(firedEvents.ContainsKey(5402), "Event 5402 (TokenValidationStarted) did not fire.");
-            Assert.Equal(TestString(5402, "tokenType"), firedEvents[5402]["tokenType"]);
-            Assert.Equal(TestString(5402, "tokenID"), firedEvents[5402]["tokenID"]);
-            Assert.Equal(TestString(5402, "HostReference"), firedEvents[5402]["HostReference"]);
-            Assert.Equal(TestString(5402, "AppDomain"), firedEvents[5402]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TokenValidationStarted"), "Event TokenValidationStarted did not fire.");
+            Assert.Equal(TestString(5402, "tokenType"), firedEvents["TokenValidationStarted"]["tokenType"]);
+            Assert.Equal(TestString(5402, "tokenID"), firedEvents["TokenValidationStarted"]["tokenID"]);
+            Assert.Equal(TestString(5402, "HostReference"), firedEvents["TokenValidationStarted"]["HostReference"]);
+            Assert.Equal(TestString(5402, "AppDomain"), firedEvents["TokenValidationStarted"]["AppDomain"]);
 
             // 5403 TokenValidationSuccess - Multidata103TemplateHA
-            Assert.True(firedEvents.ContainsKey(5403), "Event 5403 (TokenValidationSuccess) did not fire.");
-            Assert.Equal(TestString(5403, "tokenType"), firedEvents[5403]["tokenType"]);
-            Assert.Equal(TestString(5403, "tokenID"), firedEvents[5403]["tokenID"]);
-            Assert.Equal(TestString(5403, "HostReference"), firedEvents[5403]["HostReference"]);
-            Assert.Equal(TestString(5403, "AppDomain"), firedEvents[5403]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TokenValidationSuccess"), "Event TokenValidationSuccess did not fire.");
+            Assert.Equal(TestString(5403, "tokenType"), firedEvents["TokenValidationSuccess"]["tokenType"]);
+            Assert.Equal(TestString(5403, "tokenID"), firedEvents["TokenValidationSuccess"]["tokenID"]);
+            Assert.Equal(TestString(5403, "HostReference"), firedEvents["TokenValidationSuccess"]["HostReference"]);
+            Assert.Equal(TestString(5403, "AppDomain"), firedEvents["TokenValidationSuccess"]["AppDomain"]);
 
             // 5404 TokenValidationFailure - Multidata102TemplateHA
-            Assert.True(firedEvents.ContainsKey(5404), "Event 5404 (TokenValidationFailure) did not fire.");
-            Assert.Equal(TestString(5404, "tokenType"), firedEvents[5404]["tokenType"]);
-            Assert.Equal(TestString(5404, "tokenID"), firedEvents[5404]["tokenID"]);
-            Assert.Equal(TestString(5404, "errorMessage"), firedEvents[5404]["errorMessage"]);
-            Assert.Equal(TestString(5404, "HostReference"), firedEvents[5404]["HostReference"]);
-            Assert.Equal(TestString(5404, "AppDomain"), firedEvents[5404]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TokenValidationFailure"), "Event TokenValidationFailure did not fire.");
+            Assert.Equal(TestString(5404, "tokenType"), firedEvents["TokenValidationFailure"]["tokenType"]);
+            Assert.Equal(TestString(5404, "tokenID"), firedEvents["TokenValidationFailure"]["tokenID"]);
+            Assert.Equal(TestString(5404, "errorMessage"), firedEvents["TokenValidationFailure"]["errorMessage"]);
+            Assert.Equal(TestString(5404, "HostReference"), firedEvents["TokenValidationFailure"]["HostReference"]);
+            Assert.Equal(TestString(5404, "AppDomain"), firedEvents["TokenValidationFailure"]["AppDomain"]);
 
             // 5405 GetIssuerNameSuccess - Multidata101TemplateHA
-            Assert.True(firedEvents.ContainsKey(5405), "Event 5405 (GetIssuerNameSuccess) did not fire.");
-            Assert.Equal(TestString(5405, "issuerName"), firedEvents[5405]["issuerName"]);
-            Assert.Equal(TestString(5405, "tokenID"), firedEvents[5405]["tokenID"]);
-            Assert.Equal(TestString(5405, "HostReference"), firedEvents[5405]["HostReference"]);
-            Assert.Equal(TestString(5405, "AppDomain"), firedEvents[5405]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("GetIssuerNameSuccess"), "Event GetIssuerNameSuccess did not fire.");
+            Assert.Equal(TestString(5405, "issuerName"), firedEvents["GetIssuerNameSuccess"]["issuerName"]);
+            Assert.Equal(TestString(5405, "tokenID"), firedEvents["GetIssuerNameSuccess"]["tokenID"]);
+            Assert.Equal(TestString(5405, "HostReference"), firedEvents["GetIssuerNameSuccess"]["HostReference"]);
+            Assert.Equal(TestString(5405, "AppDomain"), firedEvents["GetIssuerNameSuccess"]["AppDomain"]);
 
             // 5406 GetIssuerNameFailure - Multidata100TemplateHA
-            Assert.True(firedEvents.ContainsKey(5406), "Event 5406 (GetIssuerNameFailure) did not fire.");
-            Assert.Equal(TestString(5406, "tokenID"), firedEvents[5406]["tokenID"]);
-            Assert.Equal(TestString(5406, "HostReference"), firedEvents[5406]["HostReference"]);
-            Assert.Equal(TestString(5406, "AppDomain"), firedEvents[5406]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("GetIssuerNameFailure"), "Event GetIssuerNameFailure did not fire.");
+            Assert.Equal(TestString(5406, "tokenID"), firedEvents["GetIssuerNameFailure"]["tokenID"]);
+            Assert.Equal(TestString(5406, "HostReference"), firedEvents["GetIssuerNameFailure"]["HostReference"]);
+            Assert.Equal(TestString(5406, "AppDomain"), firedEvents["GetIssuerNameFailure"]["AppDomain"]);
 
             // 5600 FederationMessageProcessingStarted - TwoStringsTemplateVA
-            Assert.True(firedEvents.ContainsKey(5600), "Event 5600 (FederationMessageProcessingStarted) did not fire.");
-            Assert.Equal(TestString(5600, "HostReference"), firedEvents[5600]["HostReference"]);
-            Assert.Equal(TestString(5600, "AppDomain"), firedEvents[5600]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("FederationMessageProcessingStarted"), "Event FederationMessageProcessingStarted did not fire.");
+            Assert.Equal(TestString(5600, "HostReference"), firedEvents["FederationMessageProcessingStarted"]["HostReference"]);
+            Assert.Equal(TestString(5600, "AppDomain"), firedEvents["FederationMessageProcessingStarted"]["AppDomain"]);
 
             // 5601 FederationMessageProcessingSuccess - TwoStringsTemplateVA
-            Assert.True(firedEvents.ContainsKey(5601), "Event 5601 (FederationMessageProcessingSuccess) did not fire.");
-            Assert.Equal(TestString(5601, "HostReference"), firedEvents[5601]["HostReference"]);
-            Assert.Equal(TestString(5601, "AppDomain"), firedEvents[5601]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("FederationMessageProcessingSuccess"), "Event FederationMessageProcessingSuccess did not fire.");
+            Assert.Equal(TestString(5601, "HostReference"), firedEvents["FederationMessageProcessingSuccess"]["HostReference"]);
+            Assert.Equal(TestString(5601, "AppDomain"), firedEvents["FederationMessageProcessingSuccess"]["AppDomain"]);
 
             // 5602 FederationMessageCreationStarted - TwoStringsTemplateVA
-            Assert.True(firedEvents.ContainsKey(5602), "Event 5602 (FederationMessageCreationStarted) did not fire.");
-            Assert.Equal(TestString(5602, "HostReference"), firedEvents[5602]["HostReference"]);
-            Assert.Equal(TestString(5602, "AppDomain"), firedEvents[5602]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("FederationMessageCreationStarted"), "Event FederationMessageCreationStarted did not fire.");
+            Assert.Equal(TestString(5602, "HostReference"), firedEvents["FederationMessageCreationStarted"]["HostReference"]);
+            Assert.Equal(TestString(5602, "AppDomain"), firedEvents["FederationMessageCreationStarted"]["AppDomain"]);
 
             // 5603 FederationMessageCreationSuccess - TwoStringsTemplateVA
-            Assert.True(firedEvents.ContainsKey(5603), "Event 5603 (FederationMessageCreationSuccess) did not fire.");
-            Assert.Equal(TestString(5603, "HostReference"), firedEvents[5603]["HostReference"]);
-            Assert.Equal(TestString(5603, "AppDomain"), firedEvents[5603]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("FederationMessageCreationSuccess"), "Event FederationMessageCreationSuccess did not fire.");
+            Assert.Equal(TestString(5603, "HostReference"), firedEvents["FederationMessageCreationSuccess"]["HostReference"]);
+            Assert.Equal(TestString(5603, "AppDomain"), firedEvents["FederationMessageCreationSuccess"]["AppDomain"]);
 
             // 5604 SessionCookieReadingStarted - TwoStringsTemplateVA
-            Assert.True(firedEvents.ContainsKey(5604), "Event 5604 (SessionCookieReadingStarted) did not fire.");
-            Assert.Equal(TestString(5604, "HostReference"), firedEvents[5604]["HostReference"]);
-            Assert.Equal(TestString(5604, "AppDomain"), firedEvents[5604]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SessionCookieReadingStarted"), "Event SessionCookieReadingStarted did not fire.");
+            Assert.Equal(TestString(5604, "HostReference"), firedEvents["SessionCookieReadingStarted"]["HostReference"]);
+            Assert.Equal(TestString(5604, "AppDomain"), firedEvents["SessionCookieReadingStarted"]["AppDomain"]);
 
             // 5605 SessionCookieReadingSuccess - TwoStringsTemplateVA
-            Assert.True(firedEvents.ContainsKey(5605), "Event 5605 (SessionCookieReadingSuccess) did not fire.");
-            Assert.Equal(TestString(5605, "HostReference"), firedEvents[5605]["HostReference"]);
-            Assert.Equal(TestString(5605, "AppDomain"), firedEvents[5605]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SessionCookieReadingSuccess"), "Event SessionCookieReadingSuccess did not fire.");
+            Assert.Equal(TestString(5605, "HostReference"), firedEvents["SessionCookieReadingSuccess"]["HostReference"]);
+            Assert.Equal(TestString(5605, "AppDomain"), firedEvents["SessionCookieReadingSuccess"]["AppDomain"]);
 
             // 5606 PrincipalSettingFromSessionTokenStarted - TwoStringsTemplateVA
-            Assert.True(firedEvents.ContainsKey(5606), "Event 5606 (PrincipalSettingFromSessionTokenStarted) did not fire.");
-            Assert.Equal(TestString(5606, "HostReference"), firedEvents[5606]["HostReference"]);
-            Assert.Equal(TestString(5606, "AppDomain"), firedEvents[5606]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("PrincipalSettingFromSessionTokenStarted"), "Event PrincipalSettingFromSessionTokenStarted did not fire.");
+            Assert.Equal(TestString(5606, "HostReference"), firedEvents["PrincipalSettingFromSessionTokenStarted"]["HostReference"]);
+            Assert.Equal(TestString(5606, "AppDomain"), firedEvents["PrincipalSettingFromSessionTokenStarted"]["AppDomain"]);
 
             // 5607 PrincipalSettingFromSessionTokenSuccess - TwoStringsTemplateVA
-            Assert.True(firedEvents.ContainsKey(5607), "Event 5607 (PrincipalSettingFromSessionTokenSuccess) did not fire.");
-            Assert.Equal(TestString(5607, "HostReference"), firedEvents[5607]["HostReference"]);
-            Assert.Equal(TestString(5607, "AppDomain"), firedEvents[5607]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("PrincipalSettingFromSessionTokenSuccess"), "Event PrincipalSettingFromSessionTokenSuccess did not fire.");
+            Assert.Equal(TestString(5607, "HostReference"), firedEvents["PrincipalSettingFromSessionTokenSuccess"]["HostReference"]);
+            Assert.Equal(TestString(5607, "AppDomain"), firedEvents["PrincipalSettingFromSessionTokenSuccess"]["AppDomain"]);
 
             // 39456 TrackingRecordDropped - Multidata15TemplateA
-            Assert.True(firedEvents.ContainsKey(39456), "Event 39456 (TrackingRecordDropped) did not fire.");
-            Assert.Equal(TestInt64(39456, 0), firedEvents[39456]["RecordNumber"]);
-            Assert.Equal(TestGuid(39456, 1), firedEvents[39456]["ProviderId"]);
-            Assert.Equal(TestString(39456, "AppDomain"), firedEvents[39456]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TrackingRecordDropped"), "Event TrackingRecordDropped did not fire.");
+            Assert.Equal(TestInt64(39456, 0), firedEvents["TrackingRecordDropped"]["RecordNumber"]);
+            Assert.Equal(TestGuid(39456, 1), firedEvents["TrackingRecordDropped"]["ProviderId"]);
+            Assert.Equal(TestString(39456, "AppDomain"), firedEvents["TrackingRecordDropped"]["AppDomain"]);
 
             // 39457 TrackingRecordRaised - ThreeStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(39457), "Event 39457 (TrackingRecordRaised) did not fire.");
-            Assert.Equal(TestString(39457, "data1"), firedEvents[39457]["data1"]);
-            Assert.Equal(TestString(39457, "data2"), firedEvents[39457]["data2"]);
-            Assert.Equal(TestString(39457, "AppDomain"), firedEvents[39457]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TrackingRecordRaised"), "Event TrackingRecordRaised did not fire.");
+            Assert.Equal(TestString(39457, "data1"), firedEvents["TrackingRecordRaised"]["data1"]);
+            Assert.Equal(TestString(39457, "data2"), firedEvents["TrackingRecordRaised"]["data2"]);
+            Assert.Equal(TestString(39457, "AppDomain"), firedEvents["TrackingRecordRaised"]["AppDomain"]);
 
             // 39458 TrackingRecordTruncated - Multidata15TemplateA
-            Assert.True(firedEvents.ContainsKey(39458), "Event 39458 (TrackingRecordTruncated) did not fire.");
-            Assert.Equal(TestInt64(39458, 0), firedEvents[39458]["RecordNumber"]);
-            Assert.Equal(TestGuid(39458, 1), firedEvents[39458]["ProviderId"]);
-            Assert.Equal(TestString(39458, "AppDomain"), firedEvents[39458]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TrackingRecordTruncated"), "Event TrackingRecordTruncated did not fire.");
+            Assert.Equal(TestInt64(39458, 0), firedEvents["TrackingRecordTruncated"]["RecordNumber"]);
+            Assert.Equal(TestGuid(39458, 1), firedEvents["TrackingRecordTruncated"]["ProviderId"]);
+            Assert.Equal(TestString(39458, "AppDomain"), firedEvents["TrackingRecordTruncated"]["AppDomain"]);
 
             // 39459 TrackingDataExtracted - Multidata16TemplateA
-            Assert.True(firedEvents.ContainsKey(39459), "Event 39459 (TrackingDataExtracted) did not fire.");
-            Assert.Equal(TestString(39459, "Data"), firedEvents[39459]["Data"]);
-            Assert.Equal(TestString(39459, "Activity"), firedEvents[39459]["Activity"]);
-            Assert.Equal(TestString(39459, "AppDomain"), firedEvents[39459]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TrackingDataExtracted"), "Event TrackingDataExtracted did not fire.");
+            Assert.Equal(TestString(39459, "Data"), firedEvents["TrackingDataExtracted"]["Data"]);
+            Assert.Equal(TestString(39459, "Activity"), firedEvents["TrackingDataExtracted"]["Activity"]);
+            Assert.Equal(TestString(39459, "AppDomain"), firedEvents["TrackingDataExtracted"]["AppDomain"]);
 
             // 39460 TrackingValueNotSerializable - Multidata18TemplateA
-            Assert.True(firedEvents.ContainsKey(39460), "Event 39460 (TrackingValueNotSerializable) did not fire.");
-            Assert.Equal(TestString(39460, "name"), firedEvents[39460]["name"]);
-            Assert.Equal(TestString(39460, "AppDomain"), firedEvents[39460]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TrackingValueNotSerializable"), "Event TrackingValueNotSerializable did not fire.");
+            Assert.Equal(TestString(39460, "name"), firedEvents["TrackingValueNotSerializable"]["name"]);
+            Assert.Equal(TestString(39460, "AppDomain"), firedEvents["TrackingValueNotSerializable"]["AppDomain"]);
 
             // 57393 AppDomainUnload - Multidata0TemplateA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57393), "Event 57393 (AppDomainUnload) did not fire.");
-            Assert.Equal(TestString(57393, "appdomainName"), firedEvents[57393]["appdomainName"]);
-            Assert.Equal(TestString(57393, "processName"), firedEvents[57393]["processName"]);
-            Assert.Equal(TestString(57393, "processId"), firedEvents[57393]["processId"]);
-            Assert.Equal(TestString(57393, "AppDomain"), firedEvents[57393]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("AppDomainUnload"), "Event AppDomainUnload did not fire.");
+            Assert.Equal(TestString(57393, "appdomainName"), firedEvents["AppDomainUnload"]["appdomainName"]);
+            Assert.Equal(TestString(57393, "processName"), firedEvents["AppDomainUnload"]["processName"]);
+            Assert.Equal(TestString(57393, "processId"), firedEvents["AppDomainUnload"]["processId"]);
+            Assert.Equal(TestString(57393, "AppDomain"), firedEvents["AppDomainUnload"]["AppDomain"]);
 
             // 57394 HandledException - ThreeStringsTemplateEA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57394), "Event 57394 (HandledException) did not fire.");
-            Assert.Equal(TestString(57394, "data1"), firedEvents[57394]["data1"]);
-            Assert.Equal(TestString(57394, "SerializedException"), firedEvents[57394]["SerializedException"]);
-            Assert.Equal(TestString(57394, "AppDomain"), firedEvents[57394]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("HandledException"), "Event HandledException did not fire.");
+            Assert.Equal(TestString(57394, "data1"), firedEvents["HandledException"]["data1"]);
+            Assert.Equal(TestString(57394, "SerializedException"), firedEvents["HandledException"]["SerializedException"]);
+            Assert.Equal(TestString(57394, "AppDomain"), firedEvents["HandledException"]["AppDomain"]);
 
             // 57395 ShipAssertExceptionMessage - TwoStringsTemplateA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57395), "Event 57395 (ShipAssertExceptionMessage) did not fire.");
-            Assert.Equal(TestString(57395, "data1"), firedEvents[57395]["data1"]);
-            Assert.Equal(TestString(57395, "AppDomain"), firedEvents[57395]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ShipAssertExceptionMessage"), "Event ShipAssertExceptionMessage did not fire.");
+            Assert.Equal(TestString(57395, "data1"), firedEvents["ShipAssertExceptionMessage"]["data1"]);
+            Assert.Equal(TestString(57395, "AppDomain"), firedEvents["ShipAssertExceptionMessage"]["AppDomain"]);
 
             // 57396 ThrowingException - FourStringsTemplateEA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57396), "Event 57396 (ThrowingException) did not fire.");
-            Assert.Equal(TestString(57396, "data1"), firedEvents[57396]["data1"]);
-            Assert.Equal(TestString(57396, "data2"), firedEvents[57396]["data2"]);
-            Assert.Equal(TestString(57396, "SerializedException"), firedEvents[57396]["SerializedException"]);
-            Assert.Equal(TestString(57396, "AppDomain"), firedEvents[57396]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ThrowingException"), "Event ThrowingException did not fire.");
+            Assert.Equal(TestString(57396, "data1"), firedEvents["ThrowingException"]["data1"]);
+            Assert.Equal(TestString(57396, "data2"), firedEvents["ThrowingException"]["data2"]);
+            Assert.Equal(TestString(57396, "SerializedException"), firedEvents["ThrowingException"]["SerializedException"]);
+            Assert.Equal(TestString(57396, "AppDomain"), firedEvents["ThrowingException"]["AppDomain"]);
 
             // 57397 UnhandledException - ThreeStringsTemplateEA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57397), "Event 57397 (UnhandledException) did not fire.");
-            Assert.Equal(TestString(57397, "data1"), firedEvents[57397]["data1"]);
-            Assert.Equal(TestString(57397, "SerializedException"), firedEvents[57397]["SerializedException"]);
-            Assert.Equal(TestString(57397, "AppDomain"), firedEvents[57397]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("UnhandledException"), "Event UnhandledException did not fire.");
+            Assert.Equal(TestString(57397, "data1"), firedEvents["UnhandledException"]["data1"]);
+            Assert.Equal(TestString(57397, "SerializedException"), firedEvents["UnhandledException"]["SerializedException"]);
+            Assert.Equal(TestString(57397, "AppDomain"), firedEvents["UnhandledException"]["AppDomain"]);
 
             // 57398 MaxInstancesExceeded - Multidata84TemplateA
-            Assert.True(firedEvents.ContainsKey(57398), "Event 57398 (MaxInstancesExceeded) did not fire.");
-            Assert.Equal(TestInt32(57398, 0), firedEvents[57398]["limit"]);
-            Assert.Equal(TestString(57398, "AppDomain"), firedEvents[57398]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("MaxInstancesExceeded"), "Event MaxInstancesExceeded did not fire.");
+            Assert.Equal(TestInt32(57398, 0), firedEvents["MaxInstancesExceeded"]["limit"]);
+            Assert.Equal(TestString(57398, "AppDomain"), firedEvents["MaxInstancesExceeded"]["AppDomain"]);
 
             // 57399 TraceCodeEventLogCritical - TwoStringsTemplateTA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57399), "Event 57399 (TraceCodeEventLogCritical) did not fire.");
-            Assert.Equal(TestString(57399, "ExtendedData"), firedEvents[57399]["ExtendedData"]);
-            Assert.Equal(TestString(57399, "AppDomain"), firedEvents[57399]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TraceCodeEventLogCritical"), "Event TraceCodeEventLogCritical did not fire.");
+            Assert.Equal(TestString(57399, "ExtendedData"), firedEvents["TraceCodeEventLogCritical"]["ExtendedData"]);
+            Assert.Equal(TestString(57399, "AppDomain"), firedEvents["TraceCodeEventLogCritical"]["AppDomain"]);
 
             // 57400 TraceCodeEventLogError - TwoStringsTemplateTA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57400), "Event 57400 (TraceCodeEventLogError) did not fire.");
-            Assert.Equal(TestString(57400, "ExtendedData"), firedEvents[57400]["ExtendedData"]);
-            Assert.Equal(TestString(57400, "AppDomain"), firedEvents[57400]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TraceCodeEventLogError"), "Event TraceCodeEventLogError did not fire.");
+            Assert.Equal(TestString(57400, "ExtendedData"), firedEvents["TraceCodeEventLogError"]["ExtendedData"]);
+            Assert.Equal(TestString(57400, "AppDomain"), firedEvents["TraceCodeEventLogError"]["AppDomain"]);
 
             // 57401 TraceCodeEventLogInfo - TwoStringsTemplateTA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57401), "Event 57401 (TraceCodeEventLogInfo) did not fire.");
-            Assert.Equal(TestString(57401, "ExtendedData"), firedEvents[57401]["ExtendedData"]);
-            Assert.Equal(TestString(57401, "AppDomain"), firedEvents[57401]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TraceCodeEventLogInfo"), "Event TraceCodeEventLogInfo did not fire.");
+            Assert.Equal(TestString(57401, "ExtendedData"), firedEvents["TraceCodeEventLogInfo"]["ExtendedData"]);
+            Assert.Equal(TestString(57401, "AppDomain"), firedEvents["TraceCodeEventLogInfo"]["AppDomain"]);
 
             // 57402 TraceCodeEventLogVerbose - TwoStringsTemplateTA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57402), "Event 57402 (TraceCodeEventLogVerbose) did not fire.");
-            Assert.Equal(TestString(57402, "ExtendedData"), firedEvents[57402]["ExtendedData"]);
-            Assert.Equal(TestString(57402, "AppDomain"), firedEvents[57402]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TraceCodeEventLogVerbose"), "Event TraceCodeEventLogVerbose did not fire.");
+            Assert.Equal(TestString(57402, "ExtendedData"), firedEvents["TraceCodeEventLogVerbose"]["ExtendedData"]);
+            Assert.Equal(TestString(57402, "AppDomain"), firedEvents["TraceCodeEventLogVerbose"]["AppDomain"]);
 
             // 57403 TraceCodeEventLogWarning - TwoStringsTemplateTA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57403), "Event 57403 (TraceCodeEventLogWarning) did not fire.");
-            Assert.Equal(TestString(57403, "ExtendedData"), firedEvents[57403]["ExtendedData"]);
-            Assert.Equal(TestString(57403, "AppDomain"), firedEvents[57403]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TraceCodeEventLogWarning"), "Event TraceCodeEventLogWarning did not fire.");
+            Assert.Equal(TestString(57403, "ExtendedData"), firedEvents["TraceCodeEventLogWarning"]["ExtendedData"]);
+            Assert.Equal(TestString(57403, "AppDomain"), firedEvents["TraceCodeEventLogWarning"]["AppDomain"]);
 
             // 57404 HandledExceptionWarning - ThreeStringsTemplateEA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57404), "Event 57404 (HandledExceptionWarning) did not fire.");
-            Assert.Equal(TestString(57404, "data1"), firedEvents[57404]["data1"]);
-            Assert.Equal(TestString(57404, "SerializedException"), firedEvents[57404]["SerializedException"]);
-            Assert.Equal(TestString(57404, "AppDomain"), firedEvents[57404]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("HandledExceptionWarning"), "Event HandledExceptionWarning did not fire.");
+            Assert.Equal(TestString(57404, "data1"), firedEvents["HandledExceptionWarning"]["data1"]);
+            Assert.Equal(TestString(57404, "SerializedException"), firedEvents["HandledExceptionWarning"]["SerializedException"]);
+            Assert.Equal(TestString(57404, "AppDomain"), firedEvents["HandledExceptionWarning"]["AppDomain"]);
 
             // 57405 HandledExceptionError - ThreeStringsTemplateEA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57405), "Event 57405 (HandledExceptionError) did not fire.");
-            Assert.Equal(TestString(57405, "data1"), firedEvents[57405]["data1"]);
-            Assert.Equal(TestString(57405, "SerializedException"), firedEvents[57405]["SerializedException"]);
-            Assert.Equal(TestString(57405, "AppDomain"), firedEvents[57405]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("HandledExceptionError"), "Event HandledExceptionError did not fire.");
+            Assert.Equal(TestString(57405, "data1"), firedEvents["HandledExceptionError"]["data1"]);
+            Assert.Equal(TestString(57405, "SerializedException"), firedEvents["HandledExceptionError"]["SerializedException"]);
+            Assert.Equal(TestString(57405, "AppDomain"), firedEvents["HandledExceptionError"]["AppDomain"]);
 
             // 57406 HandledExceptionVerbose - ThreeStringsTemplateEA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57406), "Event 57406 (HandledExceptionVerbose) did not fire.");
-            Assert.Equal(TestString(57406, "data1"), firedEvents[57406]["data1"]);
-            Assert.Equal(TestString(57406, "SerializedException"), firedEvents[57406]["SerializedException"]);
-            Assert.Equal(TestString(57406, "AppDomain"), firedEvents[57406]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("HandledExceptionVerbose"), "Event HandledExceptionVerbose did not fire.");
+            Assert.Equal(TestString(57406, "data1"), firedEvents["HandledExceptionVerbose"]["data1"]);
+            Assert.Equal(TestString(57406, "SerializedException"), firedEvents["HandledExceptionVerbose"]["SerializedException"]);
+            Assert.Equal(TestString(57406, "AppDomain"), firedEvents["HandledExceptionVerbose"]["AppDomain"]);
 
             // 57407 ThrowingExceptionVerbose - FourStringsTemplateEA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57407), "Event 57407 (ThrowingExceptionVerbose) did not fire.");
-            Assert.Equal(TestString(57407, "data1"), firedEvents[57407]["data1"]);
-            Assert.Equal(TestString(57407, "data2"), firedEvents[57407]["data2"]);
-            Assert.Equal(TestString(57407, "SerializedException"), firedEvents[57407]["SerializedException"]);
-            Assert.Equal(TestString(57407, "AppDomain"), firedEvents[57407]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ThrowingExceptionVerbose"), "Event ThrowingExceptionVerbose did not fire.");
+            Assert.Equal(TestString(57407, "data1"), firedEvents["ThrowingExceptionVerbose"]["data1"]);
+            Assert.Equal(TestString(57407, "data2"), firedEvents["ThrowingExceptionVerbose"]["data2"]);
+            Assert.Equal(TestString(57407, "SerializedException"), firedEvents["ThrowingExceptionVerbose"]["SerializedException"]);
+            Assert.Equal(TestString(57407, "AppDomain"), firedEvents["ThrowingExceptionVerbose"]["AppDomain"]);
 
             // 57408 EtwUnhandledException - ThreeStringsTemplateEA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57408), "Event 57408 (EtwUnhandledException) did not fire.");
-            Assert.Equal(TestString(57408, "data1"), firedEvents[57408]["data1"]);
-            Assert.Equal(TestString(57408, "SerializedException"), firedEvents[57408]["SerializedException"]);
-            Assert.Equal(TestString(57408, "AppDomain"), firedEvents[57408]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("EtwUnhandledException"), "Event EtwUnhandledException did not fire.");
+            Assert.Equal(TestString(57408, "data1"), firedEvents["EtwUnhandledException"]["data1"]);
+            Assert.Equal(TestString(57408, "SerializedException"), firedEvents["EtwUnhandledException"]["SerializedException"]);
+            Assert.Equal(TestString(57408, "AppDomain"), firedEvents["EtwUnhandledException"]["AppDomain"]);
 
             // 57409 ThrowingEtwExceptionVerbose - FourStringsTemplateEA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57409), "Event 57409 (ThrowingEtwExceptionVerbose) did not fire.");
-            Assert.Equal(TestString(57409, "data1"), firedEvents[57409]["data1"]);
-            Assert.Equal(TestString(57409, "data2"), firedEvents[57409]["data2"]);
-            Assert.Equal(TestString(57409, "SerializedException"), firedEvents[57409]["SerializedException"]);
-            Assert.Equal(TestString(57409, "AppDomain"), firedEvents[57409]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ThrowingEtwExceptionVerbose"), "Event ThrowingEtwExceptionVerbose did not fire.");
+            Assert.Equal(TestString(57409, "data1"), firedEvents["ThrowingEtwExceptionVerbose"]["data1"]);
+            Assert.Equal(TestString(57409, "data2"), firedEvents["ThrowingEtwExceptionVerbose"]["data2"]);
+            Assert.Equal(TestString(57409, "SerializedException"), firedEvents["ThrowingEtwExceptionVerbose"]["SerializedException"]);
+            Assert.Equal(TestString(57409, "AppDomain"), firedEvents["ThrowingEtwExceptionVerbose"]["AppDomain"]);
 
             // 57410 ThrowingEtwException - FourStringsTemplateEA (task=0, Guid.Empty)
-            Assert.True(firedEvents.ContainsKey(57410), "Event 57410 (ThrowingEtwException) did not fire.");
-            Assert.Equal(TestString(57410, "data1"), firedEvents[57410]["data1"]);
-            Assert.Equal(TestString(57410, "data2"), firedEvents[57410]["data2"]);
-            Assert.Equal(TestString(57410, "SerializedException"), firedEvents[57410]["SerializedException"]);
-            Assert.Equal(TestString(57410, "AppDomain"), firedEvents[57410]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ThrowingEtwException"), "Event ThrowingEtwException did not fire.");
+            Assert.Equal(TestString(57410, "data1"), firedEvents["ThrowingEtwException"]["data1"]);
+            Assert.Equal(TestString(57410, "data2"), firedEvents["ThrowingEtwException"]["data2"]);
+            Assert.Equal(TestString(57410, "SerializedException"), firedEvents["ThrowingEtwException"]["SerializedException"]);
+            Assert.Equal(TestString(57410, "AppDomain"), firedEvents["ThrowingEtwException"]["AppDomain"]);
 
             // 62326 HttpHandlerPickedForUrl - FourStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(62326), "Event 62326 (HttpHandlerPickedForUrl) did not fire.");
-            Assert.Equal(TestString(62326, "data1"), firedEvents[62326]["data1"]);
-            Assert.Equal(TestString(62326, "data2"), firedEvents[62326]["data2"]);
-            Assert.Equal(TestString(62326, "data3"), firedEvents[62326]["data3"]);
-            Assert.Equal(TestString(62326, "AppDomain"), firedEvents[62326]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("HttpHandlerPickedForUrl"), "Event HttpHandlerPickedForUrl did not fire.");
+            Assert.Equal(TestString(62326, "data1"), firedEvents["HttpHandlerPickedForUrl"]["data1"]);
+            Assert.Equal(TestString(62326, "data2"), firedEvents["HttpHandlerPickedForUrl"]["data2"]);
+            Assert.Equal(TestString(62326, "data3"), firedEvents["HttpHandlerPickedForUrl"]["data3"]);
+            Assert.Equal(TestString(62326, "AppDomain"), firedEvents["HttpHandlerPickedForUrl"]["AppDomain"]);
         }
     }
 }

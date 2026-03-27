@@ -61,79 +61,79 @@ namespace TraceEventTests.Parsers
         /// </summary>
         private void WriteMetadata_Chunk05(EventPipeWriterV5 writer, ref int metadataId)
         {
-            // 1148 FlowchartSwitchCaseNotFound (TwoStringsTemplateA, opcode 63)
+            // FlowchartSwitchCaseNotFound (TwoStringsTemplateA, opcode 63)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "FlowchartSwitchCaseNotFound", 1148) { OpCode = 63 });
-            // 1150 CompensationState (ThreeStringsTemplateA, opcode 0)
+            // CompensationState (ThreeStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "CompensationState", 1150));
-            // 1223 SwitchCaseNotFound (TwoStringsTemplateA, opcode 0)
+            // SwitchCaseNotFound (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "SwitchCaseNotFound", 1223));
-            // 1400 ChannelInitializationTimeout (TwoStringsTemplateA, opcode 0)
+            // ChannelInitializationTimeout (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "ChannelInitializationTimeout", 1400));
-            // 1401 CloseTimeout (TwoStringsTemplateA, opcode 0)
+            // CloseTimeout (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "CloseTimeout", 1401));
-            // 1402 IdleTimeout (Multidata56TemplateA, opcode 0)
+            // IdleTimeout (Multidata56TemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "IdleTimeout", 1402));
-            // 1403 LeaseTimeout (Multidata56TemplateA, opcode 0)
+            // LeaseTimeout (Multidata56TemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "LeaseTimeout", 1403));
-            // 1405 OpenTimeout (TwoStringsTemplateA, opcode 0)
+            // OpenTimeout (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "OpenTimeout", 1405));
-            // 1406 ReceiveTimeout (TwoStringsTemplateA, opcode 0)
+            // ReceiveTimeout (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "ReceiveTimeout", 1406));
-            // 1407 SendTimeout (TwoStringsTemplateA, opcode 0)
+            // SendTimeout (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "SendTimeout", 1407));
-            // 1409 InactivityTimeout (TwoStringsTemplateA, opcode 0)
+            // InactivityTimeout (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "InactivityTimeout", 1409));
-            // 1416 MaxReceivedMessageSizeExceeded (TwoStringsTemplateA, opcode 0)
+            // MaxReceivedMessageSizeExceeded (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "MaxReceivedMessageSizeExceeded", 1416));
-            // 1417 MaxSentMessageSizeExceeded (TwoStringsTemplateA, opcode 0)
+            // MaxSentMessageSizeExceeded (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "MaxSentMessageSizeExceeded", 1417));
-            // 1418 MaxOutboundConnectionsPerEndpointExceeded (TwoStringsTemplateA, opcode 0)
+            // MaxOutboundConnectionsPerEndpointExceeded (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "MaxOutboundConnectionsPerEndpointExceeded", 1418));
-            // 1419 MaxPendingConnectionsExceeded (TwoStringsTemplateA, opcode 0)
+            // MaxPendingConnectionsExceeded (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "MaxPendingConnectionsExceeded", 1419));
-            // 1420 ReaderQuotaExceeded (TwoStringsTemplateA, opcode 0)
+            // ReaderQuotaExceeded (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "ReaderQuotaExceeded", 1420));
-            // 1422 NegotiateTokenAuthenticatorStateCacheExceeded (Multidata57TemplateA, opcode 0)
+            // NegotiateTokenAuthenticatorStateCacheExceeded (Multidata57TemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "NegotiateTokenAuthenticatorStateCacheExceeded", 1422));
-            // 1423 NegotiateTokenAuthenticatorStateCacheRatio (Multidata58TemplateA, opcode 0)
+            // NegotiateTokenAuthenticatorStateCacheRatio (Multidata58TemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "NegotiateTokenAuthenticatorStateCacheRatio", 1423));
-            // 1424 SecuritySessionRatio (Multidata58TemplateA, opcode 0)
+            // SecuritySessionRatio (Multidata58TemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "SecuritySessionRatio", 1424));
-            // 1430 PendingConnectionsRatio (Multidata58TemplateA, opcode 0)
+            // PendingConnectionsRatio (Multidata58TemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "PendingConnectionsRatio", 1430));
-            // 1431 ConcurrentCallsRatio (Multidata58TemplateA, opcode 0)
+            // ConcurrentCallsRatio (Multidata58TemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "ConcurrentCallsRatio", 1431));
-            // 1432 ConcurrentSessionsRatio (Multidata58TemplateA, opcode 0)
+            // ConcurrentSessionsRatio (Multidata58TemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "ConcurrentSessionsRatio", 1432));
-            // 1433 OutboundConnectionsPerEndpointRatio (Multidata58TemplateA, opcode 0)
+            // OutboundConnectionsPerEndpointRatio (Multidata58TemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "OutboundConnectionsPerEndpointRatio", 1433));
-            // 1436 PendingMessagesPerChannelRatio (Multidata58TemplateA, opcode 0)
+            // PendingMessagesPerChannelRatio (Multidata58TemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "PendingMessagesPerChannelRatio", 1436));
-            // 1438 ConcurrentInstancesRatio (Multidata58TemplateA, opcode 0)
+            // ConcurrentInstancesRatio (Multidata58TemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "ConcurrentInstancesRatio", 1438));
-            // 1439 PendingAcceptsAtZero (OneStringsTemplateA, opcode 0)
+            // PendingAcceptsAtZero (OneStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "PendingAcceptsAtZero", 1439));
-            // 1441 MaxSessionSizeReached (TwoStringsTemplateA, opcode 0)
+            // MaxSessionSizeReached (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "MaxSessionSizeReached", 1441));
-            // 1442 ReceiveRetryCountReached (TwoStringsTemplateA, opcode 0)
+            // ReceiveRetryCountReached (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "ReceiveRetryCountReached", 1442));
-            // 1443 MaxRetryCyclesExceededMsmq (TwoStringsTemplateA, opcode 0)
+            // MaxRetryCyclesExceededMsmq (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "MaxRetryCyclesExceededMsmq", 1443));
-            // 1445 ReadPoolMiss (Multidata59TemplateA, opcode 0)
+            // ReadPoolMiss (Multidata59TemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "ReadPoolMiss", 1445));
-            // 1446 WritePoolMiss (Multidata59TemplateA, opcode 0)
+            // WritePoolMiss (Multidata59TemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "WritePoolMiss", 1446));
-            // 1449 WfMessageReceived (OneStringsTemplateA, opcode 10)
+            // WfMessageReceived (OneStringsTemplateA, opcode 10)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "WfMessageReceived", 1449) { OpCode = 10 });
-            // 1450 WfMessageSent (OneStringsTemplateA, opcode 9)
+            // WfMessageSent (OneStringsTemplateA, opcode 9)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "WfMessageSent", 1450) { OpCode = 9 });
-            // 1451 MaxRetryCyclesExceeded (TwoStringsTemplateA, opcode 0)
+            // MaxRetryCyclesExceeded (TwoStringsTemplateA, opcode 0)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "MaxRetryCyclesExceeded", 1451));
-            // 2021 ExecuteWorkItemStart (OneStringsTemplateA, opcode 1)
+            // ExecuteWorkItemStart (OneStringsTemplateA, opcode 1)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "ExecuteWorkItemStart", 2021) { OpCode = 1 });
-            // 2022 ExecuteWorkItemStop (OneStringsTemplateA, opcode 2)
+            // ExecuteWorkItemStop (OneStringsTemplateA, opcode 2)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "ExecuteWorkItemStop", 2022) { OpCode = 2 });
-            // 2023 SendMessageChannelCacheMiss (OneStringsTemplateA, opcode 76)
+            // SendMessageChannelCacheMiss (OneStringsTemplateA, opcode 76)
             writer.WriteMetadataBlock(new EventMetadata(metadataId++, ProviderName, "SendMessageChannelCacheMiss", 2023) { OpCode = 76 });
         }
 
@@ -152,79 +152,79 @@ namespace TraceEventTests.Parsers
 
             writer.WriteEventBlock(w =>
             {
-                // 1148 FlowchartSwitchCaseNotFound (TwoStringsTemplateA)
+                // FlowchartSwitchCaseNotFound (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1148, TwoStringsTemplateAFields));
-                // 1150 CompensationState (ThreeStringsTemplateA)
+                // CompensationState (ThreeStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1150, ThreeStringsTemplateAFields));
-                // 1223 SwitchCaseNotFound (TwoStringsTemplateA)
+                // SwitchCaseNotFound (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1223, TwoStringsTemplateAFields));
-                // 1400 ChannelInitializationTimeout (TwoStringsTemplateA)
+                // ChannelInitializationTimeout (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1400, TwoStringsTemplateAFields));
-                // 1401 CloseTimeout (TwoStringsTemplateA)
+                // CloseTimeout (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1401, TwoStringsTemplateAFields));
-                // 1402 IdleTimeout (Multidata56TemplateA)
+                // IdleTimeout (Multidata56TemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1402, Multidata56TemplateAFields));
-                // 1403 LeaseTimeout (Multidata56TemplateA)
+                // LeaseTimeout (Multidata56TemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1403, Multidata56TemplateAFields));
-                // 1405 OpenTimeout (TwoStringsTemplateA)
+                // OpenTimeout (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1405, TwoStringsTemplateAFields));
-                // 1406 ReceiveTimeout (TwoStringsTemplateA)
+                // ReceiveTimeout (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1406, TwoStringsTemplateAFields));
-                // 1407 SendTimeout (TwoStringsTemplateA)
+                // SendTimeout (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1407, TwoStringsTemplateAFields));
-                // 1409 InactivityTimeout (TwoStringsTemplateA)
+                // InactivityTimeout (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1409, TwoStringsTemplateAFields));
-                // 1416 MaxReceivedMessageSizeExceeded (TwoStringsTemplateA)
+                // MaxReceivedMessageSizeExceeded (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1416, TwoStringsTemplateAFields));
-                // 1417 MaxSentMessageSizeExceeded (TwoStringsTemplateA)
+                // MaxSentMessageSizeExceeded (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1417, TwoStringsTemplateAFields));
-                // 1418 MaxOutboundConnectionsPerEndpointExceeded (TwoStringsTemplateA)
+                // MaxOutboundConnectionsPerEndpointExceeded (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1418, TwoStringsTemplateAFields));
-                // 1419 MaxPendingConnectionsExceeded (TwoStringsTemplateA)
+                // MaxPendingConnectionsExceeded (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1419, TwoStringsTemplateAFields));
-                // 1420 ReaderQuotaExceeded (TwoStringsTemplateA)
+                // ReaderQuotaExceeded (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1420, TwoStringsTemplateAFields));
-                // 1422 NegotiateTokenAuthenticatorStateCacheExceeded (Multidata57TemplateA)
+                // NegotiateTokenAuthenticatorStateCacheExceeded (Multidata57TemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1422, Multidata57TemplateAFields));
-                // 1423 NegotiateTokenAuthenticatorStateCacheRatio (Multidata58TemplateA)
+                // NegotiateTokenAuthenticatorStateCacheRatio (Multidata58TemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1423, Multidata58TemplateAFields));
-                // 1424 SecuritySessionRatio (Multidata58TemplateA)
+                // SecuritySessionRatio (Multidata58TemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1424, Multidata58TemplateAFields));
-                // 1430 PendingConnectionsRatio (Multidata58TemplateA)
+                // PendingConnectionsRatio (Multidata58TemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1430, Multidata58TemplateAFields));
-                // 1431 ConcurrentCallsRatio (Multidata58TemplateA)
+                // ConcurrentCallsRatio (Multidata58TemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1431, Multidata58TemplateAFields));
-                // 1432 ConcurrentSessionsRatio (Multidata58TemplateA)
+                // ConcurrentSessionsRatio (Multidata58TemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1432, Multidata58TemplateAFields));
-                // 1433 OutboundConnectionsPerEndpointRatio (Multidata58TemplateA)
+                // OutboundConnectionsPerEndpointRatio (Multidata58TemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1433, Multidata58TemplateAFields));
-                // 1436 PendingMessagesPerChannelRatio (Multidata58TemplateA)
+                // PendingMessagesPerChannelRatio (Multidata58TemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1436, Multidata58TemplateAFields));
-                // 1438 ConcurrentInstancesRatio (Multidata58TemplateA)
+                // ConcurrentInstancesRatio (Multidata58TemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1438, Multidata58TemplateAFields));
-                // 1439 PendingAcceptsAtZero (OneStringsTemplateA)
+                // PendingAcceptsAtZero (OneStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1439, OneStringsTemplateAFields));
-                // 1441 MaxSessionSizeReached (TwoStringsTemplateA)
+                // MaxSessionSizeReached (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1441, TwoStringsTemplateAFields));
-                // 1442 ReceiveRetryCountReached (TwoStringsTemplateA)
+                // ReceiveRetryCountReached (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1442, TwoStringsTemplateAFields));
-                // 1443 MaxRetryCyclesExceededMsmq (TwoStringsTemplateA)
+                // MaxRetryCyclesExceededMsmq (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1443, TwoStringsTemplateAFields));
-                // 1445 ReadPoolMiss (Multidata59TemplateA)
+                // ReadPoolMiss (Multidata59TemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1445, Multidata59TemplateAFields));
-                // 1446 WritePoolMiss (Multidata59TemplateA)
+                // WritePoolMiss (Multidata59TemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1446, Multidata59TemplateAFields));
-                // 1449 WfMessageReceived (OneStringsTemplateA)
+                // WfMessageReceived (OneStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1449, OneStringsTemplateAFields));
-                // 1450 WfMessageSent (OneStringsTemplateA)
+                // WfMessageSent (OneStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1450, OneStringsTemplateAFields));
-                // 1451 MaxRetryCyclesExceeded (TwoStringsTemplateA)
+                // MaxRetryCyclesExceeded (TwoStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(1451, TwoStringsTemplateAFields));
-                // 2021 ExecuteWorkItemStart (OneStringsTemplateA)
+                // ExecuteWorkItemStart (OneStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(2021, OneStringsTemplateAFields));
-                // 2022 ExecuteWorkItemStop (OneStringsTemplateA)
+                // ExecuteWorkItemStop (OneStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(2022, OneStringsTemplateAFields));
-                // 2023 SendMessageChannelCacheMiss (OneStringsTemplateA)
+                // SendMessageChannelCacheMiss (OneStringsTemplateA)
                 w.WriteEventBlobV4Or5(id++, 999, __sequenceNumber++, BuildPayload(2023, OneStringsTemplateAFields));
             });
 
@@ -236,22 +236,22 @@ namespace TraceEventTests.Parsers
         /// <summary>
         /// Subscribes to all Chunk 05 events, recording payload field values for validation.
         /// </summary>
-        private void Subscribe_Chunk05(ApplicationServerTraceEventParser parser, Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Subscribe_Chunk05(ApplicationServerTraceEventParser parser, Dictionary<string, Dictionary<string, object>> firedEvents)
         {
-            // 1148 FlowchartSwitchCaseNotFound (TwoStringsTemplateA)
+            // FlowchartSwitchCaseNotFound (TwoStringsTemplateA)
             parser.FlowchartSwitchCaseNotFound += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1148] = new Dictionary<string, object>
+                firedEvents["FlowchartSwitchCaseNotFound"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1150 CompensationState (ThreeStringsTemplateA)
+            // CompensationState (ThreeStringsTemplateA)
             parser.CompensationState += delegate (ThreeStringsTemplateATraceData data)
             {
-                firedEvents[1150] = new Dictionary<string, object>
+                firedEvents["CompensationState"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "data2", data.data2 },
@@ -259,40 +259,40 @@ namespace TraceEventTests.Parsers
                 };
             };
 
-            // 1223 SwitchCaseNotFound (TwoStringsTemplateA)
+            // SwitchCaseNotFound (TwoStringsTemplateA)
             parser.SwitchCaseNotFound += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1223] = new Dictionary<string, object>
+                firedEvents["SwitchCaseNotFound"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1400 ChannelInitializationTimeout (TwoStringsTemplateA)
+            // ChannelInitializationTimeout (TwoStringsTemplateA)
             parser.ChannelInitializationTimeout += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1400] = new Dictionary<string, object>
+                firedEvents["ChannelInitializationTimeout"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1401 CloseTimeout (TwoStringsTemplateA)
+            // CloseTimeout (TwoStringsTemplateA)
             parser.CloseTimeout += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1401] = new Dictionary<string, object>
+                firedEvents["CloseTimeout"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1402 IdleTimeout (Multidata56TemplateA)
+            // IdleTimeout (Multidata56TemplateA)
             parser.IdleTimeout += delegate (Multidata56TemplateATraceData data)
             {
-                firedEvents[1402] = new Dictionary<string, object>
+                firedEvents["IdleTimeout"] = new Dictionary<string, object>
                 {
                     { "msg", data.msg },
                     { "key", data.key },
@@ -300,10 +300,10 @@ namespace TraceEventTests.Parsers
                 };
             };
 
-            // 1403 LeaseTimeout (Multidata56TemplateA)
+            // LeaseTimeout (Multidata56TemplateA)
             parser.LeaseTimeout += delegate (Multidata56TemplateATraceData data)
             {
-                firedEvents[1403] = new Dictionary<string, object>
+                firedEvents["LeaseTimeout"] = new Dictionary<string, object>
                 {
                     { "msg", data.msg },
                     { "key", data.key },
@@ -311,110 +311,110 @@ namespace TraceEventTests.Parsers
                 };
             };
 
-            // 1405 OpenTimeout (TwoStringsTemplateA)
+            // OpenTimeout (TwoStringsTemplateA)
             parser.OpenTimeout += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1405] = new Dictionary<string, object>
+                firedEvents["OpenTimeout"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1406 ReceiveTimeout (TwoStringsTemplateA)
+            // ReceiveTimeout (TwoStringsTemplateA)
             parser.ReceiveTimeout += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1406] = new Dictionary<string, object>
+                firedEvents["ReceiveTimeout"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1407 SendTimeout (TwoStringsTemplateA)
+            // SendTimeout (TwoStringsTemplateA)
             parser.SendTimeout += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1407] = new Dictionary<string, object>
+                firedEvents["SendTimeout"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1409 InactivityTimeout (TwoStringsTemplateA)
+            // InactivityTimeout (TwoStringsTemplateA)
             parser.InactivityTimeout += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1409] = new Dictionary<string, object>
+                firedEvents["InactivityTimeout"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1416 MaxReceivedMessageSizeExceeded (TwoStringsTemplateA)
+            // MaxReceivedMessageSizeExceeded (TwoStringsTemplateA)
             parser.MaxReceivedMessageSizeExceeded += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1416] = new Dictionary<string, object>
+                firedEvents["MaxReceivedMessageSizeExceeded"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1417 MaxSentMessageSizeExceeded (TwoStringsTemplateA)
+            // MaxSentMessageSizeExceeded (TwoStringsTemplateA)
             parser.MaxSentMessageSizeExceeded += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1417] = new Dictionary<string, object>
+                firedEvents["MaxSentMessageSizeExceeded"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1418 MaxOutboundConnectionsPerEndpointExceeded (TwoStringsTemplateA)
+            // MaxOutboundConnectionsPerEndpointExceeded (TwoStringsTemplateA)
             parser.MaxOutboundConnectionsPerEndpointExceeded += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1418] = new Dictionary<string, object>
+                firedEvents["MaxOutboundConnectionsPerEndpointExceeded"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1419 MaxPendingConnectionsExceeded (TwoStringsTemplateA)
+            // MaxPendingConnectionsExceeded (TwoStringsTemplateA)
             parser.MaxPendingConnectionsExceeded += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1419] = new Dictionary<string, object>
+                firedEvents["MaxPendingConnectionsExceeded"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1420 ReaderQuotaExceeded (TwoStringsTemplateA)
+            // ReaderQuotaExceeded (TwoStringsTemplateA)
             parser.ReaderQuotaExceeded += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1420] = new Dictionary<string, object>
+                firedEvents["ReaderQuotaExceeded"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1422 NegotiateTokenAuthenticatorStateCacheExceeded (Multidata57TemplateA)
+            // NegotiateTokenAuthenticatorStateCacheExceeded (Multidata57TemplateA)
             parser.NegotiateTokenAuthenticatorStateCacheExceeded += delegate (Multidata57TemplateATraceData data)
             {
-                firedEvents[1422] = new Dictionary<string, object>
+                firedEvents["NegotiateTokenAuthenticatorStateCacheExceeded"] = new Dictionary<string, object>
                 {
                     { "msg", data.msg },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1423 NegotiateTokenAuthenticatorStateCacheRatio (Multidata58TemplateA)
+            // NegotiateTokenAuthenticatorStateCacheRatio (Multidata58TemplateA)
             parser.NegotiateTokenAuthenticatorStateCacheRatio += delegate (Multidata58TemplateATraceData data)
             {
-                firedEvents[1423] = new Dictionary<string, object>
+                firedEvents["NegotiateTokenAuthenticatorStateCacheRatio"] = new Dictionary<string, object>
                 {
                     { "cur", data.cur },
                     { "max", data.max },
@@ -422,10 +422,10 @@ namespace TraceEventTests.Parsers
                 };
             };
 
-            // 1424 SecuritySessionRatio (Multidata58TemplateA)
+            // SecuritySessionRatio (Multidata58TemplateA)
             parser.SecuritySessionRatio += delegate (Multidata58TemplateATraceData data)
             {
-                firedEvents[1424] = new Dictionary<string, object>
+                firedEvents["SecuritySessionRatio"] = new Dictionary<string, object>
                 {
                     { "cur", data.cur },
                     { "max", data.max },
@@ -433,10 +433,10 @@ namespace TraceEventTests.Parsers
                 };
             };
 
-            // 1430 PendingConnectionsRatio (Multidata58TemplateA)
+            // PendingConnectionsRatio (Multidata58TemplateA)
             parser.PendingConnectionsRatio += delegate (Multidata58TemplateATraceData data)
             {
-                firedEvents[1430] = new Dictionary<string, object>
+                firedEvents["PendingConnectionsRatio"] = new Dictionary<string, object>
                 {
                     { "cur", data.cur },
                     { "max", data.max },
@@ -444,10 +444,10 @@ namespace TraceEventTests.Parsers
                 };
             };
 
-            // 1431 ConcurrentCallsRatio (Multidata58TemplateA)
+            // ConcurrentCallsRatio (Multidata58TemplateA)
             parser.ConcurrentCallsRatio += delegate (Multidata58TemplateATraceData data)
             {
-                firedEvents[1431] = new Dictionary<string, object>
+                firedEvents["ConcurrentCallsRatio"] = new Dictionary<string, object>
                 {
                     { "cur", data.cur },
                     { "max", data.max },
@@ -455,10 +455,10 @@ namespace TraceEventTests.Parsers
                 };
             };
 
-            // 1432 ConcurrentSessionsRatio (Multidata58TemplateA)
+            // ConcurrentSessionsRatio (Multidata58TemplateA)
             parser.ConcurrentSessionsRatio += delegate (Multidata58TemplateATraceData data)
             {
-                firedEvents[1432] = new Dictionary<string, object>
+                firedEvents["ConcurrentSessionsRatio"] = new Dictionary<string, object>
                 {
                     { "cur", data.cur },
                     { "max", data.max },
@@ -466,10 +466,10 @@ namespace TraceEventTests.Parsers
                 };
             };
 
-            // 1433 OutboundConnectionsPerEndpointRatio (Multidata58TemplateA)
+            // OutboundConnectionsPerEndpointRatio (Multidata58TemplateA)
             parser.OutboundConnectionsPerEndpointRatio += delegate (Multidata58TemplateATraceData data)
             {
-                firedEvents[1433] = new Dictionary<string, object>
+                firedEvents["OutboundConnectionsPerEndpointRatio"] = new Dictionary<string, object>
                 {
                     { "cur", data.cur },
                     { "max", data.max },
@@ -477,10 +477,10 @@ namespace TraceEventTests.Parsers
                 };
             };
 
-            // 1436 PendingMessagesPerChannelRatio (Multidata58TemplateA)
+            // PendingMessagesPerChannelRatio (Multidata58TemplateA)
             parser.PendingMessagesPerChannelRatio += delegate (Multidata58TemplateATraceData data)
             {
-                firedEvents[1436] = new Dictionary<string, object>
+                firedEvents["PendingMessagesPerChannelRatio"] = new Dictionary<string, object>
                 {
                     { "cur", data.cur },
                     { "max", data.max },
@@ -488,10 +488,10 @@ namespace TraceEventTests.Parsers
                 };
             };
 
-            // 1438 ConcurrentInstancesRatio (Multidata58TemplateA)
+            // ConcurrentInstancesRatio (Multidata58TemplateA)
             parser.ConcurrentInstancesRatio += delegate (Multidata58TemplateATraceData data)
             {
-                firedEvents[1438] = new Dictionary<string, object>
+                firedEvents["ConcurrentInstancesRatio"] = new Dictionary<string, object>
                 {
                     { "cur", data.cur },
                     { "max", data.max },
@@ -499,115 +499,115 @@ namespace TraceEventTests.Parsers
                 };
             };
 
-            // 1439 PendingAcceptsAtZero (OneStringsTemplateA)
+            // PendingAcceptsAtZero (OneStringsTemplateA)
             parser.PendingAcceptsAtZero += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[1439] = new Dictionary<string, object>
+                firedEvents["PendingAcceptsAtZero"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1441 MaxSessionSizeReached (TwoStringsTemplateA)
+            // MaxSessionSizeReached (TwoStringsTemplateA)
             parser.MaxSessionSizeReached += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1441] = new Dictionary<string, object>
+                firedEvents["MaxSessionSizeReached"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1442 ReceiveRetryCountReached (TwoStringsTemplateA)
+            // ReceiveRetryCountReached (TwoStringsTemplateA)
             parser.ReceiveRetryCountReached += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1442] = new Dictionary<string, object>
+                firedEvents["ReceiveRetryCountReached"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1443 MaxRetryCyclesExceededMsmq (TwoStringsTemplateA)
+            // MaxRetryCyclesExceededMsmq (TwoStringsTemplateA)
             parser.MaxRetryCyclesExceededMsmq += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1443] = new Dictionary<string, object>
+                firedEvents["MaxRetryCyclesExceededMsmq"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1445 ReadPoolMiss (Multidata59TemplateA)
+            // ReadPoolMiss (Multidata59TemplateA)
             parser.ReadPoolMiss += delegate (Multidata59TemplateATraceData data)
             {
-                firedEvents[1445] = new Dictionary<string, object>
+                firedEvents["ReadPoolMiss"] = new Dictionary<string, object>
                 {
                     { "itemTypeName", data.itemTypeName },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1446 WritePoolMiss (Multidata59TemplateA)
+            // WritePoolMiss (Multidata59TemplateA)
             parser.WritePoolMiss += delegate (Multidata59TemplateATraceData data)
             {
-                firedEvents[1446] = new Dictionary<string, object>
+                firedEvents["WritePoolMiss"] = new Dictionary<string, object>
                 {
                     { "itemTypeName", data.itemTypeName },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1449 WfMessageReceived (OneStringsTemplateA)
+            // WfMessageReceived (OneStringsTemplateA)
             parser.WfMessageReceived += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[1449] = new Dictionary<string, object>
+                firedEvents["WfMessageReceived"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1450 WfMessageSent (OneStringsTemplateA)
+            // WfMessageSent (OneStringsTemplateA)
             parser.WfMessageSent += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[1450] = new Dictionary<string, object>
+                firedEvents["WfMessageSent"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 1451 MaxRetryCyclesExceeded (TwoStringsTemplateA)
+            // MaxRetryCyclesExceeded (TwoStringsTemplateA)
             parser.MaxRetryCyclesExceeded += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[1451] = new Dictionary<string, object>
+                firedEvents["MaxRetryCyclesExceeded"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 2021 ExecuteWorkItemStart (OneStringsTemplateA)
+            // ExecuteWorkItemStart (OneStringsTemplateA)
             parser.ExecuteWorkItemStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[2021] = new Dictionary<string, object>
+                firedEvents["ExecuteWorkItemStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 2022 ExecuteWorkItemStop (OneStringsTemplateA)
+            // ExecuteWorkItemStop (OneStringsTemplateA)
             parser.ExecuteWorkItemStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[2022] = new Dictionary<string, object>
+                firedEvents["ExecuteWorkItemStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
             };
 
-            // 2023 SendMessageChannelCacheMiss (OneStringsTemplateA)
+            // SendMessageChannelCacheMiss (OneStringsTemplateA)
             parser.SendMessageChannelCacheMiss += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[2023] = new Dictionary<string, object>
+                firedEvents["SendMessageChannelCacheMiss"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -617,67 +617,67 @@ namespace TraceEventTests.Parsers
         /// <summary>
         /// Validates that all Chunk 05 events fired with correct payload values.
         /// </summary>
-        private void Validate_Chunk05(Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Validate_Chunk05(Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             // Helper: validate TwoStringsTemplateA events
-            int[] twoStringsEvents = new int[] { 1148, 1223, 1400, 1401, 1405, 1406, 1407, 1409, 1416, 1417, 1418, 1419, 1420, 1441, 1442, 1443, 1451 };
-            foreach (int eventId in twoStringsEvents)
+            (int id, string name)[] twoStringsEvents = new[] { (1148, "FlowchartSwitchCaseNotFound"), (1223, "SwitchCaseNotFound"), (1400, "ChannelInitializationTimeout"), (1401, "CloseTimeout"), (1405, "OpenTimeout"), (1406, "ReceiveTimeout"), (1407, "SendTimeout"), (1409, "InactivityTimeout"), (1416, "MaxReceivedMessageSizeExceeded"), (1417, "MaxSentMessageSizeExceeded"), (1418, "MaxOutboundConnectionsPerEndpointExceeded"), (1419, "MaxPendingConnectionsExceeded"), (1420, "ReaderQuotaExceeded"), (1441, "MaxSessionSizeReached"), (1442, "ReceiveRetryCountReached"), (1443, "MaxRetryCyclesExceededMsmq"), (1451, "MaxRetryCyclesExceeded") };
+            foreach (var (eventId, eventName) in twoStringsEvents)
             {
-                Assert.True(firedEvents.ContainsKey(eventId), $"Event {eventId} did not fire.");
-                var fields = firedEvents[eventId];
+                Assert.True(firedEvents.ContainsKey(eventName), $"Event {eventName} did not fire.");
+                var fields = firedEvents[eventName];
                 Assert.Equal(TestString(eventId, "data1"), (string)fields["data1"]);
                 Assert.Equal(TestString(eventId, "AppDomain"), (string)fields["AppDomain"]);
             }
 
-            // 1150 CompensationState (ThreeStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1150), "Event 1150 did not fire.");
-            Assert.Equal(TestString(1150, "data1"), (string)firedEvents[1150]["data1"]);
-            Assert.Equal(TestString(1150, "data2"), (string)firedEvents[1150]["data2"]);
-            Assert.Equal(TestString(1150, "AppDomain"), (string)firedEvents[1150]["AppDomain"]);
+            // CompensationState (ThreeStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("CompensationState"), "Event CompensationState did not fire.");
+            Assert.Equal(TestString(1150, "data1"), (string)firedEvents["CompensationState"]["data1"]);
+            Assert.Equal(TestString(1150, "data2"), (string)firedEvents["CompensationState"]["data2"]);
+            Assert.Equal(TestString(1150, "AppDomain"), (string)firedEvents["CompensationState"]["AppDomain"]);
 
             // Multidata56TemplateA events: 1402, 1403
-            int[] multidata56Events = new int[] { 1402, 1403 };
-            foreach (int eventId in multidata56Events)
+            (int id, string name)[] multidata56Events = new[] { (1402, "IdleTimeout"), (1403, "LeaseTimeout") };
+            foreach (var (eventId, eventName) in multidata56Events)
             {
-                Assert.True(firedEvents.ContainsKey(eventId), $"Event {eventId} did not fire.");
-                var fields = firedEvents[eventId];
+                Assert.True(firedEvents.ContainsKey(eventName), $"Event {eventName} did not fire.");
+                var fields = firedEvents[eventName];
                 Assert.Equal(TestString(eventId, "msg"), (string)fields["msg"]);
                 Assert.Equal(TestString(eventId, "key"), (string)fields["key"]);
                 Assert.Equal(TestString(eventId, "AppDomain"), (string)fields["AppDomain"]);
             }
 
-            // 1422 NegotiateTokenAuthenticatorStateCacheExceeded (Multidata57TemplateA)
-            Assert.True(firedEvents.ContainsKey(1422), "Event 1422 did not fire.");
-            Assert.Equal(TestString(1422, "msg"), (string)firedEvents[1422]["msg"]);
-            Assert.Equal(TestString(1422, "AppDomain"), (string)firedEvents[1422]["AppDomain"]);
+            // NegotiateTokenAuthenticatorStateCacheExceeded (Multidata57TemplateA)
+            Assert.True(firedEvents.ContainsKey("NegotiateTokenAuthenticatorStateCacheExceeded"), "Event NegotiateTokenAuthenticatorStateCacheExceeded did not fire.");
+            Assert.Equal(TestString(1422, "msg"), (string)firedEvents["NegotiateTokenAuthenticatorStateCacheExceeded"]["msg"]);
+            Assert.Equal(TestString(1422, "AppDomain"), (string)firedEvents["NegotiateTokenAuthenticatorStateCacheExceeded"]["AppDomain"]);
 
             // Multidata58TemplateA events: 1423, 1424, 1430, 1431, 1432, 1433, 1436, 1438
-            int[] multidata58Events = new int[] { 1423, 1424, 1430, 1431, 1432, 1433, 1436, 1438 };
-            foreach (int eventId in multidata58Events)
+            (int id, string name)[] multidata58Events = new[] { (1423, "NegotiateTokenAuthenticatorStateCacheRatio"), (1424, "SecuritySessionRatio"), (1430, "PendingConnectionsRatio"), (1431, "ConcurrentCallsRatio"), (1432, "ConcurrentSessionsRatio"), (1433, "OutboundConnectionsPerEndpointRatio"), (1436, "PendingMessagesPerChannelRatio"), (1438, "ConcurrentInstancesRatio") };
+            foreach (var (eventId, eventName) in multidata58Events)
             {
-                Assert.True(firedEvents.ContainsKey(eventId), $"Event {eventId} did not fire.");
-                var fields = firedEvents[eventId];
+                Assert.True(firedEvents.ContainsKey(eventName), $"Event {eventName} did not fire.");
+                var fields = firedEvents[eventName];
                 Assert.Equal(TestInt32(eventId, 0), (int)fields["cur"]);
                 Assert.Equal(TestInt32(eventId, 1), (int)fields["max"]);
                 Assert.Equal(TestString(eventId, "AppDomain"), (string)fields["AppDomain"]);
             }
 
             // Multidata59TemplateA events: 1445, 1446
-            int[] multidata59Events = new int[] { 1445, 1446 };
-            foreach (int eventId in multidata59Events)
+            (int id, string name)[] multidata59Events = new[] { (1445, "ReadPoolMiss"), (1446, "WritePoolMiss") };
+            foreach (var (eventId, eventName) in multidata59Events)
             {
-                Assert.True(firedEvents.ContainsKey(eventId), $"Event {eventId} did not fire.");
-                var fields = firedEvents[eventId];
+                Assert.True(firedEvents.ContainsKey(eventName), $"Event {eventName} did not fire.");
+                var fields = firedEvents[eventName];
                 Assert.Equal(TestString(eventId, "itemTypeName"), (string)fields["itemTypeName"]);
                 Assert.Equal(TestString(eventId, "AppDomain"), (string)fields["AppDomain"]);
             }
 
             // OneStringsTemplateA events: 1439, 1449, 1450, 2021, 2022, 2023
-            int[] oneStringEvents = new int[] { 1439, 1449, 1450, 2021, 2022, 2023 };
-            foreach (int eventId in oneStringEvents)
+            (int id, string name)[] oneStringEvents = new[] { (1439, "PendingAcceptsAtZero"), (1449, "WfMessageReceived"), (1450, "WfMessageSent"), (2021, "ExecuteWorkItemStart"), (2022, "ExecuteWorkItemStop"), (2023, "SendMessageChannelCacheMiss") };
+            foreach (var (eventId, eventName) in oneStringEvents)
             {
-                Assert.True(firedEvents.ContainsKey(eventId), $"Event {eventId} did not fire.");
-                var fields = firedEvents[eventId];
+                Assert.True(firedEvents.ContainsKey(eventName), $"Event {eventName} did not fire.");
+                var fields = firedEvents[eventName];
                 Assert.Equal(TestString(eventId, "AppDomain"), (string)fields["AppDomain"]);
             }
         }

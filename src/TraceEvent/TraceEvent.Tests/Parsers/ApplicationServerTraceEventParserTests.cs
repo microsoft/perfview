@@ -28,7 +28,7 @@ namespace TraceEventTests.Parsers
             byte[] traceBytes = BuildTrace();
 
             // Process and collect results
-            var firedEvents = new Dictionary<int, Dictionary<string, object>>();
+            var firedEvents = new Dictionary<string, Dictionary<string, object>>();
             using (var stream = new MemoryStream(traceBytes))
             {
                 var source = new EventPipeEventSource(stream);
@@ -90,7 +90,7 @@ namespace TraceEventTests.Parsers
 
         #region Event Subscription
 
-        private void SubscribeAllEvents(ApplicationServerTraceEventParser parser, Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void SubscribeAllEvents(ApplicationServerTraceEventParser parser, Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             Subscribe_Chunk01(parser, firedEvents);
             Subscribe_Chunk02(parser, firedEvents);
@@ -111,7 +111,7 @@ namespace TraceEventTests.Parsers
 
         #region Validation
 
-        private void ValidateAllEvents(Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void ValidateAllEvents(Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             Validate_Chunk01(firedEvents);
             Validate_Chunk02(firedEvents);

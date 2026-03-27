@@ -256,11 +256,11 @@ namespace TraceEventTests.Parsers
         // =====================================================================
         // Subscribe_Chunk12: Subscribe to parser events and record received data
         // =====================================================================
-                private void Subscribe_Chunk12(ApplicationServerTraceEventParser parser, Dictionary<int, Dictionary<string, object>> firedEvents)
+                private void Subscribe_Chunk12(ApplicationServerTraceEventParser parser, Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             parser.DiscoveryMessageReceivedAfterOperationCompleted += delegate (Multidata87TemplateATraceData data)
             {
-                firedEvents[4804] = new Dictionary<string, object>
+                firedEvents["DiscoveryMessageReceivedAfterOperationCompleted"] = new Dictionary<string, object>
                 {
                     { "discoveryMessageName", data.discoveryMessageName },
                     { "messageId", data.messageId },
@@ -271,7 +271,7 @@ namespace TraceEventTests.Parsers
 
             parser.DiscoveryMessageWithInvalidContent += delegate (Multidata88TemplateATraceData data)
             {
-                firedEvents[4805] = new Dictionary<string, object>
+                firedEvents["DiscoveryMessageWithInvalidContent"] = new Dictionary<string, object>
                 {
                     { "messageType", data.messageType },
                     { "messageId", data.messageId },
@@ -281,7 +281,7 @@ namespace TraceEventTests.Parsers
 
             parser.DiscoveryMessageWithInvalidRelatesToOrOperationCompleted += delegate (Multidata89TemplateATraceData data)
             {
-                firedEvents[4806] = new Dictionary<string, object>
+                firedEvents["DiscoveryMessageWithInvalidRelatesToOrOperationCompleted"] = new Dictionary<string, object>
                 {
                     { "discoveryMessageName", data.discoveryMessageName },
                     { "messageId", data.messageId },
@@ -293,7 +293,7 @@ namespace TraceEventTests.Parsers
 
             parser.DiscoveryMessageWithInvalidReplyTo += delegate (Multidata90TemplateATraceData data)
             {
-                firedEvents[4807] = new Dictionary<string, object>
+                firedEvents["DiscoveryMessageWithInvalidReplyTo"] = new Dictionary<string, object>
                 {
                     { "messageId", data.messageId },
                     { "AppDomain", data.AppDomain },
@@ -302,7 +302,7 @@ namespace TraceEventTests.Parsers
 
             parser.DiscoveryMessageWithNoContent += delegate (Multidata91TemplateATraceData data)
             {
-                firedEvents[4808] = new Dictionary<string, object>
+                firedEvents["DiscoveryMessageWithNoContent"] = new Dictionary<string, object>
                 {
                     { "messageType", data.messageType },
                     { "AppDomain", data.AppDomain },
@@ -311,7 +311,7 @@ namespace TraceEventTests.Parsers
 
             parser.DiscoveryMessageWithNullMessageId += delegate (Multidata91TemplateATraceData data)
             {
-                firedEvents[4809] = new Dictionary<string, object>
+                firedEvents["DiscoveryMessageWithNullMessageId"] = new Dictionary<string, object>
                 {
                     { "messageType", data.messageType },
                     { "AppDomain", data.AppDomain },
@@ -320,7 +320,7 @@ namespace TraceEventTests.Parsers
 
             parser.DiscoveryMessageWithNullMessageSequence += delegate (Multidata92TemplateATraceData data)
             {
-                firedEvents[4810] = new Dictionary<string, object>
+                firedEvents["DiscoveryMessageWithNullMessageSequence"] = new Dictionary<string, object>
                 {
                     { "discoveryMessageName", data.discoveryMessageName },
                     { "messageId", data.messageId },
@@ -330,7 +330,7 @@ namespace TraceEventTests.Parsers
 
             parser.DiscoveryMessageWithNullRelatesTo += delegate (Multidata92TemplateATraceData data)
             {
-                firedEvents[4811] = new Dictionary<string, object>
+                firedEvents["DiscoveryMessageWithNullRelatesTo"] = new Dictionary<string, object>
                 {
                     { "discoveryMessageName", data.discoveryMessageName },
                     { "messageId", data.messageId },
@@ -340,7 +340,7 @@ namespace TraceEventTests.Parsers
 
             parser.DiscoveryMessageWithNullReplyTo += delegate (Multidata90TemplateATraceData data)
             {
-                firedEvents[4812] = new Dictionary<string, object>
+                firedEvents["DiscoveryMessageWithNullReplyTo"] = new Dictionary<string, object>
                 {
                     { "messageId", data.messageId },
                     { "AppDomain", data.AppDomain },
@@ -349,7 +349,7 @@ namespace TraceEventTests.Parsers
 
             parser.DuplicateDiscoveryMessage += delegate (Multidata88TemplateATraceData data)
             {
-                firedEvents[4813] = new Dictionary<string, object>
+                firedEvents["DuplicateDiscoveryMessage"] = new Dictionary<string, object>
                 {
                     { "messageType", data.messageType },
                     { "messageId", data.messageId },
@@ -359,7 +359,7 @@ namespace TraceEventTests.Parsers
 
             parser.EndpointDiscoverabilityDisabled += delegate (Multidata93TemplateATraceData data)
             {
-                firedEvents[4814] = new Dictionary<string, object>
+                firedEvents["EndpointDiscoverabilityDisabled"] = new Dictionary<string, object>
                 {
                     { "endpointAddress", data.endpointAddress },
                     { "listenUri", data.listenUri },
@@ -369,7 +369,7 @@ namespace TraceEventTests.Parsers
 
             parser.EndpointDiscoverabilityEnabled += delegate (Multidata93TemplateATraceData data)
             {
-                firedEvents[4815] = new Dictionary<string, object>
+                firedEvents["EndpointDiscoverabilityEnabled"] = new Dictionary<string, object>
                 {
                     { "endpointAddress", data.endpointAddress },
                     { "listenUri", data.listenUri },
@@ -379,7 +379,7 @@ namespace TraceEventTests.Parsers
 
             parser.FindInitiatedInDiscoveryClientChannel += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[4816] = new Dictionary<string, object>
+                firedEvents["FindInitiatedInDiscoveryClientChannel"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -387,7 +387,7 @@ namespace TraceEventTests.Parsers
 
             parser.InnerChannelCreationFailed += delegate (Multidata94TemplateEATraceData data)
             {
-                firedEvents[4817] = new Dictionary<string, object>
+                firedEvents["InnerChannelCreationFailed"] = new Dictionary<string, object>
                 {
                     { "endpointAddress", data.endpointAddress },
                     { "via", data.via },
@@ -398,7 +398,7 @@ namespace TraceEventTests.Parsers
 
             parser.InnerChannelOpenFailed += delegate (Multidata94TemplateEATraceData data)
             {
-                firedEvents[4818] = new Dictionary<string, object>
+                firedEvents["InnerChannelOpenFailed"] = new Dictionary<string, object>
                 {
                     { "endpointAddress", data.endpointAddress },
                     { "via", data.via },
@@ -409,7 +409,7 @@ namespace TraceEventTests.Parsers
 
             parser.InnerChannelOpenSucceeded += delegate (Multidata95TemplateATraceData data)
             {
-                firedEvents[4819] = new Dictionary<string, object>
+                firedEvents["InnerChannelOpenSucceeded"] = new Dictionary<string, object>
                 {
                     { "endpointAddress", data.endpointAddress },
                     { "via", data.via },
@@ -419,7 +419,7 @@ namespace TraceEventTests.Parsers
 
             parser.SynchronizationContextReset += delegate (Multidata96TemplateATraceData data)
             {
-                firedEvents[4820] = new Dictionary<string, object>
+                firedEvents["SynchronizationContextReset"] = new Dictionary<string, object>
                 {
                     { "synchronizationContextType", data.synchronizationContextType },
                     { "AppDomain", data.AppDomain },
@@ -428,7 +428,7 @@ namespace TraceEventTests.Parsers
 
             parser.SynchronizationContextSetToNull += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[4821] = new Dictionary<string, object>
+                firedEvents["SynchronizationContextSetToNull"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -436,7 +436,7 @@ namespace TraceEventTests.Parsers
 
             parser.DCSerializeWithSurrogateStart += delegate (Multidata97TemplateATraceData data)
             {
-                firedEvents[5001] = new Dictionary<string, object>
+                firedEvents["DCSerializeWithSurrogateStart"] = new Dictionary<string, object>
                 {
                     { "SurrogateType", data.SurrogateType },
                     { "AppDomain", data.AppDomain },
@@ -445,7 +445,7 @@ namespace TraceEventTests.Parsers
 
             parser.DCSerializeWithSurrogateStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[5002] = new Dictionary<string, object>
+                firedEvents["DCSerializeWithSurrogateStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -453,7 +453,7 @@ namespace TraceEventTests.Parsers
 
             parser.DCDeserializeWithSurrogateStart += delegate (Multidata97TemplateATraceData data)
             {
-                firedEvents[5003] = new Dictionary<string, object>
+                firedEvents["DCDeserializeWithSurrogateStart"] = new Dictionary<string, object>
                 {
                     { "SurrogateType", data.SurrogateType },
                     { "AppDomain", data.AppDomain },
@@ -462,7 +462,7 @@ namespace TraceEventTests.Parsers
 
             parser.DCDeserializeWithSurrogateStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[5004] = new Dictionary<string, object>
+                firedEvents["DCDeserializeWithSurrogateStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -470,7 +470,7 @@ namespace TraceEventTests.Parsers
 
             parser.ImportKnownTypesStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[5005] = new Dictionary<string, object>
+                firedEvents["ImportKnownTypesStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -478,7 +478,7 @@ namespace TraceEventTests.Parsers
 
             parser.ImportKnownTypesStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[5006] = new Dictionary<string, object>
+                firedEvents["ImportKnownTypesStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -486,7 +486,7 @@ namespace TraceEventTests.Parsers
 
             parser.DCResolverResolve += delegate (Multidata33TemplateATraceData data)
             {
-                firedEvents[5007] = new Dictionary<string, object>
+                firedEvents["DCResolverResolve"] = new Dictionary<string, object>
                 {
                     { "TypeName", data.TypeName },
                     { "AppDomain", data.AppDomain },
@@ -495,7 +495,7 @@ namespace TraceEventTests.Parsers
 
             parser.DCGenWriterStart += delegate (Multidata98TemplateATraceData data)
             {
-                firedEvents[5008] = new Dictionary<string, object>
+                firedEvents["DCGenWriterStart"] = new Dictionary<string, object>
                 {
                     { "Kind", data.Kind },
                     { "TypeName", data.TypeName },
@@ -505,7 +505,7 @@ namespace TraceEventTests.Parsers
 
             parser.DCGenWriterStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[5009] = new Dictionary<string, object>
+                firedEvents["DCGenWriterStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -513,7 +513,7 @@ namespace TraceEventTests.Parsers
 
             parser.DCGenReaderStart += delegate (Multidata98TemplateATraceData data)
             {
-                firedEvents[5010] = new Dictionary<string, object>
+                firedEvents["DCGenReaderStart"] = new Dictionary<string, object>
                 {
                     { "Kind", data.Kind },
                     { "TypeName", data.TypeName },
@@ -523,7 +523,7 @@ namespace TraceEventTests.Parsers
 
             parser.DCGenReaderStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[5011] = new Dictionary<string, object>
+                firedEvents["DCGenReaderStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -531,7 +531,7 @@ namespace TraceEventTests.Parsers
 
             parser.DCJsonGenReaderStart += delegate (Multidata98TemplateATraceData data)
             {
-                firedEvents[5012] = new Dictionary<string, object>
+                firedEvents["DCJsonGenReaderStart"] = new Dictionary<string, object>
                 {
                     { "Kind", data.Kind },
                     { "TypeName", data.TypeName },
@@ -541,7 +541,7 @@ namespace TraceEventTests.Parsers
 
             parser.DCJsonGenReaderStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[5013] = new Dictionary<string, object>
+                firedEvents["DCJsonGenReaderStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -549,7 +549,7 @@ namespace TraceEventTests.Parsers
 
             parser.DCJsonGenWriterStart += delegate (Multidata98TemplateATraceData data)
             {
-                firedEvents[5014] = new Dictionary<string, object>
+                firedEvents["DCJsonGenWriterStart"] = new Dictionary<string, object>
                 {
                     { "Kind", data.Kind },
                     { "TypeName", data.TypeName },
@@ -559,7 +559,7 @@ namespace TraceEventTests.Parsers
 
             parser.DCJsonGenWriterStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[5015] = new Dictionary<string, object>
+                firedEvents["DCJsonGenWriterStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -567,7 +567,7 @@ namespace TraceEventTests.Parsers
 
             parser.GenXmlSerializableStart += delegate (Multidata99TemplateATraceData data)
             {
-                firedEvents[5016] = new Dictionary<string, object>
+                firedEvents["GenXmlSerializableStart"] = new Dictionary<string, object>
                 {
                     { "DCType", data.DCType },
                     { "AppDomain", data.AppDomain },
@@ -576,7 +576,7 @@ namespace TraceEventTests.Parsers
 
             parser.GenXmlSerializableStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[5017] = new Dictionary<string, object>
+                firedEvents["GenXmlSerializableStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -584,7 +584,7 @@ namespace TraceEventTests.Parsers
 
             parser.JsonMessageDecodingStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[5203] = new Dictionary<string, object>
+                firedEvents["JsonMessageDecodingStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -592,7 +592,7 @@ namespace TraceEventTests.Parsers
 
             parser.JsonMessageEncodingStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[5204] = new Dictionary<string, object>
+                firedEvents["JsonMessageEncodingStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -604,236 +604,236 @@ namespace TraceEventTests.Parsers
         // =====================================================================
         // Validate_Chunk12: Validate all received event payloads
         // =====================================================================
-        private void Validate_Chunk12(Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Validate_Chunk12(Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             // --- 4804: DiscoveryMessageReceivedAfterOperationCompleted ---
-            Assert.True(firedEvents.ContainsKey(4804), "Event 4804 (DiscoveryMessageReceivedAfterOperationCompleted) not received");
-            var e4804 = firedEvents[4804];
-            Assert.Equal(TestString(4804, "discoveryMessageName"), (string)e4804["discoveryMessageName"]);
-            Assert.Equal(TestString(4804, "messageId"), (string)e4804["messageId"]);
-            Assert.Equal(TestString(4804, "discoveryOperationName"), (string)e4804["discoveryOperationName"]);
-            Assert.Equal(TestString(4804, "AppDomain"), (string)e4804["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DiscoveryMessageReceivedAfterOperationCompleted"), "Event DiscoveryMessageReceivedAfterOperationCompleted not received");
+            var eDiscoveryMessageReceivedAfterOperationCompleted = firedEvents["DiscoveryMessageReceivedAfterOperationCompleted"];
+            Assert.Equal(TestString(4804, "discoveryMessageName"), (string)eDiscoveryMessageReceivedAfterOperationCompleted["discoveryMessageName"]);
+            Assert.Equal(TestString(4804, "messageId"), (string)eDiscoveryMessageReceivedAfterOperationCompleted["messageId"]);
+            Assert.Equal(TestString(4804, "discoveryOperationName"), (string)eDiscoveryMessageReceivedAfterOperationCompleted["discoveryOperationName"]);
+            Assert.Equal(TestString(4804, "AppDomain"), (string)eDiscoveryMessageReceivedAfterOperationCompleted["AppDomain"]);
 
             // --- 4805: DiscoveryMessageWithInvalidContent ---
-            Assert.True(firedEvents.ContainsKey(4805), "Event 4805 (DiscoveryMessageWithInvalidContent) not received");
-            var e4805 = firedEvents[4805];
-            Assert.Equal(TestString(4805, "messageType"), (string)e4805["messageType"]);
-            Assert.Equal(TestString(4805, "messageId"), (string)e4805["messageId"]);
-            Assert.Equal(TestString(4805, "AppDomain"), (string)e4805["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DiscoveryMessageWithInvalidContent"), "Event DiscoveryMessageWithInvalidContent not received");
+            var eDiscoveryMessageWithInvalidContent = firedEvents["DiscoveryMessageWithInvalidContent"];
+            Assert.Equal(TestString(4805, "messageType"), (string)eDiscoveryMessageWithInvalidContent["messageType"]);
+            Assert.Equal(TestString(4805, "messageId"), (string)eDiscoveryMessageWithInvalidContent["messageId"]);
+            Assert.Equal(TestString(4805, "AppDomain"), (string)eDiscoveryMessageWithInvalidContent["AppDomain"]);
 
             // --- 4806: DiscoveryMessageWithInvalidRelatesToOrOperationCompleted ---
-            Assert.True(firedEvents.ContainsKey(4806), "Event 4806 (DiscoveryMessageWithInvalidRelatesToOrOperationCompleted) not received");
-            var e4806 = firedEvents[4806];
-            Assert.Equal(TestString(4806, "discoveryMessageName"), (string)e4806["discoveryMessageName"]);
-            Assert.Equal(TestString(4806, "messageId"), (string)e4806["messageId"]);
-            Assert.Equal(TestString(4806, "relatesTo"), (string)e4806["relatesTo"]);
-            Assert.Equal(TestString(4806, "discoveryOperationName"), (string)e4806["discoveryOperationName"]);
-            Assert.Equal(TestString(4806, "AppDomain"), (string)e4806["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DiscoveryMessageWithInvalidRelatesToOrOperationCompleted"), "Event DiscoveryMessageWithInvalidRelatesToOrOperationCompleted not received");
+            var eDiscoveryMessageWithInvalidRelatesToOrOperationCompleted = firedEvents["DiscoveryMessageWithInvalidRelatesToOrOperationCompleted"];
+            Assert.Equal(TestString(4806, "discoveryMessageName"), (string)eDiscoveryMessageWithInvalidRelatesToOrOperationCompleted["discoveryMessageName"]);
+            Assert.Equal(TestString(4806, "messageId"), (string)eDiscoveryMessageWithInvalidRelatesToOrOperationCompleted["messageId"]);
+            Assert.Equal(TestString(4806, "relatesTo"), (string)eDiscoveryMessageWithInvalidRelatesToOrOperationCompleted["relatesTo"]);
+            Assert.Equal(TestString(4806, "discoveryOperationName"), (string)eDiscoveryMessageWithInvalidRelatesToOrOperationCompleted["discoveryOperationName"]);
+            Assert.Equal(TestString(4806, "AppDomain"), (string)eDiscoveryMessageWithInvalidRelatesToOrOperationCompleted["AppDomain"]);
 
             // --- 4807: DiscoveryMessageWithInvalidReplyTo ---
-            Assert.True(firedEvents.ContainsKey(4807), "Event 4807 (DiscoveryMessageWithInvalidReplyTo) not received");
-            var e4807 = firedEvents[4807];
-            Assert.Equal(TestString(4807, "messageId"), (string)e4807["messageId"]);
-            Assert.Equal(TestString(4807, "AppDomain"), (string)e4807["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DiscoveryMessageWithInvalidReplyTo"), "Event DiscoveryMessageWithInvalidReplyTo not received");
+            var eDiscoveryMessageWithInvalidReplyTo = firedEvents["DiscoveryMessageWithInvalidReplyTo"];
+            Assert.Equal(TestString(4807, "messageId"), (string)eDiscoveryMessageWithInvalidReplyTo["messageId"]);
+            Assert.Equal(TestString(4807, "AppDomain"), (string)eDiscoveryMessageWithInvalidReplyTo["AppDomain"]);
 
             // --- 4808: DiscoveryMessageWithNoContent ---
-            Assert.True(firedEvents.ContainsKey(4808), "Event 4808 (DiscoveryMessageWithNoContent) not received");
-            var e4808 = firedEvents[4808];
-            Assert.Equal(TestString(4808, "messageType"), (string)e4808["messageType"]);
-            Assert.Equal(TestString(4808, "AppDomain"), (string)e4808["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DiscoveryMessageWithNoContent"), "Event DiscoveryMessageWithNoContent not received");
+            var eDiscoveryMessageWithNoContent = firedEvents["DiscoveryMessageWithNoContent"];
+            Assert.Equal(TestString(4808, "messageType"), (string)eDiscoveryMessageWithNoContent["messageType"]);
+            Assert.Equal(TestString(4808, "AppDomain"), (string)eDiscoveryMessageWithNoContent["AppDomain"]);
 
             // --- 4809: DiscoveryMessageWithNullMessageId ---
-            Assert.True(firedEvents.ContainsKey(4809), "Event 4809 (DiscoveryMessageWithNullMessageId) not received");
-            var e4809 = firedEvents[4809];
-            Assert.Equal(TestString(4809, "messageType"), (string)e4809["messageType"]);
-            Assert.Equal(TestString(4809, "AppDomain"), (string)e4809["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DiscoveryMessageWithNullMessageId"), "Event DiscoveryMessageWithNullMessageId not received");
+            var eDiscoveryMessageWithNullMessageId = firedEvents["DiscoveryMessageWithNullMessageId"];
+            Assert.Equal(TestString(4809, "messageType"), (string)eDiscoveryMessageWithNullMessageId["messageType"]);
+            Assert.Equal(TestString(4809, "AppDomain"), (string)eDiscoveryMessageWithNullMessageId["AppDomain"]);
 
             // --- 4810: DiscoveryMessageWithNullMessageSequence ---
-            Assert.True(firedEvents.ContainsKey(4810), "Event 4810 (DiscoveryMessageWithNullMessageSequence) not received");
-            var e4810 = firedEvents[4810];
-            Assert.Equal(TestString(4810, "discoveryMessageName"), (string)e4810["discoveryMessageName"]);
-            Assert.Equal(TestString(4810, "messageId"), (string)e4810["messageId"]);
-            Assert.Equal(TestString(4810, "AppDomain"), (string)e4810["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DiscoveryMessageWithNullMessageSequence"), "Event DiscoveryMessageWithNullMessageSequence not received");
+            var eDiscoveryMessageWithNullMessageSequence = firedEvents["DiscoveryMessageWithNullMessageSequence"];
+            Assert.Equal(TestString(4810, "discoveryMessageName"), (string)eDiscoveryMessageWithNullMessageSequence["discoveryMessageName"]);
+            Assert.Equal(TestString(4810, "messageId"), (string)eDiscoveryMessageWithNullMessageSequence["messageId"]);
+            Assert.Equal(TestString(4810, "AppDomain"), (string)eDiscoveryMessageWithNullMessageSequence["AppDomain"]);
 
             // --- 4811: DiscoveryMessageWithNullRelatesTo ---
-            Assert.True(firedEvents.ContainsKey(4811), "Event 4811 (DiscoveryMessageWithNullRelatesTo) not received");
-            var e4811 = firedEvents[4811];
-            Assert.Equal(TestString(4811, "discoveryMessageName"), (string)e4811["discoveryMessageName"]);
-            Assert.Equal(TestString(4811, "messageId"), (string)e4811["messageId"]);
-            Assert.Equal(TestString(4811, "AppDomain"), (string)e4811["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DiscoveryMessageWithNullRelatesTo"), "Event DiscoveryMessageWithNullRelatesTo not received");
+            var eDiscoveryMessageWithNullRelatesTo = firedEvents["DiscoveryMessageWithNullRelatesTo"];
+            Assert.Equal(TestString(4811, "discoveryMessageName"), (string)eDiscoveryMessageWithNullRelatesTo["discoveryMessageName"]);
+            Assert.Equal(TestString(4811, "messageId"), (string)eDiscoveryMessageWithNullRelatesTo["messageId"]);
+            Assert.Equal(TestString(4811, "AppDomain"), (string)eDiscoveryMessageWithNullRelatesTo["AppDomain"]);
 
             // --- 4812: DiscoveryMessageWithNullReplyTo ---
-            Assert.True(firedEvents.ContainsKey(4812), "Event 4812 (DiscoveryMessageWithNullReplyTo) not received");
-            var e4812 = firedEvents[4812];
-            Assert.Equal(TestString(4812, "messageId"), (string)e4812["messageId"]);
-            Assert.Equal(TestString(4812, "AppDomain"), (string)e4812["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DiscoveryMessageWithNullReplyTo"), "Event DiscoveryMessageWithNullReplyTo not received");
+            var eDiscoveryMessageWithNullReplyTo = firedEvents["DiscoveryMessageWithNullReplyTo"];
+            Assert.Equal(TestString(4812, "messageId"), (string)eDiscoveryMessageWithNullReplyTo["messageId"]);
+            Assert.Equal(TestString(4812, "AppDomain"), (string)eDiscoveryMessageWithNullReplyTo["AppDomain"]);
 
             // --- 4813: DuplicateDiscoveryMessage ---
-            Assert.True(firedEvents.ContainsKey(4813), "Event 4813 (DuplicateDiscoveryMessage) not received");
-            var e4813 = firedEvents[4813];
-            Assert.Equal(TestString(4813, "messageType"), (string)e4813["messageType"]);
-            Assert.Equal(TestString(4813, "messageId"), (string)e4813["messageId"]);
-            Assert.Equal(TestString(4813, "AppDomain"), (string)e4813["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DuplicateDiscoveryMessage"), "Event DuplicateDiscoveryMessage not received");
+            var eDuplicateDiscoveryMessage = firedEvents["DuplicateDiscoveryMessage"];
+            Assert.Equal(TestString(4813, "messageType"), (string)eDuplicateDiscoveryMessage["messageType"]);
+            Assert.Equal(TestString(4813, "messageId"), (string)eDuplicateDiscoveryMessage["messageId"]);
+            Assert.Equal(TestString(4813, "AppDomain"), (string)eDuplicateDiscoveryMessage["AppDomain"]);
 
             // --- 4814: EndpointDiscoverabilityDisabled ---
-            Assert.True(firedEvents.ContainsKey(4814), "Event 4814 (EndpointDiscoverabilityDisabled) not received");
-            var e4814 = firedEvents[4814];
-            Assert.Equal(TestString(4814, "endpointAddress"), (string)e4814["endpointAddress"]);
-            Assert.Equal(TestString(4814, "listenUri"), (string)e4814["listenUri"]);
-            Assert.Equal(TestString(4814, "AppDomain"), (string)e4814["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("EndpointDiscoverabilityDisabled"), "Event EndpointDiscoverabilityDisabled not received");
+            var eEndpointDiscoverabilityDisabled = firedEvents["EndpointDiscoverabilityDisabled"];
+            Assert.Equal(TestString(4814, "endpointAddress"), (string)eEndpointDiscoverabilityDisabled["endpointAddress"]);
+            Assert.Equal(TestString(4814, "listenUri"), (string)eEndpointDiscoverabilityDisabled["listenUri"]);
+            Assert.Equal(TestString(4814, "AppDomain"), (string)eEndpointDiscoverabilityDisabled["AppDomain"]);
 
             // --- 4815: EndpointDiscoverabilityEnabled ---
-            Assert.True(firedEvents.ContainsKey(4815), "Event 4815 (EndpointDiscoverabilityEnabled) not received");
-            var e4815 = firedEvents[4815];
-            Assert.Equal(TestString(4815, "endpointAddress"), (string)e4815["endpointAddress"]);
-            Assert.Equal(TestString(4815, "listenUri"), (string)e4815["listenUri"]);
-            Assert.Equal(TestString(4815, "AppDomain"), (string)e4815["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("EndpointDiscoverabilityEnabled"), "Event EndpointDiscoverabilityEnabled not received");
+            var eEndpointDiscoverabilityEnabled = firedEvents["EndpointDiscoverabilityEnabled"];
+            Assert.Equal(TestString(4815, "endpointAddress"), (string)eEndpointDiscoverabilityEnabled["endpointAddress"]);
+            Assert.Equal(TestString(4815, "listenUri"), (string)eEndpointDiscoverabilityEnabled["listenUri"]);
+            Assert.Equal(TestString(4815, "AppDomain"), (string)eEndpointDiscoverabilityEnabled["AppDomain"]);
 
             // --- 4816: FindInitiatedInDiscoveryClientChannel ---
-            Assert.True(firedEvents.ContainsKey(4816), "Event 4816 (FindInitiatedInDiscoveryClientChannel) not received");
-            var e4816 = firedEvents[4816];
-            Assert.Equal(TestString(4816, "AppDomain"), (string)e4816["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("FindInitiatedInDiscoveryClientChannel"), "Event FindInitiatedInDiscoveryClientChannel not received");
+            var eFindInitiatedInDiscoveryClientChannel = firedEvents["FindInitiatedInDiscoveryClientChannel"];
+            Assert.Equal(TestString(4816, "AppDomain"), (string)eFindInitiatedInDiscoveryClientChannel["AppDomain"]);
 
             // --- 4817: InnerChannelCreationFailed ---
-            Assert.True(firedEvents.ContainsKey(4817), "Event 4817 (InnerChannelCreationFailed) not received");
-            var e4817 = firedEvents[4817];
-            Assert.Equal(TestString(4817, "endpointAddress"), (string)e4817["endpointAddress"]);
-            Assert.Equal(TestString(4817, "via"), (string)e4817["via"]);
-            Assert.Equal(TestString(4817, "SerializedException"), (string)e4817["SerializedException"]);
-            Assert.Equal(TestString(4817, "AppDomain"), (string)e4817["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InnerChannelCreationFailed"), "Event InnerChannelCreationFailed not received");
+            var eInnerChannelCreationFailed = firedEvents["InnerChannelCreationFailed"];
+            Assert.Equal(TestString(4817, "endpointAddress"), (string)eInnerChannelCreationFailed["endpointAddress"]);
+            Assert.Equal(TestString(4817, "via"), (string)eInnerChannelCreationFailed["via"]);
+            Assert.Equal(TestString(4817, "SerializedException"), (string)eInnerChannelCreationFailed["SerializedException"]);
+            Assert.Equal(TestString(4817, "AppDomain"), (string)eInnerChannelCreationFailed["AppDomain"]);
 
             // --- 4818: InnerChannelOpenFailed ---
-            Assert.True(firedEvents.ContainsKey(4818), "Event 4818 (InnerChannelOpenFailed) not received");
-            var e4818 = firedEvents[4818];
-            Assert.Equal(TestString(4818, "endpointAddress"), (string)e4818["endpointAddress"]);
-            Assert.Equal(TestString(4818, "via"), (string)e4818["via"]);
-            Assert.Equal(TestString(4818, "SerializedException"), (string)e4818["SerializedException"]);
-            Assert.Equal(TestString(4818, "AppDomain"), (string)e4818["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InnerChannelOpenFailed"), "Event InnerChannelOpenFailed not received");
+            var eInnerChannelOpenFailed = firedEvents["InnerChannelOpenFailed"];
+            Assert.Equal(TestString(4818, "endpointAddress"), (string)eInnerChannelOpenFailed["endpointAddress"]);
+            Assert.Equal(TestString(4818, "via"), (string)eInnerChannelOpenFailed["via"]);
+            Assert.Equal(TestString(4818, "SerializedException"), (string)eInnerChannelOpenFailed["SerializedException"]);
+            Assert.Equal(TestString(4818, "AppDomain"), (string)eInnerChannelOpenFailed["AppDomain"]);
 
             // --- 4819: InnerChannelOpenSucceeded ---
-            Assert.True(firedEvents.ContainsKey(4819), "Event 4819 (InnerChannelOpenSucceeded) not received");
-            var e4819 = firedEvents[4819];
-            Assert.Equal(TestString(4819, "endpointAddress"), (string)e4819["endpointAddress"]);
-            Assert.Equal(TestString(4819, "via"), (string)e4819["via"]);
-            Assert.Equal(TestString(4819, "AppDomain"), (string)e4819["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InnerChannelOpenSucceeded"), "Event InnerChannelOpenSucceeded not received");
+            var eInnerChannelOpenSucceeded = firedEvents["InnerChannelOpenSucceeded"];
+            Assert.Equal(TestString(4819, "endpointAddress"), (string)eInnerChannelOpenSucceeded["endpointAddress"]);
+            Assert.Equal(TestString(4819, "via"), (string)eInnerChannelOpenSucceeded["via"]);
+            Assert.Equal(TestString(4819, "AppDomain"), (string)eInnerChannelOpenSucceeded["AppDomain"]);
 
             // --- 4820: SynchronizationContextReset ---
-            Assert.True(firedEvents.ContainsKey(4820), "Event 4820 (SynchronizationContextReset) not received");
-            var e4820 = firedEvents[4820];
-            Assert.Equal(TestString(4820, "synchronizationContextType"), (string)e4820["synchronizationContextType"]);
-            Assert.Equal(TestString(4820, "AppDomain"), (string)e4820["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SynchronizationContextReset"), "Event SynchronizationContextReset not received");
+            var eSynchronizationContextReset = firedEvents["SynchronizationContextReset"];
+            Assert.Equal(TestString(4820, "synchronizationContextType"), (string)eSynchronizationContextReset["synchronizationContextType"]);
+            Assert.Equal(TestString(4820, "AppDomain"), (string)eSynchronizationContextReset["AppDomain"]);
 
             // --- 4821: SynchronizationContextSetToNull ---
-            Assert.True(firedEvents.ContainsKey(4821), "Event 4821 (SynchronizationContextSetToNull) not received");
-            var e4821 = firedEvents[4821];
-            Assert.Equal(TestString(4821, "AppDomain"), (string)e4821["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SynchronizationContextSetToNull"), "Event SynchronizationContextSetToNull not received");
+            var eSynchronizationContextSetToNull = firedEvents["SynchronizationContextSetToNull"];
+            Assert.Equal(TestString(4821, "AppDomain"), (string)eSynchronizationContextSetToNull["AppDomain"]);
 
             // --- 5001: DCSerializeWithSurrogateStart ---
-            Assert.True(firedEvents.ContainsKey(5001), "Event 5001 (DCSerializeWithSurrogateStart) not received");
-            var e5001 = firedEvents[5001];
-            Assert.Equal(TestString(5001, "SurrogateType"), (string)e5001["SurrogateType"]);
-            Assert.Equal(TestString(5001, "AppDomain"), (string)e5001["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DCSerializeWithSurrogateStart"), "Event DCSerializeWithSurrogateStart not received");
+            var eDCSerializeWithSurrogateStart = firedEvents["DCSerializeWithSurrogateStart"];
+            Assert.Equal(TestString(5001, "SurrogateType"), (string)eDCSerializeWithSurrogateStart["SurrogateType"]);
+            Assert.Equal(TestString(5001, "AppDomain"), (string)eDCSerializeWithSurrogateStart["AppDomain"]);
 
             // --- 5002: DCSerializeWithSurrogateStop ---
-            Assert.True(firedEvents.ContainsKey(5002), "Event 5002 (DCSerializeWithSurrogateStop) not received");
-            var e5002 = firedEvents[5002];
-            Assert.Equal(TestString(5002, "AppDomain"), (string)e5002["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DCSerializeWithSurrogateStop"), "Event DCSerializeWithSurrogateStop not received");
+            var eDCSerializeWithSurrogateStop = firedEvents["DCSerializeWithSurrogateStop"];
+            Assert.Equal(TestString(5002, "AppDomain"), (string)eDCSerializeWithSurrogateStop["AppDomain"]);
 
             // --- 5003: DCDeserializeWithSurrogateStart ---
-            Assert.True(firedEvents.ContainsKey(5003), "Event 5003 (DCDeserializeWithSurrogateStart) not received");
-            var e5003 = firedEvents[5003];
-            Assert.Equal(TestString(5003, "SurrogateType"), (string)e5003["SurrogateType"]);
-            Assert.Equal(TestString(5003, "AppDomain"), (string)e5003["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DCDeserializeWithSurrogateStart"), "Event DCDeserializeWithSurrogateStart not received");
+            var eDCDeserializeWithSurrogateStart = firedEvents["DCDeserializeWithSurrogateStart"];
+            Assert.Equal(TestString(5003, "SurrogateType"), (string)eDCDeserializeWithSurrogateStart["SurrogateType"]);
+            Assert.Equal(TestString(5003, "AppDomain"), (string)eDCDeserializeWithSurrogateStart["AppDomain"]);
 
             // --- 5004: DCDeserializeWithSurrogateStop ---
-            Assert.True(firedEvents.ContainsKey(5004), "Event 5004 (DCDeserializeWithSurrogateStop) not received");
-            var e5004 = firedEvents[5004];
-            Assert.Equal(TestString(5004, "AppDomain"), (string)e5004["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DCDeserializeWithSurrogateStop"), "Event DCDeserializeWithSurrogateStop not received");
+            var eDCDeserializeWithSurrogateStop = firedEvents["DCDeserializeWithSurrogateStop"];
+            Assert.Equal(TestString(5004, "AppDomain"), (string)eDCDeserializeWithSurrogateStop["AppDomain"]);
 
             // --- 5005: ImportKnownTypesStart ---
-            Assert.True(firedEvents.ContainsKey(5005), "Event 5005 (ImportKnownTypesStart) not received");
-            var e5005 = firedEvents[5005];
-            Assert.Equal(TestString(5005, "AppDomain"), (string)e5005["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ImportKnownTypesStart"), "Event ImportKnownTypesStart not received");
+            var eImportKnownTypesStart = firedEvents["ImportKnownTypesStart"];
+            Assert.Equal(TestString(5005, "AppDomain"), (string)eImportKnownTypesStart["AppDomain"]);
 
             // --- 5006: ImportKnownTypesStop ---
-            Assert.True(firedEvents.ContainsKey(5006), "Event 5006 (ImportKnownTypesStop) not received");
-            var e5006 = firedEvents[5006];
-            Assert.Equal(TestString(5006, "AppDomain"), (string)e5006["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ImportKnownTypesStop"), "Event ImportKnownTypesStop not received");
+            var eImportKnownTypesStop = firedEvents["ImportKnownTypesStop"];
+            Assert.Equal(TestString(5006, "AppDomain"), (string)eImportKnownTypesStop["AppDomain"]);
 
             // --- 5007: DCResolverResolve ---
-            Assert.True(firedEvents.ContainsKey(5007), "Event 5007 (DCResolverResolve) not received");
-            var e5007 = firedEvents[5007];
-            Assert.Equal(TestString(5007, "TypeName"), (string)e5007["TypeName"]);
-            Assert.Equal(TestString(5007, "AppDomain"), (string)e5007["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DCResolverResolve"), "Event DCResolverResolve not received");
+            var eDCResolverResolve = firedEvents["DCResolverResolve"];
+            Assert.Equal(TestString(5007, "TypeName"), (string)eDCResolverResolve["TypeName"]);
+            Assert.Equal(TestString(5007, "AppDomain"), (string)eDCResolverResolve["AppDomain"]);
 
             // --- 5008: DCGenWriterStart ---
-            Assert.True(firedEvents.ContainsKey(5008), "Event 5008 (DCGenWriterStart) not received");
-            var e5008 = firedEvents[5008];
-            Assert.Equal(TestString(5008, "Kind"), (string)e5008["Kind"]);
-            Assert.Equal(TestString(5008, "TypeName"), (string)e5008["TypeName"]);
-            Assert.Equal(TestString(5008, "AppDomain"), (string)e5008["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DCGenWriterStart"), "Event DCGenWriterStart not received");
+            var eDCGenWriterStart = firedEvents["DCGenWriterStart"];
+            Assert.Equal(TestString(5008, "Kind"), (string)eDCGenWriterStart["Kind"]);
+            Assert.Equal(TestString(5008, "TypeName"), (string)eDCGenWriterStart["TypeName"]);
+            Assert.Equal(TestString(5008, "AppDomain"), (string)eDCGenWriterStart["AppDomain"]);
 
             // --- 5009: DCGenWriterStop ---
-            Assert.True(firedEvents.ContainsKey(5009), "Event 5009 (DCGenWriterStop) not received");
-            var e5009 = firedEvents[5009];
-            Assert.Equal(TestString(5009, "AppDomain"), (string)e5009["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DCGenWriterStop"), "Event DCGenWriterStop not received");
+            var eDCGenWriterStop = firedEvents["DCGenWriterStop"];
+            Assert.Equal(TestString(5009, "AppDomain"), (string)eDCGenWriterStop["AppDomain"]);
 
             // --- 5010: DCGenReaderStart ---
-            Assert.True(firedEvents.ContainsKey(5010), "Event 5010 (DCGenReaderStart) not received");
-            var e5010 = firedEvents[5010];
-            Assert.Equal(TestString(5010, "Kind"), (string)e5010["Kind"]);
-            Assert.Equal(TestString(5010, "TypeName"), (string)e5010["TypeName"]);
-            Assert.Equal(TestString(5010, "AppDomain"), (string)e5010["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DCGenReaderStart"), "Event DCGenReaderStart not received");
+            var eDCGenReaderStart = firedEvents["DCGenReaderStart"];
+            Assert.Equal(TestString(5010, "Kind"), (string)eDCGenReaderStart["Kind"]);
+            Assert.Equal(TestString(5010, "TypeName"), (string)eDCGenReaderStart["TypeName"]);
+            Assert.Equal(TestString(5010, "AppDomain"), (string)eDCGenReaderStart["AppDomain"]);
 
             // --- 5011: DCGenReaderStop ---
-            Assert.True(firedEvents.ContainsKey(5011), "Event 5011 (DCGenReaderStop) not received");
-            var e5011 = firedEvents[5011];
-            Assert.Equal(TestString(5011, "AppDomain"), (string)e5011["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DCGenReaderStop"), "Event DCGenReaderStop not received");
+            var eDCGenReaderStop = firedEvents["DCGenReaderStop"];
+            Assert.Equal(TestString(5011, "AppDomain"), (string)eDCGenReaderStop["AppDomain"]);
 
             // --- 5012: DCJsonGenReaderStart ---
-            Assert.True(firedEvents.ContainsKey(5012), "Event 5012 (DCJsonGenReaderStart) not received");
-            var e5012 = firedEvents[5012];
-            Assert.Equal(TestString(5012, "Kind"), (string)e5012["Kind"]);
-            Assert.Equal(TestString(5012, "TypeName"), (string)e5012["TypeName"]);
-            Assert.Equal(TestString(5012, "AppDomain"), (string)e5012["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DCJsonGenReaderStart"), "Event DCJsonGenReaderStart not received");
+            var eDCJsonGenReaderStart = firedEvents["DCJsonGenReaderStart"];
+            Assert.Equal(TestString(5012, "Kind"), (string)eDCJsonGenReaderStart["Kind"]);
+            Assert.Equal(TestString(5012, "TypeName"), (string)eDCJsonGenReaderStart["TypeName"]);
+            Assert.Equal(TestString(5012, "AppDomain"), (string)eDCJsonGenReaderStart["AppDomain"]);
 
             // --- 5013: DCJsonGenReaderStop ---
-            Assert.True(firedEvents.ContainsKey(5013), "Event 5013 (DCJsonGenReaderStop) not received");
-            var e5013 = firedEvents[5013];
-            Assert.Equal(TestString(5013, "AppDomain"), (string)e5013["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DCJsonGenReaderStop"), "Event DCJsonGenReaderStop not received");
+            var eDCJsonGenReaderStop = firedEvents["DCJsonGenReaderStop"];
+            Assert.Equal(TestString(5013, "AppDomain"), (string)eDCJsonGenReaderStop["AppDomain"]);
 
             // --- 5014: DCJsonGenWriterStart ---
-            Assert.True(firedEvents.ContainsKey(5014), "Event 5014 (DCJsonGenWriterStart) not received");
-            var e5014 = firedEvents[5014];
-            Assert.Equal(TestString(5014, "Kind"), (string)e5014["Kind"]);
-            Assert.Equal(TestString(5014, "TypeName"), (string)e5014["TypeName"]);
-            Assert.Equal(TestString(5014, "AppDomain"), (string)e5014["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DCJsonGenWriterStart"), "Event DCJsonGenWriterStart not received");
+            var eDCJsonGenWriterStart = firedEvents["DCJsonGenWriterStart"];
+            Assert.Equal(TestString(5014, "Kind"), (string)eDCJsonGenWriterStart["Kind"]);
+            Assert.Equal(TestString(5014, "TypeName"), (string)eDCJsonGenWriterStart["TypeName"]);
+            Assert.Equal(TestString(5014, "AppDomain"), (string)eDCJsonGenWriterStart["AppDomain"]);
 
             // --- 5015: DCJsonGenWriterStop ---
-            Assert.True(firedEvents.ContainsKey(5015), "Event 5015 (DCJsonGenWriterStop) not received");
-            var e5015 = firedEvents[5015];
-            Assert.Equal(TestString(5015, "AppDomain"), (string)e5015["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DCJsonGenWriterStop"), "Event DCJsonGenWriterStop not received");
+            var eDCJsonGenWriterStop = firedEvents["DCJsonGenWriterStop"];
+            Assert.Equal(TestString(5015, "AppDomain"), (string)eDCJsonGenWriterStop["AppDomain"]);
 
             // --- 5016: GenXmlSerializableStart ---
-            Assert.True(firedEvents.ContainsKey(5016), "Event 5016 (GenXmlSerializableStart) not received");
-            var e5016 = firedEvents[5016];
-            Assert.Equal(TestString(5016, "DCType"), (string)e5016["DCType"]);
-            Assert.Equal(TestString(5016, "AppDomain"), (string)e5016["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("GenXmlSerializableStart"), "Event GenXmlSerializableStart not received");
+            var eGenXmlSerializableStart = firedEvents["GenXmlSerializableStart"];
+            Assert.Equal(TestString(5016, "DCType"), (string)eGenXmlSerializableStart["DCType"]);
+            Assert.Equal(TestString(5016, "AppDomain"), (string)eGenXmlSerializableStart["AppDomain"]);
 
             // --- 5017: GenXmlSerializableStop ---
-            Assert.True(firedEvents.ContainsKey(5017), "Event 5017 (GenXmlSerializableStop) not received");
-            var e5017 = firedEvents[5017];
-            Assert.Equal(TestString(5017, "AppDomain"), (string)e5017["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("GenXmlSerializableStop"), "Event GenXmlSerializableStop not received");
+            var eGenXmlSerializableStop = firedEvents["GenXmlSerializableStop"];
+            Assert.Equal(TestString(5017, "AppDomain"), (string)eGenXmlSerializableStop["AppDomain"]);
 
             // --- 5203: JsonMessageDecodingStart ---
-            Assert.True(firedEvents.ContainsKey(5203), "Event 5203 (JsonMessageDecodingStart) not received");
-            var e5203 = firedEvents[5203];
-            Assert.Equal(TestString(5203, "AppDomain"), (string)e5203["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("JsonMessageDecodingStart"), "Event JsonMessageDecodingStart not received");
+            var eJsonMessageDecodingStart = firedEvents["JsonMessageDecodingStart"];
+            Assert.Equal(TestString(5203, "AppDomain"), (string)eJsonMessageDecodingStart["AppDomain"]);
 
             // --- 5204: JsonMessageEncodingStart ---
-            Assert.True(firedEvents.ContainsKey(5204), "Event 5204 (JsonMessageEncodingStart) not received");
-            var e5204 = firedEvents[5204];
-            Assert.Equal(TestString(5204, "AppDomain"), (string)e5204["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("JsonMessageEncodingStart"), "Event JsonMessageEncodingStart not received");
+            var eJsonMessageEncodingStart = firedEvents["JsonMessageEncodingStart"];
+            Assert.Equal(TestString(5204, "AppDomain"), (string)eJsonMessageEncodingStart["AppDomain"]);
 
         }
     }

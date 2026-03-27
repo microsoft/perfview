@@ -180,7 +180,7 @@ namespace TraceEventTests.Parsers
 
         #region Chunk04 Subscribe
 
-        private void Subscribe_Chunk04(ApplicationServerTraceEventParser parser, Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Subscribe_Chunk04(ApplicationServerTraceEventParser parser, Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             // 1019 CompleteCancelActivityWorkItem (FourStringsTemplateATraceData)
             parser.CompleteCancelActivityWorkItem += delegate (FourStringsTemplateATraceData data)
@@ -190,7 +190,7 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = data.data2;
                 fields["data3"] = data.data3;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1019] = fields;
+                firedEvents["CompleteCancelActivityWorkItem"] = fields;
             };
 
             // 1020 CreateBookmark (SixStringsTemplateATraceData)
@@ -203,7 +203,7 @@ namespace TraceEventTests.Parsers
                 fields["data4"] = data.data4;
                 fields["data5"] = data.data5;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1020] = fields;
+                firedEvents["CreateBookmark"] = fields;
             };
 
             // 1021 ScheduleBookmarkWorkItem (SixStringsTemplateATraceData)
@@ -216,7 +216,7 @@ namespace TraceEventTests.Parsers
                 fields["data4"] = data.data4;
                 fields["data5"] = data.data5;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1021] = fields;
+                firedEvents["ScheduleBookmarkWorkItem"] = fields;
             };
 
             // 1022 StartBookmarkWorkItem (SixStringsTemplateATraceData)
@@ -229,7 +229,7 @@ namespace TraceEventTests.Parsers
                 fields["data4"] = data.data4;
                 fields["data5"] = data.data5;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1022] = fields;
+                firedEvents["StartBookmarkWorkItem"] = fields;
             };
 
             // 1023 CompleteBookmarkWorkItem (SixStringsTemplateATraceData)
@@ -242,7 +242,7 @@ namespace TraceEventTests.Parsers
                 fields["data4"] = data.data4;
                 fields["data5"] = data.data5;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1023] = fields;
+                firedEvents["CompleteBookmarkWorkItem"] = fields;
             };
 
             // 1024 CreateBookmarkScope (TwoStringsTemplateATraceData)
@@ -251,7 +251,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1024] = fields;
+                firedEvents["CreateBookmarkScope"] = fields;
             };
 
             // 1025 BookmarkScopeInitialized (ThreeStringsTemplateATraceData)
@@ -261,7 +261,7 @@ namespace TraceEventTests.Parsers
                 fields["data1"] = data.data1;
                 fields["data2"] = data.data2;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1025] = fields;
+                firedEvents["BookmarkScopeInitialized"] = fields;
             };
 
             // 1026 ScheduleTransactionContextWorkItem (FourStringsTemplateATraceData)
@@ -272,7 +272,7 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = data.data2;
                 fields["data3"] = data.data3;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1026] = fields;
+                firedEvents["ScheduleTransactionContextWorkItem"] = fields;
             };
 
             // 1027 StartTransactionContextWorkItem (FourStringsTemplateATraceData)
@@ -283,7 +283,7 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = data.data2;
                 fields["data3"] = data.data3;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1027] = fields;
+                firedEvents["StartTransactionContextWorkItem"] = fields;
             };
 
             // 1028 CompleteTransactionContextWorkItem (FourStringsTemplateATraceData)
@@ -294,7 +294,7 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = data.data2;
                 fields["data3"] = data.data3;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1028] = fields;
+                firedEvents["CompleteTransactionContextWorkItem"] = fields;
             };
 
             // 1029 ScheduleFaultWorkItem (EightStringsTemplateEATraceData)
@@ -309,7 +309,7 @@ namespace TraceEventTests.Parsers
                 fields["data6"] = data.data6;
                 fields["SerializedException"] = data.SerializedException;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1029] = fields;
+                firedEvents["ScheduleFaultWorkItem"] = fields;
             };
 
             // 1030 StartFaultWorkItem (EightStringsTemplateEATraceData)
@@ -324,7 +324,7 @@ namespace TraceEventTests.Parsers
                 fields["data6"] = data.data6;
                 fields["SerializedException"] = data.SerializedException;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1030] = fields;
+                firedEvents["StartFaultWorkItem"] = fields;
             };
 
             // 1031 CompleteFaultWorkItem (EightStringsTemplateEATraceData)
@@ -339,7 +339,7 @@ namespace TraceEventTests.Parsers
                 fields["data6"] = data.data6;
                 fields["SerializedException"] = data.SerializedException;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1031] = fields;
+                firedEvents["CompleteFaultWorkItem"] = fields;
             };
 
             // 1032 ScheduleRuntimeWorkItem (FourStringsTemplateATraceData)
@@ -350,7 +350,7 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = data.data2;
                 fields["data3"] = data.data3;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1032] = fields;
+                firedEvents["ScheduleRuntimeWorkItem"] = fields;
             };
 
             // 1033 StartRuntimeWorkItem (FourStringsTemplateATraceData)
@@ -361,7 +361,7 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = data.data2;
                 fields["data3"] = data.data3;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1033] = fields;
+                firedEvents["StartRuntimeWorkItem"] = fields;
             };
 
             // 1034 CompleteRuntimeWorkItem (FourStringsTemplateATraceData)
@@ -372,7 +372,7 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = data.data2;
                 fields["data3"] = data.data3;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1034] = fields;
+                firedEvents["CompleteRuntimeWorkItem"] = fields;
             };
 
             // 1035 RuntimeTransactionSet (SevenStringsTemplateATraceData)
@@ -386,7 +386,7 @@ namespace TraceEventTests.Parsers
                 fields["data5"] = data.data5;
                 fields["data6"] = data.data6;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1035] = fields;
+                firedEvents["RuntimeTransactionSet"] = fields;
             };
 
             // 1036 RuntimeTransactionCompletionRequested (FourStringsTemplateATraceData)
@@ -397,7 +397,7 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = data.data2;
                 fields["data3"] = data.data3;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1036] = fields;
+                firedEvents["RuntimeTransactionCompletionRequested"] = fields;
             };
 
             // 1037 RuntimeTransactionComplete (TwoStringsTemplateATraceData)
@@ -406,7 +406,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1037] = fields;
+                firedEvents["RuntimeTransactionComplete"] = fields;
             };
 
             // 1038 EnterNoPersistBlock (OneStringsTemplateATraceData)
@@ -414,7 +414,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1038] = fields;
+                firedEvents["EnterNoPersistBlock"] = fields;
             };
 
             // 1039 ExitNoPersistBlock (OneStringsTemplateATraceData)
@@ -422,7 +422,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1039] = fields;
+                firedEvents["ExitNoPersistBlock"] = fields;
             };
 
             // 1040 InArgumentBound (SixStringsTemplateATraceData)
@@ -435,7 +435,7 @@ namespace TraceEventTests.Parsers
                 fields["data4"] = data.data4;
                 fields["data5"] = data.data5;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1040] = fields;
+                firedEvents["InArgumentBound"] = fields;
             };
 
             // 1041 WorkflowApplicationPersistableIdle (ThreeStringsTemplateATraceData)
@@ -445,7 +445,7 @@ namespace TraceEventTests.Parsers
                 fields["data1"] = data.data1;
                 fields["data2"] = data.data2;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1041] = fields;
+                firedEvents["WorkflowApplicationPersistableIdle"] = fields;
             };
 
             // 1101 WorkflowActivityStart (Multidata17TemplateATraceData)
@@ -454,7 +454,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["Id"] = data.Id;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1101] = fields;
+                firedEvents["WorkflowActivityStart"] = fields;
             };
 
             // 1102 WorkflowActivityStop (Multidata17TemplateATraceData)
@@ -463,7 +463,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["Id"] = data.Id;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1102] = fields;
+                firedEvents["WorkflowActivityStop"] = fields;
             };
 
             // 1103 WorkflowActivitySuspend (Multidata17TemplateATraceData)
@@ -472,7 +472,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["Id"] = data.Id;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1103] = fields;
+                firedEvents["WorkflowActivitySuspend"] = fields;
             };
 
             // 1104 WorkflowActivityResume (Multidata17TemplateATraceData)
@@ -481,7 +481,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["Id"] = data.Id;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1104] = fields;
+                firedEvents["WorkflowActivityResume"] = fields;
             };
 
             // 1124 InvokeMethodIsStatic (TwoStringsTemplateATraceData)
@@ -490,7 +490,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1124] = fields;
+                firedEvents["InvokeMethodIsStatic"] = fields;
             };
 
             // 1125 InvokeMethodIsNotStatic (TwoStringsTemplateATraceData)
@@ -499,7 +499,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1125] = fields;
+                firedEvents["InvokeMethodIsNotStatic"] = fields;
             };
 
             // 1126 InvokedMethodThrewException (ThreeStringsTemplateATraceData)
@@ -509,7 +509,7 @@ namespace TraceEventTests.Parsers
                 fields["data1"] = data.data1;
                 fields["data2"] = data.data2;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1126] = fields;
+                firedEvents["InvokedMethodThrewException"] = fields;
             };
 
             // 1131 InvokeMethodUseAsyncPattern (FourStringsTemplateATraceData)
@@ -520,7 +520,7 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = data.data2;
                 fields["data3"] = data.data3;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1131] = fields;
+                firedEvents["InvokeMethodUseAsyncPattern"] = fields;
             };
 
             // 1132 InvokeMethodDoesNotUseAsyncPattern (TwoStringsTemplateATraceData)
@@ -529,7 +529,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1132] = fields;
+                firedEvents["InvokeMethodDoesNotUseAsyncPattern"] = fields;
             };
 
             // 1140 FlowchartStart (TwoStringsTemplateATraceData)
@@ -538,7 +538,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1140] = fields;
+                firedEvents["FlowchartStart"] = fields;
             };
 
             // 1141 FlowchartEmpty (TwoStringsTemplateATraceData)
@@ -547,7 +547,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1141] = fields;
+                firedEvents["FlowchartEmpty"] = fields;
             };
 
             // 1143 FlowchartNextNull (TwoStringsTemplateATraceData)
@@ -556,7 +556,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1143] = fields;
+                firedEvents["FlowchartNextNull"] = fields;
             };
 
             // 1146 FlowchartSwitchCase (ThreeStringsTemplateATraceData)
@@ -566,7 +566,7 @@ namespace TraceEventTests.Parsers
                 fields["data1"] = data.data1;
                 fields["data2"] = data.data2;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1146] = fields;
+                firedEvents["FlowchartSwitchCase"] = fields;
             };
 
             // 1147 FlowchartSwitchDefault (TwoStringsTemplateATraceData)
@@ -575,7 +575,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[1147] = fields;
+                firedEvents["FlowchartSwitchDefault"] = fields;
             };
         }
 
@@ -583,255 +583,255 @@ namespace TraceEventTests.Parsers
 
         #region Chunk04 Validate
 
-        private void Validate_Chunk04(Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Validate_Chunk04(Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             // 1019 CompleteCancelActivityWorkItem (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1019), "Event 1019 CompleteCancelActivityWorkItem did not fire");
-            Assert.Equal(TestString(1019, "data1"), firedEvents[1019]["data1"]);
-            Assert.Equal(TestString(1019, "data2"), firedEvents[1019]["data2"]);
-            Assert.Equal(TestString(1019, "data3"), firedEvents[1019]["data3"]);
-            Assert.Equal(TestString(1019, "AppDomain"), firedEvents[1019]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("CompleteCancelActivityWorkItem"), "Event 1019 CompleteCancelActivityWorkItem did not fire");
+            Assert.Equal(TestString(1019, "data1"), firedEvents["CompleteCancelActivityWorkItem"]["data1"]);
+            Assert.Equal(TestString(1019, "data2"), firedEvents["CompleteCancelActivityWorkItem"]["data2"]);
+            Assert.Equal(TestString(1019, "data3"), firedEvents["CompleteCancelActivityWorkItem"]["data3"]);
+            Assert.Equal(TestString(1019, "AppDomain"), firedEvents["CompleteCancelActivityWorkItem"]["AppDomain"]);
 
             // 1020 CreateBookmark (SixStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1020), "Event 1020 CreateBookmark did not fire");
-            Assert.Equal(TestString(1020, "data1"), firedEvents[1020]["data1"]);
-            Assert.Equal(TestString(1020, "data2"), firedEvents[1020]["data2"]);
-            Assert.Equal(TestString(1020, "data3"), firedEvents[1020]["data3"]);
-            Assert.Equal(TestString(1020, "data4"), firedEvents[1020]["data4"]);
-            Assert.Equal(TestString(1020, "data5"), firedEvents[1020]["data5"]);
-            Assert.Equal(TestString(1020, "AppDomain"), firedEvents[1020]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("CreateBookmark"), "Event 1020 CreateBookmark did not fire");
+            Assert.Equal(TestString(1020, "data1"), firedEvents["CreateBookmark"]["data1"]);
+            Assert.Equal(TestString(1020, "data2"), firedEvents["CreateBookmark"]["data2"]);
+            Assert.Equal(TestString(1020, "data3"), firedEvents["CreateBookmark"]["data3"]);
+            Assert.Equal(TestString(1020, "data4"), firedEvents["CreateBookmark"]["data4"]);
+            Assert.Equal(TestString(1020, "data5"), firedEvents["CreateBookmark"]["data5"]);
+            Assert.Equal(TestString(1020, "AppDomain"), firedEvents["CreateBookmark"]["AppDomain"]);
 
             // 1021 ScheduleBookmarkWorkItem (SixStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1021), "Event 1021 ScheduleBookmarkWorkItem did not fire");
-            Assert.Equal(TestString(1021, "data1"), firedEvents[1021]["data1"]);
-            Assert.Equal(TestString(1021, "data2"), firedEvents[1021]["data2"]);
-            Assert.Equal(TestString(1021, "data3"), firedEvents[1021]["data3"]);
-            Assert.Equal(TestString(1021, "data4"), firedEvents[1021]["data4"]);
-            Assert.Equal(TestString(1021, "data5"), firedEvents[1021]["data5"]);
-            Assert.Equal(TestString(1021, "AppDomain"), firedEvents[1021]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ScheduleBookmarkWorkItem"), "Event 1021 ScheduleBookmarkWorkItem did not fire");
+            Assert.Equal(TestString(1021, "data1"), firedEvents["ScheduleBookmarkWorkItem"]["data1"]);
+            Assert.Equal(TestString(1021, "data2"), firedEvents["ScheduleBookmarkWorkItem"]["data2"]);
+            Assert.Equal(TestString(1021, "data3"), firedEvents["ScheduleBookmarkWorkItem"]["data3"]);
+            Assert.Equal(TestString(1021, "data4"), firedEvents["ScheduleBookmarkWorkItem"]["data4"]);
+            Assert.Equal(TestString(1021, "data5"), firedEvents["ScheduleBookmarkWorkItem"]["data5"]);
+            Assert.Equal(TestString(1021, "AppDomain"), firedEvents["ScheduleBookmarkWorkItem"]["AppDomain"]);
 
             // 1022 StartBookmarkWorkItem (SixStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1022), "Event 1022 StartBookmarkWorkItem did not fire");
-            Assert.Equal(TestString(1022, "data1"), firedEvents[1022]["data1"]);
-            Assert.Equal(TestString(1022, "data2"), firedEvents[1022]["data2"]);
-            Assert.Equal(TestString(1022, "data3"), firedEvents[1022]["data3"]);
-            Assert.Equal(TestString(1022, "data4"), firedEvents[1022]["data4"]);
-            Assert.Equal(TestString(1022, "data5"), firedEvents[1022]["data5"]);
-            Assert.Equal(TestString(1022, "AppDomain"), firedEvents[1022]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("StartBookmarkWorkItem"), "Event 1022 StartBookmarkWorkItem did not fire");
+            Assert.Equal(TestString(1022, "data1"), firedEvents["StartBookmarkWorkItem"]["data1"]);
+            Assert.Equal(TestString(1022, "data2"), firedEvents["StartBookmarkWorkItem"]["data2"]);
+            Assert.Equal(TestString(1022, "data3"), firedEvents["StartBookmarkWorkItem"]["data3"]);
+            Assert.Equal(TestString(1022, "data4"), firedEvents["StartBookmarkWorkItem"]["data4"]);
+            Assert.Equal(TestString(1022, "data5"), firedEvents["StartBookmarkWorkItem"]["data5"]);
+            Assert.Equal(TestString(1022, "AppDomain"), firedEvents["StartBookmarkWorkItem"]["AppDomain"]);
 
             // 1023 CompleteBookmarkWorkItem (SixStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1023), "Event 1023 CompleteBookmarkWorkItem did not fire");
-            Assert.Equal(TestString(1023, "data1"), firedEvents[1023]["data1"]);
-            Assert.Equal(TestString(1023, "data2"), firedEvents[1023]["data2"]);
-            Assert.Equal(TestString(1023, "data3"), firedEvents[1023]["data3"]);
-            Assert.Equal(TestString(1023, "data4"), firedEvents[1023]["data4"]);
-            Assert.Equal(TestString(1023, "data5"), firedEvents[1023]["data5"]);
-            Assert.Equal(TestString(1023, "AppDomain"), firedEvents[1023]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("CompleteBookmarkWorkItem"), "Event 1023 CompleteBookmarkWorkItem did not fire");
+            Assert.Equal(TestString(1023, "data1"), firedEvents["CompleteBookmarkWorkItem"]["data1"]);
+            Assert.Equal(TestString(1023, "data2"), firedEvents["CompleteBookmarkWorkItem"]["data2"]);
+            Assert.Equal(TestString(1023, "data3"), firedEvents["CompleteBookmarkWorkItem"]["data3"]);
+            Assert.Equal(TestString(1023, "data4"), firedEvents["CompleteBookmarkWorkItem"]["data4"]);
+            Assert.Equal(TestString(1023, "data5"), firedEvents["CompleteBookmarkWorkItem"]["data5"]);
+            Assert.Equal(TestString(1023, "AppDomain"), firedEvents["CompleteBookmarkWorkItem"]["AppDomain"]);
 
             // 1024 CreateBookmarkScope (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1024), "Event 1024 CreateBookmarkScope did not fire");
-            Assert.Equal(TestString(1024, "data1"), firedEvents[1024]["data1"]);
-            Assert.Equal(TestString(1024, "AppDomain"), firedEvents[1024]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("CreateBookmarkScope"), "Event 1024 CreateBookmarkScope did not fire");
+            Assert.Equal(TestString(1024, "data1"), firedEvents["CreateBookmarkScope"]["data1"]);
+            Assert.Equal(TestString(1024, "AppDomain"), firedEvents["CreateBookmarkScope"]["AppDomain"]);
 
             // 1025 BookmarkScopeInitialized (ThreeStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1025), "Event 1025 BookmarkScopeInitialized did not fire");
-            Assert.Equal(TestString(1025, "data1"), firedEvents[1025]["data1"]);
-            Assert.Equal(TestString(1025, "data2"), firedEvents[1025]["data2"]);
-            Assert.Equal(TestString(1025, "AppDomain"), firedEvents[1025]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("BookmarkScopeInitialized"), "Event 1025 BookmarkScopeInitialized did not fire");
+            Assert.Equal(TestString(1025, "data1"), firedEvents["BookmarkScopeInitialized"]["data1"]);
+            Assert.Equal(TestString(1025, "data2"), firedEvents["BookmarkScopeInitialized"]["data2"]);
+            Assert.Equal(TestString(1025, "AppDomain"), firedEvents["BookmarkScopeInitialized"]["AppDomain"]);
 
             // 1026 ScheduleTransactionContextWorkItem (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1026), "Event 1026 ScheduleTransactionContextWorkItem did not fire");
-            Assert.Equal(TestString(1026, "data1"), firedEvents[1026]["data1"]);
-            Assert.Equal(TestString(1026, "data2"), firedEvents[1026]["data2"]);
-            Assert.Equal(TestString(1026, "data3"), firedEvents[1026]["data3"]);
-            Assert.Equal(TestString(1026, "AppDomain"), firedEvents[1026]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ScheduleTransactionContextWorkItem"), "Event 1026 ScheduleTransactionContextWorkItem did not fire");
+            Assert.Equal(TestString(1026, "data1"), firedEvents["ScheduleTransactionContextWorkItem"]["data1"]);
+            Assert.Equal(TestString(1026, "data2"), firedEvents["ScheduleTransactionContextWorkItem"]["data2"]);
+            Assert.Equal(TestString(1026, "data3"), firedEvents["ScheduleTransactionContextWorkItem"]["data3"]);
+            Assert.Equal(TestString(1026, "AppDomain"), firedEvents["ScheduleTransactionContextWorkItem"]["AppDomain"]);
 
             // 1027 StartTransactionContextWorkItem (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1027), "Event 1027 StartTransactionContextWorkItem did not fire");
-            Assert.Equal(TestString(1027, "data1"), firedEvents[1027]["data1"]);
-            Assert.Equal(TestString(1027, "data2"), firedEvents[1027]["data2"]);
-            Assert.Equal(TestString(1027, "data3"), firedEvents[1027]["data3"]);
-            Assert.Equal(TestString(1027, "AppDomain"), firedEvents[1027]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("StartTransactionContextWorkItem"), "Event 1027 StartTransactionContextWorkItem did not fire");
+            Assert.Equal(TestString(1027, "data1"), firedEvents["StartTransactionContextWorkItem"]["data1"]);
+            Assert.Equal(TestString(1027, "data2"), firedEvents["StartTransactionContextWorkItem"]["data2"]);
+            Assert.Equal(TestString(1027, "data3"), firedEvents["StartTransactionContextWorkItem"]["data3"]);
+            Assert.Equal(TestString(1027, "AppDomain"), firedEvents["StartTransactionContextWorkItem"]["AppDomain"]);
 
             // 1028 CompleteTransactionContextWorkItem (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1028), "Event 1028 CompleteTransactionContextWorkItem did not fire");
-            Assert.Equal(TestString(1028, "data1"), firedEvents[1028]["data1"]);
-            Assert.Equal(TestString(1028, "data2"), firedEvents[1028]["data2"]);
-            Assert.Equal(TestString(1028, "data3"), firedEvents[1028]["data3"]);
-            Assert.Equal(TestString(1028, "AppDomain"), firedEvents[1028]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("CompleteTransactionContextWorkItem"), "Event 1028 CompleteTransactionContextWorkItem did not fire");
+            Assert.Equal(TestString(1028, "data1"), firedEvents["CompleteTransactionContextWorkItem"]["data1"]);
+            Assert.Equal(TestString(1028, "data2"), firedEvents["CompleteTransactionContextWorkItem"]["data2"]);
+            Assert.Equal(TestString(1028, "data3"), firedEvents["CompleteTransactionContextWorkItem"]["data3"]);
+            Assert.Equal(TestString(1028, "AppDomain"), firedEvents["CompleteTransactionContextWorkItem"]["AppDomain"]);
 
             // 1029 ScheduleFaultWorkItem (EightStringsTemplateEA)
-            Assert.True(firedEvents.ContainsKey(1029), "Event 1029 ScheduleFaultWorkItem did not fire");
-            Assert.Equal(TestString(1029, "data1"), firedEvents[1029]["data1"]);
-            Assert.Equal(TestString(1029, "data2"), firedEvents[1029]["data2"]);
-            Assert.Equal(TestString(1029, "data3"), firedEvents[1029]["data3"]);
-            Assert.Equal(TestString(1029, "data4"), firedEvents[1029]["data4"]);
-            Assert.Equal(TestString(1029, "data5"), firedEvents[1029]["data5"]);
-            Assert.Equal(TestString(1029, "data6"), firedEvents[1029]["data6"]);
-            Assert.Equal(TestString(1029, "SerializedException"), firedEvents[1029]["SerializedException"]);
-            Assert.Equal(TestString(1029, "AppDomain"), firedEvents[1029]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ScheduleFaultWorkItem"), "Event 1029 ScheduleFaultWorkItem did not fire");
+            Assert.Equal(TestString(1029, "data1"), firedEvents["ScheduleFaultWorkItem"]["data1"]);
+            Assert.Equal(TestString(1029, "data2"), firedEvents["ScheduleFaultWorkItem"]["data2"]);
+            Assert.Equal(TestString(1029, "data3"), firedEvents["ScheduleFaultWorkItem"]["data3"]);
+            Assert.Equal(TestString(1029, "data4"), firedEvents["ScheduleFaultWorkItem"]["data4"]);
+            Assert.Equal(TestString(1029, "data5"), firedEvents["ScheduleFaultWorkItem"]["data5"]);
+            Assert.Equal(TestString(1029, "data6"), firedEvents["ScheduleFaultWorkItem"]["data6"]);
+            Assert.Equal(TestString(1029, "SerializedException"), firedEvents["ScheduleFaultWorkItem"]["SerializedException"]);
+            Assert.Equal(TestString(1029, "AppDomain"), firedEvents["ScheduleFaultWorkItem"]["AppDomain"]);
 
             // 1030 StartFaultWorkItem (EightStringsTemplateEA)
-            Assert.True(firedEvents.ContainsKey(1030), "Event 1030 StartFaultWorkItem did not fire");
-            Assert.Equal(TestString(1030, "data1"), firedEvents[1030]["data1"]);
-            Assert.Equal(TestString(1030, "data2"), firedEvents[1030]["data2"]);
-            Assert.Equal(TestString(1030, "data3"), firedEvents[1030]["data3"]);
-            Assert.Equal(TestString(1030, "data4"), firedEvents[1030]["data4"]);
-            Assert.Equal(TestString(1030, "data5"), firedEvents[1030]["data5"]);
-            Assert.Equal(TestString(1030, "data6"), firedEvents[1030]["data6"]);
-            Assert.Equal(TestString(1030, "SerializedException"), firedEvents[1030]["SerializedException"]);
-            Assert.Equal(TestString(1030, "AppDomain"), firedEvents[1030]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("StartFaultWorkItem"), "Event 1030 StartFaultWorkItem did not fire");
+            Assert.Equal(TestString(1030, "data1"), firedEvents["StartFaultWorkItem"]["data1"]);
+            Assert.Equal(TestString(1030, "data2"), firedEvents["StartFaultWorkItem"]["data2"]);
+            Assert.Equal(TestString(1030, "data3"), firedEvents["StartFaultWorkItem"]["data3"]);
+            Assert.Equal(TestString(1030, "data4"), firedEvents["StartFaultWorkItem"]["data4"]);
+            Assert.Equal(TestString(1030, "data5"), firedEvents["StartFaultWorkItem"]["data5"]);
+            Assert.Equal(TestString(1030, "data6"), firedEvents["StartFaultWorkItem"]["data6"]);
+            Assert.Equal(TestString(1030, "SerializedException"), firedEvents["StartFaultWorkItem"]["SerializedException"]);
+            Assert.Equal(TestString(1030, "AppDomain"), firedEvents["StartFaultWorkItem"]["AppDomain"]);
 
             // 1031 CompleteFaultWorkItem (EightStringsTemplateEA)
-            Assert.True(firedEvents.ContainsKey(1031), "Event 1031 CompleteFaultWorkItem did not fire");
-            Assert.Equal(TestString(1031, "data1"), firedEvents[1031]["data1"]);
-            Assert.Equal(TestString(1031, "data2"), firedEvents[1031]["data2"]);
-            Assert.Equal(TestString(1031, "data3"), firedEvents[1031]["data3"]);
-            Assert.Equal(TestString(1031, "data4"), firedEvents[1031]["data4"]);
-            Assert.Equal(TestString(1031, "data5"), firedEvents[1031]["data5"]);
-            Assert.Equal(TestString(1031, "data6"), firedEvents[1031]["data6"]);
-            Assert.Equal(TestString(1031, "SerializedException"), firedEvents[1031]["SerializedException"]);
-            Assert.Equal(TestString(1031, "AppDomain"), firedEvents[1031]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("CompleteFaultWorkItem"), "Event 1031 CompleteFaultWorkItem did not fire");
+            Assert.Equal(TestString(1031, "data1"), firedEvents["CompleteFaultWorkItem"]["data1"]);
+            Assert.Equal(TestString(1031, "data2"), firedEvents["CompleteFaultWorkItem"]["data2"]);
+            Assert.Equal(TestString(1031, "data3"), firedEvents["CompleteFaultWorkItem"]["data3"]);
+            Assert.Equal(TestString(1031, "data4"), firedEvents["CompleteFaultWorkItem"]["data4"]);
+            Assert.Equal(TestString(1031, "data5"), firedEvents["CompleteFaultWorkItem"]["data5"]);
+            Assert.Equal(TestString(1031, "data6"), firedEvents["CompleteFaultWorkItem"]["data6"]);
+            Assert.Equal(TestString(1031, "SerializedException"), firedEvents["CompleteFaultWorkItem"]["SerializedException"]);
+            Assert.Equal(TestString(1031, "AppDomain"), firedEvents["CompleteFaultWorkItem"]["AppDomain"]);
 
             // 1032 ScheduleRuntimeWorkItem (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1032), "Event 1032 ScheduleRuntimeWorkItem did not fire");
-            Assert.Equal(TestString(1032, "data1"), firedEvents[1032]["data1"]);
-            Assert.Equal(TestString(1032, "data2"), firedEvents[1032]["data2"]);
-            Assert.Equal(TestString(1032, "data3"), firedEvents[1032]["data3"]);
-            Assert.Equal(TestString(1032, "AppDomain"), firedEvents[1032]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ScheduleRuntimeWorkItem"), "Event 1032 ScheduleRuntimeWorkItem did not fire");
+            Assert.Equal(TestString(1032, "data1"), firedEvents["ScheduleRuntimeWorkItem"]["data1"]);
+            Assert.Equal(TestString(1032, "data2"), firedEvents["ScheduleRuntimeWorkItem"]["data2"]);
+            Assert.Equal(TestString(1032, "data3"), firedEvents["ScheduleRuntimeWorkItem"]["data3"]);
+            Assert.Equal(TestString(1032, "AppDomain"), firedEvents["ScheduleRuntimeWorkItem"]["AppDomain"]);
 
             // 1033 StartRuntimeWorkItem (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1033), "Event 1033 StartRuntimeWorkItem did not fire");
-            Assert.Equal(TestString(1033, "data1"), firedEvents[1033]["data1"]);
-            Assert.Equal(TestString(1033, "data2"), firedEvents[1033]["data2"]);
-            Assert.Equal(TestString(1033, "data3"), firedEvents[1033]["data3"]);
-            Assert.Equal(TestString(1033, "AppDomain"), firedEvents[1033]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("StartRuntimeWorkItem"), "Event 1033 StartRuntimeWorkItem did not fire");
+            Assert.Equal(TestString(1033, "data1"), firedEvents["StartRuntimeWorkItem"]["data1"]);
+            Assert.Equal(TestString(1033, "data2"), firedEvents["StartRuntimeWorkItem"]["data2"]);
+            Assert.Equal(TestString(1033, "data3"), firedEvents["StartRuntimeWorkItem"]["data3"]);
+            Assert.Equal(TestString(1033, "AppDomain"), firedEvents["StartRuntimeWorkItem"]["AppDomain"]);
 
             // 1034 CompleteRuntimeWorkItem (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1034), "Event 1034 CompleteRuntimeWorkItem did not fire");
-            Assert.Equal(TestString(1034, "data1"), firedEvents[1034]["data1"]);
-            Assert.Equal(TestString(1034, "data2"), firedEvents[1034]["data2"]);
-            Assert.Equal(TestString(1034, "data3"), firedEvents[1034]["data3"]);
-            Assert.Equal(TestString(1034, "AppDomain"), firedEvents[1034]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("CompleteRuntimeWorkItem"), "Event 1034 CompleteRuntimeWorkItem did not fire");
+            Assert.Equal(TestString(1034, "data1"), firedEvents["CompleteRuntimeWorkItem"]["data1"]);
+            Assert.Equal(TestString(1034, "data2"), firedEvents["CompleteRuntimeWorkItem"]["data2"]);
+            Assert.Equal(TestString(1034, "data3"), firedEvents["CompleteRuntimeWorkItem"]["data3"]);
+            Assert.Equal(TestString(1034, "AppDomain"), firedEvents["CompleteRuntimeWorkItem"]["AppDomain"]);
 
             // 1035 RuntimeTransactionSet (SevenStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1035), "Event 1035 RuntimeTransactionSet did not fire");
-            Assert.Equal(TestString(1035, "data1"), firedEvents[1035]["data1"]);
-            Assert.Equal(TestString(1035, "data2"), firedEvents[1035]["data2"]);
-            Assert.Equal(TestString(1035, "data3"), firedEvents[1035]["data3"]);
-            Assert.Equal(TestString(1035, "data4"), firedEvents[1035]["data4"]);
-            Assert.Equal(TestString(1035, "data5"), firedEvents[1035]["data5"]);
-            Assert.Equal(TestString(1035, "data6"), firedEvents[1035]["data6"]);
-            Assert.Equal(TestString(1035, "AppDomain"), firedEvents[1035]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("RuntimeTransactionSet"), "Event 1035 RuntimeTransactionSet did not fire");
+            Assert.Equal(TestString(1035, "data1"), firedEvents["RuntimeTransactionSet"]["data1"]);
+            Assert.Equal(TestString(1035, "data2"), firedEvents["RuntimeTransactionSet"]["data2"]);
+            Assert.Equal(TestString(1035, "data3"), firedEvents["RuntimeTransactionSet"]["data3"]);
+            Assert.Equal(TestString(1035, "data4"), firedEvents["RuntimeTransactionSet"]["data4"]);
+            Assert.Equal(TestString(1035, "data5"), firedEvents["RuntimeTransactionSet"]["data5"]);
+            Assert.Equal(TestString(1035, "data6"), firedEvents["RuntimeTransactionSet"]["data6"]);
+            Assert.Equal(TestString(1035, "AppDomain"), firedEvents["RuntimeTransactionSet"]["AppDomain"]);
 
             // 1036 RuntimeTransactionCompletionRequested (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1036), "Event 1036 RuntimeTransactionCompletionRequested did not fire");
-            Assert.Equal(TestString(1036, "data1"), firedEvents[1036]["data1"]);
-            Assert.Equal(TestString(1036, "data2"), firedEvents[1036]["data2"]);
-            Assert.Equal(TestString(1036, "data3"), firedEvents[1036]["data3"]);
-            Assert.Equal(TestString(1036, "AppDomain"), firedEvents[1036]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("RuntimeTransactionCompletionRequested"), "Event 1036 RuntimeTransactionCompletionRequested did not fire");
+            Assert.Equal(TestString(1036, "data1"), firedEvents["RuntimeTransactionCompletionRequested"]["data1"]);
+            Assert.Equal(TestString(1036, "data2"), firedEvents["RuntimeTransactionCompletionRequested"]["data2"]);
+            Assert.Equal(TestString(1036, "data3"), firedEvents["RuntimeTransactionCompletionRequested"]["data3"]);
+            Assert.Equal(TestString(1036, "AppDomain"), firedEvents["RuntimeTransactionCompletionRequested"]["AppDomain"]);
 
             // 1037 RuntimeTransactionComplete (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1037), "Event 1037 RuntimeTransactionComplete did not fire");
-            Assert.Equal(TestString(1037, "data1"), firedEvents[1037]["data1"]);
-            Assert.Equal(TestString(1037, "AppDomain"), firedEvents[1037]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("RuntimeTransactionComplete"), "Event 1037 RuntimeTransactionComplete did not fire");
+            Assert.Equal(TestString(1037, "data1"), firedEvents["RuntimeTransactionComplete"]["data1"]);
+            Assert.Equal(TestString(1037, "AppDomain"), firedEvents["RuntimeTransactionComplete"]["AppDomain"]);
 
             // 1038 EnterNoPersistBlock (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1038), "Event 1038 EnterNoPersistBlock did not fire");
-            Assert.Equal(TestString(1038, "AppDomain"), firedEvents[1038]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("EnterNoPersistBlock"), "Event 1038 EnterNoPersistBlock did not fire");
+            Assert.Equal(TestString(1038, "AppDomain"), firedEvents["EnterNoPersistBlock"]["AppDomain"]);
 
             // 1039 ExitNoPersistBlock (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1039), "Event 1039 ExitNoPersistBlock did not fire");
-            Assert.Equal(TestString(1039, "AppDomain"), firedEvents[1039]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ExitNoPersistBlock"), "Event 1039 ExitNoPersistBlock did not fire");
+            Assert.Equal(TestString(1039, "AppDomain"), firedEvents["ExitNoPersistBlock"]["AppDomain"]);
 
             // 1040 InArgumentBound (SixStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1040), "Event 1040 InArgumentBound did not fire");
-            Assert.Equal(TestString(1040, "data1"), firedEvents[1040]["data1"]);
-            Assert.Equal(TestString(1040, "data2"), firedEvents[1040]["data2"]);
-            Assert.Equal(TestString(1040, "data3"), firedEvents[1040]["data3"]);
-            Assert.Equal(TestString(1040, "data4"), firedEvents[1040]["data4"]);
-            Assert.Equal(TestString(1040, "data5"), firedEvents[1040]["data5"]);
-            Assert.Equal(TestString(1040, "AppDomain"), firedEvents[1040]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InArgumentBound"), "Event 1040 InArgumentBound did not fire");
+            Assert.Equal(TestString(1040, "data1"), firedEvents["InArgumentBound"]["data1"]);
+            Assert.Equal(TestString(1040, "data2"), firedEvents["InArgumentBound"]["data2"]);
+            Assert.Equal(TestString(1040, "data3"), firedEvents["InArgumentBound"]["data3"]);
+            Assert.Equal(TestString(1040, "data4"), firedEvents["InArgumentBound"]["data4"]);
+            Assert.Equal(TestString(1040, "data5"), firedEvents["InArgumentBound"]["data5"]);
+            Assert.Equal(TestString(1040, "AppDomain"), firedEvents["InArgumentBound"]["AppDomain"]);
 
             // 1041 WorkflowApplicationPersistableIdle (ThreeStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1041), "Event 1041 WorkflowApplicationPersistableIdle did not fire");
-            Assert.Equal(TestString(1041, "data1"), firedEvents[1041]["data1"]);
-            Assert.Equal(TestString(1041, "data2"), firedEvents[1041]["data2"]);
-            Assert.Equal(TestString(1041, "AppDomain"), firedEvents[1041]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WorkflowApplicationPersistableIdle"), "Event 1041 WorkflowApplicationPersistableIdle did not fire");
+            Assert.Equal(TestString(1041, "data1"), firedEvents["WorkflowApplicationPersistableIdle"]["data1"]);
+            Assert.Equal(TestString(1041, "data2"), firedEvents["WorkflowApplicationPersistableIdle"]["data2"]);
+            Assert.Equal(TestString(1041, "AppDomain"), firedEvents["WorkflowApplicationPersistableIdle"]["AppDomain"]);
 
             // 1101 WorkflowActivityStart (Multidata17TemplateA)
-            Assert.True(firedEvents.ContainsKey(1101), "Event 1101 WorkflowActivityStart did not fire");
-            Assert.Equal(TestGuid(1101, 0), firedEvents[1101]["Id"]);
-            Assert.Equal(TestString(1101, "AppDomain"), firedEvents[1101]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WorkflowActivityStart"), "Event 1101 WorkflowActivityStart did not fire");
+            Assert.Equal(TestGuid(1101, 0), firedEvents["WorkflowActivityStart"]["Id"]);
+            Assert.Equal(TestString(1101, "AppDomain"), firedEvents["WorkflowActivityStart"]["AppDomain"]);
 
             // 1102 WorkflowActivityStop (Multidata17TemplateA)
-            Assert.True(firedEvents.ContainsKey(1102), "Event 1102 WorkflowActivityStop did not fire");
-            Assert.Equal(TestGuid(1102, 0), firedEvents[1102]["Id"]);
-            Assert.Equal(TestString(1102, "AppDomain"), firedEvents[1102]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WorkflowActivityStop"), "Event 1102 WorkflowActivityStop did not fire");
+            Assert.Equal(TestGuid(1102, 0), firedEvents["WorkflowActivityStop"]["Id"]);
+            Assert.Equal(TestString(1102, "AppDomain"), firedEvents["WorkflowActivityStop"]["AppDomain"]);
 
             // 1103 WorkflowActivitySuspend (Multidata17TemplateA)
-            Assert.True(firedEvents.ContainsKey(1103), "Event 1103 WorkflowActivitySuspend did not fire");
-            Assert.Equal(TestGuid(1103, 0), firedEvents[1103]["Id"]);
-            Assert.Equal(TestString(1103, "AppDomain"), firedEvents[1103]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WorkflowActivitySuspend"), "Event 1103 WorkflowActivitySuspend did not fire");
+            Assert.Equal(TestGuid(1103, 0), firedEvents["WorkflowActivitySuspend"]["Id"]);
+            Assert.Equal(TestString(1103, "AppDomain"), firedEvents["WorkflowActivitySuspend"]["AppDomain"]);
 
             // 1104 WorkflowActivityResume (Multidata17TemplateA)
-            Assert.True(firedEvents.ContainsKey(1104), "Event 1104 WorkflowActivityResume did not fire");
-            Assert.Equal(TestGuid(1104, 0), firedEvents[1104]["Id"]);
-            Assert.Equal(TestString(1104, "AppDomain"), firedEvents[1104]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WorkflowActivityResume"), "Event 1104 WorkflowActivityResume did not fire");
+            Assert.Equal(TestGuid(1104, 0), firedEvents["WorkflowActivityResume"]["Id"]);
+            Assert.Equal(TestString(1104, "AppDomain"), firedEvents["WorkflowActivityResume"]["AppDomain"]);
 
             // 1124 InvokeMethodIsStatic (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1124), "Event 1124 InvokeMethodIsStatic did not fire");
-            Assert.Equal(TestString(1124, "data1"), firedEvents[1124]["data1"]);
-            Assert.Equal(TestString(1124, "AppDomain"), firedEvents[1124]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InvokeMethodIsStatic"), "Event 1124 InvokeMethodIsStatic did not fire");
+            Assert.Equal(TestString(1124, "data1"), firedEvents["InvokeMethodIsStatic"]["data1"]);
+            Assert.Equal(TestString(1124, "AppDomain"), firedEvents["InvokeMethodIsStatic"]["AppDomain"]);
 
             // 1125 InvokeMethodIsNotStatic (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1125), "Event 1125 InvokeMethodIsNotStatic did not fire");
-            Assert.Equal(TestString(1125, "data1"), firedEvents[1125]["data1"]);
-            Assert.Equal(TestString(1125, "AppDomain"), firedEvents[1125]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InvokeMethodIsNotStatic"), "Event 1125 InvokeMethodIsNotStatic did not fire");
+            Assert.Equal(TestString(1125, "data1"), firedEvents["InvokeMethodIsNotStatic"]["data1"]);
+            Assert.Equal(TestString(1125, "AppDomain"), firedEvents["InvokeMethodIsNotStatic"]["AppDomain"]);
 
             // 1126 InvokedMethodThrewException (ThreeStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1126), "Event 1126 InvokedMethodThrewException did not fire");
-            Assert.Equal(TestString(1126, "data1"), firedEvents[1126]["data1"]);
-            Assert.Equal(TestString(1126, "data2"), firedEvents[1126]["data2"]);
-            Assert.Equal(TestString(1126, "AppDomain"), firedEvents[1126]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InvokedMethodThrewException"), "Event 1126 InvokedMethodThrewException did not fire");
+            Assert.Equal(TestString(1126, "data1"), firedEvents["InvokedMethodThrewException"]["data1"]);
+            Assert.Equal(TestString(1126, "data2"), firedEvents["InvokedMethodThrewException"]["data2"]);
+            Assert.Equal(TestString(1126, "AppDomain"), firedEvents["InvokedMethodThrewException"]["AppDomain"]);
 
             // 1131 InvokeMethodUseAsyncPattern (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1131), "Event 1131 InvokeMethodUseAsyncPattern did not fire");
-            Assert.Equal(TestString(1131, "data1"), firedEvents[1131]["data1"]);
-            Assert.Equal(TestString(1131, "data2"), firedEvents[1131]["data2"]);
-            Assert.Equal(TestString(1131, "data3"), firedEvents[1131]["data3"]);
-            Assert.Equal(TestString(1131, "AppDomain"), firedEvents[1131]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InvokeMethodUseAsyncPattern"), "Event 1131 InvokeMethodUseAsyncPattern did not fire");
+            Assert.Equal(TestString(1131, "data1"), firedEvents["InvokeMethodUseAsyncPattern"]["data1"]);
+            Assert.Equal(TestString(1131, "data2"), firedEvents["InvokeMethodUseAsyncPattern"]["data2"]);
+            Assert.Equal(TestString(1131, "data3"), firedEvents["InvokeMethodUseAsyncPattern"]["data3"]);
+            Assert.Equal(TestString(1131, "AppDomain"), firedEvents["InvokeMethodUseAsyncPattern"]["AppDomain"]);
 
             // 1132 InvokeMethodDoesNotUseAsyncPattern (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1132), "Event 1132 InvokeMethodDoesNotUseAsyncPattern did not fire");
-            Assert.Equal(TestString(1132, "data1"), firedEvents[1132]["data1"]);
-            Assert.Equal(TestString(1132, "AppDomain"), firedEvents[1132]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InvokeMethodDoesNotUseAsyncPattern"), "Event 1132 InvokeMethodDoesNotUseAsyncPattern did not fire");
+            Assert.Equal(TestString(1132, "data1"), firedEvents["InvokeMethodDoesNotUseAsyncPattern"]["data1"]);
+            Assert.Equal(TestString(1132, "AppDomain"), firedEvents["InvokeMethodDoesNotUseAsyncPattern"]["AppDomain"]);
 
             // 1140 FlowchartStart (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1140), "Event 1140 FlowchartStart did not fire");
-            Assert.Equal(TestString(1140, "data1"), firedEvents[1140]["data1"]);
-            Assert.Equal(TestString(1140, "AppDomain"), firedEvents[1140]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("FlowchartStart"), "Event 1140 FlowchartStart did not fire");
+            Assert.Equal(TestString(1140, "data1"), firedEvents["FlowchartStart"]["data1"]);
+            Assert.Equal(TestString(1140, "AppDomain"), firedEvents["FlowchartStart"]["AppDomain"]);
 
             // 1141 FlowchartEmpty (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1141), "Event 1141 FlowchartEmpty did not fire");
-            Assert.Equal(TestString(1141, "data1"), firedEvents[1141]["data1"]);
-            Assert.Equal(TestString(1141, "AppDomain"), firedEvents[1141]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("FlowchartEmpty"), "Event 1141 FlowchartEmpty did not fire");
+            Assert.Equal(TestString(1141, "data1"), firedEvents["FlowchartEmpty"]["data1"]);
+            Assert.Equal(TestString(1141, "AppDomain"), firedEvents["FlowchartEmpty"]["AppDomain"]);
 
             // 1143 FlowchartNextNull (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1143), "Event 1143 FlowchartNextNull did not fire");
-            Assert.Equal(TestString(1143, "data1"), firedEvents[1143]["data1"]);
-            Assert.Equal(TestString(1143, "AppDomain"), firedEvents[1143]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("FlowchartNextNull"), "Event 1143 FlowchartNextNull did not fire");
+            Assert.Equal(TestString(1143, "data1"), firedEvents["FlowchartNextNull"]["data1"]);
+            Assert.Equal(TestString(1143, "AppDomain"), firedEvents["FlowchartNextNull"]["AppDomain"]);
 
             // 1146 FlowchartSwitchCase (ThreeStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1146), "Event 1146 FlowchartSwitchCase did not fire");
-            Assert.Equal(TestString(1146, "data1"), firedEvents[1146]["data1"]);
-            Assert.Equal(TestString(1146, "data2"), firedEvents[1146]["data2"]);
-            Assert.Equal(TestString(1146, "AppDomain"), firedEvents[1146]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("FlowchartSwitchCase"), "Event 1146 FlowchartSwitchCase did not fire");
+            Assert.Equal(TestString(1146, "data1"), firedEvents["FlowchartSwitchCase"]["data1"]);
+            Assert.Equal(TestString(1146, "data2"), firedEvents["FlowchartSwitchCase"]["data2"]);
+            Assert.Equal(TestString(1146, "AppDomain"), firedEvents["FlowchartSwitchCase"]["AppDomain"]);
 
             // 1147 FlowchartSwitchDefault (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1147), "Event 1147 FlowchartSwitchDefault did not fire");
-            Assert.Equal(TestString(1147, "data1"), firedEvents[1147]["data1"]);
-            Assert.Equal(TestString(1147, "AppDomain"), firedEvents[1147]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("FlowchartSwitchDefault"), "Event 1147 FlowchartSwitchDefault did not fire");
+            Assert.Equal(TestString(1147, "data1"), firedEvents["FlowchartSwitchDefault"]["data1"]);
+            Assert.Equal(TestString(1147, "AppDomain"), firedEvents["FlowchartSwitchDefault"]["AppDomain"]);
         }
 
         #endregion

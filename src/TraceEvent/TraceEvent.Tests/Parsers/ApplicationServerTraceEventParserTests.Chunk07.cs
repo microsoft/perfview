@@ -225,39 +225,39 @@ namespace TraceEventTests.Parsers
         /// <summary>
         /// Subscribes to all chunk 07 events on the parser, recording payload values into firedEvents.
         /// </summary>
-        private void Subscribe_Chunk07(ApplicationServerTraceEventParser parser, Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Subscribe_Chunk07(ApplicationServerTraceEventParser parser, Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             parser.OutgoingMessageSecured += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["OutgoingMessageSecured"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.IncomingMessageVerified += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["IncomingMessageVerified"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.GetServiceInstanceStart += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["GetServiceInstanceStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.GetServiceInstanceStop += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["GetServiceInstanceStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.ChannelReceiveStart += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["ChannelReceiveStart"] = new Dictionary<string, object>
                 {
                     { "ChannelId", d.ChannelId },
                     { "AppDomain", d.AppDomain },
@@ -265,7 +265,7 @@ namespace TraceEventTests.Parsers
             };
             parser.ChannelReceiveStop += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["ChannelReceiveStop"] = new Dictionary<string, object>
                 {
                     { "ChannelId", d.ChannelId },
                     { "AppDomain", d.AppDomain },
@@ -273,7 +273,7 @@ namespace TraceEventTests.Parsers
             };
             parser.ChannelFactoryCreated += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["ChannelFactoryCreated"] = new Dictionary<string, object>
                 {
                     { "EventSource", d.EventSource },
                     { "AppDomain", d.AppDomain },
@@ -281,7 +281,7 @@ namespace TraceEventTests.Parsers
             };
             parser.PipeConnectionAcceptStart += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["PipeConnectionAcceptStart"] = new Dictionary<string, object>
                 {
                     { "uri", d.uri },
                     { "AppDomain", d.AppDomain },
@@ -289,14 +289,14 @@ namespace TraceEventTests.Parsers
             };
             parser.PipeConnectionAcceptStop += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["PipeConnectionAcceptStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.EstablishConnectionStart += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["EstablishConnectionStart"] = new Dictionary<string, object>
                 {
                     { "Key", d.Key },
                     { "AppDomain", d.AppDomain },
@@ -304,14 +304,14 @@ namespace TraceEventTests.Parsers
             };
             parser.EstablishConnectionStop += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["EstablishConnectionStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.SessionPreambleUnderstood += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["SessionPreambleUnderstood"] = new Dictionary<string, object>
                 {
                     { "Via", d.Via },
                     { "AppDomain", d.AppDomain },
@@ -319,7 +319,7 @@ namespace TraceEventTests.Parsers
             };
             parser.ConnectionReaderSendFault += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["ConnectionReaderSendFault"] = new Dictionary<string, object>
                 {
                     { "FaultString", d.FaultString },
                     { "AppDomain", d.AppDomain },
@@ -327,14 +327,14 @@ namespace TraceEventTests.Parsers
             };
             parser.SocketAcceptClosed += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["SocketAcceptClosed"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.ServiceHostFaulted += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["ServiceHostFaulted"] = new Dictionary<string, object>
                 {
                     { "EventSource", d.EventSource },
                     { "AppDomain", d.AppDomain },
@@ -342,7 +342,7 @@ namespace TraceEventTests.Parsers
             };
             parser.ListenerOpenStart += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["ListenerOpenStart"] = new Dictionary<string, object>
                 {
                     { "Uri", d.Uri },
                     { "AppDomain", d.AppDomain },
@@ -350,21 +350,21 @@ namespace TraceEventTests.Parsers
             };
             parser.ListenerOpenStop += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["ListenerOpenStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.ServerMaxPooledConnectionsQuotaReached += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["ServerMaxPooledConnectionsQuotaReached"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.TcpConnectionTimedOut += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["TcpConnectionTimedOut"] = new Dictionary<string, object>
                 {
                     { "SocketId", d.SocketId },
                     { "Uri", d.Uri },
@@ -373,7 +373,7 @@ namespace TraceEventTests.Parsers
             };
             parser.TcpConnectionResetError += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["TcpConnectionResetError"] = new Dictionary<string, object>
                 {
                     { "SocketId", d.SocketId },
                     { "Uri", d.Uri },
@@ -382,35 +382,35 @@ namespace TraceEventTests.Parsers
             };
             parser.ServiceSecurityNegotiationCompleted += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["ServiceSecurityNegotiationCompleted"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.SecurityNegotiationProcessingFailure += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["SecurityNegotiationProcessingFailure"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.SecurityIdentityVerificationSuccess += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["SecurityIdentityVerificationSuccess"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.SecurityIdentityVerificationFailure += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["SecurityIdentityVerificationFailure"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.PortSharingDuplicatedSocket += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["PortSharingDuplicatedSocket"] = new Dictionary<string, object>
                 {
                     { "Uri", d.Uri },
                     { "AppDomain", d.AppDomain },
@@ -418,42 +418,42 @@ namespace TraceEventTests.Parsers
             };
             parser.SecurityImpersonationSuccess += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["SecurityImpersonationSuccess"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.SecurityImpersonationFailure += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["SecurityImpersonationFailure"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.HttpChannelRequestAborted += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["HttpChannelRequestAborted"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.HttpChannelResponseAborted += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["HttpChannelResponseAborted"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.HttpAuthFailed += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["HttpAuthFailed"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.SharedListenerProxyRegisterStart += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["SharedListenerProxyRegisterStart"] = new Dictionary<string, object>
                 {
                     { "Uri", d.Uri },
                     { "AppDomain", d.AppDomain },
@@ -461,14 +461,14 @@ namespace TraceEventTests.Parsers
             };
             parser.SharedListenerProxyRegisterStop += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["SharedListenerProxyRegisterStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.SharedListenerProxyRegisterFailed += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["SharedListenerProxyRegisterFailed"] = new Dictionary<string, object>
                 {
                     { "Status", d.Status },
                     { "AppDomain", d.AppDomain },
@@ -476,28 +476,28 @@ namespace TraceEventTests.Parsers
             };
             parser.ConnectionPoolPreambleFailed += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["ConnectionPoolPreambleFailed"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.SslOnInitiateUpgrade += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["SslOnInitiateUpgrade"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.SslOnAcceptUpgrade += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["SslOnAcceptUpgrade"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
             };
             parser.BinaryMessageEncodingStart += d =>
             {
-                firedEvents[(int)d.ID] = new Dictionary<string, object>
+                firedEvents["BinaryMessageEncodingStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", d.AppDomain },
                 };
@@ -507,171 +507,171 @@ namespace TraceEventTests.Parsers
         /// <summary>
         /// Validates all chunk 07 events fired with correct payload values.
         /// </summary>
-        private void Validate_Chunk07(Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Validate_Chunk07(Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             // 3333 OutgoingMessageSecured – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3333), "Event 3333 (OutgoingMessageSecured) did not fire.");
-            Assert.Equal(TestString(3333, "AppDomain"), firedEvents[3333]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("OutgoingMessageSecured"), "Event OutgoingMessageSecured did not fire.");
+            Assert.Equal(TestString(3333, "AppDomain"), firedEvents["OutgoingMessageSecured"]["AppDomain"]);
 
             // 3334 IncomingMessageVerified – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3334), "Event 3334 (IncomingMessageVerified) did not fire.");
-            Assert.Equal(TestString(3334, "AppDomain"), firedEvents[3334]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("IncomingMessageVerified"), "Event IncomingMessageVerified did not fire.");
+            Assert.Equal(TestString(3334, "AppDomain"), firedEvents["IncomingMessageVerified"]["AppDomain"]);
 
             // 3335 GetServiceInstanceStart – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3335), "Event 3335 (GetServiceInstanceStart) did not fire.");
-            Assert.Equal(TestString(3335, "AppDomain"), firedEvents[3335]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("GetServiceInstanceStart"), "Event GetServiceInstanceStart did not fire.");
+            Assert.Equal(TestString(3335, "AppDomain"), firedEvents["GetServiceInstanceStart"]["AppDomain"]);
 
             // 3336 GetServiceInstanceStop – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3336), "Event 3336 (GetServiceInstanceStop) did not fire.");
-            Assert.Equal(TestString(3336, "AppDomain"), firedEvents[3336]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("GetServiceInstanceStop"), "Event GetServiceInstanceStop did not fire.");
+            Assert.Equal(TestString(3336, "AppDomain"), firedEvents["GetServiceInstanceStop"]["AppDomain"]);
 
             // 3337 ChannelReceiveStart – Multidata43TemplateA
-            Assert.True(firedEvents.ContainsKey(3337), "Event 3337 (ChannelReceiveStart) did not fire.");
-            Assert.Equal(TestInt32(3337, 0), firedEvents[3337]["ChannelId"]);
-            Assert.Equal(TestString(3337, "AppDomain"), firedEvents[3337]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ChannelReceiveStart"), "Event ChannelReceiveStart did not fire.");
+            Assert.Equal(TestInt32(3337, 0), firedEvents["ChannelReceiveStart"]["ChannelId"]);
+            Assert.Equal(TestString(3337, "AppDomain"), firedEvents["ChannelReceiveStart"]["AppDomain"]);
 
             // 3338 ChannelReceiveStop – Multidata43TemplateA
-            Assert.True(firedEvents.ContainsKey(3338), "Event 3338 (ChannelReceiveStop) did not fire.");
-            Assert.Equal(TestInt32(3338, 0), firedEvents[3338]["ChannelId"]);
-            Assert.Equal(TestString(3338, "AppDomain"), firedEvents[3338]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ChannelReceiveStop"), "Event ChannelReceiveStop did not fire.");
+            Assert.Equal(TestInt32(3338, 0), firedEvents["ChannelReceiveStop"]["ChannelId"]);
+            Assert.Equal(TestString(3338, "AppDomain"), firedEvents["ChannelReceiveStop"]["AppDomain"]);
 
             // 3339 ChannelFactoryCreated – TwoStringsTemplateSA
-            Assert.True(firedEvents.ContainsKey(3339), "Event 3339 (ChannelFactoryCreated) did not fire.");
-            Assert.Equal(TestString(3339, "EventSource"), firedEvents[3339]["EventSource"]);
-            Assert.Equal(TestString(3339, "AppDomain"), firedEvents[3339]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ChannelFactoryCreated"), "Event ChannelFactoryCreated did not fire.");
+            Assert.Equal(TestString(3339, "EventSource"), firedEvents["ChannelFactoryCreated"]["EventSource"]);
+            Assert.Equal(TestString(3339, "AppDomain"), firedEvents["ChannelFactoryCreated"]["AppDomain"]);
 
             // 3340 PipeConnectionAcceptStart – Multidata44TemplateA
-            Assert.True(firedEvents.ContainsKey(3340), "Event 3340 (PipeConnectionAcceptStart) did not fire.");
-            Assert.Equal(TestString(3340, "uri"), firedEvents[3340]["uri"]);
-            Assert.Equal(TestString(3340, "AppDomain"), firedEvents[3340]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("PipeConnectionAcceptStart"), "Event PipeConnectionAcceptStart did not fire.");
+            Assert.Equal(TestString(3340, "uri"), firedEvents["PipeConnectionAcceptStart"]["uri"]);
+            Assert.Equal(TestString(3340, "AppDomain"), firedEvents["PipeConnectionAcceptStart"]["AppDomain"]);
 
             // 3341 PipeConnectionAcceptStop – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3341), "Event 3341 (PipeConnectionAcceptStop) did not fire.");
-            Assert.Equal(TestString(3341, "AppDomain"), firedEvents[3341]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("PipeConnectionAcceptStop"), "Event PipeConnectionAcceptStop did not fire.");
+            Assert.Equal(TestString(3341, "AppDomain"), firedEvents["PipeConnectionAcceptStop"]["AppDomain"]);
 
             // 3342 EstablishConnectionStart – Multidata45TemplateA
-            Assert.True(firedEvents.ContainsKey(3342), "Event 3342 (EstablishConnectionStart) did not fire.");
-            Assert.Equal(TestString(3342, "Key"), firedEvents[3342]["Key"]);
-            Assert.Equal(TestString(3342, "AppDomain"), firedEvents[3342]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("EstablishConnectionStart"), "Event EstablishConnectionStart did not fire.");
+            Assert.Equal(TestString(3342, "Key"), firedEvents["EstablishConnectionStart"]["Key"]);
+            Assert.Equal(TestString(3342, "AppDomain"), firedEvents["EstablishConnectionStart"]["AppDomain"]);
 
             // 3343 EstablishConnectionStop – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3343), "Event 3343 (EstablishConnectionStop) did not fire.");
-            Assert.Equal(TestString(3343, "AppDomain"), firedEvents[3343]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("EstablishConnectionStop"), "Event EstablishConnectionStop did not fire.");
+            Assert.Equal(TestString(3343, "AppDomain"), firedEvents["EstablishConnectionStop"]["AppDomain"]);
 
             // 3345 SessionPreambleUnderstood – Multidata46TemplateA
-            Assert.True(firedEvents.ContainsKey(3345), "Event 3345 (SessionPreambleUnderstood) did not fire.");
-            Assert.Equal(TestString(3345, "Via"), firedEvents[3345]["Via"]);
-            Assert.Equal(TestString(3345, "AppDomain"), firedEvents[3345]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SessionPreambleUnderstood"), "Event SessionPreambleUnderstood did not fire.");
+            Assert.Equal(TestString(3345, "Via"), firedEvents["SessionPreambleUnderstood"]["Via"]);
+            Assert.Equal(TestString(3345, "AppDomain"), firedEvents["SessionPreambleUnderstood"]["AppDomain"]);
 
             // 3346 ConnectionReaderSendFault – Multidata47TemplateA
-            Assert.True(firedEvents.ContainsKey(3346), "Event 3346 (ConnectionReaderSendFault) did not fire.");
-            Assert.Equal(TestString(3346, "FaultString"), firedEvents[3346]["FaultString"]);
-            Assert.Equal(TestString(3346, "AppDomain"), firedEvents[3346]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ConnectionReaderSendFault"), "Event ConnectionReaderSendFault did not fire.");
+            Assert.Equal(TestString(3346, "FaultString"), firedEvents["ConnectionReaderSendFault"]["FaultString"]);
+            Assert.Equal(TestString(3346, "AppDomain"), firedEvents["ConnectionReaderSendFault"]["AppDomain"]);
 
             // 3347 SocketAcceptClosed – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3347), "Event 3347 (SocketAcceptClosed) did not fire.");
-            Assert.Equal(TestString(3347, "AppDomain"), firedEvents[3347]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SocketAcceptClosed"), "Event SocketAcceptClosed did not fire.");
+            Assert.Equal(TestString(3347, "AppDomain"), firedEvents["SocketAcceptClosed"]["AppDomain"]);
 
             // 3348 ServiceHostFaulted – TwoStringsTemplateSA
-            Assert.True(firedEvents.ContainsKey(3348), "Event 3348 (ServiceHostFaulted) did not fire.");
-            Assert.Equal(TestString(3348, "EventSource"), firedEvents[3348]["EventSource"]);
-            Assert.Equal(TestString(3348, "AppDomain"), firedEvents[3348]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ServiceHostFaulted"), "Event ServiceHostFaulted did not fire.");
+            Assert.Equal(TestString(3348, "EventSource"), firedEvents["ServiceHostFaulted"]["EventSource"]);
+            Assert.Equal(TestString(3348, "AppDomain"), firedEvents["ServiceHostFaulted"]["AppDomain"]);
 
             // 3349 ListenerOpenStart – Multidata48TemplateA
-            Assert.True(firedEvents.ContainsKey(3349), "Event 3349 (ListenerOpenStart) did not fire.");
-            Assert.Equal(TestString(3349, "Uri"), firedEvents[3349]["Uri"]);
-            Assert.Equal(TestString(3349, "AppDomain"), firedEvents[3349]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ListenerOpenStart"), "Event ListenerOpenStart did not fire.");
+            Assert.Equal(TestString(3349, "Uri"), firedEvents["ListenerOpenStart"]["Uri"]);
+            Assert.Equal(TestString(3349, "AppDomain"), firedEvents["ListenerOpenStart"]["AppDomain"]);
 
             // 3350 ListenerOpenStop – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3350), "Event 3350 (ListenerOpenStop) did not fire.");
-            Assert.Equal(TestString(3350, "AppDomain"), firedEvents[3350]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ListenerOpenStop"), "Event ListenerOpenStop did not fire.");
+            Assert.Equal(TestString(3350, "AppDomain"), firedEvents["ListenerOpenStop"]["AppDomain"]);
 
             // 3351 ServerMaxPooledConnectionsQuotaReached – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3351), "Event 3351 (ServerMaxPooledConnectionsQuotaReached) did not fire.");
-            Assert.Equal(TestString(3351, "AppDomain"), firedEvents[3351]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ServerMaxPooledConnectionsQuotaReached"), "Event ServerMaxPooledConnectionsQuotaReached did not fire.");
+            Assert.Equal(TestString(3351, "AppDomain"), firedEvents["ServerMaxPooledConnectionsQuotaReached"]["AppDomain"]);
 
             // 3352 TcpConnectionTimedOut – Multidata49TemplateA
-            Assert.True(firedEvents.ContainsKey(3352), "Event 3352 (TcpConnectionTimedOut) did not fire.");
-            Assert.Equal(TestInt32(3352, 0), firedEvents[3352]["SocketId"]);
-            Assert.Equal(TestString(3352, "Uri"), firedEvents[3352]["Uri"]);
-            Assert.Equal(TestString(3352, "AppDomain"), firedEvents[3352]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TcpConnectionTimedOut"), "Event TcpConnectionTimedOut did not fire.");
+            Assert.Equal(TestInt32(3352, 0), firedEvents["TcpConnectionTimedOut"]["SocketId"]);
+            Assert.Equal(TestString(3352, "Uri"), firedEvents["TcpConnectionTimedOut"]["Uri"]);
+            Assert.Equal(TestString(3352, "AppDomain"), firedEvents["TcpConnectionTimedOut"]["AppDomain"]);
 
             // 3353 TcpConnectionResetError – Multidata49TemplateA
-            Assert.True(firedEvents.ContainsKey(3353), "Event 3353 (TcpConnectionResetError) did not fire.");
-            Assert.Equal(TestInt32(3353, 0), firedEvents[3353]["SocketId"]);
-            Assert.Equal(TestString(3353, "Uri"), firedEvents[3353]["Uri"]);
-            Assert.Equal(TestString(3353, "AppDomain"), firedEvents[3353]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TcpConnectionResetError"), "Event TcpConnectionResetError did not fire.");
+            Assert.Equal(TestInt32(3353, 0), firedEvents["TcpConnectionResetError"]["SocketId"]);
+            Assert.Equal(TestString(3353, "Uri"), firedEvents["TcpConnectionResetError"]["Uri"]);
+            Assert.Equal(TestString(3353, "AppDomain"), firedEvents["TcpConnectionResetError"]["AppDomain"]);
 
             // 3354 ServiceSecurityNegotiationCompleted – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3354), "Event 3354 (ServiceSecurityNegotiationCompleted) did not fire.");
-            Assert.Equal(TestString(3354, "AppDomain"), firedEvents[3354]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ServiceSecurityNegotiationCompleted"), "Event ServiceSecurityNegotiationCompleted did not fire.");
+            Assert.Equal(TestString(3354, "AppDomain"), firedEvents["ServiceSecurityNegotiationCompleted"]["AppDomain"]);
 
             // 3355 SecurityNegotiationProcessingFailure – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3355), "Event 3355 (SecurityNegotiationProcessingFailure) did not fire.");
-            Assert.Equal(TestString(3355, "AppDomain"), firedEvents[3355]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SecurityNegotiationProcessingFailure"), "Event SecurityNegotiationProcessingFailure did not fire.");
+            Assert.Equal(TestString(3355, "AppDomain"), firedEvents["SecurityNegotiationProcessingFailure"]["AppDomain"]);
 
             // 3356 SecurityIdentityVerificationSuccess – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3356), "Event 3356 (SecurityIdentityVerificationSuccess) did not fire.");
-            Assert.Equal(TestString(3356, "AppDomain"), firedEvents[3356]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SecurityIdentityVerificationSuccess"), "Event SecurityIdentityVerificationSuccess did not fire.");
+            Assert.Equal(TestString(3356, "AppDomain"), firedEvents["SecurityIdentityVerificationSuccess"]["AppDomain"]);
 
             // 3357 SecurityIdentityVerificationFailure – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3357), "Event 3357 (SecurityIdentityVerificationFailure) did not fire.");
-            Assert.Equal(TestString(3357, "AppDomain"), firedEvents[3357]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SecurityIdentityVerificationFailure"), "Event SecurityIdentityVerificationFailure did not fire.");
+            Assert.Equal(TestString(3357, "AppDomain"), firedEvents["SecurityIdentityVerificationFailure"]["AppDomain"]);
 
             // 3358 PortSharingDuplicatedSocket – Multidata48TemplateA
-            Assert.True(firedEvents.ContainsKey(3358), "Event 3358 (PortSharingDuplicatedSocket) did not fire.");
-            Assert.Equal(TestString(3358, "Uri"), firedEvents[3358]["Uri"]);
-            Assert.Equal(TestString(3358, "AppDomain"), firedEvents[3358]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("PortSharingDuplicatedSocket"), "Event PortSharingDuplicatedSocket did not fire.");
+            Assert.Equal(TestString(3358, "Uri"), firedEvents["PortSharingDuplicatedSocket"]["Uri"]);
+            Assert.Equal(TestString(3358, "AppDomain"), firedEvents["PortSharingDuplicatedSocket"]["AppDomain"]);
 
             // 3359 SecurityImpersonationSuccess – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3359), "Event 3359 (SecurityImpersonationSuccess) did not fire.");
-            Assert.Equal(TestString(3359, "AppDomain"), firedEvents[3359]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SecurityImpersonationSuccess"), "Event SecurityImpersonationSuccess did not fire.");
+            Assert.Equal(TestString(3359, "AppDomain"), firedEvents["SecurityImpersonationSuccess"]["AppDomain"]);
 
             // 3360 SecurityImpersonationFailure – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3360), "Event 3360 (SecurityImpersonationFailure) did not fire.");
-            Assert.Equal(TestString(3360, "AppDomain"), firedEvents[3360]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SecurityImpersonationFailure"), "Event SecurityImpersonationFailure did not fire.");
+            Assert.Equal(TestString(3360, "AppDomain"), firedEvents["SecurityImpersonationFailure"]["AppDomain"]);
 
             // 3361 HttpChannelRequestAborted – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3361), "Event 3361 (HttpChannelRequestAborted) did not fire.");
-            Assert.Equal(TestString(3361, "AppDomain"), firedEvents[3361]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("HttpChannelRequestAborted"), "Event HttpChannelRequestAborted did not fire.");
+            Assert.Equal(TestString(3361, "AppDomain"), firedEvents["HttpChannelRequestAborted"]["AppDomain"]);
 
             // 3362 HttpChannelResponseAborted – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3362), "Event 3362 (HttpChannelResponseAborted) did not fire.");
-            Assert.Equal(TestString(3362, "AppDomain"), firedEvents[3362]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("HttpChannelResponseAborted"), "Event HttpChannelResponseAborted did not fire.");
+            Assert.Equal(TestString(3362, "AppDomain"), firedEvents["HttpChannelResponseAborted"]["AppDomain"]);
 
             // 3363 HttpAuthFailed – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3363), "Event 3363 (HttpAuthFailed) did not fire.");
-            Assert.Equal(TestString(3363, "AppDomain"), firedEvents[3363]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("HttpAuthFailed"), "Event HttpAuthFailed did not fire.");
+            Assert.Equal(TestString(3363, "AppDomain"), firedEvents["HttpAuthFailed"]["AppDomain"]);
 
             // 3364 SharedListenerProxyRegisterStart – Multidata48TemplateA
-            Assert.True(firedEvents.ContainsKey(3364), "Event 3364 (SharedListenerProxyRegisterStart) did not fire.");
-            Assert.Equal(TestString(3364, "Uri"), firedEvents[3364]["Uri"]);
-            Assert.Equal(TestString(3364, "AppDomain"), firedEvents[3364]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SharedListenerProxyRegisterStart"), "Event SharedListenerProxyRegisterStart did not fire.");
+            Assert.Equal(TestString(3364, "Uri"), firedEvents["SharedListenerProxyRegisterStart"]["Uri"]);
+            Assert.Equal(TestString(3364, "AppDomain"), firedEvents["SharedListenerProxyRegisterStart"]["AppDomain"]);
 
             // 3365 SharedListenerProxyRegisterStop – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3365), "Event 3365 (SharedListenerProxyRegisterStop) did not fire.");
-            Assert.Equal(TestString(3365, "AppDomain"), firedEvents[3365]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SharedListenerProxyRegisterStop"), "Event SharedListenerProxyRegisterStop did not fire.");
+            Assert.Equal(TestString(3365, "AppDomain"), firedEvents["SharedListenerProxyRegisterStop"]["AppDomain"]);
 
             // 3366 SharedListenerProxyRegisterFailed – Multidata50TemplateA
-            Assert.True(firedEvents.ContainsKey(3366), "Event 3366 (SharedListenerProxyRegisterFailed) did not fire.");
-            Assert.Equal(TestString(3366, "Status"), firedEvents[3366]["Status"]);
-            Assert.Equal(TestString(3366, "AppDomain"), firedEvents[3366]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SharedListenerProxyRegisterFailed"), "Event SharedListenerProxyRegisterFailed did not fire.");
+            Assert.Equal(TestString(3366, "Status"), firedEvents["SharedListenerProxyRegisterFailed"]["Status"]);
+            Assert.Equal(TestString(3366, "AppDomain"), firedEvents["SharedListenerProxyRegisterFailed"]["AppDomain"]);
 
             // 3367 ConnectionPoolPreambleFailed – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3367), "Event 3367 (ConnectionPoolPreambleFailed) did not fire.");
-            Assert.Equal(TestString(3367, "AppDomain"), firedEvents[3367]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ConnectionPoolPreambleFailed"), "Event ConnectionPoolPreambleFailed did not fire.");
+            Assert.Equal(TestString(3367, "AppDomain"), firedEvents["ConnectionPoolPreambleFailed"]["AppDomain"]);
 
             // 3368 SslOnInitiateUpgrade – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3368), "Event 3368 (SslOnInitiateUpgrade) did not fire.");
-            Assert.Equal(TestString(3368, "AppDomain"), firedEvents[3368]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SslOnInitiateUpgrade"), "Event SslOnInitiateUpgrade did not fire.");
+            Assert.Equal(TestString(3368, "AppDomain"), firedEvents["SslOnInitiateUpgrade"]["AppDomain"]);
 
             // 3369 SslOnAcceptUpgrade – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3369), "Event 3369 (SslOnAcceptUpgrade) did not fire.");
-            Assert.Equal(TestString(3369, "AppDomain"), firedEvents[3369]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SslOnAcceptUpgrade"), "Event SslOnAcceptUpgrade did not fire.");
+            Assert.Equal(TestString(3369, "AppDomain"), firedEvents["SslOnAcceptUpgrade"]["AppDomain"]);
 
             // 3370 BinaryMessageEncodingStart – OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3370), "Event 3370 (BinaryMessageEncodingStart) did not fire.");
-            Assert.Equal(TestString(3370, "AppDomain"), firedEvents[3370]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("BinaryMessageEncodingStart"), "Event BinaryMessageEncodingStart did not fire.");
+            Assert.Equal(TestString(3370, "AppDomain"), firedEvents["BinaryMessageEncodingStart"]["AppDomain"]);
         }
     }
 }

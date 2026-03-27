@@ -209,7 +209,7 @@ namespace TraceEventTests.Parsers
 
         #region Chunk 11 Subscription
 
-        private void Subscribe_Chunk11(ApplicationServerTraceEventParser parser, Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Subscribe_Chunk11(ApplicationServerTraceEventParser parser, Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             // 4014 MessageQueueRegisterFailed (Multidata80TemplateA)
             parser.MessageQueueRegisterFailed += delegate (Multidata80TemplateATraceData data)
@@ -218,7 +218,7 @@ namespace TraceEventTests.Parsers
                 fields["Uri"] = data.Uri;
                 fields["Status"] = data.Status;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4014] = fields;
+                firedEvents["MessageQueueRegisterFailed"] = fields;
             };
 
             // 4015 MessageQueueRegisterCompleted (Multidata48TemplateA)
@@ -227,7 +227,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["Uri"] = data.Uri;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4015] = fields;
+                firedEvents["MessageQueueRegisterCompleted"] = fields;
             };
 
             // 4016 MessageQueueDuplicatedSocketError (OneStringsTemplateA)
@@ -235,7 +235,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4016] = fields;
+                firedEvents["MessageQueueDuplicatedSocketError"] = fields;
             };
 
             // 4019 MessageQueueDuplicatedSocketComplete (OneStringsTemplateA)
@@ -243,7 +243,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4019] = fields;
+                firedEvents["MessageQueueDuplicatedSocketComplete"] = fields;
             };
 
             // 4020 TcpTransportListenerListeningStart (Multidata48TemplateA)
@@ -252,7 +252,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["Uri"] = data.Uri;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4020] = fields;
+                firedEvents["TcpTransportListenerListeningStart"] = fields;
             };
 
             // 4021 TcpTransportListenerListeningStop (OneStringsTemplateA)
@@ -260,7 +260,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4021] = fields;
+                firedEvents["TcpTransportListenerListeningStop"] = fields;
             };
 
             // 4022 WebhostUnregisterProtocolFailed (Multidata82TemplateA)
@@ -269,7 +269,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["hresult"] = data.hresult;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4022] = fields;
+                firedEvents["WebhostUnregisterProtocolFailed"] = fields;
             };
 
             // 4023 WasCloseAllListenerChannelInstancesCompleted (OneStringsTemplateA)
@@ -277,7 +277,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4023] = fields;
+                firedEvents["WasCloseAllListenerChannelInstancesCompleted"] = fields;
             };
 
             // 4024 WasCloseAllListenerChannelInstancesFailed (Multidata82TemplateA)
@@ -286,7 +286,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["hresult"] = data.hresult;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4024] = fields;
+                firedEvents["WasCloseAllListenerChannelInstancesFailed"] = fields;
             };
 
             // 4025 OpenListenerChannelInstanceFailed (Multidata82TemplateA)
@@ -295,7 +295,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["hresult"] = data.hresult;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4025] = fields;
+                firedEvents["OpenListenerChannelInstanceFailed"] = fields;
             };
 
             // 4026 WasConnected (OneStringsTemplateA)
@@ -303,7 +303,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4026] = fields;
+                firedEvents["WasConnected"] = fields;
             };
 
             // 4027 WasDisconnected (OneStringsTemplateA)
@@ -311,7 +311,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4027] = fields;
+                firedEvents["WasDisconnected"] = fields;
             };
 
             // 4028 PipeTransportListenerListeningStart (Multidata48TemplateA)
@@ -320,7 +320,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["Uri"] = data.Uri;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4028] = fields;
+                firedEvents["PipeTransportListenerListeningStart"] = fields;
             };
 
             // 4029 PipeTransportListenerListeningStop (OneStringsTemplateA)
@@ -328,7 +328,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4029] = fields;
+                firedEvents["PipeTransportListenerListeningStop"] = fields;
             };
 
             // 4030 DispatchSessionSuccess (OneStringsTemplateA)
@@ -336,7 +336,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4030] = fields;
+                firedEvents["DispatchSessionSuccess"] = fields;
             };
 
             // 4031 DispatchSessionFailed (OneStringsTemplateA)
@@ -344,7 +344,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4031] = fields;
+                firedEvents["DispatchSessionFailed"] = fields;
             };
 
             // 4032 WasConnectionTimedout (OneStringsTemplateA)
@@ -352,7 +352,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4032] = fields;
+                firedEvents["WasConnectionTimedout"] = fields;
             };
 
             // 4033 RoutingTableLookupStart (OneStringsTemplateA)
@@ -360,7 +360,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4033] = fields;
+                firedEvents["RoutingTableLookupStart"] = fields;
             };
 
             // 4034 RoutingTableLookupStop (OneStringsTemplateA)
@@ -368,7 +368,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4034] = fields;
+                firedEvents["RoutingTableLookupStop"] = fields;
             };
 
             // 4035 PendingSessionQueueRatio (Multidata83TemplateA)
@@ -378,7 +378,7 @@ namespace TraceEventTests.Parsers
                 fields["curr"] = data.curr;
                 fields["max"] = data.max;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4035] = fields;
+                firedEvents["PendingSessionQueueRatio"] = fields;
             };
 
             // 4201 EndSqlCommandExecute (TwoStringsTemplateA)
@@ -387,7 +387,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4201] = fields;
+                firedEvents["EndSqlCommandExecute"] = fields;
             };
 
             // 4202 StartSqlCommandExecute (TwoStringsTemplateA)
@@ -396,7 +396,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4202] = fields;
+                firedEvents["StartSqlCommandExecute"] = fields;
             };
 
             // 4203 RenewLockSystemError (OneStringsTemplateA)
@@ -404,7 +404,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4203] = fields;
+                firedEvents["RenewLockSystemError"] = fields;
             };
 
             // 4205 FoundProcessingError (ThreeStringsTemplateEA)
@@ -414,7 +414,7 @@ namespace TraceEventTests.Parsers
                 fields["data1"] = data.data1;
                 fields["SerializedException"] = data.SerializedException;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4205] = fields;
+                firedEvents["FoundProcessingError"] = fields;
             };
 
             // 4206 UnlockInstanceException (TwoStringsTemplateA)
@@ -423,7 +423,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4206] = fields;
+                firedEvents["UnlockInstanceException"] = fields;
             };
 
             // 4207 MaximumRetriesExceededForSqlCommand (OneStringsTemplateA)
@@ -431,7 +431,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4207] = fields;
+                firedEvents["MaximumRetriesExceededForSqlCommand"] = fields;
             };
 
             // 4208 RetryingSqlCommandDueToSqlError (TwoStringsTemplateA)
@@ -440,7 +440,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4208] = fields;
+                firedEvents["RetryingSqlCommandDueToSqlError"] = fields;
             };
 
             // 4209 TimeoutOpeningSqlConnection (TwoStringsTemplateA)
@@ -449,7 +449,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4209] = fields;
+                firedEvents["TimeoutOpeningSqlConnection"] = fields;
             };
 
             // 4210 SqlExceptionCaught (ThreeStringsTemplateA)
@@ -459,7 +459,7 @@ namespace TraceEventTests.Parsers
                 fields["data1"] = data.data1;
                 fields["data2"] = data.data2;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4210] = fields;
+                firedEvents["SqlExceptionCaught"] = fields;
             };
 
             // 4211 QueuingSqlRetry (TwoStringsTemplateA)
@@ -468,7 +468,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4211] = fields;
+                firedEvents["QueuingSqlRetry"] = fields;
             };
 
             // 4212 LockRetryTimeout (TwoStringsTemplateA)
@@ -477,7 +477,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = data.data1;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4212] = fields;
+                firedEvents["LockRetryTimeout"] = fields;
             };
 
             // 4213 RunnableInstancesDetectionError (TwoStringsTemplateEA)
@@ -486,7 +486,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["SerializedException"] = data.SerializedException;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4213] = fields;
+                firedEvents["RunnableInstancesDetectionError"] = fields;
             };
 
             // 4214 InstanceLocksRecoveryError (TwoStringsTemplateEA)
@@ -495,7 +495,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["SerializedException"] = data.SerializedException;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4214] = fields;
+                firedEvents["InstanceLocksRecoveryError"] = fields;
             };
 
             // 4600 MessageLogEventSizeExceeded (OneStringsTemplateA)
@@ -503,7 +503,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4600] = fields;
+                firedEvents["MessageLogEventSizeExceeded"] = fields;
             };
 
             // 4801 DiscoveryClientInClientChannelFailedToClose (TwoStringsTemplateEA)
@@ -512,7 +512,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["SerializedException"] = data.SerializedException;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4801] = fields;
+                firedEvents["DiscoveryClientInClientChannelFailedToClose"] = fields;
             };
 
             // 4802 DiscoveryClientProtocolExceptionSuppressed (TwoStringsTemplateEA)
@@ -521,7 +521,7 @@ namespace TraceEventTests.Parsers
                 var fields = new Dictionary<string, object>();
                 fields["SerializedException"] = data.SerializedException;
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4802] = fields;
+                firedEvents["DiscoveryClientProtocolExceptionSuppressed"] = fields;
             };
 
             // 4803 DiscoveryClientReceivedMulticastSuppression (OneStringsTemplateA)
@@ -529,7 +529,7 @@ namespace TraceEventTests.Parsers
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = data.AppDomain;
-                firedEvents[4803] = fields;
+                firedEvents["DiscoveryClientReceivedMulticastSuppression"] = fields;
             };
         }
 
@@ -537,180 +537,180 @@ namespace TraceEventTests.Parsers
 
         #region Chunk 11 Validation
 
-        private void Validate_Chunk11(Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Validate_Chunk11(Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             // 4014 MessageQueueRegisterFailed (Multidata80TemplateA)
-            Assert.True(firedEvents.ContainsKey(4014), "MessageQueueRegisterFailed (4014) did not fire");
-            Assert.Equal(TestString(4014, "Uri"), firedEvents[4014]["Uri"]);
-            Assert.Equal(TestString(4014, "Status"), firedEvents[4014]["Status"]);
-            Assert.Equal(TestString(4014, "AppDomain"), firedEvents[4014]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("MessageQueueRegisterFailed"), "MessageQueueRegisterFailed (4014) did not fire");
+            Assert.Equal(TestString(4014, "Uri"), firedEvents["MessageQueueRegisterFailed"]["Uri"]);
+            Assert.Equal(TestString(4014, "Status"), firedEvents["MessageQueueRegisterFailed"]["Status"]);
+            Assert.Equal(TestString(4014, "AppDomain"), firedEvents["MessageQueueRegisterFailed"]["AppDomain"]);
 
             // 4015 MessageQueueRegisterCompleted (Multidata48TemplateA)
-            Assert.True(firedEvents.ContainsKey(4015), "MessageQueueRegisterCompleted (4015) did not fire");
-            Assert.Equal(TestString(4015, "Uri"), firedEvents[4015]["Uri"]);
-            Assert.Equal(TestString(4015, "AppDomain"), firedEvents[4015]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("MessageQueueRegisterCompleted"), "MessageQueueRegisterCompleted (4015) did not fire");
+            Assert.Equal(TestString(4015, "Uri"), firedEvents["MessageQueueRegisterCompleted"]["Uri"]);
+            Assert.Equal(TestString(4015, "AppDomain"), firedEvents["MessageQueueRegisterCompleted"]["AppDomain"]);
 
             // 4016 MessageQueueDuplicatedSocketError (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4016), "MessageQueueDuplicatedSocketError (4016) did not fire");
-            Assert.Equal(TestString(4016, "AppDomain"), firedEvents[4016]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("MessageQueueDuplicatedSocketError"), "MessageQueueDuplicatedSocketError (4016) did not fire");
+            Assert.Equal(TestString(4016, "AppDomain"), firedEvents["MessageQueueDuplicatedSocketError"]["AppDomain"]);
 
             // 4019 MessageQueueDuplicatedSocketComplete (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4019), "MessageQueueDuplicatedSocketComplete (4019) did not fire");
-            Assert.Equal(TestString(4019, "AppDomain"), firedEvents[4019]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("MessageQueueDuplicatedSocketComplete"), "MessageQueueDuplicatedSocketComplete (4019) did not fire");
+            Assert.Equal(TestString(4019, "AppDomain"), firedEvents["MessageQueueDuplicatedSocketComplete"]["AppDomain"]);
 
             // 4020 TcpTransportListenerListeningStart (Multidata48TemplateA)
-            Assert.True(firedEvents.ContainsKey(4020), "TcpTransportListenerListeningStart (4020) did not fire");
-            Assert.Equal(TestString(4020, "Uri"), firedEvents[4020]["Uri"]);
-            Assert.Equal(TestString(4020, "AppDomain"), firedEvents[4020]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TcpTransportListenerListeningStart"), "TcpTransportListenerListeningStart (4020) did not fire");
+            Assert.Equal(TestString(4020, "Uri"), firedEvents["TcpTransportListenerListeningStart"]["Uri"]);
+            Assert.Equal(TestString(4020, "AppDomain"), firedEvents["TcpTransportListenerListeningStart"]["AppDomain"]);
 
             // 4021 TcpTransportListenerListeningStop (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4021), "TcpTransportListenerListeningStop (4021) did not fire");
-            Assert.Equal(TestString(4021, "AppDomain"), firedEvents[4021]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TcpTransportListenerListeningStop"), "TcpTransportListenerListeningStop (4021) did not fire");
+            Assert.Equal(TestString(4021, "AppDomain"), firedEvents["TcpTransportListenerListeningStop"]["AppDomain"]);
 
             // 4022 WebhostUnregisterProtocolFailed (Multidata82TemplateA)
-            Assert.True(firedEvents.ContainsKey(4022), "WebhostUnregisterProtocolFailed (4022) did not fire");
-            Assert.Equal(TestString(4022, "hresult"), firedEvents[4022]["hresult"]);
-            Assert.Equal(TestString(4022, "AppDomain"), firedEvents[4022]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WebhostUnregisterProtocolFailed"), "WebhostUnregisterProtocolFailed (4022) did not fire");
+            Assert.Equal(TestString(4022, "hresult"), firedEvents["WebhostUnregisterProtocolFailed"]["hresult"]);
+            Assert.Equal(TestString(4022, "AppDomain"), firedEvents["WebhostUnregisterProtocolFailed"]["AppDomain"]);
 
             // 4023 WasCloseAllListenerChannelInstancesCompleted (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4023), "WasCloseAllListenerChannelInstancesCompleted (4023) did not fire");
-            Assert.Equal(TestString(4023, "AppDomain"), firedEvents[4023]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WasCloseAllListenerChannelInstancesCompleted"), "WasCloseAllListenerChannelInstancesCompleted (4023) did not fire");
+            Assert.Equal(TestString(4023, "AppDomain"), firedEvents["WasCloseAllListenerChannelInstancesCompleted"]["AppDomain"]);
 
             // 4024 WasCloseAllListenerChannelInstancesFailed (Multidata82TemplateA)
-            Assert.True(firedEvents.ContainsKey(4024), "WasCloseAllListenerChannelInstancesFailed (4024) did not fire");
-            Assert.Equal(TestString(4024, "hresult"), firedEvents[4024]["hresult"]);
-            Assert.Equal(TestString(4024, "AppDomain"), firedEvents[4024]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WasCloseAllListenerChannelInstancesFailed"), "WasCloseAllListenerChannelInstancesFailed (4024) did not fire");
+            Assert.Equal(TestString(4024, "hresult"), firedEvents["WasCloseAllListenerChannelInstancesFailed"]["hresult"]);
+            Assert.Equal(TestString(4024, "AppDomain"), firedEvents["WasCloseAllListenerChannelInstancesFailed"]["AppDomain"]);
 
             // 4025 OpenListenerChannelInstanceFailed (Multidata82TemplateA)
-            Assert.True(firedEvents.ContainsKey(4025), "OpenListenerChannelInstanceFailed (4025) did not fire");
-            Assert.Equal(TestString(4025, "hresult"), firedEvents[4025]["hresult"]);
-            Assert.Equal(TestString(4025, "AppDomain"), firedEvents[4025]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("OpenListenerChannelInstanceFailed"), "OpenListenerChannelInstanceFailed (4025) did not fire");
+            Assert.Equal(TestString(4025, "hresult"), firedEvents["OpenListenerChannelInstanceFailed"]["hresult"]);
+            Assert.Equal(TestString(4025, "AppDomain"), firedEvents["OpenListenerChannelInstanceFailed"]["AppDomain"]);
 
             // 4026 WasConnected (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4026), "WasConnected (4026) did not fire");
-            Assert.Equal(TestString(4026, "AppDomain"), firedEvents[4026]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WasConnected"), "WasConnected (4026) did not fire");
+            Assert.Equal(TestString(4026, "AppDomain"), firedEvents["WasConnected"]["AppDomain"]);
 
             // 4027 WasDisconnected (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4027), "WasDisconnected (4027) did not fire");
-            Assert.Equal(TestString(4027, "AppDomain"), firedEvents[4027]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WasDisconnected"), "WasDisconnected (4027) did not fire");
+            Assert.Equal(TestString(4027, "AppDomain"), firedEvents["WasDisconnected"]["AppDomain"]);
 
             // 4028 PipeTransportListenerListeningStart (Multidata48TemplateA)
-            Assert.True(firedEvents.ContainsKey(4028), "PipeTransportListenerListeningStart (4028) did not fire");
-            Assert.Equal(TestString(4028, "Uri"), firedEvents[4028]["Uri"]);
-            Assert.Equal(TestString(4028, "AppDomain"), firedEvents[4028]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("PipeTransportListenerListeningStart"), "PipeTransportListenerListeningStart (4028) did not fire");
+            Assert.Equal(TestString(4028, "Uri"), firedEvents["PipeTransportListenerListeningStart"]["Uri"]);
+            Assert.Equal(TestString(4028, "AppDomain"), firedEvents["PipeTransportListenerListeningStart"]["AppDomain"]);
 
             // 4029 PipeTransportListenerListeningStop (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4029), "PipeTransportListenerListeningStop (4029) did not fire");
-            Assert.Equal(TestString(4029, "AppDomain"), firedEvents[4029]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("PipeTransportListenerListeningStop"), "PipeTransportListenerListeningStop (4029) did not fire");
+            Assert.Equal(TestString(4029, "AppDomain"), firedEvents["PipeTransportListenerListeningStop"]["AppDomain"]);
 
             // 4030 DispatchSessionSuccess (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4030), "DispatchSessionSuccess (4030) did not fire");
-            Assert.Equal(TestString(4030, "AppDomain"), firedEvents[4030]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DispatchSessionSuccess"), "DispatchSessionSuccess (4030) did not fire");
+            Assert.Equal(TestString(4030, "AppDomain"), firedEvents["DispatchSessionSuccess"]["AppDomain"]);
 
             // 4031 DispatchSessionFailed (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4031), "DispatchSessionFailed (4031) did not fire");
-            Assert.Equal(TestString(4031, "AppDomain"), firedEvents[4031]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DispatchSessionFailed"), "DispatchSessionFailed (4031) did not fire");
+            Assert.Equal(TestString(4031, "AppDomain"), firedEvents["DispatchSessionFailed"]["AppDomain"]);
 
             // 4032 WasConnectionTimedout (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4032), "WasConnectionTimedout (4032) did not fire");
-            Assert.Equal(TestString(4032, "AppDomain"), firedEvents[4032]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("WasConnectionTimedout"), "WasConnectionTimedout (4032) did not fire");
+            Assert.Equal(TestString(4032, "AppDomain"), firedEvents["WasConnectionTimedout"]["AppDomain"]);
 
             // 4033 RoutingTableLookupStart (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4033), "RoutingTableLookupStart (4033) did not fire");
-            Assert.Equal(TestString(4033, "AppDomain"), firedEvents[4033]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("RoutingTableLookupStart"), "RoutingTableLookupStart (4033) did not fire");
+            Assert.Equal(TestString(4033, "AppDomain"), firedEvents["RoutingTableLookupStart"]["AppDomain"]);
 
             // 4034 RoutingTableLookupStop (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4034), "RoutingTableLookupStop (4034) did not fire");
-            Assert.Equal(TestString(4034, "AppDomain"), firedEvents[4034]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("RoutingTableLookupStop"), "RoutingTableLookupStop (4034) did not fire");
+            Assert.Equal(TestString(4034, "AppDomain"), firedEvents["RoutingTableLookupStop"]["AppDomain"]);
 
             // 4035 PendingSessionQueueRatio (Multidata83TemplateA)
-            Assert.True(firedEvents.ContainsKey(4035), "PendingSessionQueueRatio (4035) did not fire");
-            Assert.Equal(TestInt32(4035, 0), firedEvents[4035]["curr"]);
-            Assert.Equal(TestInt32(4035, 1), firedEvents[4035]["max"]);
-            Assert.Equal(TestString(4035, "AppDomain"), firedEvents[4035]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("PendingSessionQueueRatio"), "PendingSessionQueueRatio (4035) did not fire");
+            Assert.Equal(TestInt32(4035, 0), firedEvents["PendingSessionQueueRatio"]["curr"]);
+            Assert.Equal(TestInt32(4035, 1), firedEvents["PendingSessionQueueRatio"]["max"]);
+            Assert.Equal(TestString(4035, "AppDomain"), firedEvents["PendingSessionQueueRatio"]["AppDomain"]);
 
             // 4201 EndSqlCommandExecute (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4201), "EndSqlCommandExecute (4201) did not fire");
-            Assert.Equal(TestString(4201, "data1"), firedEvents[4201]["data1"]);
-            Assert.Equal(TestString(4201, "AppDomain"), firedEvents[4201]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("EndSqlCommandExecute"), "EndSqlCommandExecute (4201) did not fire");
+            Assert.Equal(TestString(4201, "data1"), firedEvents["EndSqlCommandExecute"]["data1"]);
+            Assert.Equal(TestString(4201, "AppDomain"), firedEvents["EndSqlCommandExecute"]["AppDomain"]);
 
             // 4202 StartSqlCommandExecute (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4202), "StartSqlCommandExecute (4202) did not fire");
-            Assert.Equal(TestString(4202, "data1"), firedEvents[4202]["data1"]);
-            Assert.Equal(TestString(4202, "AppDomain"), firedEvents[4202]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("StartSqlCommandExecute"), "StartSqlCommandExecute (4202) did not fire");
+            Assert.Equal(TestString(4202, "data1"), firedEvents["StartSqlCommandExecute"]["data1"]);
+            Assert.Equal(TestString(4202, "AppDomain"), firedEvents["StartSqlCommandExecute"]["AppDomain"]);
 
             // 4203 RenewLockSystemError (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4203), "RenewLockSystemError (4203) did not fire");
-            Assert.Equal(TestString(4203, "AppDomain"), firedEvents[4203]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("RenewLockSystemError"), "RenewLockSystemError (4203) did not fire");
+            Assert.Equal(TestString(4203, "AppDomain"), firedEvents["RenewLockSystemError"]["AppDomain"]);
 
             // 4205 FoundProcessingError (ThreeStringsTemplateEA)
-            Assert.True(firedEvents.ContainsKey(4205), "FoundProcessingError (4205) did not fire");
-            Assert.Equal(TestString(4205, "data1"), firedEvents[4205]["data1"]);
-            Assert.Equal(TestString(4205, "SerializedException"), firedEvents[4205]["SerializedException"]);
-            Assert.Equal(TestString(4205, "AppDomain"), firedEvents[4205]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("FoundProcessingError"), "FoundProcessingError (4205) did not fire");
+            Assert.Equal(TestString(4205, "data1"), firedEvents["FoundProcessingError"]["data1"]);
+            Assert.Equal(TestString(4205, "SerializedException"), firedEvents["FoundProcessingError"]["SerializedException"]);
+            Assert.Equal(TestString(4205, "AppDomain"), firedEvents["FoundProcessingError"]["AppDomain"]);
 
             // 4206 UnlockInstanceException (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4206), "UnlockInstanceException (4206) did not fire");
-            Assert.Equal(TestString(4206, "data1"), firedEvents[4206]["data1"]);
-            Assert.Equal(TestString(4206, "AppDomain"), firedEvents[4206]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("UnlockInstanceException"), "UnlockInstanceException (4206) did not fire");
+            Assert.Equal(TestString(4206, "data1"), firedEvents["UnlockInstanceException"]["data1"]);
+            Assert.Equal(TestString(4206, "AppDomain"), firedEvents["UnlockInstanceException"]["AppDomain"]);
 
             // 4207 MaximumRetriesExceededForSqlCommand (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4207), "MaximumRetriesExceededForSqlCommand (4207) did not fire");
-            Assert.Equal(TestString(4207, "AppDomain"), firedEvents[4207]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("MaximumRetriesExceededForSqlCommand"), "MaximumRetriesExceededForSqlCommand (4207) did not fire");
+            Assert.Equal(TestString(4207, "AppDomain"), firedEvents["MaximumRetriesExceededForSqlCommand"]["AppDomain"]);
 
             // 4208 RetryingSqlCommandDueToSqlError (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4208), "RetryingSqlCommandDueToSqlError (4208) did not fire");
-            Assert.Equal(TestString(4208, "data1"), firedEvents[4208]["data1"]);
-            Assert.Equal(TestString(4208, "AppDomain"), firedEvents[4208]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("RetryingSqlCommandDueToSqlError"), "RetryingSqlCommandDueToSqlError (4208) did not fire");
+            Assert.Equal(TestString(4208, "data1"), firedEvents["RetryingSqlCommandDueToSqlError"]["data1"]);
+            Assert.Equal(TestString(4208, "AppDomain"), firedEvents["RetryingSqlCommandDueToSqlError"]["AppDomain"]);
 
             // 4209 TimeoutOpeningSqlConnection (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4209), "TimeoutOpeningSqlConnection (4209) did not fire");
-            Assert.Equal(TestString(4209, "data1"), firedEvents[4209]["data1"]);
-            Assert.Equal(TestString(4209, "AppDomain"), firedEvents[4209]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TimeoutOpeningSqlConnection"), "TimeoutOpeningSqlConnection (4209) did not fire");
+            Assert.Equal(TestString(4209, "data1"), firedEvents["TimeoutOpeningSqlConnection"]["data1"]);
+            Assert.Equal(TestString(4209, "AppDomain"), firedEvents["TimeoutOpeningSqlConnection"]["AppDomain"]);
 
             // 4210 SqlExceptionCaught (ThreeStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4210), "SqlExceptionCaught (4210) did not fire");
-            Assert.Equal(TestString(4210, "data1"), firedEvents[4210]["data1"]);
-            Assert.Equal(TestString(4210, "data2"), firedEvents[4210]["data2"]);
-            Assert.Equal(TestString(4210, "AppDomain"), firedEvents[4210]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SqlExceptionCaught"), "SqlExceptionCaught (4210) did not fire");
+            Assert.Equal(TestString(4210, "data1"), firedEvents["SqlExceptionCaught"]["data1"]);
+            Assert.Equal(TestString(4210, "data2"), firedEvents["SqlExceptionCaught"]["data2"]);
+            Assert.Equal(TestString(4210, "AppDomain"), firedEvents["SqlExceptionCaught"]["AppDomain"]);
 
             // 4211 QueuingSqlRetry (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4211), "QueuingSqlRetry (4211) did not fire");
-            Assert.Equal(TestString(4211, "data1"), firedEvents[4211]["data1"]);
-            Assert.Equal(TestString(4211, "AppDomain"), firedEvents[4211]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("QueuingSqlRetry"), "QueuingSqlRetry (4211) did not fire");
+            Assert.Equal(TestString(4211, "data1"), firedEvents["QueuingSqlRetry"]["data1"]);
+            Assert.Equal(TestString(4211, "AppDomain"), firedEvents["QueuingSqlRetry"]["AppDomain"]);
 
             // 4212 LockRetryTimeout (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4212), "LockRetryTimeout (4212) did not fire");
-            Assert.Equal(TestString(4212, "data1"), firedEvents[4212]["data1"]);
-            Assert.Equal(TestString(4212, "AppDomain"), firedEvents[4212]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("LockRetryTimeout"), "LockRetryTimeout (4212) did not fire");
+            Assert.Equal(TestString(4212, "data1"), firedEvents["LockRetryTimeout"]["data1"]);
+            Assert.Equal(TestString(4212, "AppDomain"), firedEvents["LockRetryTimeout"]["AppDomain"]);
 
             // 4213 RunnableInstancesDetectionError (TwoStringsTemplateEA)
-            Assert.True(firedEvents.ContainsKey(4213), "RunnableInstancesDetectionError (4213) did not fire");
-            Assert.Equal(TestString(4213, "SerializedException"), firedEvents[4213]["SerializedException"]);
-            Assert.Equal(TestString(4213, "AppDomain"), firedEvents[4213]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("RunnableInstancesDetectionError"), "RunnableInstancesDetectionError (4213) did not fire");
+            Assert.Equal(TestString(4213, "SerializedException"), firedEvents["RunnableInstancesDetectionError"]["SerializedException"]);
+            Assert.Equal(TestString(4213, "AppDomain"), firedEvents["RunnableInstancesDetectionError"]["AppDomain"]);
 
             // 4214 InstanceLocksRecoveryError (TwoStringsTemplateEA)
-            Assert.True(firedEvents.ContainsKey(4214), "InstanceLocksRecoveryError (4214) did not fire");
-            Assert.Equal(TestString(4214, "SerializedException"), firedEvents[4214]["SerializedException"]);
-            Assert.Equal(TestString(4214, "AppDomain"), firedEvents[4214]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InstanceLocksRecoveryError"), "InstanceLocksRecoveryError (4214) did not fire");
+            Assert.Equal(TestString(4214, "SerializedException"), firedEvents["InstanceLocksRecoveryError"]["SerializedException"]);
+            Assert.Equal(TestString(4214, "AppDomain"), firedEvents["InstanceLocksRecoveryError"]["AppDomain"]);
 
             // 4600 MessageLogEventSizeExceeded (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4600), "MessageLogEventSizeExceeded (4600) did not fire");
-            Assert.Equal(TestString(4600, "AppDomain"), firedEvents[4600]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("MessageLogEventSizeExceeded"), "MessageLogEventSizeExceeded (4600) did not fire");
+            Assert.Equal(TestString(4600, "AppDomain"), firedEvents["MessageLogEventSizeExceeded"]["AppDomain"]);
 
             // 4801 DiscoveryClientInClientChannelFailedToClose (TwoStringsTemplateEA)
-            Assert.True(firedEvents.ContainsKey(4801), "DiscoveryClientInClientChannelFailedToClose (4801) did not fire");
-            Assert.Equal(TestString(4801, "SerializedException"), firedEvents[4801]["SerializedException"]);
-            Assert.Equal(TestString(4801, "AppDomain"), firedEvents[4801]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DiscoveryClientInClientChannelFailedToClose"), "DiscoveryClientInClientChannelFailedToClose (4801) did not fire");
+            Assert.Equal(TestString(4801, "SerializedException"), firedEvents["DiscoveryClientInClientChannelFailedToClose"]["SerializedException"]);
+            Assert.Equal(TestString(4801, "AppDomain"), firedEvents["DiscoveryClientInClientChannelFailedToClose"]["AppDomain"]);
 
             // 4802 DiscoveryClientProtocolExceptionSuppressed (TwoStringsTemplateEA)
-            Assert.True(firedEvents.ContainsKey(4802), "DiscoveryClientProtocolExceptionSuppressed (4802) did not fire");
-            Assert.Equal(TestString(4802, "SerializedException"), firedEvents[4802]["SerializedException"]);
-            Assert.Equal(TestString(4802, "AppDomain"), firedEvents[4802]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DiscoveryClientProtocolExceptionSuppressed"), "DiscoveryClientProtocolExceptionSuppressed (4802) did not fire");
+            Assert.Equal(TestString(4802, "SerializedException"), firedEvents["DiscoveryClientProtocolExceptionSuppressed"]["SerializedException"]);
+            Assert.Equal(TestString(4802, "AppDomain"), firedEvents["DiscoveryClientProtocolExceptionSuppressed"]["AppDomain"]);
 
             // 4803 DiscoveryClientReceivedMulticastSuppression (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(4803), "DiscoveryClientReceivedMulticastSuppression (4803) did not fire");
-            Assert.Equal(TestString(4803, "AppDomain"), firedEvents[4803]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DiscoveryClientReceivedMulticastSuppression"), "DiscoveryClientReceivedMulticastSuppression (4803) did not fire");
+            Assert.Equal(TestString(4803, "AppDomain"), firedEvents["DiscoveryClientReceivedMulticastSuppression"]["AppDomain"]);
         }
 
         #endregion

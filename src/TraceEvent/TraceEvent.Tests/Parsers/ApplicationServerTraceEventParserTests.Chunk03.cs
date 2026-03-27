@@ -1,4 +1,4 @@
-using Microsoft.Diagnostics.Tracing;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer;
 using System;
@@ -106,35 +106,35 @@ namespace TraceEventTests.Parsers
             int id = __metadataId;
             writer.WriteMetadataBlock(w =>
             {
-                // Event 602: CBAMatchFound (Multidata70TemplateA, opcode=0)
+                // CBAMatchFound (Multidata70TemplateA, opcode=0)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "CBAMatchFound", 602);
                     pw.WriteV5MetadataParameterList();
                 });
 
-                // Event 603: AspNetRoutingService (Multidata70TemplateA, opcode=0)
+                // AspNetRoutingService (Multidata70TemplateA, opcode=0)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "AspNetRoutingService", 603);
                     pw.WriteV5MetadataParameterList();
                 });
 
-                // Event 604: AspNetRoute (Multidata71TemplateA, opcode=0)
+                // AspNetRoute (Multidata71TemplateA, opcode=0)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "AspNetRoute", 604);
                     pw.WriteV5MetadataParameterList();
                 });
 
-                // Event 605: IncrementBusyCount (Multidata75TemplateA, opcode=0)
+                // IncrementBusyCount (Multidata75TemplateA, opcode=0)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "IncrementBusyCount", 605);
                     pw.WriteV5MetadataParameterList();
                 });
 
-                // Event 606: DecrementBusyCount (Multidata75TemplateA, opcode=2)
+                // DecrementBusyCount (Multidata75TemplateA, opcode=2)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "DecrementBusyCount", 606);
@@ -142,7 +142,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(2);
                 });
 
-                // Event 701: ServiceChannelOpenStart (OneStringsTemplateA, opcode=1)
+                // ServiceChannelOpenStart (OneStringsTemplateA, opcode=1)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "ServiceChannelOpenStart", 701);
@@ -150,7 +150,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(1);
                 });
 
-                // Event 702: ServiceChannelOpenStop (OneStringsTemplateA, opcode=2)
+                // ServiceChannelOpenStop (OneStringsTemplateA, opcode=2)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "ServiceChannelOpenStop", 702);
@@ -158,7 +158,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(2);
                 });
 
-                // Event 703: ServiceChannelCallStart (OneStringsTemplateA, opcode=1)
+                // ServiceChannelCallStart (OneStringsTemplateA, opcode=1)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "ServiceChannelCallStart", 703);
@@ -166,7 +166,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(1);
                 });
 
-                // Event 704: ServiceChannelBeginCallStart (OneStringsTemplateA, opcode=1)
+                // ServiceChannelBeginCallStart (OneStringsTemplateA, opcode=1)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "ServiceChannelBeginCallStart", 704);
@@ -174,7 +174,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(1);
                 });
 
-                // Event 706: HttpSendMessageStart (OneStringsTemplateA, opcode=1)
+                // HttpSendMessageStart (OneStringsTemplateA, opcode=1)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "HttpSendMessageStart", 706);
@@ -182,7 +182,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(1);
                 });
 
-                // Event 707: HttpSendStop (OneStringsTemplateA, opcode=2)
+                // HttpSendStop (OneStringsTemplateA, opcode=2)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "HttpSendStop", 707);
@@ -190,7 +190,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(2);
                 });
 
-                // Event 708: HttpMessageReceiveStart (OneStringsTemplateA, opcode=1)
+                // HttpMessageReceiveStart (OneStringsTemplateA, opcode=1)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "HttpMessageReceiveStart", 708);
@@ -198,7 +198,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(1);
                 });
 
-                // Event 709: DispatchMessageStart (TwoStringsTemplateVA, opcode=49)
+                // DispatchMessageStart (TwoStringsTemplateVA, opcode=49)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "DispatchMessageStart", 709);
@@ -206,7 +206,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(49);
                 });
 
-                // Event 710: HttpContextBeforeProcessAuthentication (OneStringsTemplateA, opcode=128)
+                // HttpContextBeforeProcessAuthentication (OneStringsTemplateA, opcode=128)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "HttpContextBeforeProcessAuthentication", 710);
@@ -214,7 +214,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(128);
                 });
 
-                // Event 711: DispatchMessageBeforeAuthorization (OneStringsTemplateA, opcode=48)
+                // DispatchMessageBeforeAuthorization (OneStringsTemplateA, opcode=48)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "DispatchMessageBeforeAuthorization", 711);
@@ -222,7 +222,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(48);
                 });
 
-                // Event 712: DispatchMessageStop (OneStringsTemplateA, opcode=50)
+                // DispatchMessageStop (OneStringsTemplateA, opcode=50)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "DispatchMessageStop", 712);
@@ -230,7 +230,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(50);
                 });
 
-                // Event 715: ClientChannelOpenStart (OneStringsTemplateA, opcode=14)
+                // ClientChannelOpenStart (OneStringsTemplateA, opcode=14)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "ClientChannelOpenStart", 715);
@@ -238,7 +238,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(14);
                 });
 
-                // Event 716: ClientChannelOpenStop (OneStringsTemplateA, opcode=15)
+                // ClientChannelOpenStop (OneStringsTemplateA, opcode=15)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "ClientChannelOpenStop", 716);
@@ -246,7 +246,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(15);
                 });
 
-                // Event 717: HttpSendStreamedMessageStart (OneStringsTemplateA, opcode=1)
+                // HttpSendStreamedMessageStart (OneStringsTemplateA, opcode=1)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "HttpSendStreamedMessageStart", 717);
@@ -254,7 +254,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(1);
                 });
 
-                // Event 1001: WorkflowApplicationCompleted (TwoStringsTemplateA, opcode=134)
+                // WorkflowApplicationCompleted (TwoStringsTemplateA, opcode=134)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "WorkflowApplicationCompleted", 1001);
@@ -262,7 +262,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(134);
                 });
 
-                // Event 1002: WorkflowApplicationTerminated (ThreeStringsTemplateEA, opcode=140)
+                // WorkflowApplicationTerminated (ThreeStringsTemplateEA, opcode=140)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "WorkflowApplicationTerminated", 1002);
@@ -270,7 +270,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(140);
                 });
 
-                // Event 1003: WorkflowInstanceCanceled (TwoStringsTemplateA, opcode=137)
+                // WorkflowInstanceCanceled (TwoStringsTemplateA, opcode=137)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "WorkflowInstanceCanceled", 1003);
@@ -278,7 +278,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(137);
                 });
 
-                // Event 1004: WorkflowInstanceAborted (ThreeStringsTemplateEA, opcode=136)
+                // WorkflowInstanceAborted (ThreeStringsTemplateEA, opcode=136)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "WorkflowInstanceAborted", 1004);
@@ -286,7 +286,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(136);
                 });
 
-                // Event 1005: WorkflowApplicationIdled (TwoStringsTemplateA, opcode=135)
+                // WorkflowApplicationIdled (TwoStringsTemplateA, opcode=135)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "WorkflowApplicationIdled", 1005);
@@ -294,7 +294,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(135);
                 });
 
-                // Event 1006: WorkflowApplicationUnhandledException (SixStringsTemplateEA, opcode=141)
+                // WorkflowApplicationUnhandledException (SixStringsTemplateEA, opcode=141)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "WorkflowApplicationUnhandledException", 1006);
@@ -302,7 +302,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(141);
                 });
 
-                // Event 1007: WorkflowApplicationPersisted (TwoStringsTemplateA, opcode=139)
+                // WorkflowApplicationPersisted (TwoStringsTemplateA, opcode=139)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "WorkflowApplicationPersisted", 1007);
@@ -310,7 +310,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(139);
                 });
 
-                // Event 1008: WorkflowApplicationUnloaded (TwoStringsTemplateA, opcode=142)
+                // WorkflowApplicationUnloaded (TwoStringsTemplateA, opcode=142)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "WorkflowApplicationUnloaded", 1008);
@@ -318,21 +318,21 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(142);
                 });
 
-                // Event 1009: ActivityScheduled (SevenStringsTemplateA, opcode=0)
+                // ActivityScheduled (SevenStringsTemplateA, opcode=0)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "ActivityScheduled", 1009);
                     pw.WriteV5MetadataParameterList();
                 });
 
-                // Event 1010: ActivityCompleted (FiveStringsTemplateA, opcode=0)
+                // ActivityCompleted (FiveStringsTemplateA, opcode=0)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "ActivityCompleted", 1010);
                     pw.WriteV5MetadataParameterList();
                 });
 
-                // Event 1011: ScheduleExecuteActivityWorkItem (FourStringsTemplateA, opcode=110)
+                // ScheduleExecuteActivityWorkItem (FourStringsTemplateA, opcode=110)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "ScheduleExecuteActivityWorkItem", 1011);
@@ -340,7 +340,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(110);
                 });
 
-                // Event 1012: StartExecuteActivityWorkItem (FourStringsTemplateA, opcode=120)
+                // StartExecuteActivityWorkItem (FourStringsTemplateA, opcode=120)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "StartExecuteActivityWorkItem", 1012);
@@ -348,7 +348,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(120);
                 });
 
-                // Event 1013: CompleteExecuteActivityWorkItem (FourStringsTemplateA, opcode=24)
+                // CompleteExecuteActivityWorkItem (FourStringsTemplateA, opcode=24)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "CompleteExecuteActivityWorkItem", 1013);
@@ -356,7 +356,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(24);
                 });
 
-                // Event 1014: ScheduleCompletionWorkItem (SevenStringsTemplateA, opcode=109)
+                // ScheduleCompletionWorkItem (SevenStringsTemplateA, opcode=109)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "ScheduleCompletionWorkItem", 1014);
@@ -364,7 +364,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(109);
                 });
 
-                // Event 1015: StartCompletionWorkItem (SevenStringsTemplateA, opcode=119)
+                // StartCompletionWorkItem (SevenStringsTemplateA, opcode=119)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "StartCompletionWorkItem", 1015);
@@ -372,7 +372,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(119);
                 });
 
-                // Event 1016: CompleteCompletionWorkItem (SevenStringsTemplateA, opcode=23)
+                // CompleteCompletionWorkItem (SevenStringsTemplateA, opcode=23)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "CompleteCompletionWorkItem", 1016);
@@ -380,7 +380,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(23);
                 });
 
-                // Event 1017: ScheduleCancelActivityWorkItem (FourStringsTemplateA, opcode=108)
+                // ScheduleCancelActivityWorkItem (FourStringsTemplateA, opcode=108)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "ScheduleCancelActivityWorkItem", 1017);
@@ -388,7 +388,7 @@ namespace TraceEventTests.Parsers
                     pw.WriteV5OpcodeMetadataTag(108);
                 });
 
-                // Event 1018: StartCancelActivityWorkItem (FourStringsTemplateA, opcode=118)
+                // StartCancelActivityWorkItem (FourStringsTemplateA, opcode=118)
                 w.WriteMetadataEventBlobV5OrLess(pw =>
                 {
                     pw.WriteV5InitialMetadataBlob(id++, ProviderName, "StartCancelActivityWorkItem", 1018);
@@ -462,27 +462,27 @@ namespace TraceEventTests.Parsers
 
         #region Chunk03 Subscribe
 
-        private void Subscribe_Chunk03(ApplicationServerTraceEventParser parser, Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Subscribe_Chunk03(ApplicationServerTraceEventParser parser, Dictionary<string, Dictionary<string, object>> firedEvents)
         {
-            // Event 602: CBAMatchFound (Multidata70TemplateA)
+            // CBAMatchFound (Multidata70TemplateA)
             parser.CBAMatchFound += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["IncomingAddress"] = e.IncomingAddress;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["CBAMatchFound"] = fields;
             };
 
-            // Event 603: AspNetRoutingService (Multidata70TemplateA)
+            // AspNetRoutingService (Multidata70TemplateA)
             parser.AspNetRoutingService += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["IncomingAddress"] = e.IncomingAddress;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["AspNetRoutingService"] = fields;
             };
 
-            // Event 604: AspNetRoute (Multidata71TemplateA)
+            // AspNetRoute (Multidata71TemplateA)
             parser.AspNetRoute += e =>
             {
                 var fields = new Dictionary<string, object>();
@@ -490,188 +490,188 @@ namespace TraceEventTests.Parsers
                 fields["ServiceType"] = e.ServiceType;
                 fields["ServiceHostFactoryType"] = e.ServiceHostFactoryType;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["AspNetRoute"] = fields;
             };
 
-            // Event 605: IncrementBusyCount (Multidata75TemplateA)
+            // IncrementBusyCount (Multidata75TemplateA)
             parser.IncrementBusyCount += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["Data"] = e.Data;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["IncrementBusyCount"] = fields;
             };
 
-            // Event 606: DecrementBusyCount (Multidata75TemplateA)
+            // DecrementBusyCount (Multidata75TemplateA)
             parser.DecrementBusyCount += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["Data"] = e.Data;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["DecrementBusyCount"] = fields;
             };
 
-            // Event 701: ServiceChannelOpenStart (OneStringsTemplateA)
+            // ServiceChannelOpenStart (OneStringsTemplateA)
             parser.ServiceChannelOpenStart += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["ServiceChannelOpenStart"] = fields;
             };
 
-            // Event 702: ServiceChannelOpenStop (OneStringsTemplateA)
+            // ServiceChannelOpenStop (OneStringsTemplateA)
             parser.ServiceChannelOpenStop += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["ServiceChannelOpenStop"] = fields;
             };
 
-            // Event 703: ServiceChannelCallStart (OneStringsTemplateA)
+            // ServiceChannelCallStart (OneStringsTemplateA)
             parser.ServiceChannelCallStart += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["ServiceChannelCallStart"] = fields;
             };
 
-            // Event 704: ServiceChannelBeginCallStart (OneStringsTemplateA)
+            // ServiceChannelBeginCallStart (OneStringsTemplateA)
             parser.ServiceChannelBeginCallStart += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["ServiceChannelBeginCallStart"] = fields;
             };
 
-            // Event 706: HttpSendMessageStart (OneStringsTemplateA)
+            // HttpSendMessageStart (OneStringsTemplateA)
             parser.HttpSendMessageStart += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["HttpSendMessageStart"] = fields;
             };
 
-            // Event 707: HttpSendStop (OneStringsTemplateA)
+            // HttpSendStop (OneStringsTemplateA)
             parser.HttpSendStop += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["HttpSendStop"] = fields;
             };
 
-            // Event 708: HttpMessageReceiveStart (OneStringsTemplateA)
+            // HttpMessageReceiveStart (OneStringsTemplateA)
             parser.HttpMessageReceiveStart += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["HttpMessageReceiveStart"] = fields;
             };
 
-            // Event 709: DispatchMessageStart (TwoStringsTemplateVA)
+            // DispatchMessageStart (TwoStringsTemplateVA)
             parser.DispatchMessageStart += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["HostReference"] = e.HostReference;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["DispatchMessageStart"] = fields;
             };
 
-            // Event 710: HttpContextBeforeProcessAuthentication (OneStringsTemplateA)
+            // HttpContextBeforeProcessAuthentication (OneStringsTemplateA)
             parser.HttpContextBeforeProcessAuthentication += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["HttpContextBeforeProcessAuthentication"] = fields;
             };
 
-            // Event 711: DispatchMessageBeforeAuthorization (OneStringsTemplateA)
+            // DispatchMessageBeforeAuthorization (OneStringsTemplateA)
             parser.DispatchMessageBeforeAuthorization += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["DispatchMessageBeforeAuthorization"] = fields;
             };
 
-            // Event 712: DispatchMessageStop (OneStringsTemplateA)
+            // DispatchMessageStop (OneStringsTemplateA)
             parser.DispatchMessageStop += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["DispatchMessageStop"] = fields;
             };
 
-            // Event 715: ClientChannelOpenStart (OneStringsTemplateA)
+            // ClientChannelOpenStart (OneStringsTemplateA)
             parser.ClientChannelOpenStart += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["ClientChannelOpenStart"] = fields;
             };
 
-            // Event 716: ClientChannelOpenStop (OneStringsTemplateA)
+            // ClientChannelOpenStop (OneStringsTemplateA)
             parser.ClientChannelOpenStop += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["ClientChannelOpenStop"] = fields;
             };
 
-            // Event 717: HttpSendStreamedMessageStart (OneStringsTemplateA)
+            // HttpSendStreamedMessageStart (OneStringsTemplateA)
             parser.HttpSendStreamedMessageStart += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["HttpSendStreamedMessageStart"] = fields;
             };
 
-            // Event 1001: WorkflowApplicationCompleted (TwoStringsTemplateA)
+            // WorkflowApplicationCompleted (TwoStringsTemplateA)
             parser.WorkflowApplicationCompleted += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = e.data1;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["WorkflowApplicationCompleted"] = fields;
             };
 
-            // Event 1002: WorkflowApplicationTerminated (ThreeStringsTemplateEA)
+            // WorkflowApplicationTerminated (ThreeStringsTemplateEA)
             parser.WorkflowApplicationTerminated += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = e.data1;
                 fields["SerializedException"] = e.SerializedException;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["WorkflowApplicationTerminated"] = fields;
             };
 
-            // Event 1003: WorkflowInstanceCanceled (TwoStringsTemplateA)
+            // WorkflowInstanceCanceled (TwoStringsTemplateA)
             parser.WorkflowInstanceCanceled += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = e.data1;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["WorkflowInstanceCanceled"] = fields;
             };
 
-            // Event 1004: WorkflowInstanceAborted (ThreeStringsTemplateEA)
+            // WorkflowInstanceAborted (ThreeStringsTemplateEA)
             parser.WorkflowInstanceAborted += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = e.data1;
                 fields["SerializedException"] = e.SerializedException;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["WorkflowInstanceAborted"] = fields;
             };
 
-            // Event 1005: WorkflowApplicationIdled (TwoStringsTemplateA)
+            // WorkflowApplicationIdled (TwoStringsTemplateA)
             parser.WorkflowApplicationIdled += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = e.data1;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["WorkflowApplicationIdled"] = fields;
             };
 
-            // Event 1006: WorkflowApplicationUnhandledException (SixStringsTemplateEA)
+            // WorkflowApplicationUnhandledException (SixStringsTemplateEA)
             parser.WorkflowApplicationUnhandledException += e =>
             {
                 var fields = new Dictionary<string, object>();
@@ -681,28 +681,28 @@ namespace TraceEventTests.Parsers
                 fields["data4"] = e.data4;
                 fields["SerializedException"] = e.SerializedException;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["WorkflowApplicationUnhandledException"] = fields;
             };
 
-            // Event 1007: WorkflowApplicationPersisted (TwoStringsTemplateA)
+            // WorkflowApplicationPersisted (TwoStringsTemplateA)
             parser.WorkflowApplicationPersisted += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = e.data1;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["WorkflowApplicationPersisted"] = fields;
             };
 
-            // Event 1008: WorkflowApplicationUnloaded (TwoStringsTemplateA)
+            // WorkflowApplicationUnloaded (TwoStringsTemplateA)
             parser.WorkflowApplicationUnloaded += e =>
             {
                 var fields = new Dictionary<string, object>();
                 fields["data1"] = e.data1;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["WorkflowApplicationUnloaded"] = fields;
             };
 
-            // Event 1009: ActivityScheduled (SevenStringsTemplateA)
+            // ActivityScheduled (SevenStringsTemplateA)
             parser.ActivityScheduled += e =>
             {
                 var fields = new Dictionary<string, object>();
@@ -713,10 +713,10 @@ namespace TraceEventTests.Parsers
                 fields["data5"] = e.data5;
                 fields["data6"] = e.data6;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["ActivityScheduled"] = fields;
             };
 
-            // Event 1010: ActivityCompleted (FiveStringsTemplateA)
+            // ActivityCompleted (FiveStringsTemplateA)
             parser.ActivityCompleted += e =>
             {
                 var fields = new Dictionary<string, object>();
@@ -725,10 +725,10 @@ namespace TraceEventTests.Parsers
                 fields["data3"] = e.data3;
                 fields["data4"] = e.data4;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["ActivityCompleted"] = fields;
             };
 
-            // Event 1011: ScheduleExecuteActivityWorkItem (FourStringsTemplateA)
+            // ScheduleExecuteActivityWorkItem (FourStringsTemplateA)
             parser.ScheduleExecuteActivityWorkItem += e =>
             {
                 var fields = new Dictionary<string, object>();
@@ -736,10 +736,10 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = e.data2;
                 fields["data3"] = e.data3;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["ScheduleExecuteActivityWorkItem"] = fields;
             };
 
-            // Event 1012: StartExecuteActivityWorkItem (FourStringsTemplateA)
+            // StartExecuteActivityWorkItem (FourStringsTemplateA)
             parser.StartExecuteActivityWorkItem += e =>
             {
                 var fields = new Dictionary<string, object>();
@@ -747,10 +747,10 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = e.data2;
                 fields["data3"] = e.data3;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["StartExecuteActivityWorkItem"] = fields;
             };
 
-            // Event 1013: CompleteExecuteActivityWorkItem (FourStringsTemplateA)
+            // CompleteExecuteActivityWorkItem (FourStringsTemplateA)
             parser.CompleteExecuteActivityWorkItem += e =>
             {
                 var fields = new Dictionary<string, object>();
@@ -758,10 +758,10 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = e.data2;
                 fields["data3"] = e.data3;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["CompleteExecuteActivityWorkItem"] = fields;
             };
 
-            // Event 1014: ScheduleCompletionWorkItem (SevenStringsTemplateA)
+            // ScheduleCompletionWorkItem (SevenStringsTemplateA)
             parser.ScheduleCompletionWorkItem += e =>
             {
                 var fields = new Dictionary<string, object>();
@@ -772,10 +772,10 @@ namespace TraceEventTests.Parsers
                 fields["data5"] = e.data5;
                 fields["data6"] = e.data6;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["ScheduleCompletionWorkItem"] = fields;
             };
 
-            // Event 1015: StartCompletionWorkItem (SevenStringsTemplateA)
+            // StartCompletionWorkItem (SevenStringsTemplateA)
             parser.StartCompletionWorkItem += e =>
             {
                 var fields = new Dictionary<string, object>();
@@ -786,10 +786,10 @@ namespace TraceEventTests.Parsers
                 fields["data5"] = e.data5;
                 fields["data6"] = e.data6;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["StartCompletionWorkItem"] = fields;
             };
 
-            // Event 1016: CompleteCompletionWorkItem (SevenStringsTemplateA)
+            // CompleteCompletionWorkItem (SevenStringsTemplateA)
             parser.CompleteCompletionWorkItem += e =>
             {
                 var fields = new Dictionary<string, object>();
@@ -800,10 +800,10 @@ namespace TraceEventTests.Parsers
                 fields["data5"] = e.data5;
                 fields["data6"] = e.data6;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["CompleteCompletionWorkItem"] = fields;
             };
 
-            // Event 1017: ScheduleCancelActivityWorkItem (FourStringsTemplateA)
+            // ScheduleCancelActivityWorkItem (FourStringsTemplateA)
             parser.ScheduleCancelActivityWorkItem += e =>
             {
                 var fields = new Dictionary<string, object>();
@@ -811,10 +811,10 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = e.data2;
                 fields["data3"] = e.data3;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["ScheduleCancelActivityWorkItem"] = fields;
             };
 
-            // Event 1018: StartCancelActivityWorkItem (FourStringsTemplateA)
+            // StartCancelActivityWorkItem (FourStringsTemplateA)
             parser.StartCancelActivityWorkItem += e =>
             {
                 var fields = new Dictionary<string, object>();
@@ -822,7 +822,7 @@ namespace TraceEventTests.Parsers
                 fields["data2"] = e.data2;
                 fields["data3"] = e.data3;
                 fields["AppDomain"] = e.AppDomain;
-                firedEvents[(int)e.ID] = fields;
+                firedEvents["StartCancelActivityWorkItem"] = fields;
             };
         }
 
@@ -830,220 +830,220 @@ namespace TraceEventTests.Parsers
 
         #region Chunk03 Validate
 
-        private void Validate_Chunk03(Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Validate_Chunk03(Dictionary<string, Dictionary<string, object>> firedEvents)
         {
-            // Event 602: CBAMatchFound (Multidata70TemplateA)
-            Assert.True(firedEvents.ContainsKey(602), "Event 602 (CBAMatchFound) did not fire.");
-            Assert.Equal(TestString(602, "IncomingAddress"), firedEvents[602]["IncomingAddress"]);
-            Assert.Equal(TestString(602, "AppDomain"), firedEvents[602]["AppDomain"]);
+            // CBAMatchFound (Multidata70TemplateA)
+            Assert.True(firedEvents.ContainsKey("CBAMatchFound"), "Event CBAMatchFound did not fire.");
+            Assert.Equal(TestString(602, "IncomingAddress"), firedEvents["CBAMatchFound"]["IncomingAddress"]);
+            Assert.Equal(TestString(602, "AppDomain"), firedEvents["CBAMatchFound"]["AppDomain"]);
 
-            // Event 603: AspNetRoutingService (Multidata70TemplateA)
-            Assert.True(firedEvents.ContainsKey(603), "Event 603 (AspNetRoutingService) did not fire.");
-            Assert.Equal(TestString(603, "IncomingAddress"), firedEvents[603]["IncomingAddress"]);
-            Assert.Equal(TestString(603, "AppDomain"), firedEvents[603]["AppDomain"]);
+            // AspNetRoutingService (Multidata70TemplateA)
+            Assert.True(firedEvents.ContainsKey("AspNetRoutingService"), "Event AspNetRoutingService did not fire.");
+            Assert.Equal(TestString(603, "IncomingAddress"), firedEvents["AspNetRoutingService"]["IncomingAddress"]);
+            Assert.Equal(TestString(603, "AppDomain"), firedEvents["AspNetRoutingService"]["AppDomain"]);
 
-            // Event 604: AspNetRoute (Multidata71TemplateA)
-            Assert.True(firedEvents.ContainsKey(604), "Event 604 (AspNetRoute) did not fire.");
-            Assert.Equal(TestString(604, "AspNetRoutePrefix"), firedEvents[604]["AspNetRoutePrefix"]);
-            Assert.Equal(TestString(604, "ServiceType"), firedEvents[604]["ServiceType"]);
-            Assert.Equal(TestString(604, "ServiceHostFactoryType"), firedEvents[604]["ServiceHostFactoryType"]);
-            Assert.Equal(TestString(604, "AppDomain"), firedEvents[604]["AppDomain"]);
+            // AspNetRoute (Multidata71TemplateA)
+            Assert.True(firedEvents.ContainsKey("AspNetRoute"), "Event AspNetRoute did not fire.");
+            Assert.Equal(TestString(604, "AspNetRoutePrefix"), firedEvents["AspNetRoute"]["AspNetRoutePrefix"]);
+            Assert.Equal(TestString(604, "ServiceType"), firedEvents["AspNetRoute"]["ServiceType"]);
+            Assert.Equal(TestString(604, "ServiceHostFactoryType"), firedEvents["AspNetRoute"]["ServiceHostFactoryType"]);
+            Assert.Equal(TestString(604, "AppDomain"), firedEvents["AspNetRoute"]["AppDomain"]);
 
-            // Event 605: IncrementBusyCount (Multidata75TemplateA)
-            Assert.True(firedEvents.ContainsKey(605), "Event 605 (IncrementBusyCount) did not fire.");
-            Assert.Equal(TestString(605, "Data"), firedEvents[605]["Data"]);
-            Assert.Equal(TestString(605, "AppDomain"), firedEvents[605]["AppDomain"]);
+            // IncrementBusyCount (Multidata75TemplateA)
+            Assert.True(firedEvents.ContainsKey("IncrementBusyCount"), "Event IncrementBusyCount did not fire.");
+            Assert.Equal(TestString(605, "Data"), firedEvents["IncrementBusyCount"]["Data"]);
+            Assert.Equal(TestString(605, "AppDomain"), firedEvents["IncrementBusyCount"]["AppDomain"]);
 
-            // Event 606: DecrementBusyCount (Multidata75TemplateA)
-            Assert.True(firedEvents.ContainsKey(606), "Event 606 (DecrementBusyCount) did not fire.");
-            Assert.Equal(TestString(606, "Data"), firedEvents[606]["Data"]);
-            Assert.Equal(TestString(606, "AppDomain"), firedEvents[606]["AppDomain"]);
+            // DecrementBusyCount (Multidata75TemplateA)
+            Assert.True(firedEvents.ContainsKey("DecrementBusyCount"), "Event DecrementBusyCount did not fire.");
+            Assert.Equal(TestString(606, "Data"), firedEvents["DecrementBusyCount"]["Data"]);
+            Assert.Equal(TestString(606, "AppDomain"), firedEvents["DecrementBusyCount"]["AppDomain"]);
 
-            // Event 701: ServiceChannelOpenStart (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(701), "Event 701 (ServiceChannelOpenStart) did not fire.");
-            Assert.Equal(TestString(701, "AppDomain"), firedEvents[701]["AppDomain"]);
+            // ServiceChannelOpenStart (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ServiceChannelOpenStart"), "Event ServiceChannelOpenStart did not fire.");
+            Assert.Equal(TestString(701, "AppDomain"), firedEvents["ServiceChannelOpenStart"]["AppDomain"]);
 
-            // Event 702: ServiceChannelOpenStop (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(702), "Event 702 (ServiceChannelOpenStop) did not fire.");
-            Assert.Equal(TestString(702, "AppDomain"), firedEvents[702]["AppDomain"]);
+            // ServiceChannelOpenStop (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ServiceChannelOpenStop"), "Event ServiceChannelOpenStop did not fire.");
+            Assert.Equal(TestString(702, "AppDomain"), firedEvents["ServiceChannelOpenStop"]["AppDomain"]);
 
-            // Event 703: ServiceChannelCallStart (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(703), "Event 703 (ServiceChannelCallStart) did not fire.");
-            Assert.Equal(TestString(703, "AppDomain"), firedEvents[703]["AppDomain"]);
+            // ServiceChannelCallStart (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ServiceChannelCallStart"), "Event ServiceChannelCallStart did not fire.");
+            Assert.Equal(TestString(703, "AppDomain"), firedEvents["ServiceChannelCallStart"]["AppDomain"]);
 
-            // Event 704: ServiceChannelBeginCallStart (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(704), "Event 704 (ServiceChannelBeginCallStart) did not fire.");
-            Assert.Equal(TestString(704, "AppDomain"), firedEvents[704]["AppDomain"]);
+            // ServiceChannelBeginCallStart (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ServiceChannelBeginCallStart"), "Event ServiceChannelBeginCallStart did not fire.");
+            Assert.Equal(TestString(704, "AppDomain"), firedEvents["ServiceChannelBeginCallStart"]["AppDomain"]);
 
-            // Event 706: HttpSendMessageStart (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(706), "Event 706 (HttpSendMessageStart) did not fire.");
-            Assert.Equal(TestString(706, "AppDomain"), firedEvents[706]["AppDomain"]);
+            // HttpSendMessageStart (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("HttpSendMessageStart"), "Event HttpSendMessageStart did not fire.");
+            Assert.Equal(TestString(706, "AppDomain"), firedEvents["HttpSendMessageStart"]["AppDomain"]);
 
-            // Event 707: HttpSendStop (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(707), "Event 707 (HttpSendStop) did not fire.");
-            Assert.Equal(TestString(707, "AppDomain"), firedEvents[707]["AppDomain"]);
+            // HttpSendStop (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("HttpSendStop"), "Event HttpSendStop did not fire.");
+            Assert.Equal(TestString(707, "AppDomain"), firedEvents["HttpSendStop"]["AppDomain"]);
 
-            // Event 708: HttpMessageReceiveStart (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(708), "Event 708 (HttpMessageReceiveStart) did not fire.");
-            Assert.Equal(TestString(708, "AppDomain"), firedEvents[708]["AppDomain"]);
+            // HttpMessageReceiveStart (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("HttpMessageReceiveStart"), "Event HttpMessageReceiveStart did not fire.");
+            Assert.Equal(TestString(708, "AppDomain"), firedEvents["HttpMessageReceiveStart"]["AppDomain"]);
 
-            // Event 709: DispatchMessageStart (TwoStringsTemplateVA)
-            Assert.True(firedEvents.ContainsKey(709), "Event 709 (DispatchMessageStart) did not fire.");
-            Assert.Equal(TestString(709, "HostReference"), firedEvents[709]["HostReference"]);
-            Assert.Equal(TestString(709, "AppDomain"), firedEvents[709]["AppDomain"]);
+            // DispatchMessageStart (TwoStringsTemplateVA)
+            Assert.True(firedEvents.ContainsKey("DispatchMessageStart"), "Event DispatchMessageStart did not fire.");
+            Assert.Equal(TestString(709, "HostReference"), firedEvents["DispatchMessageStart"]["HostReference"]);
+            Assert.Equal(TestString(709, "AppDomain"), firedEvents["DispatchMessageStart"]["AppDomain"]);
 
-            // Event 710: HttpContextBeforeProcessAuthentication (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(710), "Event 710 (HttpContextBeforeProcessAuthentication) did not fire.");
-            Assert.Equal(TestString(710, "AppDomain"), firedEvents[710]["AppDomain"]);
+            // HttpContextBeforeProcessAuthentication (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("HttpContextBeforeProcessAuthentication"), "Event HttpContextBeforeProcessAuthentication did not fire.");
+            Assert.Equal(TestString(710, "AppDomain"), firedEvents["HttpContextBeforeProcessAuthentication"]["AppDomain"]);
 
-            // Event 711: DispatchMessageBeforeAuthorization (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(711), "Event 711 (DispatchMessageBeforeAuthorization) did not fire.");
-            Assert.Equal(TestString(711, "AppDomain"), firedEvents[711]["AppDomain"]);
+            // DispatchMessageBeforeAuthorization (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("DispatchMessageBeforeAuthorization"), "Event DispatchMessageBeforeAuthorization did not fire.");
+            Assert.Equal(TestString(711, "AppDomain"), firedEvents["DispatchMessageBeforeAuthorization"]["AppDomain"]);
 
-            // Event 712: DispatchMessageStop (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(712), "Event 712 (DispatchMessageStop) did not fire.");
-            Assert.Equal(TestString(712, "AppDomain"), firedEvents[712]["AppDomain"]);
+            // DispatchMessageStop (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("DispatchMessageStop"), "Event DispatchMessageStop did not fire.");
+            Assert.Equal(TestString(712, "AppDomain"), firedEvents["DispatchMessageStop"]["AppDomain"]);
 
-            // Event 715: ClientChannelOpenStart (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(715), "Event 715 (ClientChannelOpenStart) did not fire.");
-            Assert.Equal(TestString(715, "AppDomain"), firedEvents[715]["AppDomain"]);
+            // ClientChannelOpenStart (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ClientChannelOpenStart"), "Event ClientChannelOpenStart did not fire.");
+            Assert.Equal(TestString(715, "AppDomain"), firedEvents["ClientChannelOpenStart"]["AppDomain"]);
 
-            // Event 716: ClientChannelOpenStop (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(716), "Event 716 (ClientChannelOpenStop) did not fire.");
-            Assert.Equal(TestString(716, "AppDomain"), firedEvents[716]["AppDomain"]);
+            // ClientChannelOpenStop (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ClientChannelOpenStop"), "Event ClientChannelOpenStop did not fire.");
+            Assert.Equal(TestString(716, "AppDomain"), firedEvents["ClientChannelOpenStop"]["AppDomain"]);
 
-            // Event 717: HttpSendStreamedMessageStart (OneStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(717), "Event 717 (HttpSendStreamedMessageStart) did not fire.");
-            Assert.Equal(TestString(717, "AppDomain"), firedEvents[717]["AppDomain"]);
+            // HttpSendStreamedMessageStart (OneStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("HttpSendStreamedMessageStart"), "Event HttpSendStreamedMessageStart did not fire.");
+            Assert.Equal(TestString(717, "AppDomain"), firedEvents["HttpSendStreamedMessageStart"]["AppDomain"]);
 
-            // Event 1001: WorkflowApplicationCompleted (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1001), "Event 1001 (WorkflowApplicationCompleted) did not fire.");
-            Assert.Equal(TestString(1001, "data1"), firedEvents[1001]["data1"]);
-            Assert.Equal(TestString(1001, "AppDomain"), firedEvents[1001]["AppDomain"]);
+            // WorkflowApplicationCompleted (TwoStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("WorkflowApplicationCompleted"), "Event WorkflowApplicationCompleted did not fire.");
+            Assert.Equal(TestString(1001, "data1"), firedEvents["WorkflowApplicationCompleted"]["data1"]);
+            Assert.Equal(TestString(1001, "AppDomain"), firedEvents["WorkflowApplicationCompleted"]["AppDomain"]);
 
-            // Event 1002: WorkflowApplicationTerminated (ThreeStringsTemplateEA)
-            Assert.True(firedEvents.ContainsKey(1002), "Event 1002 (WorkflowApplicationTerminated) did not fire.");
-            Assert.Equal(TestString(1002, "data1"), firedEvents[1002]["data1"]);
-            Assert.Equal(TestString(1002, "SerializedException"), firedEvents[1002]["SerializedException"]);
-            Assert.Equal(TestString(1002, "AppDomain"), firedEvents[1002]["AppDomain"]);
+            // WorkflowApplicationTerminated (ThreeStringsTemplateEA)
+            Assert.True(firedEvents.ContainsKey("WorkflowApplicationTerminated"), "Event WorkflowApplicationTerminated did not fire.");
+            Assert.Equal(TestString(1002, "data1"), firedEvents["WorkflowApplicationTerminated"]["data1"]);
+            Assert.Equal(TestString(1002, "SerializedException"), firedEvents["WorkflowApplicationTerminated"]["SerializedException"]);
+            Assert.Equal(TestString(1002, "AppDomain"), firedEvents["WorkflowApplicationTerminated"]["AppDomain"]);
 
-            // Event 1003: WorkflowInstanceCanceled (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1003), "Event 1003 (WorkflowInstanceCanceled) did not fire.");
-            Assert.Equal(TestString(1003, "data1"), firedEvents[1003]["data1"]);
-            Assert.Equal(TestString(1003, "AppDomain"), firedEvents[1003]["AppDomain"]);
+            // WorkflowInstanceCanceled (TwoStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("WorkflowInstanceCanceled"), "Event WorkflowInstanceCanceled did not fire.");
+            Assert.Equal(TestString(1003, "data1"), firedEvents["WorkflowInstanceCanceled"]["data1"]);
+            Assert.Equal(TestString(1003, "AppDomain"), firedEvents["WorkflowInstanceCanceled"]["AppDomain"]);
 
-            // Event 1004: WorkflowInstanceAborted (ThreeStringsTemplateEA)
-            Assert.True(firedEvents.ContainsKey(1004), "Event 1004 (WorkflowInstanceAborted) did not fire.");
-            Assert.Equal(TestString(1004, "data1"), firedEvents[1004]["data1"]);
-            Assert.Equal(TestString(1004, "SerializedException"), firedEvents[1004]["SerializedException"]);
-            Assert.Equal(TestString(1004, "AppDomain"), firedEvents[1004]["AppDomain"]);
+            // WorkflowInstanceAborted (ThreeStringsTemplateEA)
+            Assert.True(firedEvents.ContainsKey("WorkflowInstanceAborted"), "Event WorkflowInstanceAborted did not fire.");
+            Assert.Equal(TestString(1004, "data1"), firedEvents["WorkflowInstanceAborted"]["data1"]);
+            Assert.Equal(TestString(1004, "SerializedException"), firedEvents["WorkflowInstanceAborted"]["SerializedException"]);
+            Assert.Equal(TestString(1004, "AppDomain"), firedEvents["WorkflowInstanceAborted"]["AppDomain"]);
 
-            // Event 1005: WorkflowApplicationIdled (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1005), "Event 1005 (WorkflowApplicationIdled) did not fire.");
-            Assert.Equal(TestString(1005, "data1"), firedEvents[1005]["data1"]);
-            Assert.Equal(TestString(1005, "AppDomain"), firedEvents[1005]["AppDomain"]);
+            // WorkflowApplicationIdled (TwoStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("WorkflowApplicationIdled"), "Event WorkflowApplicationIdled did not fire.");
+            Assert.Equal(TestString(1005, "data1"), firedEvents["WorkflowApplicationIdled"]["data1"]);
+            Assert.Equal(TestString(1005, "AppDomain"), firedEvents["WorkflowApplicationIdled"]["AppDomain"]);
 
-            // Event 1006: WorkflowApplicationUnhandledException (SixStringsTemplateEA)
-            Assert.True(firedEvents.ContainsKey(1006), "Event 1006 (WorkflowApplicationUnhandledException) did not fire.");
-            Assert.Equal(TestString(1006, "data1"), firedEvents[1006]["data1"]);
-            Assert.Equal(TestString(1006, "data2"), firedEvents[1006]["data2"]);
-            Assert.Equal(TestString(1006, "data3"), firedEvents[1006]["data3"]);
-            Assert.Equal(TestString(1006, "data4"), firedEvents[1006]["data4"]);
-            Assert.Equal(TestString(1006, "SerializedException"), firedEvents[1006]["SerializedException"]);
-            Assert.Equal(TestString(1006, "AppDomain"), firedEvents[1006]["AppDomain"]);
+            // WorkflowApplicationUnhandledException (SixStringsTemplateEA)
+            Assert.True(firedEvents.ContainsKey("WorkflowApplicationUnhandledException"), "Event WorkflowApplicationUnhandledException did not fire.");
+            Assert.Equal(TestString(1006, "data1"), firedEvents["WorkflowApplicationUnhandledException"]["data1"]);
+            Assert.Equal(TestString(1006, "data2"), firedEvents["WorkflowApplicationUnhandledException"]["data2"]);
+            Assert.Equal(TestString(1006, "data3"), firedEvents["WorkflowApplicationUnhandledException"]["data3"]);
+            Assert.Equal(TestString(1006, "data4"), firedEvents["WorkflowApplicationUnhandledException"]["data4"]);
+            Assert.Equal(TestString(1006, "SerializedException"), firedEvents["WorkflowApplicationUnhandledException"]["SerializedException"]);
+            Assert.Equal(TestString(1006, "AppDomain"), firedEvents["WorkflowApplicationUnhandledException"]["AppDomain"]);
 
-            // Event 1007: WorkflowApplicationPersisted (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1007), "Event 1007 (WorkflowApplicationPersisted) did not fire.");
-            Assert.Equal(TestString(1007, "data1"), firedEvents[1007]["data1"]);
-            Assert.Equal(TestString(1007, "AppDomain"), firedEvents[1007]["AppDomain"]);
+            // WorkflowApplicationPersisted (TwoStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("WorkflowApplicationPersisted"), "Event WorkflowApplicationPersisted did not fire.");
+            Assert.Equal(TestString(1007, "data1"), firedEvents["WorkflowApplicationPersisted"]["data1"]);
+            Assert.Equal(TestString(1007, "AppDomain"), firedEvents["WorkflowApplicationPersisted"]["AppDomain"]);
 
-            // Event 1008: WorkflowApplicationUnloaded (TwoStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1008), "Event 1008 (WorkflowApplicationUnloaded) did not fire.");
-            Assert.Equal(TestString(1008, "data1"), firedEvents[1008]["data1"]);
-            Assert.Equal(TestString(1008, "AppDomain"), firedEvents[1008]["AppDomain"]);
+            // WorkflowApplicationUnloaded (TwoStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("WorkflowApplicationUnloaded"), "Event WorkflowApplicationUnloaded did not fire.");
+            Assert.Equal(TestString(1008, "data1"), firedEvents["WorkflowApplicationUnloaded"]["data1"]);
+            Assert.Equal(TestString(1008, "AppDomain"), firedEvents["WorkflowApplicationUnloaded"]["AppDomain"]);
 
-            // Event 1009: ActivityScheduled (SevenStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1009), "Event 1009 (ActivityScheduled) did not fire.");
-            Assert.Equal(TestString(1009, "data1"), firedEvents[1009]["data1"]);
-            Assert.Equal(TestString(1009, "data2"), firedEvents[1009]["data2"]);
-            Assert.Equal(TestString(1009, "data3"), firedEvents[1009]["data3"]);
-            Assert.Equal(TestString(1009, "data4"), firedEvents[1009]["data4"]);
-            Assert.Equal(TestString(1009, "data5"), firedEvents[1009]["data5"]);
-            Assert.Equal(TestString(1009, "data6"), firedEvents[1009]["data6"]);
-            Assert.Equal(TestString(1009, "AppDomain"), firedEvents[1009]["AppDomain"]);
+            // ActivityScheduled (SevenStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ActivityScheduled"), "Event ActivityScheduled did not fire.");
+            Assert.Equal(TestString(1009, "data1"), firedEvents["ActivityScheduled"]["data1"]);
+            Assert.Equal(TestString(1009, "data2"), firedEvents["ActivityScheduled"]["data2"]);
+            Assert.Equal(TestString(1009, "data3"), firedEvents["ActivityScheduled"]["data3"]);
+            Assert.Equal(TestString(1009, "data4"), firedEvents["ActivityScheduled"]["data4"]);
+            Assert.Equal(TestString(1009, "data5"), firedEvents["ActivityScheduled"]["data5"]);
+            Assert.Equal(TestString(1009, "data6"), firedEvents["ActivityScheduled"]["data6"]);
+            Assert.Equal(TestString(1009, "AppDomain"), firedEvents["ActivityScheduled"]["AppDomain"]);
 
-            // Event 1010: ActivityCompleted (FiveStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1010), "Event 1010 (ActivityCompleted) did not fire.");
-            Assert.Equal(TestString(1010, "data1"), firedEvents[1010]["data1"]);
-            Assert.Equal(TestString(1010, "data2"), firedEvents[1010]["data2"]);
-            Assert.Equal(TestString(1010, "data3"), firedEvents[1010]["data3"]);
-            Assert.Equal(TestString(1010, "data4"), firedEvents[1010]["data4"]);
-            Assert.Equal(TestString(1010, "AppDomain"), firedEvents[1010]["AppDomain"]);
+            // ActivityCompleted (FiveStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ActivityCompleted"), "Event ActivityCompleted did not fire.");
+            Assert.Equal(TestString(1010, "data1"), firedEvents["ActivityCompleted"]["data1"]);
+            Assert.Equal(TestString(1010, "data2"), firedEvents["ActivityCompleted"]["data2"]);
+            Assert.Equal(TestString(1010, "data3"), firedEvents["ActivityCompleted"]["data3"]);
+            Assert.Equal(TestString(1010, "data4"), firedEvents["ActivityCompleted"]["data4"]);
+            Assert.Equal(TestString(1010, "AppDomain"), firedEvents["ActivityCompleted"]["AppDomain"]);
 
-            // Event 1011: ScheduleExecuteActivityWorkItem (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1011), "Event 1011 (ScheduleExecuteActivityWorkItem) did not fire.");
-            Assert.Equal(TestString(1011, "data1"), firedEvents[1011]["data1"]);
-            Assert.Equal(TestString(1011, "data2"), firedEvents[1011]["data2"]);
-            Assert.Equal(TestString(1011, "data3"), firedEvents[1011]["data3"]);
-            Assert.Equal(TestString(1011, "AppDomain"), firedEvents[1011]["AppDomain"]);
+            // ScheduleExecuteActivityWorkItem (FourStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ScheduleExecuteActivityWorkItem"), "Event ScheduleExecuteActivityWorkItem did not fire.");
+            Assert.Equal(TestString(1011, "data1"), firedEvents["ScheduleExecuteActivityWorkItem"]["data1"]);
+            Assert.Equal(TestString(1011, "data2"), firedEvents["ScheduleExecuteActivityWorkItem"]["data2"]);
+            Assert.Equal(TestString(1011, "data3"), firedEvents["ScheduleExecuteActivityWorkItem"]["data3"]);
+            Assert.Equal(TestString(1011, "AppDomain"), firedEvents["ScheduleExecuteActivityWorkItem"]["AppDomain"]);
 
-            // Event 1012: StartExecuteActivityWorkItem (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1012), "Event 1012 (StartExecuteActivityWorkItem) did not fire.");
-            Assert.Equal(TestString(1012, "data1"), firedEvents[1012]["data1"]);
-            Assert.Equal(TestString(1012, "data2"), firedEvents[1012]["data2"]);
-            Assert.Equal(TestString(1012, "data3"), firedEvents[1012]["data3"]);
-            Assert.Equal(TestString(1012, "AppDomain"), firedEvents[1012]["AppDomain"]);
+            // StartExecuteActivityWorkItem (FourStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("StartExecuteActivityWorkItem"), "Event StartExecuteActivityWorkItem did not fire.");
+            Assert.Equal(TestString(1012, "data1"), firedEvents["StartExecuteActivityWorkItem"]["data1"]);
+            Assert.Equal(TestString(1012, "data2"), firedEvents["StartExecuteActivityWorkItem"]["data2"]);
+            Assert.Equal(TestString(1012, "data3"), firedEvents["StartExecuteActivityWorkItem"]["data3"]);
+            Assert.Equal(TestString(1012, "AppDomain"), firedEvents["StartExecuteActivityWorkItem"]["AppDomain"]);
 
-            // Event 1013: CompleteExecuteActivityWorkItem (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1013), "Event 1013 (CompleteExecuteActivityWorkItem) did not fire.");
-            Assert.Equal(TestString(1013, "data1"), firedEvents[1013]["data1"]);
-            Assert.Equal(TestString(1013, "data2"), firedEvents[1013]["data2"]);
-            Assert.Equal(TestString(1013, "data3"), firedEvents[1013]["data3"]);
-            Assert.Equal(TestString(1013, "AppDomain"), firedEvents[1013]["AppDomain"]);
+            // CompleteExecuteActivityWorkItem (FourStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("CompleteExecuteActivityWorkItem"), "Event CompleteExecuteActivityWorkItem did not fire.");
+            Assert.Equal(TestString(1013, "data1"), firedEvents["CompleteExecuteActivityWorkItem"]["data1"]);
+            Assert.Equal(TestString(1013, "data2"), firedEvents["CompleteExecuteActivityWorkItem"]["data2"]);
+            Assert.Equal(TestString(1013, "data3"), firedEvents["CompleteExecuteActivityWorkItem"]["data3"]);
+            Assert.Equal(TestString(1013, "AppDomain"), firedEvents["CompleteExecuteActivityWorkItem"]["AppDomain"]);
 
-            // Event 1014: ScheduleCompletionWorkItem (SevenStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1014), "Event 1014 (ScheduleCompletionWorkItem) did not fire.");
-            Assert.Equal(TestString(1014, "data1"), firedEvents[1014]["data1"]);
-            Assert.Equal(TestString(1014, "data2"), firedEvents[1014]["data2"]);
-            Assert.Equal(TestString(1014, "data3"), firedEvents[1014]["data3"]);
-            Assert.Equal(TestString(1014, "data4"), firedEvents[1014]["data4"]);
-            Assert.Equal(TestString(1014, "data5"), firedEvents[1014]["data5"]);
-            Assert.Equal(TestString(1014, "data6"), firedEvents[1014]["data6"]);
-            Assert.Equal(TestString(1014, "AppDomain"), firedEvents[1014]["AppDomain"]);
+            // ScheduleCompletionWorkItem (SevenStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ScheduleCompletionWorkItem"), "Event ScheduleCompletionWorkItem did not fire.");
+            Assert.Equal(TestString(1014, "data1"), firedEvents["ScheduleCompletionWorkItem"]["data1"]);
+            Assert.Equal(TestString(1014, "data2"), firedEvents["ScheduleCompletionWorkItem"]["data2"]);
+            Assert.Equal(TestString(1014, "data3"), firedEvents["ScheduleCompletionWorkItem"]["data3"]);
+            Assert.Equal(TestString(1014, "data4"), firedEvents["ScheduleCompletionWorkItem"]["data4"]);
+            Assert.Equal(TestString(1014, "data5"), firedEvents["ScheduleCompletionWorkItem"]["data5"]);
+            Assert.Equal(TestString(1014, "data6"), firedEvents["ScheduleCompletionWorkItem"]["data6"]);
+            Assert.Equal(TestString(1014, "AppDomain"), firedEvents["ScheduleCompletionWorkItem"]["AppDomain"]);
 
-            // Event 1015: StartCompletionWorkItem (SevenStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1015), "Event 1015 (StartCompletionWorkItem) did not fire.");
-            Assert.Equal(TestString(1015, "data1"), firedEvents[1015]["data1"]);
-            Assert.Equal(TestString(1015, "data2"), firedEvents[1015]["data2"]);
-            Assert.Equal(TestString(1015, "data3"), firedEvents[1015]["data3"]);
-            Assert.Equal(TestString(1015, "data4"), firedEvents[1015]["data4"]);
-            Assert.Equal(TestString(1015, "data5"), firedEvents[1015]["data5"]);
-            Assert.Equal(TestString(1015, "data6"), firedEvents[1015]["data6"]);
-            Assert.Equal(TestString(1015, "AppDomain"), firedEvents[1015]["AppDomain"]);
+            // StartCompletionWorkItem (SevenStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("StartCompletionWorkItem"), "Event StartCompletionWorkItem did not fire.");
+            Assert.Equal(TestString(1015, "data1"), firedEvents["StartCompletionWorkItem"]["data1"]);
+            Assert.Equal(TestString(1015, "data2"), firedEvents["StartCompletionWorkItem"]["data2"]);
+            Assert.Equal(TestString(1015, "data3"), firedEvents["StartCompletionWorkItem"]["data3"]);
+            Assert.Equal(TestString(1015, "data4"), firedEvents["StartCompletionWorkItem"]["data4"]);
+            Assert.Equal(TestString(1015, "data5"), firedEvents["StartCompletionWorkItem"]["data5"]);
+            Assert.Equal(TestString(1015, "data6"), firedEvents["StartCompletionWorkItem"]["data6"]);
+            Assert.Equal(TestString(1015, "AppDomain"), firedEvents["StartCompletionWorkItem"]["AppDomain"]);
 
-            // Event 1016: CompleteCompletionWorkItem (SevenStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1016), "Event 1016 (CompleteCompletionWorkItem) did not fire.");
-            Assert.Equal(TestString(1016, "data1"), firedEvents[1016]["data1"]);
-            Assert.Equal(TestString(1016, "data2"), firedEvents[1016]["data2"]);
-            Assert.Equal(TestString(1016, "data3"), firedEvents[1016]["data3"]);
-            Assert.Equal(TestString(1016, "data4"), firedEvents[1016]["data4"]);
-            Assert.Equal(TestString(1016, "data5"), firedEvents[1016]["data5"]);
-            Assert.Equal(TestString(1016, "data6"), firedEvents[1016]["data6"]);
-            Assert.Equal(TestString(1016, "AppDomain"), firedEvents[1016]["AppDomain"]);
+            // CompleteCompletionWorkItem (SevenStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("CompleteCompletionWorkItem"), "Event CompleteCompletionWorkItem did not fire.");
+            Assert.Equal(TestString(1016, "data1"), firedEvents["CompleteCompletionWorkItem"]["data1"]);
+            Assert.Equal(TestString(1016, "data2"), firedEvents["CompleteCompletionWorkItem"]["data2"]);
+            Assert.Equal(TestString(1016, "data3"), firedEvents["CompleteCompletionWorkItem"]["data3"]);
+            Assert.Equal(TestString(1016, "data4"), firedEvents["CompleteCompletionWorkItem"]["data4"]);
+            Assert.Equal(TestString(1016, "data5"), firedEvents["CompleteCompletionWorkItem"]["data5"]);
+            Assert.Equal(TestString(1016, "data6"), firedEvents["CompleteCompletionWorkItem"]["data6"]);
+            Assert.Equal(TestString(1016, "AppDomain"), firedEvents["CompleteCompletionWorkItem"]["AppDomain"]);
 
-            // Event 1017: ScheduleCancelActivityWorkItem (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1017), "Event 1017 (ScheduleCancelActivityWorkItem) did not fire.");
-            Assert.Equal(TestString(1017, "data1"), firedEvents[1017]["data1"]);
-            Assert.Equal(TestString(1017, "data2"), firedEvents[1017]["data2"]);
-            Assert.Equal(TestString(1017, "data3"), firedEvents[1017]["data3"]);
-            Assert.Equal(TestString(1017, "AppDomain"), firedEvents[1017]["AppDomain"]);
+            // ScheduleCancelActivityWorkItem (FourStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("ScheduleCancelActivityWorkItem"), "Event ScheduleCancelActivityWorkItem did not fire.");
+            Assert.Equal(TestString(1017, "data1"), firedEvents["ScheduleCancelActivityWorkItem"]["data1"]);
+            Assert.Equal(TestString(1017, "data2"), firedEvents["ScheduleCancelActivityWorkItem"]["data2"]);
+            Assert.Equal(TestString(1017, "data3"), firedEvents["ScheduleCancelActivityWorkItem"]["data3"]);
+            Assert.Equal(TestString(1017, "AppDomain"), firedEvents["ScheduleCancelActivityWorkItem"]["AppDomain"]);
 
-            // Event 1018: StartCancelActivityWorkItem (FourStringsTemplateA)
-            Assert.True(firedEvents.ContainsKey(1018), "Event 1018 (StartCancelActivityWorkItem) did not fire.");
-            Assert.Equal(TestString(1018, "data1"), firedEvents[1018]["data1"]);
-            Assert.Equal(TestString(1018, "data2"), firedEvents[1018]["data2"]);
-            Assert.Equal(TestString(1018, "data3"), firedEvents[1018]["data3"]);
-            Assert.Equal(TestString(1018, "AppDomain"), firedEvents[1018]["AppDomain"]);
+            // StartCancelActivityWorkItem (FourStringsTemplateA)
+            Assert.True(firedEvents.ContainsKey("StartCancelActivityWorkItem"), "Event StartCancelActivityWorkItem did not fire.");
+            Assert.Equal(TestString(1018, "data1"), firedEvents["StartCancelActivityWorkItem"]["data1"]);
+            Assert.Equal(TestString(1018, "data2"), firedEvents["StartCancelActivityWorkItem"]["data2"]);
+            Assert.Equal(TestString(1018, "data3"), firedEvents["StartCancelActivityWorkItem"]["data3"]);
+            Assert.Equal(TestString(1018, "AppDomain"), firedEvents["StartCancelActivityWorkItem"]["AppDomain"]);
         }
 
         #endregion

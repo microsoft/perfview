@@ -442,11 +442,11 @@ namespace TraceEventTests.Parsers
         // =====================================================================
         // Subscribe_Chunk06 — subscribes to all 38 events in this chunk.
         // =====================================================================
-        private void Subscribe_Chunk06(ApplicationServerTraceEventParser parser, Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Subscribe_Chunk06(ApplicationServerTraceEventParser parser, Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             parser.InternalCacheMetadataStart += delegate (Multidata19TemplateATraceData data)
             {
-                firedEvents[2024] = new Dictionary<string, object>
+                firedEvents["InternalCacheMetadataStart"] = new Dictionary<string, object>
                 {
                     { "id", data.id },
                     { "AppDomain", data.AppDomain },
@@ -455,7 +455,7 @@ namespace TraceEventTests.Parsers
 
             parser.InternalCacheMetadataStop += delegate (Multidata19TemplateATraceData data)
             {
-                firedEvents[2025] = new Dictionary<string, object>
+                firedEvents["InternalCacheMetadataStop"] = new Dictionary<string, object>
                 {
                     { "id", data.id },
                     { "AppDomain", data.AppDomain },
@@ -464,7 +464,7 @@ namespace TraceEventTests.Parsers
 
             parser.CompileVbExpressionStart += delegate (Multidata20TemplateATraceData data)
             {
-                firedEvents[2026] = new Dictionary<string, object>
+                firedEvents["CompileVbExpressionStart"] = new Dictionary<string, object>
                 {
                     { "expr", data.expr },
                     { "AppDomain", data.AppDomain },
@@ -473,7 +473,7 @@ namespace TraceEventTests.Parsers
 
             parser.CacheRootMetadataStart += delegate (Multidata21TemplateATraceData data)
             {
-                firedEvents[2027] = new Dictionary<string, object>
+                firedEvents["CacheRootMetadataStart"] = new Dictionary<string, object>
                 {
                     { "activityName", data.activityName },
                     { "AppDomain", data.AppDomain },
@@ -482,7 +482,7 @@ namespace TraceEventTests.Parsers
 
             parser.CacheRootMetadataStop += delegate (Multidata21TemplateATraceData data)
             {
-                firedEvents[2028] = new Dictionary<string, object>
+                firedEvents["CacheRootMetadataStop"] = new Dictionary<string, object>
                 {
                     { "activityName", data.activityName },
                     { "AppDomain", data.AppDomain },
@@ -491,7 +491,7 @@ namespace TraceEventTests.Parsers
 
             parser.CompileVbExpressionStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[2029] = new Dictionary<string, object>
+                firedEvents["CompileVbExpressionStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -499,7 +499,7 @@ namespace TraceEventTests.Parsers
 
             parser.TryCatchExceptionFromTry += delegate (ThreeStringsTemplateATraceData data)
             {
-                firedEvents[2576] = new Dictionary<string, object>
+                firedEvents["TryCatchExceptionFromTry"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "data2", data.data2 },
@@ -509,7 +509,7 @@ namespace TraceEventTests.Parsers
 
             parser.TryCatchExceptionDuringCancelation += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[2577] = new Dictionary<string, object>
+                firedEvents["TryCatchExceptionDuringCancelation"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
@@ -518,7 +518,7 @@ namespace TraceEventTests.Parsers
 
             parser.TryCatchExceptionFromCatchOrFinally += delegate (TwoStringsTemplateATraceData data)
             {
-                firedEvents[2578] = new Dictionary<string, object>
+                firedEvents["TryCatchExceptionFromCatchOrFinally"] = new Dictionary<string, object>
                 {
                     { "data1", data.data1 },
                     { "AppDomain", data.AppDomain },
@@ -527,7 +527,7 @@ namespace TraceEventTests.Parsers
 
             parser.ReceiveContextCompleteFailed += delegate (Multidata33TemplateATraceData data)
             {
-                firedEvents[3300] = new Dictionary<string, object>
+                firedEvents["ReceiveContextCompleteFailed"] = new Dictionary<string, object>
                 {
                     { "TypeName", data.TypeName },
                     { "AppDomain", data.AppDomain },
@@ -536,7 +536,7 @@ namespace TraceEventTests.Parsers
 
             parser.ReceiveContextAbandonFailed += delegate (Multidata33TemplateATraceData data)
             {
-                firedEvents[3301] = new Dictionary<string, object>
+                firedEvents["ReceiveContextAbandonFailed"] = new Dictionary<string, object>
                 {
                     { "TypeName", data.TypeName },
                     { "AppDomain", data.AppDomain },
@@ -545,7 +545,7 @@ namespace TraceEventTests.Parsers
 
             parser.ReceiveContextFaulted += delegate (TwoStringsTemplateSATraceData data)
             {
-                firedEvents[3302] = new Dictionary<string, object>
+                firedEvents["ReceiveContextFaulted"] = new Dictionary<string, object>
                 {
                     { "EventSource", data.EventSource },
                     { "AppDomain", data.AppDomain },
@@ -554,7 +554,7 @@ namespace TraceEventTests.Parsers
 
             parser.ReceiveContextAbandonWithException += delegate (Multidata34TemplateATraceData data)
             {
-                firedEvents[3303] = new Dictionary<string, object>
+                firedEvents["ReceiveContextAbandonWithException"] = new Dictionary<string, object>
                 {
                     { "TypeName", data.TypeName },
                     { "ExceptionToString", data.ExceptionToString },
@@ -564,7 +564,7 @@ namespace TraceEventTests.Parsers
 
             parser.ClientBaseCachedChannelFactoryCount += delegate (Multidata35TemplateSATraceData data)
             {
-                firedEvents[3305] = new Dictionary<string, object>
+                firedEvents["ClientBaseCachedChannelFactoryCount"] = new Dictionary<string, object>
                 {
                     { "Count", data.Count },
                     { "MaxNum", data.MaxNum },
@@ -575,7 +575,7 @@ namespace TraceEventTests.Parsers
 
             parser.ClientBaseChannelFactoryAgedOutofCache += delegate (Multidata36TemplateSATraceData data)
             {
-                firedEvents[3306] = new Dictionary<string, object>
+                firedEvents["ClientBaseChannelFactoryAgedOutofCache"] = new Dictionary<string, object>
                 {
                     { "Count", data.Count },
                     { "EventSource", data.EventSource },
@@ -585,7 +585,7 @@ namespace TraceEventTests.Parsers
 
             parser.ClientBaseChannelFactoryCacheHit += delegate (TwoStringsTemplateSATraceData data)
             {
-                firedEvents[3307] = new Dictionary<string, object>
+                firedEvents["ClientBaseChannelFactoryCacheHit"] = new Dictionary<string, object>
                 {
                     { "EventSource", data.EventSource },
                     { "AppDomain", data.AppDomain },
@@ -594,7 +594,7 @@ namespace TraceEventTests.Parsers
 
             parser.ClientBaseUsingLocalChannelFactory += delegate (TwoStringsTemplateSATraceData data)
             {
-                firedEvents[3308] = new Dictionary<string, object>
+                firedEvents["ClientBaseUsingLocalChannelFactory"] = new Dictionary<string, object>
                 {
                     { "EventSource", data.EventSource },
                     { "AppDomain", data.AppDomain },
@@ -603,7 +603,7 @@ namespace TraceEventTests.Parsers
 
             parser.QueryCompositionExecuted += delegate (Multidata37TemplateSATraceData data)
             {
-                firedEvents[3309] = new Dictionary<string, object>
+                firedEvents["QueryCompositionExecuted"] = new Dictionary<string, object>
                 {
                     { "TypeName", data.TypeName },
                     { "Uri", data.Uri },
@@ -614,7 +614,7 @@ namespace TraceEventTests.Parsers
 
             parser.DispatchFailed += delegate (Multidata38TemplateHATraceData data)
             {
-                firedEvents[3310] = new Dictionary<string, object>
+                firedEvents["DispatchFailed"] = new Dictionary<string, object>
                 {
                     { "OperationName", data.OperationName },
                     { "HostReference", data.HostReference },
@@ -624,7 +624,7 @@ namespace TraceEventTests.Parsers
 
             parser.DispatchSuccessful += delegate (Multidata38TemplateHATraceData data)
             {
-                firedEvents[3311] = new Dictionary<string, object>
+                firedEvents["DispatchSuccessful"] = new Dictionary<string, object>
                 {
                     { "OperationName", data.OperationName },
                     { "HostReference", data.HostReference },
@@ -634,7 +634,7 @@ namespace TraceEventTests.Parsers
 
             parser.MessageReadByEncoder += delegate (Multidata39TemplateSATraceData data)
             {
-                firedEvents[3312] = new Dictionary<string, object>
+                firedEvents["MessageReadByEncoder"] = new Dictionary<string, object>
                 {
                     { "Size", data.Size },
                     { "EventSource", data.EventSource },
@@ -644,7 +644,7 @@ namespace TraceEventTests.Parsers
 
             parser.MessageWrittenByEncoder += delegate (Multidata39TemplateSATraceData data)
             {
-                firedEvents[3313] = new Dictionary<string, object>
+                firedEvents["MessageWrittenByEncoder"] = new Dictionary<string, object>
                 {
                     { "Size", data.Size },
                     { "EventSource", data.EventSource },
@@ -654,7 +654,7 @@ namespace TraceEventTests.Parsers
 
             parser.SessionIdleTimeout += delegate (Multidata40TemplateATraceData data)
             {
-                firedEvents[3314] = new Dictionary<string, object>
+                firedEvents["SessionIdleTimeout"] = new Dictionary<string, object>
                 {
                     { "RemoteAddress", data.RemoteAddress },
                     { "AppDomain", data.AppDomain },
@@ -663,7 +663,7 @@ namespace TraceEventTests.Parsers
 
             parser.SocketAcceptEnqueued += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3319] = new Dictionary<string, object>
+                firedEvents["SocketAcceptEnqueued"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -671,7 +671,7 @@ namespace TraceEventTests.Parsers
 
             parser.SocketAccepted += delegate (Multidata41TemplateATraceData data)
             {
-                firedEvents[3320] = new Dictionary<string, object>
+                firedEvents["SocketAccepted"] = new Dictionary<string, object>
                 {
                     { "ListenerHashCode", data.ListenerHashCode },
                     { "SocketHashCode", data.SocketHashCode },
@@ -681,7 +681,7 @@ namespace TraceEventTests.Parsers
 
             parser.ConnectionPoolMiss += delegate (Multidata42TemplateATraceData data)
             {
-                firedEvents[3321] = new Dictionary<string, object>
+                firedEvents["ConnectionPoolMiss"] = new Dictionary<string, object>
                 {
                     { "PoolKey", data.PoolKey },
                     { "busy", data.busy },
@@ -691,7 +691,7 @@ namespace TraceEventTests.Parsers
 
             parser.DispatchFormatterDeserializeRequestStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3322] = new Dictionary<string, object>
+                firedEvents["DispatchFormatterDeserializeRequestStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -699,7 +699,7 @@ namespace TraceEventTests.Parsers
 
             parser.DispatchFormatterDeserializeRequestStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3323] = new Dictionary<string, object>
+                firedEvents["DispatchFormatterDeserializeRequestStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -707,7 +707,7 @@ namespace TraceEventTests.Parsers
 
             parser.DispatchFormatterSerializeReplyStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3324] = new Dictionary<string, object>
+                firedEvents["DispatchFormatterSerializeReplyStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -715,7 +715,7 @@ namespace TraceEventTests.Parsers
 
             parser.DispatchFormatterSerializeReplyStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3325] = new Dictionary<string, object>
+                firedEvents["DispatchFormatterSerializeReplyStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -723,7 +723,7 @@ namespace TraceEventTests.Parsers
 
             parser.ClientFormatterSerializeRequestStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3326] = new Dictionary<string, object>
+                firedEvents["ClientFormatterSerializeRequestStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -731,7 +731,7 @@ namespace TraceEventTests.Parsers
 
             parser.ClientFormatterSerializeRequestStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3327] = new Dictionary<string, object>
+                firedEvents["ClientFormatterSerializeRequestStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -739,7 +739,7 @@ namespace TraceEventTests.Parsers
 
             parser.ClientFormatterDeserializeReplyStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3328] = new Dictionary<string, object>
+                firedEvents["ClientFormatterDeserializeReplyStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -747,7 +747,7 @@ namespace TraceEventTests.Parsers
 
             parser.ClientFormatterDeserializeReplyStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3329] = new Dictionary<string, object>
+                firedEvents["ClientFormatterDeserializeReplyStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -755,7 +755,7 @@ namespace TraceEventTests.Parsers
 
             parser.SecurityNegotiationStart += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3330] = new Dictionary<string, object>
+                firedEvents["SecurityNegotiationStart"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -763,7 +763,7 @@ namespace TraceEventTests.Parsers
 
             parser.SecurityNegotiationStop += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3331] = new Dictionary<string, object>
+                firedEvents["SecurityNegotiationStop"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -771,7 +771,7 @@ namespace TraceEventTests.Parsers
 
             parser.SecurityTokenProviderOpened += delegate (OneStringsTemplateATraceData data)
             {
-                firedEvents[3332] = new Dictionary<string, object>
+                firedEvents["SecurityTokenProviderOpened"] = new Dictionary<string, object>
                 {
                     { "AppDomain", data.AppDomain },
                 };
@@ -781,192 +781,192 @@ namespace TraceEventTests.Parsers
         // =====================================================================
         // Validate_Chunk06 — asserts all 38 events fired with correct payloads.
         // =====================================================================
-        private void Validate_Chunk06(Dictionary<int, Dictionary<string, object>> firedEvents)
+        private void Validate_Chunk06(Dictionary<string, Dictionary<string, object>> firedEvents)
         {
             // EVENT:2024|InternalCacheMetadataStart|Multidata19TemplateA
-            Assert.True(firedEvents.ContainsKey(2024), "Event 2024 (InternalCacheMetadataStart) did not fire.");
-            Assert.Equal(TestString(2024, "id"), firedEvents[2024]["id"]);
-            Assert.Equal(TestString(2024, "AppDomain"), firedEvents[2024]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InternalCacheMetadataStart"), "Event InternalCacheMetadataStart did not fire.");
+            Assert.Equal(TestString(2024, "id"), firedEvents["InternalCacheMetadataStart"]["id"]);
+            Assert.Equal(TestString(2024, "AppDomain"), firedEvents["InternalCacheMetadataStart"]["AppDomain"]);
 
             // EVENT:2025|InternalCacheMetadataStop|Multidata19TemplateA
-            Assert.True(firedEvents.ContainsKey(2025), "Event 2025 (InternalCacheMetadataStop) did not fire.");
-            Assert.Equal(TestString(2025, "id"), firedEvents[2025]["id"]);
-            Assert.Equal(TestString(2025, "AppDomain"), firedEvents[2025]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("InternalCacheMetadataStop"), "Event InternalCacheMetadataStop did not fire.");
+            Assert.Equal(TestString(2025, "id"), firedEvents["InternalCacheMetadataStop"]["id"]);
+            Assert.Equal(TestString(2025, "AppDomain"), firedEvents["InternalCacheMetadataStop"]["AppDomain"]);
 
             // EVENT:2026|CompileVbExpressionStart|Multidata20TemplateA
-            Assert.True(firedEvents.ContainsKey(2026), "Event 2026 (CompileVbExpressionStart) did not fire.");
-            Assert.Equal(TestString(2026, "expr"), firedEvents[2026]["expr"]);
-            Assert.Equal(TestString(2026, "AppDomain"), firedEvents[2026]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("CompileVbExpressionStart"), "Event CompileVbExpressionStart did not fire.");
+            Assert.Equal(TestString(2026, "expr"), firedEvents["CompileVbExpressionStart"]["expr"]);
+            Assert.Equal(TestString(2026, "AppDomain"), firedEvents["CompileVbExpressionStart"]["AppDomain"]);
 
             // EVENT:2027|CacheRootMetadataStart|Multidata21TemplateA
-            Assert.True(firedEvents.ContainsKey(2027), "Event 2027 (CacheRootMetadataStart) did not fire.");
-            Assert.Equal(TestString(2027, "activityName"), firedEvents[2027]["activityName"]);
-            Assert.Equal(TestString(2027, "AppDomain"), firedEvents[2027]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("CacheRootMetadataStart"), "Event CacheRootMetadataStart did not fire.");
+            Assert.Equal(TestString(2027, "activityName"), firedEvents["CacheRootMetadataStart"]["activityName"]);
+            Assert.Equal(TestString(2027, "AppDomain"), firedEvents["CacheRootMetadataStart"]["AppDomain"]);
 
             // EVENT:2028|CacheRootMetadataStop|Multidata21TemplateA
-            Assert.True(firedEvents.ContainsKey(2028), "Event 2028 (CacheRootMetadataStop) did not fire.");
-            Assert.Equal(TestString(2028, "activityName"), firedEvents[2028]["activityName"]);
-            Assert.Equal(TestString(2028, "AppDomain"), firedEvents[2028]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("CacheRootMetadataStop"), "Event CacheRootMetadataStop did not fire.");
+            Assert.Equal(TestString(2028, "activityName"), firedEvents["CacheRootMetadataStop"]["activityName"]);
+            Assert.Equal(TestString(2028, "AppDomain"), firedEvents["CacheRootMetadataStop"]["AppDomain"]);
 
             // EVENT:2029|CompileVbExpressionStop|OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(2029), "Event 2029 (CompileVbExpressionStop) did not fire.");
-            Assert.Equal(TestString(2029, "AppDomain"), firedEvents[2029]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("CompileVbExpressionStop"), "Event CompileVbExpressionStop did not fire.");
+            Assert.Equal(TestString(2029, "AppDomain"), firedEvents["CompileVbExpressionStop"]["AppDomain"]);
 
             // EVENT:2576|TryCatchExceptionFromTry|ThreeStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(2576), "Event 2576 (TryCatchExceptionFromTry) did not fire.");
-            Assert.Equal(TestString(2576, "data1"), firedEvents[2576]["data1"]);
-            Assert.Equal(TestString(2576, "data2"), firedEvents[2576]["data2"]);
-            Assert.Equal(TestString(2576, "AppDomain"), firedEvents[2576]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TryCatchExceptionFromTry"), "Event TryCatchExceptionFromTry did not fire.");
+            Assert.Equal(TestString(2576, "data1"), firedEvents["TryCatchExceptionFromTry"]["data1"]);
+            Assert.Equal(TestString(2576, "data2"), firedEvents["TryCatchExceptionFromTry"]["data2"]);
+            Assert.Equal(TestString(2576, "AppDomain"), firedEvents["TryCatchExceptionFromTry"]["AppDomain"]);
 
             // EVENT:2577|TryCatchExceptionDuringCancelation|TwoStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(2577), "Event 2577 (TryCatchExceptionDuringCancelation) did not fire.");
-            Assert.Equal(TestString(2577, "data1"), firedEvents[2577]["data1"]);
-            Assert.Equal(TestString(2577, "AppDomain"), firedEvents[2577]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TryCatchExceptionDuringCancelation"), "Event TryCatchExceptionDuringCancelation did not fire.");
+            Assert.Equal(TestString(2577, "data1"), firedEvents["TryCatchExceptionDuringCancelation"]["data1"]);
+            Assert.Equal(TestString(2577, "AppDomain"), firedEvents["TryCatchExceptionDuringCancelation"]["AppDomain"]);
 
             // EVENT:2578|TryCatchExceptionFromCatchOrFinally|TwoStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(2578), "Event 2578 (TryCatchExceptionFromCatchOrFinally) did not fire.");
-            Assert.Equal(TestString(2578, "data1"), firedEvents[2578]["data1"]);
-            Assert.Equal(TestString(2578, "AppDomain"), firedEvents[2578]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("TryCatchExceptionFromCatchOrFinally"), "Event TryCatchExceptionFromCatchOrFinally did not fire.");
+            Assert.Equal(TestString(2578, "data1"), firedEvents["TryCatchExceptionFromCatchOrFinally"]["data1"]);
+            Assert.Equal(TestString(2578, "AppDomain"), firedEvents["TryCatchExceptionFromCatchOrFinally"]["AppDomain"]);
 
             // EVENT:3300|ReceiveContextCompleteFailed|Multidata33TemplateA
-            Assert.True(firedEvents.ContainsKey(3300), "Event 3300 (ReceiveContextCompleteFailed) did not fire.");
-            Assert.Equal(TestString(3300, "TypeName"), firedEvents[3300]["TypeName"]);
-            Assert.Equal(TestString(3300, "AppDomain"), firedEvents[3300]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ReceiveContextCompleteFailed"), "Event ReceiveContextCompleteFailed did not fire.");
+            Assert.Equal(TestString(3300, "TypeName"), firedEvents["ReceiveContextCompleteFailed"]["TypeName"]);
+            Assert.Equal(TestString(3300, "AppDomain"), firedEvents["ReceiveContextCompleteFailed"]["AppDomain"]);
 
             // EVENT:3301|ReceiveContextAbandonFailed|Multidata33TemplateA
-            Assert.True(firedEvents.ContainsKey(3301), "Event 3301 (ReceiveContextAbandonFailed) did not fire.");
-            Assert.Equal(TestString(3301, "TypeName"), firedEvents[3301]["TypeName"]);
-            Assert.Equal(TestString(3301, "AppDomain"), firedEvents[3301]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ReceiveContextAbandonFailed"), "Event ReceiveContextAbandonFailed did not fire.");
+            Assert.Equal(TestString(3301, "TypeName"), firedEvents["ReceiveContextAbandonFailed"]["TypeName"]);
+            Assert.Equal(TestString(3301, "AppDomain"), firedEvents["ReceiveContextAbandonFailed"]["AppDomain"]);
 
             // EVENT:3302|ReceiveContextFaulted|TwoStringsTemplateSA
-            Assert.True(firedEvents.ContainsKey(3302), "Event 3302 (ReceiveContextFaulted) did not fire.");
-            Assert.Equal(TestString(3302, "EventSource"), firedEvents[3302]["EventSource"]);
-            Assert.Equal(TestString(3302, "AppDomain"), firedEvents[3302]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ReceiveContextFaulted"), "Event ReceiveContextFaulted did not fire.");
+            Assert.Equal(TestString(3302, "EventSource"), firedEvents["ReceiveContextFaulted"]["EventSource"]);
+            Assert.Equal(TestString(3302, "AppDomain"), firedEvents["ReceiveContextFaulted"]["AppDomain"]);
 
             // EVENT:3303|ReceiveContextAbandonWithException|Multidata34TemplateA
-            Assert.True(firedEvents.ContainsKey(3303), "Event 3303 (ReceiveContextAbandonWithException) did not fire.");
-            Assert.Equal(TestString(3303, "TypeName"), firedEvents[3303]["TypeName"]);
-            Assert.Equal(TestString(3303, "ExceptionToString"), firedEvents[3303]["ExceptionToString"]);
-            Assert.Equal(TestString(3303, "AppDomain"), firedEvents[3303]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ReceiveContextAbandonWithException"), "Event ReceiveContextAbandonWithException did not fire.");
+            Assert.Equal(TestString(3303, "TypeName"), firedEvents["ReceiveContextAbandonWithException"]["TypeName"]);
+            Assert.Equal(TestString(3303, "ExceptionToString"), firedEvents["ReceiveContextAbandonWithException"]["ExceptionToString"]);
+            Assert.Equal(TestString(3303, "AppDomain"), firedEvents["ReceiveContextAbandonWithException"]["AppDomain"]);
 
             // EVENT:3305|ClientBaseCachedChannelFactoryCount|Multidata35TemplateSA
-            Assert.True(firedEvents.ContainsKey(3305), "Event 3305 (ClientBaseCachedChannelFactoryCount) did not fire.");
-            Assert.Equal(TestInt32(3305, 0), firedEvents[3305]["Count"]);
-            Assert.Equal(TestInt32(3305, 1), firedEvents[3305]["MaxNum"]);
-            Assert.Equal(TestString(3305, "EventSource"), firedEvents[3305]["EventSource"]);
-            Assert.Equal(TestString(3305, "AppDomain"), firedEvents[3305]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ClientBaseCachedChannelFactoryCount"), "Event ClientBaseCachedChannelFactoryCount did not fire.");
+            Assert.Equal(TestInt32(3305, 0), firedEvents["ClientBaseCachedChannelFactoryCount"]["Count"]);
+            Assert.Equal(TestInt32(3305, 1), firedEvents["ClientBaseCachedChannelFactoryCount"]["MaxNum"]);
+            Assert.Equal(TestString(3305, "EventSource"), firedEvents["ClientBaseCachedChannelFactoryCount"]["EventSource"]);
+            Assert.Equal(TestString(3305, "AppDomain"), firedEvents["ClientBaseCachedChannelFactoryCount"]["AppDomain"]);
 
             // EVENT:3306|ClientBaseChannelFactoryAgedOutofCache|Multidata36TemplateSA
-            Assert.True(firedEvents.ContainsKey(3306), "Event 3306 (ClientBaseChannelFactoryAgedOutofCache) did not fire.");
-            Assert.Equal(TestInt32(3306, 0), firedEvents[3306]["Count"]);
-            Assert.Equal(TestString(3306, "EventSource"), firedEvents[3306]["EventSource"]);
-            Assert.Equal(TestString(3306, "AppDomain"), firedEvents[3306]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ClientBaseChannelFactoryAgedOutofCache"), "Event ClientBaseChannelFactoryAgedOutofCache did not fire.");
+            Assert.Equal(TestInt32(3306, 0), firedEvents["ClientBaseChannelFactoryAgedOutofCache"]["Count"]);
+            Assert.Equal(TestString(3306, "EventSource"), firedEvents["ClientBaseChannelFactoryAgedOutofCache"]["EventSource"]);
+            Assert.Equal(TestString(3306, "AppDomain"), firedEvents["ClientBaseChannelFactoryAgedOutofCache"]["AppDomain"]);
 
             // EVENT:3307|ClientBaseChannelFactoryCacheHit|TwoStringsTemplateSA
-            Assert.True(firedEvents.ContainsKey(3307), "Event 3307 (ClientBaseChannelFactoryCacheHit) did not fire.");
-            Assert.Equal(TestString(3307, "EventSource"), firedEvents[3307]["EventSource"]);
-            Assert.Equal(TestString(3307, "AppDomain"), firedEvents[3307]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ClientBaseChannelFactoryCacheHit"), "Event ClientBaseChannelFactoryCacheHit did not fire.");
+            Assert.Equal(TestString(3307, "EventSource"), firedEvents["ClientBaseChannelFactoryCacheHit"]["EventSource"]);
+            Assert.Equal(TestString(3307, "AppDomain"), firedEvents["ClientBaseChannelFactoryCacheHit"]["AppDomain"]);
 
             // EVENT:3308|ClientBaseUsingLocalChannelFactory|TwoStringsTemplateSA
-            Assert.True(firedEvents.ContainsKey(3308), "Event 3308 (ClientBaseUsingLocalChannelFactory) did not fire.");
-            Assert.Equal(TestString(3308, "EventSource"), firedEvents[3308]["EventSource"]);
-            Assert.Equal(TestString(3308, "AppDomain"), firedEvents[3308]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ClientBaseUsingLocalChannelFactory"), "Event ClientBaseUsingLocalChannelFactory did not fire.");
+            Assert.Equal(TestString(3308, "EventSource"), firedEvents["ClientBaseUsingLocalChannelFactory"]["EventSource"]);
+            Assert.Equal(TestString(3308, "AppDomain"), firedEvents["ClientBaseUsingLocalChannelFactory"]["AppDomain"]);
 
             // EVENT:3309|QueryCompositionExecuted|Multidata37TemplateSA
-            Assert.True(firedEvents.ContainsKey(3309), "Event 3309 (QueryCompositionExecuted) did not fire.");
-            Assert.Equal(TestString(3309, "TypeName"), firedEvents[3309]["TypeName"]);
-            Assert.Equal(TestString(3309, "Uri"), firedEvents[3309]["Uri"]);
-            Assert.Equal(TestString(3309, "EventSource"), firedEvents[3309]["EventSource"]);
-            Assert.Equal(TestString(3309, "AppDomain"), firedEvents[3309]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("QueryCompositionExecuted"), "Event QueryCompositionExecuted did not fire.");
+            Assert.Equal(TestString(3309, "TypeName"), firedEvents["QueryCompositionExecuted"]["TypeName"]);
+            Assert.Equal(TestString(3309, "Uri"), firedEvents["QueryCompositionExecuted"]["Uri"]);
+            Assert.Equal(TestString(3309, "EventSource"), firedEvents["QueryCompositionExecuted"]["EventSource"]);
+            Assert.Equal(TestString(3309, "AppDomain"), firedEvents["QueryCompositionExecuted"]["AppDomain"]);
 
             // EVENT:3310|DispatchFailed|Multidata38TemplateHA
-            Assert.True(firedEvents.ContainsKey(3310), "Event 3310 (DispatchFailed) did not fire.");
-            Assert.Equal(TestString(3310, "OperationName"), firedEvents[3310]["OperationName"]);
-            Assert.Equal(TestString(3310, "HostReference"), firedEvents[3310]["HostReference"]);
-            Assert.Equal(TestString(3310, "AppDomain"), firedEvents[3310]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DispatchFailed"), "Event DispatchFailed did not fire.");
+            Assert.Equal(TestString(3310, "OperationName"), firedEvents["DispatchFailed"]["OperationName"]);
+            Assert.Equal(TestString(3310, "HostReference"), firedEvents["DispatchFailed"]["HostReference"]);
+            Assert.Equal(TestString(3310, "AppDomain"), firedEvents["DispatchFailed"]["AppDomain"]);
 
             // EVENT:3311|DispatchSuccessful|Multidata38TemplateHA
-            Assert.True(firedEvents.ContainsKey(3311), "Event 3311 (DispatchSuccessful) did not fire.");
-            Assert.Equal(TestString(3311, "OperationName"), firedEvents[3311]["OperationName"]);
-            Assert.Equal(TestString(3311, "HostReference"), firedEvents[3311]["HostReference"]);
-            Assert.Equal(TestString(3311, "AppDomain"), firedEvents[3311]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DispatchSuccessful"), "Event DispatchSuccessful did not fire.");
+            Assert.Equal(TestString(3311, "OperationName"), firedEvents["DispatchSuccessful"]["OperationName"]);
+            Assert.Equal(TestString(3311, "HostReference"), firedEvents["DispatchSuccessful"]["HostReference"]);
+            Assert.Equal(TestString(3311, "AppDomain"), firedEvents["DispatchSuccessful"]["AppDomain"]);
 
             // EVENT:3312|MessageReadByEncoder|Multidata39TemplateSA
-            Assert.True(firedEvents.ContainsKey(3312), "Event 3312 (MessageReadByEncoder) did not fire.");
-            Assert.Equal(TestInt32(3312, 0), firedEvents[3312]["Size"]);
-            Assert.Equal(TestString(3312, "EventSource"), firedEvents[3312]["EventSource"]);
-            Assert.Equal(TestString(3312, "AppDomain"), firedEvents[3312]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("MessageReadByEncoder"), "Event MessageReadByEncoder did not fire.");
+            Assert.Equal(TestInt32(3312, 0), firedEvents["MessageReadByEncoder"]["Size"]);
+            Assert.Equal(TestString(3312, "EventSource"), firedEvents["MessageReadByEncoder"]["EventSource"]);
+            Assert.Equal(TestString(3312, "AppDomain"), firedEvents["MessageReadByEncoder"]["AppDomain"]);
 
             // EVENT:3313|MessageWrittenByEncoder|Multidata39TemplateSA
-            Assert.True(firedEvents.ContainsKey(3313), "Event 3313 (MessageWrittenByEncoder) did not fire.");
-            Assert.Equal(TestInt32(3313, 0), firedEvents[3313]["Size"]);
-            Assert.Equal(TestString(3313, "EventSource"), firedEvents[3313]["EventSource"]);
-            Assert.Equal(TestString(3313, "AppDomain"), firedEvents[3313]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("MessageWrittenByEncoder"), "Event MessageWrittenByEncoder did not fire.");
+            Assert.Equal(TestInt32(3313, 0), firedEvents["MessageWrittenByEncoder"]["Size"]);
+            Assert.Equal(TestString(3313, "EventSource"), firedEvents["MessageWrittenByEncoder"]["EventSource"]);
+            Assert.Equal(TestString(3313, "AppDomain"), firedEvents["MessageWrittenByEncoder"]["AppDomain"]);
 
             // EVENT:3314|SessionIdleTimeout|Multidata40TemplateA
-            Assert.True(firedEvents.ContainsKey(3314), "Event 3314 (SessionIdleTimeout) did not fire.");
-            Assert.Equal(TestString(3314, "RemoteAddress"), firedEvents[3314]["RemoteAddress"]);
-            Assert.Equal(TestString(3314, "AppDomain"), firedEvents[3314]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SessionIdleTimeout"), "Event SessionIdleTimeout did not fire.");
+            Assert.Equal(TestString(3314, "RemoteAddress"), firedEvents["SessionIdleTimeout"]["RemoteAddress"]);
+            Assert.Equal(TestString(3314, "AppDomain"), firedEvents["SessionIdleTimeout"]["AppDomain"]);
 
             // EVENT:3319|SocketAcceptEnqueued|OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3319), "Event 3319 (SocketAcceptEnqueued) did not fire.");
-            Assert.Equal(TestString(3319, "AppDomain"), firedEvents[3319]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SocketAcceptEnqueued"), "Event SocketAcceptEnqueued did not fire.");
+            Assert.Equal(TestString(3319, "AppDomain"), firedEvents["SocketAcceptEnqueued"]["AppDomain"]);
 
             // EVENT:3320|SocketAccepted|Multidata41TemplateA
-            Assert.True(firedEvents.ContainsKey(3320), "Event 3320 (SocketAccepted) did not fire.");
-            Assert.Equal(TestInt32(3320, 0), firedEvents[3320]["ListenerHashCode"]);
-            Assert.Equal(TestInt32(3320, 1), firedEvents[3320]["SocketHashCode"]);
-            Assert.Equal(TestString(3320, "AppDomain"), firedEvents[3320]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SocketAccepted"), "Event SocketAccepted did not fire.");
+            Assert.Equal(TestInt32(3320, 0), firedEvents["SocketAccepted"]["ListenerHashCode"]);
+            Assert.Equal(TestInt32(3320, 1), firedEvents["SocketAccepted"]["SocketHashCode"]);
+            Assert.Equal(TestString(3320, "AppDomain"), firedEvents["SocketAccepted"]["AppDomain"]);
 
             // EVENT:3321|ConnectionPoolMiss|Multidata42TemplateA
-            Assert.True(firedEvents.ContainsKey(3321), "Event 3321 (ConnectionPoolMiss) did not fire.");
-            Assert.Equal(TestString(3321, "PoolKey"), firedEvents[3321]["PoolKey"]);
-            Assert.Equal(TestInt32(3321, 1), firedEvents[3321]["busy"]);
-            Assert.Equal(TestString(3321, "AppDomain"), firedEvents[3321]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ConnectionPoolMiss"), "Event ConnectionPoolMiss did not fire.");
+            Assert.Equal(TestString(3321, "PoolKey"), firedEvents["ConnectionPoolMiss"]["PoolKey"]);
+            Assert.Equal(TestInt32(3321, 1), firedEvents["ConnectionPoolMiss"]["busy"]);
+            Assert.Equal(TestString(3321, "AppDomain"), firedEvents["ConnectionPoolMiss"]["AppDomain"]);
 
             // EVENT:3322|DispatchFormatterDeserializeRequestStart|OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3322), "Event 3322 (DispatchFormatterDeserializeRequestStart) did not fire.");
-            Assert.Equal(TestString(3322, "AppDomain"), firedEvents[3322]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DispatchFormatterDeserializeRequestStart"), "Event DispatchFormatterDeserializeRequestStart did not fire.");
+            Assert.Equal(TestString(3322, "AppDomain"), firedEvents["DispatchFormatterDeserializeRequestStart"]["AppDomain"]);
 
             // EVENT:3323|DispatchFormatterDeserializeRequestStop|OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3323), "Event 3323 (DispatchFormatterDeserializeRequestStop) did not fire.");
-            Assert.Equal(TestString(3323, "AppDomain"), firedEvents[3323]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DispatchFormatterDeserializeRequestStop"), "Event DispatchFormatterDeserializeRequestStop did not fire.");
+            Assert.Equal(TestString(3323, "AppDomain"), firedEvents["DispatchFormatterDeserializeRequestStop"]["AppDomain"]);
 
             // EVENT:3324|DispatchFormatterSerializeReplyStart|OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3324), "Event 3324 (DispatchFormatterSerializeReplyStart) did not fire.");
-            Assert.Equal(TestString(3324, "AppDomain"), firedEvents[3324]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DispatchFormatterSerializeReplyStart"), "Event DispatchFormatterSerializeReplyStart did not fire.");
+            Assert.Equal(TestString(3324, "AppDomain"), firedEvents["DispatchFormatterSerializeReplyStart"]["AppDomain"]);
 
             // EVENT:3325|DispatchFormatterSerializeReplyStop|OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3325), "Event 3325 (DispatchFormatterSerializeReplyStop) did not fire.");
-            Assert.Equal(TestString(3325, "AppDomain"), firedEvents[3325]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("DispatchFormatterSerializeReplyStop"), "Event DispatchFormatterSerializeReplyStop did not fire.");
+            Assert.Equal(TestString(3325, "AppDomain"), firedEvents["DispatchFormatterSerializeReplyStop"]["AppDomain"]);
 
             // EVENT:3326|ClientFormatterSerializeRequestStart|OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3326), "Event 3326 (ClientFormatterSerializeRequestStart) did not fire.");
-            Assert.Equal(TestString(3326, "AppDomain"), firedEvents[3326]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ClientFormatterSerializeRequestStart"), "Event ClientFormatterSerializeRequestStart did not fire.");
+            Assert.Equal(TestString(3326, "AppDomain"), firedEvents["ClientFormatterSerializeRequestStart"]["AppDomain"]);
 
             // EVENT:3327|ClientFormatterSerializeRequestStop|OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3327), "Event 3327 (ClientFormatterSerializeRequestStop) did not fire.");
-            Assert.Equal(TestString(3327, "AppDomain"), firedEvents[3327]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ClientFormatterSerializeRequestStop"), "Event ClientFormatterSerializeRequestStop did not fire.");
+            Assert.Equal(TestString(3327, "AppDomain"), firedEvents["ClientFormatterSerializeRequestStop"]["AppDomain"]);
 
             // EVENT:3328|ClientFormatterDeserializeReplyStart|OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3328), "Event 3328 (ClientFormatterDeserializeReplyStart) did not fire.");
-            Assert.Equal(TestString(3328, "AppDomain"), firedEvents[3328]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ClientFormatterDeserializeReplyStart"), "Event ClientFormatterDeserializeReplyStart did not fire.");
+            Assert.Equal(TestString(3328, "AppDomain"), firedEvents["ClientFormatterDeserializeReplyStart"]["AppDomain"]);
 
             // EVENT:3329|ClientFormatterDeserializeReplyStop|OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3329), "Event 3329 (ClientFormatterDeserializeReplyStop) did not fire.");
-            Assert.Equal(TestString(3329, "AppDomain"), firedEvents[3329]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("ClientFormatterDeserializeReplyStop"), "Event ClientFormatterDeserializeReplyStop did not fire.");
+            Assert.Equal(TestString(3329, "AppDomain"), firedEvents["ClientFormatterDeserializeReplyStop"]["AppDomain"]);
 
             // EVENT:3330|SecurityNegotiationStart|OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3330), "Event 3330 (SecurityNegotiationStart) did not fire.");
-            Assert.Equal(TestString(3330, "AppDomain"), firedEvents[3330]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SecurityNegotiationStart"), "Event SecurityNegotiationStart did not fire.");
+            Assert.Equal(TestString(3330, "AppDomain"), firedEvents["SecurityNegotiationStart"]["AppDomain"]);
 
             // EVENT:3331|SecurityNegotiationStop|OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3331), "Event 3331 (SecurityNegotiationStop) did not fire.");
-            Assert.Equal(TestString(3331, "AppDomain"), firedEvents[3331]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SecurityNegotiationStop"), "Event SecurityNegotiationStop did not fire.");
+            Assert.Equal(TestString(3331, "AppDomain"), firedEvents["SecurityNegotiationStop"]["AppDomain"]);
 
             // EVENT:3332|SecurityTokenProviderOpened|OneStringsTemplateA
-            Assert.True(firedEvents.ContainsKey(3332), "Event 3332 (SecurityTokenProviderOpened) did not fire.");
-            Assert.Equal(TestString(3332, "AppDomain"), firedEvents[3332]["AppDomain"]);
+            Assert.True(firedEvents.ContainsKey("SecurityTokenProviderOpened"), "Event SecurityTokenProviderOpened did not fire.");
+            Assert.Equal(TestString(3332, "AppDomain"), firedEvents["SecurityTokenProviderOpened"]["AppDomain"]);
         }
     }
 }
