@@ -64,7 +64,12 @@ namespace PerfViewTests.Dialogs
                     };
                     safetyTimer.Start();
 
-                    app.Dispatcher.BeginInvoke((Action)(() =>
+                    // Use Dispatcher.CurrentDispatcher (the STA thread's dispatcher being
+                    // pumped by Dispatcher.Run) rather than app.Dispatcher, because if
+                    // Application.Current was reused from a prior test, app.Dispatcher may
+                    // belong to a different thread.
+                    var currentDispatcher = Dispatcher.CurrentDispatcher;
+                    currentDispatcher.BeginInvoke((Action)(() =>
                     {
                         try
                         {
@@ -86,8 +91,8 @@ namespace PerfViewTests.Dialogs
                                 }
                                 finally
                                 {
-                                    app.Dispatcher.BeginInvoke(
-                                        (Action)(() => Dispatcher.CurrentDispatcher.InvokeShutdown()));
+                                    currentDispatcher.BeginInvoke(
+                                        (Action)(() => currentDispatcher.InvokeShutdown()));
                                 }
                             });
                         }
