@@ -481,8 +481,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
         [JsonPropertyName("build_id")]
         public string BuildId { get; set; }
         [JsonPropertyName("p_vaddr")]
+        [JsonConverter(typeof(HexUInt64Converter))]
         public ulong VirtualAddress { get; set; }
         [JsonPropertyName("p_offset")]
+        [JsonConverter(typeof(HexUInt64Converter))]
         public ulong FileOffset { get; set; }
     }
 
@@ -533,6 +535,45 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
         public override void Write(Utf8JsonWriter writer, ProcessMappingSymbolMetadata value, JsonSerializerOptions options)
         {
             JsonSerializer.Serialize(writer, value, value.GetType(), options);
+        }
+    }
+
+    internal class HexUInt64Converter : JsonConverter<ulong>
+    {
+        public override ulong Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.Number)
+            {
+                return reader.GetUInt64();
+            }
+
+            if (reader.TokenType != JsonTokenType.String)
+            {
+                throw new JsonException($"Cannot convert token of type {reader.TokenType} to ulong.");
+            }
+
+            string text = reader.GetString();
+            if (text != null && text.StartsWith("0x", StringComparison.OrdinalIgnoreCase) && text.Length > 2)
+            {
+                if (ulong.TryParse(text.Substring(2), System.Globalization.NumberStyles.HexNumber,
+                    System.Globalization.CultureInfo.InvariantCulture, out ulong hexValue))
+                {
+                    return hexValue;
+                }
+            }
+
+            if (ulong.TryParse(text, System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture, out ulong value))
+            {
+                return value;
+            }
+
+            throw new JsonException($"Cannot convert \"{text}\" to ulong.");
+        }
+
+        public override void Write(Utf8JsonWriter writer, ulong value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue("0x" + value.ToString("X"));
         }
     }
 }

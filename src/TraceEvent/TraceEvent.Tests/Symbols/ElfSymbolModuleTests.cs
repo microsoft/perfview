@@ -1,6 +1,8 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing.Etlx;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -443,6 +445,81 @@ namespace TraceEventTests
             Assert.Equal(string.Empty, module.FindNameForRva(0x1000, ref symbolStart));
         }
 
+        /// <summary>
+        /// Regression test for the libcoreclr.so bug where p_vaddr != p_offset.
+        /// In the real trace: p_vaddr=0x1c9060, p_offset=0x1c8060, pageSize=4096.
+        /// The Linux loader maps at PAGE_DOWN(p_vaddr) = 0x1c9000.
+        /// The caller (OpenElfSymbolsForModuleFile) page-aligns pVaddr and passes
+        /// the actual pOffset. LookupSymbolsForModule adds pOffset to
+        /// (address - ImageBase) so that the lookup RVA matches the ElfSymbolModule
+        /// formula (st_value - alignedPVaddr) + pOffset.
+        /// </summary>
+        [Fact]
+        public void NonPageAlignedPVaddr_CallerPageAligns()
+        {
+            // These values are from a real libcoreclr.so trace.
+            ulong rawPVaddr = 0x1c9060;
+            ulong rawPOffset = 0x1c8060;
+            // Note: rawPOffset (0x1c8060) differs from rawPVaddr — this is the root cause of the bug.
+            ulong pageSize = 4096;
+
+            // The caller (OpenElfSymbolsForModuleFile) page-aligns before passing to ElfSymbolModule.
+            ulong alignedPVaddr = rawPVaddr & ~(pageSize - 1); // 0x1c9000
+            Assert.Equal((ulong)0x1c9000, alignedPVaddr);
+
+            // Symbol at virtual address 0x1D0000 (inside the executable segment).
+            ulong symbolAddr = 0x1D0000;
+            ulong symbolSize = 0x100;
+
+            var builder = new ElfBuilder()
+                .Set64Bit(true)
+                .SetPTLoad(alignedPVaddr, rawPOffset)
+                .AddFunction("coreclr_execute_assembly", symbolAddr, symbolSize);
+
+            byte[] data = builder.Build();
+
+            // The caller passes (alignedPVaddr, rawPOffset) — the actual p_offset.
+            var module = CreateModule(data, alignedPVaddr, rawPOffset);
+
+            uint symbolStart = 0;
+            // The ElfSymbolModule RVA formula: (st_value - pVaddr) + pOffset
+            // = (0x1D0000 - 0x1c9000) + 0x1c8060 = 0x7000 + 0x1c8060 = 0x1CF060
+            // The caller (LookupSymbolsForModule) computes: (address - ImageBase) + pOffset
+            // = (st_value - alignedPVaddr) + pOffset — same value.
+            uint lookupRva = (uint)(symbolAddr - alignedPVaddr + rawPOffset);
+            Assert.Equal("coreclr_execute_assembly", module.FindNameForRva(lookupRva, ref symbolStart));
+            Assert.Equal(lookupRva, symbolStart);
+        }
+
+        /// <summary>
+        /// Verifies that ElfSymbolInfo.PageAlignedVirtualAddress correctly page-aligns p_vaddr.
+        /// </summary>
+        [Fact]
+        public void ElfSymbolInfo_PageAlignedVirtualAddress()
+        {
+            var info = new Microsoft.Diagnostics.Tracing.Etlx.ElfSymbolInfo();
+
+            // With page size set, non-aligned p_vaddr gets aligned.
+            info.VirtualAddress = 0x1c9060;
+            info.PageSize = 4096;
+            Assert.Equal((ulong)0x1c9000, info.PageAlignedVirtualAddress);
+
+            // Already-aligned p_vaddr stays the same.
+            info.VirtualAddress = 0x400000;
+            info.PageSize = 4096;
+            Assert.Equal((ulong)0x400000, info.PageAlignedVirtualAddress);
+
+            // PageSize=0 (unknown) returns raw VirtualAddress.
+            info.VirtualAddress = 0x1c9060;
+            info.PageSize = 0;
+            Assert.Equal((ulong)0x1c9060, info.PageAlignedVirtualAddress);
+
+            // 64K pages (ARM64).
+            info.VirtualAddress = 0x1c9060;
+            info.PageSize = 65536;
+            Assert.Equal((ulong)0x1c0000, info.PageAlignedVirtualAddress);
+        }
+
         #endregion
 
         #region Demangling Integration
@@ -632,6 +709,303 @@ namespace TraceEventTests
 
                 Assert.Equal(string.Empty, module.FindNameForRva(0x3000, ref symbolStart));
             });
+        }
+
+        #endregion
+
+        #region ReadBuildId
+
+        [Fact]
+        public void ReadBuildId_ValidElf64_ReturnsBuildId()
+        {
+            byte[] buildId = new byte[] { 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89,
+                                           0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89,
+                                           0xab, 0xcd, 0xef, 0x01 };
+            var builder = new ElfBuilder()
+                .Set64Bit(true)
+                .SetPTLoad(0x400000, 0)
+                .SetBuildId(buildId);
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadBuildId(path);
+                Assert.Equal("abcdef0123456789abcdef0123456789abcdef01", result);
+            });
+        }
+
+        [Fact]
+        public void ReadBuildId_ValidElf32_ReturnsBuildId()
+        {
+            byte[] buildId = new byte[] { 0xde, 0xad, 0xbe, 0xef };
+            var builder = new ElfBuilder()
+                .Set64Bit(false)
+                .SetPTLoad(0x400000, 0)
+                .SetBuildId(buildId);
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadBuildId(path);
+                Assert.Equal("deadbeef", result);
+            });
+        }
+
+        [Fact]
+        public void ReadBuildId_NoBuildId_ReturnsNull()
+        {
+            // ELF with no build-id note (no program headers).
+            var builder = new ElfBuilder()
+                .Set64Bit(true)
+                .SetPTLoad(0x400000, 0)
+                .AddFunction("test", 0x401000, 0x100);
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadBuildId(path);
+                Assert.Null(result);
+            });
+        }
+
+        [Fact]
+        public void ReadBuildId_NotElfFile_ReturnsNull()
+        {
+            byte[] data = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadBuildId(path);
+                Assert.Null(result);
+            });
+        }
+
+        [Fact]
+        public void ReadBuildId_EmptyFile_ReturnsNull()
+        {
+            RunWithTempFile(Array.Empty<byte>(), (path) =>
+            {
+                string result = ElfSymbolModule.ReadBuildId(path);
+                Assert.Null(result);
+            });
+        }
+
+        [Fact]
+        public void ReadBuildId_NonExistentFile_ReturnsNull()
+        {
+            string result = ElfSymbolModule.ReadBuildId(@"C:\nonexistent\path\fake.so");
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void ReadBuildId_BigEndianElf64_ReturnsBuildId()
+        {
+            byte[] buildId = new byte[] { 0x11, 0x22, 0x33, 0x44 };
+            var builder = new ElfBuilder()
+                .Set64Bit(true)
+                .SetBigEndian(true)
+                .SetPTLoad(0x400000, 0)
+                .SetBuildId(buildId);
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadBuildId(path);
+                Assert.Equal("11223344", result);
+            });
+        }
+
+        #endregion
+
+        #region ReadDebugLink
+
+        [Fact]
+        public void ReadDebugLink_WithDebugLink_ReturnsFilename()
+        {
+            var builder = new ElfBuilder()
+                .Set64Bit(true)
+                .SetPTLoad(0x400000, 0)
+                .SetDebugLink("libcoreclr.so.dbg");
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadDebugLink(path);
+                Assert.Equal("libcoreclr.so.dbg", result);
+            });
+        }
+
+        [Fact]
+        public void ReadDebugLink_WithDebugLinkElf32_ReturnsFilename()
+        {
+            var builder = new ElfBuilder()
+                .Set64Bit(false)
+                .SetPTLoad(0x400000, 0)
+                .SetDebugLink("mylib.debug");
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadDebugLink(path);
+                Assert.Equal("mylib.debug", result);
+            });
+        }
+
+        [Fact]
+        public void ReadDebugLink_WithDebugLinkAndBuildId_ReturnsBoth()
+        {
+            byte[] buildId = new byte[] { 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89,
+                                           0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89,
+                                           0xab, 0xcd, 0xef, 0x01 };
+            var builder = new ElfBuilder()
+                .Set64Bit(true)
+                .SetPTLoad(0x400000, 0)
+                .SetBuildId(buildId)
+                .SetDebugLink("libcoreclr.so.dbg");
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string debugLink = ElfSymbolModule.ReadDebugLink(path);
+                Assert.Equal("libcoreclr.so.dbg", debugLink);
+
+                string buildIdResult = ElfSymbolModule.ReadBuildId(path);
+                Assert.Equal("abcdef0123456789abcdef0123456789abcdef01", buildIdResult);
+            });
+        }
+
+        [Fact]
+        public void ReadDebugLink_WithoutDebugLink_ReturnsNull()
+        {
+            var builder = new ElfBuilder()
+                .Set64Bit(true)
+                .SetPTLoad(0x400000, 0)
+                .AddFunction("test", 0x401000, 0x100);
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadDebugLink(path);
+                Assert.Null(result);
+            });
+        }
+
+        [Fact]
+        public void ReadDebugLink_InvalidFile_ReturnsNull()
+        {
+            byte[] data = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadDebugLink(path);
+                Assert.Null(result);
+            });
+        }
+
+        [Fact]
+        public void ReadDebugLink_NonExistentFile_ReturnsNull()
+        {
+            string result = ElfSymbolModule.ReadDebugLink(@"C:\nonexistent\path\fake.so");
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void ReadDebugLink_BigEndianElf64_ReturnsFilename()
+        {
+            var builder = new ElfBuilder()
+                .Set64Bit(true)
+                .SetBigEndian(true)
+                .SetPTLoad(0x400000, 0)
+                .SetDebugLink("libtest.so.debug");
+
+            byte[] data = builder.Build();
+            RunWithTempFile(data, (path) =>
+            {
+                string result = ElfSymbolModule.ReadDebugLink(path);
+                Assert.Equal("libtest.so.debug", result);
+            });
+        }
+
+        #endregion
+
+        #region MatchOrInit tests
+
+        [Fact]
+        public void MatchOrInitPE_WhenNull_CreatesPESymbolInfo()
+        {
+            var moduleFile = new TraceModuleFile(null, 0, (ModuleFileIndex)0);
+            var pe = moduleFile.MatchOrInitPE();
+            Assert.NotNull(pe);
+            Assert.IsType<PESymbolInfo>(pe);
+            Assert.Equal(ModuleBinaryFormat.PE, moduleFile.BinaryFormat);
+        }
+
+        [Fact]
+        public void MatchOrInitPE_WhenAlreadyPE_ReturnsSame()
+        {
+            var moduleFile = new TraceModuleFile(null, 0, (ModuleFileIndex)0);
+            var pe1 = moduleFile.MatchOrInitPE();
+            var pe2 = moduleFile.MatchOrInitPE();
+            Assert.Same(pe1, pe2);
+        }
+
+        [Fact]
+        public void MatchOrInitPE_WhenElf_ReturnsNull()
+        {
+            var moduleFile = new TraceModuleFile(null, 0, (ModuleFileIndex)0);
+            moduleFile.MatchOrInitElf(); // Set as ELF first
+
+            // Suppress Debug.Assert so we can verify the return value.
+            var listeners = new TraceListener[Trace.Listeners.Count];
+            Trace.Listeners.CopyTo(listeners, 0);
+            Trace.Listeners.Clear();
+            try
+            {
+                var pe = moduleFile.MatchOrInitPE();
+                Assert.Null(pe);
+            }
+            finally
+            {
+                Trace.Listeners.AddRange(listeners);
+            }
+        }
+
+        [Fact]
+        public void MatchOrInitElf_WhenNull_CreatesElfSymbolInfo()
+        {
+            var moduleFile = new TraceModuleFile(null, 0, (ModuleFileIndex)0);
+            var elf = moduleFile.MatchOrInitElf();
+            Assert.NotNull(elf);
+            Assert.IsType<ElfSymbolInfo>(elf);
+            Assert.Equal(ModuleBinaryFormat.ELF, moduleFile.BinaryFormat);
+        }
+
+        [Fact]
+        public void MatchOrInitElf_WhenAlreadyElf_ReturnsSame()
+        {
+            var moduleFile = new TraceModuleFile(null, 0, (ModuleFileIndex)0);
+            var elf1 = moduleFile.MatchOrInitElf();
+            var elf2 = moduleFile.MatchOrInitElf();
+            Assert.Same(elf1, elf2);
+        }
+
+        [Fact]
+        public void MatchOrInitElf_WhenPE_ReturnsNull()
+        {
+            var moduleFile = new TraceModuleFile(null, 0, (ModuleFileIndex)0);
+            moduleFile.MatchOrInitPE(); // Set as PE first
+
+            // Suppress Debug.Assert so we can verify the return value.
+            var listeners = new TraceListener[Trace.Listeners.Count];
+            Trace.Listeners.CopyTo(listeners, 0);
+            Trace.Listeners.Clear();
+            try
+            {
+                var elf = moduleFile.MatchOrInitElf();
+                Assert.Null(elf);
+            }
+            finally
+            {
+                Trace.Listeners.AddRange(listeners);
+            }
         }
 
         #endregion
