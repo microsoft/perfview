@@ -36,7 +36,8 @@ namespace PerfViewTests.Dialogs
             {
                 try
                 {
-                    var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+                    var app = Application.Current ?? new Application();
+                    app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
                     RegisterMinimalThemeResources(app);
 
                     // Catch unhandled dispatcher exceptions so they don't silently hang.
@@ -68,7 +69,7 @@ namespace PerfViewTests.Dialogs
                         try
                         {
                             // Part 1: Call directly from the UI thread (dispatch is a no-op).
-                            uiResult = XamlMessageBox.Show("Test message", "UI_Test", MessageBoxButton.OK);
+                            uiResult = XamlMessageBox.Show("Test message", "XamlMBTest_UI", MessageBoxButton.OK);
 
                             // Part 2: Call from a background thread — before the fix for issue #2300,
                             // this would throw InvalidOperationException ("The calling thread must be STA")
@@ -77,7 +78,7 @@ namespace PerfViewTests.Dialogs
                             {
                                 try
                                 {
-                                    bgResult = XamlMessageBox.Show("Test message", "BG_Test", MessageBoxButton.YesNo);
+                                    bgResult = XamlMessageBox.Show("Test message", "XamlMBTest_BG", MessageBoxButton.YesNo);
                                 }
                                 catch (Exception ex)
                                 {
@@ -115,6 +116,8 @@ namespace PerfViewTests.Dialogs
             Assert.Equal(MessageBoxResult.None, bgResult);
         }
 
+        private static bool s_autoCloseHandlerRegistered;
+
         /// <summary>
         /// Registers a class-level handler that auto-closes any <see cref="Window"/> with
         /// a test caption as soon as it finishes loading. The handler fires inside
@@ -122,13 +125,19 @@ namespace PerfViewTests.Dialogs
         /// </summary>
         private static void RegisterAutoCloseHandler()
         {
+            if (s_autoCloseHandlerRegistered)
+            {
+                return;
+            }
+
+            s_autoCloseHandlerRegistered = true;
             EventManager.RegisterClassHandler(
                 typeof(Window),
                 FrameworkElement.LoadedEvent,
                 new RoutedEventHandler((sender, args) =>
                 {
                     Window w = sender as Window;
-                    if (w != null && (w.Title == "UI_Test" || w.Title == "BG_Test"))
+                    if (w != null && w.Title != null && w.Title.StartsWith("XamlMBTest_"))
                     {
                         w.Dispatcher.BeginInvoke((Action)(() => w.Close()));
                     }
@@ -141,9 +150,9 @@ namespace PerfViewTests.Dialogs
         /// </summary>
         private static void RegisterMinimalThemeResources(Application app)
         {
-            app.Resources.Add("CustomToolWindowStyle", new Style(typeof(Window)));
-            app.Resources.Add("ControlDarkerBackground", new SolidColorBrush(Colors.LightGray));
-            app.Resources.Add("ControlDefaultBorderBrush", new SolidColorBrush(Colors.Gray));
+            app.Resources["CustomToolWindowStyle"] = new Style(typeof(Window));
+            app.Resources["ControlDarkerBackground"] = new SolidColorBrush(Colors.LightGray);
+            app.Resources["ControlDefaultBorderBrush"] = new SolidColorBrush(Colors.Gray);
         }
     }
 }

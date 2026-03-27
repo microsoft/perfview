@@ -50,14 +50,10 @@ public static class XamlMessageBox
         // Auto-dispatch to match the old System.Windows.MessageBox behavior of working from
         // any thread. This fixes callers like the SecurityCheck delegate which is invoked from
         // background threads during symbol resolution (see issue #2300).
-        if (Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+        var dispatcher = owner?.Dispatcher ?? Application.Current?.Dispatcher;
+        if (dispatcher is not null && !dispatcher.CheckAccess())
         {
-            MessageBoxResult result = defaultResult;
-            dispatcher.Invoke(() =>
-            {
-                result = Show(owner, message, caption, buttons, icon, defaultResult);
-            });
-            return result;
+            return dispatcher.Invoke(() => Show(owner, message, caption, buttons, icon, defaultResult));
         }
 
         MessageBoxWindow window = new(message, caption, buttons, icon, defaultResult);
