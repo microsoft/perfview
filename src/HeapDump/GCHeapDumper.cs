@@ -907,8 +907,8 @@ public class GCHeapDumper
             m_log.WriteLine("We are retrying the dump so we scale the max by {0} to the value {1}", retryScale, m_maxNodeCount);
         }
 
-        // We assume that object on average are 8 object pointers.      
-        int estimatedObjectCount = (int)(totalGCSize / ((uint)(8 * IntPtr.Size)));
+        // We assume that object on average are 8 object pointers.
+        int estimatedObjectCount = (totalGCSize > (8 * (ulong)IntPtr.Size * (ulong)Int32.MaxValue)) ? Int32.MaxValue : (int)(totalGCSize / ((uint)(8 * IntPtr.Size)));
         m_log.WriteLine("Estimated number of objects = {0:n0}", estimatedObjectCount);
 
         // We force the node count to be this max node count if we are within a factor of 2.  
