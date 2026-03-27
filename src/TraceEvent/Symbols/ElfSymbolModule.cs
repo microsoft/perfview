@@ -116,82 +116,40 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    // Read the ELF header.
+                    // Read and validate the ELF header.
                     byte[] header = new byte[Unsafe.SizeOf<Elf64_Ehdr>()];
                     int headerRead = ReadFully(stream, header, 0, header.Length);
-                    if (headerRead < EI_NIDENT)
+                    if (!TryReadElfHeader(header, headerRead, out var hdr, "ReadBuildId"))
                     {
-                        Debug.WriteLine("ReadBuildId: File too small.");
                         return null;
                     }
 
-                    if (header[0] != ElfMagic0 || header[1] != ElfMagic1 || header[2] != ElfMagic2 || header[3] != ElfMagic3)
-                    {
-                        Debug.WriteLine("ReadBuildId: Invalid ELF magic.");
-                        return null;
-                    }
+                    bool is64Bit = hdr.Is64Bit;
+                    bool bigEndian = hdr.BigEndian;
 
-                    byte eiClass = header[EI_CLASS];
-                    byte eiData = header[EI_DATA];
-                    bool is64Bit = (eiClass == ElfClass64);
-                    bool bigEndian = (eiData == ElfDataMsb);
-
-                    if (eiClass != ElfClass32 && eiClass != ElfClass64)
-                    {
-                        Debug.WriteLine("ReadBuildId: Unknown ELF class " + eiClass + ".");
-                        return null;
-                    }
-
-                    int ehSize = is64Bit ? Unsafe.SizeOf<Elf64_Ehdr>() : Unsafe.SizeOf<Elf32_Ehdr>();
-                    if (headerRead < ehSize)
-                    {
-                        Debug.WriteLine("ReadBuildId: Header too small.");
-                        return null;
-                    }
-
-                    // Extract program header fields from the typed struct.
-                    ulong ePhoff;
-                    ushort ePhentsize, ePhnum;
-                    if (is64Bit)
-                    {
-                        var ehdr = ReadStruct<Elf64_Ehdr>(header, 0);
-                        if (bigEndian) ehdr.SwapEndian();
-                        ePhoff = ehdr.e_phoff;
-                        ePhentsize = ehdr.e_phentsize;
-                        ePhnum = ehdr.e_phnum;
-                    }
-                    else
-                    {
-                        var ehdr = ReadStruct<Elf32_Ehdr>(header, 0);
-                        if (bigEndian) ehdr.SwapEndian();
-                        ePhoff = ehdr.e_phoff;
-                        ePhentsize = ehdr.e_phentsize;
-                        ePhnum = ehdr.e_phnum;
-                    }
-
-                    if (ePhoff == 0 || ePhentsize == 0 || ePhnum == 0)
+                    if (hdr.PhOffset == 0 || hdr.PhEntrySize == 0 || hdr.PhCount == 0)
                     {
                         Debug.WriteLine("ReadBuildId: No program headers found.");
                         return null;
                     }
 
                     int minPhentsize = is64Bit ? Unsafe.SizeOf<Elf64_Phdr>() : Unsafe.SizeOf<Elf32_Phdr>();
-                    if (ePhentsize < minPhentsize)
+                    if (hdr.PhEntrySize < minPhentsize)
                     {
-                        Debug.WriteLine("ReadBuildId: ePhentsize too small: " + ePhentsize);
+                        Debug.WriteLine("ReadBuildId: ePhentsize too small: " + hdr.PhEntrySize);
                         return null;
                     }
 
-                    if (ePhnum > MaxProgramHeaderCount)
+                    if (hdr.PhCount > MaxProgramHeaderCount)
                     {
-                        Debug.WriteLine("ReadBuildId: Program header count too large: " + ePhnum);
+                        Debug.WriteLine("ReadBuildId: Program header count too large: " + hdr.PhCount);
                         return null;
                     }
 
                     // Read all program headers in one bulk read.
-                    int phTableSize = ePhnum * ePhentsize;
+                    int phTableSize = hdr.PhCount * hdr.PhEntrySize;
                     byte[] phTable = new byte[phTableSize];
-                    stream.Seek((long)ePhoff, SeekOrigin.Begin);
+                    stream.Seek((long)hdr.PhOffset, SeekOrigin.Begin);
                     if (ReadFully(stream, phTable, 0, phTableSize) < phTableSize)
                     {
                         Debug.WriteLine("ReadBuildId: Could not read program headers.");
@@ -199,28 +157,10 @@ namespace Microsoft.Diagnostics.Symbols
                     }
 
                     // Iterate program headers looking for PT_NOTE segments.
-                    for (int i = 0; i < ePhnum; i++)
+                    for (int i = 0; i < hdr.PhCount; i++)
                     {
-                        int phPos = i * ePhentsize;
-
-                        uint pType;
-                        ulong pOffset, pFilesz;
-                        if (is64Bit)
-                        {
-                            var phdr = ReadStruct<Elf64_Phdr>(phTable, phPos);
-                            if (bigEndian) phdr.SwapEndian();
-                            pType = phdr.p_type;
-                            pOffset = phdr.p_offset;
-                            pFilesz = phdr.p_filesz;
-                        }
-                        else
-                        {
-                            var phdr = ReadStruct<Elf32_Phdr>(phTable, phPos);
-                            if (bigEndian) phdr.SwapEndian();
-                            pType = phdr.p_type;
-                            pOffset = phdr.p_offset;
-                            pFilesz = phdr.p_filesz;
-                        }
+                        int phPos = i * hdr.PhEntrySize;
+                        ReadProgramHeader(phTable, phPos, is64Bit, bigEndian, out uint pType, out ulong pOffset, out ulong pFilesz, out _);
 
                         if (pType != PT_NOTE)
                         {
@@ -273,90 +213,46 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    // Read the ELF header.
+                    // Read and validate the ELF header.
                     byte[] header = new byte[Unsafe.SizeOf<Elf64_Ehdr>()];
                     int headerRead = ReadFully(stream, header, 0, header.Length);
-                    if (headerRead < EI_NIDENT)
+                    if (!TryReadElfHeader(header, headerRead, out var hdr, "ReadDebugLink"))
                     {
-                        Debug.WriteLine("ReadDebugLink: File too small.");
                         return null;
                     }
 
-                    if (header[0] != ElfMagic0 || header[1] != ElfMagic1 || header[2] != ElfMagic2 || header[3] != ElfMagic3)
-                    {
-                        Debug.WriteLine("ReadDebugLink: Invalid ELF magic.");
-                        return null;
-                    }
+                    bool is64Bit = hdr.Is64Bit;
+                    bool bigEndian = hdr.BigEndian;
 
-                    byte eiClass = header[EI_CLASS];
-                    byte eiData = header[EI_DATA];
-                    bool is64Bit = (eiClass == ElfClass64);
-                    bool bigEndian = (eiData == ElfDataMsb);
-
-                    if (eiClass != ElfClass32 && eiClass != ElfClass64)
-                    {
-                        Debug.WriteLine("ReadDebugLink: Unknown ELF class " + eiClass + ".");
-                        return null;
-                    }
-
-                    int ehSize = is64Bit ? Unsafe.SizeOf<Elf64_Ehdr>() : Unsafe.SizeOf<Elf32_Ehdr>();
-                    if (headerRead < ehSize)
-                    {
-                        Debug.WriteLine("ReadDebugLink: Header too small.");
-                        return null;
-                    }
-
-                    // Extract section header fields from the typed struct.
-                    ulong eShoff;
-                    ushort eShentsize, eShnum, eShstrndx;
-                    if (is64Bit)
-                    {
-                        var ehdr = ReadStruct<Elf64_Ehdr>(header, 0);
-                        if (bigEndian) ehdr.SwapEndian();
-                        eShoff = ehdr.e_shoff;
-                        eShentsize = ehdr.e_shentsize;
-                        eShnum = ehdr.e_shnum;
-                        eShstrndx = ehdr.e_shstrndx;
-                    }
-                    else
-                    {
-                        var ehdr = ReadStruct<Elf32_Ehdr>(header, 0);
-                        if (bigEndian) ehdr.SwapEndian();
-                        eShoff = ehdr.e_shoff;
-                        eShentsize = ehdr.e_shentsize;
-                        eShnum = ehdr.e_shnum;
-                        eShstrndx = ehdr.e_shstrndx;
-                    }
-
-                    if (eShoff == 0 || eShentsize == 0 || eShnum == 0)
+                    if (hdr.ShOffset == 0 || hdr.ShEntrySize == 0 || hdr.ShCount == 0)
                     {
                         Debug.WriteLine("ReadDebugLink: No section headers found.");
                         return null;
                     }
 
                     int minShentsize = is64Bit ? Unsafe.SizeOf<Elf64_Shdr>() : Unsafe.SizeOf<Elf32_Shdr>();
-                    if (eShentsize < minShentsize || eShentsize > MaxShentsize)
+                    if (hdr.ShEntrySize < minShentsize || hdr.ShEntrySize > MaxShentsize)
                     {
-                        Debug.WriteLine("ReadDebugLink: Invalid section header entry size: " + eShentsize);
+                        Debug.WriteLine("ReadDebugLink: Invalid section header entry size: " + hdr.ShEntrySize);
                         return null;
                     }
 
-                    if (eShnum > MaxSectionCount)
+                    if (hdr.ShCount > MaxSectionCount)
                     {
-                        Debug.WriteLine("ReadDebugLink: Section count too large: " + eShnum);
+                        Debug.WriteLine("ReadDebugLink: Section count too large: " + hdr.ShCount);
                         return null;
                     }
 
-                    if (eShstrndx >= eShnum)
+                    if (hdr.ShStrIndex >= hdr.ShCount)
                     {
-                        Debug.WriteLine("ReadDebugLink: Invalid shstrndx: " + eShstrndx);
+                        Debug.WriteLine("ReadDebugLink: Invalid shstrndx: " + hdr.ShStrIndex);
                         return null;
                     }
 
                     // Read all section headers in one bulk read.
-                    int shTableSize = eShnum * eShentsize;
+                    int shTableSize = hdr.ShCount * hdr.ShEntrySize;
                     byte[] shTable = new byte[shTableSize];
-                    stream.Seek((long)eShoff, SeekOrigin.Begin);
+                    stream.Seek((long)hdr.ShOffset, SeekOrigin.Begin);
                     if (ReadFully(stream, shTable, 0, shTableSize) < shTableSize)
                     {
                         Debug.WriteLine("ReadDebugLink: Could not read section headers.");
@@ -364,8 +260,8 @@ namespace Microsoft.Diagnostics.Symbols
                     }
 
                     // Read the section name string table (shstrtab).
-                    int shstrPos = eShstrndx * eShentsize;
-                    ReadSectionHeader(shTable, shstrPos, is64Bit, bigEndian, out _, out ulong shstrOffset, out ulong shstrSize, out _, out _);
+                    int shstrPos = hdr.ShStrIndex * hdr.ShEntrySize;
+                    ReadSectionHeader(shTable, shstrPos, is64Bit, bigEndian, out _, out _, out ulong shstrOffset, out ulong shstrSize, out _, out _);
 
                     if (shstrSize == 0 || shstrSize > MaxShstrtabSize)
                     {
@@ -382,27 +278,10 @@ namespace Microsoft.Diagnostics.Symbols
                     }
 
                     // Iterate sections looking for .gnu_debuglink by name.
-                    for (int i = 0; i < eShnum; i++)
+                    for (int i = 0; i < hdr.ShCount; i++)
                     {
-                        int shPos = i * eShentsize;
-                        uint shName;
-                        ulong secOffset, secSize;
-                        if (is64Bit)
-                        {
-                            var shdr = ReadStruct<Elf64_Shdr>(shTable, shPos);
-                            if (bigEndian) shdr.SwapEndian();
-                            shName = shdr.sh_name;
-                            secOffset = shdr.sh_offset;
-                            secSize = shdr.sh_size;
-                        }
-                        else
-                        {
-                            var shdr = ReadStruct<Elf32_Shdr>(shTable, shPos);
-                            if (bigEndian) shdr.SwapEndian();
-                            shName = shdr.sh_name;
-                            secOffset = shdr.sh_offset;
-                            secSize = shdr.sh_size;
-                        }
+                        int shPos = i * hdr.ShEntrySize;
+                        ReadSectionHeader(shTable, shPos, is64Bit, bigEndian, out uint shName, out _, out ulong secOffset, out ulong secSize, out _, out _);
 
                         if (shName >= shstrtab.Length)
                         {
@@ -460,15 +339,100 @@ namespace Microsoft.Diagnostics.Symbols
         private static readonly byte[] GnuDebugLinkName = Encoding.UTF8.GetBytes(".gnu_debuglink");
 
         /// <summary>
+        /// Common fields extracted from an ELF header (Ehdr) after validation.
+        /// </summary>
+        private struct ElfHeaderInfo
+        {
+            public bool Is64Bit;
+            public bool BigEndian;
+            // Program header table.
+            public ulong PhOffset;
+            public ushort PhEntrySize;
+            public ushort PhCount;
+            // Section header table.
+            public ulong ShOffset;
+            public ushort ShEntrySize;
+            public ushort ShCount;
+            public ushort ShStrIndex;
+        }
+
+        /// <summary>
+        /// Validates an ELF header buffer and extracts common fields into <paramref name="info"/>.
+        /// The caller must have already read at least <c>Unsafe.SizeOf&lt;Elf64_Ehdr&gt;()</c> bytes
+        /// into <paramref name="header"/>.
+        /// </summary>
+        /// <returns>True if the header is valid; false otherwise (with a Debug.WriteLine message).</returns>
+        private static bool TryReadElfHeader(byte[] header, int headerRead, out ElfHeaderInfo info, string callerName)
+        {
+            info = default;
+
+            if (headerRead < EI_NIDENT)
+            {
+                Debug.WriteLine(callerName + ": File too small.");
+                return false;
+            }
+
+            if (header[0] != ElfMagic0 || header[1] != ElfMagic1 || header[2] != ElfMagic2 || header[3] != ElfMagic3)
+            {
+                Debug.WriteLine(callerName + ": Invalid ELF magic.");
+                return false;
+            }
+
+            byte eiClass = header[EI_CLASS];
+            byte eiData = header[EI_DATA];
+            info.Is64Bit = (eiClass == ElfClass64);
+            info.BigEndian = (eiData == ElfDataMsb);
+
+            if (eiClass != ElfClass32 && eiClass != ElfClass64)
+            {
+                Debug.WriteLine(callerName + ": Unknown ELF class " + eiClass + ".");
+                return false;
+            }
+
+            int ehSize = info.Is64Bit ? Unsafe.SizeOf<Elf64_Ehdr>() : Unsafe.SizeOf<Elf32_Ehdr>();
+            if (headerRead < ehSize)
+            {
+                Debug.WriteLine(callerName + ": Header too small.");
+                return false;
+            }
+
+            // Extract all commonly needed fields from the typed header.
+            if (info.Is64Bit)
+            {
+                var ehdr = ReadStruct<Elf64_Ehdr>(header, 0, info.BigEndian);
+                info.PhOffset = ehdr.e_phoff;
+                info.PhEntrySize = ehdr.e_phentsize;
+                info.PhCount = ehdr.e_phnum;
+                info.ShOffset = ehdr.e_shoff;
+                info.ShEntrySize = ehdr.e_shentsize;
+                info.ShCount = ehdr.e_shnum;
+                info.ShStrIndex = ehdr.e_shstrndx;
+            }
+            else
+            {
+                var ehdr = ReadStruct<Elf32_Ehdr>(header, 0, info.BigEndian);
+                info.PhOffset = ehdr.e_phoff;
+                info.PhEntrySize = ehdr.e_phentsize;
+                info.PhCount = ehdr.e_phnum;
+                info.ShOffset = ehdr.e_shoff;
+                info.ShEntrySize = ehdr.e_shentsize;
+                info.ShCount = ehdr.e_shnum;
+                info.ShStrIndex = ehdr.e_shstrndx;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Reads section header fields from a byte array at the given position.
         /// </summary>
         private static void ReadSectionHeader(byte[] shTable, int shPos, bool is64Bit, bool bigEndian,
-            out uint shType, out ulong offset, out ulong size, out uint link, out ulong entsize)
+            out uint name, out uint shType, out ulong offset, out ulong size, out uint link, out ulong entsize)
         {
             if (is64Bit)
             {
-                var shdr = ReadStruct<Elf64_Shdr>(shTable, shPos);
-                if (bigEndian) shdr.SwapEndian();
+                var shdr = ReadStruct<Elf64_Shdr>(shTable, shPos, bigEndian);
+                name = shdr.sh_name;
                 shType = shdr.sh_type;
                 offset = shdr.sh_offset;
                 size = shdr.sh_size;
@@ -477,13 +441,61 @@ namespace Microsoft.Diagnostics.Symbols
             }
             else
             {
-                var shdr = ReadStruct<Elf32_Shdr>(shTable, shPos);
-                if (bigEndian) shdr.SwapEndian();
+                var shdr = ReadStruct<Elf32_Shdr>(shTable, shPos, bigEndian);
+                name = shdr.sh_name;
                 shType = shdr.sh_type;
                 offset = shdr.sh_offset;
                 size = shdr.sh_size;
                 link = shdr.sh_link;
                 entsize = shdr.sh_entsize;
+            }
+        }
+
+        /// <summary>
+        /// Reads program header fields from a byte array at the given position.
+        /// </summary>
+        private static void ReadProgramHeader(byte[] phTable, int phPos, bool is64Bit, bool bigEndian,
+            out uint pType, out ulong pOffset, out ulong pFilesz, out ulong pVaddr)
+        {
+            if (is64Bit)
+            {
+                var phdr = ReadStruct<Elf64_Phdr>(phTable, phPos, bigEndian);
+                pType = phdr.p_type;
+                pOffset = phdr.p_offset;
+                pFilesz = phdr.p_filesz;
+                pVaddr = phdr.p_vaddr;
+            }
+            else
+            {
+                var phdr = ReadStruct<Elf32_Phdr>(phTable, phPos, bigEndian);
+                pType = phdr.p_type;
+                pOffset = phdr.p_offset;
+                pFilesz = phdr.p_filesz;
+                pVaddr = phdr.p_vaddr;
+            }
+        }
+
+        /// <summary>
+        /// Reads symbol table entry fields from a byte array at the given position.
+        /// </summary>
+        private static void ReadSymbolEntry(byte[] symData, int pos, bool is64Bit, bool bigEndian,
+            out uint stName, out byte stInfo, out ulong stValue, out ulong stSize)
+        {
+            if (is64Bit)
+            {
+                var sym = ReadStruct<Elf64_Sym>(symData, pos, bigEndian);
+                stName = sym.st_name;
+                stInfo = sym.st_info;
+                stValue = sym.st_value;
+                stSize = sym.st_size;
+            }
+            else
+            {
+                var sym = ReadStruct<Elf32_Sym>(symData, pos, bigEndian);
+                stName = sym.st_name;
+                stInfo = sym.st_info;
+                stValue = sym.st_value;
+                stSize = sym.st_size;
             }
         }
 
@@ -567,9 +579,19 @@ namespace Microsoft.Diagnostics.Symbols
         // (e_phoff, sh_type, st_value, etc.) for easy cross-reference with the spec.
         // MemoryMarshal.Read<T> is used to read them from byte arrays — the same pattern as PEFile.cs.
         // For big-endian ELF files, SwapEndian() reverses each multi-byte field after reading.
+        // All structs implement IElfStruct so ReadStruct<T> can handle endian swapping automatically.
+
+        /// <summary>
+        /// Implemented by all ELF binary structs so that <see cref="ReadStruct{T}"/> can
+        /// perform endian conversion in one place.
+        /// </summary>
+        private interface IElfStruct
+        {
+            void SwapEndian();
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct Elf64_Ehdr
+        private struct Elf64_Ehdr : IElfStruct
         {
             // e_ident[16]
             public byte ei_mag0, ei_mag1, ei_mag2, ei_mag3;
@@ -609,7 +631,7 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct Elf32_Ehdr
+        private struct Elf32_Ehdr : IElfStruct
         {
             // e_ident[16]
             public byte ei_mag0, ei_mag1, ei_mag2, ei_mag3;
@@ -650,7 +672,7 @@ namespace Microsoft.Diagnostics.Symbols
 
         // 64-bit: p_type(4), p_flags(4), p_offset(8), p_vaddr(8), p_paddr(8), p_filesz(8), p_memsz(8), p_align(8)
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct Elf64_Phdr
+        private struct Elf64_Phdr : IElfStruct
         {
             public uint p_type;
             public uint p_flags;
@@ -676,7 +698,7 @@ namespace Microsoft.Diagnostics.Symbols
 
         // 32-bit: p_type(4), p_offset(4), p_vaddr(4), p_paddr(4), p_filesz(4), p_memsz(4), p_flags(4), p_align(4)
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct Elf32_Phdr
+        private struct Elf32_Phdr : IElfStruct
         {
             public uint p_type;
             public uint p_offset;
@@ -701,7 +723,7 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct Elf64_Shdr
+        private struct Elf64_Shdr : IElfStruct
         {
             public uint sh_name;
             public uint sh_type;
@@ -730,7 +752,7 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct Elf32_Shdr
+        private struct Elf32_Shdr : IElfStruct
         {
             public uint sh_name;
             public uint sh_type;
@@ -760,7 +782,7 @@ namespace Microsoft.Diagnostics.Symbols
 
         // 64-bit: st_name(4), st_info(1), st_other(1), st_shndx(2), st_value(8), st_size(8) = 24 bytes
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct Elf64_Sym
+        private struct Elf64_Sym : IElfStruct
         {
             public uint st_name;
             public byte st_info;
@@ -780,7 +802,7 @@ namespace Microsoft.Diagnostics.Symbols
 
         // 32-bit: st_name(4), st_value(4), st_size(4), st_info(1), st_other(1), st_shndx(2) = 16 bytes
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct Elf32_Sym
+        private struct Elf32_Sym : IElfStruct
         {
             public uint st_name;
             public uint st_value;
@@ -799,7 +821,7 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct Elf_Nhdr
+        private struct Elf_Nhdr : IElfStruct
         {
             public uint n_namesz;
             public uint n_descsz;
@@ -815,12 +837,17 @@ namespace Microsoft.Diagnostics.Symbols
 
         /// <summary>
         /// Reads an ELF struct from a byte array at the given offset.
-        /// For little-endian ELF files the struct is ready to use. For big-endian, the caller
-        /// must call SwapEndian() on the returned value.
+        /// When <paramref name="bigEndian"/> is true, <see cref="IElfStruct.SwapEndian"/>
+        /// is called automatically before returning.
         /// </summary>
-        private static T ReadStruct<T>(byte[] data, int offset) where T : struct
+        private static T ReadStruct<T>(byte[] data, int offset, bool bigEndian) where T : struct, IElfStruct
         {
-            return MemoryMarshal.Read<T>(data.AsSpan(offset));
+            T value = MemoryMarshal.Read<T>(data.AsSpan(offset));
+            if (bigEndian)
+            {
+                value.SwapEndian();
+            }
+            return value;
         }
 
         #endregion
@@ -860,61 +887,18 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         private void ParseElf(Stream stream)
         {
-            // Read the ELF header.
+            // Read and validate the ELF header.
             byte[] header = new byte[Unsafe.SizeOf<Elf64_Ehdr>()];
             int headerRead = ReadFully(stream, header, 0, header.Length);
-            if (headerRead < EI_NIDENT)
-            {
-                Debug.WriteLine("ElfSymbolModule: File too small.");
-                return;
-            }
-
-            // Verify ELF magic bytes: 0x7f 'E' 'L' 'F'.
-            if (header[0] != ElfMagic0 || header[1] != ElfMagic1 || header[2] != ElfMagic2 || header[3] != ElfMagic3)
-            {
-                Debug.WriteLine("ElfSymbolModule: Invalid ELF magic.");
-                return;
-            }
-
-            byte eiClass = header[EI_CLASS];
-            byte eiData = header[EI_DATA];
-
-            m_is64Bit = (eiClass == ElfClass64);
-            m_bigEndian = (eiData == ElfDataMsb);
-
-            if (eiClass != ElfClass32 && eiClass != ElfClass64)
-            {
-                Debug.WriteLine("ElfSymbolModule: Unknown ELF class " + eiClass + ".");
-                return;
-            }
-
-            int ehSize = m_is64Bit ? Unsafe.SizeOf<Elf64_Ehdr>() : Unsafe.SizeOf<Elf32_Ehdr>();
-            if (headerRead < ehSize)
+            if (!TryReadElfHeader(header, headerRead, out var hdr, "ElfSymbolModule"))
             {
                 return;
             }
 
-            // Extract section header fields from the typed struct.
-            ulong eShoff;
-            ushort eShentsize, eShnum;
-            if (m_is64Bit)
-            {
-                var ehdr = ReadStruct<Elf64_Ehdr>(header, 0);
-                if (m_bigEndian) ehdr.SwapEndian();
-                eShoff = ehdr.e_shoff;
-                eShentsize = ehdr.e_shentsize;
-                eShnum = ehdr.e_shnum;
-            }
-            else
-            {
-                var ehdr = ReadStruct<Elf32_Ehdr>(header, 0);
-                if (m_bigEndian) ehdr.SwapEndian();
-                eShoff = ehdr.e_shoff;
-                eShentsize = ehdr.e_shentsize;
-                eShnum = ehdr.e_shnum;
-            }
+            m_is64Bit = hdr.Is64Bit;
+            m_bigEndian = hdr.BigEndian;
 
-            if (eShoff == 0 || eShentsize == 0)
+            if (hdr.ShOffset == 0 || hdr.ShEntrySize == 0)
             {
                 Debug.WriteLine("ElfSymbolModule: No section headers found.");
                 return;
@@ -924,34 +908,24 @@ namespace Microsoft.Diagnostics.Symbols
             // Reject values below the minimum struct size (would cause out-of-bounds reads)
             // and cap at 256 to guard against overflow in sectionCount * eShentsize.
             int minShentsize = m_is64Bit ? Unsafe.SizeOf<Elf64_Shdr>() : Unsafe.SizeOf<Elf32_Shdr>();
-            if (eShentsize < minShentsize || eShentsize > MaxShentsize)
+            if (hdr.ShEntrySize < minShentsize || hdr.ShEntrySize > MaxShentsize)
             {
-                Debug.WriteLine("ElfSymbolModule: Invalid section header entry size: " + eShentsize);
+                Debug.WriteLine("ElfSymbolModule: Invalid section header entry size: " + hdr.ShEntrySize);
                 return;
             }
 
             // Handle extended section count.
-            uint sectionCount = eShnum;
-            if (eShnum == 0)
+            uint sectionCount = hdr.ShCount;
+            if (hdr.ShCount == 0)
             {
-                byte[] firstSh = new byte[eShentsize];
-                stream.Seek((long)eShoff, SeekOrigin.Begin);
+                byte[] firstSh = new byte[hdr.ShEntrySize];
+                stream.Seek((long)hdr.ShOffset, SeekOrigin.Begin);
                 if (ReadFully(stream, firstSh, 0, firstSh.Length) < firstSh.Length)
                 {
                     return;
                 }
-                if (m_is64Bit)
-                {
-                    var firstShdr = ReadStruct<Elf64_Shdr>(firstSh, 0);
-                    if (m_bigEndian) firstShdr.SwapEndian();
-                    sectionCount = (uint)firstShdr.sh_size;
-                }
-                else
-                {
-                    var firstShdr = ReadStruct<Elf32_Shdr>(firstSh, 0);
-                    if (m_bigEndian) firstShdr.SwapEndian();
-                    sectionCount = firstShdr.sh_size;
-                }
+                ReadSectionHeader(firstSh, 0, m_is64Bit, m_bigEndian, out _, out _, out _, out ulong extSize, out _, out _);
+                sectionCount = (uint)extSize;
             }
 
             if (sectionCount == 0)
@@ -967,9 +941,9 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             // Read all section headers in one bulk read.
-            int shTableSize = (int)sectionCount * eShentsize;
+            int shTableSize = (int)sectionCount * hdr.ShEntrySize;
             byte[] shTable = new byte[shTableSize];
-            stream.Seek((long)eShoff, SeekOrigin.Begin);
+            stream.Seek((long)hdr.ShOffset, SeekOrigin.Begin);
             if (ReadFully(stream, shTable, 0, shTableSize) < shTableSize)
             {
                 return;
@@ -980,9 +954,9 @@ namespace Microsoft.Diagnostics.Symbols
             long totalSymbolCount = 0;
             for (uint i = 0; i < sectionCount; i++)
             {
-                int shPos = (int)i * eShentsize;
+                int shPos = (int)i * hdr.ShEntrySize;
                 ReadSectionHeader(shTable, shPos, m_is64Bit, m_bigEndian,
-                    out uint shType, out _, out ulong shSize, out uint shLink, out ulong shEntsize);
+                    out _, out uint shType, out _, out ulong shSize, out uint shLink, out ulong shEntsize);
 
                 if (shType != SHT_SYMTAB && shType != SHT_DYNSYM)
                 {
@@ -1000,9 +974,9 @@ namespace Microsoft.Diagnostics.Symbols
                     continue;
                 }
 
-                int strtabShPos = (int)shLink * eShentsize;
+                int strtabShPos = (int)shLink * hdr.ShEntrySize;
                 ReadSectionHeader(shTable, strtabShPos, m_is64Bit, m_bigEndian,
-                    out _, out _, out ulong strtabSize, out _, out _);
+                    out _, out _, out _, out ulong strtabSize, out _, out _);
                 totalStrtabSize += (long)strtabSize;
             }
 
@@ -1014,9 +988,9 @@ namespace Microsoft.Diagnostics.Symbols
             long strtabBaseOffset = 0;
             for (uint i = 0; i < sectionCount; i++)
             {
-                int shPos = (int)i * eShentsize;
+                int shPos = (int)i * hdr.ShEntrySize;
                 ReadSectionHeader(shTable, shPos, m_is64Bit, m_bigEndian,
-                    out uint shType, out ulong shOffset, out ulong shSize, out uint shLink, out ulong shEntsize);
+                    out _, out uint shType, out ulong shOffset, out ulong shSize, out uint shLink, out ulong shEntsize);
 
                 if (shType != SHT_SYMTAB && shType != SHT_DYNSYM)
                 {
@@ -1029,9 +1003,9 @@ namespace Microsoft.Diagnostics.Symbols
                     continue;
                 }
 
-                int strtabShPos = (int)shLink * eShentsize;
+                int strtabShPos = (int)shLink * hdr.ShEntrySize;
                 ReadSectionHeader(shTable, strtabShPos, m_is64Bit, m_bigEndian,
-                    out _, out ulong strtabOffset, out ulong strtabSize, out _, out _);
+                    out _, out _, out ulong strtabOffset, out ulong strtabSize, out _, out _);
 
                 if (strtabSize == 0)
                 {
@@ -1106,30 +1080,7 @@ namespace Microsoft.Diagnostics.Symbols
             for (long i = 0; i < count; i++)
             {
                 int pos = (int)(i * entsize);
-
-                uint stName;
-                byte stInfo;
-                ulong stValue;
-                ulong stSize;
-
-                if (m_is64Bit)
-                {
-                    var sym = ReadStruct<Elf64_Sym>(symData, pos);
-                    if (m_bigEndian) sym.SwapEndian();
-                    stName = sym.st_name;
-                    stInfo = sym.st_info;
-                    stValue = sym.st_value;
-                    stSize = sym.st_size;
-                }
-                else
-                {
-                    var sym = ReadStruct<Elf32_Sym>(symData, pos);
-                    if (m_bigEndian) sym.SwapEndian();
-                    stName = sym.st_name;
-                    stInfo = sym.st_info;
-                    stValue = sym.st_value;
-                    stSize = sym.st_size;
-                }
+                ReadSymbolEntry(symData, pos, m_is64Bit, m_bigEndian, out uint stName, out byte stInfo, out ulong stValue, out ulong stSize);
 
                 // Filter to STT_FUNC symbols with non-zero value and size.
                 if ((stInfo & STT_MASK) != STT_FUNC || stValue == 0 || stSize == 0)
@@ -1179,8 +1130,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             while (pos + nhdrSize <= length)
             {
-                var nhdr = ReadStruct<Elf_Nhdr>(noteData, pos);
-                if (bigEndian) nhdr.SwapEndian();
+                var nhdr = ReadStruct<Elf_Nhdr>(noteData, pos, bigEndian);
                 uint namesz = nhdr.n_namesz;
                 uint descsz = nhdr.n_descsz;
                 uint type = nhdr.n_type;
