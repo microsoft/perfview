@@ -413,6 +413,11 @@ namespace Microsoft.Diagnostics.Symbols
         /// <returns>The local file path to the downloaded symbol file, or null if not found.</returns>
         public string FindElfSymbolFilePath(string fileName, string buildId, string elfFilePath = null)
         {
+            if (fileName == null)
+            {
+                throw new ArgumentNullException(nameof(fileName));
+            }
+
             if (buildId == null)
             {
                 throw new ArgumentNullException(nameof(buildId));
