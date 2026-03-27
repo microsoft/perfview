@@ -46,6 +46,16 @@ public static class XamlMessageBox
     /// <inheritdoc cref="MessageBox.Show(Window, string, string, MessageBoxButton, MessageBoxImage, MessageBoxResult)"/>
     public static MessageBoxResult Show(Window owner, string message, string caption, MessageBoxButton buttons, MessageBoxImage icon, MessageBoxResult defaultResult)
     {
+        // XamlMessageBox uses a WPF window that must be created and shown on the UI thread.
+        // Auto-dispatch to match the old System.Windows.MessageBox behavior of working from
+        // any thread. This fixes callers like the SecurityCheck delegate which is invoked from
+        // background threads during symbol resolution (see issue #2300).
+        var dispatcher = owner?.Dispatcher ?? Application.Current?.Dispatcher;
+        if (dispatcher is not null && !dispatcher.CheckAccess())
+        {
+            return dispatcher.Invoke(() => Show(owner, message, caption, buttons, icon, defaultResult));
+        }
+
         MessageBoxWindow window = new(message, caption, buttons, icon, defaultResult);
         if (owner is not null)
         {
