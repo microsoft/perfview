@@ -32,7 +32,13 @@ namespace FastSerialization
         }
 
         public virtual long Length { get { return bytes.Count; } }
-        public virtual void Clear() { bytes = new SegmentedList<byte>(131_072); }
+        /// <summary>
+        /// Resets the stream to empty, preserving the pre-allocated buffer.
+        /// We set Count to 0 rather than creating a new SegmentedList so that the existing
+        /// segment allocations are reused. This avoids discarding potentially large pre-allocations
+        /// (up to ~1GB for 128M-node graphs) and the costly regrowth from scratch that follows.
+        /// </summary>
+        public virtual void Clear() { bytes.Count = 0; }
 
         public void Write(byte value)
         {
