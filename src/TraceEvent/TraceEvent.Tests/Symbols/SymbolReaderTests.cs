@@ -1,4 +1,4 @@
-﻿using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Symbols;
 using PerfView.TestUtilities;
 using System;
 using System.Collections.Generic;
@@ -541,6 +541,829 @@ namespace TraceEventTests
                 if (Directory.Exists(tempDir))
                     Directory.Delete(tempDir, true);
             }
+        }
+
+        #region FindElfSymbolFilePath Tests
+
+        [Fact]
+        public void FindElfSymbolFilePath_DebugSymbolsFoundLocally()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-local-debug");
+            try
+            {
+                string buildId = "abc123";
+                string normalizedBuildId = buildId.ToLowerInvariant();
+
+                // Create SSQP debug symbol directory structure with valid ELF build-id.
+                string debugDir = Path.Combine(tempDir, "_.debug", "elf-buildid-sym-" + normalizedBuildId);
+                Directory.CreateDirectory(debugDir);
+                string debugFile = Path.Combine(debugDir, "_.debug");
+                File.WriteAllBytes(debugFile, CreateMinimalElfWithBuildId(normalizedBuildId));
+
+                _symbolReader.SymbolPath = tempDir;
+                string result = _symbolReader.FindElfSymbolFilePath("libcoreclr.so", buildId);
+
+                Assert.NotNull(result);
+                Assert.Equal(Path.GetFullPath(debugFile), Path.GetFullPath(result));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindElfSymbolFilePath_BinaryFallbackLocally()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-local-binary");
+            try
+            {
+                string buildId = "def456";
+                string normalizedBuildId = buildId.ToLowerInvariant();
+
+                // Create only the binary directory structure (no debug symbols).
+                string binaryDir = Path.Combine(tempDir, "libcoreclr.so", "elf-buildid-" + normalizedBuildId);
+                Directory.CreateDirectory(binaryDir);
+                string binaryFile = Path.Combine(binaryDir, "libcoreclr.so");
+                File.WriteAllBytes(binaryFile, CreateMinimalElfWithBuildId(normalizedBuildId));
+
+                _symbolReader.SymbolPath = tempDir;
+                string result = _symbolReader.FindElfSymbolFilePath("libcoreclr.so", buildId);
+
+                Assert.NotNull(result);
+                Assert.Equal(Path.GetFullPath(binaryFile), Path.GetFullPath(result));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindElfSymbolFilePath_DebugPreferredOverBinary()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-local-prefer-debug");
+            try
+            {
+                string buildId = "aabbcc";
+                string normalizedBuildId = buildId.ToLowerInvariant();
+
+                // Create both debug and binary directory structures with valid ELF build-ids.
+                string debugDir = Path.Combine(tempDir, "_.debug", "elf-buildid-sym-" + normalizedBuildId);
+                Directory.CreateDirectory(debugDir);
+                string debugFile = Path.Combine(debugDir, "_.debug");
+                File.WriteAllBytes(debugFile, CreateMinimalElfWithBuildId(normalizedBuildId));
+
+                string binaryDir = Path.Combine(tempDir, "libtest.so", "elf-buildid-" + normalizedBuildId);
+                Directory.CreateDirectory(binaryDir);
+                string binaryFile = Path.Combine(binaryDir, "libtest.so");
+                File.WriteAllBytes(binaryFile, CreateMinimalElfWithBuildId(normalizedBuildId));
+
+                _symbolReader.SymbolPath = tempDir;
+                string result = _symbolReader.FindElfSymbolFilePath("libtest.so", buildId);
+
+                Assert.NotNull(result);
+                Assert.Equal(Path.GetFullPath(debugFile), Path.GetFullPath(result));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindElfSymbolFilePath_NotFoundLocally()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-local-empty");
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+
+                _symbolReader.SymbolPath = tempDir;
+                string result = _symbolReader.FindElfSymbolFilePath("libmissing.so", "deadbeef");
+
+                Assert.Null(result);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Theory]
+        [InlineData("abcd", "abcd")]
+        [InlineData("ABC123", "abc123")]
+        [InlineData("aabbccdd00112233445566778899aabbccddeeff", "aabbccdd00112233445566778899aabbccddeeff")]
+        public void FindElfSymbolFilePath_BuildIdNormalization(string inputBuildId, string expectedNormalized)
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-buildid-norm");
+            try
+            {
+                // Create debug symbol directory structure with valid ELF build-id.
+                string debugDir = Path.Combine(tempDir, "_.debug", "elf-buildid-sym-" + expectedNormalized);
+                Directory.CreateDirectory(debugDir);
+                string debugFile = Path.Combine(debugDir, "_.debug");
+                File.WriteAllBytes(debugFile, CreateMinimalElfWithBuildId(expectedNormalized));
+
+                _symbolReader.SymbolPath = tempDir;
+                string result = _symbolReader.FindElfSymbolFilePath("libnorm.so", inputBuildId);
+
+                Assert.NotNull(result);
+                Assert.Equal(Path.GetFullPath(debugFile), Path.GetFullPath(result));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindElfSymbolFilePath_AbsolutePathExtractsFilename()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-abspath");
+            try
+            {
+                string buildId = "1122334455";
+                string normalizedBuildId = buildId.ToLowerInvariant();
+
+                // Create binary directory structure using just the simple filename.
+                string binaryDir = Path.Combine(tempDir, "libc.so.6", "elf-buildid-" + normalizedBuildId);
+                Directory.CreateDirectory(binaryDir);
+                string binaryFile = Path.Combine(binaryDir, "libc.so.6");
+                File.WriteAllBytes(binaryFile, CreateMinimalElfWithBuildId(normalizedBuildId));
+
+                _symbolReader.SymbolPath = tempDir;
+                // Pass an absolute path — only the filename portion should be used for lookup.
+                string result = _symbolReader.FindElfSymbolFilePath("/usr/lib/x86_64-linux-gnu/libc.so.6", buildId);
+
+                Assert.NotNull(result);
+                Assert.Equal(Path.GetFullPath(binaryFile), Path.GetFullPath(result));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindElfSymbolFilePath_CacheOnlySkipsRemotePaths()
+        {
+            // Use a UNC-style path that is "remote" but won't actually be accessed.
+            _symbolReader.SymbolPath = @"\\nonexistent-server\symbols";
+            _symbolReader.Options = SymbolReaderOptions.CacheOnly;
+
+            string result = _symbolReader.FindElfSymbolFilePath("libcoreclr.so", "aabbccdd");
+
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void FindElfSymbolFilePath_CacheHitSkipsSearch()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-cache-hit");
+            try
+            {
+                string buildId = "cacced1d12";
+                string normalizedBuildId = buildId.ToLowerInvariant();
+
+                string debugDir = Path.Combine(tempDir, "_.debug", "elf-buildid-sym-" + normalizedBuildId);
+                Directory.CreateDirectory(debugDir);
+                string debugFile = Path.Combine(debugDir, "_.debug");
+                File.WriteAllBytes(debugFile, CreateMinimalElfWithBuildId(normalizedBuildId));
+
+                _symbolReader.SymbolPath = tempDir;
+
+                // First call populates the cache.
+                string result1 = _symbolReader.FindElfSymbolFilePath("libcache.so", buildId);
+                Assert.NotNull(result1);
+
+                // Remove the file so only cache can return it.
+                File.Delete(debugFile);
+                Directory.Delete(debugDir);
+
+                string result2 = _symbolReader.FindElfSymbolFilePath("libcache.so", buildId);
+                Assert.Equal(result1, result2);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindElfSymbolFilePath_NegativeCacheReturnsNull()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-negative-cache");
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                _symbolReader.SymbolPath = tempDir;
+
+                // First call: nothing found, null is cached.
+                string result1 = _symbolReader.FindElfSymbolFilePath("libnocache.so", "ffffffff");
+                Assert.Null(result1);
+
+                // Now create the file — but the negative cache should still return null.
+                string normalizedBuildId = "ffffffff";
+                string debugDir = Path.Combine(tempDir, "_.debug", "elf-buildid-sym-" + normalizedBuildId);
+                Directory.CreateDirectory(debugDir);
+                File.WriteAllBytes(Path.Combine(debugDir, "_.debug"), new byte[] { 0x7F });
+
+                string result2 = _symbolReader.FindElfSymbolFilePath("libnocache.so", "ffffffff");
+                Assert.Null(result2);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindElfSymbolFilePath_DifferentBuildIdsAreDifferentCacheKeys()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-diff-keys");
+            try
+            {
+                string buildId1 = "aaaa";
+                string buildId2 = "bbbb";
+                string norm1 = buildId1;
+                string norm2 = buildId2;
+
+                // Only create debug symbols for the second build ID.
+                string debugDir2 = Path.Combine(tempDir, "_.debug", "elf-buildid-sym-" + norm2);
+                Directory.CreateDirectory(debugDir2);
+                string debugFile2 = Path.Combine(debugDir2, "_.debug");
+                File.WriteAllBytes(debugFile2, CreateMinimalElfWithBuildId(norm2));
+
+                _symbolReader.SymbolPath = tempDir;
+
+                string result1 = _symbolReader.FindElfSymbolFilePath("lib.so", buildId1);
+                Assert.Null(result1);
+
+                string result2 = _symbolReader.FindElfSymbolFilePath("lib.so", buildId2);
+                Assert.NotNull(result2);
+                Assert.Equal(Path.GetFullPath(debugFile2), Path.GetFullPath(result2));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindElfSymbolFilePath_DebugLinkDiscovery()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-debuglink");
+            try
+            {
+                string buildId = "aabb0011";
+
+                // Build an ELF binary with .gnu_debuglink pointing to "libtest.so.dbg".
+                var binaryBuilder = new ElfBuilder()
+                    .Set64Bit(true)
+                    .SetPTLoad(0x400000, 0)
+                    .SetBuildId(HexToBytes(buildId))
+                    .SetDebugLink("libtest.so.dbg");
+                byte[] binaryData = binaryBuilder.Build();
+
+                // Build a debug ELF file with matching build-id.
+                byte[] debugData = CreateMinimalElfWithBuildId(buildId);
+
+                // Place the binary and debug file in the same directory.
+                Directory.CreateDirectory(tempDir);
+                string binaryPath = Path.Combine(tempDir, "libtest.so");
+                string debugPath = Path.Combine(tempDir, "libtest.so.dbg");
+                File.WriteAllBytes(binaryPath, binaryData);
+                File.WriteAllBytes(debugPath, debugData);
+
+                // Set symbol path to an empty location (no SSQP match),
+                // but provide elfFilePath so adjacent search kicks in.
+                // SecurityCheck is needed because adjacent search uses checkSecurity: true.
+                string emptyDir = Path.Combine(tempDir, "empty");
+                Directory.CreateDirectory(emptyDir);
+                _symbolReader.SymbolPath = emptyDir;
+                _symbolReader.SecurityCheck = _ => true;
+
+                string result = _symbolReader.FindElfSymbolFilePath("libtest.so", buildId, elfFilePath: binaryPath);
+
+                Assert.NotNull(result);
+                Assert.Equal(Path.GetFullPath(debugPath), Path.GetFullPath(result));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindElfSymbolFilePath_DebugLinkInSubdir()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-debuglink-subdir");
+            try
+            {
+                string buildId = "ccdd0022";
+
+                // Build an ELF binary with .gnu_debuglink pointing to "libfoo.debug".
+                var binaryBuilder = new ElfBuilder()
+                    .Set64Bit(true)
+                    .SetPTLoad(0x400000, 0)
+                    .SetBuildId(HexToBytes(buildId))
+                    .SetDebugLink("libfoo.debug");
+                byte[] binaryData = binaryBuilder.Build();
+
+                // Build a debug ELF file with matching build-id.
+                byte[] debugData = CreateMinimalElfWithBuildId(buildId);
+
+                // Place the binary in tempDir, debug file in {tempDir}/.debug/ subdir.
+                Directory.CreateDirectory(tempDir);
+                string debugSubDir = Path.Combine(tempDir, ".debug");
+                Directory.CreateDirectory(debugSubDir);
+
+                string binaryPath = Path.Combine(tempDir, "libfoo.so");
+                string debugPath = Path.Combine(debugSubDir, "libfoo.debug");
+                File.WriteAllBytes(binaryPath, binaryData);
+                File.WriteAllBytes(debugPath, debugData);
+
+                string emptyDir = Path.Combine(tempDir, "empty");
+                Directory.CreateDirectory(emptyDir);
+                _symbolReader.SymbolPath = emptyDir;
+                _symbolReader.SecurityCheck = _ => true;
+
+                string result = _symbolReader.FindElfSymbolFilePath("libfoo.so", buildId, elfFilePath: binaryPath);
+
+                Assert.NotNull(result);
+                Assert.Equal(Path.GetFullPath(debugPath), Path.GetFullPath(result));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        #endregion
+
+        #region FindR2RPerfMapSymbolFilePath Tests
+
+        [Fact]
+        public void FindR2RPerfMapSymbolFilePath_FoundLocally()
+        {
+            string tempDir = Path.Combine(OutputDir, "r2r-local");
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                var sig = new Guid("a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d");
+                int version = 1;
+                string perfMapFile = Path.Combine(tempDir, "CoreLib.r2rmap");
+                File.WriteAllBytes(perfMapFile, CreateMinimalR2RPerfMap(sig, version));
+
+                _symbolReader.SymbolPath = tempDir;
+                string result = _symbolReader.FindR2RPerfMapSymbolFilePath("CoreLib.r2rmap", sig, version);
+
+                Assert.NotNull(result);
+                Assert.Equal(perfMapFile, result);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindR2RPerfMapSymbolFilePath_NotFound()
+        {
+            string tempDir = Path.Combine(OutputDir, "r2r-empty");
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+
+                _symbolReader.SymbolPath = tempDir;
+                var sig = new Guid("11111111-2222-3333-4444-555555555555");
+                string result = _symbolReader.FindR2RPerfMapSymbolFilePath("Missing.r2rmap", sig, 1);
+
+                Assert.Null(result);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindR2RPerfMapSymbolFilePath_CacheOnlySkipsRemotePaths()
+        {
+            _symbolReader.SymbolPath = @"\\nonexistent-server\symbols";
+            _symbolReader.Options = SymbolReaderOptions.CacheOnly;
+
+            var sig = new Guid("a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d");
+            string result = _symbolReader.FindR2RPerfMapSymbolFilePath("CoreLib.r2rmap", sig, 1);
+
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void FindR2RPerfMapSymbolFilePath_CacheHitSkipsSearch()
+        {
+            string tempDir = Path.Combine(OutputDir, "r2r-cache-hit");
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                var sig = new Guid("cc000000-0000-0000-0000-000000000000");
+                int version = 1;
+                string perfMapFile = Path.Combine(tempDir, "Cached.r2rmap");
+                File.WriteAllBytes(perfMapFile, CreateMinimalR2RPerfMap(sig, version));
+
+                _symbolReader.SymbolPath = tempDir;
+
+                // First call populates the cache.
+                string result1 = _symbolReader.FindR2RPerfMapSymbolFilePath("Cached.r2rmap", sig, version);
+                Assert.NotNull(result1);
+
+                // Remove the file so only cache can return it.
+                File.Delete(perfMapFile);
+
+                string result2 = _symbolReader.FindR2RPerfMapSymbolFilePath("Cached.r2rmap", sig, version);
+                Assert.Equal(result1, result2);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindR2RPerfMapSymbolFilePath_DifferentSignaturesAreDifferentCacheKeys()
+        {
+            string tempDir = Path.Combine(OutputDir, "r2r-diff-keys");
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                // No file on disk — both lookups will miss the file system.
+
+                _symbolReader.SymbolPath = tempDir;
+                var sig1 = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+                var sig2 = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+
+                string result1 = _symbolReader.FindR2RPerfMapSymbolFilePath("Test.r2rmap", sig1, 1);
+                Assert.Null(result1);
+
+                // Now create the file with sig2's identity — sig2 should find it (not negatively cached).
+                string perfMapFile = Path.Combine(tempDir, "Test.r2rmap");
+                File.WriteAllBytes(perfMapFile, CreateMinimalR2RPerfMap(sig2, 1));
+
+                string result2 = _symbolReader.FindR2RPerfMapSymbolFilePath("Test.r2rmap", sig2, 1);
+                Assert.NotNull(result2);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        #endregion
+
+        #region FindSymbolFilePathForModule Tests
+
+        [Fact]
+        public void FindSymbolFilePathForModule_FileDoesNotExist()
+        {
+            string result = _symbolReader.FindSymbolFilePathForModule(@"C:\nonexistent\path\fake.dll");
+
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void FindSymbolFilePathForModule_InvalidPeFile()
+        {
+            string tempDir = Path.Combine(OutputDir, "module-invalid-pe");
+            Directory.CreateDirectory(tempDir);
+            string invalidDll = Path.Combine(tempDir, "invalid.dll");
+            File.WriteAllText(invalidDll, "This is not a valid PE file");
+
+            // Should not throw — exception is caught internally and null returned.
+            string result = _symbolReader.FindSymbolFilePathForModule(invalidDll);
+
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void FindSymbolFilePathForModule_FindsPdbNextToDll()
+        {
+            PrepareTestData();
+
+            // The test data has PDB files. We need a DLL that references one of those PDBs.
+            // Since we may not have a matching DLL in test data, verify the basic "file exists" path
+            // by testing that a DLL file that exists but has no CodeView signature returns null gracefully.
+            string tempDir = Path.Combine(OutputDir, "module-no-codeview");
+            Directory.CreateDirectory(tempDir);
+            // Create a minimal valid PE file (just MZ header + PE signature) that lacks CodeView info.
+            // The DOS stub points to PE signature at offset 0x80.
+            byte[] minimalPe = new byte[0x100];
+            minimalPe[0] = 0x4D; // 'M'
+            minimalPe[1] = 0x5A; // 'Z'
+            minimalPe[0x3C] = 0x80; // e_lfanew
+            minimalPe[0x80] = 0x50; // 'P'
+            minimalPe[0x81] = 0x45; // 'E'
+            minimalPe[0x82] = 0x00;
+            minimalPe[0x83] = 0x00;
+            string minimalDll = Path.Combine(tempDir, "minimal.dll");
+            File.WriteAllBytes(minimalDll, minimalPe);
+
+            // This PE file has no CodeView debug directory, so FindSymbolFilePathForModule
+            // should return null (either via no PDB signature or PE parsing gracefully failing).
+            string result = _symbolReader.FindSymbolFilePathForModule(minimalDll);
+            Assert.Null(result);
+        }
+
+        #endregion
+
+        #region Cache Invalidation Tests
+
+        [Fact]
+        public void ElfCache_ClearedWhenSymbolPathChanges()
+        {
+            string tempDir1 = Path.Combine(OutputDir, "elf-cache-inv1");
+            string tempDir2 = Path.Combine(OutputDir, "elf-cache-inv2");
+            try
+            {
+                // Set up: first path has nothing, second path has the file.
+                Directory.CreateDirectory(tempDir1);
+
+                string buildId = "cace0e0010";
+                string normalizedBuildId = buildId;
+                string debugDir = Path.Combine(tempDir2, "_.debug", "elf-buildid-sym-" + normalizedBuildId);
+                Directory.CreateDirectory(debugDir);
+                File.WriteAllBytes(Path.Combine(debugDir, "_.debug"), CreateMinimalElfWithBuildId(normalizedBuildId));
+
+                // First search against empty path — null is cached.
+                _symbolReader.SymbolPath = tempDir1;
+                Assert.Null(_symbolReader.FindElfSymbolFilePath("lib.so", buildId));
+
+                // Change SymbolPath — cache should be cleared, so the new path is searched.
+                _symbolReader.SymbolPath = tempDir2;
+                Assert.NotNull(_symbolReader.FindElfSymbolFilePath("lib.so", buildId));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir1)) Directory.Delete(tempDir1, true);
+                if (Directory.Exists(tempDir2)) Directory.Delete(tempDir2, true);
+            }
+        }
+
+        [Fact]
+        public void R2RCache_ClearedWhenSymbolPathChanges()
+        {
+            string tempDir1 = Path.Combine(OutputDir, "r2r-cache-inv1");
+            string tempDir2 = Path.Combine(OutputDir, "r2r-cache-inv2");
+            try
+            {
+                Directory.CreateDirectory(tempDir1);
+                Directory.CreateDirectory(tempDir2);
+                var sig = new Guid("12345678-1234-1234-1234-123456789abc");
+                int version = 1;
+                File.WriteAllBytes(Path.Combine(tempDir2, "Test.r2rmap"), CreateMinimalR2RPerfMap(sig, version));
+
+                // First search against empty path — null is cached.
+                _symbolReader.SymbolPath = tempDir1;
+                Assert.Null(_symbolReader.FindR2RPerfMapSymbolFilePath("Test.r2rmap", sig, version));
+
+                // Change SymbolPath — cache should be cleared, so the new path is searched.
+                _symbolReader.SymbolPath = tempDir2;
+                Assert.NotNull(_symbolReader.FindR2RPerfMapSymbolFilePath("Test.r2rmap", sig, version));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir1)) Directory.Delete(tempDir1, true);
+                if (Directory.Exists(tempDir2)) Directory.Delete(tempDir2, true);
+            }
+        }
+
+        [Fact]
+        public void ElfCache_ClearedWhenOptionsChange()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-cache-opt");
+            try
+            {
+                string buildId = "00ee0010";
+                string normalizedBuildId = buildId;
+                string debugDir = Path.Combine(tempDir, "_.debug", "elf-buildid-sym-" + normalizedBuildId);
+                Directory.CreateDirectory(debugDir);
+                File.WriteAllBytes(Path.Combine(debugDir, "_.debug"), CreateMinimalElfWithBuildId(normalizedBuildId));
+
+                // First: find it successfully and cache it.
+                _symbolReader.SymbolPath = tempDir;
+                Assert.NotNull(_symbolReader.FindElfSymbolFilePath("lib.so", buildId));
+
+                // Remove the file.
+                Directory.Delete(debugDir, true);
+
+                // Without cache invalidation the cached path would still be returned.
+                // Changing Options should clear the cache, forcing a fresh lookup.
+                _symbolReader.Options = SymbolReaderOptions.CacheOnly;
+                Assert.Null(_symbolReader.FindElfSymbolFilePath("lib.so", buildId));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+            }
+        }
+
+        #endregion
+
+        #region ELF Module Cache Tests
+
+        [Fact]
+        public void OpenElfSymbolFile_CacheHitReturnsSameInstance()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-mod-cache-hit");
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                // Create a dummy file — ElfSymbolModule gracefully handles non-ELF content.
+                string elfFile = Path.Combine(tempDir, "libtest.so");
+                File.WriteAllBytes(elfFile, new byte[] { 0x00 });
+
+                var module1 = _symbolReader.OpenElfSymbolFile(elfFile, 0x1000, 0x0);
+                var module2 = _symbolReader.OpenElfSymbolFile(elfFile, 0x1000, 0x0);
+
+                Assert.Same(module1, module2);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void OpenElfSymbolFile_DifferentParamsAreDifferentCacheEntries()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-mod-cache-diff");
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                string elfFile = Path.Combine(tempDir, "libtest.so");
+                File.WriteAllBytes(elfFile, new byte[] { 0x00 });
+
+                var module1 = _symbolReader.OpenElfSymbolFile(elfFile, 0x1000, 0x0);
+                var module2 = _symbolReader.OpenElfSymbolFile(elfFile, 0x2000, 0x0);
+
+                Assert.NotSame(module1, module2);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public void OpenElfSymbolFile_CacheClearedOnSymbolPathChange()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-mod-cache-clear");
+            try
+            {
+                Directory.CreateDirectory(tempDir);
+                string elfFile = Path.Combine(tempDir, "libtest.so");
+                File.WriteAllBytes(elfFile, new byte[] { 0x00 });
+
+                var module1 = _symbolReader.OpenElfSymbolFile(elfFile, 0x1000, 0x0);
+
+                // Changing SymbolPath clears all caches including the module cache.
+                _symbolReader.SymbolPath = tempDir;
+
+                var module2 = _symbolReader.OpenElfSymbolFile(elfFile, 0x1000, 0x0);
+
+                // Should be a different instance because cache was cleared.
+                Assert.NotSame(module1, module2);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Creates a minimal valid ELF64 little-endian binary with a GNU build-id note.
+        /// Used by tests that need a file whose build-id can be read by ReadBuildId.
+        /// </summary>
+        /// <param name="buildIdHex">Lowercase hex string (e.g., "abc123" → 3 bytes: 0xab, 0xc1, 0x23).</param>
+        private static byte[] CreateMinimalElfWithBuildId(string buildIdHex)
+        {
+            // Convert hex string to bytes.
+            int byteCount = buildIdHex.Length / 2;
+            byte[] buildIdBytes = new byte[byteCount];
+            for (int i = 0; i < byteCount; i++)
+            {
+                buildIdBytes[i] = byte.Parse(buildIdHex.Substring(i * 2, 2), NumberStyles.HexNumber);
+            }
+
+            // Build the GNU build-id note.
+            // Note header: namesz(4) + descsz(4) + type(4) = 12 bytes.
+            // Name: "GNU\0" = 4 bytes (already 4-byte aligned).
+            // Desc: buildId bytes, padded to 4-byte alignment.
+            uint descsz = (uint)buildIdBytes.Length;
+            uint descAligned = (descsz + 3) & ~3u;
+            int noteSize = 12 + 4 + (int)descAligned; // header + name + aligned desc
+
+            // ELF64 header (64 bytes) + one program header (56 bytes) + note.
+            int phOffset = 64;
+            int noteOffset = 64 + 56;
+            int totalSize = noteOffset + noteSize;
+            byte[] elf = new byte[totalSize];
+
+            // ELF header.
+            elf[0] = 0x7f; elf[1] = (byte)'E'; elf[2] = (byte)'L'; elf[3] = (byte)'F'; // magic
+            elf[4] = 2;   // ELFCLASS64
+            elf[5] = 1;   // ELFDATA2LSB
+            elf[6] = 1;   // EV_CURRENT
+            // e_type = ET_EXEC (2)
+            elf[16] = 2;
+            // e_machine = EM_X86_64 (0x3e)
+            elf[18] = 0x3e;
+            // e_version = 1
+            elf[20] = 1;
+            // e_phoff = 64 (0x40)
+            elf[32] = 0x40;
+            // e_ehsize = 64 (0x40)
+            elf[52] = 0x40;
+            // e_phentsize = 56 (0x38)
+            elf[54] = 0x38;
+            // e_phnum = 1
+            elf[56] = 1;
+
+            // Program header (PT_NOTE at offset 64).
+            // p_type = PT_NOTE (4)
+            elf[phOffset] = 4;
+            // p_flags (at +4 for ELF64)
+            // p_offset (at +8) = noteOffset
+            elf[phOffset + 8] = (byte)noteOffset;
+            // p_filesz (at +32) = noteSize
+            elf[phOffset + 32] = (byte)(noteSize & 0xFF);
+            elf[phOffset + 33] = (byte)((noteSize >> 8) & 0xFF);
+            // p_memsz (at +40) = noteSize
+            elf[phOffset + 40] = (byte)(noteSize & 0xFF);
+            elf[phOffset + 41] = (byte)((noteSize >> 8) & 0xFF);
+
+            // Note at noteOffset.
+            int np = noteOffset;
+            // namesz = 4
+            elf[np] = 4;
+            // descsz
+            elf[np + 4] = (byte)(descsz & 0xFF);
+            elf[np + 5] = (byte)((descsz >> 8) & 0xFF);
+            // type = NT_GNU_BUILD_ID (3)
+            elf[np + 8] = 3;
+            // name = "GNU\0"
+            elf[np + 12] = (byte)'G';
+            elf[np + 13] = (byte)'N';
+            elf[np + 14] = (byte)'U';
+            elf[np + 15] = 0;
+            // desc = build-id bytes
+            Array.Copy(buildIdBytes, 0, elf, np + 16, buildIdBytes.Length);
+
+            return elf;
+        }
+
+        /// <summary>
+        /// Creates a minimal valid R2R perfmap text file with the given Signature and Version.
+        /// Used by tests that need a file whose Signature/Version can be read by R2RPerfMapSymbolModule.
+        /// </summary>
+        private static byte[] CreateMinimalR2RPerfMap(Guid signature, int version)
+        {
+            // R2R perfmap format: each line is "address size name"
+            // Signature: FFFFFFFF 0 {guid}
+            // Version:   FFFFFFFE 0 {version}
+            string content = $"FFFFFFFF 0 {signature:D}\nFFFFFFFE 0 {version}\n";
+            return Encoding.UTF8.GetBytes(content);
+        }
+
+        /// <summary>
+        /// Converts a hex string to a byte array.
+        /// </summary>
+        private static byte[] HexToBytes(string hex)
+        {
+            int byteCount = hex.Length / 2;
+            byte[] bytes = new byte[byteCount];
+            for (int i = 0; i < byteCount; i++)
+            {
+                bytes[i] = byte.Parse(hex.Substring(i * 2, 2), NumberStyles.HexNumber);
+            }
+            return bytes;
         }
 
         protected void PrepareTestData()

@@ -119,6 +119,7 @@
       HeapDump dependencies are pulled from the HeapDump output directory because HeapDump runs out of process
       and can have a different set of dependencies.
     -->
+    <PackageReference Include="Microsoft.Bcl.HashCode" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.Win32.Registry" GeneratePathProperty="true" />
     <PackageReference Include="System.Collections.Immutable" GeneratePathProperty="true" />
     <PackageReference Include="System.Reflection.Metadata" GeneratePathProperty="true" />
@@ -409,6 +410,13 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.FastSerialization.dll</LogicalName>
       <Link>Microsoft.Diagnostics.FastSerialization.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Bcl_HashCode)\lib\netstandard2.0\Microsoft.Bcl.HashCode.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Bcl.HashCode.dll</LogicalName>
+      <Link>Microsoft.Bcl.HashCode.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PkgMicrosoft_Win32_Registry)\lib\net461\Microsoft.Win32.Registry.dll">

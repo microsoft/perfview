@@ -240,6 +240,10 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     _expectedCPUSamplingRate = intVal3;
                 }
+                else if (key == "SystemPageSize" && ulong.TryParse(value, out ulong ulongVal) && ulongVal > 0)
+                {
+                    _systemPageSize = ulongVal;
+                }
             }
         }
 
@@ -656,6 +660,7 @@ namespace Microsoft.Diagnostics.Tracing
         private int _lastLabelListId;
         internal int _processId;
         internal int _expectedCPUSamplingRate;
+        internal ulong _systemPageSize;
         private RewindableStream _stream;
         private bool _isStreaming;
         private ThreadCache _threadCache;

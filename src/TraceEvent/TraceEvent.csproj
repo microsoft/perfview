@@ -68,6 +68,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Bcl.HashCode" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" />
     <PackageReference Include="Microsoft.Win32.Registry" />
     <PackageReference Include="System.Collections.Immutable" />
