@@ -497,7 +497,7 @@ namespace Microsoft.Diagnostics.Tracing
             // TODO FIX NOW, I have never run these!  Get some data to test against.  
             WCFParser.ClientOperationPrepared += delegate (Multidata22TemplateHATraceData data)
             {
-                string extraInformation = "/Action=" + data.ServiceAction + "/URL=" + data.Destination;
+                string extraInformation = "/Action=" + data.SoapAction + "/URL=" + data.Destination;
                 OnStart(data, extraInformation, null, null, GetActiveStartStopActivityTable(data.ActivityID, data.ProcessID), "ClientOperation");
             };
             WCFParser.ServiceChannelCallStop += delegate (Multidata22TemplateHATraceData data)

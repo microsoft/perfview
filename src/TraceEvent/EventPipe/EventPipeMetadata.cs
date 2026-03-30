@@ -1,5 +1,6 @@
 ﻿using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
@@ -867,6 +868,10 @@ namespace Microsoft.Diagnostics.Tracing
             else if (name == FrameworkEventSourceTraceEventParser.ProviderName)
             {
                 return FrameworkEventSourceTraceEventParser.ProviderGuid;
+            }
+            else if (name == ApplicationServerTraceEventParser.ProviderName)
+            {
+                return ApplicationServerTraceEventParser.ProviderGuid;
             }
 #if SUPPORT_V1_V2
             else if (name == SampleProfilerTraceEventParser.ProviderName)
