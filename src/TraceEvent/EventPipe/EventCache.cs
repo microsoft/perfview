@@ -181,7 +181,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                     long ts = q.Peek().Header.TimeStamp;
                     if (ts < stopTimestamp)
                     {
-                        _heap.Add(new HeapEntry(ts, q));
+                        _heap.Add(ts, q);
                     }
                 }
             }
@@ -191,101 +191,143 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 return;
             }
 
-            HeapBuild();
+            _heap.Build();
 
             // Merge events in timestamp order using the min-heap.
             while (_heap.Count > 0)
             {
-                HeapEntry min = _heap[0];
-                EventMarker eventMarker = min.Queue.Dequeue();
+                Queue<EventMarker> minQueue = _heap.PeekQueue;
+                EventMarker eventMarker = minQueue.Dequeue();
                 OnEvent?.Invoke(ref eventMarker.Header);
 
-                if (min.Queue.Count > 0)
+                if (minQueue.Count > 0)
                 {
-                    long nextTs = min.Queue.Peek().Header.TimeStamp;
+                    long nextTs = minQueue.Peek().Header.TimeStamp;
                     if (nextTs < stopTimestamp)
                     {
                         // Update the root with the next timestamp and restore the heap property.
-                        _heap[0] = new HeapEntry(nextTs, min.Queue);
-                        HeapSiftDown(0);
+                        _heap.ReplaceRoot(nextTs, minQueue);
                     }
                     else
                     {
-                        HeapRemoveRoot();
+                        _heap.RemoveRoot();
                     }
                 }
                 else
                 {
-                    HeapRemoveRoot();
+                    _heap.RemoveRoot();
                     // Remove from active set and free internal storage to prevent unbounded
                     // memory growth when the application creates and destroys threads.
-                    _activeThreadQueues.Remove(min.Queue);
-                    min.Queue.TrimExcess();
+                    _activeThreadQueues.Remove(minQueue);
+                    minQueue.TrimExcess();
                 }
             }
         }
 
-        #region Min-heap helpers for SortAndDispatch
+        #region Min-heap Implementation
 
-        private struct HeapEntry
+        /// <summary>
+        /// A min-heap that orders entries by timestamp. Used to efficiently merge events
+        /// from multiple thread queues in timestamp order during SortAndDispatch.
+        /// </summary>
+        private class MinHeap
         {
-            public long Timestamp;
-            public Queue<EventMarker> Queue;
-
-            public HeapEntry(long timestamp, Queue<EventMarker> queue)
+            private struct Entry
             {
-                Timestamp = timestamp;
-                Queue = queue;
-            }
-        }
+                public long Timestamp;
+                public Queue<EventMarker> Queue;
 
-        private void HeapBuild()
-        {
-            for (int i = _heap.Count / 2 - 1; i >= 0; i--)
-            {
-                HeapSiftDown(i);
-            }
-        }
-
-        private void HeapSiftDown(int i)
-        {
-            int count = _heap.Count;
-            while (true)
-            {
-                int smallest = i;
-                int left = 2 * i + 1;
-                int right = 2 * i + 2;
-                if (left < count && _heap[left].Timestamp < _heap[smallest].Timestamp)
+                public Entry(long timestamp, Queue<EventMarker> queue)
                 {
-                    smallest = left;
+                    Timestamp = timestamp;
+                    Queue = queue;
                 }
-                if (right < count && _heap[right].Timestamp < _heap[smallest].Timestamp)
-                {
-                    smallest = right;
-                }
-                if (smallest == i)
-                {
-                    break;
-                }
-                HeapEntry temp = _heap[i];
-                _heap[i] = _heap[smallest];
-                _heap[smallest] = temp;
-                i = smallest;
             }
-        }
 
-        private void HeapRemoveRoot()
-        {
-            int lastIndex = _heap.Count - 1;
-            if (lastIndex == 0)
+            private readonly List<Entry> _entries = new List<Entry>();
+
+            public int Count => _entries.Count;
+
+            public Queue<EventMarker> PeekQueue => _entries[0].Queue;
+
+            public void Clear() => _entries.Clear();
+
+            public void Add(long timestamp, Queue<EventMarker> queue)
             {
-                _heap.Clear();
+                _entries.Add(new Entry(timestamp, queue));
             }
-            else
+
+            /// <summary>
+            /// Establishes the heap property over all entries. Call once after adding all
+            /// entries via Add, before extracting from the heap.
+            /// </summary>
+            public void Build()
             {
-                _heap[0] = _heap[lastIndex];
-                _heap.RemoveAt(lastIndex);
-                HeapSiftDown(0);
+                for (int i = _entries.Count / 2 - 1; i >= 0; i--)
+                {
+                    SiftDown(i);
+                }
+            }
+
+            /// <summary>
+            /// Replaces the root entry with a new timestamp for the same queue and restores
+            /// the heap property. Use when the root queue still has events to dispatch.
+            /// </summary>
+            public void ReplaceRoot(long newTimestamp, Queue<EventMarker> queue)
+            {
+                _entries[0] = new Entry(newTimestamp, queue);
+                SiftDown(0);
+            }
+
+            /// <summary>
+            /// Removes the root (minimum) entry from the heap and restores the heap property.
+            /// </summary>
+            public void RemoveRoot()
+            {
+                int lastIndex = _entries.Count - 1;
+                if (lastIndex == 0)
+                {
+                    _entries.Clear();
+                }
+                else
+                {
+                    _entries[0] = _entries[lastIndex];
+                    _entries.RemoveAt(lastIndex);
+                    SiftDown(0);
+                }
+            }
+
+            /// <summary>
+            /// Restores the min-heap property by moving the element at index i down the tree
+            /// until it is smaller than both children or reaches a leaf position.
+            /// </summary>
+            private void SiftDown(int i)
+            {
+                int count = _entries.Count;
+                while (true)
+                {
+                    int smallest = i;
+
+                    // In a binary heap stored as an array, the children of node i are at
+                    // indices 2i+1 (left) and 2i+2 (right).
+                    int left = 2 * i + 1;
+                    int right = 2 * i + 2;
+
+                    if (left < count && _entries[left].Timestamp < _entries[smallest].Timestamp)
+                    {
+                        smallest = left;
+                    }
+                    if (right < count && _entries[right].Timestamp < _entries[smallest].Timestamp)
+                    {
+                        smallest = right;
+                    }
+                    if (smallest == i)
+                    {
+                        break;
+                    }
+                    (_entries[i], _entries[smallest]) = (_entries[smallest], _entries[i]);
+                    i = smallest;
+                }
             }
         }
 
@@ -360,7 +402,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         EventPipeEventSource _source;
         ThreadCache _threads;
         Queue<EventBlockBuffer> _buffers = new Queue<EventBlockBuffer>();
-        List<HeapEntry> _heap = new List<HeapEntry>();
+        MinHeap _heap = new MinHeap();
         HashSet<Queue<EventMarker>> _activeThreadQueues = new HashSet<Queue<EventMarker>>();
     }
 

@@ -385,6 +385,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
             Action(this);
         }
 
+        public override unsafe TraceEvent Clone()
+        {
+            var clone = (ProcessMappingMetadataTraceData)base.Clone();
+            clone._parsedSymbolMetadata = _parsedSymbolMetadata;
+            clone._parsedSymbolMetadataCached = _parsedSymbolMetadataCached;
+            return clone;
+        }
+
         protected internal override Delegate Target
         {
             get { return Action; }
