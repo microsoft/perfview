@@ -196,7 +196,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             // Merge events in timestamp order using the min-heap.
             while (_heap.Count > 0)
             {
-                Queue<EventMarker> minQueue = _heap.PeekQueue;
+                Queue<EventMarker> minQueue = _heap.PeekValue;
                 EventMarker eventMarker = minQueue.Dequeue();
                 OnEvent?.Invoke(ref eventMarker.Header);
 
@@ -227,20 +227,20 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         #region Min-heap Implementation
 
         /// <summary>
-        /// A min-heap that orders entries by timestamp. Used to efficiently merge events
-        /// from multiple thread queues in timestamp order during SortAndDispatch.
+        /// A min-heap that pairs a long key with a value of type <typeparamref name="TValue"/>.
+        /// Entries are ordered by key so the minimum key is always at the root.
         /// </summary>
-        private class MinHeap
+        internal class MinHeap<TValue>
         {
             private struct Entry
             {
-                public long Timestamp;
-                public Queue<EventMarker> Queue;
+                public long Key;
+                public TValue Value;
 
-                public Entry(long timestamp, Queue<EventMarker> queue)
+                public Entry(long key, TValue value)
                 {
-                    Timestamp = timestamp;
-                    Queue = queue;
+                    Key = key;
+                    Value = value;
                 }
             }
 
@@ -248,21 +248,28 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
             public int Count => _entries.Count;
 
-            public Queue<EventMarker> PeekQueue => _entries[0].Queue;
+            public TValue PeekValue => _entries[0].Value;
 
             public void Clear() => _entries.Clear();
 
-            public void Add(long timestamp, Queue<EventMarker> queue)
+            public void Add(long key, TValue value)
             {
-                _entries.Add(new Entry(timestamp, queue));
+                _entries.Add(new Entry(key, value));
             }
 
             /// <summary>
             /// Establishes the heap property over all entries. Call once after adding all
             /// entries via Add, before extracting from the heap.
             /// </summary>
+            /// <remarks>
+            /// Starts from the last non-leaf node (_entries.Count / 2 - 1) and sifts each
+            /// node down to its correct position. Leaves (the second half of the array) are
+            /// already trivially valid heaps of size 1, so they are skipped.
+            /// </remarks>
             public void Build()
             {
+                // Start from the last non-leaf node and work backwards to the root.
+                // Nodes at indices [Count/2 .. Count-1] are leaves that need no adjustment.
                 for (int i = _entries.Count / 2 - 1; i >= 0; i--)
                 {
                     SiftDown(i);
@@ -270,12 +277,12 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             }
 
             /// <summary>
-            /// Replaces the root entry with a new timestamp for the same queue and restores
-            /// the heap property. Use when the root queue still has events to dispatch.
+            /// Replaces the root entry with a new key/value pair and restores the heap property.
+            /// Use when the root element has been consumed but its source still has more items.
             /// </summary>
-            public void ReplaceRoot(long newTimestamp, Queue<EventMarker> queue)
+            public void ReplaceRoot(long newKey, TValue value)
             {
-                _entries[0] = new Entry(newTimestamp, queue);
+                _entries[0] = new Entry(newKey, value);
                 SiftDown(0);
             }
 
@@ -313,11 +320,11 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                     int left = 2 * i + 1;
                     int right = 2 * i + 2;
 
-                    if (left < count && _entries[left].Timestamp < _entries[smallest].Timestamp)
+                    if (left < count && _entries[left].Key < _entries[smallest].Key)
                     {
                         smallest = left;
                     }
-                    if (right < count && _entries[right].Timestamp < _entries[smallest].Timestamp)
+                    if (right < count && _entries[right].Key < _entries[smallest].Key)
                     {
                         smallest = right;
                     }
@@ -402,7 +409,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         EventPipeEventSource _source;
         ThreadCache _threads;
         Queue<EventBlockBuffer> _buffers = new Queue<EventBlockBuffer>();
-        MinHeap _heap = new MinHeap();
+        MinHeap<Queue<EventMarker>> _heap = new MinHeap<Queue<EventMarker>>();
         HashSet<Queue<EventMarker>> _activeThreadQueues = new HashSet<Queue<EventMarker>>();
     }
 
