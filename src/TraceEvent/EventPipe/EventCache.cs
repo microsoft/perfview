@@ -67,6 +67,10 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 }
                 else
                 {
+                    if (thread.Events.Count == 0)
+                    {
+                        _activeThreadQueues.Add(thread.Events);
+                    }
                     thread.Events.Enqueue(eventMarker);
                 }
 
@@ -164,13 +168,14 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
         private unsafe void SortAndDispatch(long stopTimestamp)
         {
-            // Build a min-heap from non-empty thread queues whose front event is before stopTimestamp.
-            // This gives O(N * log(T)) merge performance instead of O(N * T) where N is the number
-            // of events and T is the number of threads.
+            // Build a min-heap from active thread queues (those with pending events) whose
+            // front event is before stopTimestamp. Using _activeThreadQueues avoids iterating
+            // all threads in the dictionary — only threads that have had events enqueued are checked.
+            // This gives O(N * log(T)) merge performance where N is the number of events and
+            // T is the number of active threads.
             _heap.Clear();
-            foreach (EventPipeThread thread in _threads.Values)
+            foreach (Queue<EventMarker> q in _activeThreadQueues)
             {
-                Queue<EventMarker> q = thread.Events;
                 if (q.Count > 0)
                 {
                     long ts = q.Peek().Header.TimeStamp;
@@ -212,8 +217,9 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 else
                 {
                     HeapRemoveRoot();
-                    // Free internal storage for empty queues to prevent unbounded memory growth
-                    // when the application creates and destroys threads over time.
+                    // Remove from active set and free internal storage to prevent unbounded
+                    // memory growth when the application creates and destroys threads.
+                    _activeThreadQueues.Remove(min.Queue);
                     min.Queue.TrimExcess();
                 }
             }
@@ -355,6 +361,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         ThreadCache _threads;
         Queue<EventBlockBuffer> _buffers = new Queue<EventBlockBuffer>();
         List<HeapEntry> _heap = new List<HeapEntry>();
+        HashSet<Queue<EventMarker>> _activeThreadQueues = new HashSet<Queue<EventMarker>>();
     }
 
     internal class EventMarker
