@@ -355,7 +355,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
 
         public string SymbolMetadata {get { return GetShortUTF8StringAt(SkipVarInt(0)); } }
 
-        internal ProcessMappingSymbolMetadata ParsedSymbolMetadata { get { return ProcessMappingSymbolMetadataParser.TryParse(SymbolMetadata); } }
+        internal ProcessMappingSymbolMetadata ParsedSymbolMetadata
+        {
+            get
+            {
+                if (!_parsedSymbolMetadataCached)
+                {
+                    _parsedSymbolMetadata = ProcessMappingSymbolMetadataParser.TryParse(SymbolMetadata);
+                    _parsedSymbolMetadataCached = true;
+                }
+                return _parsedSymbolMetadata;
+            }
+        }
+        private ProcessMappingSymbolMetadata _parsedSymbolMetadata;
+        private bool _parsedSymbolMetadataCached;
 
         public string VersionMetadata {get {return GetShortUTF8StringAt(SkipShortUTF8String(SkipVarInt(0))); } }
 
