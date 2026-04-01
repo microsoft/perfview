@@ -380,6 +380,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
         }
         protected internal override void Dispatch()
         {
+            _parsedSymbolMetadataCached = false;
+            _parsedSymbolMetadata = null;
             Action(this);
         }
 
