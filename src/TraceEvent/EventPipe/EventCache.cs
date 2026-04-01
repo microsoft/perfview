@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.Tracing.EventPipe
@@ -165,48 +164,126 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
         private unsafe void SortAndDispatch(long stopTimestamp)
         {
-            // This sort could be made faster by using a min-heap but this is a simple place to start
-            List<Queue<EventMarker>> threadQueues = new List<Queue<EventMarker>>(_threads.Values.Select(t => t.Events));
-            while(true)
+            // Build a min-heap from non-empty thread queues whose front event is before stopTimestamp.
+            // This gives O(N * log(T)) merge performance instead of O(N * T) where N is the number
+            // of events and T is the number of threads.
+            _heap.Clear();
+            foreach (EventPipeThread thread in _threads.Values)
             {
-                long lowestTimestamp = stopTimestamp;
-                Queue<EventMarker> oldestEventQueue = null;
-                foreach(Queue<EventMarker> threadQueue in threadQueues)
+                Queue<EventMarker> q = thread.Events;
+                if (q.Count > 0)
                 {
-                    if(threadQueue.Count == 0)
+                    long ts = q.Peek().Header.TimeStamp;
+                    if (ts < stopTimestamp)
                     {
-                        continue;
+                        _heap.Add(new HeapEntry(ts, q));
                     }
-                    long eventTimestamp = threadQueue.Peek().Header.TimeStamp;
-                    if (eventTimestamp < lowestTimestamp)
-                    {
-                        oldestEventQueue = threadQueue;
-                        lowestTimestamp = eventTimestamp;
-                    }
-                }
-                if(oldestEventQueue == null)
-                {
-                    break;
-                }
-                else
-                {
-                    EventMarker eventMarker = oldestEventQueue.Dequeue();
-                    OnEvent?.Invoke(ref eventMarker.Header);
                 }
             }
 
-            // If the app creates and destroys threads over time we need to flush old threads
-            // from the cache or memory usage will grow unbounded. AddThread handles the
-            // the thread objects but the storage for the queue elements also does not shrink
-            // below the high water mark unless we free it explicitly.
-            foreach (Queue<EventMarker> q in threadQueues)
+            if (_heap.Count == 0)
             {
-                if(q.Count == 0)
+                return;
+            }
+
+            HeapBuild();
+
+            // Merge events in timestamp order using the min-heap.
+            while (_heap.Count > 0)
+            {
+                HeapEntry min = _heap[0];
+                EventMarker eventMarker = min.Queue.Dequeue();
+                OnEvent?.Invoke(ref eventMarker.Header);
+
+                if (min.Queue.Count > 0)
                 {
-                    q.TrimExcess();
+                    long nextTs = min.Queue.Peek().Header.TimeStamp;
+                    if (nextTs < stopTimestamp)
+                    {
+                        // Update the root with the next timestamp and restore the heap property.
+                        _heap[0] = new HeapEntry(nextTs, min.Queue);
+                        HeapSiftDown(0);
+                    }
+                    else
+                    {
+                        HeapRemoveRoot();
+                    }
+                }
+                else
+                {
+                    HeapRemoveRoot();
+                    // Free internal storage for empty queues to prevent unbounded memory growth
+                    // when the application creates and destroys threads over time.
+                    min.Queue.TrimExcess();
                 }
             }
         }
+
+        #region Min-heap helpers for SortAndDispatch
+
+        private struct HeapEntry
+        {
+            public long Timestamp;
+            public Queue<EventMarker> Queue;
+
+            public HeapEntry(long timestamp, Queue<EventMarker> queue)
+            {
+                Timestamp = timestamp;
+                Queue = queue;
+            }
+        }
+
+        private void HeapBuild()
+        {
+            for (int i = _heap.Count / 2 - 1; i >= 0; i--)
+            {
+                HeapSiftDown(i);
+            }
+        }
+
+        private void HeapSiftDown(int i)
+        {
+            int count = _heap.Count;
+            while (true)
+            {
+                int smallest = i;
+                int left = 2 * i + 1;
+                int right = 2 * i + 2;
+                if (left < count && _heap[left].Timestamp < _heap[smallest].Timestamp)
+                {
+                    smallest = left;
+                }
+                if (right < count && _heap[right].Timestamp < _heap[smallest].Timestamp)
+                {
+                    smallest = right;
+                }
+                if (smallest == i)
+                {
+                    break;
+                }
+                HeapEntry temp = _heap[i];
+                _heap[i] = _heap[smallest];
+                _heap[smallest] = temp;
+                i = smallest;
+            }
+        }
+
+        private void HeapRemoveRoot()
+        {
+            int lastIndex = _heap.Count - 1;
+            if (lastIndex == 0)
+            {
+                _heap.Clear();
+            }
+            else
+            {
+                _heap[0] = _heap[lastIndex];
+                _heap.RemoveAt(lastIndex);
+                HeapSiftDown(0);
+            }
+        }
+
+        #endregion
 
         private void FreeOldEventBuffers(long stopTimestamp)
         {
@@ -277,6 +354,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         EventPipeEventSource _source;
         ThreadCache _threads;
         Queue<EventBlockBuffer> _buffers = new Queue<EventBlockBuffer>();
+        List<HeapEntry> _heap = new List<HeapEntry>();
     }
 
     internal class EventMarker
