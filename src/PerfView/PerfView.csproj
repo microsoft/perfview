@@ -106,6 +106,8 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" GeneratePathProperty="true" />
     <PackageReference Include="System.Memory" GeneratePathProperty="true" />
     <PackageReference Include="System.Numerics.Vectors" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" GeneratePathProperty="true" />
+    <PackageReference Include="System.IO.Pipelines" GeneratePathProperty="true" />
     <PackageReference Include="System.Text.Encodings.Web" GeneratePathProperty="true" />
     <PackageReference Include="System.Text.Json" GeneratePathProperty="true" />
     <PackageReference Include="System.Threading.Tasks.Extensions" GeneratePathProperty="true" />
@@ -631,6 +633,20 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Security.Cryptography.ProtectedData.dll</LogicalName>
       <Link>System.Security.Cryptography.ProtectedData.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Bcl_AsyncInterfaces)\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Bcl.AsyncInterfaces.dll</LogicalName>
+      <Link>Microsoft.Bcl.AsyncInterfaces.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_IO_Pipelines)\lib\net462\System.IO.Pipelines.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\System.IO.Pipelines.dll</LogicalName>
+      <Link>System.IO.Pipelines.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PkgSystem_Text_Encodings_Web)\lib\net462\System.Text.Encodings.Web.dll">
