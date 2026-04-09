@@ -8970,10 +8970,34 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
                     break;
 
+                case ModuleBinaryFormat.Unspecified:
+                    {
+                        // For unmerged Windows traces, symbolInfo is null because the ETL
+                        // didn't contain RSDS events with PDB identity info.
+                        // Fall back to PDB lookup on Windows, which handles missing signatures
+                        // gracefully and returns null if the file isn't a PE binary.
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        {
+                            reader.m_log.WriteLine("LookupSymbolsForModule: Binary format unspecified for {0}, looking up PDB info from local file.", moduleFile.FilePath);
+                            NativeSymbolModule moduleReader = OpenPdbForModuleFile(reader, moduleFile) as NativeSymbolModule;
+                            if (moduleReader != null)
+                            {
+                                symbolLookup = moduleReader;
+                            }
+                            // Standard PE RVA computation.
+                            computeRva = (address) => (uint)(address - moduleFile.ImageBase);
+                        }
+                        else
+                        {
+                            reader.m_log.WriteLine("LookupSymbolsForModule: Binary format unspecified for {0}, skipping.", moduleFile.FilePath);
+                        }
+                    }
+                    break;
+
                 default:
                     {
-                        Debug.Assert(false, "LookupSymbolsForModule: unknown binary format " + moduleFile.BinaryFormat);
-                        reader.m_log.WriteLine("LookupSymbolsForModule: Unknown binary format {0} for {1}, skipping.", moduleFile.BinaryFormat, moduleFile.FilePath);
+                        Debug.Assert(false, "LookupSymbolsForModule: unrecognized binary format " + moduleFile.BinaryFormat);
+                        reader.m_log.WriteLine("LookupSymbolsForModule: Unrecognized binary format {0} for {1}, skipping.", moduleFile.BinaryFormat, moduleFile.FilePath);
                     }
                     break;
             }
@@ -10568,7 +10592,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// The binary format of this module file (PE, ELF, or Unknown).
         /// </summary>
-        public ModuleBinaryFormat BinaryFormat { get { return symbolInfo?.Format ?? ModuleBinaryFormat.Unknown; } }
+        public ModuleBinaryFormat BinaryFormat { get { return symbolInfo?.Format ?? ModuleBinaryFormat.Unspecified; } }
 
         /// <summary>
         /// PE-specific symbol info (PDB identity + R2R). Null if this is not a PE module.
@@ -10780,7 +10804,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.WriteAddress(imageBase);
 
             // Write symbol info with format discriminator
-            byte format = (byte)(symbolInfo?.Format ?? ModuleBinaryFormat.Unknown);
+            byte format = (byte)(symbolInfo?.Format ?? ModuleBinaryFormat.Unspecified);
             serializer.Write(format);
             if (symbolInfo != null)
             {
@@ -10836,8 +10860,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     /// </summary>
     public enum ModuleBinaryFormat : byte
     {
-        /// <summary>The module format is unknown.</summary>
-        Unknown = 0,
+        /// <summary>The module format was not specified in the trace.</summary>
+        Unspecified = 0,
         /// <summary>Windows Portable Executable format.</summary>
         PE = 1,
         /// <summary>Linux ELF (Executable and Linkable Format).</summary>
