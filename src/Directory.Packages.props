@@ -6,7 +6,7 @@
   </PropertyGroup>
   <!-- Support files and analyzers -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.3.183" />
+    <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.3.209" />
     <PackageVersion Include="PerfView.SupportFiles" Version="1.0.8" />
     <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.30" />
     <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent.AutomatedAnalysis.Analyzers" Version="0.1.2" />
