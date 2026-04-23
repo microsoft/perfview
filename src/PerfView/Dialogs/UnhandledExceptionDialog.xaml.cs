@@ -12,11 +12,11 @@ namespace PerfView.Dialogs
         {
             InitializeComponent();
 
-            string reporting = "The fact that this exception went unhanded is a programmer error.   It should be reported "
+            string reporting = "The fact that this exception went unhandled is a programmer error.   It should be reported "
                           + "so it can be fixed.  Please set along the following stack trace information which will be "
                           + "useful in diagnosing the problem.\r\n";
 
-            Body.Text = "An unhanded exception occured.\r\n"
+            Body.Text = "An unhandled exception occurred.\r\n"
                       + "\r\n"
                       + "At this point you can opt to continue, however it is possible that the aborted computation will "
                       + "cause additional failures.   Because PerfView generally only opens files for reading, there is no "
