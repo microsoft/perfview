@@ -4773,7 +4773,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
             else
             {
-                Debug.Assert(_event.PauseDurationMSec == 0);
+                // For a BackgroundGC the initial pause is pre-seeded with SuspendDurationMSec
+                // at GCStart time (see the BGC branch in the GCStart handler), so PauseDurationMSec
+                // may already be non-zero when we get here. Overwrite it with the full pause
+                // (SuspendEE start -> RestartEE end), which is the authoritative value.
                 _event.PauseDurationMSec = RestartEEMSec - _event.PauseStartRelativeMSec;
             }
         }
