@@ -759,6 +759,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         internal static DynamicTraceEventData TryLookupWorker(TraceEvent unknownEvent, Dictionary<MapKey, IDictionary<long, string>> mapTable = null)
         {
+            // We are not able to handle WPP events in this parser.
+            if (unknownEvent.lookupAsWPP)
+            {
+                return null;
+            }
+
             // Is this a TraceLogging style 
             DynamicTraceEventData ret = null;
 
@@ -1330,7 +1336,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         parsedTemplate = TryLookup(unknown);
                         if (parsedTemplate == null)
                         {
-                            m_state.m_templates.Add(unknown.Clone(), null);         // add an entry to remember that we tried and failed.  
+                            m_state.m_templates.Add(unknown.Clone(true), null);         // add an entry to remember that we tried and failed.  
                         }
                     }
                     if (parsedTemplate == null)
@@ -1507,7 +1513,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             public bool Equals(TraceEvent x, TraceEvent y)
             {
-                Debug.Assert(!(x.lookupAsWPP && x.lookupAsClassic));
                 if (x.lookupAsClassic != y.lookupAsClassic)
                 {
                     return false;
@@ -1518,15 +1523,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return false;
                 }
 
-                if (x.lookupAsClassic)
-                {
-                    Debug.Assert(x.taskGuid != Guid.Empty && y.taskGuid != Guid.Empty);
-                    return (x.taskGuid == y.taskGuid) && (x.Opcode == y.Opcode);
-                }
-                else if (x.lookupAsWPP)
+                if (x.lookupAsWPP)
                 {
                     Debug.Assert(x.taskGuid != Guid.Empty && y.taskGuid != Guid.Empty);
                     return (x.taskGuid == y.taskGuid) && (x.ID == y.ID);
+                }
+                else if (x.lookupAsClassic)
+                {
+                    Debug.Assert(x.taskGuid != Guid.Empty && y.taskGuid != Guid.Empty);
+                    return (x.taskGuid == y.taskGuid) && (x.Opcode == y.Opcode);
                 }
                 else
                 {
@@ -1536,13 +1541,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             public int GetHashCode(TraceEvent obj)
             {
-                if (obj.lookupAsClassic)
-                {
-                    return obj.taskGuid.GetHashCode() + (int)obj.Opcode;
-                }
-                else if (obj.lookupAsWPP)
+                if (obj.lookupAsWPP)
                 {
                     return obj.taskGuid.GetHashCode() + (int)obj.ID;
+                }
+                else if (obj.lookupAsClassic)
+                {
+                    return obj.taskGuid.GetHashCode() + (int)obj.Opcode;
                 }
                 else
                 {
