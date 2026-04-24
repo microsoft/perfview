@@ -917,9 +917,15 @@ namespace Stats
                         continue;
                     }
                 }
-                events.Add(_event);
                 int heapIndexHighestGen;
-                condemnedReasonRows.Add(GetCondemnedReasonRow(_event, out heapIndexHighestGen));
+                byte[] condemnedReasonRow = GetCondemnedReasonRow(_event, out heapIndexHighestGen);
+                if (condemnedReasonRow == null)
+                {
+                    // No per-heap or global condemned reasons information available for this event.
+                    continue;
+                }
+                events.Add(_event);
+                condemnedReasonRows.Add(condemnedReasonRow);
                 if (isServerGC)
                 {
                     heapIndexes.Add(heapIndexHighestGen);
