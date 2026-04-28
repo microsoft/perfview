@@ -615,7 +615,16 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     if (exeIndexPath == null)
                     {
-                        exeIndexPath = fileName + @"\" + buildTimestamp.ToString("x") + sizeOfImage.ToString("x") + @"\" + fileName;
+                        // Symbol-server convention (matched by symsrv.dll/symchk) is
+                        // <TimeDateStamp:X8><SizeOfImage:X> — TimeDateStamp zero-padded
+                        // to 8 hex digits, SizeOfImage variable-width with no padding.
+                        // Using "x" without width drops the leading hex zero when the
+                        // value is < 0x10000000, producing a malformed key that 404s
+                        // even when the binary is indexed on the server. This hits real
+                        // binaries built with /Brepro (deterministic builds), where the
+                        // PE TimeDateStamp is a hash that can have leading zeros (e.g.
+                        // SystemSettings.dll on recent Windows: TS=0x0D9F641E).
+                        exeIndexPath = fileName + @"\" + buildTimestamp.ToString("x8") + sizeOfImage.ToString("x") + @"\" + fileName;
                     }
 
                     string cache = element.Cache;
