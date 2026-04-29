@@ -4571,7 +4571,24 @@ namespace PerfView
             return ret;
         }
 
-        // TODO not clear I want this method 
+        public virtual StackSource GetStackSource(TextWriter log, double startRelativeMSec, double endRelativeMSec, Predicate<TraceEvent> predicate)
+        {
+            StackSource ret = DataFile.OpenStackSourceImpl(SourceName, log, startRelativeMSec, endRelativeMSec, predicate);
+            if (ret == null)
+            {
+                // Fall back to implementation without predicate
+                ret = DataFile.OpenStackSourceImpl(SourceName, log, startRelativeMSec, endRelativeMSec);
+            }
+
+            if (ret == null)
+            {
+                throw new ApplicationException("Not a file type that supports the StackView.");
+            }
+
+            return ret;
+        }
+
+        // TODO not clear I want this method
         protected virtual StackSource OpenStackSource(
             string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
         {
