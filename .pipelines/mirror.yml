@@ -1,9 +1,6 @@
 trigger:
   - main
 
-variables:
-  - group: 'DotNet-VSTS-Infra-Access'
-
 resources:
   repositories:
   - repository: 1esPipelines
@@ -29,6 +26,19 @@ extends:
       jobs:
         - job: Mirror
           steps:
+          - task: AzureCLI@2
+            displayName: 'Mint AzDO token via WIF'
+            inputs:
+              azureSubscription: 'DncEng Insertion: Roslyn and Razor'
+              scriptType: 'pscore'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                $token = az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv
+                if ($LASTEXITCODE -ne 0) { Write-Error "Failed to get access token"; exit 1 }
+                $token = $token.Trim()
+                if ([string]::IsNullOrWhiteSpace($token)) { Write-Error "Token is empty"; exit 1 }
+                Write-Host "##vso[task.setvariable variable=AzdoToken;issecret=true]$token"
+
           - task: PowerShell@1
             displayName: 'Set SourceBranch Variable'
             inputs:
@@ -108,18 +118,18 @@ extends:
           - task: CmdLine@2
             displayName: 'Pull AzDO SourceBranch'
             inputs:
-              script: 'git pull --strategy=recursive --strategy-option no-renames https://dn-bot:$(dn-bot-devdiv-build-rw-code-rw)@devdiv.visualstudio.com/DevDiv/_git/perfView $(SourceBranch)'
+              script: 'git pull --strategy=recursive --strategy-option no-renames https://x-access-token:$(AzdoToken)@devdiv.visualstudio.com/DevDiv/_git/perfView $(SourceBranch)'
 
           - task: CmdLine@2
             displayName: 'Run git push'
             inputs:
-              script: 'git push https://dn-bot:$(dn-bot-devdiv-build-rw-code-rw)@devdiv.visualstudio.com/DevDiv/_git/perfView $(MirrorBranch)'
+              script: 'git push https://x-access-token:$(AzdoToken)@devdiv.visualstudio.com/DevDiv/_git/perfView $(MirrorBranch)'
 
           - task: PowerShell@1
             displayName: 'Create Pull Request'
             inputs:
               scriptType: inlineScript
-              arguments: '$(dn-bot-devdiv-build-rw-code-rw)'
+              arguments: '$(AzdoToken)'
               inlineScript: |
                 param(
                   [string]$AccessToken
