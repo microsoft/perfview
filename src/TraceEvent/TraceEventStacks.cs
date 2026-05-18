@@ -673,6 +673,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     return true;
                 }
 
+                // On Linux, <processName>!_start is an ELF entry point for C programs.
+                string processName = m_log.Threads[threadIndex].Process.Name;
+                if (string.Compare(moduleFileName, processName, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    m_goodTopModuleIndex = moduleFileIndex;
+                    return true;
+                }
+
                 // The special processes 4 (System) and 0 (Kernel) can stay in the kernel without being broken.  
                 if (moduleFile.FilePath.EndsWith("ntoskrnl.exe", StringComparison.OrdinalIgnoreCase))
                 {

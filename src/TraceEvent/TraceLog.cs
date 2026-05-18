@@ -8570,10 +8570,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             Debug.Assert(process != null);
 
+            // EndAddress is inclusive, so add one to get the exclusive length.
+            long symbolLength = (long)(data.EndAddress - data.StartAddress + 1);
+
             // Skip symbols with invalid address ranges. The length parameter to ForAllUnresolvedCodeAddressesInRange
             // is a signed long, so ranges whose unsigned size exceeds long.MaxValue (e.g., [0x0, 0xFFFFFFFFFFFFFFFF)
             // from zeroed /proc/kallsyms on Linux without root) would overflow to a negative value and must be rejected.
-            long symbolLength = (long)(data.EndAddress - data.StartAddress);
             if (symbolLength <= 0)
             {
                 return;
