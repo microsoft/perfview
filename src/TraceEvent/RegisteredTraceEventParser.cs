@@ -1046,7 +1046,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         else
                         {
                             Debug.WriteLine("     Field is an array of size " + ((fixedCount != 0) ? fixedCount.ToString() : "VARIABLE") + " of type " + ((propertyFetch.Type ?? typeof(void))) + " at offset " + arrayFieldOffset.ToString("x"));
-                            propertyFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(arrayFieldOffset, propertyFetch, arraySize, fixedCount, projectCharArrayAsString:false);
+                            if (fixedCount != 0)
+                            {
+                                // Use FixedCountArrayPayloadFetch so that Size is set to the total byte size
+                                // (fixedCount * element.Size) rather than just the element count, ensuring that
+                                // subsequent field offsets are computed correctly.
+                                propertyFetch = DynamicTraceEventData.PayloadFetch.FixedCountArrayPayloadFetch(arrayFieldOffset, propertyFetch, fixedCount, projectCharArrayAsString:false);
+                            }
+                            else
+                            {
+                                propertyFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(arrayFieldOffset, propertyFetch, arraySize, 0, projectCharArrayAsString:false);
+                            }
                         }
 
                         fieldOffset = ushort.MaxValue;           // Indicate that the next offset must be computed at run time. 
