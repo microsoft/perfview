@@ -12,7 +12,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Address = System.UInt64;
-
+using System.Buffers.Binary;
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     /// <summary>
@@ -1830,11 +1830,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         public void ToStream(Serializer serializer)
         {
-            serializer.Write((int)eventID);
-            serializer.Write((int)task);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)eventID)));
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)task)));
             serializer.Write(taskName);
             serializer.Write(taskGuid);
-            serializer.Write((int)opcode);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)opcode)));
             serializer.Write(opcodeName);
             serializer.Write(providerGuid);
             serializer.Write(providerName);
@@ -1843,13 +1843,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             serializer.Write(lookupAsWPP);
             serializer.Write(containsSelfDescribingMetadata);
 
-            serializer.Write(payloadNames.Length);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(payloadNames.Length)));
             foreach (var payloadName in payloadNames)
             {
                 serializer.Write(payloadName);
             }
 
-            serializer.Write(payloadFetches.Length);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(payloadFetches.Length)));
             foreach (var payloadFetch in payloadFetches)
             {
                 payloadFetch.ToStream(serializer);
@@ -1983,7 +1983,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(providers.Count);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(providers.Count)));
             foreach (ProviderManifest provider in providers.Values)
             {
                 serializer.Write(provider);

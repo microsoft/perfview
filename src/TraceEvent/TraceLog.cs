@@ -23,6 +23,7 @@ using Microsoft.Diagnostics.Tracing.SourceConverters;
 using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
@@ -34,8 +35,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Address = System.UInt64;
 
+using Address = System.UInt64;
 
 namespace Microsoft.Diagnostics.Tracing.Etlx
 {
@@ -2343,8 +2344,22 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
                 unsafe
                 {
-                    Debug.Assert(data.eventRecord->EventHeader.TimeStamp < long.MaxValue);
-                    WriteBlob((IntPtr)data.eventRecord, writer, headerSize);
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        Span<byte> buffer = stackalloc byte[headerSize];
+                        new Span<byte>(data.eventRecord, headerSize).CopyTo(buffer);
+                        SwapEventRecordEndianness(buffer);
+                        fixed (byte* bufferPtr = buffer)
+                        {
+                        	WriteBlob((IntPtr)bufferPtr, writer, headerSize);
+                        }
+                    }
+                    else
+                    {
+                        Debug.Assert(data.eventRecord->EventHeader.TimeStamp < long.MaxValue);
+                        WriteBlob((IntPtr)data.eventRecord, writer, headerSize);
+                    }
+
                     WriteBlob(data.userData, writer, (data.EventDataLength + 3 & ~3));
                 }
                 numberOnPage++;
@@ -3264,6 +3279,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_STACK_TRACE64 ||
                     extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_STACK_TRACE32)
                 {
+
                     int pointerSize = (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_STACK_TRACE64) ? 8 : 4;
                     var stackRecord = (TraceEventNativeMethods.EVENT_EXTENDED_ITEM_STACK_TRACE64*)extendedData[i].DataPtr;
                     // TODO Debug.Assert(stackRecord->MatchId == 0);
@@ -3463,6 +3479,63 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
+        private static void SwapEventRecordEndianness(Span<byte> buffer)
+        {
+            int offset = 0;
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // Size (UInt16)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // HeaderType (UInt16)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // Flags (UInt16)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // EventProperty (UInt16)
+            buffer.Slice(offset, 4).Reverse();
+            offset += 4;  // ThreadId (Int32)
+            buffer.Slice(offset, 4).Reverse();
+            offset += 4;  // ProcessId (Int32)
+            buffer.Slice(offset, 8).Reverse();
+            offset += 8;  // TimeStamp (Int64)
+            
+            // ProviderId GUID (16 bytes) - swap first 3 components only
+            buffer.Slice(offset, 4).Reverse();
+            offset += 4;  // Data1 (Int32)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // Data2 (Int16)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 10;  // Data3 (Int16) +  Data4 (8 bytes) - unchanged
+            
+            buffer.Slice(offset, 2).Reverse();
+            offset += 6;  // Id (UInt16) + Version, Channel, Level, Opcode (4 single bytes)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // Task (UInt16)
+            buffer.Slice(offset, 8).Reverse();
+            offset += 8;  // Keyword (UInt64)
+            buffer.Slice(offset, 4).Reverse();
+            offset += 4;  // KernelTime (UInt32)
+            buffer.Slice(offset, 4).Reverse();
+            offset += 4;  // UserTime (UInt32)
+            
+            // ActivityId GUID (16 bytes) - swap first 3 components only
+            buffer.Slice(offset, 4).Reverse();
+            offset += 4;  // Data1 (Int32)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // Data2 (Int16)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 12;  // Data3 (Int16) + Data4 (8 bytes) - unchanged + ProcessorNumber, Alignment (2 single bytes)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // LoggerId (UInt16)
+            
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // ExtendedDataCount (UInt16)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // UserDataLength (UInt16)
+            buffer.Slice(offset, 8).Reverse();
+            offset += 8;  // ExtendedData (pointer - UInt64)
+            buffer.Slice(offset, 8).Reverse();
+            offset += 8;  // UserData (pointer - UInt64)
+        }
+
         // [Conditional("DEBUG")]
         internal void DebugWarn(bool condition, string message, TraceEvent data)
         {
@@ -3588,7 +3661,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 Debug.Assert(ptr->EventHeader.Level <= 6);
                 Debug.Assert(ptr->EventHeader.Version <= 10);
 
-                long eventTimeQPC = ptr->EventHeader.TimeStamp;
+                long eventTimeQPC = BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(ptr->EventHeader.TimeStamp));
                 Debug.Assert(sessionStartTimeQPC <= eventTimeQPC && eventTimeQPC < DateTime.Now.Ticks || eventTimeQPC == long.MaxValue);
 
                 if (eventTimeQPC >= timeQPC)
@@ -3847,7 +3920,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     if (i == 2)
                     {
-                        serializer.Write(long.MaxValue);
+                        serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(long.MaxValue)));
                     }
                     else
                     {
@@ -3862,20 +3935,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             });
 
             serializer.Log("<Marker name=\"sessionStartTime\"/>");
-            serializer.Write(_syncTimeUTC.ToFileTimeUtc());
-            serializer.Write(pointerSize);
-            serializer.Write(numberOfProcessors);
-            serializer.Write(cpuSpeedMHz);
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(_syncTimeUTC.ToFileTimeUtc())));
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(pointerSize)));
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(numberOfProcessors)));
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(cpuSpeedMHz)));
             serializer.Write((byte)osVersion.Major);
             serializer.Write((byte)osVersion.Minor);
             serializer.Write((byte)osVersion.MajorRevision);
             serializer.Write((byte)osVersion.MinorRevision);
-            serializer.Write(QPCFreq);
-            serializer.Write(sessionStartTimeQPC);
-            serializer.Write(sessionEndTimeQPC);
-            serializer.Write(eventsLost);
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(QPCFreq)));
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(sessionStartTimeQPC)));
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(sessionEndTimeQPC)));
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(eventsLost)));
             serializer.Write(machineName);
-            serializer.Write(memorySizeMeg);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(memorySizeMeg)));
 
             serializer.Write(processes);
             serializer.Write(threads);
@@ -3885,29 +3958,29 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Write(moduleFiles);
 
             serializer.Log("<WriteCollection name=\"eventPages\" count=\"" + eventPages.Count + "\">\r\n");
-            serializer.Write(eventPages.Count);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(eventPages.Count)));
             for (int i = 0; i < eventPages.Count; i++)
             {
-                serializer.Write(eventPages[i].TimeQPC);
+                serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(eventPages[i].TimeQPC)));
                 serializer.Write(eventPages[i].Position);
             }
-            serializer.Write(eventPages.Count);                 // redundant as a checksum
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(eventPages.Count)));                 // redundant as a checksum
             serializer.Log("</WriteCollection>\r\n");
-            serializer.Write(eventCount);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(eventCount)));
 
             serializer.Log("<Marker Name=\"eventsToStacks\"/>");
             lazyEventsToStacks.Write(serializer, delegate
             {
                 serializer.Log("<WriteCollection name=\"eventsToStacks\" count=\"" + eventsToStacks.Count + "\">\r\n");
-                serializer.Write(eventsToStacks.Count);
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(eventsToStacks.Count)));
                 for (int i = 0; i < eventsToStacks.Count; i++)
                 {
                     EventsToStackIndex eventToStack = eventsToStacks[i];
                     Debug.Assert(i == 0 || eventsToStacks[i - 1].EventIndex <= eventsToStacks[i].EventIndex, "event list not sorted");
-                    serializer.Write((int)eventToStack.EventIndex);
-                    serializer.Write((int)eventToStack.CallStackIndex);
+                    serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)eventToStack.EventIndex)));
+                    serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)eventToStack.CallStackIndex)));
                 }
-                serializer.Write(eventsToStacks.Count);             // Redundant as a checksum
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(eventsToStacks.Count)));             // Redundant as a checksum
                 serializer.Log("</WriteCollection>\r\n");
             });
 
@@ -3915,15 +3988,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             lazyEventsToStacks.Write(serializer, delegate
             {
                 serializer.Log("<WriteCollection name=\"cswitchBlockingEventsToStacks\" count=\"" + cswitchBlockingEventsToStacks.Count + "\">\r\n");
-                serializer.Write(cswitchBlockingEventsToStacks.Count);
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(cswitchBlockingEventsToStacks.Count)));
                 for (int i = 0; i < cswitchBlockingEventsToStacks.Count; i++)
                 {
                     EventsToStackIndex eventToStack = cswitchBlockingEventsToStacks[i];
                     Debug.Assert(i == 0 || cswitchBlockingEventsToStacks[i - 1].EventIndex <= cswitchBlockingEventsToStacks[i].EventIndex, "event list not sorted");
-                    serializer.Write((int)eventToStack.EventIndex);
-                    serializer.Write((int)eventToStack.CallStackIndex);
+                    serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)eventToStack.EventIndex)));
+                    serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)eventToStack.CallStackIndex)));
                 }
-                serializer.Write(cswitchBlockingEventsToStacks.Count);             // Redundant as a checksum
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(cswitchBlockingEventsToStacks.Count)));             // Redundant as a checksum
                 serializer.Log("</WriteCollection>\r\n");
             });
 
@@ -3931,44 +4004,44 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             lazyEventsToCodeAddresses.Write(serializer, delegate
             {
                 serializer.Log("<WriteCollection name=\"eventsToCodeAddresses\" count=\"" + eventsToCodeAddresses.Count + "\">\r\n");
-                serializer.Write(eventsToCodeAddresses.Count);
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(eventsToCodeAddresses.Count)));
                 foreach (EventsToCodeAddressIndex eventsToCodeAddress in eventsToCodeAddresses)
                 {
-                    serializer.Write((int)eventsToCodeAddress.EventIndex);
-                    serializer.Write((long)eventsToCodeAddress.Address);
-                    serializer.Write((int)eventsToCodeAddress.CodeAddressIndex);
+                    serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)eventsToCodeAddress.EventIndex)));
+                    serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes((long)eventsToCodeAddress.Address)));
+                    serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)eventsToCodeAddress.CodeAddressIndex)));
                 }
-                serializer.Write(eventsToCodeAddresses.Count);       // Redundant as a checksum
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(eventsToCodeAddresses.Count)));       // Redundant as a checksum
                 serializer.Log("</WriteCollection>\r\n");
             });
 
             serializer.Log("<WriteCollection name=\"userData\" count=\"" + userData.Count + "\">\r\n");
-            serializer.Write(userData.Count);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(userData.Count)));
             foreach (KeyValuePair<string, object> pair in UserData)
             {
                 serializer.Write(pair.Key);
                 IFastSerializable asFastSerializable = (IFastSerializable)pair.Value;
                 serializer.Write(asFastSerializable);
             }
-            serializer.Write(userData.Count);                   // Redundant as a checksum
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(userData.Count)));                   // Redundant as a checksum
             serializer.Log("</WriteCollection>\r\n");
 
-            serializer.Write(sampleProfileInterval100ns);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(sampleProfileInterval100ns)));
             serializer.Write(osName);
             serializer.Write(osBuild);
-            serializer.Write(bootTime100ns);
-            serializer.Write(utcOffsetMinutes ?? int.MinValue);
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(bootTime100ns)));
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(utcOffsetMinutes ?? int.MinValue)));
             serializer.Write(hasPdbInfo);
 
             serializer.Log("<WriteCollection name=\"m_relatedActivityIds\" count=\"" + relatedActivityIDs.Count + "\">\r\n");
-            serializer.Write(relatedActivityIDs.Count);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(relatedActivityIDs.Count)));
             for (int i = 0; i < relatedActivityIDs.Count; i++)
             {
                 serializer.Write(relatedActivityIDs[i]);
             }
 
             serializer.Log("<WriteCollection name=\"containerIDs\" count=\"" + containerIDs.Count + "\">\r\n");
-            serializer.Write(containerIDs.Count);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(containerIDs.Count)));
             for (int i = 0; i < containerIDs.Count; i++)
             {
                 serializer.Write(containerIDs[i]);
@@ -3977,7 +4050,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Log("</WriteCollection>\r\n");
 
             serializer.Write(truncated);
-            serializer.Write((int)firstTimeInversion);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)firstTimeInversion)));
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -4799,7 +4872,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         void IFastSerializable.ToStream(Serializer serializer)
         {
             serializer.Write(m_log);
-            serializer.Write(m_counts.Count);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(m_counts.Count)));
             foreach (var counts in m_counts.Values)
             {
                 serializer.Write(counts);
@@ -4885,7 +4958,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public void Serialize(Serializer serializer)
         {
             serializer.Write(m_providerGuid);
-            serializer.Write((int)m_eventId);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)m_eventId)));
             serializer.Write(m_classicProvider);
         }
     }
@@ -5129,9 +5202,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             serializer.Write(m_stats);
             m_key.Serialize(serializer);
-            serializer.Write(m_count);
-            serializer.Write(m_stackCount);
-            serializer.Write(m_eventDataLenTotal);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(m_count)));
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(m_stackCount)));
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(m_eventDataLenTotal)));
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -5329,6 +5402,39 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             protected unsafe TraceEvent GetNext()
             {
                 TraceEventNativeMethods.EVENT_RECORD* ptr = (TraceEventNativeMethods.EVENT_RECORD*)reader.GetPointer(TraceLog.headerSize);
+                if (!BitConverter.IsLittleEndian)
+                {
+                    ptr->EventHeader.Size = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->EventHeader.Size));
+                    ptr->EventHeader.HeaderType = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->EventHeader.HeaderType));
+                    ptr->EventHeader.Flags = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->EventHeader.Flags));
+                    ptr->EventHeader.EventProperty = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->EventHeader.EventProperty));
+                    ptr->EventHeader.ThreadId = BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(ptr->EventHeader.ThreadId));
+                    ptr->EventHeader.ProcessId = BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(ptr->EventHeader.ProcessId));
+                    ptr->EventHeader.TimeStamp = BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(ptr->EventHeader.TimeStamp));
+                    ptr->EventHeader.Id = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->EventHeader.Id));
+                    ptr->EventHeader.Task = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->EventHeader.Task));
+                    ptr->EventHeader.Keyword = BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes(ptr->EventHeader.Keyword));
+                    ptr->EventHeader.KernelTime = BinaryPrimitives.ReadUInt32LittleEndian(BitConverter.GetBytes(ptr->EventHeader.KernelTime));
+                    ptr->EventHeader.UserTime = BinaryPrimitives.ReadUInt32LittleEndian(BitConverter.GetBytes(ptr->EventHeader.UserTime));
+                    
+                     Span<byte> guidarr = stackalloc byte[16];
+                    
+                    guidarr = ptr->EventHeader.ProviderId.ToByteArray();
+                    BinaryPrimitives.WriteInt32LittleEndian(guidarr.Slice(0), (MemoryMarshal.Read<int>(guidarr.Slice(0,4))));
+                    BinaryPrimitives.WriteInt16LittleEndian(guidarr.Slice(4), (MemoryMarshal.Read<short>(guidarr.Slice(4,6))));
+                    BinaryPrimitives.WriteInt16LittleEndian(guidarr.Slice(6), (MemoryMarshal.Read<short>(guidarr.Slice(6,8))));
+                    ptr->EventHeader.ProviderId = new Guid(guidarr.ToArray());
+                    
+                    guidarr = ptr->EventHeader.ActivityId.ToByteArray();
+                    BinaryPrimitives.WriteInt32LittleEndian(guidarr.Slice(0), (MemoryMarshal.Read<int>(guidarr.Slice(0,4))));
+                    BinaryPrimitives.WriteInt16LittleEndian(guidarr.Slice(4), (MemoryMarshal.Read<short>(guidarr.Slice(4,6))));
+                    BinaryPrimitives.WriteInt16LittleEndian(guidarr.Slice(6), (MemoryMarshal.Read<short>(guidarr.Slice(6,8))));
+                    ptr->EventHeader.ActivityId = new Guid(guidarr.ToArray());
+                    
+                    ptr->UserDataLength = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->UserDataLength));
+                    ptr->UserData = (IntPtr)BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes((ulong)ptr->UserData));
+                    ptr->UserContext = (IntPtr)BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes((ulong)ptr->UserContext));
+                }
                 TraceEvent ret = lookup.Lookup(ptr);
 
                 // We use the first item in the linked list in 'ret'.   This should always be the 'best' way of decoding
@@ -5709,7 +5815,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             serializer.Write(log);
             serializer.Log("<WriteCollection name=\"Processes\" count=\"" + processes.Count + "\">\r\n");
-            serializer.Write(processes.Count);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(processes.Count)));
             for (int i = 0; i < processes.Count; i++)
             {
                 serializer.Write(processes[i]);
@@ -5718,7 +5824,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Log("</WriteCollection>\r\n");
 
             serializer.Log("<WriteCollection name=\"ProcessesByPID\" count=\"" + processesByPID.Count + "\">\r\n");
-            serializer.Write(processesByPID.Count);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(processesByPID.Count)));
             for (int i = 0; i < processesByPID.Count; i++)
             {
                 serializer.Write(processesByPID[i]);
@@ -6115,24 +6221,24 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(processID);
-            serializer.Write((int)processIndex);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(processID)));
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)processIndex)));
             serializer.Write(log);
             serializer.Write(commandLine);
             serializer.Write(imageFileName);
-            serializer.Write(firstEventSeenQPC);
-            serializer.Write(startTimeQPC);
-            serializer.Write(endTimeQPC);
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(firstEventSeenQPC)));
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(startTimeQPC)));
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(endTimeQPC)));
             serializer.Write(exitStatus.HasValue);
             if (exitStatus.HasValue)
             {
-                serializer.Write(exitStatus.Value);
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(exitStatus.Value)));
             }
 
-            serializer.Write(parentID);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(parentID)));
             serializer.Write(parent);
             serializer.Write(loadedModules);
-            serializer.Write(cpuSamples);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(cpuSamples)));
             serializer.Write(loadedAModuleHigh);
             serializer.Write(anyModuleLoaded);
         }
@@ -6577,7 +6683,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Write(log);
 
             serializer.Log("<WriteCollection name=\"threads\" count=\"" + threads.Count + "\">\r\n");
-            serializer.Write(threads.Count);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(threads.Count)));
             for (int i = 0; i < threads.Count; i++)
             {
                 serializer.Write(threads[i]);
@@ -6771,20 +6877,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(threadID);
-            serializer.Write((int)threadIndex);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(threadID)));
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)threadIndex)));
             serializer.Write(process);
-            serializer.Write(startTimeQPC);
-            serializer.Write(endTimeQPC);
-            serializer.Write(cpuSamples);
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(startTimeQPC)));
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(endTimeQPC)));
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(cpuSamples)));
             serializer.Write(threadInfo);
-            serializer.Write((long)userStackBase);
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes((long)userStackBase)));
 
-            serializer.Write(activityIds.Count);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(activityIds.Count)));
             serializer.Log("<WriteCollection name=\"ActivityIDForThread\" count=\"" + activityIds.Count + "\">\r\n");
             foreach (ActivityIndex entry in activityIds)
             {
-                serializer.Write((int)entry);
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)entry)));
             }
 
             serializer.Log("</WriteCollection>\r\n");
@@ -7385,7 +7491,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             serializer.Write(process);
             serializer.Log("<WriteCollection count=\"" + modules.Count + "\">\r\n");
-            serializer.Write(modules.Count);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(modules.Count)));
             for (int i = 0; i < modules.Count; i++)
             {
                 serializer.Write(modules[i]);
@@ -7557,12 +7663,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         void IFastSerializable.ToStream(Serializer serializer) { ToStream(serializer); }
         internal void ToStream(Serializer serializer)
         {
-            serializer.Write(loadTimeQPC);
-            serializer.Write(unloadTimeQPC);
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(loadTimeQPC)));
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(unloadTimeQPC)));
             serializer.Write(managedModule);
             serializer.Write(process);
             serializer.Write(moduleFile);
-            serializer.Write((long)key);
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes((long)key)));
             serializer.Write(overlaps);
         }
         /// <summary>
@@ -7657,9 +7763,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         void IFastSerializable.ToStream(Serializer serializer)
         {
             base.ToStream(serializer);
-            serializer.Write(assemblyID);
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(assemblyID)));
             serializer.Write(nativeModule);
-            serializer.Write((int)flags);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)flags)));
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -7853,12 +7959,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 GetStackIndexForStackEvent64((ulong*)addresses, addressCount, thread.Process, start) :
                 GetStackIndexForStackEvent32((uint*)addresses, addressCount, thread.Process, start);
         }
-
         private unsafe CallStackIndex GetStackIndexForStackEvent32(uint* addresses, int addressCount, TraceProcess process, CallStackIndex start)
         {
             for (var it = &addresses[addressCount]; it-- != addresses;)
             {
-                CodeAddressIndex codeAddress = codeAddresses.GetOrCreateCodeAddressIndex(process, *it);
+                CodeAddressIndex codeAddress = codeAddresses.GetOrCreateCodeAddressIndex(process, BinaryPrimitives.ReadUInt32LittleEndian(BitConverter.GetBytes((uint)(*it))));
                 start = InternCallStackIndex(codeAddress, start);
             }
 
@@ -7869,7 +7974,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             for (var it = &addresses[addressCount]; it-- != addresses;)
             {
-                CodeAddressIndex codeAddress = codeAddresses.GetOrCreateCodeAddressIndex(process, *it);
+                CodeAddressIndex codeAddress = codeAddresses.GetOrCreateCodeAddressIndex(process, BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes((ulong)(*it))));
                 start = InternCallStackIndex(codeAddress, start);
             }
 
@@ -7940,11 +8045,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             lazyCallStacks.Write(serializer, delegate
             {
                 serializer.Log("<WriteCollection name=\"callStacks\" count=\"" + callStacks.Count + "\">\r\n");
-                serializer.Write(callStacks.Count);
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(callStacks.Count)));
                 for (int i = 0; i < callStacks.Count; i++)
                 {
-                    serializer.Write((int)callStacks[i].codeAddressIndex);
-                    serializer.Write((int)callStacks[i].callerIndex);
+                    serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)callStacks[i].codeAddressIndex)));
+                    serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)callStacks[i].callerIndex)));
                 }
                 serializer.Log("</WriteCollection>\r\n");
             });
@@ -9331,22 +9436,22 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 serializer.Write(methods);
 
                 serializer.WriteTagged(CodeAddressInfoSerializationVersion);
-                serializer.Write(codeAddresses.Count);
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(codeAddresses.Count)));
                 serializer.Log("<WriteCollection name=\"codeAddresses\" count=\"" + codeAddresses.Count + "\">\r\n");
                 for (int i = 0; i < codeAddresses.Count; i++)
                 {
-                    serializer.WriteAddress(codeAddresses[i].Address);
-                    serializer.Write((int)codeAddresses[i].moduleFileIndex);
-                    serializer.Write((int)codeAddresses[i].methodOrProcessOrIlMapIndex);
-                    serializer.Write(codeAddresses[i].InclusiveCount);
+                    serializer.WriteAddress(BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes((ulong)codeAddresses[i].Address)));
+                    serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)codeAddresses[i].moduleFileIndex)));
+                    serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)codeAddresses[i].methodOrProcessOrIlMapIndex)));
+                    serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(codeAddresses[i].InclusiveCount)));
 
                     // 'CodeAddressInfoSerializationVersion' >= 1
                     serializer.Write((byte)codeAddresses[i].optimizationTier);
                 }
-                serializer.Write(totalCodeAddresses);
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(totalCodeAddresses)));
                 serializer.Log("</WriteCollection>\r\n");
 
-                serializer.Write(ILToNativeMaps.Count);
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(ILToNativeMaps.Count)));
                 for (int i = 0; i < ILToNativeMaps.Count; i++)
                 {
                     serializer.Write(ILToNativeMaps[i]);
@@ -9719,8 +9824,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             internal void Serialize(Serializer serializer)
             {
-                serializer.Write(ILOffset);
-                serializer.Write(NativeOffset);
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(ILOffset)));
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(NativeOffset)));
             }
         }
 
@@ -9782,11 +9887,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             void IFastSerializable.ToStream(Serializer serializer)
             {
-                serializer.Write((int)MethodIndex);
-                serializer.Write((long)MethodStart);
-                serializer.Write(MethodLength);
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)MethodIndex)));
+                serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes((long)MethodStart)));
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(MethodLength)));
 
-                serializer.Write(Map.Count);
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(Map.Count)));
                 for (int i = 0; i < Map.Count; i++)
                 {
                     Map[i].Serialize(serializer);
@@ -10175,13 +10280,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             lazyMethods.Write(serializer, delegate
             {
                 serializer.Write(codeAddresses);
-                serializer.Write(methods.Count);
+                serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(methods.Count)));
                 serializer.Log("<WriteCollection name=\"methods\" count=\"" + methods.Count + "\">\r\n");
                 for (int i = 0; i < methods.Count; i++)
                 {
                     serializer.Write(methods[i].fullMethodName);
-                    serializer.Write(methods[i].methodDefOrRva);
-                    serializer.Write((int)methods[i].moduleIndex);
+                    serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(methods[i].methodDefOrRva)));
+                    serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)methods[i].moduleIndex)));
                 }
                 serializer.Log("</WriteCollection>\r\n");
             });
@@ -10493,7 +10598,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         void IFastSerializable.ToStream(Serializer serializer)
         {
             serializer.Write(log);
-            serializer.Write(moduleFiles.Count);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(moduleFiles.Count)));
             for (int i = 0; i < moduleFiles.Count; i++)
             {
                 serializer.Write(moduleFiles[i]);
@@ -10802,7 +10907,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         void IFastSerializable.ToStream(Serializer serializer)
         {
             serializer.Write(fileName);
-            serializer.Write(imageSize);
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(imageSize)));
             serializer.WriteAddress(imageBase);
 
             // Write symbol info with format discriminator
@@ -10815,10 +10920,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             serializer.Write(fileVersion);
             serializer.Write(productVersion);
-            serializer.Write(timeDateStamp);
-            serializer.Write(imageChecksum);
-            serializer.Write((int)moduleFileIndex);
-            serializer.Write(codeAddressesInModule);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(timeDateStamp)));
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(imageChecksum)));
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)moduleFileIndex)));
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(codeAddressesInModule)));
             serializer.Write(managedModule);
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
@@ -10912,12 +11017,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             serializer.Write(PdbName);
             serializer.Write(PdbSignature);
-            serializer.Write(PdbAge);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(PdbAge)));
             serializer.Write(IsReadyToRun);
             serializer.Write(R2RPerfMapSignature);
-            serializer.Write(R2RPerfMapVersion);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(R2RPerfMapVersion)));
             serializer.Write(R2RPerfMapName);
-            serializer.Write((int)R2RImageTextVirtualOffset);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)R2RImageTextVirtualOffset)));
         }
 
         internal override void FromStream(Deserializer deserializer)
@@ -11698,7 +11803,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     {
         public static void WriteAddress(this Serializer serializer, Address address)
         {
-            serializer.Write((long)address);
+            serializer.Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes((long)address)));
         }
         public static void ReadAddress(this Deserializer deserializer, out Address address)
         {

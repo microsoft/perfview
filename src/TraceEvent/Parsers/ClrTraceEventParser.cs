@@ -4788,12 +4788,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 buffer->TypeID = value->TypeID;
                 buffer->EdgeCount = value->EdgeCount;
                 ret = buffer;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    ret->Address = BinaryPrimitives.ReadUInt32LittleEndian(BitConverter.GetBytes(ret->Address));
+                    ret->Size = BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes(ret->Size));
+                    ret->TypeID = BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes(ret->TypeID));
+                    ret->EdgeCount = BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(ret->EdgeCount));
+                }
+
             }
             else
             {
                 GCBulkNodeUnsafeNodes* basePtr = (GCBulkNodeUnsafeNodes*)(((byte*)DataStart) + 10);
                 ret = basePtr + arrayIdx;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    ret->Address = BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes(ret->Address));
+                    ret->Size = BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes(ret->Size));
+                    ret->TypeID = BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes(ret->TypeID));
+                    ret->EdgeCount = BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(ret->EdgeCount));
+                }
             }
+	    
             Debug.Assert((ret->Address & 0xFF00000000000003L) == 0);
             Debug.Assert((ret->TypeID & 0xFF00000000000001L) == 0);
             Debug.Assert(ret->Size < 0x80000000L);

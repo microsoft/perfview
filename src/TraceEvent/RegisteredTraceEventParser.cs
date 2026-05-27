@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
-
+using System.Buffers.Binary;
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     /// <summary>
@@ -1567,7 +1567,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-            serializer.Write(count);
+            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(count)));
             foreach (var template in m_templates.Values)
             {
                 if (template != null)

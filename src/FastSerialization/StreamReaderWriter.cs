@@ -8,6 +8,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;      // For StringBuilder.
+using System.Buffers.Binary;
 
 namespace FastSerialization
 {
@@ -259,7 +260,7 @@ namespace FastSerialization
                 writeLabel = (value) =>
                 {
                     Debug.Assert((long)value <= int.MaxValue);
-                    Write((int)value);
+                    Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)value)));
                 };
             }
             else
@@ -267,7 +268,7 @@ namespace FastSerialization
                 writeLabel = (value) =>
                 {
                     Debug.Assert((long)value <= long.MaxValue);
-                    Write((long)value);
+                    Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes((long)value)));
                 };
             }
 
@@ -392,7 +393,7 @@ namespace FastSerialization
             }
             else
             {
-                Write(value.Length);
+                Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(value.Length)));
                 for (int i = 0; i < value.Length; i++)
                 {
                     char c = value[i];
