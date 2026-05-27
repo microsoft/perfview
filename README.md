@@ -54,36 +54,38 @@ you can do that by following the rest of these instructions.
 
 ### Tools Needed to Build PerfView
 
-The only tool you need to build PerfView is Visual Studio 2022.  The [Visual Studio 2022 Community Edition](https://www.visualstudio.com/vs/community/) 
+The only tool you need to build PerfView is Visual Studio 2026.  The [Visual Studio Community Edition](https://www.visualstudio.com/vs/community/)
 can be downloaded *for free* and has everything you need to fetch PerfView from GitHub, build and test it. We expect you 
-to download Visual Studio 2022 Community Edition if you don't already have Visual Studio 2022.
+to download Visual Studio Community Edition if you don't already have Visual Studio 2026.
 
 In your installation of Visual Studio, you need to ensure you have the following workloads and components installed:
 
   * **.NET desktop development** workload with all default components.
   * **Desktop development with C++** workload with all default components plus the latest Windows 10 SDK.
     * The Windows 10 SDK is not enabled by default in this workload, so you will need to check the box for it to be installed.
-  * **MSVC v143 - VS 2022 C++ x64/x86 Spectre-mitigated libs (Latest)** component.
+  * **MSVC v145 - VS 2026 C++ x64/x86 build tools (Latest)** component.
+  * **MSVC v145 - VS 2026 C++ x64/x86 Spectre-mitigated libs (Latest)** component.
     * This can be found under the 'Individual Components' tab.
 
 A `.vsconfig` file is included in the root of the repository that can be used to install the necessary components. When 
 opening the solution in Visual Studio, it will prompt you to install any components that it thinks are missing from your 
-installation.  Alternatively, you can [import the `.vsconfig` in the Visual Studio Installer](https://learn.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration).
+installation.  Alternatively, you can [import the `.vsconfig` in the Visual Studio Installer](https://learn.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations#import-a-configuration).
+PerfView intentionally uses the latest installed MSVC v145 toolset from Visual Studio 2026.
 
-If you get any errors compiling the ETWClrCompiler projects, it is likely because you either don't have the Windows 10 SDK 
+If you get any errors compiling the ETWClrProfiler projects, it is likely because you either don't have the Windows 10 SDK
 installed, or you don't have the spectre-mitigated libs installed. Please refer to the [troubleshooting section](#information-for-build-troubleshooting) for more information.
 
 
 ### Cloning the PerfView GitHub Repository. 
 
 The first step in getting started with the PerfView source code is to clone the PerfView GitHub repository.
-If you are already familiar with how GIT, GitHub, and Visual Studio 2022 GIT support works, then you can skip this section.
-However, if not, the [Setting up a Local GitHub repository with Visual Studio 2022](documentation/SettingUpRepoInVS.md) document
-will lead you through the basics of doing this. All it assumes is that you have Visual Studio 2022 installed.
+If you are already familiar with how GIT, GitHub, and Visual Studio 2026 GIT support works, then you can skip this section.
+However, if not, the [Setting up a Local GitHub repository with Visual Studio 2026](documentation/SettingUpRepoInVS.md) document
+will lead you through the basics of doing this. All it assumes is that you have Visual Studio 2026 installed.
 
 ### How to Build and Debug PerfView 
 
-PerfView is developed in Visual Studio 2022 using features through C# 7.3.
+PerfView is developed in Visual Studio 2026 using features through C# 7.3.
 
   * The solution file is PerfView.sln.  Opening this file in Visual Studio (or double clicking on it in 
   the Windows Explorer) and selecting Build -> Build Solution, will build it. You can also build the 
@@ -117,16 +119,16 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
   explicit 'scope') and needs to refer to PerfView to resolve some of its references.   Thus you will get many 'not found'
   issues in the 'Global' project.  These can be ignored until you get every other part of the build working.
 
-  * One of the invariants of the repo is that if you are running Visual Studio 2022 and you simply sync and build the
+  * One of the invariants of the repo is that if you are running Visual Studio 2026 and you simply sync and build the
   PerfView.sln file, it is supposed to 'just work'.   If that does not happen, and the advice above does not help, then
   we need to either fix the repo or update the advice above. Thus it is reasonable to open a GitHub issue. If you
   do this, the goal is to fix the problem, which means you have to put enough information into the issue to do that.
   This includes exactly what you tried, and what the error messages were.
   
-  * You can also build PerfView from the command line (but you still need Visual Studio 2022 installed).   It is a two step process.
+  * You can also build PerfView from the command line (but you still need Visual Studio 2026 installed).   It is a two step process.
   First you must restore all the needed nuget packages, then you do the build itself. To do this:
     1. Open a developer command prompt.  You can do this by hitting the windows key (by the space bar) and type
-       'Developer command prompt'.  You should see a entry for this that you can select (if Visual Studio 2022 is installed).
+       'Developer command prompt'.  You should see a entry for this that you can select (if Visual Studio 2026 is installed).
     2. Change directory to the base of your PerfView source tree (where PerfView.sln lives). 
     3. Restore the nuget packages by typing the command 'msbuild /t:restore'
     4. Build perfView by typing the command 'msbuild'
@@ -135,8 +137,10 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
   frankly any error associated with building the ETWClrProfiler dlls, you should make sure that you have the Windows 10 SDK installed.  Unfortunately this library tends not to be 
   installed with Visual Studio anymore unless you ask for it explicitly.   To fix it launch the Visual Studio Installer, modify the installation, and then look under the C++ Desktop Development and check that the Windows SDK 10.0.17763.0 option is selected.  If not, select it and continue.  Then try building PerfView again.
 
-  * If you get an error "MSB8040: Spectre-mitigated libraries are required for this project",  modify your Visual Studio 
-    installation to ensure that you have the 'MSVC v143 - VS 2022 C++ x64/x86 Spectre-mitigated libs (Latest)' component installed. 
+  * If you get an error "MSB8040: Spectre-mitigated libraries are required for this project",  modify your Visual Studio
+    installation to ensure that you have the 'MSVC v145 - VS 2026 C++ x64/x86 Spectre-mitigated libs (Latest)' component installed.
+
+  * If you get an error that the v145 platform toolset is not found, import the repository `.vsconfig` file in the Visual Studio Installer or install the Visual Studio 2026 C++ desktop workload.
 
   
 ### Running Tests

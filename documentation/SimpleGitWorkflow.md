@@ -1,9 +1,9 @@
-# Setting Up *Without* a Fork with Visual Studio 2019
+# Setting Up *Without* a Fork with Visual Studio 2026
 
  * See also [Setting up a Repo in VS](SettingUpRepoInVS.md) for important background material. 
  * See also [Open Source GitHub Setup and Workflow](OpenSourceGitWorkflow.md) for the setup needed for pull requests.  
 
-Here we describe how to use Visual Studio 2019 to set a local build of the GitHub project https://github.com/Microsoft/perfview.   
+Here we describe how to use Visual Studio 2026 to set a local build of the GitHub project https://github.com/Microsoft/perfview.
 Because this project is open source, anyone can read it so this works even if you don't have a GitHub account, but
 of course you will only have read-only access.   
 
@@ -144,7 +144,6 @@ At this point we have described the critical workflows
   1. Synchronization with what is in GitHub
   2. Making changes 
   3. Committing (checking in)
-
 
 
 

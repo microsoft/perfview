@@ -7,11 +7,8 @@ pr:
 jobs:
   - job: PerfView_Debug
     pool:
-      vmImage: 'windows-2022'
+      vmImage: 'windows-2025-vs2026'
       name: Azure Pipelines
-      demands:
-      - msbuild
-      - vstest
 
     steps:
     - template: /.pipelines/perfview-job.yml
@@ -28,11 +25,8 @@ jobs:
 
   - job: PerfView_Release
     pool:
-      vmImage: 'windows-2022'
+      vmImage: 'windows-2025-vs2026'
       name: Azure Pipelines
-      demands:
-      - msbuild
-      - vstest
 
     steps:
     - template: /.pipelines/perfview-job.yml

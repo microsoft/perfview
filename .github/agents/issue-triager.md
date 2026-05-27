@@ -303,7 +303,7 @@ After scoring myself on the rubric:
 ## Repository-Specific Knowledge
 
 ### Build System
-- **Full solution** (Windows only): `PerfView.sln` - requires Visual Studio 2022
+- **Full solution** (Windows only): `PerfView.sln` - requires Visual Studio 2026 with the repository `.vsconfig` components installed. Native ETWClrProfiler projects use the latest installed MSVC v145 toolset.
 - **Individual projects** (Linux compatible via dotnet CLI):
   - TraceEvent: `dotnet build src/TraceEvent/TraceEvent.csproj`
   - FastSerialization: `dotnet build src/FastSerialization/FastSerialization.csproj`
