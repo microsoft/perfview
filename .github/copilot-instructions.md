@@ -17,7 +17,7 @@ PerfView is a Windows performance-analysis tool for investigating CPU and memory
 
 ## Build & Test
 
-- **Full solution (Windows):** `build.cmd` or open `PerfView.sln` in Visual Studio 2022+ and build.
+- **Full solution (Windows):** `build.cmd` or open `PerfView.sln` in Visual Studio 2026 with the repository `.vsconfig` components installed. Native ETWClrProfiler projects use the latest installed MSVC v145 toolset.
 - **Individual projects (cross-platform via dotnet CLI):**
   - `dotnet build src/TraceEvent/TraceEvent.csproj -c Debug`
   - `dotnet build src/FastSerialization/FastSerialization.csproj -c Debug`
