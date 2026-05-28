@@ -1,14 +1,9 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Threading;
 using PerfView.Dialogs;
 using Xunit;
-
-#pragma warning disable VSTHRD001 // Use JoinableTaskFactory — we're explicitly testing WPF Dispatcher threading
-#pragma warning disable VSTHRD110 // Observe awaitable — fire-and-forget Task.Run is intentional in these tests
 
 namespace PerfViewTests.Dialogs
 {
@@ -25,97 +20,34 @@ namespace PerfViewTests.Dialogs
         /// Also verifies that calling from the UI thread directly still works (no-op dispatch).
         /// This is the core regression test for issue #2300.
         /// </summary>
-        [Fact]
-        public void Show_AutoDispatchesToUIThreadFromBackgroundThread()
+#pragma warning disable VSTHRD200 // Keep the original regression test name stable.
+        [WpfFact]
+        public async Task Show_AutoDispatchesToUIThreadFromBackgroundThread()
+#pragma warning restore VSTHRD200
         {
-            Exception exception = null;
-            MessageBoxResult uiResult = MessageBoxResult.None;
-            MessageBoxResult bgResult = MessageBoxResult.None;
+            Application app = Application.Current ?? new Application();
+            app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            RegisterMinimalThemeResources(app);
 
-            var staThread = new Thread(() =>
-            {
-                try
-                {
-                    var app = Application.Current ?? new Application();
-                    app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-                    RegisterMinimalThemeResources(app);
+            // Auto-close any XamlMessageBox dialogs as soon as they load.
+            RegisterAutoCloseHandler();
 
-                    // Catch unhandled dispatcher exceptions so they don't silently hang.
-                    app.DispatcherUnhandledException += (s, args) =>
-                    {
-                        exception = args.Exception;
-                        args.Handled = true;
-                        Dispatcher.CurrentDispatcher.InvokeShutdown();
-                    };
+            // Part 1: Call directly from the UI thread (dispatch is a no-op).
+            MessageBoxResult uiResult = XamlMessageBox.Show("Test message", "XamlMBTest_UI", MessageBoxButton.OK);
 
-                    // Auto-close any XamlMessageBox dialogs as soon as they load.
-                    RegisterAutoCloseHandler();
+            // Part 2: Call from a background thread — before the fix for issue #2300,
+            // this would throw InvalidOperationException ("The calling thread must be STA")
+            // because XamlMessageBox creates a WPF Window requiring the UI thread.
+            Task<MessageBoxResult> backgroundShowTask = Task.Run(() =>
+                XamlMessageBox.Show("Test message", "XamlMBTest_BG", MessageBoxButton.YesNo));
 
-                    // Safety timeout: force shutdown if the test hangs.
-                    var safetyTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(8) };
-                    safetyTimer.Tick += (s, e) =>
-                    {
-                        safetyTimer.Stop();
-                        if (exception == null)
-                        {
-                            exception = new TimeoutException("Safety timer fired — dialog was not auto-closed");
-                        }
-                        Dispatcher.CurrentDispatcher.InvokeShutdown();
-                    };
-                    safetyTimer.Start();
+            Task completedTask = await Task.WhenAny(backgroundShowTask, Task.Delay(TimeSpan.FromSeconds(10)));
+            Assert.True(
+                ReferenceEquals(backgroundShowTask, completedTask),
+                "Timed out waiting for XamlMessageBox.Show to dispatch to the WPF test thread.");
 
-                    // Use Dispatcher.CurrentDispatcher (the STA thread's dispatcher being
-                    // pumped by Dispatcher.Run) rather than app.Dispatcher, because if
-                    // Application.Current was reused from a prior test, app.Dispatcher may
-                    // belong to a different thread.
-                    var currentDispatcher = Dispatcher.CurrentDispatcher;
-                    currentDispatcher.BeginInvoke((Action)(() =>
-                    {
-                        try
-                        {
-                            // Part 1: Call directly from the UI thread (dispatch is a no-op).
-                            uiResult = XamlMessageBox.Show("Test message", "XamlMBTest_UI", MessageBoxButton.OK);
+            MessageBoxResult bgResult = await backgroundShowTask;
 
-                            // Part 2: Call from a background thread — before the fix for issue #2300,
-                            // this would throw InvalidOperationException ("The calling thread must be STA")
-                            // because XamlMessageBox creates a WPF Window requiring the UI thread.
-                            Task.Run(() =>
-                            {
-                                try
-                                {
-                                    bgResult = XamlMessageBox.Show("Test message", "XamlMBTest_BG", MessageBoxButton.YesNo);
-                                }
-                                catch (Exception ex)
-                                {
-                                    exception = ex;
-                                }
-                                finally
-                                {
-                                    currentDispatcher.BeginInvoke(
-                                        (Action)(() => currentDispatcher.InvokeShutdown()));
-                                }
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            exception = ex;
-                            Dispatcher.CurrentDispatcher.InvokeShutdown();
-                        }
-                    }));
-
-                    Dispatcher.Run();
-                }
-                catch (Exception ex)
-                {
-                    exception = ex;
-                }
-            });
-
-            staThread.SetApartmentState(ApartmentState.STA);
-            staThread.Start();
-            Assert.True(staThread.Join(TimeSpan.FromSeconds(10)), "Test timed out — dialog may not have been auto-closed");
-
-            Assert.Null(exception);
             // Both dialogs were auto-closed without clicking a button, so Result is None.
             Assert.Equal(MessageBoxResult.None, uiResult);
             Assert.Equal(MessageBoxResult.None, bgResult);
@@ -144,7 +76,9 @@ namespace PerfViewTests.Dialogs
                     Window w = sender as Window;
                     if (w != null && w.Title != null && w.Title.StartsWith("XamlMBTest_"))
                     {
+#pragma warning disable VSTHRD001, VSTHRD110 // Loaded is already on the WPF thread; defer Close until loading completes.
                         w.Dispatcher.BeginInvoke((Action)(() => w.Close()));
+#pragma warning restore VSTHRD001, VSTHRD110
                     }
                 }));
         }
