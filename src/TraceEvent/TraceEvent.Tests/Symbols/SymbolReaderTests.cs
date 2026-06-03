@@ -1,4 +1,8 @@
+using FastSerialization;
 using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.EventPipe;
 using PerfView.TestUtilities;
 using System;
 using System.Collections.Generic;
@@ -132,6 +136,207 @@ namespace TraceEventTests
                 Assert.Equal("CsPortablePdb1/Program.cs", relativePath);
 
                 Assert.Equal(9, sourceLocation.LineNumber);
+            }
+        }
+
+        [Fact]
+        public void EmbeddedPortablePdbResolvesSourceLine()
+        {
+            string dllPath = EmbeddedPdbTestAppPath;
+
+            ManagedSymbolModule pdbFile = _symbolReader.OpenEmbeddedPortablePdb(dllPath);
+            using (pdbFile as IDisposable)
+            {
+                Assert.NotNull(pdbFile);
+                Assert.IsType<PortableSymbolModule>(pdbFile);
+
+                // Resolve the metadata token for EmbeddedTarget.Add from the referenced fixture assembly
+                // rather than hard-coding it: on netstandard2.0 the compiler synthesizes attribute types
+                // (e.g. EmbeddedAttribute, RefSafetyRulesAttribute) whose constructors occupy the first
+                // MethodDef rows, so Add is not token 0x06000001.
+                uint addToken = (uint)typeof(EmbeddedPdbTestApp.EmbeddedTarget)
+                    .GetMethod(nameof(EmbeddedPdbTestApp.EmbeddedTarget.Add)).MetadataToken;
+
+                // Resolve the source location of the method's first sequence point (the one covering
+                // IL offset 0).
+                SourceLocation sourceLocation = pdbFile.SourceLocationForManagedCode(addToken, ilOffset: 0);
+                Assert.NotNull(sourceLocation);
+
+                SourceFile sourceFile = sourceLocation.SourceFile;
+                Assert.NotNull(sourceFile);
+                Assert.EndsWith("EmbeddedTarget.cs", sourceFile.BuildTimeFilePath, StringComparison.OrdinalIgnoreCase);
+
+                // The first sequence point of Add() (IL offset 0) maps to its first statement,
+                // "int sum = a + b;", on this line of EmbeddedTarget.cs.  If the fixture source moves,
+                // update this expectation.
+                Assert.Equal(15, sourceLocation.LineNumber);
+            }
+        }
+
+        [Fact]
+        public void EmbeddedPortablePdbReadableAfterPEReaderDisposed()
+        {
+            // OpenEmbeddedPortablePdb disposes the PEReader/FileStream it used before returning, so a
+            // successful source-line lookup here proves the MetadataReaderProvider owns its own backing
+            // memory and survives that disposal.  (Note: the SymbolReader still owns the returned module;
+            // disposing the SymbolReader itself would clear its cache and dispose this module.)
+            uint addToken = (uint)typeof(EmbeddedPdbTestApp.EmbeddedTarget)
+                .GetMethod(nameof(EmbeddedPdbTestApp.EmbeddedTarget.Add)).MetadataToken;
+
+            ManagedSymbolModule pdbFile = _symbolReader.OpenEmbeddedPortablePdb(EmbeddedPdbTestAppPath);
+            using (pdbFile as IDisposable)
+            {
+                Assert.NotNull(pdbFile);
+                SourceLocation sourceLocation = pdbFile.SourceLocationForManagedCode(addToken, ilOffset: 0);
+                Assert.NotNull(sourceLocation);
+                Assert.NotNull(sourceLocation.SourceFile);
+            }
+        }
+
+        [Fact]
+        public void OpenEmbeddedPortablePdbCachesResult()
+        {
+            // A second open of the same module must return the cached instance (the embedded-PDB cache
+            // key cannot collide with a standalone-PDB path).  Do not dispose between calls: the
+            // SymbolReader owns the cached module's lifetime.
+            ManagedSymbolModule first = _symbolReader.OpenEmbeddedPortablePdb(EmbeddedPdbTestAppPath);
+            ManagedSymbolModule second = _symbolReader.OpenEmbeddedPortablePdb(EmbeddedPdbTestAppPath);
+
+            Assert.NotNull(first);
+            Assert.Same(first, second);
+        }
+
+        [Fact]
+        public void OpenEmbeddedPortablePdbReturnsNullWhenNotEmbedded()
+        {
+            // The test assembly itself is built with a standalone (portable) PDB, not an embedded one,
+            // so there is no EmbeddedPortablePdb debug-directory entry to read.
+            string dllWithoutEmbeddedPdb = typeof(SymbolReaderTests).Assembly.Location;
+            Assert.True(File.Exists(dllWithoutEmbeddedPdb));
+
+            ManagedSymbolModule pdbFile = _symbolReader.OpenEmbeddedPortablePdb(dllWithoutEmbeddedPdb);
+            Assert.Null(pdbFile);
+        }
+
+        [Fact]
+        public void OpenEmbeddedPortablePdbReturnsNullForMissingFile()
+        {
+            string missing = Path.Combine(Path.GetTempPath(), "DoesNotExist_" + Guid.NewGuid().ToString("N") + ".dll");
+            ManagedSymbolModule pdbFile = _symbolReader.OpenEmbeddedPortablePdb(missing);
+            Assert.Null(pdbFile);
+        }
+
+        [Fact]
+        public void OpenSymbolFileForModuleFileResolvesEmbeddedPdb()
+        {
+            // The magic, module-oriented entry point: hand it the module path (not a PDB path) and it
+            // should transparently fall back to the module's embedded portable PDB.
+            uint addToken = (uint)typeof(EmbeddedPdbTestApp.EmbeddedTarget)
+                .GetMethod(nameof(EmbeddedPdbTestApp.EmbeddedTarget.Add)).MetadataToken;
+
+            ManagedSymbolModule pdbFile = _symbolReader.OpenSymbolFileForModuleFile(EmbeddedPdbTestAppPath);
+            using (pdbFile as IDisposable)
+            {
+                Assert.NotNull(pdbFile);
+                Assert.IsType<PortableSymbolModule>(pdbFile);
+
+                // The module-oriented entry point stamps ExePath with the module it resolved symbols for.
+                Assert.Equal(EmbeddedPdbTestAppPath, pdbFile.ExePath);
+
+                SourceLocation sourceLocation = pdbFile.SourceLocationForManagedCode(addToken, ilOffset: 0);
+                Assert.NotNull(sourceLocation);
+                Assert.EndsWith("EmbeddedTarget.cs", sourceLocation.SourceFile.BuildTimeFilePath, StringComparison.OrdinalIgnoreCase);
+                Assert.Equal(15, sourceLocation.LineNumber);
+            }
+        }
+
+        [Fact]
+        public void OpenSymbolFileForModuleFileResolvesStandalonePdb()
+        {
+            // Covers the first resolution branch of the module-oriented entry point: a standalone PDB
+            // found next to the module (here, the test assembly's own portable PDB) takes precedence
+            // over the embedded-PDB fallback.
+            string moduleWithStandalonePdb = typeof(SymbolReaderTests).Assembly.Location;
+            Assert.True(File.Exists(moduleWithStandalonePdb));
+
+            uint methodToken = (uint)typeof(SymbolReaderTests)
+                .GetMethod(nameof(OpenSymbolFileForModuleFileResolvesStandalonePdb)).MetadataToken;
+
+            // The PDB sits next to the DLL, which SymbolReader treats as an "unsafe" location; opt in
+            // to trusting it (as a real consumer would for a known-good build output directory).
+            _symbolReader.SecurityCheck = _ => true;
+
+            ManagedSymbolModule pdbFile = _symbolReader.OpenSymbolFileForModuleFile(moduleWithStandalonePdb);
+            using (pdbFile as IDisposable)
+            {
+                Assert.NotNull(pdbFile);
+                Assert.IsType<PortableSymbolModule>(pdbFile);
+                Assert.Equal(moduleWithStandalonePdb, pdbFile.ExePath);
+
+                // The standalone PDB resolves this very test method back to this source file.
+                SourceLocation sourceLocation = pdbFile.SourceLocationForManagedCode(methodToken, ilOffset: 0);
+                Assert.NotNull(sourceLocation);
+                Assert.EndsWith("SymbolReaderTests.cs", sourceLocation.SourceFile.BuildTimeFilePath, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        [Fact]
+        public void OpenSymbolFileForModuleFileReturnsNullForMissingFile()
+        {
+            string missing = Path.Combine(Path.GetTempPath(), "DoesNotExist_" + Guid.NewGuid().ToString("N") + ".dll");
+            ManagedSymbolModule pdbFile = _symbolReader.OpenSymbolFileForModuleFile(missing);
+            Assert.Null(pdbFile);
+        }
+
+        [Fact]
+        public void TraceLogOpenPdbForModuleFileResolvesEmbeddedPdb()
+        {
+            // Exercises the trace symbol-resolution path end-to-end: TraceCodeAddresses.OpenPdbForModuleFile,
+            // given a managed module that (a) carries no PDB identity in the trace, (b) whose on-disk copy
+            // matches the trace (checksum + timestamp), and (c) has no standalone PDB next to it, must fall
+            // back to the module's embedded portable PDB.  This is the only consumer of
+            // SymbolReader.OpenEmbeddedPortablePdb that the SymbolReaderTests above do not reach directly.
+            string dllPath = EmbeddedPdbTestAppPath;
+
+            // Read the real PE checksum/timestamp from the fixture DLL so the TraceModuleUnchanged gate
+            // inside OpenPdbForModuleFile passes regardless of how/when the fixture was (re)built.
+            int imageChecksum;
+            int timeDateStamp;
+            using (var peFile = new PEFile.PEFile(dllPath))
+            {
+                imageChecksum = (int)peFile.Header.CheckSum;
+                timeDateStamp = peFile.Header.TimeDateStampSec;
+            }
+
+            uint addToken = (uint)typeof(EmbeddedPdbTestApp.EmbeddedTarget)
+                .GetMethod(nameof(EmbeddedPdbTestApp.EmbeddedTarget.Add)).MetadataToken;
+
+            using (TraceLog traceLog = CreateEmptyInMemoryTraceLog())
+            {
+                // Build a managed TraceModuleFile that points at the fixture DLL on disk.  The internal
+                // constructor lower-cases the path, so restore the real-cased path afterwards because
+                // File.Exists (inside TraceModuleUnchanged) is case-sensitive on non-Windows.
+                TraceModuleFile moduleFile = new TraceModuleFile(dllPath, 0x10000, (ModuleFileIndex)0);
+                moduleFile.fileName = dllPath;
+                moduleFile.imageChecksum = imageChecksum;
+                moduleFile.timeDateStamp = timeDateStamp;
+                // Leave symbolInfo null so PdbSignature == Guid.Empty: with no recorded PDB identity,
+                // OpenPdbForModuleFile is forced down the on-disk-match -> embedded-PDB branch.
+
+                ManagedSymbolModule pdbFile = traceLog.CodeAddresses.OpenPdbForModuleFile(_symbolReader, moduleFile);
+                using (pdbFile as IDisposable)
+                {
+                    Assert.NotNull(pdbFile);
+                    Assert.IsType<PortableSymbolModule>(pdbFile);
+
+                    // OpenPdbForModuleFile stamps ExePath with the module it resolved symbols for.
+                    Assert.Equal(dllPath, pdbFile.ExePath);
+
+                    SourceLocation sourceLocation = pdbFile.SourceLocationForManagedCode(addToken, ilOffset: 0);
+                    Assert.NotNull(sourceLocation);
+                    Assert.EndsWith("EmbeddedTarget.cs", sourceLocation.SourceFile.BuildTimeFilePath, StringComparison.OrdinalIgnoreCase);
+                    Assert.Equal(15, sourceLocation.LineNumber);
+                }
             }
         }
 
@@ -1401,6 +1606,45 @@ namespace TraceEventTests
         }
 
         protected string UnzippedSymbolReaderTestInputDir => Path.Combine(UnZippedDataDir, SymbolReaderTestInput);
+
+        /// <summary>
+        /// Path to the EmbeddedPdbTestApp fixture DLL (built with &lt;DebugType&gt;embedded&lt;/DebugType&gt;)
+        /// that the TraceEvent.Tests project copies next to the test assembly.
+        /// </summary>
+        protected static string EmbeddedPdbTestAppPath
+        {
+            get
+            {
+                string path = Path.Combine(AppContext.BaseDirectory, "EmbeddedPdbTestApp.dll");
+                Assert.True(File.Exists(path), "EmbeddedPdbTestApp.dll was not found next to the test assembly: " + path);
+                return path;
+            }
+        }
+
+        /// <summary>
+        /// Builds a minimal, valid, empty <see cref="TraceLog"/> entirely in memory (no ETW capture, so
+        /// it works cross-platform).  Callers can then hand-populate <see cref="TraceModuleFile"/>s and
+        /// drive <see cref="TraceCodeAddresses"/> symbol-resolution APIs directly.
+        /// </summary>
+        private static TraceLog CreateEmptyInMemoryTraceLog()
+        {
+            // Generate a minimal in-memory nettrace stream with just enough metadata to be valid.
+            var writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "Microsoft-Windows-DotNETRuntime", "EventSource", 0));
+            writer.WriteThreadBlock(w => w.WriteThreadEntry(1, 0, 0));
+            writer.WriteEventBlock(w => w.WriteEventBlob(1, 1, 1, new byte[0]));
+            writer.WriteEndBlock();
+
+            using MemoryStream nettraceStream = new MemoryStream(writer.ToArray());
+            TraceEventDispatcher eventSource = new EventPipeEventSource(nettraceStream);
+
+            // Convert to in-memory ETLX and open it as a TraceLog (the caller owns disposal).
+            MemoryStream etlxStream = new MemoryStream();
+            TraceLog.CreateFromEventPipeEventSources(eventSource, new IOStreamStreamWriter(etlxStream, SerializationSettings.Default, leaveOpen: true), null);
+            etlxStream.Position = 0;
+            return new TraceLog(etlxStream);
+        }
 
         /// <summary>
         /// A handler for the <see cref="HttpClient"/> in <see cref="SymbolReader"/> that

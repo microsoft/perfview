@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Test fixture for SymbolReader embedded-portable-PDB resolution.
+
+    This assembly is intentionally built with <DebugType>embedded</DebugType> so that its
+    portable PDB lives inside the PE image (there is no standalone .pdb next to the DLL).
+    SymbolReaderTests opens the produced DLL via SymbolReader.OpenEmbeddedPortablePdb and
+    verifies that managed source lines resolve straight out of the embedded PDB.
+
+    Keep this assembly tiny and deterministic: EmbeddedTarget is a static class with a single
+    method whose metadata token the test resolves via reflection.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>EmbeddedPdbTestApp</AssemblyName>
+    <RootNamespace>EmbeddedPdbTestApp</RootNamespace>
+    <!-- The whole point of this fixture: embed the portable PDB in the PE image. -->
+    <DebugType>embedded</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <Deterministic>true</Deterministic>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <!-- Public-sign with the same key as the test assembly.  The (strong-named) test assembly
+       references this fixture, and .NET Framework refuses to load an unsigned assembly from a
+       strong-named one, so this fixture must be strong-named too. -->
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(SIGNING_BUILD)' != 'true'">true</PublicSign>
+    <DelaySign Condition="'$(SIGNING_BUILD)' == 'true'">true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+</Project>

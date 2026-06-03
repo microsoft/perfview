@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -709,6 +711,115 @@ namespace Microsoft.Diagnostics.Symbols
         public NativeSymbolModule OpenNativeSymbolFile(string pdbFileName)
         {
             return OpenSymbolFile(pdbFileName) as NativeSymbolModule;
+        }
+
+        /// <summary>
+        /// Attempts to open a portable PDB that is embedded inside the managed module image at
+        /// <paramref name="dllFilePath"/> (modules built with &lt;DebugType&gt;embedded&lt;/DebugType&gt;).
+        /// Returns a <see cref="ManagedSymbolModule"/> (a <c>PortableSymbolModule</c>) whose data comes
+        /// straight from the module's embedded debug directory, or null if <paramref name="dllFilePath"/>
+        /// does not exist, is not a PE file, or has no embedded portable PDB.
+        ///
+        /// Because the PDB bytes are read from the same on-disk module, no separate GUID/age matching
+        /// against a standalone PDB file is needed.  This is the embedded-PDB analog of
+        /// <see cref="OpenSymbolFile(string)"/>, which opens a standalone PDB file.
+        /// </summary>
+        /// <param name="dllFilePath">The path to the managed module (.dll/.exe) that may contain an embedded portable PDB.</param>
+        /// <returns>The symbol module for the embedded PDB, or null if none is present.</returns>
+        public ManagedSymbolModule OpenEmbeddedPortablePdb(string dllFilePath)
+        {
+            // Suffix the key so it cannot collide with the standalone-PDB cache entries (which are
+            // keyed by PDB file path), even when an embedded and a standalone PDB share the same module.
+            string cacheKey = dllFilePath + "|EmbeddedPdb";
+            if (m_symbolModuleCache.TryGet(cacheKey, out ManagedSymbolModule ret))
+            {
+                return ret;
+            }
+
+            try
+            {
+                if (!File.Exists(dllFilePath))
+                {
+                    m_log.WriteLine("OpenEmbeddedPortablePdb: {0} does not exist.", dllFilePath);
+                    return null;
+                }
+
+                using (FileStream peStream = File.Open(dllFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (PEReader peReader = new PEReader(peStream))
+                {
+                    foreach (DebugDirectoryEntry entry in peReader.ReadDebugDirectory())
+                    {
+                        if (entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb)
+                        {
+                            // The returned provider owns its own (decompressed) backing memory, so it
+                            // remains valid after the PEReader and FileStream are disposed below.
+                            MetadataReaderProvider provider = peReader.ReadEmbeddedPortablePdbDebugDirectoryData(entry);
+                            ret = new PortableSymbolModule(this, provider, dllFilePath);
+                            m_log.WriteLine("OpenEmbeddedPortablePdb: Found embedded portable PDB in {0}", dllFilePath);
+                            break;
+                        }
+                    }
+
+                    if (ret == null)
+                    {
+                        m_log.WriteLine("OpenEmbeddedPortablePdb: {0} has no embedded portable PDB.", dllFilePath);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                m_log.WriteLine("OpenEmbeddedPortablePdb: Failure reading {0}: {1}", dllFilePath, e.Message);
+                ret = null;
+            }
+
+            m_symbolModuleCache.Add(cacheKey, ret);
+            return ret;
+        }
+
+        /// <summary>
+        /// Opens the symbols for a managed/native module given only the path to the module itself
+        /// (a .dll/.exe), without the caller having to know where the PDB lives.   This is the magic,
+        /// module-oriented entry point: normal usage of <see cref="SymbolReader"/> points at a module,
+        /// not at a symbol file.
+        ///
+        /// Resolution order:
+        ///   1. A standalone PDB found via <see cref="FindSymbolFilePathForModule(string, bool)"/>
+        ///      (probing next to the module and along the symbol path / symbol servers), opened with
+        ///      <see cref="OpenSymbolFile(string)"/>.
+        ///   2. Failing that, a portable PDB embedded inside the module image itself
+        ///      (modules built with &lt;DebugType&gt;embedded&lt;/DebugType&gt;), via
+        ///      <see cref="OpenEmbeddedPortablePdb(string)"/>.
+        ///
+        /// Returns null if no symbols can be found for the module.
+        /// </summary>
+        /// <param name="moduleFilePath">The path to the managed/native module (.dll/.exe) to resolve symbols for.</param>
+        /// <returns>The symbol module for the given module, or null if none could be found.</returns>
+        public ManagedSymbolModule OpenSymbolFileForModuleFile(string moduleFilePath)
+        {
+            // 1. Standalone PDB (next to the module, symbol path, symbol servers, NGEN, ...).
+            string pdbFilePath = FindSymbolFilePathForModule(moduleFilePath);
+            if (pdbFilePath != null)
+            {
+                ManagedSymbolModule standalone = OpenSymbolFile(pdbFilePath);
+                if (standalone != null)
+                {
+                    if (string.IsNullOrEmpty(standalone.ExePath))
+                    {
+                        standalone.ExePath = moduleFilePath;
+                    }
+
+                    return standalone;
+                }
+            }
+
+            // 2. Portable PDB embedded inside the module image itself.
+            ManagedSymbolModule embedded = OpenEmbeddedPortablePdb(moduleFilePath);
+            if (embedded != null && string.IsNullOrEmpty(embedded.ExePath))
+            {
+                embedded.ExePath = moduleFilePath;
+            }
+
+            return embedded;
         }
 
         internal R2RPerfMapSymbolModule OpenR2RPerfMapSymbolFile(string filePath, uint loadedLayoutTextOffset)

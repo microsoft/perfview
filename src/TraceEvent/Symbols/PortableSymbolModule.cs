@@ -19,6 +19,19 @@ namespace Microsoft.Diagnostics.Symbols
             _metaData = _provider.GetMetadataReader();
         }
 
+        /// <summary>
+        /// Creates a PortableSymbolModule from a MetadataReaderProvider that has already been
+        /// opened (e.g. an embedded portable PDB read out of a PE image via
+        /// PEReader.ReadEmbeddedPortablePdbDebugDirectoryData).   The provider owns its own backing
+        /// memory, so it remains valid after the PEReader it came from has been disposed.   This
+        /// PortableSymbolModule takes ownership of 'provider' and disposes it when disposed.
+        /// </summary>
+        internal PortableSymbolModule(SymbolReader reader, MetadataReaderProvider provider, string pdbFileName = "") : base(reader, pdbFileName)
+        {
+            _provider = provider;
+            _metaData = _provider.GetMetadataReader();
+        }
+
         public void Dispose() => _provider.Dispose();
 
         public override Guid PdbGuid
