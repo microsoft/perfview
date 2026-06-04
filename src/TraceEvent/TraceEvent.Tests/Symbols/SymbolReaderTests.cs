@@ -227,68 +227,6 @@ namespace TraceEventTests
         }
 
         [Fact]
-        public void OpenSymbolFileForModuleFileResolvesEmbeddedPdb()
-        {
-            // The magic, module-oriented entry point: hand it the module path (not a PDB path) and it
-            // should transparently fall back to the module's embedded portable PDB.
-            uint addToken = (uint)typeof(EmbeddedPdbTestApp.EmbeddedTarget)
-                .GetMethod(nameof(EmbeddedPdbTestApp.EmbeddedTarget.Add)).MetadataToken;
-
-            ManagedSymbolModule pdbFile = _symbolReader.OpenSymbolFileForModuleFile(EmbeddedPdbTestAppPath);
-            using (pdbFile as IDisposable)
-            {
-                Assert.NotNull(pdbFile);
-                Assert.IsType<PortableSymbolModule>(pdbFile);
-
-                // The module-oriented entry point stamps ExePath with the module it resolved symbols for.
-                Assert.Equal(EmbeddedPdbTestAppPath, pdbFile.ExePath);
-
-                SourceLocation sourceLocation = pdbFile.SourceLocationForManagedCode(addToken, ilOffset: 0);
-                Assert.NotNull(sourceLocation);
-                Assert.EndsWith("EmbeddedTarget.cs", sourceLocation.SourceFile.BuildTimeFilePath, StringComparison.OrdinalIgnoreCase);
-                Assert.Equal(15, sourceLocation.LineNumber);
-            }
-        }
-
-        [Fact]
-        public void OpenSymbolFileForModuleFileResolvesStandalonePdb()
-        {
-            // Covers the first resolution branch of the module-oriented entry point: a standalone PDB
-            // found next to the module (here, the test assembly's own portable PDB) takes precedence
-            // over the embedded-PDB fallback.
-            string moduleWithStandalonePdb = typeof(SymbolReaderTests).Assembly.Location;
-            Assert.True(File.Exists(moduleWithStandalonePdb));
-
-            uint methodToken = (uint)typeof(SymbolReaderTests)
-                .GetMethod(nameof(OpenSymbolFileForModuleFileResolvesStandalonePdb)).MetadataToken;
-
-            // The PDB sits next to the DLL, which SymbolReader treats as an "unsafe" location; opt in
-            // to trusting it (as a real consumer would for a known-good build output directory).
-            _symbolReader.SecurityCheck = _ => true;
-
-            ManagedSymbolModule pdbFile = _symbolReader.OpenSymbolFileForModuleFile(moduleWithStandalonePdb);
-            using (pdbFile as IDisposable)
-            {
-                Assert.NotNull(pdbFile);
-                Assert.IsType<PortableSymbolModule>(pdbFile);
-                Assert.Equal(moduleWithStandalonePdb, pdbFile.ExePath);
-
-                // The standalone PDB resolves this very test method back to this source file.
-                SourceLocation sourceLocation = pdbFile.SourceLocationForManagedCode(methodToken, ilOffset: 0);
-                Assert.NotNull(sourceLocation);
-                Assert.EndsWith("SymbolReaderTests.cs", sourceLocation.SourceFile.BuildTimeFilePath, StringComparison.OrdinalIgnoreCase);
-            }
-        }
-
-        [Fact]
-        public void OpenSymbolFileForModuleFileReturnsNullForMissingFile()
-        {
-            string missing = Path.Combine(Path.GetTempPath(), "DoesNotExist_" + Guid.NewGuid().ToString("N") + ".dll");
-            ManagedSymbolModule pdbFile = _symbolReader.OpenSymbolFileForModuleFile(missing);
-            Assert.Null(pdbFile);
-        }
-
-        [Fact]
         public void TraceLogOpenPdbForModuleFileResolvesEmbeddedPdb()
         {
             // Exercises the trace symbol-resolution path end-to-end: TraceCodeAddresses.OpenPdbForModuleFile,
