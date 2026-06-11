@@ -9,8 +9,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;      // For StringBuilder.
-using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using System.Buffers.Binary;
 // see #Introduction and #SerializerIntroduction
 namespace FastSerialization
 {
@@ -184,6 +184,10 @@ namespace FastSerialization
         /// Write an int to a stream
         /// </summary>
         void Write(int value);
+        /// <summary>
+        /// Write an blob to a stream
+        /// </summary> 
+        void WriteBlobAsInt(int value);
         /// <summary>
         /// Write a long to a stream
         /// </summary>
@@ -605,7 +609,7 @@ namespace FastSerialization
                 Log("<ForwardRefTable StreamLabel=\"0x" + forwardRefsLabel.ToString("x") + "\">");
                 if (forwardReferenceDefinitions != null)
                 {
-                    Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(forwardReferenceDefinitions.Count)));
+                    Write(forwardReferenceDefinitions.Count);
                     for (int i = 0; i < forwardReferenceDefinitions.Count; i++)
                     {
                         Debug.Assert(forwardReferenceDefinitions[i] != StreamLabel.Invalid);
@@ -673,6 +677,14 @@ namespace FastSerialization
         {
             Log("<Write Type=\"int\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
             writer.Write(value);
+        }
+        /// <summary>
+        /// Write an blob to a stream
+        /// </summary>
+        public void WriteBlobAsInt(int value)
+        {
+            Log("<Write Type=\"int\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
+            writer.WriteBlobAsInt(value);
         }
         /// <summary>
         /// Write a long to a stream
@@ -823,15 +835,15 @@ namespace FastSerialization
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a short.  These should be read with the corresponding TryReadTagged operation
         /// </summary>
-        public void WriteTagged(short value) { WriteTag(Tags.Int16); Write(BinaryPrimitives.ReadInt16LittleEndian(BitConverter.GetBytes(value))); }
+        public void WriteTagged(short value) { WriteTag(Tags.Int16); Write(value); }
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a int.  These should be read with the corresponding TryReadTagged operation
         /// </summary>
-        public void WriteTagged(int value) { WriteTag(Tags.Int32); Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(value))); }
+        public void WriteTagged(int value) { WriteTag(Tags.Int32); Write(value); }
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a long.  These should be read with the corresponding TryReadTagged operation
         /// </summary>
-        public void WriteTagged(long value) { WriteTag(Tags.Int64); Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(value))); }
+        public void WriteTagged(long value) { WriteTag(Tags.Int64); Write(value); }
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a string.  These should be read with the corresponding TryReadTagged operation
         /// </summary>
@@ -1599,6 +1611,7 @@ namespace FastSerialization
                 reader.GotoSuffixLabel();
                 Log("<Trailer StreamLabel=\"0x" + reader.Current.ToString("x") + "\"/>");
                 StreamLabel forwardRefsLabel = reader.ReadLabel();
+                
                 Goto(forwardRefsLabel);
                 int fowardRefCount = reader.ReadInt32();
                 Log("<ForwardReferenceDefinitons StreamLabel=\"0x" + forwardRefsLabel.ToString("x") +
@@ -2233,7 +2246,7 @@ namespace FastSerialization
             serializer.Log("<DeferedRegion>\r\n");
             // We actually don't use the this pointer!  We did this for symmetry with Read
             ForwardReference endRegion = serializer.GetForwardReference();
-            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)endRegion)));        // Allow the reader to skip this.
+            serializer.Write(endRegion);        // Allow the reader to skip this. 
             toStream();                         // Write the deferred data. 
             serializer.DefineForwardReference(endRegion);
             serializer.Log("</DeferedRegion>\r\n");
@@ -2510,8 +2523,8 @@ namespace FastSerialization
         }
         void IFastSerializable.ToStream(Serializer serializer)
         {
-            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(version)));
-            serializer.Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(minimumReaderVersion)));
+            serializer.Write(version);
+            serializer.Write(minimumReaderVersion);
             serializer.Write(fullName);
         }
         void IFastSerializable.FromStream(Deserializer deserializer)

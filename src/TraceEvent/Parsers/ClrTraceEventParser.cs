@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Buffers.Binary;
 using Address = System.UInt64;
 
 // This file was generated with the following command:
@@ -4811,7 +4812,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     ret->EdgeCount = BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(ret->EdgeCount));
                 }
             }
-	    
             Debug.Assert((ret->Address & 0xFF00000000000003L) == 0);
             Debug.Assert((ret->TypeID & 0xFF00000000000001L) == 0);
             Debug.Assert(ret->Size < 0x80000000L);

@@ -260,7 +260,7 @@ namespace FastSerialization
                 writeLabel = (value) =>
                 {
                     Debug.Assert((long)value <= int.MaxValue);
-                    Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes((int)value)));
+                    Write((int)value);
                 };
             }
             else
@@ -268,7 +268,7 @@ namespace FastSerialization
                 writeLabel = (value) =>
                 {
                     Debug.Assert((long)value <= long.MaxValue);
-                    Write(BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes((long)value)));
+                    Write((long)value);
                 };
             }
 
@@ -329,6 +329,7 @@ namespace FastSerialization
         /// </summary>
         public unsafe void Write(short value)
         {
+            value = BinaryPrimitives.ReadInt16LittleEndian(BitConverter.GetBytes(value));
             if (endPosition + sizeof(short) > bytes.Length)
             {
                 MakeSpace();
@@ -345,6 +346,24 @@ namespace FastSerialization
         /// Implementation of IStreamWriter
         /// </summary>
         public unsafe void Write(int value)
+        {
+            value = BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(value));
+            if (endPosition + sizeof(int) > bytes.Length)
+            {
+                MakeSpace();
+            }
+
+            fixed (byte* data = bytes)
+            {
+                *(int*)(data + endPosition) = value;
+            }
+
+            endPosition += sizeof(int);
+        }
+        /// <summary>
+        /// Write an blob to a stream
+        /// </summary> 
+        public unsafe void WriteBlobAsInt(int value)
         {
             if (endPosition + sizeof(int) > bytes.Length)
             {
@@ -363,6 +382,7 @@ namespace FastSerialization
         /// </summary>
         public unsafe void Write(long value)
         {
+            value = BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(value));
             if (endPosition + sizeof(long) > bytes.Length)
             {
                 MakeSpace();
@@ -393,7 +413,7 @@ namespace FastSerialization
             }
             else
             {
-                Write(BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(value.Length)));
+                Write(value.Length);
                 for (int i = 0; i < value.Length; i++)
                 {
                     char c = value[i];

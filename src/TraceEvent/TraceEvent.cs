@@ -4667,7 +4667,7 @@ namespace Microsoft.Diagnostics.Tracing
                     curPos++;
 
                 }
-                return new string(temp, 0 curPos);
+                return new string(temp, 0, curPos);
             }
 
             char* charEnd = (char*)(ptr + bufferLength);
