@@ -1402,7 +1402,7 @@ namespace PEFile
                         }
                         else
                         {
-                            entryName = entry->GetName(nameBuff, resourceStartFileOffset);
+                            entryName = entry->GetName(nameBuff, resourceStartFileOffset, m_file.Header.ResourceDirectory.Size);
                         }
 
                         Children.Add(new ResourceNode(entryName, resourceStartFileOffset + entry->DataOffset, m_file, entry->IsLeaf));
@@ -1701,13 +1701,91 @@ namespace PEFile
         private int NameOffsetAndFlag;
         private int DataOffsetAndFlag;
 
-        internal unsafe string GetName(PEBufferedReader buff, int resourceStartFileOffset)
+        internal unsafe string GetName(PEBufferedReader buff, int resourceStartFileOffset, int resourceDirectorySize)
         {
             if (IsStringName)
             {
-                int nameLen = *((ushort*)buff.Fetch(NameOffset + resourceStartFileOffset, 2));
-                char* namePtr = (char*)buff.Fetch(NameOffset + resourceStartFileOffset + 2, nameLen);
-                return new string(namePtr);
+                // IMAGE_RESOURCE_DIRECTORY_STRING is laid out as a UInt16 length (in
+                // UTF-16 characters, not bytes) immediately followed by Length wide
+                // characters.  Several historical bugs in this routine come from
+                // confusing the units (bytes vs. chars) or from trusting the
+                // attacker-controlled length without bounding it against the resource
+                // section.  Validate every step against the resource data directory
+                // size so a malformed PE cannot induce an out-of-bounds read.
+                //
+                // resourceDirectorySize originates from IMAGE_DATA_DIRECTORY.Size,
+                // which is declared as signed Int32 even though the on-disk field is
+                // unsigned.  A crafted PE that writes a value with the high bit set
+                // would deliver a negative size here; reject it up front so the
+                // subsequent subtractions cannot wrap and silently disable the
+                // bounds checks below.
+                if (resourceDirectorySize <= 0)
+                {
+                    return string.Empty;
+                }
+
+                int nameOffsetInResources = NameOffset;
+                if (nameOffsetInResources < 0 || nameOffsetInResources > resourceDirectorySize - sizeof(ushort))
+                {
+                    return string.Empty;
+                }
+
+                // Manual overflow guards in place of checked() so a crafted PE causes
+                // GetName to return string.Empty (consistent with the rest of this
+                // function) rather than throwing an OverflowException that would
+                // escape ResourceNode.Children and abort resource enumeration.
+                if (resourceStartFileOffset < 0 || resourceStartFileOffset > int.MaxValue - nameOffsetInResources)
+                {
+                    return string.Empty;
+                }
+
+                int nameOffset = nameOffsetInResources + resourceStartFileOffset;
+
+                // PEBufferedReader.Fetch internally evaluates filePos + size to
+                // check its cache, so guard against that addition overflowing
+                // BEFORE the first fetch.  Without this, an attacker who lined up
+                // nameOffsetInResources + resourceStartFileOffset to equal
+                // int.MaxValue could induce a 2GB out-of-bounds read inside the
+                // very call this guard was meant to protect.
+                if (nameOffset > int.MaxValue - sizeof(ushort))
+                {
+                    return string.Empty;
+                }
+
+                int nameLen = *((ushort*)buff.Fetch(nameOffset, sizeof(ushort)));
+
+                // nameLen is a UInt16 character count, so multiplying by sizeof(char)
+                // cannot overflow Int32, but write the bound explicitly to make the
+                // invariant obvious to readers.
+                int nameByteLen = nameLen * sizeof(char);
+
+                // Ensure the entire length-prefixed string lies inside the resource
+                // data directory.  Without this bound a crafted PE could declare a
+                // name length that walks past the resource section (and potentially
+                // past end-of-file), causing PEBufferedReader.Fetch to return zeroed
+                // padding that gets surfaced as the resource name.
+                if (nameByteLen > resourceDirectorySize - nameOffsetInResources - sizeof(ushort))
+                {
+                    return string.Empty;
+                }
+
+                // Apply the same Fetch-overflow guard to the second Fetch.  The
+                // earlier guard only proved that nameOffset + sizeof(ushort) does
+                // not overflow; adding nameByteLen on top can still wrap inside
+                // PEBufferedReader.Fetch's filePos + size cache check (e.g. a
+                // resource directory at very high file offsets with a non-trivial
+                // name length), so check the full extent here.
+                if (nameByteLen > int.MaxValue - nameOffset - sizeof(ushort))
+                {
+                    return string.Empty;
+                }
+
+                char* namePtr = (char*)buff.Fetch(nameOffset + sizeof(ushort), nameByteLen);
+
+                // Always pass the explicit length: new string(char*) is NUL-terminated
+                // and would walk past the fetched window if the name lacked a trailing
+                // double-NUL.
+                return new string(namePtr, 0, nameLen);
             }
             else
             {
