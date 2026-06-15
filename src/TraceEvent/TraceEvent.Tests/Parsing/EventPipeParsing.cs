@@ -1344,6 +1344,181 @@ namespace TraceEventTests
             Assert.Equal(1, eventCount);
         }
 
+        public static IEnumerable<object[]> InvalidV6RelLocAndDataLocArrayBounds()
+        {
+            yield return new object[] { MetadataTypeCode.DataLoc, (4 << 16) | 100 };
+            yield return new object[] { MetadataTypeCode.DataLoc, (3 << 16) | 4 };
+            yield return new object[] { MetadataTypeCode.RelLoc, (4 << 16) | 100 };
+            yield return new object[] { MetadataTypeCode.RelLoc, (3 << 16) | 0 };
+        }
+
+        [Theory] //V6
+        [MemberData(nameof(InvalidV6RelLocAndDataLocArrayBounds))]
+        public void InvalidV6RelLocAndDataLocArrayBoundsReturnLookupException(MetadataTypeCode locKind, int locValue)
+        {
+            MetadataType locType = locKind == MetadataTypeCode.RelLoc ?
+                (MetadataType)new RelLocMetadataType(new MetadataType(MetadataTypeCode.Int32)) :
+                new DataLocMetadataType(new MetadataType(MetadataTypeCode.Int32));
+
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                      new MetadataParameter("Array", locType)));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p =>
+                {
+                    p.Write(locValue);
+                    p.Write(42);
+                });
+            });
+            writer.WriteEndBlock();
+
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            TraceEventDispatcher source = new EventPipeEventSource(stream);
+
+            int eventCount = 0;
+
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                string payloadValue = Assert.IsType<string>(e.PayloadValue(0));
+                Assert.Contains("EXCEPTION_DURING_VALUE_LOOKUP", payloadValue);
+                Assert.Contains(nameof(ArgumentOutOfRangeException), payloadValue);
+            };
+
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact] //V6
+        public void V6CountedStringWithTruncatedLengthPrefixReturnsLookupException()
+        {
+            // A counted (length-prefixed) UTF8 string has a 2-byte length prefix.  Here the payload
+            // is only 1 byte, so reading the prefix via GetInt16At would read past the end of the
+            // payload into adjacent native memory.  The bounds check must reject it before the read.
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                      new MetadataParameter("Str", new ArrayMetadataType(new MetadataType(MetadataTypeCode.UTF8CodeUnit)))));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p =>
+                {
+                    p.Write((byte)1); // Only 1 byte of payload; the 2-byte length prefix does not fit.
+                });
+            });
+            writer.WriteEndBlock();
+
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            TraceEventDispatcher source = new EventPipeEventSource(stream);
+
+            int eventCount = 0;
+
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                string payloadValue = Assert.IsType<string>(e.PayloadValue(0));
+                Assert.Contains("EXCEPTION_DURING_VALUE_LOOKUP", payloadValue);
+                Assert.Contains(nameof(ArgumentOutOfRangeException), payloadValue);
+            };
+
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact] //V6
+        public void V6LengthPrefixedArrayWithTruncatedCountReturnsLookupException()
+        {
+            // A length-prefixed array has a 2-byte element-count prefix.  Here the payload is only
+            // 1 byte, so reading the count via GetInt16At would read past the end of the payload.
+            // The bounds check must reject it before the read.
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                      new MetadataParameter("IntArray", new ArrayMetadataType(new MetadataType(MetadataTypeCode.Int32)))));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p =>
+                {
+                    p.Write((byte)1); // Only 1 byte of payload; the 2-byte count prefix does not fit.
+                });
+            });
+            writer.WriteEndBlock();
+
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            TraceEventDispatcher source = new EventPipeEventSource(stream);
+
+            int eventCount = 0;
+
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                string payloadValue = Assert.IsType<string>(e.PayloadValue(0));
+                Assert.Contains("EXCEPTION_DURING_VALUE_LOOKUP", payloadValue);
+                Assert.Contains(nameof(ArgumentOutOfRangeException), payloadValue);
+            };
+
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact] //V6
+        public void V6StringArrayWithInsufficientBytesForElementsReturnsLookupException()
+        {
+            // A string[] whose element count claims more strings than the remaining payload can hold.
+            // Each UTF-16 counted-string element needs at least a 2-byte length prefix, so 3 elements
+            // require >= 6 bytes, but only 3 bytes follow the count.  The previous 1-byte-per-element
+            // estimate would have incorrectly passed validation and allowed an out-of-bounds read.
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent1", 15,
+                                      new MetadataParameter("StringArray", new ArrayMetadataType(new ArrayMetadataType(new MetadataType(MetadataTypeCode.UTF16CodeUnit))))));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, 0, 0);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p =>
+                {
+                    p.Write((ushort)3); // Claim 3 strings...
+                    p.Write((byte)0);   // ...but only provide 3 bytes of element data.
+                    p.Write((byte)0);
+                    p.Write((byte)0);
+                });
+            });
+            writer.WriteEndBlock();
+
+            MemoryStream stream = new MemoryStream(writer.ToArray());
+            TraceEventDispatcher source = new EventPipeEventSource(stream);
+
+            int eventCount = 0;
+
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                string payloadValue = Assert.IsType<string>(e.PayloadValue(0));
+                Assert.Contains("EXCEPTION_DURING_VALUE_LOOKUP", payloadValue);
+                Assert.Contains(nameof(ArgumentOutOfRangeException), payloadValue);
+            };
+
+            source.Process();
+            Assert.Equal(1, eventCount);
+        }
+
         [Fact] //V6
         public void V6RelLocThrowsOnVariableSizedElementType()
         {

@@ -605,6 +605,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             else if (IsCountedSize(size))
                             {
                                 bool unicodeByteCountString = !isAnsi && (size & ELEM_COUNT) == 0;
+                                // The length-prefix bytes are read from the payload via GetInt16At / GetInt32At,
+                                // which do not bounds check.  Validate that the prefix itself is inside the payload
+                                // before reading it, so a crafted offset near EventDataLength cannot pull bytes
+                                // from adjacent native memory into 'size'.
+                                int prefixBytes = ((size & BIT_32) != 0) ? 4 : 2;
+                                if (offset < 0 || EventDataLength - offset < prefixBytes)
+                                {
+                                    throw new ArgumentOutOfRangeException(nameof(size));
+                                }
                                 if (((size & BIT_32) != 0))
                                 {
                                     size = (ushort)GetInt32At(offset);
@@ -629,6 +638,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         {
                             size -= 0x8000;
                             isAnsi = true;
+                        }
+                        // Bounds-check before reading the fixed/counted string.  For counted strings 'size' was just
+                        // read from the payload bytes, so we must ensure the read stays inside EventDataLength to
+                        // avoid an out-of-bounds read of native heap memory.  ANSI strings use 'size' bytes; Unicode
+                        // strings use 'size * 2' bytes.  We compute the required byte count using long arithmetic to
+                        // avoid any chance of overflow before the comparison.
+                        long bytesNeeded = isAnsi ? (long)size : (long)size * 2;
+                        if (offset < 0 || EventDataLength - offset < bytesNeeded)
+                        {
+                            throw new ArgumentOutOfRangeException(nameof(size));
                         }
                         if (isAnsi)
                         {
@@ -1140,6 +1159,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 Debug.Assert(IsCountedSize(payloadFetch.Size));
 
                 // Length prefixed arrays have a 2 or 4 byte length field.
+                int lengthFieldSize = ((payloadFetch.Size & DynamicTraceEventData.BIT_32) != 0) ? 4 : 2;
+                // GetInt16At / GetInt32At are raw memory reads that do not bounds check, so
+                // validate the length-field bytes are inside EventDataLength before reading them.
+                // Without this, a payload with fewer than 'lengthFieldSize' bytes at 'offset' would
+                // surface adjacent native heap bytes as the array count.
+                if (offset < 0 || EventDataLength - offset < lengthFieldSize)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(offset));
+                }
                 if (((payloadFetch.Size & DynamicTraceEventData.BIT_32) != 0))
                 {
                     arrayCount = GetInt32At(offset);
@@ -1150,20 +1178,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     arrayCount = GetInt16At(offset);
                     offset += 2;
                 }
+
+                // The length field is read directly from the payload bytes,
+                // so validate it against EventDataLength before the caller uses it to read array elements.
+                // For fixed-size elements we can compute the exact byte cost; for variable-sized elements
+                // we use a per-element minimum derived from the element encoding (e.g. 2 bytes for UTF-16
+                // null-terminated strings) which still gives a useful upper bound that prevents OOB reads.
+                ValidateArrayCount(arrayInfo, offset, arrayCount);
             }
             else if (arrayInfo.Kind == ArrayKind.RelLoc)
             {
                 Debug.Assert(arrayInfo.Element.IsFixedSize);
 
-                arrayCount = GetInt16At(offset + 2) / arrayInfo.Element.Size;
-                offset = GetInt16At(offset) + offset + 4; // RelLoc offset is relative to the end of the field.
+                (offset, arrayCount) = GetArrayDataOffsetAndCount(arrayInfo, offset, isRelLoc: true);
             }
             else if (arrayInfo.Kind == ArrayKind.DataLoc)
             {
                 Debug.Assert(arrayInfo.Element.IsFixedSize);
 
-                arrayCount = GetInt16At(offset + 2) / arrayInfo.Element.Size;
-                offset = GetInt16At(offset); // DataLoc offset is absolute in the buffer
+                (offset, arrayCount) = GetArrayDataOffsetAndCount(arrayInfo, offset, isRelLoc: false);
             }
             else
             {
@@ -1172,6 +1205,98 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
 
             return arrayCount;
+        }
+
+        private (int dataOffset, int arrayCount) GetArrayDataOffsetAndCount(PayloadFetchArrayInfo arrayInfo, int offset, bool isRelLoc)
+        {
+            const int locDescriptorSize = 4;
+
+            if (offset < 0 || EventDataLength - locDescriptorSize < offset)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+
+            int arrayOffset = (ushort)GetInt16At(offset);
+            int arrayByteLength = (ushort)GetInt16At(offset + 2);
+            int elementSize = arrayInfo.Element.Size;
+            if (elementSize <= 0 || arrayByteLength % elementSize != 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(arrayByteLength));
+            }
+
+            int dataOffset = arrayOffset;
+            if (isRelLoc)
+            {
+                int relativeOffsetBase = offset + locDescriptorSize;
+                if (relativeOffsetBase < offset || int.MaxValue - relativeOffsetBase < arrayOffset)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(offset));
+                }
+
+                dataOffset = relativeOffsetBase + arrayOffset; // RelLoc offset is relative to the end of the RelLoc field itself.
+            }
+
+            if (dataOffset < 0 || EventDataLength - dataOffset < arrayByteLength)
+            {
+                throw new ArgumentOutOfRangeException(nameof(arrayByteLength));
+            }
+
+            return (dataOffset, arrayByteLength / elementSize);
+        }
+
+        // Validates that 'arrayCount' (just read from payload bytes for a length-prefixed
+        // array) does not point past the end of the event payload.  For fixed-size elements we use the actual
+        // element size; for variable-sized elements we use a per-element minimum derived from the element
+        // encoding (e.g. 2 bytes for UTF-16 null-terminated strings) so that callers that fast-path byte /
+        // char arrays via GetByteArrayAt or GetFixed*StringAt cannot be tricked into an OOB read.
+        private void ValidateArrayCount(PayloadFetchArrayInfo arrayInfo, int offset, int arrayCount)
+        {
+            if (arrayCount < 0 || offset < 0 || offset > EventDataLength)
+            {
+                throw new ArgumentOutOfRangeException(nameof(arrayCount));
+            }
+
+            int remaining = EventDataLength - offset;
+            long minBytesNeeded;
+            if (arrayInfo.Element.IsFixedSize)
+            {
+                int elementSize = arrayInfo.Element.Size;
+                if (elementSize <= 0)
+                {
+                    // Defensive: a zero-sized element with an unbounded count makes no sense.
+                    throw new ArgumentOutOfRangeException(nameof(arrayCount));
+                }
+                minBytesNeeded = (long)arrayCount * elementSize;
+            }
+            else
+            {
+                // Variable-sized elements still have a minimum byte footprint per element.
+                // For strings, the minimum depends on encoding:
+                //   - null-terminated Unicode strings need at least 2 bytes (the terminator),
+                //   - counted strings need at least the size prefix (2 or 4 bytes),
+                //   - null-terminated ANSI strings need at least 1 byte (the terminator).
+                // For any other variable-sized element kind we conservatively assume 1 byte.
+                int minBytesPerElement = 1;
+                if (arrayInfo.Element.Type == typeof(string))
+                {
+                    ushort elementSize = arrayInfo.Element.Size;
+                    if (IsNullTerminated(elementSize))
+                    {
+                        bool isAnsi = (elementSize & IS_ANSI) != 0;
+                        minBytesPerElement = isAnsi ? 1 : 2;
+                    }
+                    else if (IsCountedSize(elementSize))
+                    {
+                        minBytesPerElement = ((elementSize & BIT_32) != 0) ? 4 : 2;
+                    }
+                }
+                minBytesNeeded = (long)arrayCount * minBytesPerElement;
+            }
+
+            if (minBytesNeeded > remaining)
+            {
+                throw new ArgumentOutOfRangeException(nameof(arrayCount));
+            }
         }
 
         internal int OffsetOfNextField(ref PayloadFetch payloadFetch, int offset, int payloadLength)
