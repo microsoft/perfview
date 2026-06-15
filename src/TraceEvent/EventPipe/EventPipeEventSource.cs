@@ -1093,6 +1093,26 @@ namespace Microsoft.Diagnostics.Tracing
         public static void ReadFromFormatV3(ref SpanReader reader, ref EventPipeEventHeader header)
         {
             ref readonly LayoutV3 layout = ref reader.ReadRef<LayoutV3>();
+            int totalSize;
+            try
+            {
+                totalSize = checked(layout.EventSize + sizeof(int));
+            }
+            catch (OverflowException ex)
+            {
+                throw new FormatException("Invalid EventPipe V3 event size", ex);
+            }
+
+            header.HeaderSize = sizeof(LayoutV3);
+            header.TotalNonHeaderSize = totalSize - header.HeaderSize;
+            if (totalSize < header.HeaderSize ||
+                header.TotalNonHeaderSize > reader.RemainingBytes.Length ||
+                layout.PayloadSize < 0 ||
+                layout.PayloadSize > header.TotalNonHeaderSize)
+            {
+                throw new FormatException("Invalid EventPipe V3 event payload size");
+            }
+
             header.EventSize = layout.EventSize;
             header.MetaDataId = layout.MetaDataId;
             header.ThreadIndexOrId = header.ThreadId = layout.ThreadId;
@@ -1109,11 +1129,30 @@ namespace Microsoft.Diagnostics.Tracing
             // we want to peak ahead and read some data in the stack part of the event without advancing the reader's cursor
             SpanReader eventReader = reader;
             eventReader.ReadBytes(layout.PayloadSize);
-            header.StackBytesSize = eventReader.ReadInt32();
+            int remainingStackBytes = header.TotalNonHeaderSize - layout.PayloadSize;
+            if (remainingStackBytes < sizeof(int))
+            {
+                throw new FormatException("Invalid EventPipe V3 event stack size");
+            }
+
+            int stackBytesSize = eventReader.ReadInt32();
+            remainingStackBytes -= sizeof(int);
+            if (stackBytesSize < 0 || stackBytesSize > remainingStackBytes)
+            {
+                throw new FormatException("Invalid EventPipe V3 event stack size");
+            }
+
+            // Defense-in-depth: EventPipeMetadata.GetEventRecordForEventData stores the stack-extended-data length
+            // in a ushort field (DataSize = (ushort)(stackBytesSize + sizeof(ulong))). If stackBytesSize is larger
+            // than ushort.MaxValue - sizeof(ulong), the cast truncates and TraceLog.ProcessExtendedData then
+            // computes a negative addressesCount, producing another out-of-bounds read. Reject those sizes here.
+            if (stackBytesSize > ushort.MaxValue - sizeof(ulong))
+            {
+                throw new FormatException("Invalid EventPipe V3 event stack size");
+            }
+
+            header.StackBytesSize = stackBytesSize;
             header.StackBytes = (IntPtr)Unsafe.AsPointer<byte>(ref MemoryMarshal.GetReference(eventReader.RemainingBytes));
-            header.HeaderSize = sizeof(LayoutV3);
-            int totalSize = header.EventSize + 4;
-            header.TotalNonHeaderSize = totalSize - header.HeaderSize;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
