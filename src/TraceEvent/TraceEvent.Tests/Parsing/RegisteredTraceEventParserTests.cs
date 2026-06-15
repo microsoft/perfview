@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Xunit;
@@ -364,6 +365,352 @@ namespace TraceEventTests
 
             Assert.Equal(normalizedLegacy, normalizedNew);
         }
+
+        [Fact]
+        public unsafe void EmbeddedTdhMetadataParser_ToleratesOutOfRangeTopLevelStringOffset()
+        {
+            byte[] buffer = CreateSinglePropertyEventInfoBuffer();
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                var eventInfo = (RegisteredTraceEventParser.TRACE_EVENT_INFO*)eventInfoBuffer;
+                eventInfo->ProviderNameOffset = buffer.Length + 2;
+
+                DynamicTraceEventData template = new RegisteredTraceEventParser.TdhEventParser(eventInfoBuffer, buffer.Length, null, null).ParseEventMetaData();
+
+                // An out-of-range descriptive string offset is tolerated: the event still parses and the
+                // unreadable provider name falls back to its default rather than rejecting the event.
+                Assert.NotNull(template);
+                Assert.Equal("UnknownProvider", template.ProviderName);
+            }
+        }
+
+        [Fact]
+        public unsafe void EmbeddedTdhMetadataParser_ValidatesPropertyArrayBounds()
+        {
+            byte[] buffer = CreateSinglePropertyEventInfoBuffer();
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                var eventInfo = (RegisteredTraceEventParser.TRACE_EVENT_INFO*)eventInfoBuffer;
+                eventInfo->PropertyCount = 2;
+                eventInfo->TopLevelPropertyCount = 2;
+
+                var parser = new RegisteredTraceEventParser.TdhEventParser(eventInfoBuffer, EventInfoPropertyArrayOffset + EventPropertyInfoSize, null, null);
+
+                Assert.Null(parser.ParseEventMetaData());
+            }
+        }
+
+        [Fact]
+        public unsafe void EmbeddedTdhMetadataParser_ToleratesOutOfRangePropertyNameOffset()
+        {
+            byte[] buffer = CreateSinglePropertyEventInfoBuffer();
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                var eventInfo = (RegisteredTraceEventParser.TRACE_EVENT_INFO*)eventInfoBuffer;
+                eventInfo->EventPropertyInfoArray.NameOffset = buffer.Length + 2;
+
+                DynamicTraceEventData template = new RegisteredTraceEventParser.TdhEventParser(eventInfoBuffer, buffer.Length, null, null).ParseEventMetaData();
+
+                // An out-of-range property name offset is tolerated: the field keeps its place in the
+                // payload (with an empty name) rather than rejecting the event.
+                Assert.NotNull(template);
+                Assert.Equal(new[] { "" }, template.PayloadNames);
+            }
+        }
+
+        [Fact]
+        public unsafe void EmbeddedTdhMetadataParser_ValidatesMapOffsets()
+        {
+            byte[] buffer = CreateMapInfoBuffer();
+            fixed (byte* eventMapBuffer = buffer)
+            {
+                var eventMap = (RegisteredTraceEventParser.EVENT_MAP_INFO*)eventMapBuffer;
+                eventMap->MapEntryArray.NameOffset = buffer.Length + 2;
+
+                Assert.Null(RegisteredTraceEventParser.TdhEventParser.ParseMap(eventMap, eventMapBuffer, buffer.Length));
+            }
+        }
+
+        [Fact]
+        public unsafe void EmbeddedTdhMetadataParser_ValidatesStructRecursionDepth()
+        {
+            byte[] buffer = CreateSinglePropertyEventInfoBuffer();
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                var eventInfo = (RegisteredTraceEventParser.TRACE_EVENT_INFO*)eventInfoBuffer;
+                eventInfo->EventPropertyInfoArray.Flags = RegisteredTraceEventParser.PROPERTY_FLAGS.Struct;
+                eventInfo->EventPropertyInfoArray.InType = (RegisteredTraceEventParser.TdhInputType)0; // StructStartIndex.
+                eventInfo->EventPropertyInfoArray.OutType = 1; // NumOfStructMembers.
+
+                var parser = new RegisteredTraceEventParser.TdhEventParser(eventInfoBuffer, buffer.Length, null, null);
+
+                Assert.Null(parser.ParseEventMetaData());
+            }
+        }
+
+        [Fact]
+        public unsafe void EmbeddedTdhMetadataParser_ParsesValidLengthBoundMetadata()
+        {
+            byte[] buffer = CreateSinglePropertyEventInfoBuffer();
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                var parser = new RegisteredTraceEventParser.TdhEventParser(eventInfoBuffer, buffer.Length, null, null);
+
+                DynamicTraceEventData template = parser.ParseEventMetaData();
+
+                Assert.NotNull(template);
+                Assert.Equal(new[] { "Field" }, template.PayloadNames);
+            }
+        }
+
+        [Fact]
+        public unsafe void EmbeddedTdhMetadataParser_ParsesValidStructProperty()
+        {
+            // Build a TRACE_EVENT_INFO with two properties: a top-level struct property whose
+            // single member is the UInt32 property at index 1.  This exercises the happy-path
+            // recursion into ParseFields for nested struct members, and ensures that a non-zero
+            // value in the MapNameOffset union slot of the struct property (which actually
+            // overlays the struct 'padding' field in the native union) does not cause
+            // ValidateEventInfo to falsely reject the event.
+            byte[] buffer = CreateStructPropertyEventInfoBuffer();
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                DynamicTraceEventData template = new RegisteredTraceEventParser.TdhEventParser(
+                    eventInfoBuffer, buffer.Length, null, null).ParseEventMetaData();
+
+                Assert.NotNull(template);
+                Assert.Equal(new[] { "Outer" }, template.PayloadNames);
+            }
+        }
+
+        [Fact]
+        public unsafe void EmbeddedTdhMetadataParser_RejectsExponentialStructDag()
+        {
+            // A crafted TRACE_EVENT_INFO whose two struct properties each declare the SAME pair of
+            // properties (indices 0 and 1) as their members forms a shared DAG.  Without a cumulative
+            // work budget, ParseFields re-parses the same properties and the work doubles at every
+            // recursion level (~2^32 invocations from a tiny blob) -> multi-hour hang + OOM.  The
+            // PropertyCount work budget must reject this quickly because a property is revisited.
+            // (Without the budget this test hangs, which is what makes it a genuine regression.)
+            byte[] buffer = CreateRecursiveStructDagEventInfoBuffer();
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                var parser = new RegisteredTraceEventParser.TdhEventParser(eventInfoBuffer, buffer.Length, null, null);
+
+                Assert.Null(parser.ParseEventMetaData());
+            }
+        }
+
+        [Fact]
+        public unsafe void EmbeddedTdhMetadataParser_RejectsNestedStructArrayPrefixUnderflow()
+        {
+            // A nested struct whose first (and only) member is a variable-length array whose count
+            // index points at the field immediately before the struct frame (startField - 1).  Inside
+            // the nested frame curField == 0 and no field has been added yet, so the "length/count is
+            // right before the array" prefix logic would index fieldFetches[-1].  The parser must not
+            // throw on the untrusted metadata path: it detects the prefix underflow and rejects the
+            // template (returns null) rather than crashing.
+            byte[] buffer = CreateNestedStructArrayPrefixBuffer();
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                DynamicTraceEventData template = new RegisteredTraceEventParser.TdhEventParser(
+                    eventInfoBuffer, buffer.Length, null, null).ParseEventMetaData();
+
+                Assert.Null(template);
+            }
+        }
+
+        private static unsafe byte[] CreateRecursiveStructDagEventInfoBuffer()
+        {
+            byte[] buffer = new byte[EventInfoPropertyArrayOffset + (2 * EventPropertyInfoSize) + 128];
+            int stringOffset = EventInfoPropertyArrayOffset + (2 * EventPropertyInfoSize);
+            int providerNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Provider");
+            int taskNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Task");
+            int opcodeNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Opcode");
+            int aNameOffset = AppendUnicodeString(buffer, ref stringOffset, "A");
+            int bNameOffset = AppendUnicodeString(buffer, ref stringOffset, "B");
+
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                var eventInfo = (RegisteredTraceEventParser.TRACE_EVENT_INFO*)eventInfoBuffer;
+                eventInfo->ProviderGuid = Guid.NewGuid();
+                eventInfo->EventGuid = Guid.NewGuid();
+                eventInfo->EventDescriptor.Id = 1;
+                eventInfo->ProviderNameOffset = providerNameOffset;
+                eventInfo->TaskNameOffset = taskNameOffset;
+                eventInfo->OpcodeNameOffset = opcodeNameOffset;
+                eventInfo->PropertyCount = 2;
+                eventInfo->TopLevelPropertyCount = 2;
+
+                RegisteredTraceEventParser.EVENT_PROPERTY_INFO* properties = &eventInfo->EventPropertyInfoArray;
+
+                // Both properties are structs whose members are the WHOLE property array [0, 2).
+                // StructStartIndex=0 / NumOfStructMembers=2 encoded via the InType/OutType union slots.
+                for (int i = 0; i < 2; i++)
+                {
+                    properties[i].Flags = RegisteredTraceEventParser.PROPERTY_FLAGS.Struct;
+                    properties[i].InType = (RegisteredTraceEventParser.TdhInputType)0; // StructStartIndex = 0
+                    properties[i].OutType = 2;                                          // NumOfStructMembers = 2
+                }
+                properties[0].NameOffset = aNameOffset;
+                properties[1].NameOffset = bNameOffset;
+            }
+
+            return buffer;
+        }
+
+        private static unsafe byte[] CreateNestedStructArrayPrefixBuffer()
+        {
+            byte[] buffer = new byte[EventInfoPropertyArrayOffset + (2 * EventPropertyInfoSize) + 128];
+            int stringOffset = EventInfoPropertyArrayOffset + (2 * EventPropertyInfoSize);
+            int providerNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Provider");
+            int taskNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Task");
+            int opcodeNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Opcode");
+            int outerNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Outer");
+            int innerNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Inner");
+
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                var eventInfo = (RegisteredTraceEventParser.TRACE_EVENT_INFO*)eventInfoBuffer;
+                eventInfo->ProviderGuid = Guid.NewGuid();
+                eventInfo->EventGuid = Guid.NewGuid();
+                eventInfo->EventDescriptor.Id = 1;
+                eventInfo->ProviderNameOffset = providerNameOffset;
+                eventInfo->TaskNameOffset = taskNameOffset;
+                eventInfo->OpcodeNameOffset = opcodeNameOffset;
+                eventInfo->PropertyCount = 2;
+                eventInfo->TopLevelPropertyCount = 1;
+
+                RegisteredTraceEventParser.EVENT_PROPERTY_INFO* properties = &eventInfo->EventPropertyInfoArray;
+
+                // Top-level struct property whose single member is property index 1.
+                properties[0].Flags = RegisteredTraceEventParser.PROPERTY_FLAGS.Struct;
+                properties[0].NameOffset = outerNameOffset;
+                properties[0].InType = (RegisteredTraceEventParser.TdhInputType)1; // StructStartIndex = 1
+                properties[0].OutType = 1;                                          // NumOfStructMembers = 1
+
+                // Nested member: a variable-length (ParamCount) array whose count index points at
+                // startField - 1 (= 0), i.e. just before this nested frame.  In the nested frame
+                // curField == 0 and fieldFetches is empty, so the prefix removal would underflow.
+                properties[1].Flags = RegisteredTraceEventParser.PROPERTY_FLAGS.ParamCount;
+                properties[1].NameOffset = innerNameOffset;
+                properties[1].InType = RegisteredTraceEventParser.TdhInputType.UInt32;
+                properties[1].CountOrCountIndex = 0; // == startField(1) + curField(0) - 1
+            }
+
+            return buffer;
+        }
+
+        private static unsafe byte[] CreateStructPropertyEventInfoBuffer()
+        {
+            byte[] buffer = new byte[EventInfoPropertyArrayOffset + (2 * EventPropertyInfoSize) + 128];
+            int stringOffset = EventInfoPropertyArrayOffset + (2 * EventPropertyInfoSize);
+            int providerNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Provider");
+            int taskNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Task");
+            int opcodeNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Opcode");
+            int outerNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Outer");
+            int innerNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Inner");
+
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                var eventInfo = (RegisteredTraceEventParser.TRACE_EVENT_INFO*)eventInfoBuffer;
+                eventInfo->ProviderGuid = Guid.NewGuid();
+                eventInfo->EventGuid = Guid.NewGuid();
+                eventInfo->EventDescriptor.Id = 1;
+                eventInfo->EventDescriptor.Task = 1;
+                eventInfo->EventDescriptor.Opcode = 1;
+                eventInfo->ProviderNameOffset = providerNameOffset;
+                eventInfo->TaskNameOffset = taskNameOffset;
+                eventInfo->OpcodeNameOffset = opcodeNameOffset;
+                eventInfo->PropertyCount = 2;
+                eventInfo->TopLevelPropertyCount = 1;
+
+                RegisteredTraceEventParser.EVENT_PROPERTY_INFO* properties = &eventInfo->EventPropertyInfoArray;
+
+                // Top-level struct property pointing at property index 1 as its single member.
+                // Encode StructStartIndex=1 / NumOfStructMembers=1 via the union members.
+                properties[0].Flags = RegisteredTraceEventParser.PROPERTY_FLAGS.Struct;
+                properties[0].NameOffset = outerNameOffset;
+                properties[0].InType = (RegisteredTraceEventParser.TdhInputType)1; // StructStartIndex
+                properties[0].OutType = 1;                                          // NumOfStructMembers
+                // Deliberately set the slot that overlays MapNameOffset to a non-zero garbage
+                // value to mimic real TDH output where the struct 'padding' field is not
+                // guaranteed to be zero.  ValidateEventInfo must not interpret this as a
+                // string offset for struct-typed properties.
+                properties[0].MapNameOffset = unchecked((int)0xDEADBEEF);
+
+                // The nested member.
+                properties[1].NameOffset = innerNameOffset;
+                properties[1].InType = RegisteredTraceEventParser.TdhInputType.UInt32;
+            }
+
+            return buffer;
+        }
+
+        private static unsafe byte[] CreateSinglePropertyEventInfoBuffer()
+        {
+            byte[] buffer = new byte[EventInfoPropertyArrayOffset + EventPropertyInfoSize + 128];
+            int stringOffset = EventInfoPropertyArrayOffset + EventPropertyInfoSize;
+            int providerNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Provider");
+            int taskNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Task");
+            int opcodeNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Opcode");
+            int propertyNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Field");
+
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                var eventInfo = (RegisteredTraceEventParser.TRACE_EVENT_INFO*)eventInfoBuffer;
+                eventInfo->ProviderGuid = Guid.NewGuid();
+                eventInfo->EventGuid = Guid.NewGuid();
+                eventInfo->EventDescriptor.Id = 1;
+                eventInfo->EventDescriptor.Task = 1;
+                eventInfo->EventDescriptor.Opcode = 1;
+                eventInfo->ProviderNameOffset = providerNameOffset;
+                eventInfo->TaskNameOffset = taskNameOffset;
+                eventInfo->OpcodeNameOffset = opcodeNameOffset;
+                eventInfo->PropertyCount = 1;
+                eventInfo->TopLevelPropertyCount = 1;
+
+                RegisteredTraceEventParser.EVENT_PROPERTY_INFO* propertyInfo = &eventInfo->EventPropertyInfoArray;
+                propertyInfo->NameOffset = propertyNameOffset;
+                propertyInfo->InType = RegisteredTraceEventParser.TdhInputType.UInt32;
+            }
+
+            return buffer;
+        }
+
+        private static unsafe byte[] CreateMapInfoBuffer()
+        {
+            byte[] buffer = new byte[EventMapInfoEntryArrayOffset + EventMapEntrySize + 128];
+            int stringOffset = EventMapInfoEntryArrayOffset + EventMapEntrySize;
+            int mapNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Map");
+            int entryNameOffset = AppendUnicodeString(buffer, ref stringOffset, "Entry");
+
+            fixed (byte* eventMapBuffer = buffer)
+            {
+                var eventMap = (RegisteredTraceEventParser.EVENT_MAP_INFO*)eventMapBuffer;
+                eventMap->NameOffset = mapNameOffset;
+                eventMap->Flag = RegisteredTraceEventParser.MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP;
+                eventMap->EntryCount = 1;
+                eventMap->MapEntryArray.NameOffset = entryNameOffset;
+                eventMap->MapEntryArray.Value = 1;
+            }
+
+            return buffer;
+        }
+
+        private static int AppendUnicodeString(byte[] buffer, ref int offset, string value)
+        {
+            byte[] bytes = Encoding.Unicode.GetBytes(value + '\0');
+            int originalOffset = offset;
+            Buffer.BlockCopy(bytes, 0, buffer, offset, bytes.Length);
+            offset += bytes.Length;
+            return originalOffset;
+        }
+
+        private static readonly int EventInfoPropertyArrayOffset = (int)Marshal.OffsetOf(typeof(RegisteredTraceEventParser.TRACE_EVENT_INFO), "EventPropertyInfoArray");
+        private static readonly int EventPropertyInfoSize = Marshal.SizeOf(typeof(RegisteredTraceEventParser.EVENT_PROPERTY_INFO));
+        private static readonly int EventMapInfoEntryArrayOffset = (int)Marshal.OffsetOf(typeof(RegisteredTraceEventParser.EVENT_MAP_INFO), "MapEntryArray");
+        private static readonly int EventMapEntrySize = Marshal.SizeOf(typeof(RegisteredTraceEventParser.EVENT_MAP_ENTRY));
 
         #region Legacy Implementation (for comparison testing only)
 
