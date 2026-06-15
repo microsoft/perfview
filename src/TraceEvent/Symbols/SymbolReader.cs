@@ -843,6 +843,19 @@ namespace Microsoft.Diagnostics.Symbols
         public Func<string, bool> SecurityCheck { get; set; }
 
         /// <summary>
+        /// We call back on this before executing a source-server fetch command (e.g. <c>tf.exe view ...</c> or
+        /// <c>tf.exe git view ...</c>) that was derived from PDB-supplied data.  The callback receives a
+        /// <see cref="SourceServerAuthorizationRequest"/> describing the exact command line that will be run, and
+        /// must return <c>true</c> to allow execution or <c>false</c> to deny it.
+        ///
+        /// If this property is <c>null</c>, source-server fetch commands are denied by default.  This protects
+        /// callers that do not explicitly opt in to running external processes on PDB data: a malicious PDB
+        /// cannot cause a fetch to occur silently.  To enable source-server fetches, set this property to either
+        /// an interactive prompt (as PerfView does) or to <c>request =&gt; true</c> for fully trusted scenarios.
+        /// </summary>
+        public Func<SourceServerAuthorizationRequest, bool> AuthorizeSourceServerCommand { get; set; }
+
+        /// <summary>
         /// If set OnSymbolFileFound will be called when a PDB file is found.  
         /// It is passed the complete local file path, the PDB Guid (may be Guid.Empty) and PDB age.
         /// </summary>
@@ -2184,6 +2197,27 @@ namespace Microsoft.Diagnostics.Symbols
         private List<Tuple<string, string, bool>> _sourceLinkMapping;      // Used by SourceLink to map build paths to URLs (path, url, isWildcard)
         private bool _sourceLinkMappingInited;                       // Lazy init flag. 
         #endregion
+    }
+
+    /// <summary>
+    /// Describes a source-server fetch command that has been validated and is about to be executed.
+    /// Passed to <see cref="SymbolReader.AuthorizeSourceServerCommand"/> so the caller can choose whether
+    /// to allow execution.
+    /// </summary>
+    /// <remarks>
+    /// This is a wrapper class so that additional context can be added in the future without breaking
+    /// the <see cref="SymbolReader.AuthorizeSourceServerCommand"/> delegate signature.
+    /// </remarks>
+    public sealed class SourceServerAuthorizationRequest
+    {
+        /// <summary>
+        /// The full command line that will be executed (e.g. <c>tf.exe view /version:1234 ...</c>).
+        /// This has already been validated against a strict per-tool allow-list, has any PDB-supplied
+        /// output destination replaced with a safe path under the source cache, and has been quoted per
+        /// CommandLineToArgvW rules.  It will be executed directly via <c>CreateProcess</c> (not through
+        /// a shell), so shell metacharacters in this string are inert.
+        /// </summary>
+        public string Command { get; set; }
     }
 
     /// <summary>
