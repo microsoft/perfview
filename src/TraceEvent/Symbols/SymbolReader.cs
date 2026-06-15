@@ -315,8 +315,14 @@ namespace Microsoft.Diagnostics.Symbols
             string indexPath = null;
             string perfMapPath = null;
             string symbolCacheTargetPath = null;
-            string perfMapSimpleName = Path.GetFileName(perfMapName);
-            R2RPerfMapSignature cacheKey = new R2RPerfMapSignature() { Name = perfMapName, Signature = perfMapSignature, Version = perfMapVersion };
+            string perfMapSimpleName = PathUtil.GetPlatformIndependentFileName(perfMapName ?? string.Empty);
+            if (string.IsNullOrEmpty(perfMapSimpleName) || perfMapSimpleName == "." || perfMapSimpleName == "..")
+            {
+                m_log.WriteLine("FindR2RPerfMapSymbolFilePath: *}} Invalid R2R perfmap symbol file name {0} Signature {1} Version {2}", perfMapName, perfMapSignature, perfMapVersion);
+                return null;
+            }
+
+            R2RPerfMapSignature cacheKey = new R2RPerfMapSignature() { Name = perfMapSimpleName, Signature = perfMapSignature, Version = perfMapVersion };
             if (m_r2rPerfMapPathCache.TryGet(cacheKey, out perfMapPath))
             {
                 m_log.WriteLine("FindR2RPerfMapSymbolFile: }} Hit Cache, returning {0}", perfMapPath);
@@ -340,47 +346,47 @@ namespace Microsoft.Diagnostics.Symbols
 
             if (perfMapPath == null)
             {
-            SymbolPath path = new SymbolPath(SymbolPath);
-            foreach (SymbolPathElement element in path.Elements)
-            {
-                if (element.IsSymServer)
+                SymbolPath path = new SymbolPath(SymbolPath);
+                foreach (SymbolPathElement element in path.Elements)
                 {
-                    string cache = element.Cache;
-                    if (cache == null)
+                    if (element.IsSymServer)
                     {
-                        cache = path.DefaultSymbolCache();
-                    }
-                    if (indexPath == null)
-                    {
-                        indexPath = $"/{perfMapName}/r2rmap-v{perfMapVersion}-{perfMapSignature:N}/{perfMapName}";
-                    }
-                    if (symbolCacheTargetPath == null)
-                    {
-                        symbolCacheTargetPath = Path.Combine(perfMapName,  perfMapVersion.ToString() + "-" + perfMapSignature.ToString("N"), perfMapName);
-                    }
-                    perfMapPath = GetFileFromServer(element.Target, indexPath, Path.Combine(cache, symbolCacheTargetPath));
-                    if (perfMapPath != null)
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    string filePath = Path.Combine(element.Target, perfMapSimpleName);
-                    if ((Options & SymbolReaderOptions.CacheOnly) == 0 || !element.IsRemote)
-                    {
-                        if (R2RPerfMapMatches(filePath, perfMapSignature, perfMapVersion, checkSecurity: false))
+                        string cache = element.Cache;
+                        if (cache == null)
                         {
-                            perfMapPath = filePath;
+                            cache = path.DefaultSymbolCache();
+                        }
+                        if (indexPath == null)
+                        {
+                            indexPath = $"/{perfMapSimpleName}/r2rmap-v{perfMapVersion}-{perfMapSignature:N}/{perfMapSimpleName}";
+                        }
+                        if (symbolCacheTargetPath == null)
+                        {
+                            symbolCacheTargetPath = Path.Combine(perfMapSimpleName, perfMapVersion.ToString() + "-" + perfMapSignature.ToString("N"), perfMapSimpleName);
+                        }
+                        perfMapPath = GetFileFromServer(element.Target, indexPath, Path.Combine(cache, symbolCacheTargetPath));
+                        if (perfMapPath != null)
+                        {
                             break;
                         }
                     }
                     else
                     {
-                        m_log.WriteLine("FindR2RPerfMapSymbolFilePath: location {0} is remote and cacheOnly set, skipping.", filePath);
+                        string filePath = Path.Combine(element.Target, perfMapSimpleName);
+                        if ((Options & SymbolReaderOptions.CacheOnly) == 0 || !element.IsRemote)
+                        {
+                            if (R2RPerfMapMatches(filePath, perfMapSignature, perfMapVersion, checkSecurity: false))
+                            {
+                                perfMapPath = filePath;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            m_log.WriteLine("FindR2RPerfMapSymbolFilePath: location {0} is remote and cacheOnly set, skipping.", filePath);
+                        }
                     }
                 }
-            }
             }
 
             if (perfMapPath != null)
