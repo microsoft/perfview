@@ -103,6 +103,9 @@
     <Compile Include="..\Utilities\StreamUtilities.cs">
       <Link>Utilities\StreamUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\Utilities\PathUtilities.cs">
+      <Link>Utilities\PathUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\Utilities\SymbolCachePathUtilities.cs">
       <Link>Utilities\SymbolCachePathUtilities.cs</Link>
     </Compile>

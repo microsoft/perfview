@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Microsoft.Diagnostics.Utilities
 {
@@ -108,6 +110,92 @@ namespace Microsoft.Diagnostics.Utilities
                 ? StringComparison.OrdinalIgnoreCase
                 : StringComparison.Ordinal;
             return normalizedFilePath.StartsWith(normalizedDirectory, comparison);
+        }
+
+        /// <summary>
+        /// Reduces <paramref name="name"/> to a value safe to embed in a single file-name
+        /// component on disk.  Every character reported by
+        /// <see cref="Path.GetInvalidFileNameChars"/>, every path / volume separator,
+        /// and every control character is replaced with '_'.  Trailing '.' and ' '
+        /// characters are removed because Windows silently trims them, which would
+        /// otherwise let two distinct names collide on disk and let inputs like "NUL."
+        /// slip past the reserved-name guard.  Reserved DOS device names (CON, PRN,
+        /// AUX, NUL, CLOCK$, CONIN$, CONOUT$, COM0-9, LPT0-9) are detected on the
+        /// stem before the first '.' (Win32 opens the device for paths like
+        /// "NUL.txt") and prefixed with '_' on match.
+        ///
+        /// Returns <c>null</c> if the input is null, empty, '.', '..', or sanitizes
+        /// to an empty string so callers can choose to skip the resource rather than
+        /// substitute an arbitrary placeholder.
+        /// </summary>
+        public static string SanitizeFileName(string name)
+        {
+            if (string.IsNullOrEmpty(name) || name == "." || name == "..")
+            {
+                return null;
+            }
+
+            HashSet<char> invalid = s_invalidFileNameChars;
+            StringBuilder sanitized = new StringBuilder(name.Length);
+            foreach (char c in name)
+            {
+                sanitized.Append(invalid.Contains(c) || char.IsControl(c) ? '_' : c);
+            }
+
+            while (sanitized.Length > 0)
+            {
+                char last = sanitized[sanitized.Length - 1];
+                if (last != '.' && last != ' ')
+                {
+                    break;
+                }
+                sanitized.Length--;
+            }
+
+            if (sanitized.Length == 0)
+            {
+                return null;
+            }
+
+            string candidate = sanitized.ToString();
+            int firstDot = candidate.IndexOf('.');
+            string stem = firstDot < 0 ? candidate : candidate.Substring(0, firstDot);
+            if (s_reservedDosDeviceNames.Contains(stem))
+            {
+                return "_" + candidate;
+            }
+
+            return candidate;
+        }
+
+        private static readonly HashSet<char> s_invalidFileNameChars = BuildInvalidFileNameChars();
+        private static readonly HashSet<string> s_reservedDosDeviceNames = BuildReservedDosDeviceNames();
+
+        private static HashSet<char> BuildInvalidFileNameChars()
+        {
+            HashSet<char> chars = new HashSet<char>(Path.GetInvalidFileNameChars());
+            chars.Add('\0');
+            chars.Add(Path.DirectorySeparatorChar);
+            chars.Add(Path.AltDirectorySeparatorChar);
+            chars.Add(Path.VolumeSeparatorChar);
+            chars.Add('\\');
+            chars.Add('/');
+            chars.Add(':');
+            return chars;
+        }
+
+        private static HashSet<string> BuildReservedDosDeviceNames()
+        {
+            HashSet<string> names = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "CON", "PRN", "AUX", "NUL", "CLOCK$", "CONIN$", "CONOUT$",
+            };
+            for (int i = 0; i <= 9; i++)
+            {
+                names.Add("COM" + i);
+                names.Add("LPT" + i);
+            }
+            return names;
         }
     }
 }

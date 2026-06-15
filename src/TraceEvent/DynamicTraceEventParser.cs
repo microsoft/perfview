@@ -114,14 +114,40 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public void WriteAllManifests(string directoryPath)
         {
-            Directory.CreateDirectory(directoryPath);
+            string fullDirectoryPath = Path.GetFullPath(directoryPath);
+            Directory.CreateDirectory(fullDirectoryPath);
             foreach (var providerManifest in DynamicProviders)
             {
-                
-                var filePath = Path.Combine(directoryPath, providerManifest.Name + ".manifest.xml");
+                // Provider names come from <provider name="..."> attributes in untrusted
+                // manifest XML embedded in trace data.  Sanitize the name into a safe
+                // file-name component; if the sanitizer rejects the input outright,
+                // fall back to the provider's GUID (which is always well-formed for a
+                // non-Guid.Empty value) so distinct providers still get distinct
+                // manifest files.  Use "_" only as a last resort when neither the
+                // name nor the GUID is usable.
+                string sanitizedName = PathUtilities.SanitizeFileName(providerManifest.Name);
+                if (sanitizedName == null)
+                {
+                    sanitizedName = providerManifest.Guid != Guid.Empty
+                        ? providerManifest.Guid.ToString("N")
+                        : "_";
+                }
+                string fileName = sanitizedName + ".manifest.xml";
+                string filePath = Path.GetFullPath(Path.Combine(fullDirectoryPath, fileName));
+
+                // SanitizeFileName strips every path separator and other invalid
+                // file-name character, so the combined path cannot escape the requested
+                // directory.  Verify that invariant defensively in case the sanitizer
+                // ever regresses or Path.Combine behaves unexpectedly on a new runtime.
+                if (!PathUtilities.IsPathWithinDirectory(filePath, fullDirectoryPath))
+                {
+                    throw new InvalidOperationException("Manifest output path must remain within the requested directory.");
+                }
+
                 providerManifest.WriteToFile(filePath);
             }
         }
+
 
         /// <summary>
         /// Utility method that read all the manifests the directory 'directoryPath' into the parser.   
