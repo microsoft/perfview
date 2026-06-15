@@ -180,6 +180,9 @@
     <Compile Include="..\Utilities\FileUtilities.cs">
       <Link>Utilities\FileUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\Utilities\PathUtilities.cs">
+      <Link>Utilities\PathUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\Utilities\StringUtilities.cs">
       <Link>Utilities\StringUtilities.cs</Link>
     </Compile>
