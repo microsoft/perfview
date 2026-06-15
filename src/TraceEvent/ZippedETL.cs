@@ -510,7 +510,7 @@ namespace Microsoft.Diagnostics.Tracing
                             {
                                 // .diagsession files (created by the Visual Studio Diagnostic Hub) put PDBs in a path like
                                 // 194BAE98-C4ED-470E-9204-1F9389FC9DC1\symcache\xyz.pdb
-                                m = Regex.Match(archivePath, @"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\(?:sym|pdb)cache\\(.*)", RegexOptions.IgnoreCase);
+                                m = Regex.Match(archivePath, @"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\(?:sym|pdb)cache\\(.*)", RegexOptions.IgnoreCase);
                                 if (m.Success)
                                 {
                                     pdbRelativePath = m.Groups[1].Value;
@@ -524,7 +524,11 @@ namespace Microsoft.Diagnostics.Tracing
                             }
                         }
 
-                        var pdbTargetPath = Path.Combine(SymbolDirectory, pdbRelativePath);
+                        if (!SymbolCachePathUtilities.TryGetPdbTargetPath(SymbolDirectory, pdbRelativePath, out var pdbTargetPath))
+                        {
+                            Log.WriteLine("WARNING: found PDB file with invalid path {0}, skipping extraction", pdbRelativePath);
+                            continue;
+                        }
                         var pdbTargetName = Path.GetFileName(pdbTargetPath);
                         if (File.Exists(pdbTargetPath) && (new System.IO.FileInfo(pdbTargetPath).Length == entry.Length))
                         {

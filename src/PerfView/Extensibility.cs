@@ -708,7 +708,12 @@ namespace PerfViewExtensibility
                             log.WriteLine("Putting symbols in {0}", dirForPdbs);
                         }
 
-                        var pdbTargetPath = Path.Combine(dirForPdbs, pdbRelativePath);
+                        if (!SymbolCachePathUtilities.TryGetPdbTargetPath(dirForPdbs, pdbRelativePath, out var pdbTargetPath))
+                        {
+                            log.WriteLine("WARNING: found PDB file with invalid path {0}, skipping extraction", pdbRelativePath);
+                            continue;
+                        }
+
                         var pdbTargetName = Path.GetFileName(pdbTargetPath);
                         if (!File.Exists(pdbTargetPath) || (new System.IO.FileInfo(pdbTargetPath).Length != entry.Length))
                         {
