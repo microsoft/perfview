@@ -630,7 +630,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// The delegate function to decompress by using ULZ777 algorithm
         /// </summary>
         /// <returns></returns>
-        private unsafe static int ULZ777Decompress(byte[] input, int inputOffset, int inputLength, byte[] output, int outputLength)
+        internal unsafe static int ULZ777Decompress(byte[] input, int inputOffset, int inputLength, byte[] output, int outputLength)
         {
             fixed (byte* uncompressedBufferPtr = &output[0])
             fixed (byte* compressedBufferPtr = &input[inputOffset])
@@ -660,11 +660,15 @@ namespace Microsoft.Diagnostics.Tracing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void WildCopy(byte* d, byte* s, int n)
         {
-            *(ulong*)d = *(ulong*)s;
-
-            for (int i = 8; i < n; i += 8)
+            int i = 0;
+            for (; i <= n - 8; i += 8)
             {
                 *(ulong*)(d + i) = *(ulong*)(s + i);
+            }
+
+            for (; i < n; i++)
+            {
+                d[i] = s[i];
             }
         }
 
