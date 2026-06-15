@@ -87,14 +87,20 @@ namespace PEFile
                 {
                     if (debugEntries[i].Type == IMAGE_DEBUG_TYPE.CODEVIEW)
                     {
+                        int sizeOfData = debugEntries[i].SizeOfData;
+                        if (sizeOfData < CV_INFO_PDB70.FixedSize)
+                        {
+                            continue;
+                        }
+
                         var stringBuff = AllocBuff();
-                        var info = (CV_INFO_PDB70*)stringBuff.Fetch((int)debugEntries[i].PointerToRawData, debugEntries[i].SizeOfData);
+                        var info = (CV_INFO_PDB70*)stringBuff.Fetch((int)debugEntries[i].PointerToRawData, sizeOfData);
                         if (info->CvSignature == CV_INFO_PDB70.PDB70CvSignature)
                         {
                             // If there are several this picks the last one.  
                             pdbGuid = info->Signature;
                             pdbAge = info->Age;
-                            pdbName = info->PdbFileName;
+                            pdbName = info->GetPdbFileName(sizeOfData);
                             ret = true;
                             if (first)
                             {
@@ -1619,19 +1625,30 @@ namespace PEFile
     internal unsafe struct CV_INFO_PDB70
     {
         public const int PDB70CvSignature = 0x53445352; // RSDS in ascii
+        public const int FixedSize = 24;
 
         public int CvSignature;
         public Guid Signature;
         public int Age;
         public fixed byte bytePdbFileName[1];   // Actually variable sized. 
-        public string PdbFileName
+
+        public string GetPdbFileName(int sizeOfData)
         {
-            get
+            int pdbFileNameBytes = sizeOfData - FixedSize;
+            if (pdbFileNameBytes <= 0)
             {
-                fixed (byte* ptr = bytePdbFileName)
+                return string.Empty;
+            }
+
+            fixed (byte* ptr = bytePdbFileName)
+            {
+                int pdbFileNameLength = 0;
+                while (pdbFileNameLength < pdbFileNameBytes && ptr[pdbFileNameLength] != 0)
                 {
-                    return System.Runtime.InteropServices.Marshal.PtrToStringAnsi((IntPtr)ptr);
+                    pdbFileNameLength++;
                 }
+
+                return System.Runtime.InteropServices.Marshal.PtrToStringAnsi((IntPtr)ptr, pdbFileNameLength) ?? string.Empty;
             }
         }
     };

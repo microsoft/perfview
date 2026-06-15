@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using PEFile;
 using Xunit;
 using Xunit.Abstractions;
@@ -374,6 +375,169 @@ namespace TraceEventTests
                 
                 Assert.Equal(numberOfSections1, numberOfSections2);
             }
+        }
+
+        [Fact]
+        public void PEFile_GetPdbSignature_BoundsUnterminatedCodeViewPdbName()
+        {
+            Guid firstGuid = new Guid("11111111-1111-1111-1111-111111111111");
+            Guid secondGuid = new Guid("22222222-2222-2222-2222-222222222222");
+
+            // Create an unterminated PDB name, then place non-zero bytes immediately after the declared SizeOfData.
+            // An unbounded PtrToStringAnsi() will read into the suffix; a bounded implementation must not.
+            byte[] shortPdbUnterminated = CreateCodeViewBlob(secondGuid, 2, "short.pdb", nulTerminate: false);
+            byte[] suffixWithTerminator = Encoding.ASCII.GetBytes("-OVERREAD\0");
+            byte[] shortPdbWithSuffix = new byte[shortPdbUnterminated.Length + suffixWithTerminator.Length];
+            Buffer.BlockCopy(shortPdbUnterminated, 0, shortPdbWithSuffix, 0, shortPdbUnterminated.Length);
+            Buffer.BlockCopy(suffixWithTerminator, 0, shortPdbWithSuffix, shortPdbUnterminated.Length, suffixWithTerminator.Length);
+
+            string peFilePath = CreatePEWithCodeViewDebugData(
+                new CodeViewDebugData(CreateCodeViewBlob(firstGuid, 1, "short.pdb-overread-data", nulTerminate: true)),
+                new CodeViewDebugData(shortPdbWithSuffix, sizeOfData: shortPdbUnterminated.Length));
+
+            try
+            {
+                using (var peFile = new PEFile.PEFile(peFilePath))
+                {
+                    Assert.True(peFile.GetPdbSignature(out string pdbName, out Guid pdbGuid, out int pdbAge));
+                    Assert.Equal("short.pdb", pdbName);
+                    Assert.Equal(secondGuid, pdbGuid);
+                    Assert.Equal(2, pdbAge);
+                }
+            }
+            finally
+            {
+                File.Delete(peFilePath);
+            }
+        }
+
+        [Fact]
+        public void PEFile_GetPdbSignature_IgnoresCodeViewBlobSmallerThanPdb70Header()
+        {
+            string peFilePath = CreatePEWithCodeViewDebugData(
+                new CodeViewDebugData(
+                    CreateCodeViewBlob(Guid.NewGuid(), 1, "ignored.pdb", nulTerminate: true),
+                    global::PEFile.CV_INFO_PDB70.FixedSize - 1));
+
+            try
+            {
+                using (var peFile = new PEFile.PEFile(peFilePath))
+                {
+                    Assert.False(peFile.GetPdbSignature(out string pdbName, out Guid pdbGuid, out int pdbAge));
+                    Assert.Null(pdbName);
+                    Assert.Equal(Guid.Empty, pdbGuid);
+                    Assert.Equal(0, pdbAge);
+                }
+            }
+            finally
+            {
+                File.Delete(peFilePath);
+            }
+        }
+
+        private static string CreatePEWithCodeViewDebugData(params CodeViewDebugData[] codeViewEntries)
+        {
+            const int peHeaderOffset = 0x80;
+            const int sizeOfOptionalHeader = 0xE0;
+            const int optionalHeaderOffset = peHeaderOffset + 24;
+            const int sectionHeaderOffset = peHeaderOffset + 24 + sizeOfOptionalHeader;
+            const int sectionRva = 0x1000;
+            const int sectionFileOffset = 0x200;
+            const int debugDirectoryOffset = sectionFileOffset;
+            const int imageDebugDirectorySize = 28;
+
+            int debugDirectorySize = codeViewEntries.Length * imageDebugDirectorySize;
+            int codeViewOffset = debugDirectoryOffset + debugDirectorySize;
+            int fileSize = codeViewOffset;
+            foreach (CodeViewDebugData entry in codeViewEntries)
+            {
+                fileSize += entry.Blob.Length;
+            }
+
+            byte[] peImage = new byte[Math.Max(0x400, fileSize)];
+            WriteUInt16(peImage, 0, 0x5A4D); // MZ
+            WriteUInt32(peImage, 0x3C, peHeaderOffset);
+
+            WriteUInt32(peImage, peHeaderOffset, 0x4550); // PE\0\0
+            WriteUInt16(peImage, peHeaderOffset + 4, 0x014C); // IMAGE_FILE_MACHINE_I386
+            WriteUInt16(peImage, peHeaderOffset + 6, 1); // NumberOfSections
+            WriteUInt16(peImage, peHeaderOffset + 20, sizeOfOptionalHeader);
+            WriteUInt16(peImage, peHeaderOffset + 22, 0x0102); // Executable image, 32-bit machine
+
+            WriteUInt16(peImage, optionalHeaderOffset, 0x10B); // PE32
+            WriteUInt32(peImage, optionalHeaderOffset + 32, sectionRva); // SectionAlignment
+            WriteUInt32(peImage, optionalHeaderOffset + 36, sectionFileOffset); // FileAlignment
+            WriteUInt32(peImage, optionalHeaderOffset + 56, 0x2000); // SizeOfImage
+            WriteUInt32(peImage, optionalHeaderOffset + 60, sectionFileOffset); // SizeOfHeaders
+            WriteUInt32(peImage, optionalHeaderOffset + 92, 16); // NumberOfRvaAndSizes
+
+            int debugDirectoryDataDirectoryOffset = optionalHeaderOffset + 96 + 6 * 8;
+            WriteUInt32(peImage, debugDirectoryDataDirectoryOffset, sectionRva);
+            WriteUInt32(peImage, debugDirectoryDataDirectoryOffset + 4, debugDirectorySize);
+
+            byte[] sectionName = Encoding.ASCII.GetBytes(".rdata");
+            Buffer.BlockCopy(sectionName, 0, peImage, sectionHeaderOffset, sectionName.Length);
+            WriteUInt32(peImage, sectionHeaderOffset + 8, 0x1000); // VirtualSize
+            WriteUInt32(peImage, sectionHeaderOffset + 12, sectionRva);
+            WriteUInt32(peImage, sectionHeaderOffset + 16, 0x1000); // SizeOfRawData
+            WriteUInt32(peImage, sectionHeaderOffset + 20, sectionFileOffset);
+
+            int currentCodeViewOffset = codeViewOffset;
+            for (int i = 0; i < codeViewEntries.Length; i++)
+            {
+                CodeViewDebugData entry = codeViewEntries[i];
+                int debugEntryOffset = debugDirectoryOffset + i * imageDebugDirectorySize;
+                int codeViewRva = sectionRva + currentCodeViewOffset - sectionFileOffset;
+
+                WriteUInt32(peImage, debugEntryOffset + 12, 2); // IMAGE_DEBUG_TYPE_CODEVIEW
+                WriteUInt32(peImage, debugEntryOffset + 16, entry.SizeOfData);
+                WriteUInt32(peImage, debugEntryOffset + 20, codeViewRva);
+                WriteUInt32(peImage, debugEntryOffset + 24, currentCodeViewOffset);
+
+                Buffer.BlockCopy(entry.Blob, 0, peImage, currentCodeViewOffset, entry.Blob.Length);
+                currentCodeViewOffset += entry.Blob.Length;
+            }
+
+            string filePath = Path.Combine(Path.GetTempPath(), "PEFileTests-" + Guid.NewGuid().ToString("N") + ".dll");
+            File.WriteAllBytes(filePath, peImage);
+            return filePath;
+        }
+
+        private static byte[] CreateCodeViewBlob(Guid signature, int age, string pdbFileName, bool nulTerminate)
+        {
+            byte[] pdbFileNameBytes = Encoding.ASCII.GetBytes(pdbFileName);
+            byte[] blob = new byte[global::PEFile.CV_INFO_PDB70.FixedSize + pdbFileNameBytes.Length + (nulTerminate ? 1 : 0)];
+
+            WriteUInt32(blob, 0, global::PEFile.CV_INFO_PDB70.PDB70CvSignature);
+            Buffer.BlockCopy(signature.ToByteArray(), 0, blob, 4, 16);
+            WriteUInt32(blob, 20, age);
+            Buffer.BlockCopy(pdbFileNameBytes, 0, blob, global::PEFile.CV_INFO_PDB70.FixedSize, pdbFileNameBytes.Length);
+
+            return blob;
+        }
+
+        private static void WriteUInt16(byte[] buffer, int offset, int value)
+        {
+            byte[] bytes = BitConverter.GetBytes((ushort)value);
+            Buffer.BlockCopy(bytes, 0, buffer, offset, bytes.Length);
+        }
+
+        private static void WriteUInt32(byte[] buffer, int offset, int value)
+        {
+            byte[] bytes = BitConverter.GetBytes((uint)value);
+            Buffer.BlockCopy(bytes, 0, buffer, offset, bytes.Length);
+        }
+
+        private struct CodeViewDebugData
+        {
+            public CodeViewDebugData(byte[] blob, int? sizeOfData = null)
+            {
+                Blob = blob;
+                SizeOfData = sizeOfData ?? blob.Length;
+            }
+
+            public byte[] Blob { get; }
+            public int SizeOfData { get; }
         }
     }
 }
