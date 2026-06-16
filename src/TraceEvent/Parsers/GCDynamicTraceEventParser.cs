@@ -127,21 +127,39 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         }
 
         /// <summary>
-        /// These are the raw payload fields of the underlying event.
+        /// These are the raw payload fields of the underlying event.  They read through
+        /// the cached <see cref="_payload"/> that <see cref="FixupData"/> populates per
+        /// event; when the payload didn't pass the bounds check (i.e. <c>_payload</c>
+        /// is <c>null</c>) the accessors return type-appropriate safe defaults rather
+        /// than throwing, so the dispatch hot path stays exception-safe.
         /// </summary>
-        internal string Name { get { return GetUnicodeStringAt(0); } }
-        internal Int32 DataSize { get { return GetInt32At(SkipUnicodeString(0)); } }
-        internal byte[] Data { get { return GetByteArrayAt(offset: SkipUnicodeString(0) + 4, DataSize); } }
-        internal int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(0) + 4 + DataSize); } }
+        internal string Name { get { return _payload?.Name ?? string.Empty; } }
+        internal Int32 DataSize { get { return _payload?.DataSize ?? 0; } }
+        internal byte[] Data { get { return _payload.HasValue ? GetByteArrayAt(offset: _payload.Value.DataOffset, _payload.Value.DataSize) : Array.Empty<byte>(); } }
+        internal int ClrInstanceID { get { return _payload.HasValue ? GetInt16At(_payload.Value.ClrInstanceIDOffset) : 0; } }
 
         /// <summary>
         /// This gets run before each event is dispatched.  It is responsible for detecting the event type
         /// and selecting the correct event template (derived from GCDynamicEvent).
+        ///
+        /// The single <see cref="GCDynamicTraceEventImpl"/> instance is reused for every
+        /// GCDynamic event the source produces, so the per-event payload validation
+        /// must run here (not once at construction) -- it refreshes <see cref="_payload"/>
+        /// for the event that's about to dispatch.  Centralising the bounds check here
+        /// lets all downstream payload accessors (Name / DataSize / Data / ClrInstanceID,
+        /// the typed CommittedUsage fixed-offset reads, PayloadValue / PayloadValues,
+        /// ToXml) trust the cached layout without re-validating, and prevents an
+        /// attacker-controlled DataSize from triggering an OOB read or an unhandled
+        /// exception on the dispatch hot path.
         /// </summary>
         internal override void FixupData()
         {
             // Delete any per-event user data because we may mutate the event identity.
             EventTypeUserData = null;
+
+            // Validate the payload layout for THIS event (instance is shared across all
+            // GCDynamic events, so we must re-validate each time, not just the first).
+            _payload = ReadPayloadLayout();
 
             // Set the event identity.
             SelectEventMetadata();
@@ -193,7 +211,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
-
             foreach (KeyValuePair<string, object> pair in EventPayload.PayloadValues)
             {
                 XmlAttrib(sb, pair.Key, pair.Value);
@@ -205,11 +222,75 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
 
         private event Action<GCDynamicTraceEventImpl> Action;
 
+        // Per-event scratch state populated by FixupData.  null means the bound event's
+        // payload failed the bounds check; accessors above return safe defaults in
+        // that case.  The cache lifetime is exactly one dispatch -- FixupData
+        // overwrites it before each event is delivered.
+        private PayloadLayout? _payload;
+
+        /// <summary>
+        /// Bounds-checks the current event's payload against <see cref="TraceEvent.EventDataLength"/>
+        /// and returns the validated layout (including the eagerly read Name string)
+        /// on success, or <c>null</c> on failure.  Safe to call on attacker-controlled
+        /// payloads: every read goes through bounds-aware primitives
+        /// (<see cref="TraceEvent.GetUnicodeStringAt"/>, <see cref="TraceEvent.GetInt32At"/>)
+        /// and the byte array is not materialised -- only its range is validated.
+        /// </summary>
+        private PayloadLayout? ReadPayloadLayout()
+        {
+            int eventDataLength = EventDataLength;
+
+            // GetUnicodeStringAt requires at least one byte; a malformed event with
+            // an empty payload trivially has nowhere to put the GCDynamic fields.
+            if (eventDataLength < sizeof(char))
+            {
+                return null;
+            }
+
+            // GetUnicodeStringAt's read is bounded by EventDataLength.  If the buffer
+            // contains no Unicode null terminator the returned string saturates at
+            // the buffer end and the nameEndOffset computed below exceeds
+            // eventDataLength, which the next range check rejects.
+            string name = GetUnicodeStringAt(0);
+
+            // Account for the Unicode null terminator after the name string.
+            int nameEndOffset = (name.Length + 1) * sizeof(char);
+            if (eventDataLength - nameEndOffset < sizeof(int))
+            {
+                return null;
+            }
+
+            int dataSize = GetInt32At(nameEndOffset);
+            if (dataSize < 0)
+            {
+                return null;
+            }
+
+            int dataOffset = nameEndOffset + sizeof(int);
+            int remainingBytesBeforeClrInstanceID = eventDataLength - dataOffset - sizeof(short);
+            if (remainingBytesBeforeClrInstanceID < 0 || dataSize > remainingBytesBeforeClrInstanceID)
+            {
+                return null;
+            }
+
+            return new PayloadLayout(name, dataSize, dataOffset, dataOffset + dataSize);
+        }
+
         private void SelectEventMetadata()
         {
+            // Default to the generic template -- its accessors fall back to safe
+            // placeholder values when _payload is null.
             GCDynamicEventBase eventTemplate = GCDynamicEventBase.GCDynamicTemplate;
 
-            if (Name.Equals(GCDynamicEventBase.CommittedUsageTemplate.OpcodeName, StringComparison.InvariantCultureIgnoreCase))
+            // Only select the CommittedUsage template when the payload validated AND
+            // is large enough to satisfy CommittedUsageTraceEvent's fixed-offset
+            // reads (Version through TotalBookkeepingCommitted occupy bytes 0..41).
+            // A spoofed event named "CommittedUsage" with a shorter DataSize would
+            // otherwise let BitConverter throw ArgumentException during PayloadValue
+            // / ToXml on the dispatch hot path.
+            if (_payload.HasValue
+                && _payload.Value.Name.Equals(GCDynamicEventBase.CommittedUsageTemplate.OpcodeName, StringComparison.InvariantCultureIgnoreCase)
+                && _payload.Value.DataSize >= CommittedUsageTraceEvent.MinimumDataSize)
             {
                 eventTemplate = GCDynamicEventBase.CommittedUsageTemplate;
             }
@@ -224,6 +305,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
             taskName = eventTemplate.TaskName;
             opcodeName = eventTemplate.OpcodeName;
             eventName = eventTemplate.EventName;
+        }
+
+        private struct PayloadLayout
+        {
+            public PayloadLayout(string name, int dataSize, int dataOffset, int clrInstanceIDOffset)
+            {
+                Name = name;
+                DataSize = dataSize;
+                DataOffset = dataOffset;
+                ClrInstanceIDOffset = clrInstanceIDOffset;
+            }
+
+            public readonly string Name;
+            public readonly int DataSize;
+            public readonly int DataOffset;
+            public readonly int ClrInstanceIDOffset;
         }
     }
 
@@ -331,6 +428,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
 
     public sealed class CommittedUsageTraceEvent : GCDynamicEventBase
     {
+        /// <summary>
+        /// The minimum number of bytes the Data payload must contain in order for
+        /// all CommittedUsage fields (Version through TotalBookkeepingCommitted)
+        /// to be readable.  Used by the GCDynamic dispatcher to reject spoofed
+        /// "CommittedUsage" events whose DataSize is too small, which would
+        /// otherwise cause BitConverter to throw ArgumentException during
+        /// PayloadValue / ToXml and abort trace processing.
+        /// </summary>
+        internal const int MinimumDataSize = 42;
+
         public short Version { get { return BitConverter.ToInt16(DataField, 0); } }
         public long TotalCommittedInUse { get { return BitConverter.ToInt64(DataField, 2); } }
         public long TotalCommittedInGlobalDecommit { get { return BitConverter.ToInt64(DataField, 10); } }

@@ -518,7 +518,7 @@ namespace Microsoft.Diagnostics.Symbols
             /// </summary>
             protected override string GetSourceFromSrcServer()
             {
-                // Try getting the source from the source server using SourceLink information.  
+                // Try getting the source from the source server using SourceLink information.
                 var ret = base.GetSourceFromSrcServer();
                 if (ret != null)
                 {
@@ -527,116 +527,681 @@ namespace Microsoft.Diagnostics.Symbols
 
                 var cacheDir = _symbolModule.SymbolReader.SourceCacheDirectory;
 
-                string target, fetchCmdStr;
-                GetSourceServerTargetAndCommand(out target, out fetchCmdStr, cacheDir);
+                GetSourceServerTargetAndCommand(out string target, out string fetchCmdStr, cacheDir);
 
-                if (target != null)
+                if (target == null)
                 {
-                    if (!target.StartsWith(cacheDir, StringComparison.OrdinalIgnoreCase))
-                    {
-                        // if target is not in cache dir, it means it's from a remote server.
-                        Uri uri = null;
-                        if (Uri.TryCreate(target, UriKind.Absolute, out uri))
-                        {
-                            target = null;
-                            var newTarget = Path.Combine(cacheDir, uri.AbsolutePath.TrimStart('/').Replace('/', '\\'));
-                            if (_symbolModule.SymbolReader.GetPhysicalFileFromServer(uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped), uri.AbsolutePath, newTarget))
-                            {
-                                target = newTarget;
-                            }
+                    _log.WriteLine("Did not find source file in the set of source files in the PDB.");
+                    return null;
+                }
 
-                            if (target == null)
-                            {
-                                _log.WriteLine("Could not fetch {0} from web", uri.AbsoluteUri);
-                                return null;
-                            }
-                        }
-                        else
-                        {
-                            _log.WriteLine("Source Server string {0} is targeting an unsafe location.  Giving up.", target);
-                            return null;
-                        }
+                // Synthesize a path under cacheDir that is structurally impossible to escape, no matter what
+                // the PDB-supplied 'target' looks like.  The shape is <cacheDir>\<hash(target)>\<file name>.
+                if (!TryGetSafeSourceCachePath(cacheDir, target, out string safeCachePath))
+                {
+                    _log.WriteLine("Source Server target {0} cannot be mapped to a safe cache path. Giving up.", target);
+                    return null;
+                }
+
+                // If the file already exists in the safe cache path, return it without re-fetching.
+                // This is also what suppresses repeat authorization prompts when the user opens the same source
+                // file more than once: the second open finds the cached file and never reaches the prompt below.
+                if (File.Exists(safeCachePath))
+                {
+                    if (new FileInfo(safeCachePath).Length > 0)
+                    {
+                        _log.WriteLine("Found an existing source server file {0}.", safeCachePath);
+                        return safeCachePath;
                     }
 
-                    if (!File.Exists(target) && fetchCmdStr != null)
+                    if (!FileUtilities.TryDelete(safeCachePath))
                     {
-                        _log.WriteLine("Trying to generate the file {0}.", target);
-                        var toolsDir = Path.GetDirectoryName(typeof(SourceFile).GetTypeInfo().Assembly.ManifestModule.FullyQualifiedName);
-                        var archToolsDir = Path.Combine(toolsDir, NativeDlls.ProcessArchitectureDirectory);
+                        _log.WriteLine("Found an existing empty source server file that could not be deleted: {0}", safeCachePath);
+                        return null;
+                    }
 
-                        // Find the EXE to do the source server fetch.  We only support TF.exe.   
-                        string addToPath = null;
-                        if (fetchCmdStr.StartsWith("tf.exe ", StringComparison.OrdinalIgnoreCase))
+                    _log.WriteLine("Found an existing empty source server file {0}. Re-fetching.", safeCachePath);
+                }
+
+                // HTTP(S) fetch path.  Non-HTTP(S) targets fall through to the source-server command branch.
+                if (Uri.TryCreate(target, UriKind.Absolute, out Uri uri)
+                    && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+                {
+                    if (!TryCreateSafeSourceCacheDirectory(safeCachePath))
+                    {
+                        return null;
+                    }
+
+                    if (_symbolModule.SymbolReader.GetPhysicalFileFromServer(
+                            uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped),
+                            uri.AbsolutePath,
+                            safeCachePath))
+                    {
+                        _log.WriteLine("Source Server command succeeded creating {0}", safeCachePath);
+                        return safeCachePath;
+                    }
+
+                    _log.WriteLine("Could not fetch {0} from web", uri.AbsoluteUri);
+                    return null;
+                }
+
+                // Source-server command-line fetch path (tf.exe view / tf.exe git view).
+                if (string.IsNullOrEmpty(fetchCmdStr))
+                {
+                    _log.WriteLine("Source Server target {0} is not an HTTP(S) URL and no fetch command was provided.  Giving up.", target);
+                    return null;
+                }
+
+                _log.WriteLine("Trying to generate the file {0}.", safeCachePath);
+
+                // Find tf.exe.  We only support tf.exe-based fetch commands (the per-tool allow-list in
+                // TryCreateSafeSourceServerCommand will reject any other executable).
+                string addToPath = null;
+                var tfExe = Command.FindOnPath("tf.exe");
+                if (tfExe == null)
+                {
+                    tfExe = FindTfExe();
+                    if (tfExe == null)
+                    {
+                        _log.WriteLine("Could not find TF.exe, place it on the PATH environment variable to fix this.");
+                        return null;
+                    }
+                    addToPath = Path.GetDirectoryName(tfExe);
+                }
+
+                // Legacy URL fixup: the original Microsoft TFS server's URL changed.  Because we no longer go
+                // through cmd /c, this is just a string rewrite on the PDB-supplied command before tokenization.
+                fetchCmdStr = fetchCmdStr.Replace(OldSourceServerUrl, NewSourceServerUrl);
+
+                // Rebuild the fetch command from validated, allow-listed tokens, with safeCachePath forced as
+                // the output destination.
+                if (!TryCreateSafeSourceServerCommand(fetchCmdStr, tfExe, safeCachePath, out string safeFetchCmdStr, out string rejectReason))
+                {
+                    _log.WriteLine("Source Server command (PDB-supplied, not executed): {0}", fetchCmdStr);
+                    _log.WriteLine("Source Server command is not recognized as safe ({0}). Failing.", rejectReason);
+                    return null;
+                }
+
+                // Ask the consumer for permission to run the safe command.  Defaults to deny when no authorizer
+                // is installed: non-PerfView consumers must opt in to executing source-server fetch commands.
+                var authorize = _symbolModule.SymbolReader.AuthorizeSourceServerCommand;
+                if (authorize == null)
+                {
+                    _log.WriteLine("Source Server command execution denied by default because no source-server command authorizer is installed.  Install SymbolReader.AuthorizeSourceServerCommand, or in PerfView run with /TrustPdbs, to allow this.  Safe rebuilt command was not executed: {0}", safeFetchCmdStr);
+                    return null;
+                }
+
+                bool authorized;
+                try
+                {
+                    authorized = authorize(new SourceServerAuthorizationRequest { Command = safeFetchCmdStr });
+                }
+                catch (Exception ex)
+                {
+                    _log.WriteLine("Source Server command authorizer threw exception.  Treating as denied.  Safe rebuilt command was not executed: {0}\r\nException: {1}", safeFetchCmdStr, ex.ToString());
+                    return null;
+                }
+
+                if (!authorized)
+                {
+                    _log.WriteLine("Source Server command execution denied by authorizer.  Safe rebuilt command was not executed: {0}", safeFetchCmdStr);
+                    return null;
+                }
+
+                _log.WriteLine("Source Server command authorized; running: {0}", safeFetchCmdStr);
+
+                if (!TryCreateSafeSourceCacheDirectory(safeCachePath))
+                {
+                    return null;
+                }
+
+                var options = new CommandOptions().AddOutputStream(_log).AddNoThrow();
+                if (addToPath != null)
+                {
+                    options = options.AddEnvironmentVariable("PATH", addToPath + ";%PATH%");
+                }
+
+                var fetchCmd = Command.Run(safeFetchCmdStr, options);
+                if (fetchCmd.ExitCode != 0)
+                {
+                    _log.WriteLine("Source Server command failed with exit code {0}", fetchCmd.ExitCode);
+                }
+
+                if (File.Exists(safeCachePath))
+                {
+                    // If the fetch command fails it might still create an empty output file.  Treat that as a failure.
+                    if (new FileInfo(safeCachePath).Length == 0)
+                    {
+                        if (!FileUtilities.TryDelete(safeCachePath))
                         {
-                            var tfExe = Command.FindOnPath("tf.exe");
-                            if (tfExe == null)
-                            {
-                                tfExe = FindTfExe();
-                                if (tfExe == null)
-                                {
-                                    _log.WriteLine("Could not find TF.exe, place it on the PATH environment variable to fix this.");
-                                    return null;
-                                }
-                                addToPath = Path.GetDirectoryName(tfExe);
-                            }
-                        }
-                        else
-                        {
-                            _log.WriteLine("Source Server command {0} is not recognized as safe (tf.exe) command. Failing.", fetchCmdStr);
-                            return null;
+                            _log.WriteLine("Source Server command produced an empty output file that could not be deleted: {0}", safeCachePath);
                         }
 
-                        // Update the source server URL if necessary.
-                        fetchCmdStr = fetchCmdStr.Replace(OldSourceServerUrl, NewSourceServerUrl);
+                        _log.WriteLine("Source Server command failed to produce the output file.");
+                        return null;
+                    }
 
-                        Directory.CreateDirectory(Path.GetDirectoryName(target));
-                        fetchCmdStr = "cmd /c " + fetchCmdStr;
-                        var options = new CommandOptions().AddOutputStream(_log).AddNoThrow();
-                        if (addToPath != null)
+                    _log.WriteLine("Source Server command succeeded creating {0}", safeCachePath);
+                    return safeCachePath;
+                }
+
+                _log.WriteLine("Source Server command failed to produce the output file.");
+                return null;
+            }
+
+            /// <summary>
+            /// Creates the cache directory for a synthesized source-server cache path.
+            /// Source-server fetches are best-effort: in locked-down environments the parent symbol cache
+            /// directory may be read-only, ACL-restricted, unavailable, or otherwise unsuitable for creating
+            /// per-source subdirectories.  Treat those filesystem failures as a source lookup miss and log the
+            /// full exception instead of allowing a malformed or untrusted PDB lookup to fail the caller.
+            /// </summary>
+            private bool TryCreateSafeSourceCacheDirectory(string safeCachePath)
+            {
+                string directory = Path.GetDirectoryName(safeCachePath);
+                try
+                {
+                    Directory.CreateDirectory(directory);
+                    return true;
+                }
+                catch (Exception ex) when (
+                    ex is IOException ||
+                    ex is UnauthorizedAccessException ||
+                    ex is ArgumentException ||
+                    ex is NotSupportedException)
+                {
+                    _log.WriteLine("Could not create Source Server cache directory {0}. {1}", directory, ex);
+                    return false;
+                }
+            }
+
+            /// <summary>
+            /// Synthesizes a structurally-safe path under <paramref name="cacheDir"/> for the PDB-supplied
+            /// source-server <paramref name="target"/>.  The returned path has the shape
+            /// <c>&lt;cacheDir&gt;\&lt;hash(target)&gt;\&lt;Path.GetFileName(target)&gt;</c>, which makes path
+            /// traversal structurally impossible: the hash subdirectory is a 32-character hexadecimal string
+            /// and the file name is a single path segment produced by <see cref="Path.GetFileName(string)"/>.
+            ///
+            /// Returns false if either input is null/empty, if the file-name component is missing, or if it
+            /// contains characters not allowed in a file name.  On failure <paramref name="safeCachePath"/>
+            /// is set to null.
+            /// </summary>
+            internal static bool TryGetSafeSourceCachePath(string cacheDir, string target, out string safeCachePath)
+            {
+                safeCachePath = null;
+
+                if (string.IsNullOrEmpty(cacheDir) || string.IsNullOrEmpty(target))
+                {
+                    return false;
+                }
+
+                // Path.GetFileName treats both '\' and '/' as separators on Windows, so it correctly extracts
+                // the trailing path segment from local paths and HTTP(S) URLs alike.
+                string fileName;
+                try
+                {
+                    fileName = Path.GetFileName(target);
+                }
+                catch (ArgumentException)
+                {
+                    return false;
+                }
+
+                if (string.IsNullOrEmpty(fileName))
+                {
+                    return false;
+                }
+
+                // Reject "." and ".." (and the trailing-space / trailing-dot variants Windows normalizes
+                // to them).  Neither character sequence contains any character from
+                // Path.GetInvalidFileNameChars() (so the IndexOfAny check below would pass them through),
+                // but on Windows the kernel path normalizer strips trailing spaces and trailing dots from
+                // every path component before resolving '.' / '..' semantics.  Consequently ".. ", "..  ",
+                // "...", and similar all canonicalize at the OS level to ".." and would break the
+                // single-segment containment invariant -- safeCachePath = <cacheDir>\<hash>\.. resolves to
+                // <cacheDir>.  TrimEnd(' ', '.') reduces every such name to "" (and reduces "." / ".." to ""
+                // as well), giving us a single check that subsumes the literal-dot-segment cases.
+                if (fileName.TrimEnd(' ', '.').Length == 0)
+                {
+                    return false;
+                }
+
+                if (fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                {
+                    return false;
+                }
+
+                string canonicalCacheDir;
+                try
+                {
+                    canonicalCacheDir = Path.GetFullPath(cacheDir);
+                }
+                catch (ArgumentException)
+                {
+                    return false;
+                }
+                catch (NotSupportedException)
+                {
+                    return false;
+                }
+                catch (PathTooLongException)
+                {
+                    return false;
+                }
+                catch (System.Security.SecurityException)
+                {
+                    // Path.GetFullPath checks FileIOPermission on the resolved path on .NET Framework, and
+                    // can throw SecurityException on sandboxed hosts.  Treat as failure.
+                    return false;
+                }
+
+                string subdir = ComputeCacheSubdir(target);
+                safeCachePath = Path.Combine(canonicalCacheDir, subdir, fileName);
+                return true;
+            }
+
+            /// <summary>
+            /// Returns a 32-character hexadecimal subdirectory name derived from the XxHash128 of the UTF-8
+            /// bytes of <paramref name="value"/>.  XxHash128 is a fast non-cryptographic hash; it is used here
+            /// solely as a stable mapping from <paramref name="value"/> to a directory name so that the cache
+            /// layout is identical across processes and runtimes (unlike <see cref="string.GetHashCode"/>,
+            /// which is randomized in .NET Core).
+            /// </summary>
+            private static string ComputeCacheSubdir(string value)
+            {
+                byte[] hash = System.IO.Hashing.XxHash128.Hash(Encoding.UTF8.GetBytes(value));
+                var sb = new StringBuilder(hash.Length * 2);
+                for (int i = 0; i < hash.Length; i++)
+                {
+                    sb.Append(hash[i].ToString("x2", CultureInfo.InvariantCulture));
+                }
+                return sb.ToString();
+            }
+
+            /// <summary>
+            /// Allow-list of switches accepted by <c>tf.exe view</c> (TFVC).  All other switches cause the
+            /// command to be rejected.  The PDB-supplied output destination is always stripped and replaced
+            /// with our own <c>/output:&lt;safeCachePath&gt;</c>; <c>/login</c> is always stripped.
+            /// </summary>
+            private static readonly HashSet<string> s_tfViewAllowedSwitches = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "version",   // /version:<changeset>
+                "noprompt",  // flag
+                "server",    // /server:<TFS server URL>
+                "console",   // flag - now a no-op since we always write to /output:
+            };
+
+            /// <summary>
+            /// Allow-list of switches accepted by <c>tf.exe git view</c> (Azure DevOps Git via tf.exe).  All
+            /// other switches cause the command to be rejected.  The PDB-supplied output destination is always
+            /// stripped and replaced with our own <c>/output:&lt;safeCachePath&gt;</c>; <c>/login</c> is always
+            /// stripped.
+            /// </summary>
+            private static readonly HashSet<string> s_tfGitViewAllowedSwitches = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "collection",   // /collection:<collection URL>
+                "teamproject",  // /teamproject:<project>
+                "repository",   // /repository:<repo>
+                "commitid",     // /commitid:<sha>
+                "path",         // /path:<repo-relative path>
+                "applyfilters", // flag
+            };
+
+            /// <summary>
+            /// Validates and rebuilds <paramref name="sourceServerCommand"/> (the PDB-supplied SRCSRVCMD /
+            /// TFS_EXTRACT_CMD expansion) into a safe command line that can be executed directly via
+            /// <c>CreateProcess</c> (not through a shell).
+            ///
+            /// Three command shapes are accepted (case-insensitive): <c>tf.exe view ...</c> (TFVC),
+            /// <c>tf.exe vc view ...</c> (TFVC via the explicit vc namespace), and
+            /// <c>tf.exe git view ...</c> (Azure DevOps Git via tf.exe).  Other executables -- including
+            /// <c>cmd.exe</c>, <c>fastVstsBlob.exe</c>, <c>sd.exe</c> (Perforce), and other tf.exe sub-commands
+            /// like <c>workfold</c> -- are rejected.  Within an accepted command, only switches on the
+            /// corresponding per-tool allow-list (<see cref="s_tfViewAllowedSwitches"/> /
+            /// <see cref="s_tfGitViewAllowedSwitches"/>) are kept; any unrecognized switch causes the whole
+            /// command to be rejected and the offending token is named in <paramref name="rejectionReason"/>.
+            ///
+            /// Regardless of accept/reject, the rewriter always strips any PDB-supplied <c>/output</c> or
+            /// <c>/login</c> token (PDBs have no business carrying credentials, and we always force the output
+            /// destination to <paramref name="outputPath"/>) and stops processing at any <c>&gt;file</c>
+            /// shell-redirection token (legacy templates that ran through <c>cmd /c</c>).  The rebuilt command
+            /// always ends with a single <c>/output:&lt;outputPath&gt;</c>.
+            /// </summary>
+            internal static bool TryCreateSafeSourceServerCommand(
+                string sourceServerCommand,
+                string tfExe,
+                string outputPath,
+                out string safeCommand,
+                out string rejectionReason)
+            {
+                safeCommand = null;
+                rejectionReason = null;
+
+                if (string.IsNullOrWhiteSpace(sourceServerCommand))
+                {
+                    rejectionReason = "empty command";
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(tfExe))
+                {
+                    rejectionReason = "missing tf.exe path";
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(outputPath))
+                {
+                    rejectionReason = "missing output path";
+                    return false;
+                }
+
+                if (!TrySplitCommandLine(sourceServerCommand, out List<string> tokens, out rejectionReason))
+                {
+                    return false;
+                }
+
+                // Identify the tool: "tf.exe view ...", "tf.exe vc view ...", or "tf.exe git view ...".
+                // The starting position of the argument walk depends on which shape we saw.
+                HashSet<string> allowedSwitches;
+                List<string> safeArguments;
+                int argStart;
+
+                if (tokens.Count >= 2
+                    && string.Equals(tokens[0], "tf.exe", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(tokens[1], "view", StringComparison.OrdinalIgnoreCase))
+                {
+                    allowedSwitches = s_tfViewAllowedSwitches;
+                    safeArguments = new List<string> { "view" };
+                    argStart = 2;
+                }
+                else if (tokens.Count >= 3
+                    && string.Equals(tokens[0], "tf.exe", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(tokens[1], "vc", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(tokens[2], "view", StringComparison.OrdinalIgnoreCase))
+                {
+                    allowedSwitches = s_tfViewAllowedSwitches;
+                    safeArguments = new List<string> { "vc", "view" };
+                    argStart = 3;
+                }
+                else if (tokens.Count >= 3
+                    && string.Equals(tokens[0], "tf.exe", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(tokens[1], "git", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(tokens[2], "view", StringComparison.OrdinalIgnoreCase))
+                {
+                    allowedSwitches = s_tfGitViewAllowedSwitches;
+                    safeArguments = new List<string> { "git", "view" };
+                    argStart = 3;
+                }
+                else
+                {
+                    rejectionReason = "only 'tf.exe view', 'tf.exe vc view', and 'tf.exe git view' source-server commands are supported";
+                    return false;
+                }
+
+                // Whether we've already taken the positional depot-path argument for the TFVC view shapes.
+                // Only one such positional is allowed; further positionals are rejected as unknown.
+                bool tookTfViewPositional = false;
+
+                for (int i = argStart; i < tokens.Count; i++)
+                {
+                    string token = tokens[i];
+
+                    // Stop at legacy '>file' shell redirection.  These appear in templates that originally
+                    // ran through cmd /c; we always write via /output: instead.
+                    if (token.Length > 0 && token[0] == '>')
+                    {
+                        break;
+                    }
+
+                    // Strip any PDB-supplied output destination.  We append our own /output: at the end.
+                    if (IsTfSwitch(token, "output", out bool outputHasAttachedValue))
+                    {
+                        if (!outputHasAttachedValue && i + 1 < tokens.Count && !LooksLikeSwitchOrRedirection(tokens[i + 1]))
                         {
-                            options = options.AddEnvironmentVariable("PATH", addToPath + ";%PATH%");
+                            i++;
+                        }
+                        continue;
+                    }
+
+                    // Strip any PDB-supplied /login.  Source-server templates have no business carrying credentials.
+                    if (IsTfSwitch(token, "login", out bool loginHasAttachedValue))
+                    {
+                        if (!loginHasAttachedValue && i + 1 < tokens.Count && !LooksLikeSwitchOrRedirection(tokens[i + 1]))
+                        {
+                            i++;
+                        }
+                        continue;
+                    }
+
+                    // Switch-shaped token: must be on the per-tool allow-list.
+                    if (token.Length > 0 && (token[0] == '/' || token[0] == '-'))
+                    {
+                        string switchName = ExtractSwitchName(token);
+                        if (switchName != null && allowedSwitches.Contains(switchName))
+                        {
+                            safeArguments.Add(token);
+                            continue;
                         }
 
-                        _log.WriteLine("Source Server command {0}", fetchCmdStr);
-                        var fetchCmd = Command.Run(fetchCmdStr, options);
-                        if (fetchCmd.ExitCode != 0)
+                        rejectionReason = "unrecognized switch '" + token + "'";
+                        return false;
+                    }
+
+                    // Positional argument.  For the TFVC view shapes the legitimate templates carry exactly
+                    // one depot path (e.g. "$/team/path/file.cs").  Require the minimum plausible file shape
+                    // "$/x"; "$" and "$/" are not source-file paths.
+                    if (allowedSwitches == s_tfViewAllowedSwitches
+                        && !tookTfViewPositional
+                        && token.Length >= 3
+                        && token[0] == '$'
+                        && token[1] == '/')
+                    {
+                        safeArguments.Add(token);
+                        tookTfViewPositional = true;
+                        continue;
+                    }
+
+                    rejectionReason = "unrecognized argument '" + token + "'";
+                    return false;
+                }
+
+                safeArguments.Add("/output:" + outputPath);
+
+                var builder = new StringBuilder();
+                builder.Append(QuoteCommandLineArgument(tfExe));
+                foreach (string argument in safeArguments)
+                {
+                    builder.Append(' ');
+                    builder.Append(QuoteCommandLineArgument(argument));
+                }
+
+                safeCommand = builder.ToString();
+                return true;
+            }
+
+            /// <summary>
+            /// Returns the name portion of a tf.exe-style switch token (e.g. <c>"/server:foo"</c> -&gt;
+            /// <c>"server"</c>, <c>"/noprompt"</c> -&gt; <c>"noprompt"</c>, <c>"-applyfilters"</c> -&gt;
+            /// <c>"applyfilters"</c>).  Returns null if <paramref name="token"/> is not a switch-shaped token.
+            /// </summary>
+            private static string ExtractSwitchName(string token)
+            {
+                if (string.IsNullOrEmpty(token) || (token[0] != '/' && token[0] != '-'))
+                {
+                    return null;
+                }
+
+                int end = 1;
+                while (end < token.Length && token[end] != ':' && token[end] != '=')
+                {
+                    end++;
+                }
+
+                if (end == 1)
+                {
+                    return null;
+                }
+
+                return token.Substring(1, end - 1);
+            }
+
+            /// <summary>
+            /// Returns true if <paramref name="token"/> looks like a switch (leading '/' or '-') or a shell
+            /// redirection ('&gt;' / '&lt;').  Used when stripping a PDB-supplied <c>/output</c> or
+            /// <c>/login</c> with no attached value to decide whether the following token is the missing
+            /// value (consume it) or another switch / structural marker (leave it for the main walk to
+            /// process normally).  This keeps us from silently swallowing a legitimate allow-listed switch
+            /// when a malformed PDB emits a bare <c>/output</c> with no following value.
+            /// </summary>
+            private static bool LooksLikeSwitchOrRedirection(string token)
+            {
+                if (string.IsNullOrEmpty(token))
+                {
+                    return false;
+                }
+
+                char first = token[0];
+                return first == '/' || first == '-' || first == '>' || first == '<';
+            }
+
+            /// <summary>
+            /// Returns true if <paramref name="token"/> is a tf.exe-style switch named <paramref name="switchName"/>.
+            /// Accepts both '/' and '-' prefixes and recognizes the value-attached forms 'switch:value' and
+            /// 'switch=value'.  <paramref name="hasAttachedValue"/> is set when the token also carries the
+            /// switch's value; when false, callers that consume a value should skip the next token as well.
+            /// </summary>
+            private static bool IsTfSwitch(string token, string switchName, out bool hasAttachedValue)
+            {
+                hasAttachedValue = false;
+                if (string.IsNullOrEmpty(token))
+                {
+                    return false;
+                }
+
+                if (token[0] != '/' && token[0] != '-')
+                {
+                    return false;
+                }
+
+                if (token.Length == 1 + switchName.Length)
+                {
+                    return string.Equals(token.Substring(1), switchName, StringComparison.OrdinalIgnoreCase);
+                }
+
+                if (token.Length > 1 + switchName.Length
+                    && (token[1 + switchName.Length] == ':' || token[1 + switchName.Length] == '=')
+                    && string.Equals(token.Substring(1, switchName.Length), switchName, StringComparison.OrdinalIgnoreCase))
+                {
+                    hasAttachedValue = true;
+                    return true;
+                }
+
+                return false;
+            }
+
+            /// <summary>
+            /// Splits <paramref name="commandLine"/> into tokens using a simple Windows-style quote-aware
+            /// tokenizer.  Double quotes can group whitespace into a single token and are stripped from the
+            /// resulting token value.
+            /// </summary>
+            private static bool TrySplitCommandLine(string commandLine, out List<string> tokens, out string rejectionReason)
+            {
+                tokens = new List<string>();
+                rejectionReason = null;
+
+                int i = 0;
+                while (i < commandLine.Length)
+                {
+                    while (i < commandLine.Length && char.IsWhiteSpace(commandLine[i]))
+                    {
+                        i++;
+                    }
+
+                    if (i >= commandLine.Length)
+                    {
+                        break;
+                    }
+
+                    var token = new StringBuilder();
+                    bool inQuotes = false;
+                    while (i < commandLine.Length && (inQuotes || !char.IsWhiteSpace(commandLine[i])))
+                    {
+                        char c = commandLine[i++];
+                        if (c == '"')
                         {
-                            _log.WriteLine("Source Server command failed with exit code {0}", fetchCmd.ExitCode);
+                            inQuotes = !inQuotes;
+                            continue;
                         }
 
-                        if (File.Exists(target))
-                        {
-                            // If TF.exe command files it might still create an empty output file.   Fix that 
-                            if (new FileInfo(target).Length == 0)
-                            {
-                                File.Delete(target);
-                                target = null;
-                            }
-                        }
-                        else
-                        {
-                            target = null;
-                        }
+                        token.Append(c);
+                    }
 
-                        if (target == null)
-                        {
-                            _log.WriteLine("Source Server command failed to produce the output file.");
-                        }
-                        else
-                        {
-                            _log.WriteLine("Source Server command succeeded creating {0}", target);
-                        }
+                    if (inQuotes)
+                    {
+                        rejectionReason = "unterminated quoted argument";
+                        return false;
+                    }
+
+                    tokens.Add(token.ToString());
+                }
+
+                return true;
+            }
+
+            /// <summary>
+            /// Quotes <paramref name="argument"/> for inclusion in a Windows command line consumable by
+            /// CommandLineToArgvW.  Backslashes immediately preceding a quote (or a closing quote) are doubled
+            /// per CRT rules; other characters are emitted literally.  Returns <paramref name="argument"/>
+            /// unchanged when no quoting is needed.
+            /// </summary>
+            private static string QuoteCommandLineArgument(string argument)
+            {
+                if (argument.Length == 0)
+                {
+                    return "\"\"";
+                }
+
+                bool quote = false;
+                for (int i = 0; i < argument.Length; i++)
+                {
+                    if (char.IsWhiteSpace(argument[i]) || argument[i] == '"')
+                    {
+                        quote = true;
+                        break;
+                    }
+                }
+
+                if (!quote)
+                {
+                    return argument;
+                }
+
+                var quotedArgument = new StringBuilder();
+                quotedArgument.Append('"');
+                int backslashCount = 0;
+                foreach (char c in argument)
+                {
+                    if (c == '\\')
+                    {
+                        backslashCount++;
+                    }
+                    else if (c == '"')
+                    {
+                        quotedArgument.Append('\\', backslashCount * 2 + 1);
+                        quotedArgument.Append('"');
+                        backslashCount = 0;
                     }
                     else
                     {
-                        _log.WriteLine("Found an existing source server file {0}.", target);
+                        quotedArgument.Append('\\', backslashCount);
+                        quotedArgument.Append(c);
+                        backslashCount = 0;
                     }
-
-                    return target;
                 }
 
-                _log.WriteLine("Did not find source file in the set of source files in the PDB.");
-                return null;
+                quotedArgument.Append('\\', backslashCount * 2);
+                quotedArgument.Append('"');
+                return quotedArgument.ToString();
             }
 
 

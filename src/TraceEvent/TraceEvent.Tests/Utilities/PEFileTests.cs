@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using PEFile;
 using Xunit;
 using Xunit.Abstractions;
@@ -347,6 +348,251 @@ namespace TraceEventTests
             }
         }
 
+        [Fact]
+        public unsafe void PEFile_ResourceStringNamesUseExplicitLength()
+        {
+            // Layout: a single IMAGE_RESOURCE_DIRECTORY_STRING (UInt16 length-prefixed
+            // wide string) starting at file offset 0.  The character count is 3 and
+            // the second character is an embedded NUL - the legacy code constructed
+            // strings with `new string(char*)`, which would truncate at that NUL.
+            byte[] resourceNameData =
+            {
+                3, 0,        // UTF-16 character count.
+                (byte)'A', 0,
+                0, 0,        // Embedded null character that must not terminate the name.
+                (byte)'B', 0
+            };
+
+            using (var stream = new MemoryStream(resourceNameData))
+            using (var buffer = new PEBufferedReader(stream))
+            {
+                IMAGE_RESOURCE_DIRECTORY_ENTRY entry = default;
+                int* rawEntry = (int*)&entry;
+                rawEntry[0] = unchecked((int)0x80000000); // String-name flag with offset 0.
+
+                string resourceName = entry.GetName(buffer, resourceStartFileOffset: 0, resourceDirectorySize: resourceNameData.Length);
+
+                Assert.Equal("A\0B", resourceName);
+                Assert.Equal(3, resourceName.Length);
+            }
+        }
+
+        [Fact]
+        public unsafe void PEFile_ResourceStringNameRejectsLengthBeyondDirectory()
+        {
+            // The character count (0x4000) intentionally exceeds the entire resource
+            // directory (8 bytes here).  The original PoC used exactly this trick to
+            // induce an out-of-bounds read past the pinned buffer.  GetName must
+            // refuse to read the name rather than walking past the data directory.
+            byte[] resourceNameData =
+            {
+                0x00, 0x40,  // Attacker-controlled UTF-16 character count (0x4000).
+                (byte)'A', 0,
+                (byte)'B', 0,
+                (byte)'C', 0
+            };
+
+            using (var stream = new MemoryStream(resourceNameData))
+            using (var buffer = new PEBufferedReader(stream))
+            {
+                IMAGE_RESOURCE_DIRECTORY_ENTRY entry = default;
+                int* rawEntry = (int*)&entry;
+                rawEntry[0] = unchecked((int)0x80000000);
+
+                string resourceName = entry.GetName(buffer, resourceStartFileOffset: 0, resourceDirectorySize: resourceNameData.Length);
+
+                Assert.Equal(string.Empty, resourceName);
+            }
+        }
+
+        [Fact]
+        public unsafe void PEFile_ResourceStringNameRejectsOffsetBeyondDirectory()
+        {
+            // NameOffset points outside the resource data directory.  Even reading
+            // the 2-byte length prefix would be out of bounds, so GetName must
+            // short-circuit before touching the buffer.
+            byte[] resourceNameData = new byte[16];
+
+            using (var stream = new MemoryStream(resourceNameData))
+            using (var buffer = new PEBufferedReader(stream))
+            {
+                IMAGE_RESOURCE_DIRECTORY_ENTRY entry = default;
+                int* rawEntry = (int*)&entry;
+                // String-name flag (0x80000000) with NameOffset == 0x100, well past the 16-byte directory.
+                rawEntry[0] = unchecked((int)0x80000100);
+
+                string resourceName = entry.GetName(buffer, resourceStartFileOffset: 0, resourceDirectorySize: resourceNameData.Length);
+
+                Assert.Equal(string.Empty, resourceName);
+            }
+        }
+
+        [Fact]
+        public unsafe void PEFile_ResourceStringNameRejectsNegativeOrZeroDirectorySize()
+        {
+            // IMAGE_DATA_DIRECTORY.Size is signed Int32 even though the on-disk
+            // field is unsigned, so a PE that writes a value with the high bit set
+            // delivers a negative size here.  Without an explicit non-positive
+            // guard, the subsequent unchecked subtractions would wrap and silently
+            // bypass the bounds check (e.g. int.MinValue - 2 wraps to int.MaxValue
+            // - 1, comfortably above any 31-bit NameOffset).
+            byte[] resourceNameData = new byte[16];
+
+            using (var stream = new MemoryStream(resourceNameData))
+            using (var buffer = new PEBufferedReader(stream))
+            {
+                IMAGE_RESOURCE_DIRECTORY_ENTRY entry = default;
+                int* rawEntry = (int*)&entry;
+                rawEntry[0] = unchecked((int)0x80000000);
+
+                Assert.Equal(string.Empty, entry.GetName(buffer, resourceStartFileOffset: 0, resourceDirectorySize: 0));
+                Assert.Equal(string.Empty, entry.GetName(buffer, resourceStartFileOffset: 0, resourceDirectorySize: -1));
+                Assert.Equal(string.Empty, entry.GetName(buffer, resourceStartFileOffset: 0, resourceDirectorySize: int.MinValue));
+            }
+        }
+
+        [Fact]
+        public unsafe void PEFile_ResourceStringNameReturnsEmptyOnOverflow()
+        {
+            // A crafted PE can place NameOffset and resourceStartFileOffset such
+            // that their sum overflows Int32.  GetName must degrade gracefully
+            // (return string.Empty) rather than propagate an OverflowException out
+            // of the resource enumeration loop.
+            byte[] resourceNameData = new byte[16];
+
+            using (var stream = new MemoryStream(resourceNameData))
+            using (var buffer = new PEBufferedReader(stream))
+            {
+                IMAGE_RESOURCE_DIRECTORY_ENTRY entry = default;
+                int* rawEntry = (int*)&entry;
+                // String-name flag with the largest legal NameOffset (0x7FFFFFFE).
+                rawEntry[0] = unchecked((int)0xFFFFFFFE);
+
+                string resourceName = entry.GetName(buffer, resourceStartFileOffset: 1024, resourceDirectorySize: int.MaxValue);
+
+                Assert.Equal(string.Empty, resourceName);
+            }
+        }
+
+        [Fact]
+        public unsafe void PEFile_ResourceStringNameReturnsEmptyOnFetchOffsetOverflow()
+        {
+            // Pick values that pass the earlier bounds and base-offset overflow
+            // guards but make nameOffset == int.MaxValue, so that the absolute
+            // file offset plus the length-prefix size would overflow inside
+            // PEBufferedReader.Fetch.  Without an explicit guard placed before
+            // the first Fetch, the overflow happens inside Fetch's own filePos
+            // + size arithmetic and yields an out-of-bounds pointer.
+            byte[] resourceNameData = new byte[16];
+
+            using (var stream = new MemoryStream(resourceNameData))
+            using (var buffer = new PEBufferedReader(stream))
+            {
+                IMAGE_RESOURCE_DIRECTORY_ENTRY entry = default;
+                int* rawEntry = (int*)&entry;
+                // String-name flag with NameOffset == int.MaxValue - 2.
+                rawEntry[0] = unchecked((int)0xFFFFFFFD);
+
+                // resourceDirectorySize = int.MaxValue and resourceStartFileOffset = 2
+                // mean nameOffsetInResources passes the directory-size guard and the
+                // base+offset overflow guard, producing nameOffset == int.MaxValue.
+                string resourceName = entry.GetName(buffer, resourceStartFileOffset: 2, resourceDirectorySize: int.MaxValue);
+
+                Assert.Equal(string.Empty, resourceName);
+            }
+        }
+
+        [Fact]
+        public unsafe void PEFile_ResourceStringNameReturnsEmptyOnSecondFetchOverflow()
+        {
+            // The first Fetch overflow guard proves nameOffset + sizeof(ushort)
+            // fits in Int32, but the second Fetch passes nameOffset +
+            // sizeof(ushort) + nameByteLen.  A high-offset resource directory
+            // combined with a small declared nameLen still drives the second
+            // Fetch's internal filePos + size arithmetic past Int32, so a
+            // second guard is required and must fire here.
+            //
+            // The crafted resource layout reads a length-prefix of 1 (one wide
+            // character) at the start of the (sparse) "file"; with
+            // resourceStartFileOffset == int.MaxValue - 3 the first Fetch sits
+            // at offset int.MaxValue - 3 and the second Fetch would land at
+            // int.MaxValue - 1 + 2 == int.MaxValue + 1 (overflow).
+            var stream = new SparseLengthPrefixStream(declaredLength: int.MaxValue);
+            using (var buffer = new PEBufferedReader(stream))
+            {
+                IMAGE_RESOURCE_DIRECTORY_ENTRY entry = default;
+                int* rawEntry = (int*)&entry;
+                rawEntry[0] = unchecked((int)0x80000000); // String-name flag, NameOffset = 0.
+
+                string resourceName = entry.GetName(
+                    buffer,
+                    resourceStartFileOffset: int.MaxValue - 3,
+                    resourceDirectorySize: 4);
+
+                Assert.Equal(string.Empty, resourceName);
+            }
+        }
+
+        /// <summary>
+        /// Minimal read-only stream that exposes an arbitrarily large Length and,
+        /// for the first byte returned by every Read call, yields 0x01 (with all
+        /// subsequent bytes 0x00).  The first Fetch after a Seek therefore reads
+        /// a UInt16 value of 1 (little-endian) regardless of where it landed.
+        /// This lets the resource-name overflow regression test exercise file
+        /// offsets near Int32.MaxValue without allocating a 2 GB buffer.
+        /// </summary>
+        private sealed class SparseLengthPrefixStream : Stream
+        {
+            private readonly long _length;
+            private long _position;
+
+            public SparseLengthPrefixStream(long declaredLength)
+            {
+                _length = declaredLength;
+            }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => true;
+            public override bool CanWrite => false;
+            public override long Length => _length;
+
+            public override long Position
+            {
+                get => _position;
+                set => _position = value;
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                int produced = 0;
+                while (produced < count && _position < _length)
+                {
+                    // 0x01 as the first byte of every Read => the UInt16 length
+                    // prefix is 1 regardless of seek position.
+                    byte b = produced == 0 ? (byte)1 : (byte)0;
+                    buffer[offset + produced] = b;
+                    _position++;
+                    produced++;
+                }
+                return produced;
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                switch (origin)
+                {
+                    case SeekOrigin.Begin: _position = offset; break;
+                    case SeekOrigin.Current: _position += offset; break;
+                    case SeekOrigin.End: _position = _length + offset; break;
+                }
+                return _position;
+            }
+
+            public override void Flush() { }
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
+
         /// <summary>
         /// Test multiple sequential reads from the same file
         /// </summary>
@@ -374,6 +620,169 @@ namespace TraceEventTests
                 
                 Assert.Equal(numberOfSections1, numberOfSections2);
             }
+        }
+
+        [Fact]
+        public void PEFile_GetPdbSignature_BoundsUnterminatedCodeViewPdbName()
+        {
+            Guid firstGuid = new Guid("11111111-1111-1111-1111-111111111111");
+            Guid secondGuid = new Guid("22222222-2222-2222-2222-222222222222");
+
+            // Create an unterminated PDB name, then place non-zero bytes immediately after the declared SizeOfData.
+            // An unbounded PtrToStringAnsi() will read into the suffix; a bounded implementation must not.
+            byte[] shortPdbUnterminated = CreateCodeViewBlob(secondGuid, 2, "short.pdb", nulTerminate: false);
+            byte[] suffixWithTerminator = Encoding.ASCII.GetBytes("-OVERREAD\0");
+            byte[] shortPdbWithSuffix = new byte[shortPdbUnterminated.Length + suffixWithTerminator.Length];
+            Buffer.BlockCopy(shortPdbUnterminated, 0, shortPdbWithSuffix, 0, shortPdbUnterminated.Length);
+            Buffer.BlockCopy(suffixWithTerminator, 0, shortPdbWithSuffix, shortPdbUnterminated.Length, suffixWithTerminator.Length);
+
+            string peFilePath = CreatePEWithCodeViewDebugData(
+                new CodeViewDebugData(CreateCodeViewBlob(firstGuid, 1, "short.pdb-overread-data", nulTerminate: true)),
+                new CodeViewDebugData(shortPdbWithSuffix, sizeOfData: shortPdbUnterminated.Length));
+
+            try
+            {
+                using (var peFile = new PEFile.PEFile(peFilePath))
+                {
+                    Assert.True(peFile.GetPdbSignature(out string pdbName, out Guid pdbGuid, out int pdbAge));
+                    Assert.Equal("short.pdb", pdbName);
+                    Assert.Equal(secondGuid, pdbGuid);
+                    Assert.Equal(2, pdbAge);
+                }
+            }
+            finally
+            {
+                File.Delete(peFilePath);
+            }
+        }
+
+        [Fact]
+        public void PEFile_GetPdbSignature_IgnoresCodeViewBlobSmallerThanPdb70Header()
+        {
+            string peFilePath = CreatePEWithCodeViewDebugData(
+                new CodeViewDebugData(
+                    CreateCodeViewBlob(Guid.NewGuid(), 1, "ignored.pdb", nulTerminate: true),
+                    global::PEFile.CV_INFO_PDB70.FixedSize - 1));
+
+            try
+            {
+                using (var peFile = new PEFile.PEFile(peFilePath))
+                {
+                    Assert.False(peFile.GetPdbSignature(out string pdbName, out Guid pdbGuid, out int pdbAge));
+                    Assert.Null(pdbName);
+                    Assert.Equal(Guid.Empty, pdbGuid);
+                    Assert.Equal(0, pdbAge);
+                }
+            }
+            finally
+            {
+                File.Delete(peFilePath);
+            }
+        }
+
+        private static string CreatePEWithCodeViewDebugData(params CodeViewDebugData[] codeViewEntries)
+        {
+            const int peHeaderOffset = 0x80;
+            const int sizeOfOptionalHeader = 0xE0;
+            const int optionalHeaderOffset = peHeaderOffset + 24;
+            const int sectionHeaderOffset = peHeaderOffset + 24 + sizeOfOptionalHeader;
+            const int sectionRva = 0x1000;
+            const int sectionFileOffset = 0x200;
+            const int debugDirectoryOffset = sectionFileOffset;
+            const int imageDebugDirectorySize = 28;
+
+            int debugDirectorySize = codeViewEntries.Length * imageDebugDirectorySize;
+            int codeViewOffset = debugDirectoryOffset + debugDirectorySize;
+            int fileSize = codeViewOffset;
+            foreach (CodeViewDebugData entry in codeViewEntries)
+            {
+                fileSize += entry.Blob.Length;
+            }
+
+            byte[] peImage = new byte[Math.Max(0x400, fileSize)];
+            WriteUInt16(peImage, 0, 0x5A4D); // MZ
+            WriteUInt32(peImage, 0x3C, peHeaderOffset);
+
+            WriteUInt32(peImage, peHeaderOffset, 0x4550); // PE\0\0
+            WriteUInt16(peImage, peHeaderOffset + 4, 0x014C); // IMAGE_FILE_MACHINE_I386
+            WriteUInt16(peImage, peHeaderOffset + 6, 1); // NumberOfSections
+            WriteUInt16(peImage, peHeaderOffset + 20, sizeOfOptionalHeader);
+            WriteUInt16(peImage, peHeaderOffset + 22, 0x0102); // Executable image, 32-bit machine
+
+            WriteUInt16(peImage, optionalHeaderOffset, 0x10B); // PE32
+            WriteUInt32(peImage, optionalHeaderOffset + 32, sectionRva); // SectionAlignment
+            WriteUInt32(peImage, optionalHeaderOffset + 36, sectionFileOffset); // FileAlignment
+            WriteUInt32(peImage, optionalHeaderOffset + 56, 0x2000); // SizeOfImage
+            WriteUInt32(peImage, optionalHeaderOffset + 60, sectionFileOffset); // SizeOfHeaders
+            WriteUInt32(peImage, optionalHeaderOffset + 92, 16); // NumberOfRvaAndSizes
+
+            int debugDirectoryDataDirectoryOffset = optionalHeaderOffset + 96 + 6 * 8;
+            WriteUInt32(peImage, debugDirectoryDataDirectoryOffset, sectionRva);
+            WriteUInt32(peImage, debugDirectoryDataDirectoryOffset + 4, debugDirectorySize);
+
+            byte[] sectionName = Encoding.ASCII.GetBytes(".rdata");
+            Buffer.BlockCopy(sectionName, 0, peImage, sectionHeaderOffset, sectionName.Length);
+            WriteUInt32(peImage, sectionHeaderOffset + 8, 0x1000); // VirtualSize
+            WriteUInt32(peImage, sectionHeaderOffset + 12, sectionRva);
+            WriteUInt32(peImage, sectionHeaderOffset + 16, 0x1000); // SizeOfRawData
+            WriteUInt32(peImage, sectionHeaderOffset + 20, sectionFileOffset);
+
+            int currentCodeViewOffset = codeViewOffset;
+            for (int i = 0; i < codeViewEntries.Length; i++)
+            {
+                CodeViewDebugData entry = codeViewEntries[i];
+                int debugEntryOffset = debugDirectoryOffset + i * imageDebugDirectorySize;
+                int codeViewRva = sectionRva + currentCodeViewOffset - sectionFileOffset;
+
+                WriteUInt32(peImage, debugEntryOffset + 12, 2); // IMAGE_DEBUG_TYPE_CODEVIEW
+                WriteUInt32(peImage, debugEntryOffset + 16, entry.SizeOfData);
+                WriteUInt32(peImage, debugEntryOffset + 20, codeViewRva);
+                WriteUInt32(peImage, debugEntryOffset + 24, currentCodeViewOffset);
+
+                Buffer.BlockCopy(entry.Blob, 0, peImage, currentCodeViewOffset, entry.Blob.Length);
+                currentCodeViewOffset += entry.Blob.Length;
+            }
+
+            string filePath = Path.Combine(Path.GetTempPath(), "PEFileTests-" + Guid.NewGuid().ToString("N") + ".dll");
+            File.WriteAllBytes(filePath, peImage);
+            return filePath;
+        }
+
+        private static byte[] CreateCodeViewBlob(Guid signature, int age, string pdbFileName, bool nulTerminate)
+        {
+            byte[] pdbFileNameBytes = Encoding.ASCII.GetBytes(pdbFileName);
+            byte[] blob = new byte[global::PEFile.CV_INFO_PDB70.FixedSize + pdbFileNameBytes.Length + (nulTerminate ? 1 : 0)];
+
+            WriteUInt32(blob, 0, global::PEFile.CV_INFO_PDB70.PDB70CvSignature);
+            Buffer.BlockCopy(signature.ToByteArray(), 0, blob, 4, 16);
+            WriteUInt32(blob, 20, age);
+            Buffer.BlockCopy(pdbFileNameBytes, 0, blob, global::PEFile.CV_INFO_PDB70.FixedSize, pdbFileNameBytes.Length);
+
+            return blob;
+        }
+
+        private static void WriteUInt16(byte[] buffer, int offset, int value)
+        {
+            byte[] bytes = BitConverter.GetBytes((ushort)value);
+            Buffer.BlockCopy(bytes, 0, buffer, offset, bytes.Length);
+        }
+
+        private static void WriteUInt32(byte[] buffer, int offset, int value)
+        {
+            byte[] bytes = BitConverter.GetBytes((uint)value);
+            Buffer.BlockCopy(bytes, 0, buffer, offset, bytes.Length);
+        }
+
+        private struct CodeViewDebugData
+        {
+            public CodeViewDebugData(byte[] blob, int? sizeOfData = null)
+            {
+                Blob = blob;
+                SizeOfData = sizeOfData ?? blob.Length;
+            }
+
+            public byte[] Blob { get; }
+            public int SizeOfData { get; }
         }
     }
 }

@@ -81,6 +81,70 @@ namespace TraceEventTests
             ValidateEventStatistics(sb.ToString(0, 1024 * 1024), Path.GetFileNameWithoutExtension(bperfFileName));
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        public void ULZ777Decompress_DoesNotWritePastShortLiteralRun(int literalLength)
+        {
+            byte[] compressed = Enumerable.Repeat((byte)0xCC, 16).ToArray();
+            compressed[0] = (byte)(literalLength << 5);
+            int literalOffset = 1;
+            if (literalLength == 7)
+            {
+                compressed[1] = 0;
+                literalOffset = 2;
+            }
+
+            byte[] expected = new byte[literalLength];
+            for (int i = 0; i < literalLength; i++)
+            {
+                expected[i] = (byte)('A' + i);
+                compressed[i + literalOffset] = expected[i];
+            }
+
+            byte[] output = Enumerable.Repeat((byte)0xEE, 16).ToArray();
+
+            int written = BPerfEventSource.ULZ777Decompress(compressed, 0, literalLength + literalOffset, output, literalLength);
+
+            Assert.Equal(literalLength, written);
+            Assert.Equal(expected, output.Take(literalLength).ToArray());
+            Assert.All(output.Skip(literalLength), value => Assert.Equal(0xEE, value));
+        }
+
+        [Theory]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        public void ULZ777Decompress_DoesNotWritePastShortMatchLength(int matchLength)
+        {
+            byte[] compressed = new byte[12];
+            compressed[0] = (byte)(0xE0 | (matchLength - 4));
+            compressed[1] = 1; // Extend the 7-literal run to 8 literals.
+            for (int i = 0; i < 8; i++)
+            {
+                compressed[i + 2] = (byte)('a' + i);
+            }
+
+            compressed[10] = 8;
+            compressed[11] = 0;
+
+            int outputLength = 8 + matchLength;
+            byte[] output = Enumerable.Repeat((byte)0xEE, 24).ToArray();
+
+            int written = BPerfEventSource.ULZ777Decompress(compressed, 0, compressed.Length, output, outputLength);
+
+            Assert.Equal(outputLength, written);
+            Assert.Equal(compressed.Skip(2).Take(8), output.Take(8));
+            Assert.Equal(output.Take(matchLength), output.Skip(8).Take(matchLength));
+            Assert.All(output.Skip(outputLength), value => Assert.Equal(0xEE, value));
+        }
+
         private void ValidateEventStatistics(string actual, string bperfFileName)
         {
             string baselineFile = Path.Combine(TestDataDir, bperfFileName + ".baseline.txt");

@@ -103,6 +103,7 @@
     <PackageReference Include="PerfView.SupportFiles" PrivateAssets="all" />
     <PackageReference Include="System.Buffers" GeneratePathProperty="true" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" GeneratePathProperty="true" />
+    <PackageReference Include="System.IO.Hashing" GeneratePathProperty="true" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" GeneratePathProperty="true" />
     <PackageReference Include="System.Memory" GeneratePathProperty="true" />
     <PackageReference Include="System.Numerics.Vectors" GeneratePathProperty="true" />
@@ -179,8 +180,14 @@
     <Compile Include="..\Utilities\FileUtilities.cs">
       <Link>Utilities\FileUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\Utilities\PathUtilities.cs">
+      <Link>Utilities\PathUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\Utilities\StringUtilities.cs">
       <Link>Utilities\StringUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\Utilities\SymbolCachePathUtilities.cs">
+      <Link>Utilities\SymbolCachePathUtilities.cs</Link>
     </Compile>
     <Compile Include="..\Utilities\SymbolsAuthenticationUtilities.cs">
       <Link>Utilities\SymbolsAuthenticationUtilities.cs</Link>
@@ -612,6 +619,13 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\System.Diagnostics.DiagnosticSource.dll</LogicalName>
       <Link>System.Diagnostics.DiagnosticSource.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_IO_Hashing)\lib\net462\System.IO.Hashing.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\System.IO.Hashing.dll</LogicalName>
+      <Link>System.IO.Hashing.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PkgSystem_Memory)\lib\net462\System.Memory.dll">

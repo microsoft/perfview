@@ -904,11 +904,33 @@ namespace PerfView
 
                     return result == System.Windows.MessageBoxResult.Yes;
                 };
+
+                ret.AuthorizeSourceServerCommand = request =>
+                {
+                    var result = XamlMessageBox.Show(
+                        request.Command + "\n\n" +
+                        "This command was derived from PDB-supplied data.  Do you want to run it?",
+                        "Source Server Command",
+                        System.Windows.MessageBoxButton.YesNo);
+
+                    bool allowed = result == System.Windows.MessageBoxResult.Yes;
+                    log.WriteLine("Source Server command authorization {0} by user: {1}", allowed ? "GRANTED" : "DENIED", request.Command);
+                    return allowed;
+                };
             }
             else
 #endif
             {
                 ret.SecurityCheck = (pdbFile => true);
+                ret.AuthorizeSourceServerCommand = request =>
+                {
+#if PERFVIEW_COLLECT
+                    log.WriteLine("Source Server command auto-approved in PerfViewCollect: {0}", request.Command);
+#else
+                    log.WriteLine("Source Server command auto-approved because /TrustPdbs is set: {0}", request.Command);
+#endif
+                    return true;
+                };
             }
             ret.SourceCacheDirectory = Path.Combine(CacheFiles.CacheDir, "src");
             if (localSymDir != null)

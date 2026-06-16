@@ -1,5 +1,6 @@
 ﻿using Graphs;
 using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -220,38 +221,52 @@ public class PdbScopeMemoryGraph : MemoryGraph
     {
         try
         {
-            string pdbFilePath = null;
+            string originalDllFilePath = dllFilePath;
             DebugWriteLine("Module being analyzed: " + dllFilePath);
+
+            // PdbScope XML is user-controlled and the FilePath attribute can name an
+            // arbitrary path (including UNC) that would otherwise reach File.Exists /
+            // SymbolReader and leak NTLM credentials.  Only trust paths that normalize
+            // to a real file under the XML file's own directory.  If validation fails
+            // we simply skip the module -- no "next to the binary" fallback, because a
+            // malicious PdbScope file should not be able to coerce us into resolving
+            // anything outside what the XML explicitly and safely references.
+            if (!TryResolveTrustedFilePath(dllFilePath, pdbScopeFilePath, out dllFilePath))
+            {
+                DebugWriteLine("Ignoring untrusted module path from PdbScope XML: " + originalDllFilePath);
+                return;
+            }
+
             if (!File.Exists(dllFilePath))
             {
-                DebugWriteLine("DLL not found in original location: " + dllFilePath + ".");
-                dllFilePath = Path.Combine(Path.GetDirectoryName(pdbScopeFilePath), Path.GetFileName(dllFilePath));
-                if (!File.Exists(dllFilePath))
-                {
-                    DebugWriteLine("Error: The DLL not found next to pdbScopeFile " + pdbScopeFilePath + ".");
-                    pdbFilePath = Path.Combine(Path.GetDirectoryName(pdbScopeFilePath), Path.GetFileNameWithoutExtension(dllFilePath) + ".pdb");
-                    if (!File.Exists(pdbFilePath))
-                    {
-                        DebugWriteLine("Error: The PDB not found next to pdbScopeFile " + pdbScopeFilePath + ".");
-                        return;
-                    }
-                }
+                DebugWriteLine("Error: The DLL not found at " + dllFilePath + ".");
+                return;
             }
 
             DebugWriteLine("Found DLL/EXE file " + dllFilePath);
             using (var symReader = new SymbolReader(PerfView.App.CommandProcessor.LogFile))
             {
-                symReader.SecurityCheck = name => true;         // Disable security checks.  
+                // TryResolveTrustedFilePath has already validated that dllFilePath is a
+                // real local file under the PdbScope XML's own directory, so the DLL
+                // itself is trusted.  SymbolReader will derive additional probe paths
+                // from that DLL (PDB next to the DLL, the PE debug directory's embedded
+                // pdbFileName, the user's symbol cache, configured symbol servers); the
+                // PE-embedded path in particular could be an arbitrary string baked into
+                // the DLL at build time.  Allow any probe path that is not obviously
+                // remote so legitimate local lookups succeed while still refusing UNC /
+                // URI / NT-namespace paths that would trigger an SMB authentication
+                // probe and leak NTLM credentials.  (The default behavior when
+                // SecurityCheck is null is to reject every probe -- we have to set
+                // something for symbol resolution to work at all.)
+                symReader.SecurityCheck = name => !PathUtilities.IsRemotePath(name);
 
+                string pdbFilePath = symReader.FindSymbolFilePathForModule(dllFilePath);
                 if (pdbFilePath == null)
                 {
-                    pdbFilePath = symReader.FindSymbolFilePathForModule(dllFilePath);
-                    if (pdbFilePath == null)
-                    {
-                        DebugWriteLine("Error: The PDB for DLL: " + dllFilePath + " not found.");
-                        return;
-                    }
+                    DebugWriteLine("Error: The PDB for DLL: " + dllFilePath + " not found.");
+                    return;
                 }
+
                 DebugWriteLine("Found pdb file " + pdbFilePath);
                 var module = symReader.OpenNativeSymbolFile(pdbFilePath);
                 m_moduleMap = module.GetMergedAssembliesMap();
@@ -260,6 +275,46 @@ public class PdbScopeMemoryGraph : MemoryGraph
         catch (Exception e)
         {
             DebugWriteLine("Error: reading PDB file " + e.Message);
+        }
+    }
+
+    internal static bool TryResolveTrustedFilePath(string filePath, string pdbScopeFilePath, out string trustedFilePath)
+    {
+        trustedFilePath = null;
+
+        if (string.IsNullOrWhiteSpace(filePath) || string.IsNullOrWhiteSpace(pdbScopeFilePath) || PathUtilities.IsRemotePath(filePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            string pdbScopeDirectory = Path.GetDirectoryName(Path.GetFullPath(pdbScopeFilePath));
+
+            // PdbScope XML is user-controlled. Only trust paths that normalize under the XML file's directory.
+            string fullFilePath = Path.IsPathRooted(filePath)
+                ? Path.GetFullPath(filePath)
+                : Path.GetFullPath(Path.Combine(pdbScopeDirectory, filePath));
+
+            if (PathUtilities.IsRemotePath(fullFilePath) || !PathUtilities.IsPathWithinDirectory(fullFilePath, pdbScopeDirectory))
+            {
+                return false;
+            }
+
+            trustedFilePath = fullFilePath;
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+        catch (NotSupportedException)
+        {
+            return false;
+        }
+        catch (PathTooLongException)
+        {
+            return false;
         }
     }
 

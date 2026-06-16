@@ -10996,7 +10996,12 @@ namespace PerfView
         /// <returns>The full local path to the resource</returns>
         private static string GetLocalDirPath(string packageFilePath, DhPackage package, ResourceInfo resource)
         {
-            string localDirName = resource.Name;
+            string localDirName = GetSafeDiagSessionResourceDirectoryName(resource.Name);
+            if (localDirName == null)
+            {
+                return null;
+            }
+
             string localDirPath = CacheFiles.FindFile(packageFilePath, "_" + localDirName);
 
             if (!Directory.Exists(localDirPath))
@@ -11005,6 +11010,31 @@ namespace PerfView
             }
 
             return localDirPath;
+        }
+
+        /// <summary>
+        /// Sanitizes an attacker-controlled .diagsession resource name into a safe directory-name fragment.
+        /// Mirrors the sibling <see cref="GetLocalFilePath"/> which uses <see cref="Path.GetFileNameWithoutExtension"/>
+        /// to strip any path components from the metadata before it is concatenated into a cache path.
+        /// Returns null if the sanitized name is empty, ".", or ".." so the caller can skip the resource
+        /// rather than create an oddly-named cache entry.
+        /// </summary>
+        internal static string GetSafeDiagSessionResourceDirectoryName(string resourceName)
+        {
+            string sanitized = Path.GetFileNameWithoutExtension(resourceName ?? string.Empty);
+            if (string.IsNullOrEmpty(sanitized) || sanitized == "." || sanitized == "..")
+            {
+                return null;
+            }
+
+            // Reject any character that the OS would consider invalid in a file name
+            // (e.g. ':' which on NTFS would create an Alternate Data Stream).
+            if (sanitized.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                return null;
+            }
+
+            return sanitized;
         }
 
         /// <summary>
@@ -11045,6 +11075,11 @@ namespace PerfView
                 foreach (var resource in resources)
                 {
                     string localDirPath = GetLocalDirPath(FilePath, dhPackage, resource);
+                    if (localDirPath == null)
+                    {
+                        worker.Log("Skipping symbol cache resource '" + resource.ResourceId + "' with unsafe name '" + resource.Name + "'.");
+                        continue;
+                    }
 
                     worker.Log("Found '" + resource.ResourceId + "' resource '" + resource.Name + "'. Loading ...");
 

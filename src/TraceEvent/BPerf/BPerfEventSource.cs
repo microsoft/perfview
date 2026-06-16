@@ -383,28 +383,35 @@ namespace Microsoft.Diagnostics.Tracing
             return false;
         }
 
-        private unsafe TraceEventNativeMethods.EVENT_RECORD* DeserializeEventRecord(byte* buffer, ref int retVal)
+        private unsafe TraceEventNativeMethods.EVENT_RECORD* DeserializeEventRecord(byte* buffer, int remainingBufferInBytes, ref int retVal)
         {
-            int bufferOffset = OffsetToExtendedData + 24; // store space for 3 8-byte pointers regardless of arch
+            // Walk the record once, validating that each section fits in the remaining buffer
+            // before constructing pointers into it. Advance throws if the next section, or its
+            // alignment, would extend past remainingBufferInBytes.
+            int bufferOffset = 0;
+            Advance(ref bufferOffset, OffsetToExtendedData + 24, alignTo: 1, remainingBufferInBytes); // store space for 3 8-byte pointers regardless of arch
+
             var eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)buffer;
 
-            eventRecord->UserData = new IntPtr(buffer + bufferOffset);
+            int userDataOffset = bufferOffset;
+            Advance(ref bufferOffset, eventRecord->UserDataLength, alignTo: 8, remainingBufferInBytes);
 
-            bufferOffset += eventRecord->UserDataLength;
-            bufferOffset = AlignUp(bufferOffset, 8);
+            int extendedDataOffset = bufferOffset;
+            int extendedDataSize = sizeof(TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM) * eventRecord->ExtendedDataCount;
+            Advance(ref bufferOffset, extendedDataSize, alignTo: 1, remainingBufferInBytes);
 
-            eventRecord->ExtendedData = eventRecord->ExtendedDataCount > 0 ? (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)(buffer + bufferOffset) : (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)0;
-            bufferOffset += sizeof(TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM) * eventRecord->ExtendedDataCount;
+            eventRecord->UserData = new IntPtr(buffer + userDataOffset);
+            eventRecord->ExtendedData = eventRecord->ExtendedDataCount > 0
+                ? (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)(buffer + extendedDataOffset)
+                : (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)0;
 
             for (ushort i = 0; i < eventRecord->ExtendedDataCount; ++i)
             {
                 eventRecord->ExtendedData[i].DataPtr = (ulong)(buffer + bufferOffset);
-
-                bufferOffset += eventRecord->ExtendedData[i].DataSize;
-                bufferOffset = AlignUp(bufferOffset, 8);
+                Advance(ref bufferOffset, eventRecord->ExtendedData[i].DataSize, alignTo: 8, remainingBufferInBytes);
             }
 
-            bufferOffset = AlignUp(bufferOffset, 16);
+            Advance(ref bufferOffset, 0, alignTo: 16, remainingBufferInBytes);
             retVal += bufferOffset;
 
             return eventRecord;
@@ -546,7 +553,7 @@ namespace Microsoft.Diagnostics.Tracing
                     int bufferOffset = 0;
                     while (bufferOffset < finalUncompressedSize && !this.stopProcessing)
                     {
-                        var eventRecord = this.DeserializeEventRecord(uncompressedBufferPtr + bufferOffset, ref bufferOffset);
+                        var eventRecord = this.DeserializeEventRecord(uncompressedBufferPtr + bufferOffset, finalUncompressedSize - bufferOffset, ref bufferOffset);
 
                         if (this.sessionStartTimeQPC == 0)
                         {
@@ -574,6 +581,34 @@ namespace Microsoft.Diagnostics.Tracing
         private static int AlignUp(int num, int align)
         {
             return (num + (align - 1)) & ~(align - 1);
+        }
+
+        /// <summary>
+        /// Advances <paramref name="bufferOffset"/> by <paramref name="bytesToAdvance"/> bytes (then aligns
+        /// the result up to <paramref name="alignTo"/>) while requiring that the section, and the
+        /// alignment slack, fit inside <paramref name="remainingBufferInBytes"/> bytes. Throws
+        /// <see cref="InvalidDataException"/> for any malformed input, including negative sizes
+        /// and arithmetic overflow.
+        /// </summary>
+        private static void Advance(ref int bufferOffset, int bytesToAdvance, int alignTo, int remainingBufferInBytes)
+        {
+            if (alignTo <= 0 ||
+                bytesToAdvance < 0 ||
+                bufferOffset < 0 ||
+                bufferOffset > remainingBufferInBytes ||
+                bytesToAdvance > remainingBufferInBytes - bufferOffset)
+            {
+                throw new InvalidDataException("Malformed BPerf event record: section extends past the decompressed buffer.");
+            }
+
+            int next = bufferOffset + bytesToAdvance;
+            int aligned = AlignUp(next, alignTo);
+            if (aligned < next || aligned > remainingBufferInBytes)
+            {
+                throw new InvalidDataException("Malformed BPerf event record: section extends past the decompressed buffer.");
+            }
+
+            bufferOffset = aligned;
         }
 
         private static long GetOffset(string indexFile, DateTime requestTimestamp, out long sessionStartQPC, out long ts)
@@ -630,7 +665,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// The delegate function to decompress by using ULZ777 algorithm
         /// </summary>
         /// <returns></returns>
-        private unsafe static int ULZ777Decompress(byte[] input, int inputOffset, int inputLength, byte[] output, int outputLength)
+        internal unsafe static int ULZ777Decompress(byte[] input, int inputOffset, int inputLength, byte[] output, int outputLength)
         {
             fixed (byte* uncompressedBufferPtr = &output[0])
             fixed (byte* compressedBufferPtr = &input[inputOffset])
@@ -660,11 +695,15 @@ namespace Microsoft.Diagnostics.Tracing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void WildCopy(byte* d, byte* s, int n)
         {
-            *(ulong*)d = *(ulong*)s;
-
-            for (int i = 8; i < n; i += 8)
+            int i = 0;
+            for (; i <= n - 8; i += 8)
             {
                 *(ulong*)(d + i) = *(ulong*)(s + i);
+            }
+
+            for (; i < n; i++)
+            {
+                d[i] = s[i];
             }
         }
 

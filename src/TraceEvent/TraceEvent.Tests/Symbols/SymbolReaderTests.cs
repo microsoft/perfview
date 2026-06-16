@@ -941,6 +941,137 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void FindR2RPerfMapSymbolFilePath_UsesSanitizedNameForSymbolServerPaths()
+        {
+            string cacheDir = Path.Combine(OutputDir, "r2r-symserver-sanitized-cache");
+            try
+            {
+                Directory.CreateDirectory(cacheDir);
+                var sig = new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd");
+                int version = 1;
+                string safeName = "Unsafe.r2rmap";
+                string indexPath = $"/{safeName}/r2rmap-v{version}-{sig:N}/{safeName}";
+                var expectedUri = new Uri("https://symbols.example.test" + indexPath);
+                _handler.AddIntercept(expectedUri, HttpMethod.Get, HttpStatusCode.OK, () => new ByteArrayContent(CreateMinimalR2RPerfMap(sig, version)));
+
+                _symbolReader.SymbolPath = $"SRV*{cacheDir}*https://symbols.example.test";
+
+                string result = _symbolReader.FindR2RPerfMapSymbolFilePath(@"..\..\" + safeName, sig, version);
+
+                Assert.NotNull(result);
+                Assert.StartsWith(Path.GetFullPath(cacheDir), Path.GetFullPath(result), StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("..", result, StringComparison.Ordinal);
+                Assert.Contains(expectedUri, _handler.Requests);
+            }
+            finally
+            {
+                if (Directory.Exists(cacheDir))
+                    Directory.Delete(cacheDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindR2RPerfMapSymbolFilePath_DoesNotUseRootedMetadataAsCachePath()
+        {
+            string tempDir = Path.Combine(OutputDir, "r2r-rooted-cache-path");
+            try
+            {
+                string cacheDir = Path.Combine(tempDir, "cache");
+                string outsideDir = Path.Combine(tempDir, "outside");
+                Directory.CreateDirectory(cacheDir);
+                Directory.CreateDirectory(outsideDir);
+
+                var sig = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+                int version = 1;
+                string rootedMetadataName = Path.Combine(outsideDir, "Rooted.r2rmap");
+                File.WriteAllBytes(rootedMetadataName, CreateMinimalR2RPerfMap(sig, version));
+
+                _symbolReader.SymbolPath = $"SRV*{cacheDir}*https://symbols.example.test";
+                _symbolReader.Options = SymbolReaderOptions.CacheOnly;
+
+                string result = _symbolReader.FindR2RPerfMapSymbolFilePath(rootedMetadataName, sig, version);
+
+                Assert.Null(result);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(".")]
+        [InlineData("..")]
+        [InlineData(@"..\..")]
+        [InlineData("/")]
+        [InlineData(@"\")]
+        [InlineData(@"foo\")]
+        [InlineData(@"foo\..")]
+        public void FindR2RPerfMapSymbolFilePath_RejectsInvalidNames(string perfMapName)
+        {
+            // Configure a sym-server-only path so that, if validation were bypassed, the
+            // call would attempt an HTTP request we can detect.
+            string cacheDir = Path.Combine(OutputDir, "r2r-invalid-name-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                Directory.CreateDirectory(cacheDir);
+                _symbolReader.SymbolPath = $"SRV*{cacheDir}*https://symbols.example.test";
+
+                var sig = new Guid("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+                string result = _symbolReader.FindR2RPerfMapSymbolFilePath(perfMapName, sig, 1);
+
+                Assert.Null(result);
+                Assert.Empty(_handler.Requests);
+                Assert.Empty(Directory.GetFiles(cacheDir, "*", SearchOption.AllDirectories));
+            }
+            finally
+            {
+                if (Directory.Exists(cacheDir))
+                    Directory.Delete(cacheDir, true);
+            }
+        }
+
+        [Fact]
+        public void FindR2RPerfMapSymbolFilePath_DifferentRawNamesShareSanitizedCachePath()
+        {
+            // Two raw perfMapName values that sanitize to the same simple name must
+            // resolve to the same on-disk cache file -- this is the expected behavior
+            // of the rooted-arg defense and prevents an attacker from "splitting" the
+            // cache across many entries that all alias the same simple name.
+            string cacheDir = Path.Combine(OutputDir, "r2r-cache-aliasing");
+            try
+            {
+                Directory.CreateDirectory(cacheDir);
+                var sig = new Guid("12345678-9abc-def0-1234-56789abcdef0");
+                int version = 7;
+                string safeName = "Shared.r2rmap";
+                var expectedUri = new Uri($"https://symbols.example.test/{safeName}/r2rmap-v{version}-{sig:N}/{safeName}");
+                _handler.AddIntercept(expectedUri, HttpMethod.Get, HttpStatusCode.OK, () => new ByteArrayContent(CreateMinimalR2RPerfMap(sig, version)));
+
+                _symbolReader.SymbolPath = $"SRV*{cacheDir}*https://symbols.example.test";
+
+                string fromTraversal = _symbolReader.FindR2RPerfMapSymbolFilePath(@"..\..\evil\" + safeName, sig, version);
+                string fromRooted = _symbolReader.FindR2RPerfMapSymbolFilePath(@"C:\victim\" + safeName, sig, version);
+                string fromSimple = _symbolReader.FindR2RPerfMapSymbolFilePath(safeName, sig, version);
+
+                Assert.NotNull(fromTraversal);
+                Assert.NotNull(fromRooted);
+                Assert.NotNull(fromSimple);
+                Assert.Equal(Path.GetFullPath(fromTraversal), Path.GetFullPath(fromRooted), ignoreCase: true);
+                Assert.Equal(Path.GetFullPath(fromTraversal), Path.GetFullPath(fromSimple), ignoreCase: true);
+                Assert.StartsWith(Path.GetFullPath(cacheDir), Path.GetFullPath(fromTraversal), StringComparison.OrdinalIgnoreCase);
+            }
+            finally
+            {
+                if (Directory.Exists(cacheDir))
+                    Directory.Delete(cacheDir, true);
+            }
+        }
+
+        [Fact]
         public void FindR2RPerfMapSymbolFilePath_NotFound()
         {
             string tempDir = Path.Combine(OutputDir, "r2r-empty");
@@ -1422,6 +1553,8 @@ namespace TraceEventTests
             /// </summary>
             public Dictionary<(Uri uri, HttpMethod method), (HttpStatusCode statusCode, Func<HttpContent> contentFactory)> Intercepts { get; } = new Dictionary<(Uri uri, HttpMethod method), (HttpStatusCode statusCode, Func<HttpContent> contentFactory)>();
 
+            public List<Uri> Requests { get; } = new List<Uri>();
+
             /// <summary>
             /// Convenience helper for adding an intercept for HTTP GET
             /// returning UTF-8 content with status code 200 (OK).
@@ -1437,6 +1570,8 @@ namespace TraceEventTests
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
+                Requests.Add(request.RequestUri);
+
                 if (Intercepts.TryGetValue((request.RequestUri, request.Method), out var response))
                 {
                     return Task.FromResult(new HttpResponseMessage(response.statusCode)

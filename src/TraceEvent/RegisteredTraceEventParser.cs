@@ -32,13 +32,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             symbolSource.MetaDataEventInfo += delegate (EmptyTraceData data)
             {
-                DynamicTraceEventData template = (new RegisteredTraceEventParser.TdhEventParser((byte*)data.userData, null, MapTable)).ParseEventMetaData();
+                DynamicTraceEventData template = (new RegisteredTraceEventParser.TdhEventParser((byte*)data.userData, data.EventDataLength, null, MapTable)).ParseEventMetaData();
 
                 // Uncomment this if you want to see the template in the debugger at this point
                 // template.source = data.source;
                 // template.eventRecord = data.eventRecord;
                 // template.userData = data.userData;  
-                m_state.m_templates[template] = template;
+                if (template != null)
+                {
+                    m_state.m_templates[template] = template;
+                }
             };
 
             // Try to parse bitmap and value map information.  
@@ -46,14 +49,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 try
                 {
-                    Guid providerID = *((Guid*)data.userData);
-                    byte* eventInfoBuffer = (byte*)(data.userData + sizeof(Guid));
-                    RegisteredTraceEventParser.EVENT_MAP_INFO* eventInfo = (RegisteredTraceEventParser.EVENT_MAP_INFO*)eventInfoBuffer;
-                    IDictionary<long, string> map = RegisteredTraceEventParser.TdhEventParser.ParseMap(eventInfo, eventInfoBuffer);
-                    if (eventInfo->NameOffset < data.EventDataLength - 16)
+                    if (data.EventDataLength >= sizeof(Guid))
                     {
-                        string mapName = new string((char*)(&eventInfoBuffer[eventInfo->NameOffset]));
-                        MapTable.Add(new MapKey(providerID, mapName), map);
+                        Guid providerID = *((Guid*)data.userData);
+                        byte* eventInfoBuffer = (byte*)(data.userData + sizeof(Guid));
+                        int eventInfoBufferLength = data.EventDataLength - sizeof(Guid);
+                        RegisteredTraceEventParser.EVENT_MAP_INFO* eventInfo = (RegisteredTraceEventParser.EVENT_MAP_INFO*)eventInfoBuffer;
+                        IDictionary<long, string> map = RegisteredTraceEventParser.TdhEventParser.ParseMap(eventInfo, eventInfoBuffer, eventInfoBufferLength);
+                        string mapName;
+                        if (map != null && RegisteredTraceEventParser.TdhEventParser.TryReadMapName(eventInfo, eventInfoBuffer, eventInfoBufferLength, out mapName))
+                        {
+                            MapTable.Add(new MapKey(providerID, mapName), map);
+                        }
                     }
                 }
                 catch (Exception) { };
@@ -792,8 +799,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 if (status == 0)
                 {
-                    ret = (new TdhEventParser(buffer, unknownEvent.eventRecord, mapTable)).ParseEventMetaData();
-                    ret.containsSelfDescribingMetadata = hasETWEventInformation;
+                    ret = (new TdhEventParser(buffer, buffSize, unknownEvent.eventRecord, mapTable)).ParseEventMetaData();
+                    if (ret != null)
+                    {
+                        ret.containsSelfDescribingMetadata = hasETWEventInformation;
+                    }
                 }
 
                 System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
@@ -811,14 +821,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         internal class TdhEventParser
         {
             /// <summary>
-            /// Creates a new parser from the TRACE_EVENT_INFO held in 'buffer'.  Use
+            /// Creates a new parser from the TRACE_EVENT_INFO held in 'eventInfo'.  Use
             /// ParseEventMetaData to then parse it into a DynamicTraceEventData structure.
-            ///  EventRecord can be null and mapTable if present allow the parser to resolve maps (enums), and can be null.  
+            /// eventInfoLength is the length in bytes of the buffer pointed to by 'eventInfo'; every offset and array
+            /// extent contained in the TRACE_EVENT_INFO is bounds-checked against this length before being dereferenced.
+            /// eventRecord can be null and mapTable if present allow the parser to resolve maps (enums), and can be null.
             /// </summary>
-            public TdhEventParser(byte* eventInfo, TraceEventNativeMethods.EVENT_RECORD* eventRecord, Dictionary<MapKey, IDictionary<long, string>> mapTable)
+            public TdhEventParser(byte* eventInfo, int eventInfoLength, TraceEventNativeMethods.EVENT_RECORD* eventRecord, Dictionary<MapKey, IDictionary<long, string>> mapTable)
             {
                 eventBuffer = eventInfo;
                 this.eventInfo = (TRACE_EVENT_INFO*)eventInfo;
+                this.eventInfoLength = eventInfoLength;
                 propertyInfos = &this.eventInfo->EventPropertyInfoArray;
                 this.eventRecord = eventRecord;
                 this.mapTable = mapTable;
@@ -830,29 +843,41 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// <returns></returns>
             public DynamicTraceEventData ParseEventMetaData()
             {
+                if (!ValidateEventInfo())
+                {
+                    return null;
+                }
+
                 EVENT_PROPERTY_INFO* propertyInfos = &eventInfo->EventPropertyInfoArray;
                 string taskName = null;
                 if (eventInfo->TaskNameOffset != 0)
                 {
-                    taskName = MakeLegalIdentifier(new string((char*)(&eventBuffer[eventInfo->TaskNameOffset])));
+                    taskName = ReadString(eventInfo->TaskNameOffset);
+                    if (taskName != null)
+                    {
+                        taskName = MakeLegalIdentifier(taskName);
+                    }
                 }
 
                 string opcodeName = null;
                 if (eventInfo->OpcodeNameOffset != 0)
                 {
-                    opcodeName = new string((char*)(&eventBuffer[eventInfo->OpcodeNameOffset]));
-                    if (opcodeName.StartsWith("win:"))
+                    opcodeName = ReadString(eventInfo->OpcodeNameOffset);
+                    if (opcodeName != null)
                     {
-                        opcodeName = opcodeName.Substring(4);
-                    }
+                        if (opcodeName.StartsWith("win:"))
+                        {
+                            opcodeName = opcodeName.Substring(4);
+                        }
 
-                    opcodeName = MakeLegalIdentifier(opcodeName);
+                        opcodeName = MakeLegalIdentifier(opcodeName);
+                    }
                 }
 
                 string providerName = "UnknownProvider";
                 if (eventInfo->ProviderNameOffset != 0)
                 {
-                    providerName = new string((char*)(&eventBuffer[eventInfo->ProviderNameOffset]));
+                    providerName = ReadString(eventInfo->ProviderNameOffset) ?? providerName;
                 }
 
                 var eventID = eventInfo->EventDescriptor.Id;
@@ -875,11 +900,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 if (eventInfo->EventMessageOffset != 0)
                 {
-                    newTemplate.MessageFormat = new string((char*)(&eventBuffer[eventInfo->EventMessageOffset]));
+                    newTemplate.MessageFormat = ReadString(eventInfo->EventMessageOffset);
                 }
 
                 Debug.WriteLine("In TdhEventParser for event" + providerName + "/" + taskName + "/" + opcodeName + " with " + eventInfo->TopLevelPropertyCount + " fields");
                 DynamicTraceEventData.PayloadFetchClassInfo fields = ParseFields(0, eventInfo->TopLevelPropertyCount);
+                if (fields == null)
+                {
+                    return null;
+                }
+
                 newTemplate.payloadNames = fields.FieldNames;
                 newTemplate.payloadFetches = fields.FieldFetches;
 
@@ -893,15 +923,37 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(int startField, int numFields)
             {
+                _totalFieldsParsed = 0;
+                return ParseFields(startField, numFields, 0);
+            }
+
+            private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(int startField, int numFields, int recursionDepth)
+            {
+                if (!ValidateFieldRange(startField, numFields) || recursionDepth > MaxParseFieldRecursionDepth)
+                {
+                    return null;
+                }
+
                 ushort fieldOffset = 0;
                 var fieldNames = new List<string>(numFields);
                 var fieldFetches = new List<DynamicTraceEventData.PayloadFetch>(numFields);
 
                 for (int curField = 0; curField < numFields; curField++)
                 {
+                    // Bound the *total* number of fields parsed across all recursion frames.  In well-formed
+                    // metadata struct membership partitions the property array, so every property is parsed
+                    // exactly once and the cumulative count never exceeds PropertyCount.  A crafted blob whose
+                    // structs reference overlapping/shared ranges would otherwise re-parse properties and blow
+                    // up exponentially (the depth cap below bounds depth, not total work).  Exceeding
+                    // PropertyCount therefore proves the metadata is malformed, so reject the whole template.
+                    if (++_totalFieldsParsed > eventInfo->PropertyCount)
+                    {
+                        return null;
+                    }
+
                     DynamicTraceEventData.PayloadFetch propertyFetch = new DynamicTraceEventData.PayloadFetch();
                     var propertyInfo = &propertyInfos[curField + startField];
-                    var propertyName = new string((char*)(&eventBuffer[propertyInfo->NameOffset]));
+                    var propertyName = ReadString(propertyInfo->NameOffset) ?? string.Empty;
                     // Remove anything that does not look like an ID (.e.g space)
                     propertyName = Regex.Replace(propertyName, "[^A-Za-z0-9_]", "");
 
@@ -920,11 +972,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     {
                         int numStructFields = propertyInfo->NumOfStructMembers;
                         Debug.WriteLine("   " + propertyName + " Is a nested type with " + numStructFields + " fields {");
-                        DynamicTraceEventData.PayloadFetchClassInfo classInfo = ParseFields(propertyInfo->StructStartIndex, numStructFields);
+                        DynamicTraceEventData.PayloadFetchClassInfo classInfo = ParseFields(propertyInfo->StructStartIndex, numStructFields, recursionDepth + 1);
                         if (classInfo == null)
                         {
                             Debug.WriteLine("    Failure parsing nested struct.");
-                            goto Exit;
+                            return null;
                         }
                         Debug.WriteLine(" } " + propertyName + " Nested struct completes.");
                         propertyFetch = DynamicTraceEventData.PayloadFetch.StructPayloadFetch(fieldOffset, classInfo);
@@ -941,42 +993,47 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         // Deal with any maps (bit fields or enumerations)
                         if (propertyInfo->MapNameOffset != 0)
                         {
-                            string mapName = new string((char*)(&eventBuffer[propertyInfo->MapNameOffset]));
+                            string mapName = ReadString(propertyInfo->MapNameOffset);
 
-                            // Normal case, you can look up the enum information immediately. 
-                            if (eventRecord != null)
+                            // If the map name is out of range we simply skip the map and parse the field
+                            // as its underlying integer type rather than rejecting the whole event.
+                            if (mapName != null)
                             {
-                                int buffSize = 84000;  // TODO this is inefficient (and incorrect for very large enums).  
-                                byte* enumBuffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
-
-                                EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
-                                var hr = TdhGetEventMapInformation(eventRecord, mapName, enumInfo, ref buffSize);
-                                if (hr == 0)
+                                // Normal case, you can look up the enum information immediately. 
+                                if (eventRecord != null)
                                 {
-                                    propertyFetch.Map = ParseMap(enumInfo, enumBuffer);
-                                }
+                                    int buffSize = 84000;  // TODO this is inefficient (and incorrect for very large enums).  
+                                    byte* enumBuffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
 
-                                System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)enumBuffer);
-                            }
-                            else
-                            {
-                                // This is the kernelTraceControl case,  the map information will be provided
-                                // later, so we have to set up a LAZY map which will be evaluated when we need the
-                                // enum (giving time for the enum definition to be processed. 
-                                var mapKey = new MapKey(eventInfo->ProviderGuid, mapName);
-
-                                // Set the map to be a lazyMap, which is a Func that returns a map.  
-                                Func<IDictionary<long, string>> lazyMap = delegate ()
-                                {
-                                    IDictionary<long, string> map = null;
-                                    if (mapTable != null)
+                                    EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
+                                    var hr = TdhGetEventMapInformation(eventRecord, mapName, enumInfo, ref buffSize);
+                                    if (hr == 0)
                                     {
-                                        mapTable.TryGetValue(mapKey, out map);
+                                        propertyFetch.Map = ParseMap(enumInfo, enumBuffer, buffSize);
                                     }
 
-                                    return map;
-                                };
-                                propertyFetch.LazyMap = lazyMap;
+                                    System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)enumBuffer);
+                                }
+                                else
+                                {
+                                    // This is the kernelTraceControl case,  the map information will be provided
+                                    // later, so we have to set up a LAZY map which will be evaluated when we need the
+                                    // enum (giving time for the enum definition to be processed. 
+                                    var mapKey = new MapKey(eventInfo->ProviderGuid, mapName);
+
+                                    // Set the map to be a lazyMap, which is a Func that returns a map.  
+                                    Func<IDictionary<long, string>> lazyMap = delegate ()
+                                    {
+                                        IDictionary<long, string> map = null;
+                                        if (mapTable != null)
+                                        {
+                                            mapTable.TryGetValue(mapKey, out map);
+                                        }
+
+                                        return map;
+                                    };
+                                    propertyFetch.LazyMap = lazyMap;
+                                }
                             }
                         }
                     }
@@ -1007,6 +1064,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             if (countOrCountIndex == startField + curField - 1)
                             {
                                 var lastFieldIdx = fieldFetches.Count - 1;
+                                if (lastFieldIdx < 0)
+                                {
+                                    // Malformed metadata: the count index points before the current (nested) parse
+                                    // frame, so there is no preceding field in this frame to consume as the prefix.
+                                    // Reject the template rather than indexing fieldFetches[-1] on the untrusted path.
+                                    return null;
+                                }
+
                                 arraySize = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.CONSUMES_FIELD + DynamicTraceEventData.ELEM_COUNT;
                                 if (fieldFetches[lastFieldIdx].Size == 4)
                                 {
@@ -1084,44 +1149,146 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return ret; ;
             }
 
-            // Parses a EVENT_MAP_INFO into a Dictionary for a Value map or a SortedDictionary for a Bitmap
-            // returns null if it does not know how to parse it.  
-            internal static unsafe IDictionary<long, string> ParseMap(EVENT_MAP_INFO* enumInfo, byte* enumBuffer)
+            // Parses a EVENT_MAP_INFO into a Dictionary for a Value map or a SortedDictionary for a Bitmap.
+            // 'enumBufferLength' is the length in bytes of the buffer pointed to by 'enumBuffer'; every offset and array
+            // extent contained in the EVENT_MAP_INFO is bounds-checked against this length before being dereferenced.
+            // Returns null if it does not know how to parse it or if the metadata fails validation.
+            internal static unsafe IDictionary<long, string> ParseMap(EVENT_MAP_INFO* enumInfo, byte* enumBuffer, int enumBufferLength)
             {
-                IDictionary<long, string> map = null;
-                // We only support manifest enums for now.  
-                if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP ||
-                    enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_BITMAP)
+                if (enumInfo == null || !ValidateRange(enumBufferLength, 0, EventMapInfoEntryArrayOffset))
                 {
-                    StringWriter enumWriter = new StringWriter();
-                    string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
-
-                    if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
-                    {
-                        map = new Dictionary<long, string>();
-                    }
-                    else
-                    {
-                        map = new SortedDictionary<long, string>();
-                    }
-
-                    EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
-                    for (int k = 0; k < enumInfo->EntryCount; k++)
-                    {
-                        int value = mapEntries[k].Value;
-                        string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
-                        map[value] = valueName;
-                    }
+                    return null;
                 }
+
+                // We only support manifest enums for now.
+                if (enumInfo->Flag != MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP &&
+                    enumInfo->Flag != MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_BITMAP)
+                {
+                    return null;
+                }
+
+                // The entry array must fit within the buffer before we can index into it below.
+                if (enumInfo->EntryCount < 0 ||
+                    !ValidateRange(enumBufferLength, EventMapInfoEntryArrayOffset, (long)enumInfo->EntryCount * EventMapEntrySize))
+                {
+                    return null;
+                }
+
+                IDictionary<long, string> map = (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
+                    ? (IDictionary<long, string>)new Dictionary<long, string>()
+                    : new SortedDictionary<long, string>();
+
+                EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
+                for (int k = 0; k < enumInfo->EntryCount; k++)
+                {
+                    string valueName;
+                    if (!TryReadUnicodeString(enumBuffer, mapEntries[k].NameOffset, enumBufferLength, out valueName) || valueName == null)
+                    {
+                        return null;
+                    }
+
+                    map[mapEntries[k].Value] = valueName.Trim();
+                }
+
                 return map;
             }
 
+            // Reads the map's name (EVENT_MAP_INFO.NameOffset) from 'enumBuffer', bounds-checked against
+            // 'enumBufferLength'.  Returns false if the name offset is missing or out of range.
+            internal static unsafe bool TryReadMapName(EVENT_MAP_INFO* enumInfo, byte* enumBuffer, int enumBufferLength, out string mapName)
+            {
+                mapName = null;
+                return enumInfo != null &&
+                    ValidateRange(enumBufferLength, 0, EventMapInfoEntryArrayOffset) &&
+                    enumInfo->NameOffset != 0 &&
+                    TryReadUnicodeString(enumBuffer, enumInfo->NameOffset, enumBufferLength, out mapName);
+            }
+
+            // Validates the fixed-size TRACE_EVENT_INFO header and that the declared property array fits within
+            // the buffer.  This is the minimum required before ParseFields can safely index into the property
+            // array; individual string offsets and field ranges are bounds-checked at the point they are read.
+            private bool ValidateEventInfo()
+            {
+                if (eventInfo == null || !ValidateRange(eventInfoLength, 0, TraceEventInfoPropertyArrayOffset))
+                {
+                    return false;
+                }
+
+                if (eventInfo->PropertyCount < 0 ||
+                    eventInfo->TopLevelPropertyCount < 0 ||
+                    eventInfo->TopLevelPropertyCount > eventInfo->PropertyCount)
+                {
+                    return false;
+                }
+
+                return ValidateRange(eventInfoLength, TraceEventInfoPropertyArrayOffset, (long)eventInfo->PropertyCount * EventPropertyInfoSize);
+            }
+
+            private bool ValidateFieldRange(int startField, int numFields)
+            {
+                return startField >= 0 &&
+                    numFields >= 0 &&
+                    startField <= eventInfo->PropertyCount &&
+                    numFields <= eventInfo->PropertyCount - startField;
+            }
+
+            private string ReadString(int offset)
+            {
+                string value;
+                return TryReadUnicodeString(eventBuffer, offset, eventInfoLength, out value) ? value : null;
+            }
+
+            // Returns true if [offset, offset + size) lies entirely within a buffer of 'bufferLength' bytes.
+            private static bool ValidateRange(int bufferLength, int offset, long size)
+            {
+                return bufferLength >= 0 &&
+                    offset >= 0 &&
+                    size >= 0 &&
+                    offset <= bufferLength &&
+                    size <= bufferLength - offset;
+            }
+
+            // Reads a null-terminated Unicode string starting at 'offset' in 'buffer', refusing to read past
+            // 'bufferLength'.  An offset of 0 means the string is absent (returns true with a null value); any
+            // other offset that is out of range or lacks a terminator within the buffer returns false.
+            private static unsafe bool TryReadUnicodeString(byte* buffer, int offset, int bufferLength, out string value)
+            {
+                value = null;
+                if (offset == 0)
+                {
+                    return true;
+                }
+
+                if (!ValidateRange(bufferLength, offset, sizeof(char)))
+                {
+                    return false;
+                }
+
+                for (int i = offset; i <= bufferLength - sizeof(char); i += sizeof(char))
+                {
+                    if (buffer[i] == 0 && buffer[i + 1] == 0)
+                    {
+                        value = new string((char*)(&buffer[offset]));
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
             #region private
+            private const int MaxParseFieldRecursionDepth = 32;
+            private int _totalFieldsParsed;          // cumulative fields parsed across all ParseFields frames; bounds total work
+            private static readonly int TraceEventInfoPropertyArrayOffset = (int)Marshal.OffsetOf(typeof(TRACE_EVENT_INFO), "EventPropertyInfoArray");
+            private static readonly int EventPropertyInfoSize = Marshal.SizeOf(typeof(EVENT_PROPERTY_INFO));
+            private static readonly int EventMapInfoEntryArrayOffset = (int)Marshal.OffsetOf(typeof(EVENT_MAP_INFO), "MapEntryArray");
+            private static readonly int EventMapEntrySize = Marshal.SizeOf(typeof(EVENT_MAP_ENTRY));
             private TRACE_EVENT_INFO* eventInfo;
             private TraceEventNativeMethods.EVENT_RECORD* eventRecord;
             private Dictionary<MapKey, IDictionary<long, string>> mapTable;     // table of enums that have defined. 
             private EVENT_PROPERTY_INFO* propertyInfos;
             private byte* eventBuffer;                           // points at the eventInfo, but in increments of bytes 
+            private int eventInfoLength;
             #endregion // private
         }
 
