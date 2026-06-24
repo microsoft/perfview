@@ -673,6 +673,16 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     return true;
                 }
 
+                // On musl-based Linux distros (e.g. Alpine), libc and the dynamic loader are
+                // combined into a single module named like "ld-musl-x86_64.so.1" (the architecture
+                // varies). Threads start from there (__libc_start_main, pthread start), so treat it
+                // as a valid top frame just like glibc's libc.
+                if (moduleFileName.StartsWith("ld-musl-", StringComparison.OrdinalIgnoreCase))
+                {
+                    m_goodTopModuleIndex = moduleFileIndex;
+                    return true;
+                }
+
                 // On Linux, <processName>!_start is an ELF entry point for C programs.
                 string processName = m_log.Threads[threadIndex].Process.Name;
                 if (string.Compare(moduleFileName, processName, StringComparison.OrdinalIgnoreCase) == 0)
