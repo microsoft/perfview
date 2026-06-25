@@ -23,6 +23,7 @@ using Microsoft.Diagnostics.Tracing.SourceConverters;
 using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
@@ -35,7 +36,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Address = System.UInt64;
-
 
 namespace Microsoft.Diagnostics.Tracing.Etlx
 {
@@ -2343,8 +2343,22 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
                 unsafe
                 {
-                    Debug.Assert(data.eventRecord->EventHeader.TimeStamp < long.MaxValue);
-                    WriteBlob((IntPtr)data.eventRecord, writer, headerSize);
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        Span<byte> buffer = stackalloc byte[headerSize];
+                        new Span<byte>(data.eventRecord, headerSize).CopyTo(buffer);
+                        SwapEventRecordEndianness(buffer);
+                        fixed (byte* bufferPtr = buffer)
+                        {
+                        	WriteBlob((IntPtr)bufferPtr, writer, headerSize);
+                        }
+                    }
+                    else
+                    {
+                        Debug.Assert(data.eventRecord->EventHeader.TimeStamp < long.MaxValue);
+                        WriteBlob((IntPtr)data.eventRecord, writer, headerSize);
+                    }
+
                     WriteBlob(data.userData, writer, (data.EventDataLength + 3 & ~3));
                 }
                 numberOnPage++;
@@ -3458,9 +3472,66 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             int intCount = byteCount >> 2;
             while (intCount > 0)
             {
-                writer.Write(*sourcePtr++);
+                writer.WriteBlobAsInt(*sourcePtr++);
                 --intCount;
             }
+        }
+
+        private static void SwapEventRecordEndianness(Span<byte> buffer)
+        {
+            int offset = 0;
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // Size (UInt16)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // HeaderType (UInt16)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // Flags (UInt16)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // EventProperty (UInt16)
+            buffer.Slice(offset, 4).Reverse();
+            offset += 4;  // ThreadId (Int32)
+            buffer.Slice(offset, 4).Reverse();
+            offset += 4;  // ProcessId (Int32)
+            buffer.Slice(offset, 8).Reverse();
+            offset += 8;  // TimeStamp (Int64)
+            
+            // ProviderId GUID (16 bytes) - swap first 3 components only
+            buffer.Slice(offset, 4).Reverse();
+            offset += 4;  // Data1 (Int32)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // Data2 (Int16)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 10;  // Data3 (Int16) +  Data4 (8 bytes) - unchanged
+            
+            buffer.Slice(offset, 2).Reverse();
+            offset += 6;  // Id (UInt16) + Version, Channel, Level, Opcode (4 single bytes)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // Task (UInt16)
+            buffer.Slice(offset, 8).Reverse();
+            offset += 8;  // Keyword (UInt64)
+            buffer.Slice(offset, 4).Reverse();
+            offset += 4;  // KernelTime (UInt32)
+            buffer.Slice(offset, 4).Reverse();
+            offset += 4;  // UserTime (UInt32)
+            
+            // ActivityId GUID (16 bytes) - swap first 3 components only
+            buffer.Slice(offset, 4).Reverse();
+            offset += 4;  // Data1 (Int32)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // Data2 (Int16)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 12;  // Data3 (Int16) + Data4 (8 bytes) - unchanged + ProcessorNumber, Alignment (2 single bytes)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // LoggerId (UInt16)
+            
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // ExtendedDataCount (UInt16)
+            buffer.Slice(offset, 2).Reverse();
+            offset += 2;  // UserDataLength (UInt16)
+            buffer.Slice(offset, 8).Reverse();
+            offset += 8;  // ExtendedData (pointer - UInt64)
+            buffer.Slice(offset, 8).Reverse();
+            offset += 8;  // UserData (pointer - UInt64)
         }
 
         // [Conditional("DEBUG")]
@@ -3588,7 +3659,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 Debug.Assert(ptr->EventHeader.Level <= 6);
                 Debug.Assert(ptr->EventHeader.Version <= 10);
 
-                long eventTimeQPC = ptr->EventHeader.TimeStamp;
+                long eventTimeQPC = BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(ptr->EventHeader.TimeStamp));
                 Debug.Assert(sessionStartTimeQPC <= eventTimeQPC && eventTimeQPC < DateTime.Now.Ticks || eventTimeQPC == long.MaxValue);
 
                 if (eventTimeQPC >= timeQPC)
@@ -5329,6 +5400,39 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             protected unsafe TraceEvent GetNext()
             {
                 TraceEventNativeMethods.EVENT_RECORD* ptr = (TraceEventNativeMethods.EVENT_RECORD*)reader.GetPointer(TraceLog.headerSize);
+                if (!BitConverter.IsLittleEndian)
+                {
+                    ptr->EventHeader.Size = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->EventHeader.Size));
+                    ptr->EventHeader.HeaderType = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->EventHeader.HeaderType));
+                    ptr->EventHeader.Flags = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->EventHeader.Flags));
+                    ptr->EventHeader.EventProperty = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->EventHeader.EventProperty));
+                    ptr->EventHeader.ThreadId = BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(ptr->EventHeader.ThreadId));
+                    ptr->EventHeader.ProcessId = BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(ptr->EventHeader.ProcessId));
+                    ptr->EventHeader.TimeStamp = BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(ptr->EventHeader.TimeStamp));
+                    ptr->EventHeader.Id = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->EventHeader.Id));
+                    ptr->EventHeader.Task = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->EventHeader.Task));
+                    ptr->EventHeader.Keyword = BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes(ptr->EventHeader.Keyword));
+                    ptr->EventHeader.KernelTime = BinaryPrimitives.ReadUInt32LittleEndian(BitConverter.GetBytes(ptr->EventHeader.KernelTime));
+                    ptr->EventHeader.UserTime = BinaryPrimitives.ReadUInt32LittleEndian(BitConverter.GetBytes(ptr->EventHeader.UserTime));
+                    
+                     Span<byte> guidarr = stackalloc byte[16];
+                    
+                    guidarr = ptr->EventHeader.ProviderId.ToByteArray();
+                    BinaryPrimitives.WriteInt32LittleEndian(guidarr.Slice(0), (MemoryMarshal.Read<int>(guidarr.Slice(0,4))));
+                    BinaryPrimitives.WriteInt16LittleEndian(guidarr.Slice(4), (MemoryMarshal.Read<short>(guidarr.Slice(4,6))));
+                    BinaryPrimitives.WriteInt16LittleEndian(guidarr.Slice(6), (MemoryMarshal.Read<short>(guidarr.Slice(6,8))));
+                    ptr->EventHeader.ProviderId = new Guid(guidarr.ToArray());
+                    
+                    guidarr = ptr->EventHeader.ActivityId.ToByteArray();
+                    BinaryPrimitives.WriteInt32LittleEndian(guidarr.Slice(0), (MemoryMarshal.Read<int>(guidarr.Slice(0,4))));
+                    BinaryPrimitives.WriteInt16LittleEndian(guidarr.Slice(4), (MemoryMarshal.Read<short>(guidarr.Slice(4,6))));
+                    BinaryPrimitives.WriteInt16LittleEndian(guidarr.Slice(6), (MemoryMarshal.Read<short>(guidarr.Slice(6,8))));
+                    ptr->EventHeader.ActivityId = new Guid(guidarr.ToArray());
+                    
+                    ptr->UserDataLength = BinaryPrimitives.ReadUInt16LittleEndian(BitConverter.GetBytes(ptr->UserDataLength));
+                    ptr->UserData = (IntPtr)BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes((ulong)ptr->UserData));
+                    ptr->UserContext = (IntPtr)BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes((ulong)ptr->UserContext));
+                }
                 TraceEvent ret = lookup.Lookup(ptr);
 
                 // We use the first item in the linked list in 'ret'.   This should always be the 'best' way of decoding
@@ -7853,12 +7957,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 GetStackIndexForStackEvent64((ulong*)addresses, addressCount, thread.Process, start) :
                 GetStackIndexForStackEvent32((uint*)addresses, addressCount, thread.Process, start);
         }
-
         private unsafe CallStackIndex GetStackIndexForStackEvent32(uint* addresses, int addressCount, TraceProcess process, CallStackIndex start)
         {
             for (var it = &addresses[addressCount]; it-- != addresses;)
             {
-                CodeAddressIndex codeAddress = codeAddresses.GetOrCreateCodeAddressIndex(process, *it);
+                CodeAddressIndex codeAddress = codeAddresses.GetOrCreateCodeAddressIndex(process, BinaryPrimitives.ReadUInt32LittleEndian(BitConverter.GetBytes((uint)(*it))));
                 start = InternCallStackIndex(codeAddress, start);
             }
 
@@ -7869,7 +7972,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             for (var it = &addresses[addressCount]; it-- != addresses;)
             {
-                CodeAddressIndex codeAddress = codeAddresses.GetOrCreateCodeAddressIndex(process, *it);
+                CodeAddressIndex codeAddress = codeAddresses.GetOrCreateCodeAddressIndex(process, BinaryPrimitives.ReadUInt64LittleEndian(BitConverter.GetBytes((ulong)(*it))));
                 start = InternCallStackIndex(codeAddress, start);
             }
 
