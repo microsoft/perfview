@@ -9111,7 +9111,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Look up the SymbolModule (open PDB) for a given moduleFile.   Will generate NGEN pdbs as needed.
         /// </summary>
-        private unsafe ManagedSymbolModule OpenPdbForModuleFile(SymbolReader symReader, TraceModuleFile moduleFile)
+        internal unsafe ManagedSymbolModule OpenPdbForModuleFile(SymbolReader symReader, TraceModuleFile moduleFile)
         {
             string pdbFileName = null;
             // If we have a signature, use it
@@ -9131,6 +9131,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (TraceModuleUnchanged(moduleFile, symReader.m_log))
                 {
                     pdbFileName = symReader.FindSymbolFilePathForModule(moduleFile.FilePath);
+
+                    // No standalone PDB found, but the on-disk module matches the trace.  See if the
+                    // module carries an embedded portable PDB (<DebugType>embedded</DebugType>) and use
+                    // it directly.  Because the bytes come from the matched-on-disk module, no GUID/age
+                    // re-validation is required, so we return the module immediately.
+                    if (pdbFileName == null)
+                    {
+                        ManagedSymbolModule embeddedSymbolModule = symReader.OpenEmbeddedPortablePdb(moduleFile.FilePath);
+                        if (embeddedSymbolModule != null)
+                        {
+                            embeddedSymbolModule.ExePath = moduleFile.FilePath;
+                            symReader.m_log.WriteLine("Opened embedded portable PDB for {0}", moduleFile.FilePath);
+                            return embeddedSymbolModule;
+                        }
+                    }
                 }
             }
 
