@@ -2509,8 +2509,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 else
                 {
                     properties->LogFileMode |= TraceEventNativeMethods.EVENT_TRACE_BUFFERING_MODE;
+                    // Size the in-memory circular buffer purely by the number of buffers, leaving BufferSize at the
+                    // per-buffer quantum set above (m_BufferQuantumKB).  MinimumBuffers is intentionally computed against
+                    // that same quantum so that (MinimumBuffers * BufferSize) == m_CircularBufferMB megabytes.
+                    // Do NOT set BufferSize to m_CircularBufferMB here: BufferSize is a per-buffer size in KB, so treating
+                    // a megabyte value as KB makes each buffer exceed ETW's maximum buffer size.  On some systems that
+                    // causes the subsequent KernelTraceControl merge (CreateMergedTraceFile) to fail (e.g. 0x80280012),
+                    // and inflates the requested memory quadratically.
                     properties->MinimumBuffers = (uint)(m_CircularBufferMB * 1024 / m_BufferQuantumKB);
-                    properties->BufferSize = (uint)m_CircularBufferMB;
                 }
                 properties->LogFileNameOffset = 0;
             }
