@@ -1,8 +1,9 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 using FastSerialization;
-using Microsoft.Diagnostics.Tracing.Compatibility;
+
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Utilities;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,6 +12,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+
 using Address = System.UInt64;
 
 namespace Microsoft.Diagnostics.Tracing.Parsers
@@ -946,7 +948,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public override string PayloadString(int index, IFormatProvider formatProvider = null)
         {
-            // See if you can do enumeration mapping.  
+            // See if you can do enumeration mapping.
             var map = payloadFetches[index].Map;
             if (map != null)
             {
@@ -1014,9 +1016,42 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-            // Otherwise do the default transformations. 
+            // Otherwise apply any TraceLogging formatting hints
+            string hinted = FormatWithHint(index, formatProvider);
+            if (hinted != null)
+            {
+                return hinted;
+            }
+
+            // Otherwise do the default transformations.
             return base.PayloadString(index, formatProvider);
         }
+
+        /// <summary>
+        /// Applies the field's <see cref="TdhFormatter.FormatHint"/> hint to the value at <paramref
+        /// name="index"/>. Returns the formatted string, or null if no hint applies.
+        /// </summary>
+        private string FormatWithHint(int index, IFormatProvider formatProvider)
+        {
+            TdhFormatter.FormatHint format = payloadFetches[index].FormatHint;
+
+            // For arrays the hint lives on the element, not on the array itself.
+            TdhFormatter.FormatHint? elementFormat = null;
+            if (format == TdhFormatter.FormatHint.None)
+            {
+                elementFormat = payloadFetches[index].Array?.Element.FormatHint;
+            }
+
+            // If no hint applies, don't fetch the value to just ignore it.
+            if (format == TdhFormatter.FormatHint.None && elementFormat.GetValueOrDefault(TdhFormatter.FormatHint.None) == TdhFormatter.FormatHint.None)
+            {
+                return null;
+            }
+
+            object value = PayloadValue(index);
+            return TdhFormatter.Format(value, format, elementFormat, formatProvider);
+        }
+
         /// <summary>
         /// Implements TraceEvent interface
         /// </summary>
@@ -1483,6 +1518,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 Size = size;
                 Type = type;
                 info = map;
+                FormatHint = TdhFormatter.FormatHint.None;
             }
 
             /// <summary>
@@ -1490,10 +1526,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// if the type is unknown.  
             /// </summary>
 
-            public PayloadFetch(ushort offset, RegisteredTraceEventParser.TdhInputType inType, int outType)
+            public PayloadFetch(ushort offset, RegisteredTraceEventParser.TdhInputType inType, RegisteredTraceEventParser.TdhOutputType outType)
             {
                 Offset = offset;
                 info = null;
+                FormatHint = ComputeFormatHintFromInOutTypes(inType, outType);
 
                 switch (inType)
                 {
@@ -1506,7 +1543,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         Size = DynamicTraceEventData.NULL_TERMINATED | DynamicTraceEventData.IS_ANSI;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.UInt8:
-                        if (outType == 13)       // Encoding for boolean
+                        if (outType == RegisteredTraceEventParser.TdhOutputType.Boolean)
                         {
                             Type = typeof(bool);
                             Size = 1;
@@ -1522,7 +1559,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     case RegisteredTraceEventParser.TdhInputType.Int16:
                     case RegisteredTraceEventParser.TdhInputType.UInt16:
                         Size = 2;
-                        if (outType == 1)       // Encoding for String
+                        if (outType == RegisteredTraceEventParser.TdhOutputType.String)
                         {
                             Type = typeof(char);
                             break;
@@ -1594,6 +1631,62 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             private static bool ArrayElementCanProjectToString(PayloadFetch element)
             {
                 return element.Type == typeof(char) && (element.Size == 1 || element.Size == 2);
+            }
+
+            /// <summary>
+            /// Maps a TraceLogging field's <see cref="RegisteredTraceEventParser.TdhInputType"/>
+            /// and <see cref="RegisteredTraceEventParser.TdhOutputType"/> values to a <see
+            /// cref="TdhFormatter.FormatHint"/> hint.
+            /// </summary>
+            /// <remarks>
+            /// This method doesn't validate that <paramref name="inType"/> can be rendered as the
+            /// requested <paramref name="outType"/>. Instead, formatting code handles those cases,
+            /// typically by returning null so that fallback formatting will run.
+            /// </remarks>
+            internal static TdhFormatter.FormatHint ComputeFormatHintFromInOutTypes(RegisteredTraceEventParser.TdhInputType inType, RegisteredTraceEventParser.TdhOutputType outType)
+            {
+                switch (outType)
+                {
+                    case RegisteredTraceEventParser.TdhOutputType.HexInt8:
+                    case RegisteredTraceEventParser.TdhOutputType.HexInt16:
+                    case RegisteredTraceEventParser.TdhOutputType.HexInt32:
+                    case RegisteredTraceEventParser.TdhOutputType.HexInt64:
+                        // Use pointer formatting for hex types, even if the output type is different.
+                        // This maintains compatibility with the existing formatting logic.
+                        return inType == RegisteredTraceEventParser.TdhInputType.Pointer ? TdhFormatter.FormatHint.Pointer : TdhFormatter.FormatHint.Hex;
+                    case RegisteredTraceEventParser.TdhOutputType.Pid:
+                        return TdhFormatter.FormatHint.Pid;
+                    case RegisteredTraceEventParser.TdhOutputType.Tid:
+                        return TdhFormatter.FormatHint.Tid;
+                    case RegisteredTraceEventParser.TdhOutputType.Port:
+                        return TdhFormatter.FormatHint.Port;
+                    case RegisteredTraceEventParser.TdhOutputType.Ipv4:
+                        return TdhFormatter.FormatHint.IPv4;
+                    case RegisteredTraceEventParser.TdhOutputType.Ipv6:
+                        return TdhFormatter.FormatHint.IPv6;
+                    case RegisteredTraceEventParser.TdhOutputType.SocketAddress:
+                        return TdhFormatter.FormatHint.SocketAddress;
+                    case RegisteredTraceEventParser.TdhOutputType.ErrorCode:
+                        return TdhFormatter.FormatHint.GenericError;
+                    case RegisteredTraceEventParser.TdhOutputType.Win32Error:
+                        return TdhFormatter.FormatHint.Win32Error;
+                    case RegisteredTraceEventParser.TdhOutputType.NtStatus:
+                        return TdhFormatter.FormatHint.NtStatus;
+                    case RegisteredTraceEventParser.TdhOutputType.HResult:
+                        return TdhFormatter.FormatHint.HResult;
+                    case RegisteredTraceEventParser.TdhOutputType.CodePointer:
+                        return TdhFormatter.FormatHint.Pointer;
+                }
+
+                // Some input types imply a format, so check those after checking outType.
+                switch (inType)
+                {
+                    case RegisteredTraceEventParser.TdhInputType.HexInt32:
+                    case RegisteredTraceEventParser.TdhInputType.HexInt64:
+                        return TdhFormatter.FormatHint.Hex;
+                }
+
+                return TdhFormatter.FormatHint.None;
             }
 
             /// <summary>
@@ -1734,6 +1827,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             public Type Type;       // Currently null for arrays.  
 
+            // Display-formatting hint derived from the TraceLogging/TDH InType/OutType.
+            public TdhFormatter.FormatHint FormatHint;
+
             // Non null of 'Type' is a enum
             public IDictionary<long, string> Map
             {
@@ -1818,6 +1914,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 serializer.Write((short)Offset);
                 serializer.Write((short)Size);
+                serializer.Write((byte)FormatHint);
                 if (Type == null)
                 {
                     serializer.Write((string)null);
@@ -1881,6 +1978,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 Offset = (ushort)deserializer.ReadInt16();
                 Size = (ushort)deserializer.ReadInt16();
+                FormatHint = (TdhFormatter.FormatHint)deserializer.ReadByte();
                 var typeName = deserializer.ReadString();
                 if (typeName != null)
                 {

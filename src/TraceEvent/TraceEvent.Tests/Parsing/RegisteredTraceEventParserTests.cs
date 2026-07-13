@@ -2,6 +2,7 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Utilities;
+using FastSerialization;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -439,8 +440,8 @@ namespace TraceEventTests
             {
                 var eventInfo = (RegisteredTraceEventParser.TRACE_EVENT_INFO*)eventInfoBuffer;
                 eventInfo->EventPropertyInfoArray.Flags = RegisteredTraceEventParser.PROPERTY_FLAGS.Struct;
-                eventInfo->EventPropertyInfoArray.InType = (RegisteredTraceEventParser.TdhInputType)0; // StructStartIndex.
-                eventInfo->EventPropertyInfoArray.OutType = 1; // NumOfStructMembers.
+                eventInfo->EventPropertyInfoArray.InType = (RegisteredTraceEventParser.TdhInputType)0;   // StructStartIndex.
+                eventInfo->EventPropertyInfoArray.OutType = (RegisteredTraceEventParser.TdhOutputType)1; // NumOfStructMembers.
 
                 var parser = new RegisteredTraceEventParser.TdhEventParser(eventInfoBuffer, buffer.Length, null, null);
 
@@ -481,6 +482,50 @@ namespace TraceEventTests
                 Assert.NotNull(template);
                 Assert.Equal(new[] { "Outer" }, template.PayloadNames);
             }
+        }
+
+        [Fact]
+        public unsafe void EmbeddedTdhMetadataParser_CapturesFormatHintFromOutType()
+        {
+            byte[] buffer = CreateSinglePropertyEventInfoBuffer();
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                var eventInfo = (RegisteredTraceEventParser.TRACE_EVENT_INFO*)eventInfoBuffer;
+                eventInfo->EventPropertyInfoArray.OutType = RegisteredTraceEventParser.TdhOutputType.HexInt32;
+
+                DynamicTraceEventData template = new RegisteredTraceEventParser.TdhEventParser(eventInfoBuffer, buffer.Length, null, null).ParseEventMetaData();
+
+                Assert.NotNull(template);
+                Assert.Equal(new[] { "Field" }, template.PayloadNames);
+                Assert.Equal(TdhFormatter.FormatHint.Hex, template.payloadFetches[0].FormatHint);
+            }
+        }
+
+        [Fact]
+        public unsafe void EmbeddedTdhMetadataParser_FormatHintSurvivesSerialization()
+        {
+            byte[] buffer = CreateSinglePropertyEventInfoBuffer();
+
+            DynamicTraceEventData template;
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                var eventInfo = (RegisteredTraceEventParser.TRACE_EVENT_INFO*)eventInfoBuffer;
+                eventInfo->EventPropertyInfoArray.OutType = RegisteredTraceEventParser.TdhOutputType.HexInt32;
+                template = new RegisteredTraceEventParser.TdhEventParser(eventInfoBuffer, buffer.Length, null, null).ParseEventMetaData();
+            }
+            Assert.NotNull(template);
+            Assert.Equal(TdhFormatter.FormatHint.Hex, template.payloadFetches[0].FormatHint);
+
+            // Round-trip the template through FastSerialization and confirm the hint is preserved.
+            var stream = new MemoryStream();
+            new Serializer(stream, template, leaveOpen: true).Dispose();
+
+            stream.Position = 0;
+
+            using var deserializer = new Deserializer(stream, "test", leaveOpen: true, SerializationSettings.Default);
+            deserializer.RegisterFactory(typeof(DynamicTraceEventData), () => new DynamicTraceEventData(null, 0, 0, null, Guid.Empty, 0, null, Guid.Empty, null));
+            var roundTripped = (DynamicTraceEventData)deserializer.GetEntryObject();
+            Assert.Equal(TdhFormatter.FormatHint.Hex, roundTripped.payloadFetches[0].FormatHint);
         }
 
         [Fact]
@@ -549,8 +594,8 @@ namespace TraceEventTests
                 for (int i = 0; i < 2; i++)
                 {
                     properties[i].Flags = RegisteredTraceEventParser.PROPERTY_FLAGS.Struct;
-                    properties[i].InType = (RegisteredTraceEventParser.TdhInputType)0; // StructStartIndex = 0
-                    properties[i].OutType = 2;                                          // NumOfStructMembers = 2
+                    properties[i].InType = (RegisteredTraceEventParser.TdhInputType)0;   // StructStartIndex = 0
+                    properties[i].OutType = (RegisteredTraceEventParser.TdhOutputType)2; // NumOfStructMembers = 2
                 }
                 properties[0].NameOffset = aNameOffset;
                 properties[1].NameOffset = bNameOffset;
@@ -586,8 +631,8 @@ namespace TraceEventTests
                 // Top-level struct property whose single member is property index 1.
                 properties[0].Flags = RegisteredTraceEventParser.PROPERTY_FLAGS.Struct;
                 properties[0].NameOffset = outerNameOffset;
-                properties[0].InType = (RegisteredTraceEventParser.TdhInputType)1; // StructStartIndex = 1
-                properties[0].OutType = 1;                                          // NumOfStructMembers = 1
+                properties[0].InType = (RegisteredTraceEventParser.TdhInputType)1;   // StructStartIndex = 1
+                properties[0].OutType = (RegisteredTraceEventParser.TdhOutputType)1; // NumOfStructMembers = 1
 
                 // Nested member: a variable-length (ParamCount) array whose count index points at
                 // startField - 1 (= 0), i.e. just before this nested frame.  In the nested frame
@@ -631,8 +676,8 @@ namespace TraceEventTests
                 // Encode StructStartIndex=1 / NumOfStructMembers=1 via the union members.
                 properties[0].Flags = RegisteredTraceEventParser.PROPERTY_FLAGS.Struct;
                 properties[0].NameOffset = outerNameOffset;
-                properties[0].InType = (RegisteredTraceEventParser.TdhInputType)1; // StructStartIndex
-                properties[0].OutType = 1;                                          // NumOfStructMembers
+                properties[0].InType = (RegisteredTraceEventParser.TdhInputType)1;   // StructStartIndex
+                properties[0].OutType = (RegisteredTraceEventParser.TdhOutputType)1; // NumOfStructMembers
                 // Deliberately set the slot that overlays MapNameOffset to a non-zero garbage
                 // value to mimic real TDH output where the struct 'padding' field is not
                 // guaranteed to be zero.  ValidateEventInfo must not interpret this as a

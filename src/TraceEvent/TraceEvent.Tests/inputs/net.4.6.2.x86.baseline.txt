@@ -212,12 +212,12 @@ EVENT 451.426: Microsoft-JScript/Jscript_Recycler_Allocation/External_AddRef PID
 EVENT 451.430: Microsoft-JScript/Jscript_Recycler_Allocation/External_Release PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=8; MemoryAddress=0x1dc44d60000; 
 EVENT 451.697: Microsoft-IE/Mshtml_CMarkup_Layout/Start PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=20; View=0x1dc2c938000; grfLAYOUT=0; EventContextId=2,045,197,022,976; 
 EVENT 451.700: Microsoft-IE/Mshtml_CMarkup_Layout/Start PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=20; View=0x1dc2c938000; grfLAYOUT=256; EventContextId=2,045,197,022,976; 
-EVENT 451.709: Microsoft-IE/Mshtml_CMarkup_Layout/Stop PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=20; DOC=0x1dc2c938000; Flags=2; EventContextId=2,045,197,022,976; 
-EVENT 451.710: Microsoft-IE/Mshtml_CMarkup_Layout/Stop PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=20; DOC=0x1dc2c938000; Flags=0; EventContextId=2,045,197,022,976; 
+EVENT 451.709: Microsoft-IE/Mshtml_CMarkup_Layout/Stop PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=20; DOC=0x1dc2c938000; Flags=0x00000002; EventContextId=2,045,197,022,976; 
+EVENT 451.710: Microsoft-IE/Mshtml_CMarkup_Layout/Stop PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=20; DOC=0x1dc2c938000; Flags=0x00000000; EventContextId=2,045,197,022,976; 
 EVENT 451.712: Microsoft-IE/Mshtml_CMarkup_Layout/Start PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=20; View=0x1dc2c938000; grfLAYOUT=0; EventContextId=2,045,197,022,976; 
 EVENT 451.713: Microsoft-IE/Mshtml_CMarkup_Layout/Start PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=20; View=0x1dc2c938000; grfLAYOUT=256; EventContextId=2,045,197,022,976; 
-EVENT 451.714: Microsoft-IE/Mshtml_CMarkup_Layout/Stop PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=20; DOC=0x1dc2c938000; Flags=2; EventContextId=2,045,197,022,976; 
-EVENT 451.715: Microsoft-IE/Mshtml_CMarkup_Layout/Stop PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=20; DOC=0x1dc2c938000; Flags=0; EventContextId=2,045,197,022,976; 
+EVENT 451.714: Microsoft-IE/Mshtml_CMarkup_Layout/Stop PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=20; DOC=0x1dc2c938000; Flags=0x00000002; EventContextId=2,045,197,022,976; 
+EVENT 451.715: Microsoft-IE/Mshtml_CMarkup_Layout/Stop PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=20; DOC=0x1dc2c938000; Flags=0x00000000; EventContextId=2,045,197,022,976; 
 EVENT 451.746: Microsoft-JScript/Memprotect_GC_Allocation PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=28; HeapHandle=0x1d42ab14240; Size=64; Address=0x1dc3027d240; Source=3; 
 EVENT 451.754: Microsoft-JScript/Jscript_Recycler_Allocation/Allocate_DOM_Object PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=12; MemoryAddress=0x1dc44d60060; TypeId=4,144; 
 EVENT 451.756: Microsoft-JScript/Jscript_Recycler_Allocation/External_AddRef PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=8; MemoryAddress=0x1dc44d60060; 
@@ -229,7 +229,7 @@ EVENT 452.408: Microsoft-JScript/Jscript_Recycler_Allocation/External_Release PI
 EVENT 452.410: Microsoft-JScript/Jscript_Recycler_Allocation/External_AddRef PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=8; MemoryAddress=0x1dc42d984d0; 
 EVENT 452.411: Microsoft-JScript/Jscript_Recycler_Allocation/External_Release PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=8; MemoryAddress=0x1dc42d984d0; 
 EVENT 452.416: Microsoft-IE/Mshtml_CMarkup_Layout/Start PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=20; View=0x1dc2c938000; grfLAYOUT=0; EventContextId=2,045,152,134,912; 
-EVENT 452.422: Microsoft-IE/Mshtml_CMarkup_Layout/Stop PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=20; DOC=0x1dc2c938000; Flags=2; EventContextId=2,045,197,022,976; 
+EVENT 452.422: Microsoft-IE/Mshtml_CMarkup_Layout/Stop PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=20; DOC=0x1dc2c938000; Flags=0x00000002; EventContextId=2,045,197,022,976; 
 EVENT 452.482: Microsoft-JScript/Jscript_Recycler_Allocation/Allocate_Object PID=17836; TID=6692; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=8; MemoryAddress=0x1dc44d28260; 
 EVENT 459.300: Microsoft-JScript/Jscript_GC_BackgroundZeroPage/Start PID=17836; TID=13432; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=8; RecyclerID=0x1d42ab93f30; 
 EVENT 459.482: Microsoft-JScript/Jscript_GC_BackgroundZeroPage/Stop PID=17836; TID=13432; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=8; RecyclerID=0x1d42ab93f30; 
@@ -870,7 +870,7 @@ EVENT 4,664.889: KernelTraceControl/ImageID/Opcode(34) PID=7268; TID=-1; PName=W
 EVENT 4,674.020: Windows Kernel/PerfInfo/CollectionEnd PID=24464; TID=13020; PName=PerfView; ProceNum=3; DataLen=24; SampleSource=0; NewInterval=10,000; OldInterval=10,000; 
 EVENT 4,711.161: Windows Kernel/EventTrace/Extension PID=-1; TID=-1; PName=; ProceNum=2; DataLen=36; GroupMask1=0; GroupMask2=0; GroupMask3=0; GroupMask4=0; GroupMask5=0; GroupMask6=0; GroupMask7=0; GroupMask8=0; KernelEventVersion=60; 
 EVENT 4,711.162: Windows Kernel/EventTrace/RundownComplete PID=-1; TID=-1; PName=; ProceNum=2; DataLen=0; 
-EVENT 4,718.232: Microsoft-Windows-Kernel-EventTracing/ETW_TASK_SESSION/ETW_OPCODE_STOP PID=24464; TID=13020; PName=PerfView; ProceNum=1; DataLen=160; SessionGuid=9e814aad-3204-11d2-9...; LoggerMode=171,966,593; SessionName=NT Kernel Logger; LogFileName=C:\temp\perfview\Per...; MinimumBuffers=1,024; MaximumBuffers=1,290; BufferSize=65,536; PeakBuffersCount=1,024; CurrentBuffersCount=1,024; FlushThreshold=0; 
+EVENT 4,718.232: Microsoft-Windows-Kernel-EventTracing/ETW_TASK_SESSION/ETW_OPCODE_STOP PID=24464; TID=13020; PName=PerfView; ProceNum=1; DataLen=160; SessionGuid=9e814aad-3204-11d2-9...; LoggerMode=0x0A400081; SessionName=NT Kernel Logger; LogFileName=C:\temp\perfview\Per...; MinimumBuffers=0x00000400; MaximumBuffers=0x0000050A; BufferSize=0x00010000; PeakBuffersCount=0x00000400; CurrentBuffersCount=0x00000400; FlushThreshold=0x00000000; 
 EVENT 4,733.984: Microsoft-JScript/Jscript_GC_BackgroundResetMarks/Start PID=17836; TID=13432; PName=MicrosoftEdgeCP; ProceNum=0; DataLen=8; RecyclerID=0x1d42ab93f30; 
 EVENT 4,734.296: Microsoft-JScript/Jscript_GC_BackgroundResetMarks/Stop PID=17836; TID=13432; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=8; RecyclerID=0x1d42ab93f30; 
 EVENT 4,734.298: Microsoft-JScript/Jscript_GC_BackgroundResetWriteWatch/Start PID=17836; TID=13432; PName=MicrosoftEdgeCP; ProceNum=3; DataLen=9; RecyclerID=0x1d42ab93f30; BackgroundMarkRescanCount=255; 

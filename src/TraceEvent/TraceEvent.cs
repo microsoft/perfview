@@ -1109,10 +1109,7 @@ namespace Microsoft.Diagnostics.Tracing
                     int intValue = (int)value;
                     if (intValue != 0 && PayloadNames[index] == "IPv4Address")
                     {
-                        return (intValue & 0xFF).ToString() + "." +
-                               ((intValue >> 8) & 0xFF).ToString() + "." +
-                               ((intValue >> 16) & 0xFF).ToString() + "." +
-                               ((intValue >> 24) & 0xFF).ToString();
+                        return FormatUtils.FormatIpV4Address(unchecked((UInt32)intValue));
                     }
                     if (formatProvider != null)
                     {
@@ -1173,43 +1170,33 @@ namespace Microsoft.Diagnostics.Tracing
                 var asByteArray = value as byte[];
                 if (asByteArray != null)
                 {
-                    StringBuilder sb = new StringBuilder();
                     if (PayloadNames[index].EndsWith("Address") || PayloadNames[index].EndsWith("Addr"))
                     {
-                        if (asByteArray.Length == 16 && asByteArray[0] == 2 && asByteArray[1] == 0)         // FAMILY = 2 = IPv4
+                        string formattedSockaddr = FormatUtils.FormatSockaddr(new ArraySegment<byte>(asByteArray));
+                        if (formattedSockaddr != null)
                         {
-                            sb.Append(asByteArray[4].ToString()).Append('.');
-                            sb.Append(asByteArray[5].ToString()).Append('.');
-                            sb.Append(asByteArray[6].ToString()).Append('.');
-                            sb.Append(asByteArray[7].ToString()).Append(':');
-                            int port = (asByteArray[2] << 8) + asByteArray[3];
-                            sb.Append(port);
-                        }
-                        else if (asByteArray.Length == 28 && asByteArray[0] == 23 && asByteArray[1] == 0)   // FAMILY = 23 = IPv6
-                        {
-                            var ipV6 = new byte[16];
-                            Array.Copy(asByteArray, 8, ipV6, 0, 16);
-                            int port = (asByteArray[2] << 8) + asByteArray[3];
-                            sb.Append('[').Append(new System.Net.IPAddress(ipV6).ToString()).Append("]:").Append(port);
+                            return formattedSockaddr;
                         }
                     }
-                    // If we did not find a way of pretty printing int, dump it as bytes. 
-                    if (sb.Length == 0)
+
+                    // If we did not find a way of pretty printing in, dump it as bytes.
+                    var limit = Math.Min(asByteArray.Length, 16);
+                    const string ExtraBytesIndicator = "...";
+                    var sb = new StringBuilder(2 * limit + ExtraBytesIndicator.Length);
+                    for (int i = 0; i < limit; i++)
                     {
-                        var limit = Math.Min(asByteArray.Length, 16);
-                        for (int i = 0; i < limit; i++)
-                        {
-                            var b = asByteArray[i];
-                            sb.Append(HexDigit((b / 16)));
-                            sb.Append(HexDigit((b % 16)));
-                        }
-                        if (limit < asByteArray.Length)
-                        {
-                            sb.Append("...");
-                        }
+                        var b = asByteArray[i];
+                        sb.Append(HexDigit((b / 16)));
+                        sb.Append(HexDigit((b % 16)));
                     }
+                    if (limit < asByteArray.Length)
+                    {
+                        sb.Append(ExtraBytesIndicator);
+                    }
+
                     return sb.ToString();
                 }
+
                 var asArray = value as System.Array;
                 if (asArray != null && asArray.Rank == 1)
                 {

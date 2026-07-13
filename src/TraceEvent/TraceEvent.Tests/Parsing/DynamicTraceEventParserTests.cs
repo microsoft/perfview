@@ -1,10 +1,16 @@
-﻿using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
+
 using System;
 using System.IO;
 using System.Security;
 using System.Text;
+
 using Xunit;
+
+using FormatHint = Microsoft.Diagnostics.Tracing.Parsers.TdhFormatter.FormatHint;
+using TdhInputType = Microsoft.Diagnostics.Tracing.Parsers.RegisteredTraceEventParser.TdhInputType;
+using TdhOutputType = Microsoft.Diagnostics.Tracing.Parsers.RegisteredTraceEventParser.TdhOutputType;
 
 namespace TraceEventTests
 {
@@ -153,6 +159,45 @@ namespace TraceEventTests
             {
                 Directory.Delete(outputDirectory, recursive: true);
             }
+        }
+
+        [Theory]
+        [InlineData(FormatHint.None, TdhInputType.Int32, TdhOutputType.Null)]
+        [InlineData(FormatHint.None, TdhInputType.Int32, TdhOutputType.Int)]
+        [InlineData(FormatHint.None, TdhInputType.Pointer, TdhOutputType.HexBinary)]
+        [InlineData(FormatHint.Hex, TdhInputType.UInt8, TdhOutputType.HexInt8)]
+        [InlineData(FormatHint.Hex, TdhInputType.Int16, TdhOutputType.HexInt16)]
+        [InlineData(FormatHint.Hex, TdhInputType.Int32, TdhOutputType.HexInt32)]
+        [InlineData(FormatHint.Hex, TdhInputType.UInt64, TdhOutputType.HexInt64)]
+        // Input type of pointer overrides hex formatting on output
+        [InlineData(FormatHint.Pointer, TdhInputType.Pointer, TdhOutputType.HexInt8)]
+        [InlineData(FormatHint.Pointer, TdhInputType.Pointer, TdhOutputType.HexInt16)]
+        [InlineData(FormatHint.Pointer, TdhInputType.Pointer, TdhOutputType.HexInt32)]
+        [InlineData(FormatHint.Pointer, TdhInputType.Pointer, TdhOutputType.HexInt64)]
+        [InlineData(FormatHint.Pid, TdhInputType.UInt32, TdhOutputType.Pid)]
+        [InlineData(FormatHint.Tid, TdhInputType.UInt32, TdhOutputType.Tid)]
+        [InlineData(FormatHint.Port, TdhInputType.UInt16, TdhOutputType.Port)]
+        [InlineData(FormatHint.IPv4, TdhInputType.UInt32, TdhOutputType.Ipv4)]
+        [InlineData(FormatHint.IPv6, TdhInputType.Binary, TdhOutputType.Ipv6)]
+        [InlineData(FormatHint.SocketAddress, TdhInputType.Binary, TdhOutputType.SocketAddress)]
+        [InlineData(FormatHint.GenericError, TdhInputType.Int32, TdhOutputType.ErrorCode)]
+        [InlineData(FormatHint.GenericError, TdhInputType.UInt32, TdhOutputType.ErrorCode)]
+        [InlineData(FormatHint.Win32Error, TdhInputType.Int32, TdhOutputType.Win32Error)]
+        [InlineData(FormatHint.Win32Error, TdhInputType.UInt32, TdhOutputType.Win32Error)]
+        [InlineData(FormatHint.NtStatus, TdhInputType.Int32, TdhOutputType.NtStatus)]
+        [InlineData(FormatHint.NtStatus, TdhInputType.UInt32, TdhOutputType.NtStatus)]
+        [InlineData(FormatHint.HResult, TdhInputType.Int32, TdhOutputType.HResult)]
+        [InlineData(FormatHint.HResult, TdhInputType.UInt32, TdhOutputType.HResult)]
+        [InlineData(FormatHint.Pointer, TdhInputType.UInt32, TdhOutputType.CodePointer)]
+        [InlineData(FormatHint.Pointer, TdhInputType.UInt64, TdhOutputType.CodePointer)]
+        // HexIntXX input types are hex formatted even if there is no output hint
+        [InlineData(FormatHint.Hex, TdhInputType.HexInt32, TdhOutputType.Null)]
+        [InlineData(FormatHint.Hex, TdhInputType.HexInt64, TdhOutputType.Null)]
+        public void ComputeFormatHintFromInOutTypes_MapsToExpectedFormatHint(FormatHint expected, object inType, object outType)
+        {
+            // inType/outType are passed as object to avoid CS0051: "Inconsistent accessibility:
+            // parameter type 'X' is less accessible than method 'Y'"
+            Assert.Equal(expected, DynamicTraceEventData.PayloadFetch.ComputeFormatHintFromInOutTypes((TdhInputType)inType, (TdhOutputType)outType));
         }
 
         private static ProviderManifest CreateProviderManifest(string providerName, Guid providerGuid)
