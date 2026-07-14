@@ -127,16 +127,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         }
 
         /// <summary>
-        /// These are the raw payload fields of the underlying event.  They read through
-        /// the cached <see cref="_payload"/> that <see cref="FixupData"/> populates per
-        /// event; when the payload didn't pass the bounds check (i.e. <c>_payload</c>
-        /// is <c>null</c>) the accessors return type-appropriate safe defaults rather
-        /// than throwing, so the dispatch hot path stays exception-safe.
+        /// These are the raw payload fields of the underlying event.  TraceLog replay
+        /// reuses templates and does not call <see cref="FixupData"/>, so replayed events
+        /// decode the current layout on access.  Invalid layouts return type-appropriate
+        /// safe defaults.
         /// </summary>
-        internal string Name { get { return _payload?.Name ?? string.Empty; } }
-        internal Int32 DataSize { get { return _payload?.DataSize ?? 0; } }
-        internal byte[] Data { get { return _payload.HasValue ? GetByteArrayAt(offset: _payload.Value.DataOffset, _payload.Value.DataSize) : Array.Empty<byte>(); } }
-        internal int ClrInstanceID { get { return _payload.HasValue ? GetInt16At(_payload.Value.ClrInstanceIDOffset) : 0; } }
+        internal string Name { get { return GetPayloadLayout()?.Name ?? string.Empty; } }
+        internal Int32 DataSize { get { return GetPayloadLayout()?.DataSize ?? 0; } }
+        internal byte[] Data
+        {
+            get
+            {
+                PayloadLayout? payload = GetPayloadLayout();
+                return payload.HasValue ? GetByteArrayAt(offset: payload.Value.DataOffset, payload.Value.DataSize) : Array.Empty<byte>();
+            }
+        }
+        internal int ClrInstanceID
+        {
+            get
+            {
+                PayloadLayout? payload = GetPayloadLayout();
+                return payload.HasValue ? GetInt16At(payload.Value.ClrInstanceIDOffset) : 0;
+            }
+        }
 
         /// <summary>
         /// This gets run before each event is dispatched.  It is responsible for detecting the event type
@@ -145,12 +158,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         /// The single <see cref="GCDynamicTraceEventImpl"/> instance is reused for every
         /// GCDynamic event the source produces, so the per-event payload validation
         /// must run here (not once at construction) -- it refreshes <see cref="_payload"/>
-        /// for the event that's about to dispatch.  Centralising the bounds check here
-        /// lets all downstream payload accessors (Name / DataSize / Data / ClrInstanceID,
-        /// the typed CommittedUsage fixed-offset reads, PayloadValue / PayloadValues,
-        /// ToXml) trust the cached layout without re-validating, and prevents an
-        /// attacker-controlled DataSize from triggering an OOB read or an unhandled
-        /// exception on the dispatch hot path.
+        /// for the raw event that's about to be converted and prevents an
+        /// attacker-controlled DataSize from selecting an incompatible template.
+        /// Payload accessors validate independently because TraceLog replay skips this
+        /// method after the converted event type has been persisted.
         /// </summary>
         internal override void FixupData()
         {
@@ -222,11 +233,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
 
         private event Action<GCDynamicTraceEventImpl> Action;
 
-        // Per-event scratch state populated by FixupData.  null means the bound event's
-        // payload failed the bounds check; accessors above return safe defaults in
-        // that case.  The cache lifetime is exactly one dispatch -- FixupData
-        // overwrites it before each event is delivered.
+        // Per-event scratch state populated while converting a raw event to its final
+        // event type. TraceLog replay templates never populate this field, so their
+        // payload accessors decode each currently bound event instead.
         private PayloadLayout? _payload;
+
+        private PayloadLayout? GetPayloadLayout()
+        {
+            return _payload ?? ReadPayloadLayout();
+        }
 
         /// <summary>
         /// Bounds-checks the current event's payload against <see cref="TraceEvent.EventDataLength"/>
@@ -438,12 +453,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         /// </summary>
         internal const int MinimumDataSize = 42;
 
-        public short Version { get { return BitConverter.ToInt16(DataField, 0); } }
-        public long TotalCommittedInUse { get { return BitConverter.ToInt64(DataField, 2); } }
-        public long TotalCommittedInGlobalDecommit { get { return BitConverter.ToInt64(DataField, 10); } }
-        public long TotalCommittedInFree { get { return BitConverter.ToInt64(DataField, 18); } }
-        public long TotalCommittedInGlobalFree { get { return BitConverter.ToInt64(DataField, 26); } }
-        public long TotalBookkeepingCommitted { get { return BitConverter.ToInt64(DataField, 34); } }
+        public short Version { get { return GetInt16(0); } }
+        public long TotalCommittedInUse { get { return GetInt64(2); } }
+        public long TotalCommittedInGlobalDecommit { get { return GetInt64(10); } }
+        public long TotalCommittedInFree { get { return GetInt64(18); } }
+        public long TotalCommittedInGlobalFree { get { return GetInt64(26); } }
+        public long TotalBookkeepingCommitted { get { return GetInt64(34); } }
 
         internal override TraceEventID ID => TraceEventID.Illegal - 11;
         internal override string TaskName => "GC";
@@ -498,6 +513,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
                 yield return new KeyValuePair<string, object>("TotalCommittedInGlobalFree", TotalCommittedInGlobalFree);
                 yield return new KeyValuePair<string, object>("TotalBookkeepingCommitted", TotalBookkeepingCommitted);
             }
+        }
+
+        private short GetInt16(int offset)
+        {
+            byte[] data = DataField;
+            return data.Length >= offset + sizeof(short) ? BitConverter.ToInt16(data, offset) : (short)0;
+        }
+
+        private long GetInt64(int offset)
+        {
+            byte[] data = DataField;
+            return data.Length >= offset + sizeof(long) ? BitConverter.ToInt64(data, offset) : 0;
         }
     }
 
