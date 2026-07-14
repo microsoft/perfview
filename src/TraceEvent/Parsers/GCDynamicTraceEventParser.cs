@@ -127,29 +127,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         }
 
         /// <summary>
-        /// These are the raw payload fields of the underlying event.  TraceLog replay
-        /// reuses templates and does not call <see cref="FixupData"/>, so replayed events
-        /// decode the current layout on access.  Invalid layouts return type-appropriate
-        /// safe defaults.
+        /// These are the raw payload fields of the underlying event.  They read through
+        /// the cached <see cref="_payload"/> populated before the typed event is accessed.
+        /// Invalid layouts return type-appropriate safe defaults.
         /// </summary>
-        internal string Name { get { return GetPayloadLayout()?.Name ?? string.Empty; } }
-        internal Int32 DataSize { get { return GetPayloadLayout()?.DataSize ?? 0; } }
-        internal byte[] Data
-        {
-            get
-            {
-                PayloadLayout? payload = GetPayloadLayout();
-                return payload.HasValue ? GetByteArrayAt(offset: payload.Value.DataOffset, payload.Value.DataSize) : Array.Empty<byte>();
-            }
-        }
-        internal int ClrInstanceID
-        {
-            get
-            {
-                PayloadLayout? payload = GetPayloadLayout();
-                return payload.HasValue ? GetInt16At(payload.Value.ClrInstanceIDOffset) : 0;
-            }
-        }
+        internal string Name { get { return _payload?.Name ?? string.Empty; } }
+        internal Int32 DataSize { get { return _payload?.DataSize ?? 0; } }
+        internal byte[] Data { get { return _payload.HasValue ? GetByteArrayAt(offset: _payload.Value.DataOffset, _payload.Value.DataSize) : Array.Empty<byte>(); } }
+        internal int ClrInstanceID { get { return _payload.HasValue ? GetInt16At(_payload.Value.ClrInstanceIDOffset) : 0; } }
 
         /// <summary>
         /// This gets run before each event is dispatched.  It is responsible for detecting the event type
@@ -197,6 +182,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
         {
             get
             {
+                // TraceLog replay reuses this template and does not call FixupData, so
+                // refresh the layout once before exposing the typed payload for this event.
+                _payload = ReadPayloadLayout();
+
                 if (eventID == GCDynamicEventBase.CommittedUsageTemplate.ID)
                 {
                     return _committedUsageTemplate.Bind(this);
@@ -233,15 +222,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
 
         private event Action<GCDynamicTraceEventImpl> Action;
 
-        // Per-event scratch state populated while converting a raw event to its final
-        // event type. TraceLog replay templates never populate this field, so their
-        // payload accessors decode each currently bound event instead.
+        // Per-event scratch state refreshed by FixupData during raw conversion and by
+        // EventPayload during TraceLog replay.
         private PayloadLayout? _payload;
-
-        private PayloadLayout? GetPayloadLayout()
-        {
-            return _payload ?? ReadPayloadLayout();
-        }
 
         /// <summary>
         /// Bounds-checks the current event's payload against <see cref="TraceEvent.EventDataLength"/>
