@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
+using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 
 namespace Microsoft.Diagnostics.Tracing.Parsers
@@ -183,8 +184,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.GCDynamic
             get
             {
                 // TraceLog replay reuses this template and does not call FixupData, so
-                // refresh the layout once before exposing the typed payload for this event.
-                _payload = ReadPayloadLayout();
+                // refresh the layout before exposing the typed payload for this event.
+                if (traceEventSource is TraceLog)
+                {
+                    _payload = ReadPayloadLayout();
+                }
 
                 if (eventID == GCDynamicEventBase.CommittedUsageTemplate.ID)
                 {

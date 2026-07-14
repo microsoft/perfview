@@ -1,4 +1,5 @@
 using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 using System;
@@ -355,8 +356,13 @@ namespace TraceEventTests.Regression
         {
             fixed (byte* firstPayloadBytes = firstPayload)
             fixed (byte* secondPayloadBytes = secondPayload)
-            using (TestTraceEventSource source = new TestTraceEventSource())
             {
+                TraceLog source = (TraceLog)Activator.CreateInstance(typeof(TraceLog), true);
+                source._QPCFreq = 1;
+                source._syncTimeQPC = 1;
+                source._syncTimeUTC = DateTime.UtcNow;
+                source.sessionStartTimeQPC = 1;
+
                 TraceEventNativeMethods.EVENT_RECORD eventRecord = new TraceEventNativeMethods.EVENT_RECORD();
                 eventRecord.EventHeader.ProviderId = GCDynamicTraceEventParser.ProviderGuid;
                 eventRecord.EventHeader.Id = (ushort)GCDynamicEventBase.CommittedUsageTemplate.ID;
@@ -377,24 +383,6 @@ namespace TraceEventTests.Regression
                     traceEvent.userData = eventRecord.UserData;
                     action(traceEvent);
                 }
-            }
-        }
-
-        private sealed class TestTraceEventSource : TraceEventDispatcher
-        {
-            public TestTraceEventSource()
-            {
-                _QPCFreq = 1;
-                _syncTimeQPC = 1;
-                _syncTimeUTC = DateTime.UtcNow;
-                sessionStartTimeQPC = 1;
-            }
-
-            public override int EventsLost { get { return 0; } }
-
-            public override bool Process()
-            {
-                return true;
             }
         }
     }
