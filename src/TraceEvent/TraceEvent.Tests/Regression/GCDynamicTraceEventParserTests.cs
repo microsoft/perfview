@@ -1,4 +1,5 @@
 using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.GCDynamic;
 using System;
@@ -143,6 +144,79 @@ namespace TraceEventTests.Regression
             });
         }
 
+        [Fact]
+        public void GCDynamicCommittedUsageReplayDecodesWithoutFixupData()
+        {
+            byte[] data = CreateCommittedUsageData(1, 100, 200, 300, 400, 500);
+            byte[] payload = CreatePayload("CommittedUsage", data.Length, data, 7);
+
+            WithGCDynamicReplayEvent(payload, delegate (GCDynamicTraceEventImpl traceEvent)
+            {
+                CommittedUsageTraceEvent committedUsage = (CommittedUsageTraceEvent)traceEvent.EventPayload;
+
+                Assert.Equal(1, committedUsage.Version);
+                Assert.Equal(100, committedUsage.TotalCommittedInUse);
+                Assert.Equal(500, committedUsage.TotalBookkeepingCommitted);
+            });
+        }
+
+        [Fact]
+        public void GCDynamicCommittedUsageReplayDoesNotReusePreviousPayload()
+        {
+            byte[] firstData = CreateCommittedUsageData(1, 100, 200, 300, 400, 500);
+            byte[] secondData = CreateCommittedUsageData(2, 600, 700, 800, 900, 1000);
+            byte[] firstPayload = CreatePayload("CommittedUsage", firstData.Length, firstData, 7);
+            byte[] secondPayload = CreatePayload("CommittedUsage", secondData.Length, secondData, 8);
+            List<short> versions = new List<short>();
+            List<long> committedInUse = new List<long>();
+
+            WithReusedGCDynamicReplayEvent(firstPayload, secondPayload, delegate (GCDynamicTraceEventImpl traceEvent)
+            {
+                CommittedUsageTraceEvent committedUsage = (CommittedUsageTraceEvent)traceEvent.EventPayload;
+                versions.Add(committedUsage.Version);
+                committedInUse.Add(committedUsage.TotalCommittedInUse);
+            });
+
+            Assert.Equal(new short[] { 1, 2 }, versions);
+            Assert.Equal(new long[] { 100, 600 }, committedInUse);
+        }
+
+        [Fact]
+        public void GCDynamicCommittedUsageReplayWithTruncatedDataIsSafe()
+        {
+            byte[] payload = CreatePayload("CommittedUsage", 1, new byte[] { 1 }, 7);
+
+            WithGCDynamicReplayEvent(payload, delegate (GCDynamicTraceEventImpl traceEvent)
+            {
+                CommittedUsageTraceEvent committedUsage = (CommittedUsageTraceEvent)traceEvent.EventPayload;
+                Assert.Equal(0, committedUsage.Version);
+                Assert.Equal(0, committedUsage.TotalCommittedInUse);
+                Assert.Equal(0, committedUsage.TotalCommittedInGlobalDecommit);
+                Assert.Equal(0, committedUsage.TotalCommittedInFree);
+                Assert.Equal(0, committedUsage.TotalCommittedInGlobalFree);
+                Assert.Equal(0, committedUsage.TotalBookkeepingCommitted);
+
+                List<KeyValuePair<string, object>> values = new List<KeyValuePair<string, object>>();
+                Exception payloadValuesException = Record.Exception(delegate
+                {
+                    foreach (KeyValuePair<string, object> value in committedUsage.PayloadValues)
+                    {
+                        values.Add(value);
+                    }
+                });
+                Assert.Null(payloadValuesException);
+                Assert.Equal(6, values.Count);
+                Assert.Equal((short)0, values[0].Value);
+                for (int i = 1; i < values.Count; i++)
+                {
+                    Assert.Equal((long)0, values[i].Value);
+                }
+
+                Exception toXmlException = Record.Exception(delegate { traceEvent.ToXml(new StringBuilder()); });
+                Assert.Null(toXmlException);
+            });
+        }
+
         /// <summary>
         /// Regression test for the propagated-exception path through
         /// PayloadValues on a malformed payload.  ToXml iterates
@@ -243,6 +317,18 @@ namespace TraceEventTests.Regression
             return payload.ToArray();
         }
 
+        private static byte[] CreateCommittedUsageData(short version, long committedInUse, long committedInGlobalDecommit, long committedInFree, long committedInGlobalFree, long bookkeepingCommitted)
+        {
+            byte[] data = new byte[CommittedUsageTraceEvent.MinimumDataSize];
+            BitConverter.GetBytes(version).CopyTo(data, 0);
+            BitConverter.GetBytes(committedInUse).CopyTo(data, 2);
+            BitConverter.GetBytes(committedInGlobalDecommit).CopyTo(data, 10);
+            BitConverter.GetBytes(committedInFree).CopyTo(data, 18);
+            BitConverter.GetBytes(committedInGlobalFree).CopyTo(data, 26);
+            BitConverter.GetBytes(bookkeepingCommitted).CopyTo(data, 34);
+            return data;
+        }
+
         private static unsafe void WithGCDynamicEvent(byte[] payload, Action<GCDynamicTraceEventImpl> action)
         {
             fixed (byte* payloadBytes = payload)
@@ -258,6 +344,45 @@ namespace TraceEventTests.Regression
                 traceEvent.userData = eventRecord.UserData;
 
                 action(traceEvent);
+            }
+        }
+
+        private static unsafe void WithGCDynamicReplayEvent(byte[] payload, Action<GCDynamicTraceEventImpl> action)
+        {
+            WithReusedGCDynamicReplayEvent(payload, null, action);
+        }
+
+        private static unsafe void WithReusedGCDynamicReplayEvent(byte[] firstPayload, byte[] secondPayload, Action<GCDynamicTraceEventImpl> action)
+        {
+            fixed (byte* firstPayloadBytes = firstPayload)
+            fixed (byte* secondPayloadBytes = secondPayload)
+            {
+                TraceLog source = (TraceLog)Activator.CreateInstance(typeof(TraceLog), true);
+                source._QPCFreq = 1;
+                source._syncTimeQPC = 1;
+                source._syncTimeUTC = DateTime.UtcNow;
+                source.sessionStartTimeQPC = 1;
+
+                TraceEventNativeMethods.EVENT_RECORD eventRecord = new TraceEventNativeMethods.EVENT_RECORD();
+                eventRecord.EventHeader.ProviderId = GCDynamicTraceEventParser.ProviderGuid;
+                eventRecord.EventHeader.Id = (ushort)GCDynamicEventBase.CommittedUsageTemplate.ID;
+
+                GCDynamicTraceEventImpl traceEvent = new GCDynamicTraceEventImpl(null, (int)GCDynamicEventBase.CommittedUsageTemplate.ID, 1, "GC", Guid.Empty, 41, "CommittedUsage", GCDynamicTraceEventParser.ProviderGuid, "Microsoft-Windows-DotNETRuntime");
+                traceEvent.eventRecord = &eventRecord;
+                traceEvent.traceEventSource = source;
+
+                eventRecord.UserDataLength = (ushort)firstPayload.Length;
+                eventRecord.UserData = (IntPtr)firstPayloadBytes;
+                traceEvent.userData = eventRecord.UserData;
+                action(traceEvent);
+
+                if (secondPayload != null)
+                {
+                    eventRecord.UserDataLength = (ushort)secondPayload.Length;
+                    eventRecord.UserData = (IntPtr)secondPayloadBytes;
+                    traceEvent.userData = eventRecord.UserData;
+                    action(traceEvent);
+                }
             }
         }
     }
