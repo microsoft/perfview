@@ -12,7 +12,7 @@ public:
     ULONG __stdcall  AddRef( ) { return InterlockedIncrement(&m_refCount);  } 
     ULONG __stdcall Release( ) { auto ret = InterlockedDecrement (&m_refCount); if (ret <= 0) delete(this); return ret; } 
     HRESULT __stdcall QueryInterface (REFIID  riid,void ** ppInterface );
-    HRESULT __stdcall  LockServer(BOOL bLock) { return S_OK; } 
+    HRESULT __stdcall  LockServer(BOOL) { return S_OK; }
     HRESULT __stdcall  CreateInstance(IUnknown * pUnkOuter, REFIID riid, void** ppInterface);
 private:
     long m_refCount ;
@@ -31,7 +31,7 @@ int main()
 BOOL WINAPI DllMain( 
     HINSTANCE   hInstance   , 
     DWORD       dwReason    , 
-    LPVOID      lpReserved  )
+    LPVOID      )
 {    
     switch ( dwReason )
     {
