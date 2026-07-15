@@ -573,10 +573,6 @@ STDMETHODIMP CorProfilerTracer::ObjectAllocated(ObjectID objectId, ClassID class
 			classInfo->SamplingRate = min((int)(classInfo->AllocPerMSec * 10), 1000);
 			if (classInfo->SamplingRate == 1)
 				classInfo->SamplingRate = 0;
-
-			// TODO This is for debugging.  Can remove after we are happy with the algorithm.   
-			// if (classInfo->SamplingRate != oldSamplingRate)
-			// 	   EventWriteSamplingRateChangeEvent(classId, classInfo->Name, delta, minAllocPerMSec, newAllocPerMSec, classInfo->AllocPerMSec, classInfo->SamplingRate);
 		}
 
 		// We are done calculating the sampling rate since we are logging an event we can reset the 'Ignored' stats and log the event.  
