@@ -97,6 +97,9 @@ void WINAPI ProfilerControlCallback(
 	PEVENT_FILTER_DESCRIPTOR FilterData,
 	PVOID CallbackContext)
 {
+	UNREFERENCED_PARAMETER(SourceId);
+	UNREFERENCED_PARAMETER(MatchAllKeywords);
+
 	CorProfilerTracer* profiler = (CorProfilerTracer*)CallbackContext;
 	LOG_TRACE(L"ProfilerControlCallback DoETWCommand IsEnabled 0x%x Level 0x%xI64 MatchAny 0x%x\n", IsEnabled, Level, MatchAnyKeywords);
 	profiler->DoETWCommand(IsEnabled, Level, MatchAnyKeywords, FilterData);
@@ -121,7 +124,7 @@ EXTERN_C void __stdcall EnterMethod(FunctionID functionID)
 #if defined(_M_IX86)
 // see http://msdn.microsoft.com/en-us/library/4ks26t93.aspx  for inline assembly.   Not supported on X64.   
 
-void __declspec(naked) __stdcall EnterMethodNaked(FunctionIDOrClientID funcID)
+void __declspec(naked) __stdcall EnterMethodNaked(FunctionIDOrClientID)
 {
 	__asm
 	{
@@ -142,7 +145,7 @@ void __declspec(naked) __stdcall EnterMethodNaked(FunctionIDOrClientID funcID)
 	}
 } // EnterNaked
 
-void __declspec(naked) __stdcall TailcallMethodNaked(FunctionIDOrClientID funcID)
+void __declspec(naked) __stdcall TailcallMethodNaked(FunctionIDOrClientID)
 {
 	__asm
 	{
@@ -166,6 +169,8 @@ HRESULT STDMETHODCALLTYPE CorProfilerTracer::InitializeForAttach(
 	/* [in] */ void *pvClientData,
 	/* [in] */ UINT cbClientData)
 {
+	UNREFERENCED_PARAMETER(pvClientData);
+
 	HRESULT             hr = S_OK;
 	LOG_TRACE(L"ClrProfiler Initializing\n");
 	CALL_N_LOGONBADHR(pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo3), (void **)&m_info));
@@ -223,6 +228,9 @@ exit:
 // This routine does the work of responding to a ETW request from the controller 
 void CorProfilerTracer::DoETWCommand(ULONG IsEnabled, UCHAR Level, ULONGLONG MatchAnyKeywords, struct _EVENT_FILTER_DESCRIPTOR* filterData)
 {
+	UNREFERENCED_PARAMETER(Level);
+	UNREFERENCED_PARAMETER(filterData);
+
 	LOG_TRACE(L"DoETWCommand(IsEnabled=%d, Level=%d Keywords=0x%x,%x)\n", IsEnabled, Level, (int)(MatchAnyKeywords >> 32), (int)MatchAnyKeywords);
 
 	const DWORD FLAGS_CAN_SET = (COR_PRF_MONITOR_OBJECT_ALLOCATED | COR_PRF_MONITOR_MODULE_LOADS | COR_PRF_MONITOR_GC);
@@ -460,6 +468,7 @@ void CorProfilerTracer::ForceGC()
 	m_forcingGC = true;
 	HANDLE thread = CreateThread(0, 0, ForceGCBody, this, 0, NULL);
 	LOG_TRACE(L"ForceGC: thread 0x%x\n", thread);
+	UNREFERENCED_PARAMETER(thread);
 	for (int i = 0; i < 2000; i++)
 	{
 		if (!m_forcingGC)
@@ -561,14 +570,9 @@ STDMETHODIMP CorProfilerTracer::ObjectAllocated(ObjectID objectId, ClassID class
 
 			// We want to sample at a rate that ensures less 100 allocations per second per type.  
 			// However don't sample less than 1/1000, 
-			int oldSamplingRate = classInfo->SamplingRate;
 			classInfo->SamplingRate = min((int)(classInfo->AllocPerMSec * 10), 1000);
 			if (classInfo->SamplingRate == 1)
 				classInfo->SamplingRate = 0;
-
-			// TODO This is for debugging.  Can remove after we are happy with the algorithm.   
-			// if (classInfo->SamplingRate != oldSamplingRate)
-			// 	   EventWriteSamplingRateChangeEvent(classId, classInfo->Name, delta, minAllocPerMSec, newAllocPerMSec, classInfo->AllocPerMSec, classInfo->SamplingRate);
 		}
 
 		// We are done calculating the sampling rate since we are logging an event we can reset the 'Ignored' stats and log the event.  
@@ -617,6 +621,8 @@ STDMETHODIMP CorProfilerTracer::GarbageCollectionFinished(void)
 //==============================================================================
 STDMETHODIMP CorProfilerTracer::FinalizeableObjectQueued(DWORD finalizerFlags, ObjectID objectID)
 {
+	UNREFERENCED_PARAMETER(finalizerFlags);
+
 	LOG_TRACE(L"FinalizeableObjectQueued\n");
 #ifndef PIN_INVESTIGATION
 	// TODO FIX NOW HACK for exchange data collection 
@@ -678,7 +684,7 @@ STDMETHODIMP CorProfilerTracer::ObjectReferences(ObjectID objectId, ClassID clas
 	// LOG_TRACE(L"ObjectReferences\n");
 
 	// We do this for the side effect of logging the class  
-	ClassInfo* classInfo = GetClassInfo(classId);
+	(void)GetClassInfo(classId);
 	/** TODO FIX NOW
 	if (classInfo == NULL)
 	return E_FAIL;
@@ -725,11 +731,11 @@ ClassInfo* CorProfilerTracer::GetClassInfo(ClassID classId)
 	ClassInfo*& classInfo = m_classInfo[classId];
 	if (classInfo == NULL)
 		classInfo = new ClassInfo();
-	if (classInfo->ID == -1)     // We failed to get info on the class. 
+	if (classInfo->ID == static_cast<ClassID>(-1))     // We failed to get info on the class.
 		return NULL;
 	if (classInfo->ID == 0)
 	{
-		classInfo->ID = -1;
+		classInfo->ID = static_cast<ClassID>(-1);
 		DWORD classFlags = 0;           // TODO FIX NOW, set class flags properly.  
 		ModuleID moduleId = 0;
 
@@ -803,7 +809,7 @@ ClassInfo* CorProfilerTracer::GetClassInfo(ClassID classId)
 			classInfo->ForceKeepSize = 0x0;
 #endif 
 
-		if (classInfo->ID != -1)
+		if (classInfo->ID != static_cast<ClassID>(-1))
 		{
 			EventWriteClassIDDefintionEvent(classInfo->ID, classInfo->Token, classFlags, moduleId, classInfo->Name);
 		}
@@ -830,7 +836,7 @@ ModuleInfo* CorProfilerTracer::GetModuleInfo(ModuleID moduleId)
 	if (!moduleInfo->MetaDataImport)
 	{
 		HRESULT hr = m_info->GetModuleMetaData(moduleId, ofRead, IID_IMetaDataImport, (IUnknown**)&moduleInfo->MetaDataImport);
-		if (!moduleInfo->MetaDataImport)
+		if (FAILED(hr) || !moduleInfo->MetaDataImport)
 		{
 			moduleInfo->MetaDataFailed = true;
 			return nullptr;
@@ -855,4 +861,3 @@ ModuleInfo* CorProfilerTracer::GetModuleInfo(ModuleID moduleId)
 
 	return moduleInfo;
 }
-
