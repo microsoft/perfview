@@ -32,6 +32,19 @@
   <ItemGroup>
     <ProjectReference Include="..\..\PerfView.TestUtilities\PerfView.TestUtilities.csproj" />
     <ProjectReference Include="..\TraceEvent.csproj" />
+    <!-- Built with <DebugType>embedded</DebugType>; consumed as an on-disk DLL (with its portable
+         PDB embedded in the PE image) by the embedded-PDB SymbolReader tests.  A normal project
+         reference ensures EmbeddedPdbTestApp.dll is copied to the test output directory. -->
+    <ProjectReference Include="EmbeddedPdbTestApp\EmbeddedPdbTestApp.csproj" />
+  </ItemGroup>
+
+  <!-- EmbeddedPdbTestApp is a separate project nested under this one.  Stop the default SDK globs
+       from pulling its sources (and generated obj\ files) into this test assembly's compilation. -->
+  <ItemGroup>
+    <Compile Remove="EmbeddedPdbTestApp\**\*.cs" />
+    <EmbeddedResource Remove="EmbeddedPdbTestApp\**\*" />
+    <None Remove="EmbeddedPdbTestApp\**\*" />
+    <Content Remove="EmbeddedPdbTestApp\**\*" />
   </ItemGroup>
 
   <ItemGroup>
