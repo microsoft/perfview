@@ -3004,6 +3004,94 @@ namespace TraceEventTests
             // The event must have been dispatched through the typed CLR handler
             Assert.Equal(1, clrHandlerHits);
         }
+
+        /// <summary>
+        /// Regression test: a MethodILToNativeMap (EventID 190) event whose CountOfMapEntries far
+        /// exceeds what its payload can hold must not crash the process. Before the fix,
+        /// TraceLog.AddILMapping trusted the attacker-controlled entry count and read ILOffset/
+        /// NativeOffset entries past the end of the event buffer, accessing protected memory and
+        /// crashing with an (uncatchable) AccessViolationException on fully untrusted nettrace input
+        /// (found by fuzzing). It must now be rejected and parsing must complete cleanly.
+        /// </summary>
+        [Fact]
+        public void MalformedILToNativeMapEntryCountDoesNotAccessViolation()
+        {
+            // MethodILToNativeMap (EventID 190) payload layout:
+            //   MethodID          : Int64  (8 bytes, offset 0)
+            //   ReJITID           : Int64  (8 bytes, offset 8)
+            //   MethodExtent      : Byte   (1 byte,  offset 16)
+            //   CountOfMapEntries : Int16  (2 bytes, offset 17)
+            //   ILOffsets         : Int32 * CountOfMapEntries (offset 19)
+            //   NativeOffsets     : Int32 * CountOfMapEntries
+            //   ClrInstanceID     : Int16
+            // A valid event has payload length == CountOfMapEntries * 8 + 21. This event deliberately
+            // claims the maximum Int16 entry count while providing an almost-empty payload, mimicking
+            // a corrupt/fuzzed trace.
+            const short bogusCount = short.MaxValue;
+
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(
+                new EventMetadata(1, "Microsoft-Windows-DotNETRuntime", "MethodILToNativeMap", 190));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 1, processId: 1);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p =>
+                {
+                    p.Write((long)0x1234);   // MethodID
+                    p.Write((long)0);        // ReJITID
+                    p.Write((byte)0);        // MethodExtent
+                    p.Write(bogusCount);     // CountOfMapEntries (bogus, far exceeds payload)
+                    p.Write((short)0);       // trailing bytes (nominal ClrInstanceID) -> payload length = 21
+                });
+            });
+            writer.WriteEndBlock();
+
+            byte[] bytes = writer.ToArray();
+
+            // 1) Confirm the event is genuinely recognized as MethodILToNativeMap, so this test cannot
+            //    silently pass on a stream that is simply ignored. Reading CountOfMapEntries is an
+            //    in-bounds access; we deliberately do not touch the out-of-range ILOffset/NativeOffset.
+            int clrHandlerHits = 0;
+            using (var source = new EventPipeEventSource(new MemoryStream(bytes)))
+            {
+                source.Clr.MethodILToNativeMap += data =>
+                {
+                    clrHandlerHits++;
+                    Assert.Equal((int)bogusCount, data.CountOfMapEntries);
+                };
+                source.Process();
+            }
+            Assert.Equal(1, clrHandlerHits);
+
+            // 2) Drive the full TraceLog conversion (TraceLog.CopyRawEvents -> AddILMapping), which
+            //    previously read past the event buffer for the bogus entry count and crashed the
+            //    process with an AccessViolationException. With the fix the malformed event must be
+            //    detected and skipped (recorded in the conversion log) and the conversion must
+            //    complete and produce the converted etlx file without crashing.
+            string tempFile = Path.GetTempFileName();
+            string etlxFile = null;
+            try
+            {
+                File.WriteAllBytes(tempFile, bytes);
+                StringWriter conversionLog = new StringWriter();
+                TraceLogOptions options = new TraceLogOptions() { ConversionLog = conversionLog };
+                etlxFile = TraceLog.CreateFromEventPipeDataFile(tempFile, null, options);
+                Assert.True(File.Exists(etlxFile));
+
+                // The malformed MethodILToNativeMap event must have been rejected by AddILMapping's
+                // bounds check rather than reading out of bounds.
+                Assert.Contains("invalid CountOfMapEntries", conversionLog.ToString());
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) { File.Delete(tempFile); }
+                if (etlxFile != null && File.Exists(etlxFile)) { File.Delete(etlxFile); }
+            }
+        }
     }
 
 
