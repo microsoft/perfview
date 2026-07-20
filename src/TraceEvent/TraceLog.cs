@@ -10786,11 +10786,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         #region Private
         internal TraceModuleFile(string fileName, Address imageBase, ModuleFileIndex moduleFileIndex)
         {
-            if (fileName != null)
-            {
-                this.fileName = fileName.ToLowerInvariant();        // Normalize to lower case.
-            }
-
+            this.fileName = fileName;
             this.imageBase = imageBase;
             this.moduleFileIndex = moduleFileIndex;
             fileVersion = "";
