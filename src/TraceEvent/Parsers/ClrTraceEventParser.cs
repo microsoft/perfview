@@ -2612,6 +2612,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             yield return new CtfEventMapping("DotNETRuntime:AppDomainLoad_V1", Parsers.ClrTraceEventParser.ProviderGuid, 41, 156, 1);
             yield return new CtfEventMapping("DotNETRuntime:MethodJittingStarted", Parsers.ClrTraceEventParser.ProviderGuid, 42, 145, 0);
             yield return new CtfEventMapping("DotNETRuntime:MethodJittingStarted_V1", Parsers.ClrTraceEventParser.ProviderGuid, 42, 145, 1);
+            yield return new CtfEventMapping("DotNETRuntime:MethodDetails", Parsers.ClrTraceEventParser.ProviderGuid, 43, 72, 0);
+            yield return new CtfEventMapping("DotNETRuntime:MethodILToNativeMap_V1", Parsers.ClrTraceEventParser.ProviderGuid, 87, 190, 0);
             yield return new CtfEventMapping("DotNETRuntime:AppDomainUnload", Parsers.ClrTraceEventParser.ProviderGuid, 42, 157, 0);
             yield return new CtfEventMapping("DotNETRuntime:AppDomainUnload_V1", Parsers.ClrTraceEventParser.ProviderGuid, 42, 157, 1);
             yield return new CtfEventMapping("DotNETRuntime:DomainModuleLoad", Parsers.ClrTraceEventParser.ProviderGuid, 45, 151, 0);
