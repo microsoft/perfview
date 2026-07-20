@@ -876,7 +876,12 @@ namespace Microsoft.Diagnostics.Tracing
             int minVersion = _stream.Read<int>();
             int typeLen = _stream.Read<int>();
             int maxLen = BlockName.EventPipeFile.Length;
-            if (typeLen > maxLen)
+            // typeLen comes from fully untrusted input. It must be validated against BOTH bounds before it is
+            // used as a stackalloc size: a negative value is not caught by the upper-bound check and, once
+            // converted to the unsigned size the runtime uses for the stack allocation, requests an enormous
+            // amount of stack and reliably crashes the process with a StackOverflowException (an uncatchable,
+            // fuzzer-discoverable denial of service on a malformed nettrace/EventPipe stream).
+            if (typeLen < 0 || typeLen > maxLen)
             {
                 throw new FormatException($"Invalid FastSerialization object type length {typeLen}");
             }

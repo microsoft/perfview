@@ -263,6 +263,39 @@ namespace TraceEventTests
             });
         }
 
+        // Regression test: a malformed FastSerialization object header with a negative type-name length must be
+        // rejected with a FormatException. Before validation was added the negative length flowed into a
+        // stackalloc whose size was interpreted as an enormous unsigned value, crashing the process with an
+        // uncatchable StackOverflowException on fully untrusted nettrace input (found by fuzzing).
+        [Fact]
+        public void NegativeObjectTypeLengthThrowsInsteadOfStackOverflow()
+        {
+            MemoryStream stream = new MemoryStream();
+            using (BinaryWriter writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+            {
+                writer.WriteNetTraceHeaderV5();
+                writer.WriteFastSerializationHeader();
+
+                // Begin a FastSerialization object exactly as the reader expects, but write a negative
+                // type-name length where a valid (small, non-negative) length is required.
+                writer.Write((byte)5); // BeginPrivateObject
+                writer.Write((byte)5); // BeginPrivateObject (type)
+                writer.Write((byte)1); // NullReference (type of type)
+                writer.Write((int)4);  // version
+                writer.Write((int)4);  // minVersion
+                writer.Write((int)(-1)); // malformed: negative type-name length
+            }
+
+            stream.Position = 0;
+            Assert.Throws<FormatException>(() =>
+            {
+                using (var source = new EventPipeEventSource(stream))
+                {
+                    source.Process();
+                }
+            });
+        }
+
         [Fact]
         public void CanParseHeaderOfV3EventPipeFile()
         {
