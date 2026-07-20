@@ -738,6 +738,30 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
 
         /// <summary>
+        /// Merge multiple stack sources into a single unified source by re-interning all frames by name.
+        /// Frames with the same name across sources (e.g. the same process frame) are automatically merged.
+        /// </summary>
+        public static InternStackSource Merge(IEnumerable<StackSource> sources)
+        {
+            if (sources == null)
+            {
+                throw new ArgumentNullException(nameof(sources));
+            }
+
+            var ret = new InternStackSource();
+            foreach (var source in sources)
+            {
+                if (source == null)
+                {
+                    continue;
+                }
+                ret.ReadAllSamples(source, source, 1.0F);
+            }
+            ret.Interner.DoneInterning();
+            return ret;
+        }
+
+        /// <summary>
         /// Create a new InternStackSource
         /// </summary>
         public InternStackSource()
