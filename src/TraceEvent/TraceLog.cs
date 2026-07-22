@@ -9686,27 +9686,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var process = log.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
 
             ilMap.ProcessIndex = process.ProcessIndex;
-
-            // CountOfMapEntries and the payload offsets it drives (ILOffset/NativeOffset) come from
-            // fully untrusted event data. A valid MethodILToNativeMap event stores CountOfMapEntries
-            // ILOffsets followed by CountOfMapEntries NativeOffsets (4 bytes each) plus a trailing
-            // ClrInstanceID, so its payload must be at least CountOfMapEntries * 8 + 21 bytes. A
-            // corrupt or fuzzed EventPipe/ETW stream can claim far more entries than the payload
-            // actually contains; because NativeOffset(i) indexes relative to CountOfMapEntries, reading
-            // even the first entry would then index past the event buffer and access protected memory,
-            // crashing the process with an (uncatchable) AccessViolationException. Reject such malformed
-            // events instead of reading out of bounds.
-            if (data.CountOfMapEntries < 0 || data.EventDataLength < data.CountOfMapEntries * 8 + 21)
-            {
-                if (log.options != null && log.options.ConversionLog != null)
-                {
-                    log.options.ConversionLog.WriteLine(
-                        "WARNING: skipping MethodILToNativeMap event with invalid CountOfMapEntries " +
-                        data.CountOfMapEntries + " for payload length " + data.EventDataLength + ".");
-                }
-                return;
-            }
-
             ILToNativeMapTuple tuple;
             for (int i = 0; i < data.CountOfMapEntries; i++)
             {
