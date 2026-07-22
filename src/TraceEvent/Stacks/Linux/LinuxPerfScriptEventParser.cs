@@ -1192,6 +1192,12 @@ namespace Microsoft.Diagnostics.Tracing.StackSources
                 {
                     break;
                 }
+                else if (source.EndOfStream)
+                {
+                    // The input is malformed or truncated: the expected next field name was
+                    // never found before the end of the stream. Break to avoid an infinite loop.
+                    break;
+                }
                 else
                 {
                     source.RestoreToMark(pos);
