@@ -10635,6 +10635,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             Action = action;
+            NeedsFixup = true;
         }
         protected internal override void Dispatch()
         {
@@ -10645,10 +10646,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             get { return Action; }
             set { Action = (Action<MethodILToNativeMapTraceData>)value; }
         }
+        internal override void FixupData()
+        {
+            if (EventDataLength < MinimumPayloadSize)
+            {
+                throw new FormatException(
+                    "MethodILToNativeMap payload length " + EventDataLength +
+                    " is smaller than the " + MinimumPayloadSize + "-byte fixed payload.");
+            }
+
+            int mapEntryCount = CountOfMapEntries;
+            if (mapEntryCount < 0 || EventDataLength < MinimumPayloadSize + mapEntryCount * BytesPerMapEntry)
+            {
+                throw new FormatException(
+                    "MethodILToNativeMap payload length " + EventDataLength +
+                    " cannot contain " + mapEntryCount + " map entries.");
+            }
+        }
         protected internal override void Validate()
         {
-            Debug.Assert(Version != 0 || EventDataLength == CountOfMapEntries * 8 + 21);
-            Debug.Assert(Version > 0 || EventDataLength >= CountOfMapEntries * 8 + 21);
+            if (EventDataLength >= MinimumPayloadSize && CountOfMapEntries >= 0)
+            {
+                Debug.Assert(Version != 0 || EventDataLength == MinimumPayloadSize + CountOfMapEntries * BytesPerMapEntry);
+                Debug.Assert(Version > 0 || EventDataLength >= MinimumPayloadSize + CountOfMapEntries * BytesPerMapEntry);
+            }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -10700,6 +10721,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     return null;
             }
         }
+
+        // The fixed payload is 19 bytes through CountOfMapEntries plus a trailing
+        // 2-byte ClrInstanceID. Each map entry adds one 4-byte IL offset and one
+        // 4-byte native offset.
+        private const int MinimumPayloadSize = 19 + 2;
+        private const int BytesPerMapEntry = 4 + 4;
 
         private event Action<MethodILToNativeMapTraceData> Action;
         #endregion

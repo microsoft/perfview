@@ -3037,6 +3037,78 @@ namespace TraceEventTests
             // The event must have been dispatched through the typed CLR handler
             Assert.Equal(1, clrHandlerHits);
         }
+
+        /// <summary>
+        /// Regression test: a malformed MethodILToNativeMap (EventID 190) payload must not crash the
+        /// process, whether it is too short to hold CountOfMapEntries or the count exceeds the number
+        /// of entries in the payload.
+        /// </summary>
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void MalformedILToNativeMapPayloadDoesNotAccessViolation(bool includeBogusEntryCount)
+        {
+            // MethodILToNativeMap (EventID 190) payload layout:
+            //   MethodID          : Int64  (8 bytes, offset 0)
+            //   ReJITID           : Int64  (8 bytes, offset 8)
+            //   MethodExtent      : Byte   (1 byte,  offset 16)
+            //   CountOfMapEntries : Int16  (2 bytes, offset 17)
+            //   ILOffsets         : Int32 * CountOfMapEntries (offset 19)
+            //   NativeOffsets     : Int32 * CountOfMapEntries
+            //   ClrInstanceID     : Int16
+            // Each mapping consists of one 4-byte IL offset and one 4-byte native offset. The
+            // parser derives its offsets from these field sizes rather than repeating 8 and 21.
+            const short bogusCount = short.MaxValue;
+
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(
+                new EventMetadata(1, "Microsoft-Windows-DotNETRuntime", "MethodILToNativeMap", 190));
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(999, threadId: 1, processId: 1);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(1, 999, 1, p =>
+                {
+                    p.Write((long)0x1234);   // MethodID
+                    p.Write((long)0);        // ReJITID
+                    p.Write((byte)0);        // MethodExtent
+                    if (includeBogusEntryCount)
+                    {
+                        p.Write(bogusCount); // CountOfMapEntries exceeds the available payload.
+                        p.Write((short)0);   // Bytes where the first IL offset would begin.
+                    }
+                });
+            });
+            writer.WriteEndBlock();
+
+            byte[] bytes = writer.ToArray();
+
+            // FixupData validates the payload before the typed event can be dispatched.
+            int clrHandlerHits = 0;
+            using (var source = new EventPipeEventSource(new MemoryStream(bytes)))
+            {
+                source.Clr.MethodILToNativeMap += data => clrHandlerHits++;
+                FormatException exception = Assert.Throws<FormatException>(() => source.Process());
+                Assert.Contains("MethodILToNativeMap payload length", exception.Message);
+            }
+            Assert.Equal(0, clrHandlerHits);
+
+            // The full TraceLog conversion path must fail with a catchable format error rather than
+            // reading beyond the event buffer and raising an AccessViolationException.
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllBytes(tempFile, bytes);
+                Assert.Throws<FormatException>(() => TraceLog.CreateFromEventPipeDataFile(tempFile));
+            }
+            finally
+            {
+                if (File.Exists(tempFile)) { File.Delete(tempFile); }
+            }
+        }
     }
 
 
