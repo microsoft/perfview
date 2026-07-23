@@ -5,7 +5,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
+using System.Buffers.Binary;
 namespace Microsoft.Diagnostics.Tracing.EventPipe
 {
 
@@ -60,6 +60,40 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         {
             Span<byte> buffer = stackalloc byte[Unsafe.SizeOf<T>()];
             Read(buffer);
+            if (!BitConverter.IsLittleEndian)
+            {
+                if(typeof(T) == typeof(short))
+                {
+                    short val = BinaryPrimitives.ReadInt16LittleEndian(buffer);
+                    return (T)(object)val;
+                }
+                else if(typeof(T) == typeof(int))
+                {
+                    int val = BinaryPrimitives.ReadInt32LittleEndian(buffer);
+                    return (T)(object)val;
+                }
+                else if(typeof(T) == typeof(long))
+                {   
+                    long val = BinaryPrimitives.ReadInt64LittleEndian(buffer);
+                    return (T)(object)val;
+                }
+                else if(typeof(T) == typeof(ushort))
+                {   
+                    ushort val = BinaryPrimitives.ReadUInt16LittleEndian(buffer);
+                    return (T)(object)val;
+                }
+                else if(typeof(T) == typeof(uint))
+                {   
+                    uint val = BinaryPrimitives.ReadUInt32LittleEndian(buffer);
+                    return (T)(object)val;
+                }
+                else if(typeof(T) == typeof(ulong))
+                {   
+                    ulong val = BinaryPrimitives.ReadUInt64LittleEndian(buffer);
+                    return (T)(object)val;
+                }
+
+            }
             return MemoryMarshal.Read<T>(buffer);
         }
 

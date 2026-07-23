@@ -17,8 +17,9 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Address = System.UInt64;
+using System.Buffers.Binary;
 
+using Address = System.UInt64;
 // #Introduction 
 // 
 // Note that TraceEvent lives in a Nuget package.   See 
@@ -3693,7 +3694,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // calculate the hash, and look it up in the table please note that this was hand
             // inlined, and is replicated in TraceEventDispatcher.Insert
-            int* guidPtr = (int*)&eventRecord->EventHeader.ProviderId;   // This is the taskGuid for Classic events.  
+            int* guidPtr = (int*)&eventRecord->EventHeader.ProviderId;   // This is the taskGuid for Classic events.
             int hash = (*guidPtr + eventID * 9) & templatesLengthMask;
             for (; ; )
             {
@@ -4598,15 +4599,15 @@ namespace Microsoft.Diagnostics.Tracing
         }
         internal static unsafe long ReadInt64(IntPtr pointer, int offset)
         {
-            return Unsafe.ReadUnaligned<long>((byte*)pointer.ToPointer() + offset);
+            return BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(Unsafe.ReadUnaligned<long>((byte*)pointer.ToPointer() + offset)));
         }
         internal static unsafe int ReadInt32(IntPtr pointer, int offset)
         {
-            return Unsafe.ReadUnaligned<int>((byte*)pointer.ToPointer() + offset);
+            return BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(Unsafe.ReadUnaligned<int>((byte*)pointer.ToPointer() + offset)));
         }
         internal static unsafe short ReadInt16(IntPtr pointer, int offset)
         {
-            return *((short*)((byte*)pointer.ToPointer() + offset));
+            return BinaryPrimitives.ReadInt16LittleEndian(BitConverter.GetBytes(*((short*)((byte*)pointer.ToPointer() + offset))));
         }
         internal static unsafe IntPtr ReadIntPtr(IntPtr pointer, int offset)
         {
@@ -4649,7 +4650,26 @@ namespace Microsoft.Diagnostics.Tracing
             // Really we should be able to count on pointers being null terminated.  However we have had instances
             // where this is not true.   To avoid scanning the string twice we first check if the last character
             // in the buffer is a 0 if so, we KNOW we can use the 'fast path'  Otherwise we check 
-            byte* ptr = (byte*)pointer;
+	    byte* ptr = (byte*)pointer;
+            char* charStart = (char*)(ptr + offset);
+            int maxPos = (bufferLength - offset) / sizeof(char);
+            int curPos = 0;
+            if(!BitConverter.IsLittleEndian)
+            {
+                char *temp = stackalloc char[maxPos];
+                while(curPos < maxPos)
+                {
+                    char ch = (char)BinaryPrimitives.ReverseEndianness((ushort)charStart[curPos]);
+                    if (ch == 0)
+                        break;
+
+                    temp[curPos] = ch;
+                    curPos++;
+
+                }
+                return new string(temp, 0, curPos);
+            }
+
             char* charEnd = (char*)(ptr + bufferLength);
             if (charEnd[-1] == 0)       // Is the last character a null?
             {
@@ -4659,14 +4679,11 @@ namespace Microsoft.Diagnostics.Tracing
             // but who cares as long as it stays in the buffer.  
 
             // unoptimized path.  Carefully count characters and create a string up to the null.  
-            char* charStart = (char*)(ptr + offset);
-            int maxPos = (bufferLength - offset) / sizeof(char);
-            int curPos = 0;
             while (curPos < maxPos && charStart[curPos] != 0)
             {
                 curPos++;
             }
-            // CurPos now points at the end (either buffer end or null terminator, make just the right sized string.  
+            // CurPos now points at the end (either buffer end or null terminator, make just the right sized string.
             return new string(charStart, 0, curPos);
         }
         internal static unsafe string ReadUTF8String(IntPtr pointer, int offset, int bufferLength)
