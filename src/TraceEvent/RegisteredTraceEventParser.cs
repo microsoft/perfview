@@ -1394,12 +1394,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public PROPERTY_FLAGS Flags;
             public int NameOffset;
 
-            // These are valid if Flags & Struct not set. 
+            // These are valid if Flags & Struct not set.
             public TdhInputType InType;
-            public ushort OutType;             // Really TDH_OUT_TYPE
+            public TdhOutputType OutType;
             public int MapNameOffset;
 
-            // These are valid if Flags & Struct is set.  
+            // These are valid if Flags & Struct is set.
             public int StructStartIndex
             {
                 get
@@ -1475,6 +1475,51 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             SizeT,
             HexDump,
             WbemSID
+        };
+
+        internal enum TdhOutputType : ushort
+        {
+            Null,
+            String,
+            Datetime,
+            Byte,
+            UnsignedByte,
+            Short,
+            UnsignedShort,
+            Int,
+            UnsignedInt,
+            Long,
+            UnsignedLong,
+            Float,
+            Double,
+            Boolean,
+            Guid,
+            HexBinary,
+            HexInt8,
+            HexInt16,
+            HexInt32,
+            HexInt64,
+            Pid,
+            Tid,
+            Port,
+            Ipv4,
+            Ipv6,
+            SocketAddress,
+            CimDateTime,
+            EtwTime,
+            Xml,
+            ErrorCode,
+            Win32Error,
+            NtStatus,
+            HResult,
+            CultureInsensitiveDateTime,
+            JSON,
+            UTF8,
+            Pkcs7WithTypeInfo,
+            CodePointer,
+            DateTimeUtc,                // End of winmeta outtypes.
+            ReducedString = 300,        // Start of TDH outtypes for WBEM.
+            NoPrint,
         };
         #endregion
     }
