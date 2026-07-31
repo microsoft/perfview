@@ -193,11 +193,61 @@ namespace TraceEventTests
         // HexIntXX input types are hex formatted even if there is no output hint
         [InlineData(FormatHint.Hex, TdhInputType.HexInt32, TdhOutputType.Null)]
         [InlineData(FormatHint.Hex, TdhInputType.HexInt64, TdhOutputType.Null)]
-        public void ComputeFormatHintFromInOutTypes_MapsToExpectedFormatHint(FormatHint expected, object inType, object outType)
+        public void ComputeFormatHintFromInOutTypes_MapsToExpectedFormatHint(object expected, object inType, object outType)
         {
-            // inType/outType are passed as object to avoid CS0051: "Inconsistent accessibility:
+            // The values are passed as object to avoid CS0051: "Inconsistent accessibility:
             // parameter type 'X' is less accessible than method 'Y'"
-            Assert.Equal(expected, DynamicTraceEventData.PayloadFetch.ComputeFormatHintFromInOutTypes((TdhInputType)inType, (TdhOutputType)outType));
+            Assert.Equal((FormatHint)expected, DynamicTraceEventData.PayloadFetch.ComputeFormatHintFromInOutTypes((TdhInputType)inType, (TdhOutputType)outType));
+        }
+
+        [Fact]
+        public void StructValue_ToString_AppliesScalarFormattingHints()
+        {
+            var fieldFetches = new[]
+            {
+                new DynamicTraceEventData.PayloadFetch(0, TdhInputType.UInt16, TdhOutputType.UnsignedShort),
+                new DynamicTraceEventData.PayloadFetch(2, TdhInputType.UInt32, TdhOutputType.HexInt32),
+            };
+            var value = new DynamicTraceEventData.StructValue(fieldFetches);
+            value.Add("UInt16Field", (Int16)42);
+            value.Add("UInt32HexField", unchecked((Int32)0xDEADBEEF));
+
+            Assert.Equal(
+                "{ \"UInt16Field\":\"42\", \"UInt32HexField\":\"0xDEADBEEF\" }",
+                value.ToString());
+        }
+
+        [Fact]
+        public void StructValue_ToString_AppliesNestedFormattingHints()
+        {
+            var innerFieldFetches = new[]
+            {
+                new DynamicTraceEventData.PayloadFetch(0, TdhInputType.Int32, TdhOutputType.HResult),
+            };
+            var innerClassInfo = new DynamicTraceEventData.PayloadFetchClassInfo
+            {
+                FieldNames = new[] { "InnerError" },
+                FieldFetches = innerFieldFetches,
+            };
+            DynamicTraceEventData.PayloadFetch innerFetch =
+                DynamicTraceEventData.PayloadFetch.StructPayloadFetch(0, innerClassInfo);
+            DynamicTraceEventData.PayloadFetch innerArrayFetch =
+                DynamicTraceEventData.PayloadFetch.FixedCountArrayPayloadFetch(0, innerFetch, 2);
+
+            var firstArrayElement = new DynamicTraceEventData.StructValue(innerFieldFetches);
+            firstArrayElement.Add("InnerError", unchecked((Int32)0x80004005));
+            var secondArrayElement = new DynamicTraceEventData.StructValue(innerFieldFetches);
+            secondArrayElement.Add("InnerError", 0);
+            var child = new DynamicTraceEventData.StructValue(innerFieldFetches);
+            child.Add("InnerError", unchecked((Int32)0x80070005));
+
+            var value = new DynamicTraceEventData.StructValue(new[] { innerArrayFetch, innerFetch });
+            value.Add("ArrayOfInner", new[] { firstArrayElement, secondArrayElement });
+            value.Add("ChildOfInner", child);
+
+            Assert.Equal(
+                "{ \"ArrayOfInner\":[ { \"InnerError\":\"0x80004005\" }, { \"InnerError\":\"0x00000000\" } ], \"ChildOfInner\":{ \"InnerError\":\"0x80070005\" } }",
+                value.ToString());
         }
 
         private static ProviderManifest CreateProviderManifest(string providerName, Guid providerGuid)

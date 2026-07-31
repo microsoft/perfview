@@ -13,7 +13,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     /// cref="FormatHint"/>). The hints should be computed from a field's
     /// TDH InType/OutType.
     /// </summary>
-    public static class TdhFormatter
+    internal static class TdhFormatter
     {
         // For compatibility with existing formatting, pointers use lower-case hex and always
         // have a minimum width of 8, even when dealing with 64-bit pointers.

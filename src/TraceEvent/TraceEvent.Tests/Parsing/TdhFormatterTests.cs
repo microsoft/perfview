@@ -135,7 +135,18 @@ namespace TraceEventTests
                     0x00, 0x00, 0x00, 0x00,                         // sin6_flowinfo
                     0xff, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // sin6_addr = ff03::114 (network byte order)
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x14,
-                    0x00, 0x00, 0x00, 0x00,                         // sin6_scope_id
+                    0x00, 0x00, 0x00, 0x00,                         // sin6_scope_id = 0
+                },
+                FormatHint.SocketAddress));
+            Assert.Equal("[fe80::1234:5678%12]:60000", TdhFormatter.Format(
+                new byte[]
+                {
+                    0x17, 0x00,                                     // sin6_family = AF_INET6
+                    0xEA, 0x60,                                     // sin6_port = 60000 (network byte order)
+                    0x00, 0x00, 0x00, 0x00,                         // sin6_flowinfo
+                    0xfe, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // sin6_addr = fe80::1234:5678 (network byte order)
+                    0x00, 0x00, 0x00, 0x00, 0x12, 0x34, 0x56, 0x78,
+                    0x00, 0x00, 0x00, 0x0c,                         // sin6_scope_id = 12 (network byte order)
                 },
                 FormatHint.SocketAddress));
 

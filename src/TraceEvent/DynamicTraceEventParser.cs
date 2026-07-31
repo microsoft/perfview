@@ -523,7 +523,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
             if (classInfo != null)
             {
-                var ret = new StructValue(classInfo.FieldFetches.Length);
+                var ret = new StructValue(classInfo.FieldFetches);
 
                 for (int i = 0; i < classInfo.FieldFetches.Length; i++)
                 {
@@ -782,9 +782,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         internal class StructValue : IDictionary<string, object>
         {
-            internal StructValue(int capacity = 0)
+            internal StructValue(PayloadFetch[] fieldFetches)
             {
-                m_values = new List<KeyValuePair<string, object>>(capacity);
+                m_fieldFetches = fieldFetches ?? throw new ArgumentNullException(nameof(fieldFetches));
+                m_values = new List<KeyValuePair<string, object>>(fieldFetches.Length);
             }
             public IEnumerator<KeyValuePair<string, object>> GetEnumerator() { return m_values.GetEnumerator(); }
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return m_values.GetEnumerator(); }
@@ -827,71 +828,94 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return WriteAsJSon(new StringBuilder(), this).ToString();
             }
 
-            private static StringBuilder WriteAsJSon(StringBuilder sb, object value)
+            private static StringBuilder WriteAsJSon(StringBuilder sb, StructValue value)
             {
-                var asStructValue = value as StructValue;
-                if (asStructValue != null)
+                Debug.Assert(value.m_values.Count == value.m_fieldFetches.Length);
+                sb.Append("{ ");
+                bool first = true;
+                for (int i = 0; i < value.m_values.Count; i++)
                 {
-                    sb.Append("{ ");
-                    bool first = true;
-                    foreach (var keyvalue in asStructValue)
+                    if (!first)
                     {
-                        if (!first)
-                        {
-                            sb.Append(", ");
-                        }
-                        else
-                        {
-                            first = false;
-                        }
-
-                        sb.Append("\"");
-                        Quote(sb, keyvalue.Key);
-                        sb.Append("\":");
-                        WriteAsJSon(sb, keyvalue.Value);
+                        sb.Append(", ");
                     }
-                    sb.Append(" }");
-                    return sb;
-                }
-
-                var asArray = value as System.Array;
-                if (asArray != null && asArray.Rank == 1)
-                {
-                    sb.Append("[ ");
-                    bool first = true;
-                    for (int i = 0; i < asArray.Length; i++)
+                    else
                     {
-                        if (!first)
-                        {
-                            sb.Append(", ");
-                        }
-                        else
-                        {
-                            first = false;
-                        }
-
-                        WriteAsJSon(sb, asArray.GetValue(i));
+                        first = false;
                     }
-                    sb.Append(" ]");
-                    return sb;
-                }
 
-                if (value is int || value is bool || value is double || value is float)
-                {
-                    sb.Append(value);
-                    return sb;
-                }
-                else if (value == null)
-                {
-                    sb.Append("null");
-                }
-                else
-                {
+                    KeyValuePair<string, object> keyvalue = value.m_values[i];
                     sb.Append("\"");
-                    Quote(sb, value.ToString());
-                    sb.Append("\"");
+                    Quote(sb, keyvalue.Key);
+                    sb.Append("\":");
+                    AppendField(sb, keyvalue.Value, value.m_fieldFetches[i]);
                 }
+                sb.Append(" }");
                 return sb;
+
+                static void AppendField(StringBuilder sb, object value, PayloadFetch payloadFetch)
+                {
+                    var asStructValue = value as StructValue;
+                    if (asStructValue != null)
+                    {
+                        WriteAsJSon(sb, asStructValue);
+                        return;
+                    }
+
+                    if (payloadFetch.FormatHint != TdhFormatter.FormatHint.None)
+                    {
+                        string formatted = TdhFormatter.Format(value, payloadFetch.FormatHint);
+                        if (formatted != null)
+                        {
+                            sb.Append("\"");
+                            Quote(sb, formatted);
+                            sb.Append("\"");
+                            return;
+                        }
+                    }
+
+                    var asArray = value as System.Array;
+                    if (asArray != null && asArray.Rank == 1)
+                    {
+                        PayloadFetchArrayInfo arrayInfo = payloadFetch.Array;
+                        if (arrayInfo == null)
+                        {
+                            throw new InvalidOperationException("Array value requires array payload metadata.");
+                        }
+
+                        sb.Append("[ ");
+                        bool first = true;
+                        for (int i = 0; i < asArray.Length; i++)
+                        {
+                            if (!first)
+                            {
+                                sb.Append(", ");
+                            }
+                            else
+                            {
+                                first = false;
+                            }
+
+                            AppendField(sb, asArray.GetValue(i), arrayInfo.Element);
+                        }
+                        sb.Append(" ]");
+
+                    }
+                    else if (value is int || value is bool || value is double || value is float)
+                    {
+                        sb.Append(value);
+                    }
+                    else if (value == null)
+                    {
+                        sb.Append("null");
+                    }
+                    else
+                    {
+                        sb.Append("\"");
+                        Quote(sb, value.ToString());
+                        sb.Append("\"");
+                    }
+                }
             }
 
             #region private
@@ -926,7 +950,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex) { throw new NotImplementedException(); }
             public bool Remove(KeyValuePair<string, object> item) { throw new NotImplementedException(); }
 
-            private List<KeyValuePair<string, object>> m_values;
+            private readonly PayloadFetch[] m_fieldFetches;
+            private readonly List<KeyValuePair<string, object>> m_values;
             #endregion
         }
 
@@ -1828,7 +1853,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public Type Type;       // Currently null for arrays.  
 
             // Display-formatting hint derived from the TraceLogging/TDH InType/OutType.
-            public TdhFormatter.FormatHint FormatHint;
+            public TdhFormatter.FormatHint FormatHint { get; set; }
 
             // Non null of 'Type' is a enum
             public IDictionary<long, string> Map
