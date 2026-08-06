@@ -58,8 +58,13 @@
     <Window.InputBindings>
         <KeyBinding Gesture="CTRL+L" Command="{x:Static src:MainWindow.FocusDirectoryCommand}" />
     </Window.InputBindings>
-    <DockPanel>
-        <Grid DockPanel.Dock="Top">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition/>
@@ -167,8 +172,7 @@
             <Button Name="WikiButton" Grid.Column="7" Margin="5,1,10,1" Content="Wiki" FontSize="9"
                     ToolTip="Goto the PerfView Wiki." Click="DoWikiClick"/>
         </Grid>
-        <src:StatusBar x:Name="StatusBar" DockPanel.Dock="Bottom"/>
-        <Grid>
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220*"/>
                 <ColumnDefinition Width="auto"/>
@@ -345,5 +349,6 @@
                 </RichTextBox.Document>
             </RichTextBox>
         </Grid>
-    </DockPanel>
+        <src:StatusBar x:Name="StatusBar" Grid.Row="2"/>
+    </Grid>
 </Window>
