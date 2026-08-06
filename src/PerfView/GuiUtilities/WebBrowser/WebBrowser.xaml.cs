@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using Utilities;
@@ -59,7 +60,6 @@ namespace PerfView.GuiUtilities
         }
 
         #region private
-        private bool _disposed = false;
         private void BackClick(object sender, RoutedEventArgs e)
         {
             if (CanGoBack)
@@ -73,6 +73,34 @@ namespace PerfView.GuiUtilities
             if (CanGoForward)
             {
                 Browser.GoForward();
+            }
+        }
+
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                e.Handled = true;
+                Close();
+            }
+        }
+
+        private void Browser_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            ProcessWebMessage(e.WebMessageAsJson);
+        }
+
+        internal void ProcessWebMessage(string messageJson)
+        {
+            if (messageJson == CloseWindowMessageJson)
+            {
+                Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    if (IsLoaded)
+                    {
+                        Close();
+                    }
+                }));
             }
         }
 
@@ -91,6 +119,12 @@ namespace PerfView.GuiUtilities
                 // Dispose WebView2 to prevent finalizer crashes
                 if (!_disposed)
                 {
+                    if (_webMessageHandlerAttached)
+                    {
+                        Browser.CoreWebView2.WebMessageReceived -= Browser_WebMessageReceived;
+                        _webMessageHandlerAttached = false;
+                    }
+
                     Browser?.Dispose();
                     _disposed = true;
                 }
@@ -125,6 +159,13 @@ namespace PerfView.GuiUtilities
                 var environment = environmentAwaiter.GetResult();
                 await Browser.EnsureCoreWebView2Async(environment).ConfigureAwait(true);
 
+                if (!_webMessageHandlerAttached)
+                {
+                    Browser.CoreWebView2.WebMessageReceived += Browser_WebMessageReceived;
+                    await Browser.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(CloseWindowOnEscapeScript).ConfigureAwait(true);
+                    _webMessageHandlerAttached = true;
+                }
+
                 // Set the preferred color scheme directly on the profile
                 Browser.CoreWebView2.Profile.PreferredColorScheme = GuiApp.MainWindow.ThemeViewModel.IsLightTheme
                     ? CoreWebView2PreferredColorScheme.Light
@@ -134,6 +175,21 @@ namespace PerfView.GuiUtilities
                 Navigate();
             });
         }
+
+        private const string CloseWindowMessage = "PerfView.CloseWindow";
+        private const string CloseWindowMessageJson = "\"" + CloseWindowMessage + "\"";
+        private const string CloseWindowOnEscapeScript = @"
+            window.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' &&
+                    !event.altKey &&
+                    !event.ctrlKey &&
+                    !event.metaKey &&
+                    !event.shiftKey) {
+                    window.chrome.webview.postMessage('PerfView.CloseWindow');
+                }
+            }, true);";
+        private bool _disposed = false;
+        private bool _webMessageHandlerAttached;
 
         #endregion
     }

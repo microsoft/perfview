@@ -5,6 +5,7 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Style="{DynamicResource CustomWindowStyle}"
         Closing="Window_Closing"
+        PreviewKeyDown="Window_PreviewKeyDown"
         Title="Web Browser" Height="700" Width="1100">
     <DockPanel Background="{DynamicResource ControlDefaultBackground}">
         <Grid DockPanel.Dock="Top" Background="{DynamicResource ControlDefaultBackground}">
