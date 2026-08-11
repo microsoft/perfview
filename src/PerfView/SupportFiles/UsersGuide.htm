@@ -3641,10 +3641,27 @@
             (lower right corner).&nbsp;&nbsp;
         </li>
         <li>
-            <strong>Viewing Stacks</strong> If an event has a stack trace associated with it
-            the 'HasStack' field will be true. By selecting the time of that event and hitting
-            Alt-S you can see the stack for that time (which will include that events). You
-            can also select two times, and that region will be shown in the AnyStack view.
+            <strong>Viewing Stacks</strong> - An event has a stack when its 'HasStack' value is
+            true. To view it, click a cell in that event's row, then right click and choose
+            'Open Any Stacks', or press Alt-S. To view stacks for several events together, hold
+            Ctrl and click a cell in each row before opening the stacks.
+            <ul>
+                <li>
+                    Selecting more than one cell in the same row still includes that event only once.
+                </li>
+                <li>
+                    If you select exactly two cells containing numbers, PerfView tries to use the numbers
+                    as the start and end times and opens all stacks in that time range.
+                </li>
+                <li>
+                    If no cells are selected, PerfView opens the stacks for the time range currently
+                    shown in the Event Viewer.
+                </li>
+                <li>
+                    Some file types cannot identify stacks for individual events. For these files,
+                    PerfView opens all stacks between the first and last selected events.
+                </li>
+            </ul>
         </li>
         <li>
             <strong>Selecting columns </strong>- hitting the &#39;cols&#39; dropdown allows
