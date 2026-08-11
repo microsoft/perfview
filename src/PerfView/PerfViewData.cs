@@ -4574,11 +4574,6 @@ namespace PerfView
         public virtual StackSource GetStackSource(TextWriter log, double startRelativeMSec, double endRelativeMSec, Predicate<TraceEvent> predicate)
         {
             StackSource ret = DataFile.OpenStackSourceImpl(SourceName, log, startRelativeMSec, endRelativeMSec, predicate);
-            if (ret == null)
-            {
-                // Fall back to implementation without predicate
-                ret = DataFile.OpenStackSourceImpl(SourceName, log, startRelativeMSec, endRelativeMSec);
-            }
 
             if (ret == null)
             {

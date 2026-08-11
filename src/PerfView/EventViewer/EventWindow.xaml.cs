@@ -461,7 +461,7 @@ namespace PerfView
                 // If we have selected exactly two items, use that as the time limits, otherwise use what is the my dialog.
                 var startTimeRelativeMSec = m_source.StartTimeRelativeMSec;
                 var endTimeRelativeMSec = m_source.EndTimeRelativeMSec;
-                var selectedCells = Grid.SelectedCells;
+                var selectedCells = Grid.SelectedCells.ToList();
                 if (selectedCells.Count == 2)
                 {
                     string start = GetCellStringValue(selectedCells[0]);
@@ -490,7 +490,7 @@ namespace PerfView
                         endTimeRelativeMSec = tmp;
                     }
                 }
-                else if (selectedCells.Count != 2)
+                else if (selectedCells.Count > 0)
                 {
                     OpenSelectedStacks(stackSourceName, selectedCells);
                     return;
@@ -606,10 +606,13 @@ namespace PerfView
                 // For ETW sources, filter by exact EventIndex so concurrent events on other
                 // threads at the same timestamp are excluded.
                 var etwRecords = uniqueRecords.OfType<ETWEventSource.ETWEventRecord>().ToList();
-                var startTimeRelativeMSec = etwRecords.Min(r => r.TimeStampRelatveMSec);
-                var endTimeRelativeMSec = etwRecords.Max(r => r.TimeStampRelatveMSec);
+                double startTimeRelativeMSec;
+                double endTimeRelativeMSec;
                 if (etwRecords.Count == uniqueRecords.Count)
                 {
+                    startTimeRelativeMSec = etwRecords.Min(r => r.TimeStampRelatveMSec);
+                    endTimeRelativeMSec = etwRecords.Max(r => r.TimeStampRelatveMSec);
+
                     var selectedIndices = new HashSet<EventIndex>(etwRecords.Select(r => r.Index));
                     aggregateSource = dataSource.GetStackSource(
                         StatusBar.LogWriter,
@@ -619,16 +622,14 @@ namespace PerfView
                 }
                 else
                 {
-                        // Fall back to per-event time windows for non-ETW sources.
-                        var sources = new List<StackSource>();
-                        foreach (var record in uniqueRecords)
-                        {
-                            sources.Add(dataSource.GetStackSource(
-                                StatusBar.LogWriter,
-                                record.TimeStampRelatveMSec - .001,
-                                record.TimeStampRelatveMSec + .001));
-                        }
-                        aggregateSource = InternStackSource.Merge(sources);
+                    // Non-ETW records have no EventIndex for an exact event filter.
+                    // Use one stack source covering the selected records' time range.
+                    startTimeRelativeMSec = uniqueRecords.Min(r => r.TimeStampRelatveMSec);
+                    endTimeRelativeMSec = uniqueRecords.Max(r => r.TimeStampRelatveMSec);
+                    aggregateSource = dataSource.GetStackSource(
+                        StatusBar.LogWriter,
+                        startTimeRelativeMSec - .001,
+                        endTimeRelativeMSec + .001);
                 }
 
                 if (aggregateSource == null)
