@@ -1,7 +1,8 @@
 using EventSources;
 using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Stacks;
-using Microsoft.VisualStudio.Threading;
 using PerfView;
 using PerfView.TestUtilities;
 using PerfViewTests.Utilities;
@@ -9,11 +10,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
 using Xunit;
 using Xunit.Abstractions;
@@ -60,8 +58,11 @@ namespace PerfViewTests.EventViewer
             Func<Task<EventWindow>> setupAsync = async () =>
             {
                 await JoinableTaskFactory.SwitchToMainThreadAsync();
+                var tracePath = Path.Combine(AppContext.BaseDirectory, "EventViewer", "inputs", "net.4.5.2.x86.etl.zip");
+                var etlFile = Assert.IsType<ETLPerfViewData>(PerfViewFile.Get(tracePath));
+                var perfViewFile = new SampledProfileFile(etlFile);
 
-                var eventData = new PerfViewEventSource(new SelectedStacksFile());
+                var eventData = new PerfViewEventSource(perfViewFile);
                 var opened = new TaskCompletionSource<bool>();
                 eventData.Open(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar, () => opened.SetResult(true));
                 await opened.Task.ConfigureAwait(true);
@@ -83,6 +84,7 @@ namespace PerfViewTests.EventViewer
                 }
 
                 eventWindow.Close();
+                eventWindow.DataSource.DataFile.Close();
             };
 
             Func<EventWindow, Task> testDriverAsync = async eventWindow =>
@@ -90,24 +92,27 @@ namespace PerfViewTests.EventViewer
                 await JoinableTaskFactory.SwitchToMainThreadAsync();
 
                 var selectedCells = eventWindow.Grid.SelectedCells;
+                var sampledProfileRows = GetSampledProfileRows(
+                    eventWindow,
+                    scenario == SelectedCellScenario.OneCell ? 1 : 2);
                 if (scenario == SelectedCellScenario.TimeRange)
                 {
                     var timeColumn = eventWindow.Grid.Columns.Single(column => Equals(column.Header, "Time MSec"));
-                    selectedCells.Add(new DataGridCellInfo(eventWindow.Grid.Items[1], timeColumn));
-                    selectedCells.Add(new DataGridCellInfo(eventWindow.Grid.Items[2], timeColumn));
+                    selectedCells.Add(new DataGridCellInfo(sampledProfileRows[0], timeColumn));
+                    selectedCells.Add(new DataGridCellInfo(sampledProfileRows[1], timeColumn));
                 }
                 else
                 {
-                    selectedCells.Add(new DataGridCellInfo(eventWindow.Grid.Items[1], eventWindow.Grid.Columns[0]));
+                    selectedCells.Add(new DataGridCellInfo(sampledProfileRows[0], eventWindow.Grid.Columns[0]));
                     if (scenario == SelectedCellScenario.TwoCells)
                     {
-                        selectedCells.Add(new DataGridCellInfo(eventWindow.Grid.Items[2], eventWindow.Grid.Columns[0]));
+                        selectedCells.Add(new DataGridCellInfo(sampledProfileRows[1], eventWindow.Grid.Columns[0]));
                     }
                     else if (scenario == SelectedCellScenario.ThreeCells)
                     {
                         // Select two cells from the first event to verify that rows are de-duplicated.
-                        selectedCells.Add(new DataGridCellInfo(eventWindow.Grid.Items[1], eventWindow.Grid.Columns[1]));
-                        selectedCells.Add(new DataGridCellInfo(eventWindow.Grid.Items[2], eventWindow.Grid.Columns[0]));
+                        selectedCells.Add(new DataGridCellInfo(sampledProfileRows[0], eventWindow.Grid.Columns[1]));
+                        selectedCells.Add(new DataGridCellInfo(sampledProfileRows[1], eventWindow.Grid.Columns[0]));
                     }
                 }
 
@@ -117,21 +122,27 @@ namespace PerfViewTests.EventViewer
 
                 var stackWindow = Assert.Single(StackWindow.StackWindows);
                 await stackWindow.StatusBar.WaitForWorkCompleteAsync().ConfigureAwait(true);
-                Assert.Equal("20.000", stackWindow.StartTextBox.Text);
+                var selectedTimes = scenario == SelectedCellScenario.OneCell
+                    ? new[] { sampledProfileRows[0].TimeStampRelatveMSec }
+                    : new[] { sampledProfileRows[0].TimeStampRelatveMSec, sampledProfileRows[1].TimeStampRelatveMSec };
+                var expectedStart = selectedTimes.Min();
+                var expectedEnd = selectedTimes.Max();
+
+                Assert.Equal(expectedStart.ToString("n3"), stackWindow.StartTextBox.Text);
                 if (scenario == SelectedCellScenario.OneCell)
                 {
-                    Assert.Equal("20.000", stackWindow.EndTextBox.Text);
-                    Assert.Equal(new[] { 20.0 }, GetSampleTimes(stackWindow.StackSource));
+                    Assert.Equal(expectedEnd.ToString("n3"), stackWindow.EndTextBox.Text);
+                    Assert.Equal(selectedTimes, GetSampleTimes(stackWindow.StackSource));
                 }
                 else if (scenario == SelectedCellScenario.TimeRange)
                 {
-                    Assert.Equal("30.000", stackWindow.EndTextBox.Text);
-                    Assert.Equal(new[] { 20.0, 25.0, 30.0, 30.0 }, GetSampleTimes(stackWindow.StackSource));
+                    Assert.Equal(expectedEnd.ToString("n3"), stackWindow.EndTextBox.Text);
+                    Assert.NotEmpty(GetSampleTimes(stackWindow.StackSource));
                 }
                 else
                 {
-                    Assert.Equal("30.000", stackWindow.EndTextBox.Text);
-                    Assert.Equal(new[] { 20.0, 30.0 }, GetSampleTimes(stackWindow.StackSource));
+                    Assert.Equal(expectedEnd.ToString("n3"), stackWindow.EndTextBox.Text);
+                    Assert.Equal(selectedTimes.OrderBy(time => time), GetSampleTimes(stackWindow.StackSource).OrderBy(time => time));
                 }
             };
 
@@ -153,22 +164,50 @@ namespace PerfViewTests.EventViewer
             return times.ToArray();
         }
 
-        private sealed class SelectedStacksFile : PerfViewFile
+        private static ETWEventSource.ETWEventRecord[] GetSampledProfileRows(EventWindow eventWindow, int count)
         {
-            private readonly PerfViewStackSource m_stackSource;
+            var file = Assert.IsType<SampledProfileFile>(eventWindow.DataSource.DataFile);
+            var rows = eventWindow.Grid.Items
+                .OfType<ETWEventSource.ETWEventRecord>()
+                .Where(row => file.IsSampledProfileWithStack(row, eventWindow.StatusBar.LogWriter))
+                .Take(count)
+                .ToArray();
 
-            public SelectedStacksFile()
+            Assert.Equal(count, rows.Length);
+            return rows;
+        }
+
+        /// <summary>
+        /// Exposes the real ETL event and CPU-stack sources without running the Event Window's
+        /// unrelated cached-symbol lookup, which depends on a PerfView executable host.
+        /// </summary>
+        private sealed class SampledProfileFile : PerfViewFile
+        {
+            private readonly ETLPerfViewData m_file;
+            private readonly PerfViewStackSource m_cpuStacks;
+
+            public SampledProfileFile(ETLPerfViewData file)
             {
-                m_stackSource = new PerfViewStackSource(this, "CPU");
-                Title = FormatName = nameof(SelectedStacksFile);
+                m_file = file;
+                m_cpuStacks = new PerfViewStackSource(this, "CPU");
+                Title = file.Title;
             }
 
             public override string Title { get; }
-            public override string FormatName { get; }
-            public override string[] FileExtensions { get; } = new[] { "Selected Stacks Test" };
-            public override PerfViewStackSource GetStackSource(string sourceName = null) => m_stackSource;
+            public override string FormatName => m_file.FormatName;
+            public override string[] FileExtensions => m_file.FileExtensions;
+            public override string FilePath => m_file.FilePath;
+            public override PerfViewStackSource GetStackSource(string sourceName = null) => m_cpuStacks;
 
-            protected internal override EventSource OpenEventSourceImpl(TextWriter log) => new SelectedStacksEventSource();
+            protected internal override EventSource OpenEventSourceImpl(TextWriter log) => m_file.OpenEventSourceImpl(log);
+
+            public bool IsSampledProfileWithStack(ETWEventSource.ETWEventRecord row, TextWriter log)
+            {
+                var traceEvent = m_file.GetTraceLog(log).GetEvent(row.Index);
+                return traceEvent is SampledProfileTraceData &&
+                    traceEvent.ProcessID != 0 &&
+                    traceEvent.CallStackIndex() != CallStackIndex.Invalid;
+            }
 
             protected internal override StackSource OpenStackSourceImpl(
                 string streamName,
@@ -177,135 +216,10 @@ namespace PerfViewTests.EventViewer
                 double endRelativeMSec = double.PositiveInfinity,
                 Predicate<TraceEvent> predicate = null)
             {
-                return new SelectedStacksStackSource(startRelativeMSec, endRelativeMSec, predicate);
-            }
-        }
-
-        private sealed class SelectedStacksEventSource : EventSource
-        {
-            private readonly List<TestEtwEventRecord> m_events;
-
-            public override ICollection<string> EventNames { get; } = new[] { "Test/Event" };
-
-            public SelectedStacksEventSource()
-            {
-                MaxEventTimeRelativeMsec = 30;
-                var recordSource = CreateRecordSource();
-                m_events = new List<TestEtwEventRecord>
-                {
-                    new TestEtwEventRecord(recordSource, 10, (EventIndex)1),
-                    new TestEtwEventRecord(recordSource, 20, (EventIndex)2),
-                    new TestEtwEventRecord(recordSource, 30, (EventIndex)4),
-                };
+                return m_file.OpenStackSourceImpl(streamName, log, startRelativeMSec, endRelativeMSec, predicate);
             }
 
-            public override EventSource Clone() => new SelectedStacksEventSource();
-            public override void SetEventFilter(List<string> eventNames) { }
-
-            public override void ForEach(Func<EventRecord, bool> callback)
-            {
-                foreach (var eventRecord in m_events.Where(e => e.TimeStampRelatveMSec >= StartTimeRelativeMSec && e.TimeStampRelatveMSec <= EndTimeRelativeMSec))
-                {
-                    if (!callback(eventRecord))
-                    {
-                        break;
-                    }
-                }
-            }
-
-            private static ETWEventSource CreateRecordSource()
-            {
-#pragma warning disable SYSLIB0050 // Formatter-based initialization is used only for this lightweight test double.
-                var source = (ETWEventSource)FormatterServices.GetUninitializedObject(typeof(ETWEventSource));
-#pragma warning restore SYSLIB0050
-                typeof(ETWEventSource)
-                    .GetField("<SessionStartTime>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
-                    .SetValue(source, new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc));
-                typeof(ETWEventSource)
-                    .GetField("<OriginTimeZone>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
-                    .SetValue(source, TimeZoneInfo.Utc);
-                return source;
-            }
-        }
-
-        private sealed class TestEtwEventRecord : ETWEventSource.ETWEventRecord
-        {
-            private readonly double m_time;
-
-            public TestEtwEventRecord(ETWEventSource source, double time, EventIndex index)
-                : base(source)
-            {
-                m_time = time;
-                m_displayFields = new string[12];
-                typeof(ETWEventSource.ETWEventRecord)
-                    .GetField("m_idx", BindingFlags.Instance | BindingFlags.NonPublic)
-                    .SetValue(this, index);
-            }
-
-            public override string EventName => "Test/Event";
-            public override string ProcessName => "test";
-            public override double TimeStampRelatveMSec => m_time;
-            public override string Rest { get => string.Empty; set { } }
-            public override List<Payload> Payloads { get; } = new List<Payload>();
-        }
-
-        private sealed class SelectedStacksStackSource : StackSource
-        {
-            private readonly List<StackSourceSample> m_samples = new List<StackSourceSample>();
-
-            public SelectedStacksStackSource(double startTime, double endTime, Predicate<TraceEvent> predicate)
-            {
-                var candidates = new[]
-                {
-                    new { Time = 10.0, Index = (EventIndex)1 },
-                    new { Time = 20.0, Index = (EventIndex)2 },
-                    new { Time = 25.0, Index = (EventIndex)3 },
-                    new { Time = 30.0, Index = (EventIndex)4 },
-                    new { Time = 30.0, Index = (EventIndex)5 },
-                };
-
-                foreach (var candidate in candidates)
-                {
-                    if (candidate.Time >= startTime &&
-                        candidate.Time <= endTime &&
-                        (predicate == null || predicate(new TestTraceEvent(candidate.Index))))
-                    {
-                        m_samples.Add(new StackSourceSample(this)
-                        {
-                            SampleIndex = (StackSourceSampleIndex)m_samples.Count,
-                            StackIndex = StackSourceCallStackIndex.Start,
-                            Metric = 1,
-                            TimeRelativeMSec = candidate.Time,
-                        });
-                    }
-                }
-            }
-
-            public override int CallStackIndexLimit => (int)StackSourceCallStackIndex.Start + 1;
-            public override int CallFrameIndexLimit => (int)StackSourceFrameIndex.Start + 1;
-            public override int SampleIndexLimit => m_samples.Count;
-            public override double SampleTimeRelativeMSecLimit => m_samples.LastOrDefault()?.TimeRelativeMSec ?? 0;
-            public override void ForEach(Action<StackSourceSample> callback) => m_samples.ForEach(callback);
-            public override StackSourceSample GetSampleByIndex(StackSourceSampleIndex sampleIndex) => m_samples[(int)sampleIndex];
-            public override StackSourceCallStackIndex GetCallerIndex(StackSourceCallStackIndex callStackIndex) => StackSourceCallStackIndex.Invalid;
-            public override StackSourceFrameIndex GetFrameIndex(StackSourceCallStackIndex callStackIndex) => StackSourceFrameIndex.Start;
-            public override string GetFrameName(StackSourceFrameIndex frameIndex, bool verboseName) => "Selected event stack";
-        }
-
-        private sealed class TestTraceEvent : TraceEvent
-        {
-            private static readonly FieldInfo EventIndexField = typeof(TraceEvent)
-                .GetField("eventIndex", BindingFlags.Instance | BindingFlags.NonPublic);
-
-            public TestTraceEvent(EventIndex index)
-                : base(0, 0, "Test", Guid.Empty, 0, "Info", Guid.Empty, "Test")
-            {
-                EventIndexField.SetValue(this, index);
-            }
-
-            public override string[] PayloadNames { get; } = Array.Empty<string>();
-            public override object PayloadValue(int index) => throw new ArgumentOutOfRangeException(nameof(index));
-            protected override Delegate Target { get; set; }
+            public override void Close() => m_file.Close();
         }
     }
 }

@@ -4577,7 +4577,7 @@ namespace PerfView
 
             if (ret == null)
             {
-                throw new ApplicationException("Not a file type that supports the StackView.");
+                throw new ApplicationException($"The {SourceName} does not support filtering by selected events.");
             }
 
             return ret;

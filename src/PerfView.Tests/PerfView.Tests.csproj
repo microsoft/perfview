@@ -14,6 +14,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="..\TraceEvent\TraceEvent.Tests\inputs\net.4.5.2.x86.etl.zip">
+      <Link>EventViewer\inputs\net.4.5.2.x86.etl.zip</Link>
+      <TargetPath>EventViewer\inputs\net.4.5.2.x86.etl.zip</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System.Xaml" />
