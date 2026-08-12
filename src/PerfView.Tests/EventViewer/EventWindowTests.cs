@@ -21,6 +21,8 @@ namespace PerfViewTests.EventViewer
 {
     public class EventWindowTests : PerfViewTestBase
     {
+        private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(2);
+
         public EventWindowTests(ITestOutputHelper testOutputHelper)
             : base(testOutputHelper)
         {
@@ -58,72 +60,109 @@ namespace PerfViewTests.EventViewer
         {
             Func<Task<EventWindow>> setupAsync = async () =>
             {
+                var tracePath = await WithTimeoutAsync(
+                    Task.Run(() => GetExtractedTracePath()),
+                    "extracting the ETL fixture").ConfigureAwait(false);
+
                 await JoinableTaskFactory.SwitchToMainThreadAsync();
 
-                var tracePath = GetExtractedTracePath();
                 var etlFile = Assert.IsType<ETLPerfViewData>(PerfViewFile.Get(tracePath));
-                var perfViewFile = new SampledProfileFile(etlFile);
+                try
+                {
+                    var perfViewFile = new SampledProfileFile(etlFile);
+                    var eventData = new PerfViewEventSource(perfViewFile);
+                    var opened = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    eventData.Open(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar, () => opened.TrySetResult(true));
+                    await WithTimeoutAsync(opened.Task, "opening the Event Window").ConfigureAwait(true);
 
-                var eventData = new PerfViewEventSource(perfViewFile);
-                var opened = new TaskCompletionSource<bool>();
-                eventData.Open(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar, () => opened.SetResult(true));
-                await opened.Task.ConfigureAwait(true);
-
-                var eventWindow = eventData.Viewer;
-                eventWindow.EventTypes.SelectAll();
-                eventWindow.Update();
-                await eventWindow.StatusBar.WaitForWorkCompleteAsync().ConfigureAwait(true);
-                return eventWindow;
+                    var eventWindow = eventData.Viewer;
+                    eventWindow.EventTypes.SelectAll();
+                    eventWindow.Update();
+                    await WithTimeoutAsync(
+                        eventWindow.StatusBar.WaitForWorkCompleteAsync(),
+                        "loading events from the ETL fixture").ConfigureAwait(true);
+                    return eventWindow;
+                }
+                catch
+                {
+                    etlFile.Close();
+                    throw;
+                }
             };
 
             Func<EventWindow, Task> cleanupAsync = async eventWindow =>
             {
                 await JoinableTaskFactory.SwitchToMainThreadAsync();
 
-                foreach (var stackWindow in StackWindow.StackWindows.ToArray())
+                try
                 {
-                    stackWindow.Close();
-                }
+                    foreach (var stackWindow in StackWindow.StackWindows.ToArray())
+                    {
+                        stackWindow.Close();
+                    }
 
-                eventWindow.Close();
-                eventWindow.DataSource.DataFile.Close();
+                    eventWindow.Close();
+                }
+                finally
+                {
+                    eventWindow.DataSource.DataFile.Close();
+                }
             };
 
             Func<EventWindow, Task> testDriverAsync = async eventWindow =>
             {
                 await JoinableTaskFactory.SwitchToMainThreadAsync();
 
-                var selectedCells = eventWindow.Grid.SelectedCells;
-                var sampledProfileRows = GetSampledProfileRows(
-                    eventWindow,
-                    scenario == SelectedCellScenario.OneCell ? 1 : 2);
-                if (scenario == SelectedCellScenario.TimeRange)
-                {
-                    var timeColumn = eventWindow.Grid.Columns.Single(column => Equals(column.Header, "Time MSec"));
-                    selectedCells.Add(new DataGridCellInfo(sampledProfileRows[0], timeColumn));
-                    selectedCells.Add(new DataGridCellInfo(sampledProfileRows[1], timeColumn));
-                }
-                else
-                {
-                    selectedCells.Add(new DataGridCellInfo(sampledProfileRows[0], eventWindow.Grid.Columns[0]));
-                    if (scenario == SelectedCellScenario.TwoCells)
-                    {
-                        selectedCells.Add(new DataGridCellInfo(sampledProfileRows[1], eventWindow.Grid.Columns[0]));
-                    }
-                    else if (scenario == SelectedCellScenario.ThreeCells)
-                    {
-                        // Select two cells from the first event to verify that rows are de-duplicated.
-                        selectedCells.Add(new DataGridCellInfo(sampledProfileRows[0], eventWindow.Grid.Columns[1]));
-                        selectedCells.Add(new DataGridCellInfo(sampledProfileRows[1], eventWindow.Grid.Columns[0]));
-                    }
-                }
+                await VerifyScenarioAsync(eventWindow, scenario).ConfigureAwait(true);
+            };
 
-                EventWindow.OpenCpuStacksCommand.Execute(null, eventWindow.Grid);
-                await eventWindow.StatusBar.WaitForWorkCompleteAsync().ConfigureAwait(true);
-                await WaitForUIAsync(eventWindow.Dispatcher, CancellationToken.None);
+            return RunUITestAsync(setupAsync, testDriverAsync, cleanupAsync);
+        }
 
-                var stackWindow = Assert.Single(StackWindow.StackWindows);
-                await stackWindow.StatusBar.WaitForWorkCompleteAsync().ConfigureAwait(true);
+        private async Task VerifyScenarioAsync(EventWindow eventWindow, SelectedCellScenario scenario)
+        {
+            Assert.Same(eventWindow.Dispatcher.Thread, Thread.CurrentThread);
+
+            var selectedCells = eventWindow.Grid.SelectedCells;
+            selectedCells.Clear();
+            var sampledProfileRows = GetSampledProfileRows(
+                eventWindow,
+                scenario == SelectedCellScenario.OneCell ? 1 : 2);
+            if (scenario == SelectedCellScenario.TimeRange)
+            {
+                var timeColumn = eventWindow.Grid.Columns.Single(column => Equals(column.Header, "Time MSec"));
+                selectedCells.Add(new DataGridCellInfo(sampledProfileRows[0], timeColumn));
+                selectedCells.Add(new DataGridCellInfo(sampledProfileRows[1], timeColumn));
+            }
+            else
+            {
+                selectedCells.Add(new DataGridCellInfo(sampledProfileRows[0], eventWindow.Grid.Columns[0]));
+                if (scenario == SelectedCellScenario.TwoCells)
+                {
+                    selectedCells.Add(new DataGridCellInfo(sampledProfileRows[1], eventWindow.Grid.Columns[0]));
+                }
+                else if (scenario == SelectedCellScenario.ThreeCells)
+                {
+                    // Select two cells from the first event to verify that rows are de-duplicated.
+                    selectedCells.Add(new DataGridCellInfo(sampledProfileRows[0], eventWindow.Grid.Columns[1]));
+                    selectedCells.Add(new DataGridCellInfo(sampledProfileRows[1], eventWindow.Grid.Columns[0]));
+                }
+            }
+
+            EventWindow.OpenCpuStacksCommand.Execute(null, eventWindow.Grid);
+            await WithTimeoutAsync(
+                eventWindow.StatusBar.WaitForWorkCompleteAsync(),
+                $"opening CPU stacks for {scenario}").ConfigureAwait(true);
+            await WithTimeoutAsync(
+                WaitForUIAsync(eventWindow.Dispatcher, CancellationToken.None),
+                $"dispatching the stack window for {scenario}").ConfigureAwait(true);
+
+            var stackWindow = Assert.Single(StackWindow.StackWindows);
+            try
+            {
+                await WithTimeoutAsync(
+                    stackWindow.StatusBar.WaitForWorkCompleteAsync(),
+                    $"computing the stack view for {scenario}").ConfigureAwait(true);
                 var selectedTimes = scenario == SelectedCellScenario.OneCell
                     ? new[] { sampledProfileRows[0].TimeStampRelatveMSec }
                     : new[] { sampledProfileRows[0].TimeStampRelatveMSec, sampledProfileRows[1].TimeStampRelatveMSec };
@@ -131,24 +170,48 @@ namespace PerfViewTests.EventViewer
                 var expectedEnd = selectedTimes.Max();
 
                 Assert.Equal(expectedStart.ToString("n3"), stackWindow.StartTextBox.Text);
-                if (scenario == SelectedCellScenario.OneCell)
+                Assert.Equal(expectedEnd.ToString("n3"), stackWindow.EndTextBox.Text);
+                if (scenario == SelectedCellScenario.TimeRange)
                 {
-                    Assert.Equal(expectedEnd.ToString("n3"), stackWindow.EndTextBox.Text);
-                    Assert.Equal(selectedTimes, GetSampleTimes(stackWindow.StackSource));
-                }
-                else if (scenario == SelectedCellScenario.TimeRange)
-                {
-                    Assert.Equal(expectedEnd.ToString("n3"), stackWindow.EndTextBox.Text);
                     Assert.NotEmpty(GetSampleTimes(stackWindow.StackSource));
                 }
                 else
                 {
-                    Assert.Equal(expectedEnd.ToString("n3"), stackWindow.EndTextBox.Text);
-                    Assert.Equal(selectedTimes.OrderBy(time => time), GetSampleTimes(stackWindow.StackSource).OrderBy(time => time));
+                    Assert.Equal(
+                        selectedTimes.OrderBy(time => time),
+                        GetSampleTimes(stackWindow.StackSource).OrderBy(time => time));
                 }
-            };
+            }
+            finally
+            {
+                stackWindow.Close();
+            }
+        }
 
-            return RunUITestAsync(setupAsync, testDriverAsync, cleanupAsync);
+        private static async Task<T> WithTimeoutAsync<T>(Task<T> task, string operation)
+        {
+            var timeoutTask = Task.Delay(TestTimeout);
+#pragma warning disable VSTHRD003 // Deliberately bound an externally-created operation in test code.
+            if (await Task.WhenAny(task, timeoutTask).ConfigureAwait(true) != task)
+            {
+                throw new TimeoutException($"Timed out after {TestTimeout} while {operation}.");
+            }
+
+            return await task.ConfigureAwait(true);
+#pragma warning restore VSTHRD003
+        }
+
+        private static async Task WithTimeoutAsync(Task task, string operation)
+        {
+            var timeoutTask = Task.Delay(TestTimeout);
+#pragma warning disable VSTHRD003 // Deliberately bound an externally-created operation in test code.
+            if (await Task.WhenAny(task, timeoutTask).ConfigureAwait(true) != task)
+            {
+                throw new TimeoutException($"Timed out after {TestTimeout} while {operation}.");
+            }
+
+            await task.ConfigureAwait(true);
+#pragma warning restore VSTHRD003
         }
 
         private enum SelectedCellScenario
