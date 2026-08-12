@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Controls;
@@ -58,7 +59,8 @@ namespace PerfViewTests.EventViewer
             Func<Task<EventWindow>> setupAsync = async () =>
             {
                 await JoinableTaskFactory.SwitchToMainThreadAsync();
-                var tracePath = Path.Combine(AppContext.BaseDirectory, "EventViewer", "inputs", "net.4.5.2.x86.etl.zip");
+
+                var tracePath = GetExtractedTracePath();
                 var etlFile = Assert.IsType<ETLPerfViewData>(PerfViewFile.Get(tracePath));
                 var perfViewFile = new SampledProfileFile(etlFile);
 
@@ -162,6 +164,29 @@ namespace PerfViewTests.EventViewer
             var times = new List<double>();
             stackSource.ForEach(sample => times.Add(sample.TimeRelativeMSec));
             return times.ToArray();
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        private static string GetExtractedTracePath()
+        {
+            var inputDirectory = Path.Combine(AppContext.BaseDirectory, "EventViewer", "inputs");
+            var zipPath = Path.Combine(inputDirectory, "net.4.5.2.x86.etl.zip");
+            var extractedDirectory = Path.Combine(AppContext.BaseDirectory, "EventViewer", "unzipped");
+            var etlPath = Path.Combine(extractedDirectory, Path.GetFileNameWithoutExtension(zipPath));
+
+            Directory.CreateDirectory(extractedDirectory);
+            if (!File.Exists(etlPath) || File.GetLastWriteTimeUtc(etlPath) < File.GetLastWriteTimeUtc(zipPath))
+            {
+                var zipReader = new ZippedETLReader(zipPath)
+                {
+                    EtlFileName = etlPath,
+                    SymbolDirectory = Path.Combine(extractedDirectory, "Symbols"),
+                };
+                zipReader.UnpackArchive();
+            }
+
+            Assert.True(File.Exists(etlPath));
+            return etlPath;
         }
 
         private static ETWEventSource.ETWEventRecord[] GetSampledProfileRows(EventWindow eventWindow, int count)
