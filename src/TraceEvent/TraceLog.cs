@@ -346,8 +346,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 process.InsertJITTEDMethod(data.MethodStartAddress, data.MethodSize, delegate ()
                 {
-                    TraceManagedModule module = process.LoadedModules.GetOrCreateManagedModule(data.ModuleID, data.TimeStampQPC);
-                    MethodIndex methodIndex = CodeAddresses.Methods.NewMethod(GetFullName(data), module.ModuleFile.ModuleFileIndex, data.MethodToken);
+                    TraceModuleFile moduleFile = process.LoadedModules.GetOrCreateMethodModuleFile(data);
+                    MethodIndex methodIndex = CodeAddresses.Methods.NewMethod(GetFullName(data), moduleFile.ModuleFileIndex, data.MethodToken);
                     return new TraceProcess.MethodLookupInfo(data.MethodStartAddress, data.MethodSize, methodIndex);
                 });
             };
@@ -1363,7 +1363,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             eventCount = 0;
 
             // FIX NOW HACK, because Method and Module unload methods are missing.
-            jittedMethods = new List<MethodLoadUnloadVerboseTraceData>();
+            methodLoadEvents = new List<MethodLoadUnloadVerboseTraceData>();
             jsJittedMethods = new List<MethodLoadUnloadJSTraceData>();
             sourceFilesByID = new Dictionary<JavaScriptSourceKey, string>();
 
@@ -1684,17 +1684,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         bookKeepingEvent = true;
                     }
 
-                    if (data.IsJitted)
+                    if (ShouldTrackMethodLoad(data.MethodFlags))
                     {
                         TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                         process.InsertJITTEDMethod(data.MethodStartAddress, data.MethodSize, delegate ()
                         {
-                            TraceManagedModule module = process.LoadedModules.GetOrCreateManagedModule(data.ModuleID, data.TimeStampQPC);
-                            MethodIndex methodIndex = CodeAddresses.Methods.NewMethod(TraceLog.GetFullName(data), module.ModuleFile.ModuleFileIndex, data.MethodToken);
+                            TraceModuleFile moduleFile = process.LoadedModules.GetOrCreateMethodModuleFile(data);
+                            MethodIndex methodIndex = CodeAddresses.Methods.NewMethod(TraceLog.GetFullName(data), moduleFile.ModuleFileIndex, data.MethodToken);
                             return new TraceProcess.MethodLookupInfo(data.MethodStartAddress, data.MethodSize, methodIndex);
                         });
 
-                        jittedMethods.Add((MethodLoadUnloadVerboseTraceData)data.Clone());
+                        methodLoadEvents.Add((MethodLoadUnloadVerboseTraceData)data.Clone());
                     }
                 };
             rawEvents.Clr.MethodLoadVerbose += onMethodStart;
@@ -2427,9 +2427,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             userStackKeyToInfo = null;
 
             // TODO FIX NOW hack because unloadMethod not present
-            foreach (var jittedMethod in jittedMethods)
+            foreach (var methodLoadEvent in methodLoadEvents)
             {
-                codeAddresses.AddMethod(jittedMethod);
+                codeAddresses.AddMethod(methodLoadEvent);
             }
 
             foreach (var jsJittedMethod in jsJittedMethods)
@@ -3531,20 +3531,34 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         internal static string GetFullName(MethodLoadUnloadVerboseTraceData data)
         {
-            string sig = data.MethodSignature;
-            int parens = sig.IndexOf('(');
+            return GetFullName(data.MethodFlags, data.MethodNamespace, data.MethodName, data.MethodSignature);
+        }
+
+        private static string GetFullName(MethodFlags methodFlags, string methodNamespace, string methodName, string methodSignature)
+        {
+            if ((methodFlags & MethodFlags.JitHelper) != 0)
+            {
+                return methodName;
+            }
+
+            int parens = methodSignature.IndexOf('(');
             string args;
             if (parens >= 0)
             {
-                args = sig.Substring(parens);
+                args = methodSignature.Substring(parens);
             }
             else
             {
                 args = "";
             }
 
-            string fullName = data.MethodNamespace + "." + data.MethodName + args;
+            string fullName = methodNamespace + "." + methodName + args;
             return fullName;
+        }
+
+        private static bool ShouldTrackMethodLoad(MethodFlags methodFlags)
+        {
+            return (methodFlags & (MethodFlags.Jitted | MethodFlags.JitHelper)) != 0;
         }
 
         internal int FindPageIndex(long timeQPC)
@@ -4202,8 +4216,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private bool noStack;                               // This event should never have a stack associated with it, so skip them if we every try to attach a stack.
         private TraceThread thread;                         // cache of the TraceThread for the current event.
 
-        // TODO FIX NOW remove the jittedMethods ones.
-        private List<MethodLoadUnloadVerboseTraceData> jittedMethods;
+        // TODO FIX NOW remove the methodLoadEvents ones.
+        private List<MethodLoadUnloadVerboseTraceData> methodLoadEvents;
         private List<MethodLoadUnloadJSTraceData> jsJittedMethods;
         private Dictionary<JavaScriptSourceKey, string> sourceFilesByID;
 
@@ -7225,6 +7239,29 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             return module;
         }
+
+        internal TraceModuleFile GetOrCreateMethodModuleFile(MethodLoadUnloadVerboseTraceData data)
+        {
+            if (data.IsJitHelper)
+            {
+                return GetOrCreateJitHelperModuleFile();
+            }
+
+            return GetOrCreateManagedModule(data.ModuleID, data.TimeStampQPC).ModuleFile;
+        }
+
+        private TraceModuleFile GetOrCreateJitHelperModuleFile()
+        {
+            if (jitHelperModuleFile == null)
+            {
+                // Stash process-private, dynamically generated runtime helpers under an invalid file path
+                // so they are clearly synthetic while still displaying cleanly in stacks.
+                string modulePath = "[GeneratedRuntimeHelpers:ProcessIndex=" + process.ProcessIndex + "]\\GeneratedRuntimeHelpers.dll";
+                jitHelperModuleFile = process.Log.ModuleFiles.GetOrCreateModuleFile(modulePath, 0, false);
+            }
+
+            return jitHelperModuleFile;
+        }
         /// <summary>
         /// Finds the index and module for an a given managed module ID.  If not found, new module
         /// should be inserted at index + 1;
@@ -7411,6 +7448,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         private TraceProcess process;
         private GrowableArray<TraceLoadedModule> modules;               // Contains unmanaged modules sorted by key
+        private TraceModuleFile jitHelperModuleFile;
         #endregion
     }
 
@@ -8536,7 +8574,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             MethodIndex methodIndex = Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid;
             ILMapIndex ilMap = ILMapIndex.Invalid;
             ModuleFileIndex moduleFileIndex = Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid;
-            TraceManagedModule module = null;
+            TraceModuleFile moduleFile = null;
             TraceProcess process = log.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
             ForAllUnresolvedCodeAddressesInRange(process, data.MethodStartAddress, data.MethodSize, true, delegate (ref CodeAddressInfo info)
             {
@@ -8545,10 +8583,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (info.GetMethodIndex(this) == Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid)
                 {
                     // Lazily create the method since many methods never have code samples in them.
-                    if (module == null)
+                    if (moduleFile == null)
                     {
-                        module = process.LoadedModules.GetOrCreateManagedModule(data.ModuleID, data.TimeStampQPC);
-                        moduleFileIndex = module.ModuleFile.ModuleFileIndex;
+                        moduleFile = process.LoadedModules.GetOrCreateMethodModuleFile(data);
+                        moduleFileIndex = moduleFile.ModuleFileIndex;
                         methodIndex = methods.NewMethod(TraceLog.GetFullName(data), moduleFileIndex, data.MethodToken);
                         if (data.IsJitted)
                         {
@@ -10427,7 +10465,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// cache entry associated with 'nativePath' and 'moduleImageBase'.  'moduleImageBase' can be 0 for managed assemblies
         /// that were not loaded with LoadLibrary.
         /// </summary>
-        internal TraceModuleFile GetOrCreateModuleFile(string nativePath, Address imageBase)
+        internal TraceModuleFile GetOrCreateModuleFile(string nativePath, Address imageBase, bool normalizePath = true)
         {
             TraceModuleFile moduleFile = null;
             if (nativePath != null)
@@ -10437,7 +10475,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             if (moduleFile == null)
             {
-                moduleFile = new TraceModuleFile(nativePath, imageBase, (ModuleFileIndex)moduleFiles.Count);
+                moduleFile = new TraceModuleFile(nativePath, imageBase, (ModuleFileIndex)moduleFiles.Count, normalizePath);
                 moduleFiles.Add(moduleFile);
                 if (nativePath != null)
                 {
@@ -10784,11 +10822,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                    "/>";
         }
         #region Private
-        internal TraceModuleFile(string fileName, Address imageBase, ModuleFileIndex moduleFileIndex)
+        internal TraceModuleFile(string fileName, Address imageBase, ModuleFileIndex moduleFileIndex, bool normalizePath = true)
         {
             if (fileName != null)
             {
-                this.fileName = fileName.ToLowerInvariant();        // Normalize to lower case.
+                this.fileName = normalizePath ? fileName.ToLowerInvariant() : fileName;
             }
 
             this.imageBase = imageBase;
