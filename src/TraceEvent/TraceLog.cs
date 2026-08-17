@@ -7256,8 +7256,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 // Stash process-private, dynamically generated runtime helpers under an invalid file path
                 // so they are clearly synthetic while still displaying cleanly in stacks.
-                string modulePath = "[GeneratedRuntimeHelpers:ProcessIndex=" + process.ProcessIndex + "]\\GeneratedRuntimeHelpers.dll";
-                jitHelperModuleFile = process.Log.ModuleFiles.GetOrCreateModuleFile(modulePath, 0, false);
+                string modulePath = "[generatedruntimehelpers:processindex=" + process.ProcessIndex + "]\\generatedruntimehelpers.dll";
+                jitHelperModuleFile = process.Log.ModuleFiles.GetOrCreateModuleFile(modulePath, 0);
             }
 
             return jitHelperModuleFile;
@@ -10465,7 +10465,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// cache entry associated with 'nativePath' and 'moduleImageBase'.  'moduleImageBase' can be 0 for managed assemblies
         /// that were not loaded with LoadLibrary.
         /// </summary>
-        internal TraceModuleFile GetOrCreateModuleFile(string nativePath, Address imageBase, bool normalizePath = true)
+        internal TraceModuleFile GetOrCreateModuleFile(string nativePath, Address imageBase)
         {
             TraceModuleFile moduleFile = null;
             if (nativePath != null)
@@ -10475,7 +10475,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             if (moduleFile == null)
             {
-                moduleFile = new TraceModuleFile(nativePath, imageBase, (ModuleFileIndex)moduleFiles.Count, normalizePath);
+                moduleFile = new TraceModuleFile(nativePath, imageBase, (ModuleFileIndex)moduleFiles.Count);
                 moduleFiles.Add(moduleFile);
                 if (nativePath != null)
                 {
@@ -10822,11 +10822,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                    "/>";
         }
         #region Private
-        internal TraceModuleFile(string fileName, Address imageBase, ModuleFileIndex moduleFileIndex, bool normalizePath = true)
+        internal TraceModuleFile(string fileName, Address imageBase, ModuleFileIndex moduleFileIndex)
         {
             if (fileName != null)
             {
-                this.fileName = normalizePath ? fileName.ToLowerInvariant() : fileName;
+                this.fileName = fileName.ToLowerInvariant();        // Normalize to lower case.
             }
 
             this.imageBase = imageBase;
