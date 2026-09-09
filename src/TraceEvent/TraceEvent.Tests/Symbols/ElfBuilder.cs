@@ -17,6 +17,9 @@ namespace TraceEventTests
         private ulong m_pOffset = 0;
         private byte[] m_buildId = null;
         private string m_debugLink = null;
+        private byte[] m_debugLinkSectionData = null;
+        private ulong? m_debugLinkSectionOffset = null;
+        private ulong? m_debugLinkSectionSize = null;
         private readonly List<SymbolDef> m_symtabSymbols = new List<SymbolDef>();
         private readonly List<SymbolDef> m_dynsymSymbols = new List<SymbolDef>();
 
@@ -83,6 +86,27 @@ namespace TraceEventTests
         public ElfBuilder SetDebugLink(string filename)
         {
             m_debugLink = filename;
+            m_debugLinkSectionData = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the raw .gnu_debuglink section data for malformed-section tests.
+        /// </summary>
+        public ElfBuilder SetDebugLinkSectionData(byte[] sectionData)
+        {
+            m_debugLink = null;
+            m_debugLinkSectionData = sectionData;
+            return this;
+        }
+
+        /// <summary>
+        /// Overrides the .gnu_debuglink section header bounds for malformed-section tests.
+        /// </summary>
+        public ElfBuilder SetDebugLinkSectionBounds(ulong offset, ulong size)
+        {
+            m_debugLinkSectionOffset = offset;
+            m_debugLinkSectionSize = size;
             return this;
         }
 
@@ -150,7 +174,7 @@ namespace TraceEventTests
                 // [N+1] .shstrtab — only if debuglink is set (needed for section names)
                 bool hasDynsym = m_dynsymSymbols.Count > 0;
                 bool hasBuildId = m_buildId != null;
-                bool hasDebugLink = m_debugLink != null;
+                bool hasDebugLink = m_debugLink != null || m_debugLinkSectionData != null;
                 int sectionCount = hasDynsym ? 5 : 3;
                 if (hasDebugLink)
                 {
@@ -193,7 +217,7 @@ namespace TraceEventTests
                 int shstrtabSectionIndex = 0;
                 if (hasDebugLink)
                 {
-                    debugLinkData = BuildDebugLinkSection(m_debugLink);
+                    debugLinkData = m_debugLinkSectionData ?? BuildDebugLinkSection(m_debugLink);
                     debugLinkSectionIndex = hasDynsym ? 5 : 3;
                     shstrtabSectionIndex = debugLinkSectionIndex + 1;
 
@@ -310,7 +334,8 @@ namespace TraceEventTests
                 {
                     // .gnu_debuglink (SHT_PROGBITS)
                     WriteSectionHeader(writer, (uint)debugLinkShName, SHT_PROGBITS,
-                        (ulong)debugLinkOffset, (ulong)debugLinkData.Length, 0, 0);
+                        m_debugLinkSectionOffset ?? (ulong)debugLinkOffset,
+                        m_debugLinkSectionSize ?? (ulong)debugLinkData.Length, 0, 0);
 
                     // .shstrtab (SHT_STRTAB)
                     WriteSectionHeader(writer, (uint)shstrtabShName, SHT_STRTAB,

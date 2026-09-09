@@ -824,14 +824,131 @@ namespace TraceEventTests
             var builder = new ElfBuilder()
                 .Set64Bit(true)
                 .SetPTLoad(0x400000, 0)
-                .SetDebugLink("libcoreclr.so.dbg");
+                .SetDebugLink("foo.debug");
 
             byte[] data = builder.Build();
             RunWithTempFile(data, (path) =>
             {
                 string result = ElfSymbolModule.ReadDebugLink(path);
-                Assert.Equal("libcoreclr.so.dbg", result);
+                Assert.Equal("foo.debug", result);
             });
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(".")]
+        [InlineData("..")]
+        [InlineData("dir/foo.debug")]
+        [InlineData(@"dir\foo.debug")]
+        [InlineData("../foo.debug")]
+        [InlineData(@"..\foo.debug")]
+        [InlineData("/foo.debug")]
+        [InlineData(@"\foo.debug")]
+        [InlineData(@"C:\foo.debug")]
+        [InlineData("C:foo.debug")]
+        [InlineData(@"\\server\share\foo.debug")]
+        [InlineData(@"\\?\C:\foo.debug")]
+        [InlineData(@"\\.\C:\foo.debug")]
+        [InlineData("foo.debug:stream")]
+        [InlineData("foo?.debug")]
+        [InlineData("foo.debug.")]
+        [InlineData("foo.debug ")]
+        [InlineData("CON")]
+        [InlineData("NUL.debug")]
+        [InlineData("COM0")]
+        [InlineData("CLOCK$.debug")]
+        [InlineData("foo\u007f.debug")]
+        public void ReadDebugLink_InvalidFileName_ReturnsNull(string debugLink)
+        {
+            byte[] data = new ElfBuilder()
+                .Set64Bit(true)
+                .SetPTLoad(0x400000, 0)
+                .SetDebugLink(debugLink)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_MissingNullTerminator_ReturnsNull()
+        {
+            byte[] sectionData = new byte[]
+            {
+                (byte)'f', (byte)'o', (byte)'o', (byte)'.', (byte)'d',
+                (byte)'e', (byte)'b', (byte)'u', (byte)'g',
+                0, 0, 0, 0,
+            };
+            byte[] data = new ElfBuilder()
+                .SetDebugLinkSectionData(sectionData)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_TruncatedCrc_ReturnsNull()
+        {
+            byte[] sectionData = new byte[] { (byte)'a', 0, 0, 0, 1, 2, 3 };
+            byte[] data = new ElfBuilder()
+                .SetDebugLinkSectionData(sectionData)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_NonZeroPadding_ReturnsNull()
+        {
+            byte[] sectionData = new byte[] { (byte)'a', 0, 1, 0, 1, 2, 3, 4 };
+            byte[] data = new ElfBuilder()
+                .SetDebugLinkSectionData(sectionData)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_MalformedUtf8_ReturnsNull()
+        {
+            byte[] sectionData = new byte[] { 0xc3, 0x28, 0, 0, 1, 2, 3, 4 };
+            byte[] data = new ElfBuilder()
+                .SetDebugLinkSectionData(sectionData)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_NonZeroCrc_ReturnsFilename()
+        {
+            byte[] sectionData = new byte[] { (byte)'a', 0, 0, 0, 1, 2, 3, 4 };
+            byte[] data = new ElfBuilder()
+                .SetDebugLinkSectionData(sectionData)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Equal("a", ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_SectionOutsideFile_ReturnsNull()
+        {
+            byte[] data = new ElfBuilder()
+                .SetDebugLink("foo.debug")
+                .SetDebugLinkSectionBounds(ulong.MaxValue, 16)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_SectionExtendsPastFile_ReturnsNull()
+        {
+            byte[] data = new ElfBuilder()
+                .SetDebugLink("foo.debug")
+                .SetDebugLinkSectionBounds(64, 4096)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
         }
 
         [Fact]

@@ -452,20 +452,32 @@ namespace Microsoft.Diagnostics.Symbols
             string binaryIndexPath = $"{simpleFileName}/elf-buildid-{normalizedBuildId}/{simpleFileName}";
 
             string resultPath = null;
+            string localElfFilePath = null;
+            if (elfFilePath != null)
+            {
+                if (!PathUtilities.TryGetSafeLocalFilePath(elfFilePath, out localElfFilePath))
+                {
+                    m_log.WriteLine(
+                        "FindElfSymbolFilePath: Ignoring unsafe ELF file path {0}.",
+                        elfFilePath);
+                }
+            }
 
             // Phase 1: Check for debug symbol files adjacent to the binary (mirrors PDB local search).
             // Only look for dedicated debug files here — the binary itself is deferred to Phase 3.
-            if (elfFilePath != null)
+            if (localElfFilePath != null)
             {
-                string elfDir = Path.GetDirectoryName(elfFilePath);
+                string elfDir = Path.GetDirectoryName(localElfFilePath);
                 if (!string.IsNullOrEmpty(elfDir))
                 {
-                    m_log.WriteLine("FindElfSymbolFilePath: Checking relative to ELF binary path {0}", elfFilePath);
-                    string basePath = elfFilePath;
+                    m_log.WriteLine("FindElfSymbolFilePath: Checking relative to ELF binary path {0}", localElfFilePath);
+                    string basePath = localElfFilePath;
+                    string executableFileName = Path.GetFileName(basePath);
 
                     // Try {path}.debug
-                    string candidate = basePath + ".debug";
-                    if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                    string candidate;
+                    if (TryGetDebugLinkCandidate(elfDir, executableFileName + ".debug", out candidate) &&
+                        ElfBuildIdMatches(candidate, normalizedBuildId))
                     {
                         resultPath = candidate;
                     }
@@ -473,8 +485,8 @@ namespace Microsoft.Diagnostics.Symbols
                     // Try {path}.dbg
                     if (resultPath == null)
                     {
-                        candidate = basePath + ".dbg";
-                        if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                        if (TryGetDebugLinkCandidate(elfDir, executableFileName + ".dbg", out candidate) &&
+                            ElfBuildIdMatches(candidate, normalizedBuildId))
                         {
                             resultPath = candidate;
                         }
@@ -497,8 +509,8 @@ namespace Microsoft.Diagnostics.Symbols
                         if (debugLink != null)
                         {
                             // Try {bindir}/{debuglink}
-                            candidate = Path.Combine(elfDir, debugLink);
-                            if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                            if (TryGetDebugLinkCandidate(elfDir, debugLink, out candidate) &&
+                                ElfBuildIdMatches(candidate, normalizedBuildId))
                             {
                                 resultPath = candidate;
                             }
@@ -506,8 +518,9 @@ namespace Microsoft.Diagnostics.Symbols
                             // Try {bindir}/.debug/{debuglink}
                             if (resultPath == null)
                             {
-                                candidate = Path.Combine(elfDir, ".debug", debugLink);
-                                if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                                string debugDirectory = Path.Combine(elfDir, ".debug");
+                                if (TryGetDebugLinkCandidate(debugDirectory, debugLink, out candidate) &&
+                                    ElfBuildIdMatches(candidate, normalizedBuildId))
                                 {
                                     resultPath = candidate;
                                 }
@@ -579,11 +592,11 @@ namespace Microsoft.Diagnostics.Symbols
             // Phase 3: Last resort — try the binary itself (has .dynsym at minimum).
             // This is deferred until after symbol servers so we prefer proper debug symbols
             // (.symtab) over the stripped binary whenever a symbol server can provide them.
-            if (resultPath == null && elfFilePath != null)
+            if (resultPath == null && localElfFilePath != null)
             {
-                if (ElfBuildIdMatches(elfFilePath, normalizedBuildId))
+                if (ElfBuildIdMatches(localElfFilePath, normalizedBuildId))
                 {
-                    resultPath = elfFilePath;
+                    resultPath = localElfFilePath;
                 }
             }
 
@@ -604,6 +617,48 @@ namespace Microsoft.Diagnostics.Symbols
 
             m_elfPathCache.Add(cacheKey, resultPath);
             return resultPath;
+        }
+
+        /// <summary>
+        /// Constructs a debug-link candidate that is a direct child of the intended search directory.
+        /// </summary>
+        internal static bool TryGetDebugLinkCandidate(string searchDirectory, string debugLink, out string candidate)
+        {
+            candidate = null;
+            if (string.IsNullOrEmpty(searchDirectory) ||
+                !PathUtilities.IsSafeFileName(debugLink))
+            {
+                return false;
+            }
+
+            try
+            {
+                string canonicalSearchDirectory = Path.GetFullPath(searchDirectory);
+                string canonicalCandidate = Path.GetFullPath(Path.Combine(canonicalSearchDirectory, debugLink));
+                if (!PathUtilities.IsPathWithinDirectory(canonicalCandidate, canonicalSearchDirectory))
+                {
+                    return false;
+                }
+
+                candidate = canonicalCandidate;
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (NotSupportedException)
+            {
+                return false;
+            }
+            catch (PathTooLongException)
+            {
+                return false;
+            }
+            catch (System.Security.SecurityException)
+            {
+                return false;
+            }
         }
 
         // Find an executable file path (not a PDB) based on information about the file image.  
@@ -2850,4 +2905,3 @@ namespace Microsoft.Diagnostics.Symbols
         #endregion
     }
 }
-

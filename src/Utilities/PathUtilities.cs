@@ -113,16 +113,137 @@ namespace Microsoft.Diagnostics.Utilities
         }
 
         /// <summary>
+        /// Returns true if <paramref name="name"/> can be used unchanged as one file-name
+        /// component on Windows and POSIX systems.
+        /// </summary>
+        public static bool IsSafeFileName(string name)
+        {
+            return name != null &&
+                string.Equals(name, SanitizeFileName(name), StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Converts an absolute Windows drive path or POSIX path into safe directory
+        /// components, excluding the final file name. UNC, device, relative, traversal,
+        /// and otherwise unsafe paths are rejected.
+        /// </summary>
+        private static bool TryGetAbsoluteFileDirectorySegments(string filePath, out string[] directorySegments)
+        {
+            directorySegments = null;
+            if (string.IsNullOrEmpty(filePath))
+            {
+                return false;
+            }
+
+            var segments = new List<string>();
+            int segmentStart;
+            bool isWindowsPath = IsWindowsDriveAbsolutePath(filePath);
+            if (isWindowsPath)
+            {
+                segments.Add(char.ToUpperInvariant(filePath[0]).ToString());
+                segmentStart = 3;
+            }
+            else if (filePath[0] == '/' &&
+                     (filePath.Length == 1 || filePath[1] != '/') &&
+                     filePath.IndexOf('\\') < 0)
+            {
+                segmentStart = 1;
+            }
+            else
+            {
+                return false;
+            }
+
+            int currentStart = segmentStart;
+            for (int i = segmentStart; i <= filePath.Length; i++)
+            {
+                bool atEnd = i == filePath.Length;
+                bool atSeparator = !atEnd &&
+                    (filePath[i] == '/' || (isWindowsPath && filePath[i] == '\\'));
+                if (!atEnd && !atSeparator)
+                {
+                    continue;
+                }
+
+                if (i == currentStart)
+                {
+                    return false;
+                }
+
+                string segment = filePath.Substring(currentStart, i - currentStart);
+                if (!IsSafeFileName(segment))
+                {
+                    return false;
+                }
+
+                segments.Add(segment);
+                currentStart = i + 1;
+            }
+
+            if (segments.Count == 0)
+            {
+                return false;
+            }
+
+            segments.RemoveAt(segments.Count - 1);
+            directorySegments = segments.ToArray();
+            return true;
+        }
+
+        /// <summary>
+        /// Canonicalizes an absolute file path that uses the current platform's path
+        /// syntax and is safe for local filesystem access.
+        /// </summary>
+        public static bool TryGetSafeLocalFilePath(string filePath, out string safeFilePath)
+        {
+            safeFilePath = null;
+            if (!TryGetAbsoluteFileDirectorySegments(filePath, out _))
+            {
+                return false;
+            }
+
+            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            bool isWindowsDrivePath = IsWindowsDriveAbsolutePath(filePath);
+            if ((isWindows && !isWindowsDrivePath) ||
+                (!isWindows && isWindowsDrivePath))
+            {
+                return false;
+            }
+
+            try
+            {
+                safeFilePath = Path.GetFullPath(filePath);
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (NotSupportedException)
+            {
+                return false;
+            }
+            catch (PathTooLongException)
+            {
+                return false;
+            }
+            catch (System.Security.SecurityException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Reduces <paramref name="name"/> to a value safe to embed in a single file-name
         /// component on disk.  Every character reported by
-        /// <see cref="Path.GetInvalidFileNameChars"/>, every path / volume separator,
-        /// and every control character is replaced with '_'.  Trailing '.' and ' '
-        /// characters are removed because Windows silently trims them, which would
-        /// otherwise let two distinct names collide on disk and let inputs like "NUL."
-        /// slip past the reserved-name guard.  Reserved DOS device names (CON, PRN,
-        /// AUX, NUL, CLOCK$, CONIN$, CONOUT$, COM0-9, LPT0-9) are detected on the
-        /// stem before the first '.' (Win32 opens the device for paths like
-        /// "NUL.txt") and prefixed with '_' on match.
+        /// <see cref="Path.GetInvalidFileNameChars"/>, every Windows file-name
+        /// metacharacter, every path / volume separator, and every control character is
+        /// replaced with '_'.  Trailing '.' and ' ' characters are removed because
+        /// Windows silently trims them, which would otherwise let two distinct names
+        /// collide on disk and let inputs like "NUL." slip past the reserved-name guard.
+        /// Reserved DOS device names (CON, PRN, AUX, NUL, CLOCK$, CONIN$, CONOUT$,
+        /// COM0-9, LPT0-9) are detected on the stem before the first '.' (Win32 opens
+        /// the device for paths like "NUL.txt") and prefixed with '_' on match.
         ///
         /// Returns <c>null</c> if the input is null, empty, '.', '..', or sanitizes
         /// to an empty string so callers can choose to skip the resource rather than
@@ -181,6 +302,12 @@ namespace Microsoft.Diagnostics.Utilities
             chars.Add('\\');
             chars.Add('/');
             chars.Add(':');
+            chars.Add('<');
+            chars.Add('>');
+            chars.Add('"');
+            chars.Add('|');
+            chars.Add('?');
+            chars.Add('*');
             return chars;
         }
 
@@ -196,6 +323,14 @@ namespace Microsoft.Diagnostics.Utilities
                 names.Add("LPT" + i);
             }
             return names;
+        }
+
+        private static bool IsWindowsDriveAbsolutePath(string path)
+        {
+            return path.Length >= 3 &&
+                   ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z')) &&
+                   path[1] == ':' &&
+                   (path[2] == '\\' || path[2] == '/');
         }
     }
 }
