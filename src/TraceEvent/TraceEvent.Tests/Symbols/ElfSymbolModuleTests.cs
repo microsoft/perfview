@@ -1,8 +1,8 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using PerfView.TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -1065,24 +1065,17 @@ namespace TraceEventTests
         }
 
         [Fact]
-        public void MatchOrInitPE_WhenElf_ReturnsNull()
+        public void MatchOrInitPE_WhenElf_RejectsMismatch()
         {
             var moduleFile = new TraceModuleFile(null, 0, (ModuleFileIndex)0);
-            moduleFile.MatchOrInitElf(); // Set as ELF first
+            moduleFile.MatchOrInitElf();
 
-            // Suppress Debug.Assert so we can verify the return value.
-            var listeners = new TraceListener[Trace.Listeners.Count];
-            Trace.Listeners.CopyTo(listeners, 0);
-            Trace.Listeners.Clear();
-            try
-            {
-                var pe = moduleFile.MatchOrInitPE();
-                Assert.Null(pe);
-            }
-            finally
-            {
-                Trace.Listeners.AddRange(listeners);
-            }
+#if DEBUG
+            DebugAssertionTestConfiguration.AssertValid();
+            Assert.ThrowsAny<Exception>(() => moduleFile.MatchOrInitPE());
+#else
+            Assert.Null(moduleFile.MatchOrInitPE());
+#endif
         }
 
         [Fact]
@@ -1105,24 +1098,17 @@ namespace TraceEventTests
         }
 
         [Fact]
-        public void MatchOrInitElf_WhenPE_ReturnsNull()
+        public void MatchOrInitElf_WhenPE_RejectsMismatch()
         {
             var moduleFile = new TraceModuleFile(null, 0, (ModuleFileIndex)0);
-            moduleFile.MatchOrInitPE(); // Set as PE first
+            moduleFile.MatchOrInitPE();
 
-            // Suppress Debug.Assert so we can verify the return value.
-            var listeners = new TraceListener[Trace.Listeners.Count];
-            Trace.Listeners.CopyTo(listeners, 0);
-            Trace.Listeners.Clear();
-            try
-            {
-                var elf = moduleFile.MatchOrInitElf();
-                Assert.Null(elf);
-            }
-            finally
-            {
-                Trace.Listeners.AddRange(listeners);
-            }
+#if DEBUG
+            DebugAssertionTestConfiguration.AssertValid();
+            Assert.ThrowsAny<Exception>(() => moduleFile.MatchOrInitElf());
+#else
+            Assert.Null(moduleFile.MatchOrInitElf());
+#endif
         }
 
         #endregion

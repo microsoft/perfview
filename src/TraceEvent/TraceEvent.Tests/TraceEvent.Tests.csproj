@@ -51,6 +51,8 @@
     <Compile Include="..\..\PerfView.TestUtilities\DebugAssertionTests.cs">
       <Link>DebugAssertionTests.cs</Link>
     </Compile>
+    <Compile Remove="Properties\ModuleInitializerAttribute.cs" />
+    <Compile Include="Properties\ModuleInitializerAttribute.cs" Condition="'$(TargetFramework)' == 'net462'" />
   </ItemGroup>
 
   <ItemGroup>
