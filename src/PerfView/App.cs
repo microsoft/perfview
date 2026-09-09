@@ -905,6 +905,17 @@ namespace PerfView
                     return result == System.Windows.MessageBoxResult.Yes;
                 };
 
+                ret.AuthorizeDownload = request =>
+                {
+                    var result = XamlMessageBox.Show(
+                        $"PerfView wants to download source code for:\n{request.BuildTimeFilePath}\n\n" +
+                        $"From:\n{request.Uri.AbsoluteUri}\n\nDo you want to allow this download?",
+                        "Source Code Download",
+                        System.Windows.MessageBoxButton.YesNo);
+
+                    return result == System.Windows.MessageBoxResult.Yes;
+                };
+
                 ret.AuthorizeSourceServerCommand = request =>
                 {
                     var result = XamlMessageBox.Show(
@@ -922,6 +933,12 @@ namespace PerfView
 #endif
             {
                 ret.SecurityCheck = (pdbFile => true);
+#if !PERFVIEW_COLLECT
+                ret.AuthorizeDownload = request =>
+                {
+                    return true;
+                };
+#endif
                 ret.AuthorizeSourceServerCommand = request =>
                 {
 #if PERFVIEW_COLLECT

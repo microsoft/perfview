@@ -449,20 +449,32 @@ namespace Microsoft.Diagnostics.Symbols
             string binaryIndexPath = $"{simpleFileName}/elf-buildid-{normalizedBuildId}/{simpleFileName}";
 
             string resultPath = null;
+            string localElfFilePath = null;
+            if (elfFilePath != null)
+            {
+                if (!PathUtilities.TryGetSafeLocalFilePath(elfFilePath, out localElfFilePath))
+                {
+                    m_log.WriteLine(
+                        "FindElfSymbolFilePath: Ignoring unsafe ELF file path {0}.",
+                        elfFilePath);
+                }
+            }
 
             // Phase 1: Check for debug symbol files adjacent to the binary (mirrors PDB local search).
             // Only look for dedicated debug files here — the binary itself is deferred to Phase 3.
-            if (elfFilePath != null)
+            if (localElfFilePath != null)
             {
-                string elfDir = Path.GetDirectoryName(elfFilePath);
+                string elfDir = Path.GetDirectoryName(localElfFilePath);
                 if (!string.IsNullOrEmpty(elfDir))
                 {
-                    m_log.WriteLine("FindElfSymbolFilePath: Checking relative to ELF binary path {0}", elfFilePath);
-                    string basePath = elfFilePath;
+                    m_log.WriteLine("FindElfSymbolFilePath: Checking relative to ELF binary path {0}", localElfFilePath);
+                    string basePath = localElfFilePath;
+                    string executableFileName = Path.GetFileName(basePath);
 
                     // Try {path}.debug
-                    string candidate = basePath + ".debug";
-                    if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                    string candidate;
+                    if (TryGetDebugLinkCandidate(elfDir, executableFileName + ".debug", out candidate) &&
+                        ElfBuildIdMatches(candidate, normalizedBuildId))
                     {
                         resultPath = candidate;
                     }
@@ -470,8 +482,8 @@ namespace Microsoft.Diagnostics.Symbols
                     // Try {path}.dbg
                     if (resultPath == null)
                     {
-                        candidate = basePath + ".dbg";
-                        if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                        if (TryGetDebugLinkCandidate(elfDir, executableFileName + ".dbg", out candidate) &&
+                            ElfBuildIdMatches(candidate, normalizedBuildId))
                         {
                             resultPath = candidate;
                         }
@@ -494,8 +506,8 @@ namespace Microsoft.Diagnostics.Symbols
                         if (debugLink != null)
                         {
                             // Try {bindir}/{debuglink}
-                            candidate = Path.Combine(elfDir, debugLink);
-                            if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                            if (TryGetDebugLinkCandidate(elfDir, debugLink, out candidate) &&
+                                ElfBuildIdMatches(candidate, normalizedBuildId))
                             {
                                 resultPath = candidate;
                             }
@@ -503,8 +515,9 @@ namespace Microsoft.Diagnostics.Symbols
                             // Try {bindir}/.debug/{debuglink}
                             if (resultPath == null)
                             {
-                                candidate = Path.Combine(elfDir, ".debug", debugLink);
-                                if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                                string debugDirectory = Path.Combine(elfDir, ".debug");
+                                if (TryGetDebugLinkCandidate(debugDirectory, debugLink, out candidate) &&
+                                    ElfBuildIdMatches(candidate, normalizedBuildId))
                                 {
                                     resultPath = candidate;
                                 }
@@ -578,11 +591,11 @@ namespace Microsoft.Diagnostics.Symbols
             // Phase 3: Last resort — try the binary itself (has .dynsym at minimum).
             // This is deferred until after symbol servers so we prefer proper debug symbols
             // (.symtab) over the stripped binary whenever a symbol server can provide them.
-            if (resultPath == null && elfFilePath != null)
+            if (resultPath == null && localElfFilePath != null)
             {
-                if (ElfBuildIdMatches(elfFilePath, normalizedBuildId))
+                if (ElfBuildIdMatches(localElfFilePath, normalizedBuildId))
                 {
-                    resultPath = elfFilePath;
+                    resultPath = localElfFilePath;
                 }
             }
 
@@ -605,6 +618,48 @@ namespace Microsoft.Diagnostics.Symbols
             return resultPath;
         }
 
+        /// <summary>
+        /// Constructs a debug-link candidate that is a direct child of the intended search directory.
+        /// </summary>
+        internal static bool TryGetDebugLinkCandidate(string searchDirectory, string debugLink, out string candidate)
+        {
+            candidate = null;
+            if (string.IsNullOrEmpty(searchDirectory) ||
+                !PathUtilities.IsSafeFileName(debugLink))
+            {
+                return false;
+            }
+
+            try
+            {
+                string canonicalSearchDirectory = Path.GetFullPath(searchDirectory);
+                string canonicalCandidate = Path.GetFullPath(Path.Combine(canonicalSearchDirectory, debugLink));
+                if (!PathUtilities.IsPathWithinDirectory(canonicalCandidate, canonicalSearchDirectory))
+                {
+                    return false;
+                }
+
+                candidate = canonicalCandidate;
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (NotSupportedException)
+            {
+                return false;
+            }
+            catch (PathTooLongException)
+            {
+                return false;
+            }
+            catch (System.Security.SecurityException)
+            {
+                return false;
+            }
+        }
+
         // Find an executable file path (not a PDB) based on information about the file image.  
         /// <summary>
         /// This API looks up an executable file, by its build-timestamp and size (on a symbol server),  'fileName' should be 
@@ -622,7 +677,16 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     if (exeIndexPath == null)
                     {
-                        exeIndexPath = fileName + @"\" + buildTimestamp.ToString("x") + sizeOfImage.ToString("x") + @"\" + fileName;
+                        // Symbol-server convention (matched by symsrv.dll/symchk) is
+                        // <TimeDateStamp:X8><SizeOfImage:X> — TimeDateStamp zero-padded
+                        // to 8 hex digits, SizeOfImage variable-width with no padding.
+                        // Using "x" without width drops the leading hex zero when the
+                        // value is < 0x10000000, producing a malformed key that 404s
+                        // even when the binary is indexed on the server. This hits real
+                        // binaries built with /Brepro (deterministic builds), where the
+                        // PE TimeDateStamp is a hash that can have leading zeros (e.g.
+                        // SystemSettings.dll on recent Windows: TS=0x0D9F641E).
+                        exeIndexPath = fileName + @"\" + buildTimestamp.ToString("x8") + sizeOfImage.ToString("x") + @"\" + fileName;
                     }
 
                     string cache = element.Cache;
@@ -911,6 +975,18 @@ namespace Microsoft.Diagnostics.Symbols
         /// If this function returns true, we assume that it is OK to use the PDB.  
         /// </summary>
         public Func<string, bool> SecurityCheck { get; set; }
+
+        /// <summary>
+        /// We call back on this before downloading source code over HTTP. The callback receives a
+        /// <see cref="DownloadAuthorizationRequest"/> describing the download and must return
+        /// <c>true</c> to allow it or <c>false</c> to deny it. Authorization of the initial URI also
+        /// covers redirects followed by the HTTP client.
+        ///
+        /// If this property is <c>null</c>, source downloads are denied by default. To enable source
+        /// downloads, set this property to an interactive prompt, an allow-list policy, or
+        /// <c>request =&gt; true</c> for fully trusted scenarios.
+        /// </summary>
+        public Func<DownloadAuthorizationRequest, bool> AuthorizeDownload { get; set; }
 
         /// <summary>
         /// We call back on this before executing a source-server fetch command (e.g. <c>tf.exe view ...</c> or
@@ -1224,6 +1300,36 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         #region private
+        internal bool CheckDownloadAuthorization(DownloadAuthorizationRequest request)
+        {
+            var authorize = AuthorizeDownload;
+            if (authorize == null)
+            {
+                m_log.WriteLine("Source download denied by default because no authorization policy is installed: {0}", request.Uri.AbsoluteUri);
+                return false;
+            }
+
+            bool authorized;
+            try
+            {
+                authorized = authorize(request);
+            }
+            catch (Exception exception)
+            {
+                m_log.WriteLine(
+                    "Source download denied because the authorization policy threw an exception for {0}: {1}",
+                    request.Uri.AbsoluteUri,
+                    exception);
+                return false;
+            }
+
+            m_log.WriteLine(
+                "Source download authorization {0}: {1}",
+                authorized ? "GRANTED" : "DENIED",
+                request.Uri.AbsoluteUri);
+            return authorized;
+        }
+
         /// <summary>
         /// Validates and normalizes an ELF build-id for use in SSQP keys.
         /// </summary>
@@ -2354,6 +2460,42 @@ namespace Microsoft.Diagnostics.Symbols
     }
 
     /// <summary>
+    /// Describes a source download that is ready to start. Passed to
+    /// <see cref="SymbolReader.AuthorizeDownload"/> so the caller can choose whether to allow it.
+    /// </summary>
+    /// <remarks>
+    /// This is a class so that additional download context can be added in the future without changing
+    /// the <see cref="SymbolReader.AuthorizeDownload"/> delegate signature.
+    /// </remarks>
+    public sealed class DownloadAuthorizationRequest
+    {
+        internal DownloadAuthorizationRequest(
+            string buildTimeFilePath,
+            string symbolFilePath,
+            Uri uri)
+        {
+            BuildTimeFilePath = buildTimeFilePath;
+            SymbolFilePath = symbolFilePath;
+            Uri = uri;
+        }
+
+        /// <summary>
+        /// Gets the source file path recorded at build time.
+        /// </summary>
+        public string BuildTimeFilePath { get; }
+
+        /// <summary>
+        /// Gets the path of the PDB that supplied the source information.
+        /// </summary>
+        public string SymbolFilePath { get; }
+
+        /// <summary>
+        /// Gets the remote source URI.
+        /// </summary>
+        public Uri Uri { get; }
+    }
+
+    /// <summary>
     /// Describes a source-server fetch command that has been validated and is about to be executed.
     /// Passed to <see cref="SymbolReader.AuthorizeSourceServerCommand"/> so the caller can choose whether
     /// to allow execution.
@@ -2638,6 +2780,15 @@ namespace Microsoft.Diagnostics.Symbols
             string url = Url;
             if (url != null)
             {
+                var request = new DownloadAuthorizationRequest(
+                    BuildTimeFilePath,
+                    _symbolModule.SymbolFilePath,
+                    new Uri(url));
+                if (!_symbolModule.SymbolReader.CheckDownloadAuthorization(request))
+                {
+                    return null;
+                }
+
                 var httpClient = _symbolModule.SymbolReader.HttpClient;
                 HttpResponseMessage response = httpClient.GetAsync(url).Result;
 

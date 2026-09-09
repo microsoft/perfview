@@ -844,6 +844,25 @@ Below are the steps in converting logging an event with a stack to a resolved sy
     2. For operating system DLLs, the PDBS live on what is called a symbol server. To find these your `_NT_SYMBOL_PATH` must include the name for these symbol servers (the public Microsoft symbol server is `SRV*https://msdl.microsoft.com/download/symbols`). However to look up a DLL in the symbol server, **you need a special GUID associated with the DLL, and a RAW ETL file does NOT INCLUDE this GUID**!. If you try to look up the DLL's PDB on the machine where the DLL exists, `TraceEvent` can fetch the necessary GUID from the DLL itself, but if the ETL file was copied to another machine this will not work and the PDB cannot be fetched. Running the `TraceEventSource.MergeInPlace` operation rewrites the raw ETL file so that it includes the necessary DLL GUIDs and thus is a requirement if you move the data off the collection machine (and you want symbolic information for native code stacks).
     3. For .NET code all the library code is precompiled (NGENed) and so is looked up using a PDB like the native case. However unlike native DLLs, the PDBs for the NGEN images are typically not saved on the Microsoft symbol server. Instead you must generate the PDBs for the NGEN images from the IL images as you need them. Again if you resolve the symbols on the machine where the collection happened, at the time you resolve the symbols `TraceEvent`'s `SymbolReader` class will automatically generate the NGEN image for you and cache it, however if you move the ETL file off the machine, you need to generate the NGEN PDBs as well as merge the ETL file to get the symbolic information for the .NET code in NGEN images. This is what the `SymbolReader.GenerateNGenSymbolsForModule` method can help you do. TODO MORE
 
+`SymbolReader` has three independent authorization checks:
+
+- `SecurityCheck` controls whether a PDB found in an unsafe local location, such as beside an executable or in its build directory, may be used. The callback receives the PDB path. If the property is not set or returns `false`, the PDB is rejected. Applications should prompt the user or allow only explicitly trusted directories.
+- `AuthorizeDownload` controls whether Source Link and HTTP source-server downloads may retrieve source code. The callback receives a `DownloadAuthorizationRequest` and runs immediately before the HTTP request; approval also covers redirects followed by the HTTP client. It does not run for symbol/PDB downloads, local source, embedded source, or a valid cached source file. If the property is not set, source downloads are denied by default. Applications should prompt the user or enforce an explicit host/repository allow-list.
+- `AuthorizeSourceServerCommand` controls whether a validated command derived from PDB source-server data may execute. The callback receives a `SourceServerAuthorizationRequest` containing the exact rebuilt command. If the property is not set or returns `false`, the command is not run. Applications should prompt the user before execution or use a narrowly scoped policy. Before invoking the callback, TraceEvent independently verifies that the command uses a supported executable and allowed arguments. Returning `true` from the callback does not bypass that validation.
+
+```C#
+using (var symbolReader = new SymbolReader(log))
+{
+    symbolReader.SecurityCheck = pdbPath =>
+        trustedPdbDirectories.Contains(Path.GetDirectoryName(pdbPath));
+    symbolReader.AuthorizeDownload = request =>
+        trustedSourceHosts.Contains(request.Uri.Host);
+    symbolReader.AuthorizeSourceServerCommand = request => false;
+}
+```
+
+Each `true` result authorizes only the operation described by that callback invocation. Exceptions from `AuthorizeDownload` are logged and deny the download.
+
 So in summary to get good stacks and have them work on any machine for any code you need to:
 
 1. Collect the necessary ImageLoad and JIT compile events (including CAPTURE\_STATE so you get information about events that preceded data collection start).

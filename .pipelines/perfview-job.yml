@@ -1,5 +1,7 @@
 parameters:
   flavor: 'Debug'
+  sourceLinkRepositoryUrl: ''
+  sourceLinkRevisionId: ''
 
 steps:
 - task: UseDotNet@2
@@ -8,12 +10,21 @@ steps:
     version: 8.0.x
 
 - task: MSBuild@1
+  displayName: 'Restore PerfView.sln'
+  inputs:
+    solution: PerfView.sln
+    maximumCpuCount: true
+    msbuildArchitecture: 'x64'
+    msbuildArguments: '/t:restore'
+    configuration: ${{ parameters.flavor }}
+
+- task: MSBuild@1
   displayName: 'Build PerfView.sln'
   inputs:
     solution: PerfView.sln
     maximumCpuCount: true
     msbuildArchitecture: 'x64'
-    msbuildArguments: '/restore'
+    msbuildArguments: '/p:SourceLinkRepositoryUrl=${{ parameters.sourceLinkRepositoryUrl }} /p:SourceLinkRevisionId=${{ parameters.sourceLinkRevisionId }}'
     configuration: ${{ parameters.flavor }}
 
 - task: VisualStudioTestPlatformInstaller@1

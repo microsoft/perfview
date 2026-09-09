@@ -561,7 +561,7 @@ namespace PerfView
                 "in some scenarios where NGEN PDB are not working properly.");
             parser.DefineOptionalQualifier("NoV2Rundown", ref NoV2Rundown,
                 "Don't do rundown for .NET (CLR) V2 processes.");
-            parser.DefineOptionalQualifier("TrustPdbs", ref TrustPdbs, "Normally PerfView does not trust PDBs outside the _NT_SYMBOL_PATH and pops a dialog box.  Suppress this.");
+            parser.DefineOptionalQualifier("TrustPdbs", ref TrustPdbs, "Trust PDBs outside _NT_SYMBOL_PATH and authorize PDB-directed source downloads without prompting.");
             parser.DefineOptionalQualifier("AcceptEULA", ref AcceptEULA, "Accepts the EULA associated with PerfView.");
             parser.DefineOptionalQualifier("DataFile", ref DataFile,
                 "FileName of the profile data to generate.");

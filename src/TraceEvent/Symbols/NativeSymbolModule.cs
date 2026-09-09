@@ -567,7 +567,16 @@ namespace Microsoft.Diagnostics.Symbols
                 if (Uri.TryCreate(target, UriKind.Absolute, out Uri uri)
                     && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
                 {
+                    var httpRequest = new DownloadAuthorizationRequest(
+                        BuildTimeFilePath,
+                        _symbolModule.SymbolFilePath,
+                        uri);
                     if (!TryCreateSafeSourceCacheDirectory(safeCachePath))
+                    {
+                        return null;
+                    }
+
+                    if (!_symbolModule.SymbolReader.CheckDownloadAuthorization(httpRequest))
                     {
                         return null;
                     }

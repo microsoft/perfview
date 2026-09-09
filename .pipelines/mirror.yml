@@ -104,6 +104,20 @@ extends:
             inputs:
               script: 'git checkout $(SourceBranch)'
 
+          - task: PowerShell@1
+            displayName: 'Record GitHub Commit'
+            inputs:
+              scriptType: inlineScript
+              inlineScript: |
+                $githubCommit = (git rev-parse HEAD).Trim()
+                if ($LASTEXITCODE -ne 0 -or $githubCommit -notmatch '^[0-9a-f]{40}$')
+                {
+                  Write-Error "Failed to resolve the GitHub commit."
+                  exit 1
+                }
+
+                Write-Host "##vso[task.setvariable variable=GitHubCommit;]$githubCommit"
+
           - task: CmdLine@2
             displayName: 'Create Mirror Branch'
             inputs:
@@ -119,6 +133,51 @@ extends:
             displayName: 'Pull AzDO SourceBranch'
             inputs:
               script: 'git pull --strategy=recursive --strategy-option no-renames https://x-access-token:$(AzdoToken)@devdiv.visualstudio.com/DevDiv/_git/perfView $(SourceBranch)'
+
+          - task: PowerShell@1
+            displayName: 'Record GitHub Commit Metadata'
+            inputs:
+              scriptType: inlineScript
+              inlineScript: |
+                $ErrorActionPreference = 'Stop'
+                $existingCommit = @(
+                  Get-Content internal/.github-last-mirrored-commit -ErrorAction SilentlyContinue |
+                    Where-Object { $_ -and -not $_.TrimStart().StartsWith('#') }
+                )
+                if ($existingCommit.Count -eq 1)
+                {
+                  git merge-base --is-ancestor $existingCommit[0] $(GitHubCommit)
+                  if ($LASTEXITCODE -eq 1)
+                  {
+                    Write-Error "The previously mirrored GitHub commit is not an ancestor of the commit being mirrored. This may indicate that mirror runs completed out of order or that GitHub history was rewritten; refusing to replace the recorded commit."
+                    exit 1
+                  }
+                  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                }
+                elseif ($existingCommit.Count -gt 1)
+                {
+                  Write-Error "The mirrored GitHub commit metadata contains multiple commit values."
+                  exit 1
+                }
+
+                $metadata = @(
+                  '# This file is updated by .pipelines/mirror.yml when GitHub main is mirrored to Azure DevOps.'
+                  '# Do not update this file manually.'
+                  '$(GitHubCommit)'
+                )
+                Set-Content -Path internal/.github-last-mirrored-commit -Value $metadata -Encoding Ascii
+                git add internal/.github-last-mirrored-commit
+                if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                git diff --cached --quiet
+                if ($LASTEXITCODE -eq 1)
+                {
+                  git commit -m "Update mirrored GitHub commit"
+                  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                }
+                elseif ($LASTEXITCODE -ne 0)
+                {
+                  exit $LASTEXITCODE
+                }
 
           - task: CmdLine@2
             displayName: 'Run git push'

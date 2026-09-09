@@ -1,8 +1,8 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using PerfView.TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -824,14 +824,131 @@ namespace TraceEventTests
             var builder = new ElfBuilder()
                 .Set64Bit(true)
                 .SetPTLoad(0x400000, 0)
-                .SetDebugLink("libcoreclr.so.dbg");
+                .SetDebugLink("foo.debug");
 
             byte[] data = builder.Build();
             RunWithTempFile(data, (path) =>
             {
                 string result = ElfSymbolModule.ReadDebugLink(path);
-                Assert.Equal("libcoreclr.so.dbg", result);
+                Assert.Equal("foo.debug", result);
             });
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(".")]
+        [InlineData("..")]
+        [InlineData("dir/foo.debug")]
+        [InlineData(@"dir\foo.debug")]
+        [InlineData("../foo.debug")]
+        [InlineData(@"..\foo.debug")]
+        [InlineData("/foo.debug")]
+        [InlineData(@"\foo.debug")]
+        [InlineData(@"C:\foo.debug")]
+        [InlineData("C:foo.debug")]
+        [InlineData(@"\\server\share\foo.debug")]
+        [InlineData(@"\\?\C:\foo.debug")]
+        [InlineData(@"\\.\C:\foo.debug")]
+        [InlineData("foo.debug:stream")]
+        [InlineData("foo?.debug")]
+        [InlineData("foo.debug.")]
+        [InlineData("foo.debug ")]
+        [InlineData("CON")]
+        [InlineData("NUL.debug")]
+        [InlineData("COM0")]
+        [InlineData("CLOCK$.debug")]
+        [InlineData("foo\u007f.debug")]
+        public void ReadDebugLink_InvalidFileName_ReturnsNull(string debugLink)
+        {
+            byte[] data = new ElfBuilder()
+                .Set64Bit(true)
+                .SetPTLoad(0x400000, 0)
+                .SetDebugLink(debugLink)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_MissingNullTerminator_ReturnsNull()
+        {
+            byte[] sectionData = new byte[]
+            {
+                (byte)'f', (byte)'o', (byte)'o', (byte)'.', (byte)'d',
+                (byte)'e', (byte)'b', (byte)'u', (byte)'g',
+                0, 0, 0, 0,
+            };
+            byte[] data = new ElfBuilder()
+                .SetDebugLinkSectionData(sectionData)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_TruncatedCrc_ReturnsNull()
+        {
+            byte[] sectionData = new byte[] { (byte)'a', 0, 0, 0, 1, 2, 3 };
+            byte[] data = new ElfBuilder()
+                .SetDebugLinkSectionData(sectionData)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_NonZeroPadding_ReturnsNull()
+        {
+            byte[] sectionData = new byte[] { (byte)'a', 0, 1, 0, 1, 2, 3, 4 };
+            byte[] data = new ElfBuilder()
+                .SetDebugLinkSectionData(sectionData)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_MalformedUtf8_ReturnsNull()
+        {
+            byte[] sectionData = new byte[] { 0xc3, 0x28, 0, 0, 1, 2, 3, 4 };
+            byte[] data = new ElfBuilder()
+                .SetDebugLinkSectionData(sectionData)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_NonZeroCrc_ReturnsFilename()
+        {
+            byte[] sectionData = new byte[] { (byte)'a', 0, 0, 0, 1, 2, 3, 4 };
+            byte[] data = new ElfBuilder()
+                .SetDebugLinkSectionData(sectionData)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Equal("a", ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_SectionOutsideFile_ReturnsNull()
+        {
+            byte[] data = new ElfBuilder()
+                .SetDebugLink("foo.debug")
+                .SetDebugLinkSectionBounds(ulong.MaxValue, 16)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
+        }
+
+        [Fact]
+        public void ReadDebugLink_SectionExtendsPastFile_ReturnsNull()
+        {
+            byte[] data = new ElfBuilder()
+                .SetDebugLink("foo.debug")
+                .SetDebugLinkSectionBounds(64, 4096)
+                .Build();
+
+            RunWithTempFile(data, path => Assert.Null(ElfSymbolModule.ReadDebugLink(path)));
         }
 
         [Fact]
@@ -948,24 +1065,17 @@ namespace TraceEventTests
         }
 
         [Fact]
-        public void MatchOrInitPE_WhenElf_ReturnsNull()
+        public void MatchOrInitPE_WhenElf_RejectsMismatch()
         {
             var moduleFile = new TraceModuleFile(null, 0, (ModuleFileIndex)0);
-            moduleFile.MatchOrInitElf(); // Set as ELF first
+            moduleFile.MatchOrInitElf();
 
-            // Suppress Debug.Assert so we can verify the return value.
-            var listeners = new TraceListener[Trace.Listeners.Count];
-            Trace.Listeners.CopyTo(listeners, 0);
-            Trace.Listeners.Clear();
-            try
-            {
-                var pe = moduleFile.MatchOrInitPE();
-                Assert.Null(pe);
-            }
-            finally
-            {
-                Trace.Listeners.AddRange(listeners);
-            }
+#if DEBUG
+            DebugAssertionTestConfiguration.AssertValid();
+            Assert.ThrowsAny<Exception>(() => moduleFile.MatchOrInitPE());
+#else
+            Assert.Null(moduleFile.MatchOrInitPE());
+#endif
         }
 
         [Fact]
@@ -988,24 +1098,17 @@ namespace TraceEventTests
         }
 
         [Fact]
-        public void MatchOrInitElf_WhenPE_ReturnsNull()
+        public void MatchOrInitElf_WhenPE_RejectsMismatch()
         {
             var moduleFile = new TraceModuleFile(null, 0, (ModuleFileIndex)0);
-            moduleFile.MatchOrInitPE(); // Set as PE first
+            moduleFile.MatchOrInitPE();
 
-            // Suppress Debug.Assert so we can verify the return value.
-            var listeners = new TraceListener[Trace.Listeners.Count];
-            Trace.Listeners.CopyTo(listeners, 0);
-            Trace.Listeners.Clear();
-            try
-            {
-                var elf = moduleFile.MatchOrInitElf();
-                Assert.Null(elf);
-            }
-            finally
-            {
-                Trace.Listeners.AddRange(listeners);
-            }
+#if DEBUG
+            DebugAssertionTestConfiguration.AssertValid();
+            Assert.ThrowsAny<Exception>(() => moduleFile.MatchOrInitElf());
+#else
+            Assert.Null(moduleFile.MatchOrInitElf());
+#endif
         }
 
         #endregion

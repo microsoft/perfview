@@ -6,4 +6,47 @@
     <None Include="$(AppDesignerFolder)\launchSettings.json" Condition="Exists('$(AppDesignerFolder)\launchSettings.json')" />
   </ItemGroup>
 
+  <!--
+    Official and internal CI builds resolve the equivalent GitHub commit before invoking
+    MSBuild. Set the standard repository properties early so assembly and package metadata
+    use the same GitHub identity as the PDB.
+  -->
+  <PropertyGroup Condition="'$(SourceLinkRevisionId)' != ''">
+    <RepositoryUrl>$(SourceLinkRepositoryUrl)</RepositoryUrl>
+    <SourceRevisionId>$(SourceLinkRevisionId)</SourceRevisionId>
+  </PropertyGroup>
+
+  <!-- Reject partial overrides instead of generating a PDB with mixed repository metadata. -->
+  <Target Name="ValidateGitHubSourceLinkOverride"
+          BeforeTargets="InitializeSourceControlInformation"
+          Condition="'$(SourceLinkRepositoryUrl)' != '' or '$(SourceLinkRevisionId)' != ''">
+    <Error Condition="'$(SourceLinkRepositoryUrl)' == ''"
+           Text="SourceLinkRepositoryUrl must be set when SourceLinkRevisionId is set." />
+    <Error Condition="'$(SourceLinkRevisionId)' == ''"
+           Text="SourceLinkRevisionId must be set when SourceLinkRepositoryUrl is set." />
+  </Target>
+
+  <!--
+    Git source discovery reads the Azure DevOps checkout. After source control information is
+    initialized, replace that discovered identity before Source Link generates its mapping.
+  -->
+  <Target Name="OverrideGitHubSourceLink"
+          AfterTargets="InitializeSourceControlInformation"
+          Condition="'$(SourceLinkRepositoryUrl)' != '' and '$(SourceLinkRevisionId)' != ''">
+    <PropertyGroup>
+      <PrivateRepositoryUrl>$(SourceLinkRepositoryUrl)</PrivateRepositoryUrl>
+      <ScmRepositoryUrl>$(SourceLinkRepositoryUrl)</ScmRepositoryUrl>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Only rewrite this repository's root. Nested repositories retain their own identity. -->
+      <SourceRoot Update="@(SourceRoot)"
+                  Condition="'%(SourceRoot.SourceControl)' == 'git' and '%(SourceRoot.ContainingRoot)' == ''">
+        <RepositoryUrl>$(SourceLinkRepositoryUrl)</RepositoryUrl>
+        <ScmRepositoryUrl>$(SourceLinkRepositoryUrl)</ScmRepositoryUrl>
+        <RevisionId>$(SourceLinkRevisionId)</RevisionId>
+      </SourceRoot>
+    </ItemGroup>
+  </Target>
+
 </Project>

@@ -11,6 +11,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,7 +40,10 @@ namespace TraceEventTests
             : base(output)
         {
             _handler = new InterceptingHandler();
-            _symbolReader = new SymbolReader(TextWriter.Null, nt_symbol_path: null, httpClientDelegatingHandler: _handler);
+            _symbolReader = new SymbolReader(TextWriter.Null, nt_symbol_path: null, httpClientDelegatingHandler: _handler)
+            {
+                AuthorizeDownload = _ => true
+            };
             PrepareTestData();
         }
 
@@ -341,6 +345,106 @@ namespace TraceEventTests
             Assert.False(result4, "Should not match any pattern");
             Assert.Null(url4);
             Assert.Null(relativePath4);
+        }
+
+        [Fact]
+        public void SourceLinkDownloadWithoutAuthorizerIsDeniedBeforeHttpRequest()
+        {
+            var handler = new InterceptingHandler();
+            string cacheDirectory = CreateTemporaryDirectory();
+            string pdbPath = Path.Combine(s_inputPdbDir, FileName_CsPortablePdb1);
+
+            try
+            {
+                using (var reader = new SymbolReader(TextWriter.Null, httpClientDelegatingHandler: handler))
+                {
+                    reader.SourceCacheDirectory = cacheDirectory;
+                    reader.SourcePath = string.Empty;
+                    SourceFile sourceFile = GetPortableSourceFile(reader, pdbPath);
+
+                    string resolvedPath = null;
+                    WithBuildTimeSourceUnavailable(sourceFile, () => resolvedPath = sourceFile.GetSourceFile());
+
+                    Assert.Null(resolvedPath);
+                    Assert.Empty(handler.Requests);
+                    Assert.Empty(Directory.GetFiles(cacheDirectory));
+                }
+            }
+            finally
+            {
+                Directory.Delete(cacheDirectory, recursive: true);
+            }
+        }
+
+        [Fact]
+        public void SourceLinkDownloadDeniedBeforeHttpRequest()
+        {
+            var handler = new InterceptingHandler();
+            DownloadAuthorizationRequest authorizationRequest = null;
+            string cacheDirectory = CreateTemporaryDirectory();
+            string pdbPath = Path.Combine(s_inputPdbDir, FileName_CsPortablePdb1);
+
+            try
+            {
+                using (var reader = new SymbolReader(TextWriter.Null, httpClientDelegatingHandler: handler))
+                {
+                    reader.AuthorizeDownload = request =>
+                    {
+                        authorizationRequest = request;
+                        return false;
+                    };
+                    reader.SourceCacheDirectory = cacheDirectory;
+                    reader.SourcePath = string.Empty;
+                    SourceFile sourceFile = GetPortableSourceFile(reader, pdbPath);
+
+                    string resolvedPath = null;
+                    WithBuildTimeSourceUnavailable(sourceFile, () => resolvedPath = sourceFile.GetSourceFile());
+
+                    Assert.Null(resolvedPath);
+                    Assert.NotNull(authorizationRequest);
+                    Assert.Equal(sourceFile.BuildTimeFilePath, authorizationRequest.BuildTimeFilePath);
+                    Assert.Equal(pdbPath, authorizationRequest.SymbolFilePath);
+                    Assert.Equal(
+                        "https://contoso.com/fake-source-link-url/CsPortablePdb1/Program.cs",
+                        authorizationRequest.Uri.AbsoluteUri);
+                    Assert.Empty(handler.Requests);
+                    Assert.Empty(Directory.GetFiles(cacheDirectory));
+                }
+            }
+            finally
+            {
+                Directory.Delete(cacheDirectory, recursive: true);
+            }
+        }
+
+        [Fact]
+        public void SourceLinkDownloadAuthorizationExceptionDeniesBeforeHttpRequest()
+        {
+            var handler = new InterceptingHandler();
+            string cacheDirectory = CreateTemporaryDirectory();
+            string pdbPath = Path.Combine(s_inputPdbDir, FileName_CsPortablePdb1);
+
+            try
+            {
+                using (var reader = new SymbolReader(TextWriter.Null, httpClientDelegatingHandler: handler))
+                {
+                    reader.AuthorizeDownload = _ => throw new InvalidOperationException("Authorization failed.");
+                    reader.SourceCacheDirectory = cacheDirectory;
+                    reader.SourcePath = string.Empty;
+                    SourceFile sourceFile = GetPortableSourceFile(reader, pdbPath);
+
+                    string resolvedPath = null;
+                    WithBuildTimeSourceUnavailable(sourceFile, () => resolvedPath = sourceFile.GetSourceFile());
+
+                    Assert.Null(resolvedPath);
+                    Assert.Empty(handler.Requests);
+                    Assert.Empty(Directory.GetFiles(cacheDirectory));
+                }
+            }
+            finally
+            {
+                Directory.Delete(cacheDirectory, recursive: true);
+            }
         }
 
         /// <summary>
@@ -1135,6 +1239,77 @@ namespace TraceEventTests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TryGetDebugLinkCandidate_ValidSearchLocation_ReturnsContainedPath(bool useDebugSubdirectory)
+        {
+            string executableDirectory = Path.GetFullPath(Path.Combine(OutputDir, "elf-debuglink-candidate"));
+            string searchDirectory = useDebugSubdirectory
+                ? Path.Combine(executableDirectory, ".debug")
+                : executableDirectory;
+
+            Assert.True(SymbolReader.TryGetDebugLinkCandidate(searchDirectory, "foo.debug", out string candidate));
+            Assert.Equal("foo.debug", Path.GetFileName(candidate));
+
+            StringComparer comparer = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? StringComparer.OrdinalIgnoreCase
+                : StringComparer.Ordinal;
+            Assert.Equal(Path.GetFullPath(searchDirectory), Path.GetDirectoryName(candidate), comparer);
+        }
+
+        [Theory]
+        [InlineData("../foo.debug")]
+        [InlineData(@"..\foo.debug")]
+        [InlineData("/foo.debug")]
+        [InlineData(@"C:\foo.debug")]
+        [InlineData(@"\\server\share\foo.debug")]
+        [InlineData(@"\\?\C:\foo.debug")]
+        [InlineData("foo.debug:stream")]
+        public void TryGetDebugLinkCandidate_InvalidFileName_ReturnsFalse(string debugLink)
+        {
+            Assert.False(SymbolReader.TryGetDebugLinkCandidate(OutputDir, debugLink, out string candidate));
+            Assert.Null(candidate);
+        }
+
+        [Theory]
+        [InlineData(".debug")]
+        [InlineData(".dbg")]
+        public void FindElfSymbolFilePath_ExecutableSuffixCandidateRemainsAdjacent(string suffix)
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-adjacent-suffix-" + suffix.Substring(1));
+            try
+            {
+                const string buildId = "6677889900000000";
+                Directory.CreateDirectory(tempDir);
+                string binaryPath = Path.Combine(tempDir, "libsuffix.so");
+                File.WriteAllBytes(binaryPath, new ElfBuilder().Build());
+
+                string debugPath = binaryPath + suffix;
+                File.WriteAllBytes(debugPath, CreateMinimalElfWithBuildId(buildId));
+
+                string emptySymbolDirectory = Path.Combine(tempDir, "empty");
+                Directory.CreateDirectory(emptySymbolDirectory);
+                _symbolReader.SymbolPath = emptySymbolDirectory;
+                _symbolReader.SecurityCheck = _ => true;
+
+                string result = _symbolReader.FindElfSymbolFilePath(
+                    "libsuffix.so",
+                    buildId,
+                    elfFilePath: binaryPath);
+
+                Assert.Equal(debugPath, result);
+                Assert.Equal(
+                    Path.GetFullPath(tempDir),
+                    Path.GetDirectoryName(Path.GetFullPath(result)));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
         [Fact]
         public void FindElfSymbolFilePath_TraversalFileNameCannotEscapeSymbolCache()
         {
@@ -1153,6 +1328,81 @@ namespace TraceEventTests
                     () => _symbolReader.FindElfSymbolFilePath("..", "0123456789abcdef"));
                 Assert.Empty(_handler.Requests);
                 Assert.Empty(Directory.GetFiles(outsideDir, "*", SearchOption.AllDirectories));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Theory]
+        [InlineData("../relative/libunsafe.so")]
+        [InlineData(@"C:relative\libunsafe.so")]
+        [InlineData(@"\\server\share\libunsafe.so")]
+        [InlineData(@"\\?\C:\libunsafe.so")]
+        [InlineData(@"\\.\C:\libunsafe.so")]
+        public void FindElfSymbolFilePath_UnsafeExecutablePathCausesNoAccess(string executablePath)
+        {
+            string emptySymbolDirectory = Path.Combine(OutputDir, "elf-unsafe-path-empty");
+            Directory.CreateDirectory(emptySymbolDirectory);
+            var securityChecks = new List<string>();
+            _symbolReader.SymbolPath = emptySymbolDirectory;
+            _symbolReader.SecurityCheck = path =>
+            {
+                securityChecks.Add(path);
+                return true;
+            };
+
+            string result = _symbolReader.FindElfSymbolFilePath(
+                "libunsafe.so",
+                "1234abcd00000000",
+                elfFilePath: executablePath);
+
+            Assert.Null(result);
+            Assert.Empty(securityChecks);
+            Assert.Empty(_handler.Requests);
+        }
+
+        [Fact]
+        public void FindElfSymbolFilePath_RejectedDebugLinkDoesNotProbeOutsideDirectory()
+        {
+            string tempDir = Path.Combine(OutputDir, "elf-debuglink-rejected");
+            try
+            {
+                const string buildId = "1122aabb00000000";
+                string binaryDirectory = Path.Combine(tempDir, "bin");
+                string emptySymbolDirectory = Path.Combine(tempDir, "empty");
+                Directory.CreateDirectory(binaryDirectory);
+                Directory.CreateDirectory(emptySymbolDirectory);
+
+                string binaryPath = Path.Combine(binaryDirectory, "libunsafe.so");
+                byte[] binaryData = new ElfBuilder()
+                    .Set64Bit(true)
+                    .SetPTLoad(0x400000, 0)
+                    .SetDebugLink("../outside.debug")
+                    .Build();
+                File.WriteAllBytes(binaryPath, binaryData);
+
+                string outsidePath = Path.Combine(tempDir, "outside.debug");
+                File.WriteAllBytes(outsidePath, CreateMinimalElfWithBuildId(buildId));
+
+                var securityChecks = new List<string>();
+                _symbolReader.SymbolPath = emptySymbolDirectory;
+                _symbolReader.SecurityCheck = path =>
+                {
+                    securityChecks.Add(Path.GetFullPath(path));
+                    return true;
+                };
+
+                string result = _symbolReader.FindElfSymbolFilePath(
+                    "libunsafe.so",
+                    buildId,
+                    elfFilePath: binaryPath);
+
+                Assert.Null(result);
+                Assert.DoesNotContain(Path.GetFullPath(outsidePath), securityChecks);
+                Assert.Empty(_handler.Requests);
             }
             finally
             {
@@ -1825,6 +2075,44 @@ namespace TraceEventTests
             TraceLog.CreateFromEventPipeEventSources(eventSource, new IOStreamStreamWriter(etlxStream, SerializationSettings.Default, leaveOpen: true), null);
             etlxStream.Position = 0;
             return new TraceLog(etlxStream);
+        }
+
+        private static string CreateTemporaryDirectory()
+        {
+            string directory = Path.Combine(Path.GetTempPath(), "SymbolReaderTests_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            return directory;
+        }
+
+        private static SourceFile GetPortableSourceFile(SymbolReader reader, string pdbPath)
+        {
+            ManagedSymbolModule module = reader.OpenSymbolFile(pdbPath);
+            SourceLocation sourceLocation = module.SourceLocationForManagedCode(0x06000001, ilOffset: 0);
+            Assert.NotNull(sourceLocation);
+            Assert.NotNull(sourceLocation.SourceFile);
+            return sourceLocation.SourceFile;
+        }
+
+        private static void WithBuildTimeSourceUnavailable(SourceFile sourceFile, Action action)
+        {
+            string renamedSourceFile = null;
+            try
+            {
+                if (File.Exists(sourceFile.BuildTimeFilePath))
+                {
+                    renamedSourceFile = sourceFile.BuildTimeFilePath + "." + Guid.NewGuid().ToString("N") + ".orig";
+                    File.Move(sourceFile.BuildTimeFilePath, renamedSourceFile);
+                }
+
+                action();
+            }
+            finally
+            {
+                if (renamedSourceFile != null)
+                {
+                    File.Move(renamedSourceFile, sourceFile.BuildTimeFilePath);
+                }
+            }
         }
 
         /// <summary>
