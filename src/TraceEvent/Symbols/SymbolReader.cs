@@ -978,6 +978,18 @@ namespace Microsoft.Diagnostics.Symbols
         public Func<string, bool> SecurityCheck { get; set; }
 
         /// <summary>
+        /// We call back on this before downloading source code over HTTP. The callback receives a
+        /// <see cref="DownloadAuthorizationRequest"/> describing the download and must return
+        /// <c>true</c> to allow it or <c>false</c> to deny it. Authorization of the initial URI also
+        /// covers redirects followed by the HTTP client.
+        ///
+        /// If this property is <c>null</c>, source downloads are denied by default. To enable source
+        /// downloads, set this property to an interactive prompt, an allow-list policy, or
+        /// <c>request =&gt; true</c> for fully trusted scenarios.
+        /// </summary>
+        public Func<DownloadAuthorizationRequest, bool> AuthorizeDownload { get; set; }
+
+        /// <summary>
         /// We call back on this before executing a source-server fetch command (e.g. <c>tf.exe view ...</c> or
         /// <c>tf.exe git view ...</c>) that was derived from PDB-supplied data.  The callback receives a
         /// <see cref="SourceServerAuthorizationRequest"/> describing the exact command line that will be run, and
@@ -1289,6 +1301,36 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         #region private
+        internal bool CheckDownloadAuthorization(DownloadAuthorizationRequest request)
+        {
+            var authorize = AuthorizeDownload;
+            if (authorize == null)
+            {
+                m_log.WriteLine("Source download denied by default because no authorization policy is installed: {0}", request.Uri.AbsoluteUri);
+                return false;
+            }
+
+            bool authorized;
+            try
+            {
+                authorized = authorize(request);
+            }
+            catch (Exception exception)
+            {
+                m_log.WriteLine(
+                    "Source download denied because the authorization policy threw an exception for {0}: {1}",
+                    request.Uri.AbsoluteUri,
+                    exception);
+                return false;
+            }
+
+            m_log.WriteLine(
+                "Source download authorization {0}: {1}",
+                authorized ? "GRANTED" : "DENIED",
+                request.Uri.AbsoluteUri);
+            return authorized;
+        }
+
         /// <summary>
         /// Returns true if 'filePath' exists and is a PDB that has pdbGuid and pdbAge.  
         /// if pdbGuid == Guid.Empty, then the pdbGuid and pdbAge checks are skipped. 
@@ -2335,6 +2377,42 @@ namespace Microsoft.Diagnostics.Symbols
     }
 
     /// <summary>
+    /// Describes a source download that is ready to start. Passed to
+    /// <see cref="SymbolReader.AuthorizeDownload"/> so the caller can choose whether to allow it.
+    /// </summary>
+    /// <remarks>
+    /// This is a class so that additional download context can be added in the future without changing
+    /// the <see cref="SymbolReader.AuthorizeDownload"/> delegate signature.
+    /// </remarks>
+    public sealed class DownloadAuthorizationRequest
+    {
+        internal DownloadAuthorizationRequest(
+            string buildTimeFilePath,
+            string symbolFilePath,
+            Uri uri)
+        {
+            BuildTimeFilePath = buildTimeFilePath;
+            SymbolFilePath = symbolFilePath;
+            Uri = uri;
+        }
+
+        /// <summary>
+        /// Gets the source file path recorded at build time.
+        /// </summary>
+        public string BuildTimeFilePath { get; }
+
+        /// <summary>
+        /// Gets the path of the PDB that supplied the source information.
+        /// </summary>
+        public string SymbolFilePath { get; }
+
+        /// <summary>
+        /// Gets the remote source URI.
+        /// </summary>
+        public Uri Uri { get; }
+    }
+
+    /// <summary>
     /// Describes a source-server fetch command that has been validated and is about to be executed.
     /// Passed to <see cref="SymbolReader.AuthorizeSourceServerCommand"/> so the caller can choose whether
     /// to allow execution.
@@ -2619,6 +2697,15 @@ namespace Microsoft.Diagnostics.Symbols
             string url = Url;
             if (url != null)
             {
+                var request = new DownloadAuthorizationRequest(
+                    BuildTimeFilePath,
+                    _symbolModule.SymbolFilePath,
+                    new Uri(url));
+                if (!_symbolModule.SymbolReader.CheckDownloadAuthorization(request))
+                {
+                    return null;
+                }
+
                 var httpClient = _symbolModule.SymbolReader.HttpClient;
                 HttpResponseMessage response = httpClient.GetAsync(url).Result;
 

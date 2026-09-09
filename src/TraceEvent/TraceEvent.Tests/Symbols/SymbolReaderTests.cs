@@ -40,7 +40,10 @@ namespace TraceEventTests
             : base(output)
         {
             _handler = new InterceptingHandler();
-            _symbolReader = new SymbolReader(TextWriter.Null, nt_symbol_path: null, httpClientDelegatingHandler: _handler);
+            _symbolReader = new SymbolReader(TextWriter.Null, nt_symbol_path: null, httpClientDelegatingHandler: _handler)
+            {
+                AuthorizeDownload = _ => true
+            };
             PrepareTestData();
         }
 
@@ -342,6 +345,106 @@ namespace TraceEventTests
             Assert.False(result4, "Should not match any pattern");
             Assert.Null(url4);
             Assert.Null(relativePath4);
+        }
+
+        [Fact]
+        public void SourceLinkDownloadWithoutAuthorizerIsDeniedBeforeHttpRequest()
+        {
+            var handler = new InterceptingHandler();
+            string cacheDirectory = CreateTemporaryDirectory();
+            string pdbPath = Path.Combine(s_inputPdbDir, FileName_CsPortablePdb1);
+
+            try
+            {
+                using (var reader = new SymbolReader(TextWriter.Null, httpClientDelegatingHandler: handler))
+                {
+                    reader.SourceCacheDirectory = cacheDirectory;
+                    reader.SourcePath = string.Empty;
+                    SourceFile sourceFile = GetPortableSourceFile(reader, pdbPath);
+
+                    string resolvedPath = null;
+                    WithBuildTimeSourceUnavailable(sourceFile, () => resolvedPath = sourceFile.GetSourceFile());
+
+                    Assert.Null(resolvedPath);
+                    Assert.Empty(handler.Requests);
+                    Assert.Empty(Directory.GetFiles(cacheDirectory));
+                }
+            }
+            finally
+            {
+                Directory.Delete(cacheDirectory, recursive: true);
+            }
+        }
+
+        [Fact]
+        public void SourceLinkDownloadDeniedBeforeHttpRequest()
+        {
+            var handler = new InterceptingHandler();
+            DownloadAuthorizationRequest authorizationRequest = null;
+            string cacheDirectory = CreateTemporaryDirectory();
+            string pdbPath = Path.Combine(s_inputPdbDir, FileName_CsPortablePdb1);
+
+            try
+            {
+                using (var reader = new SymbolReader(TextWriter.Null, httpClientDelegatingHandler: handler))
+                {
+                    reader.AuthorizeDownload = request =>
+                    {
+                        authorizationRequest = request;
+                        return false;
+                    };
+                    reader.SourceCacheDirectory = cacheDirectory;
+                    reader.SourcePath = string.Empty;
+                    SourceFile sourceFile = GetPortableSourceFile(reader, pdbPath);
+
+                    string resolvedPath = null;
+                    WithBuildTimeSourceUnavailable(sourceFile, () => resolvedPath = sourceFile.GetSourceFile());
+
+                    Assert.Null(resolvedPath);
+                    Assert.NotNull(authorizationRequest);
+                    Assert.Equal(sourceFile.BuildTimeFilePath, authorizationRequest.BuildTimeFilePath);
+                    Assert.Equal(pdbPath, authorizationRequest.SymbolFilePath);
+                    Assert.Equal(
+                        "https://contoso.com/fake-source-link-url/CsPortablePdb1/Program.cs",
+                        authorizationRequest.Uri.AbsoluteUri);
+                    Assert.Empty(handler.Requests);
+                    Assert.Empty(Directory.GetFiles(cacheDirectory));
+                }
+            }
+            finally
+            {
+                Directory.Delete(cacheDirectory, recursive: true);
+            }
+        }
+
+        [Fact]
+        public void SourceLinkDownloadAuthorizationExceptionDeniesBeforeHttpRequest()
+        {
+            var handler = new InterceptingHandler();
+            string cacheDirectory = CreateTemporaryDirectory();
+            string pdbPath = Path.Combine(s_inputPdbDir, FileName_CsPortablePdb1);
+
+            try
+            {
+                using (var reader = new SymbolReader(TextWriter.Null, httpClientDelegatingHandler: handler))
+                {
+                    reader.AuthorizeDownload = _ => throw new InvalidOperationException("Authorization failed.");
+                    reader.SourceCacheDirectory = cacheDirectory;
+                    reader.SourcePath = string.Empty;
+                    SourceFile sourceFile = GetPortableSourceFile(reader, pdbPath);
+
+                    string resolvedPath = null;
+                    WithBuildTimeSourceUnavailable(sourceFile, () => resolvedPath = sourceFile.GetSourceFile());
+
+                    Assert.Null(resolvedPath);
+                    Assert.Empty(handler.Requests);
+                    Assert.Empty(Directory.GetFiles(cacheDirectory));
+                }
+            }
+            finally
+            {
+                Directory.Delete(cacheDirectory, recursive: true);
+            }
         }
 
         /// <summary>
@@ -1860,6 +1963,44 @@ namespace TraceEventTests
             TraceLog.CreateFromEventPipeEventSources(eventSource, new IOStreamStreamWriter(etlxStream, SerializationSettings.Default, leaveOpen: true), null);
             etlxStream.Position = 0;
             return new TraceLog(etlxStream);
+        }
+
+        private static string CreateTemporaryDirectory()
+        {
+            string directory = Path.Combine(Path.GetTempPath(), "SymbolReaderTests_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            return directory;
+        }
+
+        private static SourceFile GetPortableSourceFile(SymbolReader reader, string pdbPath)
+        {
+            ManagedSymbolModule module = reader.OpenSymbolFile(pdbPath);
+            SourceLocation sourceLocation = module.SourceLocationForManagedCode(0x06000001, ilOffset: 0);
+            Assert.NotNull(sourceLocation);
+            Assert.NotNull(sourceLocation.SourceFile);
+            return sourceLocation.SourceFile;
+        }
+
+        private static void WithBuildTimeSourceUnavailable(SourceFile sourceFile, Action action)
+        {
+            string renamedSourceFile = null;
+            try
+            {
+                if (File.Exists(sourceFile.BuildTimeFilePath))
+                {
+                    renamedSourceFile = sourceFile.BuildTimeFilePath + "." + Guid.NewGuid().ToString("N") + ".orig";
+                    File.Move(sourceFile.BuildTimeFilePath, renamedSourceFile);
+                }
+
+                action();
+            }
+            finally
+            {
+                if (renamedSourceFile != null)
+                {
+                    File.Move(renamedSourceFile, sourceFile.BuildTimeFilePath);
+                }
+            }
         }
 
         /// <summary>
