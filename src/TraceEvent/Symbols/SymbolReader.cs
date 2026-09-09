@@ -417,8 +417,9 @@ namespace Microsoft.Diagnostics.Symbols
         /// back to the binary ({filename}/elf-buildid-{buildId}/{filename}).
         /// </summary>
         /// <param name="fileName">The simple filename of the ELF module (e.g., "libcoreclr.so")</param>
-        /// <param name="buildId">The GNU build-id as a lowercase hex string</param>
+        /// <param name="buildId">The GNU build-id as 8-20 bytes represented by hexadecimal characters.</param>
         /// <returns>The local file path to the downloaded symbol file, or null if not found.</returns>
+        /// <exception cref="ArgumentException"><paramref name="buildId"/> is not a supported hexadecimal GNU build-id.</exception>
         public string FindElfSymbolFilePath(string fileName, string buildId, string elfFilePath = null)
         {
             if (fileName == null)
@@ -431,14 +432,10 @@ namespace Microsoft.Diagnostics.Symbols
                 throw new ArgumentNullException(nameof(buildId));
             }
 
-            m_log.WriteLine("FindElfSymbolFilePath: *{{ Searching for {0} with BuildId {1}", fileName, buildId);
+            string normalizedBuildId = NormalizeElfBuildId(buildId);
 
+            m_log.WriteLine("FindElfSymbolFilePath: *{{ Searching for {0} with BuildId {1}", fileName, normalizedBuildId);
             string simpleFileName = Path.GetFileName(fileName);
-
-            // Normalize the build ID to lowercase. Build IDs vary in length depending on the
-            // hash algorithm (e.g., SHA-1 = 40 hex chars, MD5/UUID = 32), so we use the exact
-            // value without padding.
-            string normalizedBuildId = buildId.ToLowerInvariant();
 
             ElfBuildIdSignature cacheKey = new ElfBuildIdSignature() { FileName = simpleFileName, BuildId = normalizedBuildId };
             if (m_elfPathCache.TryGet(cacheKey, out string cachedPath))
@@ -545,14 +542,16 @@ namespace Microsoft.Diagnostics.Symbols
                         }
 
                         // Try debug symbols first (preferred — has .symtab with full symbols).
-                        resultPath = GetFileFromServer(element.Target, debugIndexPath, Path.Combine(cache, debugIndexPath));
+                        string debugCachePath = GetContainedElfCachePath(cache, debugIndexPath);
+                        resultPath = GetFileFromServer(element.Target, debugIndexPath, debugCachePath);
                         if (resultPath != null)
                         {
                             break;
                         }
 
                         // Fall back to the binary (may only have .dynsym).
-                        resultPath = GetFileFromServer(element.Target, binaryIndexPath, Path.Combine(cache, binaryIndexPath));
+                        string binaryCachePath = GetContainedElfCachePath(cache, binaryIndexPath);
+                        resultPath = GetFileFromServer(element.Target, binaryIndexPath, binaryCachePath);
                         if (resultPath != null)
                         {
                             break;
@@ -1332,6 +1331,87 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
+        /// Validates and normalizes an ELF build-id for use in SSQP keys.
+        /// </summary>
+        private static string NormalizeElfBuildId(string buildId)
+        {
+            if (!TryNormalizeElfBuildId(buildId, out string normalizedBuildId))
+            {
+                throw new ArgumentException(
+                    $"ELF build-id '{buildId}' must contain an even number of hexadecimal characters representing 8 to 20 bytes.",
+                    nameof(buildId));
+            }
+
+            return normalizedBuildId;
+        }
+
+        /// <summary>
+        /// Converts a supported ELF build-id to the canonical 20-byte lowercase SSQP representation.
+        /// </summary>
+        private static bool TryNormalizeElfBuildId(string buildId, out string normalizedBuildId)
+        {
+            normalizedBuildId = null;
+            if (buildId == null ||
+                buildId.Length < MinElfBuildIdHexLength ||
+                buildId.Length > MaxElfBuildIdHexLength ||
+                (buildId.Length & 1) != 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < buildId.Length; i++)
+            {
+                char c = buildId[i];
+                if (!((c >= '0' && c <= '9') ||
+                      (c >= 'a' && c <= 'f') ||
+                      (c >= 'A' && c <= 'F')))
+                {
+                    return false;
+                }
+            }
+
+            normalizedBuildId = buildId.ToLowerInvariant().PadRight(MaxElfBuildIdHexLength, '0');
+            return true;
+        }
+
+        /// <summary>
+        /// Resolves an ELF symbol-server cache path and verifies that it remains under the configured cache root.
+        /// </summary>
+        private static string GetContainedElfCachePath(string cacheDirectory, string relativePath)
+        {
+            if (string.IsNullOrEmpty(cacheDirectory))
+            {
+                throw new ArgumentException("ELF symbol cache directory must not be null or empty.", nameof(cacheDirectory));
+            }
+
+            if (string.IsNullOrEmpty(relativePath) || Path.IsPathRooted(relativePath))
+            {
+                throw new ArgumentException("ELF symbol cache path must be relative.", nameof(relativePath));
+            }
+
+            string fullCacheDirectory = Path.GetFullPath(cacheDirectory);
+            string fullCachePath = Path.GetFullPath(Path.Combine(fullCacheDirectory, relativePath));
+            string cachePrefix = fullCacheDirectory;
+            char lastCachePrefixChar = cachePrefix[cachePrefix.Length - 1];
+            if (lastCachePrefixChar != Path.DirectorySeparatorChar &&
+                lastCachePrefixChar != Path.AltDirectorySeparatorChar)
+            {
+                cachePrefix += Path.DirectorySeparatorChar;
+            }
+
+            StringComparison comparison = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+            if (!fullCachePath.StartsWith(cachePrefix, comparison))
+            {
+                throw new InvalidOperationException(
+                    $"ELF symbol cache path '{fullCachePath}' is outside the configured cache directory '{fullCacheDirectory}'.");
+            }
+
+            return fullCachePath;
+        }
+
+        /// <summary>
         /// Returns true if 'filePath' exists and is a PDB that has pdbGuid and pdbAge.  
         /// if pdbGuid == Guid.Empty, then the pdbGuid and pdbAge checks are skipped. 
         /// </summary>
@@ -1443,7 +1523,8 @@ namespace Microsoft.Diagnostics.Symbols
                     }
 
                     string actualBuildId = ElfSymbolModule.ReadBuildId(filePath);
-                    if (actualBuildId != null && string.Equals(actualBuildId, expectedBuildId, StringComparison.OrdinalIgnoreCase))
+                    if (TryNormalizeElfBuildId(actualBuildId, out string normalizedActualBuildId) &&
+                        string.Equals(normalizedActualBuildId, expectedBuildId, StringComparison.Ordinal))
                     {
                         return true;
                     }
@@ -2197,6 +2278,8 @@ namespace Microsoft.Diagnostics.Symbols
         private Cache<ElfBuildIdSignature, string> m_elfPathCache;
         private Cache<ElfModuleSignature, ElfSymbolModule> m_elfModuleCache;
         private string m_symbolPath;
+        private const int MinElfBuildIdHexLength = 16;
+        private const int MaxElfBuildIdHexLength = 40;
 
         #endregion
     }
