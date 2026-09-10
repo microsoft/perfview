@@ -8,6 +8,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;      // For StringBuilder.
+using System.Buffers.Binary;
 
 namespace FastSerialization
 {
@@ -328,6 +329,7 @@ namespace FastSerialization
         /// </summary>
         public unsafe void Write(short value)
         {
+            value = BinaryPrimitives.ReadInt16LittleEndian(BitConverter.GetBytes(value));
             if (endPosition + sizeof(short) > bytes.Length)
             {
                 MakeSpace();
@@ -344,6 +346,24 @@ namespace FastSerialization
         /// Implementation of IStreamWriter
         /// </summary>
         public unsafe void Write(int value)
+        {
+            value = BinaryPrimitives.ReadInt32LittleEndian(BitConverter.GetBytes(value));
+            if (endPosition + sizeof(int) > bytes.Length)
+            {
+                MakeSpace();
+            }
+
+            fixed (byte* data = bytes)
+            {
+                *(int*)(data + endPosition) = value;
+            }
+
+            endPosition += sizeof(int);
+        }
+        /// <summary>
+        /// Write an blob to a stream
+        /// </summary> 
+        public unsafe void WriteBlobAsInt(int value)
         {
             if (endPosition + sizeof(int) > bytes.Length)
             {
@@ -362,6 +382,7 @@ namespace FastSerialization
         /// </summary>
         public unsafe void Write(long value)
         {
+            value = BinaryPrimitives.ReadInt64LittleEndian(BitConverter.GetBytes(value));
             if (endPosition + sizeof(long) > bytes.Length)
             {
                 MakeSpace();

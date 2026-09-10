@@ -3118,6 +3118,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
         public static unsafe bool MaybeAnEventSource(Guid providerGuid)
         {
             byte octet7 = ((byte*)(&providerGuid))[7];
+            if (!BitConverter.IsLittleEndian)
+            {
+                octet7 =  ((byte*)(&providerGuid))[6];
+            }
             if ((octet7 & 0xF0) == 0x50)
             {
                 return true;

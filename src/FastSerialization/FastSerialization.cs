@@ -9,7 +9,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;      // For StringBuilder.
-
+using System.Runtime.InteropServices;
+using System.Buffers.Binary;
 // see #Introduction and #SerializerIntroduction
 namespace FastSerialization
 {
@@ -183,6 +184,10 @@ namespace FastSerialization
         /// Write an int to a stream
         /// </summary>
         void Write(int value);
+        /// <summary>
+        /// Write an blob to a stream
+        /// </summary> 
+        void WriteBlobAsInt(int value);
         /// <summary>
         /// Write a long to a stream
         /// </summary>
@@ -590,7 +595,6 @@ namespace FastSerialization
                 Log("<Serializer>");
                 // Write the header. 
                 Write("!FastSerialization.1");
-
                 // Write the main object.  This is recursive and does most of the work. 
                 Write(entryObject);
 
@@ -675,6 +679,14 @@ namespace FastSerialization
             writer.Write(value);
         }
         /// <summary>
+        /// Write an blob to a stream
+        /// </summary>
+        public void WriteBlobAsInt(int value)
+        {
+            Log("<Write Type=\"int\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
+            writer.WriteBlobAsInt(value);
+        }
+        /// <summary>
         /// Write a long to a stream
         /// </summary>
         public void Write(long value)
@@ -688,7 +700,15 @@ namespace FastSerialization
         public void Write(Guid value)
         {
             Log("<Write Type=\"Guid\" Value=\"" + value + "\" StreamLabel=\"0x" + writer.GetLabel().ToString("x") + "\"/>");
-            byte[] bytes = value.ToByteArray();
+	    Span<byte> bytes = value.ToByteArray();
+            
+            if (!BitConverter.IsLittleEndian)
+	    {
+                BinaryPrimitives.WriteInt32LittleEndian(bytes.Slice(0), (MemoryMarshal.Read<int>(bytes.Slice(0,4))));
+	        BinaryPrimitives.WriteInt16LittleEndian(bytes.Slice(4), (MemoryMarshal.Read<short>(bytes.Slice(4,6))));
+	        BinaryPrimitives.WriteInt16LittleEndian(bytes.Slice(6), (MemoryMarshal.Read<short>(bytes.Slice(6,8))));
+            }
+            
             for (int i = 0; i < bytes.Length; i++)
             {
                 writer.Write(bytes[i]);
@@ -1591,7 +1611,7 @@ namespace FastSerialization
                 reader.GotoSuffixLabel();
                 Log("<Trailer StreamLabel=\"0x" + reader.Current.ToString("x") + "\"/>");
                 StreamLabel forwardRefsLabel = reader.ReadLabel();
-
+                
                 Goto(forwardRefsLabel);
                 int fowardRefCount = reader.ReadInt32();
                 Log("<ForwardReferenceDefinitons StreamLabel=\"0x" + forwardRefsLabel.ToString("x") +

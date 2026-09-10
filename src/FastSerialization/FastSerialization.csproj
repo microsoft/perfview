@@ -29,6 +29,10 @@
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Memory"/>
+  </ItemGroup>
+
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
     <FilesToSign Include="$(TargetPath)">
