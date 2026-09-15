@@ -88,10 +88,14 @@ will lead you through the basics of doing this. All it assumes is that you have 
 PerfView is developed in Visual Studio 2026 using features through C# 7.3.
 
   * The solution file is PerfView.sln.  Opening this file in Visual Studio (or double clicking on it in 
-  the Windows Explorer) and selecting Build -> Build Solution, will build it. You can also build the 
-  non-debug version from the command line using msbuild or the build.cmd file at the base of the repository.
+  the Windows Explorer) and selecting Build -> Build Solution, will build it. You can also build from the
+  command line using the build.cmd file at the base of the repository. The .NET SDK selected by global.json
+  must be installed on the machine for both command-line and Visual Studio builds. SDK 10.0.401 or a later
+  patch in the 10.0.4xx feature band is compatible. If no compatible SDK is installed, build.cmd reports a
+  `winget install` command using the version selected by global.json. build.cmd builds Debug by default; use
+  `build.cmd -Configuration Release` to build Release.
   The build follows standard Visual Studio conventions, and the resulting PerfView.exe file ends up in
-  src/PerfView/bin/*BuildType*/PerfView.exe. You need only deploy this one EXE to use it.  
+  src/PerfView/bin/*BuildType*/net462/PerfView.exe. You need only deploy this one EXE to use it.
 
   * The solution consists of several projects, representing support DLLs and the main EXE. To run PerfView in the 
   debugger **you need to make sure that the 'Startup Project' is set to the 'PerfView' project** so that it launches 
@@ -102,7 +106,7 @@ PerfView is developed in Visual Studio 2026 using features through C# 7.3.
 
 You will want to deploy the 'Release' rather than the 'Debug' version of PerfView.  Thus, first set your build configuration
 to 'Release' (Text window in the top toolbar, or right click on the .SLN file -> Configuration Manager -> Active Solution Configuration).
-Next build (Build -> Build Solution (Ctrl-Shift-B)).   The result will be that in the src\perfView\bin\net462\Release directory there will be
+Next build (Build -> Build Solution (Ctrl-Shift-B)).   The result will be that in the src\PerfView\bin\Release\net462 directory there will be
 among other things a PerfView.exe.   This one file is all you need to deploy.   Simply copy it to where you wish to deploy the app.  
 
 ### Information for build troubleshooting.  
