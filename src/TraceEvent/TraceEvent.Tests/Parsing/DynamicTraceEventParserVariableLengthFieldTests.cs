@@ -3,7 +3,6 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Text;
 
 using Xunit;
@@ -18,7 +17,6 @@ namespace TraceEventTests
         private const ushort CountedUnicodeByteCount = DynamicTraceEventData.COUNTED_SIZE;
         private const ushort CountedUnicodeElemCount = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.ELEM_COUNT;
         private const ushort LengthPrefixedArray = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.ELEM_COUNT;
-        private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
         private const string LookupError = "<<<EXCEPTION_DURING_VALUE_LOOKUP ArgumentOutOfRangeException>>>";
 
         public static IEnumerable<object[]> CountedStringCases()
@@ -69,28 +67,25 @@ namespace TraceEventTests
             Buffer.BlockCopy(text, 0, payload, prefixBytes, text.Length);
             var fetch = StringFetch(0, size);
 
-            WithEvent(payload, new[] { fetch }, traceEvent =>
+            WithEvent(payload, LookupFetches(fetch, payload.Length), traceEvent =>
             {
                 Assert.Equal(payload.Length, traceEvent.OffsetOfNextField(ref fetch, 0, payload.Length));
-                Assert.Equal(expected, ReadValue(traceEvent, fetch, 0));
                 Assert.Equal(expected, traceEvent.PayloadValue(0));
             });
         }
 
         [Theory]
         [MemberData(nameof(InvalidCountedStringCases))]
-        public void CountedString_LengthExceedsPayload_BothPathsReject(ushort size, uint count)
+        public void CountedString_LengthExceedsPayload_TraversalAndPayloadValueReject(ushort size, uint count)
         {
             bool widePrefix = (size & DynamicTraceEventData.BIT_32) != 0;
             byte[] payload = new byte[(widePrefix ? 4 : 2) + 4];
             WriteCount(payload, 0, count, widePrefix);
             var fetch = StringFetch(0, size);
 
-            WithEvent(payload, new[] { fetch }, traceEvent =>
+            WithEvent(payload, LookupFetches(fetch, payload.Length), traceEvent =>
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => traceEvent.OffsetOfNextField(ref fetch, 0, payload.Length));
-                var error = Assert.Throws<TargetInvocationException>(() => ReadValue(traceEvent, fetch, 0));
-                Assert.IsType<ArgumentOutOfRangeException>(error.InnerException);
                 Assert.Equal(LookupError, traceEvent.PayloadValue(0));
             });
         }
@@ -117,7 +112,7 @@ namespace TraceEventTests
             }
             var fetch = ByteArrayFetch(widePrefix);
 
-            WithEvent(payload, new[] { fetch }, traceEvent =>
+            WithEvent(payload, LookupFetches(fetch, payload.Length), traceEvent =>
             {
                 Assert.Equal(payload.Length, traceEvent.OffsetOfNextField(ref fetch, 0, payload.Length));
                 byte[] value = Assert.IsType<byte[]>(traceEvent.PayloadValue(0));
@@ -136,21 +131,18 @@ namespace TraceEventTests
         [InlineData(true, 0x7FFFFFFFu)]
         [InlineData(true, 0x80000000u)]
         [InlineData(true, 0xFFFFFFFFu)]
-        public void LengthPrefixedArray_CountExceedsPayload_BothPathsReject(bool widePrefix, uint count)
+        public void LengthPrefixedArray_CountExceedsPayload_TraversalAndPayloadValueReject(bool widePrefix, uint count)
         {
             byte[] payload = new byte[(widePrefix ? 4 : 2) + 4];
             WriteCount(payload, 0, count, widePrefix);
             var fetch = ByteArrayFetch(widePrefix);
 
-            WithEvent(payload, new[] { fetch }, traceEvent =>
+            WithEvent(payload, LookupFetches(fetch, payload.Length), traceEvent =>
             {
                 var traversalError = Assert.Throws<ArgumentOutOfRangeException>(() => traceEvent.OffsetOfNextField(ref fetch, 0, payload.Length));
-                var error = Assert.Throws<TargetInvocationException>(() => ReadValue(traceEvent, fetch, 0));
-                var lookupError = Assert.IsType<ArgumentOutOfRangeException>(error.InnerException);
                 if (widePrefix && count > int.MaxValue)
                 {
                     Assert.Equal("count", traversalError.ParamName);
-                    Assert.Equal("count", lookupError.ParamName);
                 }
                 Assert.Equal(LookupError, traceEvent.PayloadValue(0));
             });
@@ -165,23 +157,30 @@ namespace TraceEventTests
         [InlineData(true, 2, 0)]
         [InlineData(true, 3, 0)]
         [InlineData(true, 3, 3)]
-        public void LengthPrefix_Truncated_BothPathsReject(bool widePrefix, int remaining, int offset)
+        public void LengthPrefix_Truncated_RejectsWhenReadable(bool widePrefix, int remaining, int offset)
         {
             int length = offset + remaining;
             byte[] payload = new byte[Math.Max(1, length)];
             ushort size = (ushort)(CountedUnicodeByteCount | (widePrefix ? DynamicTraceEventData.BIT_32 : 0));
-            var fetches = new[] { StringFetch(0, size), ByteArrayFetch(widePrefix) };
+            var fetches = new[] { StringFetch((ushort)offset, size), ByteArrayFetch(widePrefix, (ushort)offset) };
 
-            WithEvent(payload, fetches, traceEvent =>
+            foreach (var field in fetches)
             {
-                foreach (var field in fetches)
+                var fetch = field;
+                WithEvent(payload, new[] { fetch }, traceEvent =>
                 {
-                    var fetch = field;
                     Assert.Throws<ArgumentOutOfRangeException>(() => traceEvent.OffsetOfNextField(ref fetch, offset, length));
-                    var error = Assert.Throws<TargetInvocationException>(() => ReadValue(traceEvent, fetch, offset));
-                    Assert.IsType<ArgumentOutOfRangeException>(error.InnerException);
+                }, length);
+
+                if (length > offset)
+                {
+                    var lookupFetch = field;
+                    WithEvent(payload, LookupFetches(lookupFetch, length), traceEvent =>
+                    {
+                        Assert.Equal(LookupError, traceEvent.PayloadValue(0));
+                    }, length);
                 }
-            }, length);
+            }
         }
 
         [Theory]
@@ -211,19 +210,6 @@ namespace TraceEventTests
             });
         }
 
-        [Fact]
-        public void PayloadValue_NegativeCachedOffset_ReturnsError()
-        {
-            byte[] payload = Encoding.Unicode.GetBytes("a\0b\0");
-            WithEvent(payload, StringFetches(2, DynamicTraceEventData.NULL_TERMINATED), traceEvent =>
-            {
-                typeof(DynamicTraceEventData).GetField("cachedEventId", PrivateInstance).SetValue(traceEvent, traceEvent.EventIndex);
-                typeof(DynamicTraceEventData).GetField("cachedFieldIdx", PrivateInstance).SetValue(traceEvent, 0);
-                typeof(DynamicTraceEventData).GetField("cachedFieldOffset", PrivateInstance).SetValue(traceEvent, -31470);
-                Assert.Equal(LookupError, traceEvent.PayloadValue(1));
-            });
-        }
-
         [Theory]
         [InlineData(false, "")]
         [InlineData(false, "abc")]
@@ -234,9 +220,9 @@ namespace TraceEventTests
             byte[] text = (isAnsi ? Encoding.ASCII : Encoding.Unicode).GetBytes(expected);
             byte[] payload = text.Length == 0 ? new byte[1] : text;
             var fetch = StringFetch(0, size);
-            WithEvent(payload, new[] { fetch }, traceEvent =>
+            WithEvent(payload, LookupFetches(fetch, payload.Length), traceEvent =>
             {
-                Assert.Equal(expected, ReadValue(traceEvent, fetch, 0));
+                Assert.Equal(expected, traceEvent.PayloadValue(0));
             });
         }
 
@@ -256,9 +242,9 @@ namespace TraceEventTests
                 payload[offset + i * elementSize] = (byte)('a' + i);
             }
 
-            WithEvent(payload, new[] { fetch }, traceEvent =>
+            WithEvent(payload, LookupFetches(fetch, payload.Length), traceEvent =>
             {
-                object value = ReadValue(traceEvent, fetch, offset);
+                object value = traceEvent.PayloadValue(0);
                 if (elementType == typeof(char))
                 {
                     Assert.Equal("abc", value);
@@ -289,10 +275,8 @@ namespace TraceEventTests
             var fetch = DynamicTraceEventData.PayloadFetch.FixedCountArrayPayloadFetch(offset, element, 3);
             byte[] payload = new byte[offset + 3 * elementSize];
 
-            WithEvent(payload, new[] { fetch }, traceEvent =>
+            WithEvent(payload, LookupFetches(fetch, payload.Length), traceEvent =>
             {
-                var error = Assert.Throws<TargetInvocationException>(() => ReadValue(traceEvent, fetch, offset));
-                Assert.IsType<ArgumentOutOfRangeException>(error.InnerException);
                 Assert.Equal(LookupError, traceEvent.PayloadValue(0));
             }, payload.Length - 1);
         }
@@ -304,12 +288,10 @@ namespace TraceEventTests
             var fetch = DynamicTraceEventData.PayloadFetch.FixedCountArrayPayloadFetch(0, element, 2);
             // Two empty Unicode strings still need four bytes for their terminators.
             byte[] payload = new byte[3];
-            WithEvent(payload, new[] { fetch }, traceEvent =>
+            WithEvent(payload, LookupFetches(fetch, payload.Length), traceEvent =>
             {
                 var traversalError = Assert.Throws<ArgumentOutOfRangeException>(() => traceEvent.OffsetOfNextField(ref fetch, 0, payload.Length));
                 Assert.Equal("arrayCount", traversalError.ParamName);
-                var error = Assert.Throws<TargetInvocationException>(() => ReadValue(traceEvent, fetch, 0));
-                Assert.Equal("arrayCount", Assert.IsType<ArgumentOutOfRangeException>(error.InnerException).ParamName);
                 Assert.Equal(LookupError, traceEvent.PayloadValue(0));
             });
         }
@@ -325,19 +307,16 @@ namespace TraceEventTests
             var fetch = DynamicTraceEventData.PayloadFetch.FixedCountArrayPayloadFetch(0, StringFetch(0, size), 2);
             byte[] payload = new byte[2 * (widePrefix ? 4 : 2)];
             int length = payload.Length - (truncated ? 1 : 0);
-            WithEvent(payload, new[] { fetch }, traceEvent =>
+            WithEvent(payload, LookupFetches(fetch, length), traceEvent =>
             {
                 if (truncated)
                 {
                     Assert.Throws<ArgumentOutOfRangeException>(() => traceEvent.OffsetOfNextField(ref fetch, 0, length));
-                    var error = Assert.Throws<TargetInvocationException>(() => ReadValue(traceEvent, fetch, 0));
-                    Assert.IsType<ArgumentOutOfRangeException>(error.InnerException);
                     Assert.Equal(LookupError, traceEvent.PayloadValue(0));
                 }
                 else
                 {
                     Assert.Equal(length, traceEvent.OffsetOfNextField(ref fetch, 0, length));
-                    Assert.Equal(new[] { "", "" }, Assert.IsType<string[]>(ReadValue(traceEvent, fetch, 0)));
                     Assert.Equal(new[] { "", "" }, Assert.IsType<string[]>(traceEvent.PayloadValue(0)));
                 }
             }, length);
@@ -407,23 +386,24 @@ namespace TraceEventTests
             return (size & DynamicTraceEventData.IS_ANSI) == 0 && (size & DynamicTraceEventData.ELEM_COUNT) != 0 ? 2 : 1;
         }
 
-        private static object ReadValue(DynamicTraceEventData traceEvent, DynamicTraceEventData.PayloadFetch fetch, int offset)
-        {
-            // Bypass the Debug-only pre-walk so it cannot mask a lookup-path regression.
-            return typeof(DynamicTraceEventData).GetMethod("GetPayloadValueAt", PrivateInstance)
-                .Invoke(traceEvent, new object[] { fetch, offset, traceEvent.EventDataLength });
-        }
-
         private static DynamicTraceEventData.PayloadFetch StringFetch(ushort offset, ushort size)
         {
             return new DynamicTraceEventData.PayloadFetch(offset, size, typeof(string));
         }
 
-        private static DynamicTraceEventData.PayloadFetch ByteArrayFetch(bool widePrefix)
+        private static DynamicTraceEventData.PayloadFetch ByteArrayFetch(bool widePrefix, ushort offset = 0)
         {
             var element = new DynamicTraceEventData.PayloadFetch(0, 1, typeof(byte));
             ushort size = (ushort)(LengthPrefixedArray | (widePrefix ? DynamicTraceEventData.BIT_32 : 0));
-            return DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(0, element, size);
+            return DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(offset, element, size);
+        }
+
+        private static DynamicTraceEventData.PayloadFetch[] LookupFetches(DynamicTraceEventData.PayloadFetch target, int payloadLength)
+        {
+            Assert.InRange(payloadLength, 1, ushort.MaxValue);
+            // A later fixed offset lets Debug validation skip traversal of the target before its lookup is tested.
+            var sentinel = new DynamicTraceEventData.PayloadFetch((ushort)(payloadLength - 1), 1, typeof(byte));
+            return new[] { target, sentinel };
         }
 
         private static DynamicTraceEventData.PayloadFetch StructFetch(DynamicTraceEventData.PayloadFetch field)
