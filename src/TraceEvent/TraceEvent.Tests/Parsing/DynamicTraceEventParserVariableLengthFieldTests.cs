@@ -401,7 +401,8 @@ namespace TraceEventTests
         private static DynamicTraceEventData.PayloadFetch[] LookupFetches(DynamicTraceEventData.PayloadFetch target, int payloadLength)
         {
             Assert.InRange(payloadLength, 1, ushort.MaxValue);
-            // A later fixed offset lets Debug validation skip traversal of the target before its lookup is tested.
+            // Append a fixed-offset sentinel so PayloadValue's Debug-only full-payload validation does not
+            // traverse the target; this ensures the test exercises the target through GetPayloadValueAt.
             var sentinel = new DynamicTraceEventData.PayloadFetch((ushort)(payloadLength - 1), 1, typeof(byte));
             return new[] { target, sentinel };
         }
