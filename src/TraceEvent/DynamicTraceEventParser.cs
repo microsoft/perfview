@@ -616,6 +616,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 case TypeCode.String:
                     {
                         var isAnsi = false;
+                        long stringSize = size;
                         if (size >= SPECIAL_SIZES)
                         {
                             isAnsi = ((size & IS_ANSI) != 0);
@@ -636,7 +637,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 // The length-prefix bytes are read from the payload via GetInt16At / GetInt32At,
                                 // which do not bounds check.  Validate that the prefix itself is inside the payload
                                 // before reading it, so a crafted offset near EventDataLength cannot pull bytes
-                                // from adjacent native memory into 'size'.
+                                // from adjacent native memory into 'stringSize'.
                                 int prefixBytes = ((size & BIT_32) != 0) ? 4 : 2;
                                 if (offset < 0 || EventDataLength - offset < prefixBytes)
                                 {
@@ -644,17 +645,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 }
                                 if (((size & BIT_32) != 0))
                                 {
-                                    size = (ushort)GetInt32At(offset);
+                                    stringSize = (uint)GetInt32At(offset);
                                     offset += 4;        // skip size;
                                 }
                                 else
                                 {
-                                    size = (ushort)GetInt16At(offset);
+                                    stringSize = (ushort)GetInt16At(offset);
                                     offset += 2;        // skip size;
                                 }
                                 if (unicodeByteCountString)
                                 {
-                                    size /= 2;     // Unicode string with BYTE count.   Element count is half that.  
+                                    stringSize /= 2;     // Unicode string with BYTE count.   Element count is half that.
                                 }
                             }
                             else
@@ -664,26 +665,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         }
                         else if (size > 0x8000)     // What is this? looks like a hack.  
                         {
-                            size -= 0x8000;
+                            stringSize -= 0x8000;
                             isAnsi = true;
                         }
-                        // Bounds-check before reading the fixed/counted string.  For counted strings 'size' was just
+                        // Bounds-check before reading the fixed/counted string.  For counted strings 'stringSize' was just
                         // read from the payload bytes, so we must ensure the read stays inside EventDataLength to
-                        // avoid an out-of-bounds read of native heap memory.  ANSI strings use 'size' bytes; Unicode
-                        // strings use 'size * 2' bytes.  We compute the required byte count using long arithmetic to
+                        // avoid an out-of-bounds read of native heap memory.  ANSI strings use 'stringSize' bytes; Unicode
+                        // strings use 'stringSize * 2' bytes.  We compute the required byte count using long arithmetic to
                         // avoid any chance of overflow before the comparison.
-                        long bytesNeeded = isAnsi ? (long)size : (long)size * 2;
+                        long bytesNeeded = isAnsi ? stringSize : stringSize * 2;
                         if (offset < 0 || EventDataLength - offset < bytesNeeded)
                         {
-                            throw new ArgumentOutOfRangeException(nameof(size));
+                            throw new ArgumentOutOfRangeException(nameof(stringSize));
                         }
                         if (isAnsi)
                         {
-                            return GetFixedAnsiStringAt(size, offset);
+                            return GetFixedAnsiStringAt((int)stringSize, offset);
                         }
                         else
                         {
-                            return GetFixedUnicodeStringAt(size, offset);
+                            return GetFixedUnicodeStringAt((int)stringSize, offset);
                         }
                     }
                 case TypeCode.Boolean:
@@ -1183,6 +1184,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return payloadLength;
             }
 
+            // Reject cached or nested negative offsets before an unchecked field scan.
+            if (fieldOffset < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(fieldOffset));
+            }
+
             // This can be N*N but because of our cache, it is not in the common case when you fetch
             // fields in order.   
             while (fieldIdx < targetFieldIdx)
@@ -1237,6 +1244,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     throw new ArgumentOutOfRangeException(nameof(arrayCount));
                 }
+                ValidateArrayCount(arrayInfo, offset, arrayCount);
             }
             else if (arrayInfo.Kind == ArrayKind.LengthPrefixed)
             {
@@ -1254,16 +1262,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     throw new ArgumentOutOfRangeException(nameof(offset));
                 }
+                // Length prefixes are unsigned, including values with their high bit set.
+                long count;
                 if (((payloadFetch.Size & DynamicTraceEventData.BIT_32) != 0))
                 {
-                    arrayCount = GetInt32At(offset);
+                    count = (uint)GetInt32At(offset);
                     offset += 4;
                 }
                 else
                 {
-                    arrayCount = GetInt16At(offset);
+                    count = (ushort)GetInt16At(offset);
                     offset += 2;
                 }
+
+                // Bound the unsigned count before narrowing it to int.
+                if (count > EventDataLength)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(count));
+                }
+                arrayCount = (int)count;
 
                 // The length field is read directly from the payload bytes,
                 // so validate it against EventDataLength before the caller uses it to read array elements.
@@ -1330,7 +1347,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             return (dataOffset, arrayByteLength / elementSize);
         }
 
-        // Validates that 'arrayCount' (just read from payload bytes for a length-prefixed
+        // Validates that 'arrayCount' (from a fixed-count or length-prefixed
         // array) does not point past the end of the event payload.  For fixed-size elements we use the actual
         // element size; for variable-sized elements we use a per-element minimum derived from the element
         // encoding (e.g. 2 bytes for UTF-16 null-terminated strings) so that callers that fast-path byte /
@@ -1440,15 +1457,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             else if (IsCountedSize(size) && payloadFetch.Type == typeof(string))
             {
-                int elemSize;
+                // The length prefix is read with unchecked raw reads, so validate it is in bounds first.
+                int prefixBytes = ((size & BIT_32) != 0) ? 4 : 2;
+                if (offset < 0 || payloadLength - offset < prefixBytes)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(offset));
+                }
+
+                // Preserve unsigned prefixes and widen before scaling UTF-16 element counts.
+                long elemSize;
                 if (((size & BIT_32) != 0))
                 {
-                    elemSize = GetInt32At(offset);
+                    elemSize = (uint)GetInt32At(offset);
                     offset += 4;        // skip size;
                 }
                 else
                 {
-                    elemSize = GetInt16At(offset);
+                    elemSize = (ushort)GetInt16At(offset);
                     offset += 2;        // skip size;
                 }
                 if ((size & IS_ANSI) == 0 && (size & ELEM_COUNT) != 0)
@@ -1456,7 +1481,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     elemSize *= 2;     // Counted (not byte counted) unicode string. chars are 2 wide. 
                 }
 
-                return offset + elemSize;
+                if (elemSize > payloadLength - offset)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(elemSize));
+                }
+
+                return offset + (int)elemSize;
             }
             else if (size == VARINT)
             {
