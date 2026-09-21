@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-
+using System.Buffers.Binary;
 namespace Microsoft.Diagnostics.Tracing.EventPipe
 {
     ref struct SpanReader
@@ -21,12 +21,90 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
         public sbyte ReadInt8() => Read<sbyte>();
         public byte ReadUInt8() => Read<byte>();
-        public short ReadInt16() => Read<short>();
-        public ushort ReadUInt16() => Read<ushort>();
-        public int ReadInt32() => Read<int>();
-        public uint ReadUInt32() => Read<uint>();
-        public long ReadInt64() => Read<long>();
-        public ulong ReadUInt64() => Read<ulong>();
+
+        public short ReadInt16()
+        {
+            short val;
+            if (BinaryPrimitives.TryReadInt16LittleEndian(_buffer, out val))
+            {
+            	_buffer = _buffer.Slice(sizeof(short));
+            }
+            else
+            {
+            	ThrowFormatException<short>();
+            }
+            return val;
+        }
+
+        public ushort ReadUInt16()
+        {
+            ushort val;
+            if (BinaryPrimitives.TryReadUInt16LittleEndian(_buffer, out val))
+            {
+                    _buffer = _buffer.Slice(sizeof(ushort));
+            }
+            else
+            {
+                    ThrowFormatException<ushort>();
+            }
+            return val;
+        }
+	
+         public int ReadInt32()
+         {
+             int val;
+             if (BinaryPrimitives.TryReadInt32LittleEndian(_buffer, out val))
+             {
+                 _buffer = _buffer.Slice(sizeof(int));
+             }
+             else
+             {
+                 ThrowFormatException<int>();
+             }
+             return val;
+         }
+
+         public uint ReadUInt32()
+         {
+              uint val;
+              if (BinaryPrimitives.TryReadUInt32LittleEndian(_buffer, out val))
+              {
+                  _buffer = _buffer.Slice(sizeof(uint));
+              }
+              else
+              {
+                  ThrowFormatException<uint>();
+              }
+              return val;
+         }
+
+         public long ReadInt64()
+         {
+             long val;
+             if (BinaryPrimitives.TryReadInt64LittleEndian(_buffer, out val))
+             {
+                 _buffer = _buffer.Slice(sizeof(long));
+             }
+             else
+             {
+                 ThrowFormatException<long>();
+             }
+             return val;
+         }
+
+         public ulong ReadUInt64()
+         {
+             ulong val;
+             if (BinaryPrimitives.TryReadUInt64LittleEndian(_buffer, out val))
+             {
+                 _buffer = _buffer.Slice(sizeof(ulong));
+             }
+             else
+             {
+                 ThrowFormatException<ulong>();
+             }
+             return val;
+         }
 
         public T Read<T>() where T : struct
         {
@@ -156,7 +234,17 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
         public string ReadNullTerminatedUTF16String()
         {
-            ReadOnlySpan<char> charBuffer = MemoryMarshal.Cast<byte, char>(_buffer);
+	  
+            ReadOnlySpan<char> Buffer = MemoryMarshal.Cast<byte, char>(_buffer);
+            Span<char> charBuffer = stackalloc char [Buffer.Length];
+            Buffer.CopyTo(charBuffer);
+            if (!BitConverter.IsLittleEndian)
+            {
+                for(int ii = 0; ii < charBuffer.Length; ii++)
+                {
+                    charBuffer[ii] = (char)BinaryPrimitives.ReverseEndianness((ushort)charBuffer[ii]);
+                }
+            }
             for(int i = 0; i < charBuffer.Length; i++)
             {
                 if (charBuffer[i] == 0)
