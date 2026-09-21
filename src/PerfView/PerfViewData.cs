@@ -9047,6 +9047,7 @@ namespace PerfView
     {
         internal const string Gen0WalkableObjectsViewName = "Gen 0 Walkable Objects";
         internal const string Gen1WalkableObjectsViewName = "Gen 1 Walkable Objects";
+        internal const string FragmentationBlameViewName = "Fragmentation Blame";
 
         public override string FormatName { get { return "CLR Heap Dump"; } }
         public override string[] FileExtensions { get { return new string[] { ".gcDump", ".gcDump.xml" }; } }
@@ -9063,6 +9064,27 @@ namespace PerfView
 
             Graph graph = m_gcDump.MemoryGraph;
             GCHeapDump gcDump = m_gcDump;
+
+            // Handle Fragmentation Blame view
+            if (streamName == FragmentationBlameViewName)
+            {
+                log.WriteLine("[Fragmentation Blame View]");
+                log.WriteLine("This view shows objects that are causing heap fragmentation.");
+                log.WriteLine("Objects are blamed for the size of Free objects that follow them in memory.");
+                log.WriteLine("This typically identifies pinned objects or objects in older generations that prevent compaction.");
+                log.WriteLine();
+
+                var memoryGraph = graph as MemoryGraph;
+                if (memoryGraph == null)
+                {
+                    log.WriteLine("Error: Fragmentation Blame view requires a MemoryGraph.");
+                    log.WriteLine("Returning standard memory view as fallback.");
+                    return new MemoryGraphStackSource(graph, log);
+                }
+
+                var fragmentationBlameSource = new FragmentationBlameStackSource(memoryGraph, log);
+                return fragmentationBlameSource;
+            }
 
             int gen = -1;
             if (streamName == Gen0WalkableObjectsViewName)
@@ -9125,6 +9147,9 @@ namespace PerfView
                 advanced.Children.Add(new PerfViewStackSource(this, Gen1WalkableObjectsViewName));
             }
 
+            // Add Fragmentation Blame view
+            advanced.Children.Add(new PerfViewStackSource(this, FragmentationBlameViewName));
+
             if (advanced.Children.Count > 0)
             {
                 m_Children.Add(advanced);
@@ -9141,6 +9166,11 @@ namespace PerfView
             if (stackSourceName.Equals(Gen0WalkableObjectsViewName) || stackSourceName.Equals(Gen1WalkableObjectsViewName))
             {
                 stackWindow.CallTreeTab.IsSelected = true;      // start with the call tree view
+            }
+            else if (stackSourceName.Equals(FragmentationBlameViewName))
+            {
+                stackWindow.FoldRegExTextBox.Text = "";
+                stackWindow.ExcludeRegExTextBox.Text = "";
             }
         }
 
