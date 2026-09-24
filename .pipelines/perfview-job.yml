@@ -7,7 +7,7 @@ steps:
 - task: UseDotNet@2
   displayName: 'Use .NET SDK'
   inputs:
-    version: 8.0.x
+    useGlobalJson: true
 
 - task: MSBuild@1
   displayName: 'Restore PerfView.sln'
