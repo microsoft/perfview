@@ -1511,7 +1511,8 @@ namespace PerfView
             if (handler == null || handler.IsDisposed)
             {
                 log?.WriteLine("Creating authentication handler for {0}.", AuthenticationViewModel);
-                handler = _cachedSymbolReaderHandler = new SymbolReaderAuthenticationHandler();
+                handler = AntiSSRFHandlerFactory.Wrap(new SymbolReaderAuthenticationHandler());
+                _cachedSymbolReaderHandler = handler;
             }
 
             handler.Configure(AuthenticationViewModel, log, this);

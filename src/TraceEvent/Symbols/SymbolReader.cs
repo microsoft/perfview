@@ -1624,7 +1624,7 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             if (!canceled)
                             {
-                                m_log.WriteLine("FindSymbolFilePath: Probe of {0} failed: {1}", fullUri, e.Message);
+                                m_log.WriteLine("FindSymbolFilePath: Probe of {0} failed: {1}", fullUri, e.ToString());
                             }
                         }
                     }
