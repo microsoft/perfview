@@ -23,6 +23,7 @@
     <PackageVersion Include="Microsoft.IdentityModel.Abstractions" Version="8.13.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.13.0" />
     <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.13.0" />
+    <PackageVersion Include="Microsoft.Security.AntiSSRF" Version="1.0.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.401" />
     <PackageVersion Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.3351.48" />

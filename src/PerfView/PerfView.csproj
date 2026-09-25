@@ -95,6 +95,7 @@
     <PackageReference Include="Microsoft.IdentityModel.Abstractions" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Security.AntiSSRF" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.Web.WebView2" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.Windows.CsWin32">
       <PrivateAssets>all</PrivateAssets>
@@ -556,6 +557,13 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.IdentityModel.JsonWebTokens.dll</LogicalName>
       <Link>Microsoft.IdentityModel.JsonWebTokens.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Security_AntiSSRF)\lib\netstandard2.0\Microsoft.Security.AntiSSRF.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Security.AntiSSRF.dll</LogicalName>
+      <Link>Microsoft.Security.AntiSSRF.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\lib\net462\Microsoft.Web.WebView2.Core.dll">

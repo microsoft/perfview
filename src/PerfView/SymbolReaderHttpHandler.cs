@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation.  All rights reserved
 using Azure.Core;
 using Microsoft.Diagnostics.Symbols.Authentication;
+using Microsoft.Security.AntiSSRF;
 using PerfView.Dialogs;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,65 @@ using System.Windows;
 
 namespace PerfView
 {
+    /// <summary>
+    /// Creates PerfView HTTP handler chains that use AntiSSRF as the terminal transport
+    /// while preserving PerfView's existing network access.
+    /// </summary>
+    internal static class AntiSSRFHandlerFactory
+    {
+        /// <summary>
+        /// Creates a pass-through delegating handler over AntiSSRF.
+        /// </summary>
+        internal static DelegatingHandler Create()
+        {
+            return new AntiSSRFDelegatingHandler();
+        }
+
+        /// <summary>
+        /// Wraps the AntiSSRF handler in the supplied outer handler.
+        /// </summary>
+        internal static THandler Wrap<THandler>(THandler handler)
+            where THandler : DelegatingHandler
+        {
+            if (handler == null)
+            {
+                throw new ArgumentNullException(nameof(handler));
+            }
+
+            // Delegating handlers such as SymbolReaderAuthenticationHandler create a default
+            // transport that must be disposed before AntiSSRF replaces it.
+            handler.InnerHandler?.Dispose();
+            handler.InnerHandler = CreateAntiSSRFHandler();
+            return handler;
+        }
+
+        #region private
+        private static AntiSSRFHandler CreateAntiSSRFHandler()
+        {
+            var policy = new AntiSSRFPolicy(PolicyConfigOptions.None)
+            {
+                AllowPlainTextHttp = true
+            };
+
+            AntiSSRFHandler handler = policy.GetHandler();
+            handler.CheckCertificateRevocationList = true;
+            return handler;
+        }
+
+        /// <summary>
+        /// Adapts the AntiSSRF handler to the DelegatingHandler type required by
+        /// the SymbolReader constructor used for fresh, unauthenticated readers.
+        /// </summary>
+        private sealed class AntiSSRFDelegatingHandler : DelegatingHandler
+        {
+            public AntiSSRFDelegatingHandler()
+                : base(CreateAntiSSRFHandler())
+            {
+            }
+        }
+        #endregion
+    }
+
     /// <summary>
     /// A handler that adds support for basic username:password authentication over HTTP
     /// </summary>
@@ -627,7 +687,7 @@ namespace PerfView
         /// <summary>
         /// An HTTP client used to discover the authority (login endpoint and tenant) for an Azure Dev Ops instance.
         /// </summary>
-        private readonly HttpClient _httpClient = new HttpClient(new HttpClientHandler() { CheckCertificateRevocationList = true });
+        private readonly HttpClient _httpClient = new HttpClient(AntiSSRFHandlerFactory.Create(), disposeHandler: true);
 
         /// <summary>
         /// Construct a new <see cref="AzureDevOpsHandler"/> instance.
@@ -904,7 +964,7 @@ namespace PerfView
         /// <summary>
         /// An HTTP client for making device flow calls
         /// </summary>
-        private readonly HttpClient _httpClient = new HttpClient(new HttpClientHandler() { CheckCertificateRevocationList = true });
+        private readonly HttpClient _httpClient = new HttpClient(AntiSSRFHandlerFactory.Create(), disposeHandler: true);
 
         /// <summary>
         /// Gate to protect against multiple calls to the device flow.
