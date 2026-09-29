@@ -151,7 +151,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Reprocess a pre-constructed event which this processor has presumably created. Helpful to re-examine
         /// "unknown" events, perhaps after a manifest has been received from the ETW stream.
-        /// Note when queuing events to reprocess you must <see cref="TraceEvent.Clone">Clone</see> them first
+        /// Note when queuing events to reprocess you must <see cref="TraceEvent.Clone()">Clone</see> them first
         /// or certain internal data may no longer be available and you may receive memory access violations.
         /// </summary>
         /// <param name="ev">Event to re-process.</param>
