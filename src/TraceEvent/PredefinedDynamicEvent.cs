@@ -58,16 +58,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
-        /// Creates a clone of this template.
+        /// Copies this event, or clones an unpopulated template for registration.
         /// </summary>
-        /// <returns>A new instance of the template</returns>
+        /// <returns>An independent event copy or template.</returns>
         public override unsafe TraceEvent Clone()
         {
             var clone = (PredefinedDynamicEvent)base.Clone();
             
-            // Reset source-specific fields to ensure the clone can be registered with a new source
-            clone.traceEventSource = null;
-            clone.Target = null;
+            // Reset source-specific fields only for templates so they can be registered with a new source.
+            // Populated event copies retain their source and callback, matching the base Clone behavior.
+            if (eventRecord == null)
+            {
+                clone.traceEventSource = null;
+                clone.Target = null;
+            }
 
             return clone;
         }
