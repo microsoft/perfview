@@ -79,6 +79,18 @@ namespace TraceEventTests
             Assert.Equal(string.Empty, module.FindNameForRva(0x1000, ref symbolStart));
         }
 
+        [Fact]
+        public void OpenElfSymbolFile_MismatchedBuildIdThrows()
+        {
+            byte[] data = new ElfBuilder().SetBuildId(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }).Build();
+            RunWithTempFile(data, path =>
+            {
+                using var reader = new SymbolReader(TextWriter.Null, "");
+
+                Assert.Throws<InvalidDataException>(() => reader.OpenElfSymbolFile(path, 0, 0, "1112131415161718"));
+            });
+        }
+
         #endregion
 
         #region 64-bit Little-Endian

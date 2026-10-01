@@ -9420,7 +9420,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 reader.m_log.WriteLine("Opening ELF symbols from {0} (pVaddr=0x{1:x}, aligned=0x{2:x}, pOffset=0x{3:x}, pageSize={4})",
                     symbolFilePath, elfInfo.VirtualAddress, alignedVAddr, elfInfo.FileOffset, elfInfo.PageSize);
-                return reader.OpenElfSymbolFile(symbolFilePath, alignedVAddr, elfInfo.FileOffset);
+                return reader.OpenElfSymbolFile(symbolFilePath, alignedVAddr, elfInfo.FileOffset, expectedBuildId: elfInfo.BuildId);
             }
             catch (Exception e)
             {
