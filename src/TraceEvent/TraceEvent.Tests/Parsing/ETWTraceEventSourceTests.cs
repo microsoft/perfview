@@ -16,7 +16,6 @@ namespace TraceEventTests
                 var field = typeof(ETWTraceEventSource).GetField("handles", BindingFlags.NonPublic | BindingFlags.Instance);
                 var handles = (TraceEventNativeMethods.SafeTraceHandle[])field.GetValue(source);
                 handles[0].Dispose();
-                handles[0] = new TraceEventNativeMethods.SafeTraceHandle(ulong.MaxValue);
                 var error = Assert.Throws<COMException>(() => source.Process());
                 Assert.Equal(unchecked((int)0x80070006), error.HResult);
             }
