@@ -36,11 +36,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
     /// property to false (its default is true).
     /// </para>
     /// <para>
-    /// Kernel events have additional restrictions.  In particular, there is a special API (EnableKernelProvider).
-    /// Before Windows 8, there was a restriction that kernel events could only be enabled from a session
-    /// with a special name (see KernelTraceEventParser.KernelSessionName) and thus there could only be a single
-    /// session that could log kernel events (and that session could not log non-kernel events).  These
-    /// restrictions were dropped in Windows 8.
+    /// Enable kernel events with EnableKernelProvider before enabling other providers in the session.
+    /// Some specialized keywords still require the dedicated KernelTraceEventParser.KernelSessionName session.
     /// </para>
     /// </summary>
     public sealed unsafe class TraceEventSession : IDisposable
@@ -619,11 +616,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 }
 
                 bool systemTraceProvider = false;
-                if (!OperatingSystemVersion.AtLeast(60))
-                {
-                    throw new NotSupportedException("Kernel Event Tracing is only supported on Windows 6.0 (Vista) and above.");
-                }
-
                 if (IsValidSession)
                 {
                     throw new Exception("The kernel provider must be enabled first and only once in a session.");
@@ -722,7 +714,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     m_SessionHandle = new TraceEventNativeMethods.SafeTraceHandle(kernelSessionHandle);
                 }
 
-                if (dwErr == 5 && OperatingSystemVersion.AtLeast(51))     // On Vista and we get a 'Accessed Denied' message
+                if (dwErr == 5)     // Access denied
                 {
                     throw new UnauthorizedAccessException("Error Starting ETW:  Access Denied (Administrator rights required to start ETW)");
                 }
@@ -2398,7 +2390,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 Thread.Sleep(100);  // Give it some time to stop.
                 retCode = TraceEventNativeMethods.StartTrace(out m_SessionHandle, m_SessionName, properties);
             }
-            if (retCode == 5 && OperatingSystemVersion.AtLeast(51))     // On Vista and we get a 'Accessed Denied' message
+            if (retCode == 5)     // Access denied
             {
                 throw new UnauthorizedAccessException("Error Starting ETW:  Access Denied (Administrator rights required to start ETW)");
             }
