@@ -35,6 +35,14 @@ class Program
 }
 ```
 
+## Supported Windows Versions
+
+On Windows, TraceEvent requires Windows 10 or Windows Server 2016 or later.
+Its module initializer throws `PlatformNotSupportedException` on older Windows;
+the CLR may wrap this in an initialization exception. This check is skipped on
+Linux and macOS, preserving the library's existing cross-platform capabilities.
+Older traces and target runtimes can still be analyzed on supported hosts.
+
 ## TraceEvent Samples
 
 To see more complete samples that use the APIs in more sophisticated (but not too sophisticated ways). In the [Samples directory](https://github.com/Microsoft/perfview/tree/main/src/TraceEvent/Samples) here are one or two page samples doing interesting things (collecting data, parsing from files or in real time, transforming one ETL file to another etc). Each sample is independent of the others.

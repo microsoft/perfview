@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <RootNamespace>PerfView</RootNamespace>
+    <StartupObject>PerfView.Startup</StartupObject>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,6 +20,8 @@
 
   <ItemGroup>
     <Compile Include="..\PerfView\App.cs" />
+    <Compile Include="..\PerfView\Startup.cs" />
+    <Compile Include="..\Utilities\OperatingSystemVersion.cs" />
     <Compile Include="..\PerfView\CommandLineArgs.cs" />
     <Compile Include="..\PerfView\CommandProcessor.cs" />
     <Compile Include="..\PerfView\ConfigData.cs" />

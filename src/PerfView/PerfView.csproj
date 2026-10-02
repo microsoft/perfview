@@ -5,7 +5,7 @@
     <TargetFramework>net462</TargetFramework>
     <OutputType>WinExe</OutputType>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <StartupObject>PerfView.App</StartupObject>
+    <StartupObject>PerfView.Startup</StartupObject>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <ExtrasEnableWpfProjectSetup>true</ExtrasEnableWpfProjectSetup>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
@@ -159,6 +159,7 @@
   </Target>
 
   <ItemGroup>
+    <Compile Include="..\Utilities\OperatingSystemVersion.cs" Link="Utilities\OperatingSystemVersion.cs" />
     <Compile Include="..\HeapDumpCommon\GCHeapDumpNames.cs">
       <Link>memory\GCHeapDumpNames.cs</Link>
     </Compile>
