@@ -481,7 +481,7 @@ namespace PerfView
                         File.WriteAllText(Path.Combine(SupportFiles.SupportFileDir, "ExtensionsNotCopied"), "");
                     }
 
-                    SetPermissionsForWin8Apps();
+                    SetSupportFilePermissions();
                 }
             }
             return unpacked;
@@ -492,23 +492,18 @@ namespace PerfView
         /// unpacked in the  previous step.   
         /// </summary>
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        private static void SetPermissionsForWin8Apps()
+        private static void SetSupportFilePermissions()
         {
-            // Are we on Win8 or above
-            var version = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-            if (version >= 62)
-            {
-                // Make sure that Win8 packages can get at the EtwClrProfiler dll.   
-                // *S-1-15-2-1 == "ALL APPLICATION PACKAGES" we don't use the text because it does not work in other locales 
-                var cmdLine = "icacls.exe \"" + SupportFiles.SupportFileDir + "\" /grant *S-1-15-2-1:(OI)(CI)(RX) /T";
-                var cmd = Command.Run(cmdLine, new CommandOptions().AddNoThrow());
-                Debug.Assert(cmd.ExitCode == 0);
+            // Make sure packaged apps can get at the EtwClrProfiler dll.
+            // *S-1-15-2-1 == "ALL APPLICATION PACKAGES" we don't use the text because it does not work in other locales
+            var cmdLine = "icacls.exe \"" + SupportFiles.SupportFileDir + "\" /grant *S-1-15-2-1:(OI)(CI)(RX) /T";
+            var cmd = Command.Run(cmdLine, new CommandOptions().AddNoThrow());
+            Debug.Assert(cmd.ExitCode == 0);
 
-                // Also grant *S-1-1-0 = everyone read access (so that ASP.NET users can get at the ETW profiler DLL. 
-                cmdLine = "icacls.exe \"" + SupportFiles.SupportFileDir + "\" /grant *S-1-1-0:(OI)(CI)(RX) /T";
-                cmd = Command.Run(cmdLine, new CommandOptions().AddNoThrow());
-                Debug.Assert(cmd.ExitCode == 0);
-            }
+            // Also grant *S-1-1-0 = everyone read access (so that ASP.NET users can get at the ETW profiler DLL.
+            cmdLine = "icacls.exe \"" + SupportFiles.SupportFileDir + "\" /grant *S-1-1-0:(OI)(CI)(RX) /T";
+            cmd = Command.Run(cmdLine, new CommandOptions().AddNoThrow());
+            Debug.Assert(cmd.ExitCode == 0);
         }
 
         /// <summary>
