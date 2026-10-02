@@ -252,13 +252,6 @@
       <Link>x86\KernelTraceControl.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.Win61.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\KernelTraceControl.Win61.dll</LogicalName>
-      <Link>x86\KernelTraceControl.Win61.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\arm\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>

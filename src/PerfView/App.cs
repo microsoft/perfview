@@ -521,18 +521,6 @@ namespace PerfView
                         File.WriteAllText(Path.Combine(SupportFiles.SupportFileDir, "ExtensionsNotCopied"), "");
                     }
 
-                    // The KernelTraceControl that works for Win10 and above does not work properly form older OSes
-                    // The symptom is that when collecting data, it does not properly merge files and you don't get
-                    // the KernelTraceControl events for PDBs and thus symbol lookup does not work.  
-                    var version = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-                    if (version < 62)
-                    {
-                        var kernelTraceControlDir = Path.Combine(SupportFiles.SupportFileDir, "x86");
-                        var src = Path.Combine(kernelTraceControlDir, "KernelTraceControl.Win61.dll");
-                        var dest = Path.Combine(kernelTraceControlDir, "KernelTraceControl.dll");
-                        FileUtilities.ForceCopy(src, dest);
-                    }
-
                     SetPermissionsForWin8Apps();
                 }
             }
