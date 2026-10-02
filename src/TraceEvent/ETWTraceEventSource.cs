@@ -494,19 +494,8 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Fill  out the first log file information (we will clone it later if we have multiple files). 
             logFiles[0].BufferCallback = TraceEventBufferCallback;
-            useClassicETW = !OperatingSystemVersion.AtLeast(OperatingSystemVersion.Vista);
-            if (useClassicETW)
-            {
-                var mem = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
-                *mem = default(TraceEventNativeMethods.EVENT_RECORD);
-                convertedHeader = mem;
-                logFiles[0].EventCallback = RawDispatchClassic;
-            }
-            else
-            {
-                logFiles[0].LogFileMode |= TraceEventNativeMethods.PROCESS_TRACE_MODE_EVENT_RECORD;
-                logFiles[0].EventCallback = RawDispatch;
-            }
+            logFiles[0].LogFileMode |= TraceEventNativeMethods.PROCESS_TRACE_MODE_EVENT_RECORD;
+            logFiles[0].EventCallback = RawDispatch;
             // We want the raw timestamp because it is needed to match up stacks with the event they go with.  
             logFiles[0].LogFileMode |= TraceEventNativeMethods.PROCESS_TRACE_MODE_RAW_TIMESTAMP;
 
@@ -772,52 +761,6 @@ namespace Microsoft.Diagnostics.Tracing
         // method (see http://msdn2.microsoft.com/en-us/library/aa364089.aspx) We set it up so that we call
         // back to ETWTraceEventSource.Dispatch which is the heart of the event callback logic.
         // [SecuritySafeCritical]
-        private void RawDispatchClassic(TraceEventNativeMethods.EVENT_RECORD* eventData)
-        {
-            // TODO not really a EVENT_RECORD on input, but it is a pain to be type-correct.  
-            TraceEventNativeMethods.EVENT_TRACE* oldStyleHeader = (TraceEventNativeMethods.EVENT_TRACE*)eventData;
-            eventData = convertedHeader;
-
-            eventData->EventHeader.Size = (ushort)sizeof(TraceEventNativeMethods.EVENT_TRACE_HEADER);
-            // HeaderType
-            eventData->EventHeader.Flags = TraceEventNativeMethods.EVENT_HEADER_FLAG_CLASSIC_HEADER;
-
-            // TODO Figure out if there is a marker that is used in the WOW for the classic providers 
-            // right now I assume they are all the same as the machine.  
-            if (pointerSize == 8)
-            {
-                eventData->EventHeader.Flags |= TraceEventNativeMethods.EVENT_HEADER_FLAG_64_BIT_HEADER;
-            }
-            else
-            {
-                eventData->EventHeader.Flags |= TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER;
-            }
-
-            // EventProperty
-            eventData->EventHeader.ThreadId = oldStyleHeader->Header.ThreadId;
-            eventData->EventHeader.ProcessId = oldStyleHeader->Header.ProcessId;
-            eventData->EventHeader.TimeStamp = oldStyleHeader->Header.TimeStamp;
-            eventData->EventHeader.ProviderId = oldStyleHeader->Header.Guid;            // ProviderId = TaskId
-            // ID left 0
-            eventData->EventHeader.Version = (byte)oldStyleHeader->Header.Version;
-            // Channel
-            eventData->EventHeader.Level = oldStyleHeader->Header.Level;
-            eventData->EventHeader.Opcode = oldStyleHeader->Header.Type;
-            // Task
-            // Keyword
-            eventData->EventHeader.KernelTime = oldStyleHeader->Header.KernelTime;
-            eventData->EventHeader.UserTime = oldStyleHeader->Header.UserTime;
-            // ActivityID
-
-            eventData->BufferContext = oldStyleHeader->BufferContext;
-            // ExtendedDataCount
-            eventData->UserDataLength = (ushort)oldStyleHeader->MofLength;
-            // ExtendedData
-            eventData->UserData = oldStyleHeader->MofData;
-            // UserContext 
-
-            RawDispatch(eventData);
-        }
 
         // [SecuritySafeCritical]
         private void RawDispatch(TraceEventNativeMethods.EVENT_RECORD* rawData)
@@ -878,12 +821,6 @@ namespace Microsoft.Diagnostics.Tracing
                     handles = null;
                 }
 
-                if (convertedHeader != null)
-                {
-                    Marshal.FreeHGlobal((IntPtr)convertedHeader);
-                    convertedHeader = null;
-                }
-
                 traceLoggingEventId.Dispose();
 
                 // logFiles = null; Keep the callback delegate alive as long as possible.
@@ -913,11 +850,8 @@ namespace Microsoft.Diagnostics.Tracing
                     handles[i].Dispose();
 
                     // Annoying.  The OS resets the LogFileMode field, so I have to set it up again.   
-                    if (!useClassicETW)
-                    {
-                        logFiles[i].LogFileMode = TraceEventNativeMethods.PROCESS_TRACE_MODE_EVENT_RECORD;
-                        logFiles[i].LogFileMode |= TraceEventNativeMethods.PROCESS_TRACE_MODE_RAW_TIMESTAMP;
-                    }
+                    logFiles[i].LogFileMode = TraceEventNativeMethods.PROCESS_TRACE_MODE_EVENT_RECORD;
+                    logFiles[i].LogFileMode |= TraceEventNativeMethods.PROCESS_TRACE_MODE_RAW_TIMESTAMP;
 
                     handles[i] = TraceEventNativeMethods.OpenTrace(ref logFiles[i]);
                 }
@@ -933,7 +867,6 @@ namespace Microsoft.Diagnostics.Tracing
 
         // #ETWTraceEventSourceFields
         private bool processTraceCalled;
-        private TraceEventNativeMethods.EVENT_RECORD* convertedHeader;
 
         // Returned from OpenTrace
         private TraceEventNativeMethods.EVENT_TRACE_LOGFILEW[] logFiles;
