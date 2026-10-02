@@ -240,13 +240,7 @@
   </Target>
 
   <ItemGroup>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\msdia140.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\msdia140.dll</LogicalName>
-      <Link>x86\msdia140.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
+    <!-- The x86 heap-dump helper uses this when merging JavaScript heap ETL files. -->
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
@@ -567,25 +561,11 @@
       <Link>Microsoft.Web.WebView2.Wpf.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x86\native\WebView2Loader.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\runtimes\win-x86\native\WebView2Loader.dll</LogicalName>
-      <Link>runtimes\win-x86\native\WebView2Loader.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
     <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x64\native\WebView2Loader.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\runtimes\win-x64\native\WebView2Loader.dll</LogicalName>
       <Link>runtimes\win-x64\native\WebView2Loader.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-arm64\native\WebView2Loader.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\runtimes\win-arm64\native\WebView2Loader.dll</LogicalName>
-      <Link>runtimes\win-arm64\native\WebView2Loader.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_Tokens)\lib\net462\Microsoft.IdentityModel.Tokens.dll">
