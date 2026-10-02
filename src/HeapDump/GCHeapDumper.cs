@@ -684,11 +684,11 @@ public class GCHeapDumper
                 throw new HeapDumpException("Could not find process with ID " + processID, HR.CouldNotFindProcessId);
             }
 
-            // Determine if we are a Win8 Application.  
+            // Resume packaged applications before collection.
             var fullPackageName = PackageUtil.FullPackageNameForProcess(process);
             if (fullPackageName != null)
             {
-                m_log.WriteLine("Process {0} is a Windows 8 application, resuming that process.", processID);
+                m_log.WriteLine("Process {0} is a packaged application, resuming that process.", processID);
                 var pkgDebugSettings = (IPackageDebugSettings)new PackageDebugSettingsClass();
                 // pkgDebugSettings.EnableDebugging(fullPackageName, null, IntPtr.Zero);
                 pkgDebugSettings.Resume(fullPackageName);
@@ -1609,18 +1609,12 @@ public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6>(T1 arg1, T
 public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7);
 
 /// <summary>
-/// Gets at Win8 Package information.  
+/// Gets package information for a process.
 /// </summary>
 internal class PackageUtil
 {
     public static string FullPackageNameForProcess(Process process)
     {
-        var version = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-        if (version < 62)
-        {
-            return null;        // Packages only exist on Windows 8
-        }
-
         var packageFullNameBuff = new StringBuilder(512);
         int packageFullNameBuffLen = packageFullNameBuff.Capacity;
         var hr = GetPackageFullName(process.Handle, ref packageFullNameBuffLen, packageFullNameBuff);
@@ -1654,6 +1648,5 @@ internal interface IPackageDebugSettings
 }
 
 #endregion
-
 
 
