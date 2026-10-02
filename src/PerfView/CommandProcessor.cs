@@ -2527,7 +2527,6 @@ namespace PerfView
         }
 
         private static string s_dotNetKey = @"Software\Microsoft\.NETFramework";
-        private static string s_dotNetKey32 = @"Software\Wow6432Node\Microsoft\.NETFramework";
 
         // Ensures that our EtwClrProfiler is set up (for both X64 and X86).  Does not actually turn on the provider.  
         private static void InstallETWClrProfiler(TextWriter log, int profilerKeywords)
@@ -2538,7 +2537,8 @@ namespace PerfView
             {
                 log.WriteLine("Profiler DLL to load is {0}", profilerDll);
                 log.WriteLine(@"Adding HKLM\Software\Microsoft\.NETFramework\COR* registry keys");
-                using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
+                using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
                 {
                     InsertEtwClrProfilerKeys(key, "COR", profilerDll, profilerKeywords, SupportFiles.ProcessArch.ToString(), log);
                     InsertEtwClrProfilerKeys(key, "CORECLR", profilerDll, profilerKeywords, SupportFiles.ProcessArch.ToString(), log);
@@ -2549,44 +2549,22 @@ namespace PerfView
                 log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", SupportFiles.ProcessArch);
             }
 
-            // If we are on a 64 bit system (in the wow), also enable the 64 bit version.     
-            var nativeArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432");
-            if (nativeArch != null)
+            // The x64 host also profiles x86 targets through the 32-bit registry view.
+            var arch = "x86";
+            var profilerNativeDll = Path.Combine(SupportFiles.SupportFileDir, arch, "EtwClrProfiler.dll");
+            if (File.Exists(profilerNativeDll))
             {
-                var profilerNativeDll = Path.Combine(SupportFiles.SupportFileDir, nativeArch + "\\EtwClrProfiler.dll");
-                if (File.Exists(profilerNativeDll))
+                log.WriteLine(@"Installing in the 32 bit subsystem.");
+                using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
+                using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
                 {
-                    log.WriteLine(@"Detected 64 bit system, Adding 64 bit HKLM\Software\Microsoft\.NETFramework\COR* registry keys");
-                    using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
-                    using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
-                    {
-                        InsertEtwClrProfilerKeys(key, "COR", profilerNativeDll, profilerKeywords, nativeArch, log);
-                        InsertEtwClrProfilerKeys(key, "CORECLR", profilerNativeDll, profilerKeywords, nativeArch, log);
-                    }
-                }
-                else
-                {
-                    log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", nativeArch);
+                    InsertEtwClrProfilerKeys(key, "COR", profilerNativeDll, profilerKeywords, arch, log);
+                    InsertEtwClrProfilerKeys(key, "CORECLR", profilerNativeDll, profilerKeywords, arch, log);
                 }
             }
-            // If we are amd64 process, also install in the 32 bit subsystem.  
-            else if (SupportFiles.ProcessArch == ProcessorArchitecture.Amd64)
+            else
             {
-                var arch = "x86";
-                var profilerNativeDll = Path.Combine(SupportFiles.SupportFileDir, arch + "\\EtwClrProfiler.dll");
-                if (File.Exists(profilerNativeDll))
-                {
-                    log.WriteLine(@"Detected 64 bit system, installing in the 32 bit subsystem.");
-                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey32))
-                    {
-                        InsertEtwClrProfilerKeys(key, "COR", profilerNativeDll, profilerKeywords, arch, log);
-                        InsertEtwClrProfilerKeys(key, "CORECLR", profilerNativeDll, profilerKeywords, arch, log);
-                    }
-                }
-                else
-                {
-                    log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", arch);
-                }
+                log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", arch);
             }
         }
 
@@ -2615,32 +2593,19 @@ namespace PerfView
         {
             log.WriteLine("Ensuring .NET Allocation profiler not installed.");
 
-            using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
+            using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+            using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
             {
                 DeleteEtwClrProfilerKeys(key, "COR", log);
                 DeleteEtwClrProfilerKeys(key, "CORECLR", log);
             }
 
-            var nativeArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432");
-            if (nativeArch != null)
+            log.WriteLine(@"Removing 32 bit keys.");
+            using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
+            using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
             {
-                log.WriteLine(@"Detected 64 bit system, removing 64 bit keys");
-                using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
-                using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
-                {
-                    DeleteEtwClrProfilerKeys(key, "COR", log);
-                    DeleteEtwClrProfilerKeys(key, "CORECLR", log);
-                }
-            }
-            // If we are amd64 process, also uninstall in the WOW.  
-            else if (SupportFiles.ProcessArch == ProcessorArchitecture.Amd64)
-            {
-                log.WriteLine(@"Detected 64 bit system, removing 32 bit keys.");
-                using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey32))
-                {
-                    DeleteEtwClrProfilerKeys(key, "COR", log);
-                    DeleteEtwClrProfilerKeys(key, "CORECLR", log);
-                }
+                DeleteEtwClrProfilerKeys(key, "COR", log);
+                DeleteEtwClrProfilerKeys(key, "CORECLR", log);
             }
         }
 
