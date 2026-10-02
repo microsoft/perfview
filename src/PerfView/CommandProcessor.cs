@@ -3294,7 +3294,7 @@ namespace PerfView
                           "    See 'ASP.NET events' in help for more details.";
             LogFile.WriteLine(message);
 
-            if (App.CommandLineArgs.NoGui || SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
+            if (App.CommandLineArgs.NoGui)
             {
                 LogFile.WriteLine("[ASP.NET events will not fire, see log for details.]");
                 return;

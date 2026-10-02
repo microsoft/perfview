@@ -25,10 +25,7 @@ namespace PerfView
     /// <summary>
     /// The App Class is the main program
     ///
-    /// We don't do the normal WPF style main (where WPF is responsible for the main program because 
-    /// on ARM devices we don't have WPF, however we still want to enable some things (like data collection).   
-    /// Thus we need to defer touching WPF until we know we need it.  To do this we take explicit control over
-    /// the Entry point and do command line processing first, before doing any GUI stuff.  
+    /// Command-line processing and dependency extraction happen before initializing WPF.
     /// </summary>
     public class App
     {
@@ -53,11 +50,9 @@ namespace PerfView
             try
             {
 #if !PERFVIEW_COLLECT
-                // Can't display on ARM because the SplashScreen is WPF
-                var noGui = SupportFiles.ProcessArch == ProcessorArchitecture.Arm ||
-                    (args.Length > 0 &&
+                var noGui = args.Length > 0 &&
                     (string.Compare(args[0], "/noGui", StringComparison.OrdinalIgnoreCase) == 0 ||
-                     string.Compare(args[0], 0, "/logFile", 0, 8, StringComparison.OrdinalIgnoreCase) == 0));
+                     string.Compare(args[0], 0, "/logFile", 0, 8, StringComparison.OrdinalIgnoreCase) == 0);
 
                 // Users will need to check the return code for failure because there is no console setup yet and we can't log any status.
                 var buildLayout = args.Length > 1 && string.Compare(args[0], "/buildLayout", StringComparison.OrdinalIgnoreCase) == 0;
@@ -151,13 +146,7 @@ namespace PerfView
             }
 
             // Figure out where output goes and set CommandProcessor.LogFile
-#if !PERFVIEW_COLLECT
-            // On ARM we don't have a GUI
-            if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
-            {
-                CommandLineArgs.NoGui = true;
-            }
-#else
+#if PERFVIEW_COLLECT
             // We never support GUI in PerfViewCollect
             CommandLineArgs.NoGui = true;
 #endif
@@ -234,10 +223,7 @@ namespace PerfView
 
             if (CommandLineArgs.NoGui)
             {
-                if (SupportFiles.ProcessArch != ProcessorArchitecture.Arm)
-                {
-                    CloseSplashScreen();
-                }
+                CloseSplashScreen();
 
                 if (needNewConsole && !newConsoleCreated)
                 {
@@ -333,14 +319,14 @@ namespace PerfView
             }
             else
             {
-                // Ask the gui to do the command.   This is in its own method so that on ARM we never try to load WPF.  
+                // Initialize the GUI only after dependencies have been unpacked.
                 DoMainForGui();
                 return 0;       // Does not actually return but 
             }
         }
 
         /// <summary>
-        /// Logic in DoMainForGui was segregated into its own method so that we don't load WPF until we need to (for ARM)
+        /// Defer loading WPF until GUI startup.
         /// </summary>
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void DoMainForGui()
@@ -476,29 +462,14 @@ namespace PerfView
 
                 if (Environment.OSVersion.Platform != PlatformID.Unix)
                 {
-                    // You don't need amd64 on ARM (TODO remove it on X86 machines too).  
-                    if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
-                    {
-                        DirectoryUtilities.Clean(Path.Combine(SupportFiles.SupportFileDir, "amd64"));
-                    }
-
                     // We have two versions of HeapDump.exe, and they each need their own copy of  Microsoft.Diagnostics.Runtime.dll 
-                    // so copy this dll to the other architectures.  
+                    // so copy this dll to the other architecture.
                     var fromDir = Path.Combine(SupportFiles.SupportFileDir, "x86");
-                    foreach (var arch in new string[] { "amd64", "arm" })
+                    var toDir = Path.Combine(SupportFiles.SupportFileDir, "amd64");
+                    var fromFile = Path.Combine(fromDir, "Microsoft.Diagnostics.Runtime.dll");
+                    if (Directory.Exists(toDir) && File.Exists(fromFile))
                     {
-                        var toDir = Path.Combine(SupportFiles.SupportFileDir, arch);
-                        var fromFile = Path.Combine(fromDir, "Microsoft.Diagnostics.Runtime.dll");
-                        if (Directory.Exists(toDir) && File.Exists(fromFile))
-                        {
-                            File.Copy(fromFile, Path.Combine(toDir, "Microsoft.Diagnostics.Runtime.dll"));
-
-                            // ARM can use the X86 version of the heap dumper.  
-                            if (arch == "arm")
-                            {
-                                File.Copy(Path.Combine(fromDir, "HeapDump.exe"), Path.Combine(toDir, "HeapDump.exe"));
-                            }
-                        }
+                        File.Copy(fromFile, Path.Combine(toDir, "Microsoft.Diagnostics.Runtime.dll"));
                     }
 
                     // To support intellisense for extensions, we need the PerfView.exe to be next to the .XML file that describes it
@@ -695,7 +666,7 @@ namespace PerfView
                     bool persistSymPath = true;
                     if (symPath.Elements.Count == 0)
                     {
-                        if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm || App.CommandLineArgs.NoGui)
+                        if (App.CommandLineArgs.NoGui)
                         {
                             App.CommandProcessor.LogFile.WriteLine("WARNING NO _NT_SYMBOL_PATH set ...");
                             persistSymPath = false;     // If we could not interact with the user, don't persist the answer.  
