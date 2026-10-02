@@ -7,9 +7,8 @@ using System.IO;
 using System.Threading;
 
 /* README FIRST */
-// This shows you how to listen to both Kernel and non-Kernel (in this case the CLR) events on Windows 8.
-// This is significantly easier than on Win7 (which is shown in 34_KernelAndClrFileWin7.cs) because
-// a single session can have both kernel and non-kernel providers. 
+// This shows how to record both kernel and non-kernel (in this case the CLR) events
+// in a single session on supported Windows hosts.
 // 
 namespace TraceEventSamples
 {
@@ -164,4 +163,3 @@ namespace TraceEventSamples
         }
     }
 }
-
