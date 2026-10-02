@@ -16,8 +16,9 @@
     <Copyright>Copyright © Microsoft 2010</Copyright>
     <FileVersion>$(PerfViewVersion)</FileVersion>
 
-    <!-- WebView2 downloads the wrong drivers unless this is set -->
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <!-- Explicitly select the x64 host and matching WebView2 loader. -->
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
 
   <ItemGroup>

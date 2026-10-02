@@ -35,20 +35,44 @@ steps:
     customFeed: 'https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json'
 
 - task: VSTest@3
-  displayName: 'Run Tests'
+  displayName: 'Run TraceEvent Tests (x86)'
   inputs:
     testAssemblyVer2: |
       **\bin\**\LinuxTracingTests.dll
       **\bin\**\CtfTracingTests.dll
       **\bin\**\SymbolsAuthTests.dll
       **\bin\**\TraceEventTests.dll
-      **\bin\**\PerfViewTests.dll
       **\bin\**\TraceParserGen.Tests.dll
-    testRunTitle: 'PerfView - ${{ parameters.flavor }}'
+    testRunTitle: 'TraceEvent x86 - ${{ parameters.flavor }}'
     vsTestVersion: 'toolsInstaller'
     runTestsInIsolation: true
     donotPublishTestResults: true
     otherConsoleOptions: '--blame'
+
+- task: VSTest@3
+  displayName: 'Run TraceEvent Tests (x64)'
+  inputs:
+    testAssemblyVer2: |
+      **\bin\**\LinuxTracingTests.dll
+      **\bin\**\CtfTracingTests.dll
+      **\bin\**\SymbolsAuthTests.dll
+      **\bin\**\TraceEventTests.dll
+      **\bin\**\TraceParserGen.Tests.dll
+    testRunTitle: 'TraceEvent x64 - ${{ parameters.flavor }}'
+    vsTestVersion: 'toolsInstaller'
+    runTestsInIsolation: true
+    donotPublishTestResults: true
+    otherConsoleOptions: '--blame /Platform:x64'
+
+- task: VSTest@3
+  displayName: 'Run PerfView Tests'
+  inputs:
+    testAssemblyVer2: '**\bin\**\PerfViewTests.dll'
+    testRunTitle: 'PerfView x64 - ${{ parameters.flavor }}'
+    vsTestVersion: 'toolsInstaller'
+    runTestsInIsolation: true
+    donotPublishTestResults: true
+    otherConsoleOptions: '--blame /Platform:x64'
 
 - task: CopyFiles@2
   displayName: 'Copy Files to Artifacts Staging'

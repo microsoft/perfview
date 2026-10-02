@@ -8,6 +8,13 @@ namespace PerfViewTests
     public class StartupTests
     {
         [Fact]
+        public void ApplicationAndTestHostAreX64()
+        {
+            Assert.Equal(8, IntPtr.Size);
+            Assert.Equal(System.Reflection.ProcessorArchitecture.Amd64, typeof(Startup).Assembly.GetName().ProcessorArchitecture);
+        }
+
+        [Fact]
         public void UnsupportedWindowsReportsOnceWithoutStarting()
         {
             int reports = 0;

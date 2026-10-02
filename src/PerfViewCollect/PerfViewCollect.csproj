@@ -5,6 +5,10 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <RootNamespace>PerfView</RootNamespace>
     <StartupObject>PerfView.Startup</StartupObject>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
 
   <PropertyGroup>
