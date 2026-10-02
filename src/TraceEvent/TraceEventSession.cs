@@ -3276,11 +3276,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         public static unsafe Dictionary<string, ProfileSourceInfo> GetInfo()
         {
-            if (!OperatingSystemVersion.AtLeast(62))
-            {
-                throw new ApplicationException("Profile source only available on Win8 and beyond.");
-            }
-
             var ret = new Dictionary<string, ProfileSourceInfo>(StringComparer.OrdinalIgnoreCase);
 
             // Figure out how much space we need.
@@ -3370,11 +3365,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         public static unsafe void Set(int[] profileSourceIDs, int[] profileSourceIntervals)
         {
-            if (!OperatingSystemVersion.AtLeast(62))
-            {
-                throw new ApplicationException("Profile source only available on Win8 and beyond.");
-            }
-
             TraceEventNativeMethods.SetPrivilege(TraceEventNativeMethods.SE_SYSTEM_PROFILE_PRIVILEGE);
             var interval = new TraceEventNativeMethods.TRACE_PROFILE_INTERVAL();
             for (int i = 0; i < profileSourceIntervals.Length; i++)
