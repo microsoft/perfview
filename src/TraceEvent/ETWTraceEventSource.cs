@@ -737,11 +737,6 @@ namespace Microsoft.Diagnostics.Tracing
         private bool ProcessOneFile()
         {
             int dwErr = TraceEventNativeMethods.ProcessTrace(handles, (IntPtr)0, (IntPtr)0);
-            if (dwErr == 6)
-            {
-                throw new ApplicationException("Error opening ETL file.  Most likely caused by opening a Win8 Trace on a Pre Win8 OS.");
-            }
-
             // ETW returns 1223 when you stop processing explicitly 
             if (!(dwErr == 1223 && stopProcessing))
             {
