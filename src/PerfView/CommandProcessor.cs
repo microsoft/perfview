@@ -940,14 +940,9 @@ namespace PerfView
 
                         LogFile.WriteLine("Executing the command: {0}", commandLine);
 
-                        // Make sure that if we are on a 64 bit machine we run the 64 bit version of netsh.  
-                        var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "cmd.exe");
-                        if (!File.Exists(cmdExe))
-                        {
-                            cmdExe = cmdExe.Replace("SysNative", "System32");
-                        }
+                        var cmdExe = Path.Combine(Environment.SystemDirectory, "cmd.exe");
 
-                        commandLine = cmdExe + " /c " + commandLine;
+                        commandLine = "\"" + cmdExe + "\" /c " + commandLine;
                         var command = Command.Run(commandLine, new CommandOptions().AddNoThrow().AddOutputStream(LogFile));
 
                         string netMonFile = Path.Combine(CacheFiles.CacheDir, "NetMonActive.txt");
@@ -1300,14 +1295,9 @@ namespace PerfView
 
                     LogFile.WriteLine("Executing /StopCommand: {0}", commandToRun);
 
-                    // We are in the wow, so run this in 64 bit if we need 
-                    var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "Cmd.exe");
-                    if (!File.Exists(cmdExe))
-                    {
-                        cmdExe = cmdExe.Replace("SysNative", "System32");
-                    }
+                    var cmdExe = Path.Combine(Environment.SystemDirectory, "cmd.exe");
 
-                    commandToRun = cmdExe + " /c " + commandToRun;
+                    commandToRun = "\"" + cmdExe + "\" /c " + commandToRun;
                     var cmd = Command.Run(commandToRun, new CommandOptions().AddOutputStream(LogFile).AddNoThrow().AddTimeout(60000));
                     if (cmd.ExitCode != 0)
                     {
@@ -2086,14 +2076,9 @@ namespace PerfView
                 LogFile.WriteLine("If /NetMonCapture is active this can take a while...");
 
                 string commandToRun = "netsh trace stop";
-                // We are in the wow, so run this in 64 bit if we need 
-                var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "Cmd.exe");
-                if (!File.Exists(cmdExe))
-                {
-                    cmdExe = cmdExe.Replace("SysNative", "System32");
-                }
+                var cmdExe = Path.Combine(Environment.SystemDirectory, "cmd.exe");
 
-                commandToRun = cmdExe + " /c " + commandToRun;
+                commandToRun = "\"" + cmdExe + "\" /c " + commandToRun;
 
                 Command.Run(commandToRun, new CommandOptions().AddNoThrow().AddOutputStream(LogFile));
                 FileUtilities.ForceDelete(netMonFile);
