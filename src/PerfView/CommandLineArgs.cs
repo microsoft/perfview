@@ -584,8 +584,6 @@ namespace PerfView
             parser.DefineOptionalQualifier("SessionName", ref sessionName, "Define the name for the user mode session (kernel session will also be named analogously) Useful for collecting traces when another ETW profiler (including PerfView) is being used.");
             if (sessionName != null)
             {
-                if (Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor < 62)
-                    throw new ApplicationException("SessionName qualifier only works on Windows 8 and above.");
                 CommandProcessor.s_UserModeSessionName = sessionName;
                 CommandProcessor.s_KernelessionName = sessionName + "Kernel";
             }
