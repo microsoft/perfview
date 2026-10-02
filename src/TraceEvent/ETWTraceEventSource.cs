@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
 using Microsoft.Diagnostics.Utilities;
 using Address = System.UInt64;
 
@@ -828,11 +827,6 @@ namespace Microsoft.Diagnostics.Tracing
                 return;
             }
 
-            if (lockObj != null)
-            {
-                Monitor.Enter(lockObj);
-            }
-
             Debug.Assert(rawData->EventHeader.HeaderType == 0);     // if non-zero probably old-style ETW header
 
             // Give it an event ID if it does not have one.  
@@ -860,10 +854,6 @@ namespace Microsoft.Diagnostics.Tracing
 
             Dispatch(anEvent);
 
-            if (lockObj != null)
-            {
-                Monitor.Exit(lockObj);
-            }
         }
 
         /// <summary>
@@ -950,14 +940,6 @@ namespace Microsoft.Diagnostics.Tracing
         private TraceEventNativeMethods.SafeTraceHandle[] handles;
 
         private IEnumerable<string> fileNames;        // Used if more than one file being processed.  (Null otherwise)
-
-        // TODO this can be removed, and use AddDispatchHook instead.  
-        /// <summary>
-        /// Used by real time TraceLog on Windows7.   
-        /// If we have several real time sources we have them coming in on several threads, but we want the illusion that they
-        /// are one source (thus being processed one at a time).  Thus we want a lock that is taken on every dispatch.   
-        /// </summary>
-        internal object lockObj;
 
         // We do minimal processing to keep track of process names (since they are REALLY handy). 
         private Dictionary<int, string> processNameForID;

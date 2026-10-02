@@ -597,7 +597,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
         // OS Kernel Provider support
         /// <summary>
-        /// Enable the kernel provider for the session. Before windows 8 this session must be called 'NT Kernel Session'.
+        /// Enable the kernel provider for the session.
         /// This API is OK to call from one thread while Process() is being run on another
         /// </summary>
         /// <param name="flags">Specifies the particular kernel events of interest</param>
@@ -635,7 +635,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     throw new NotSupportedException("Kernel Event Tracing is only supported on Windows 6.0 (Vista) and above.");
                 }
 
-                if (IsValidSession || m_kernelSession != null)
+                if (IsValidSession)
                 {
                     throw new Exception("The kernel provider must be enabled first and only once in a session.");
                 }
@@ -647,23 +647,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         throw new NotSupportedException("Keyword specified this is only supported on the " + KernelTraceEventParser.KernelSessionName + " session.");
                     }
 
-                    if (!OperatingSystemVersion.AtLeast(62))
-                    {
-                        if (m_FileName != null)
-                        {
-                            throw new NotSupportedException("System Tracing is only supported on Windows 8 and above.");
-                        }
-
-                        // On windows 7 and Vista, fake the systemTraceProvider for real time sessions, and do the EnableKernelProvider on that.
-                        var kernelSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName);
-                        var nestedRet = kernelSession.EnableKernelProvider(flags, stackCapture);
-                        m_kernelSession = kernelSession;
-                        return nestedRet;
-                    }
-                    else
-                    {
-                        systemTraceProvider = true;
-                    }
+                    systemTraceProvider = true;
                 }
 
                 // The Profile event requires the SeSystemProfilePrivilege to succeed, so set it.
@@ -965,13 +949,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 {
                     m_source.Dispose();
                     m_source = null;
-                }
-
-                // on Win7 we might have a real time kernel session, dispose of that if present.
-                if (m_kernelSession != null)
-                {
-                    m_kernelSession.Dispose();
-                    m_kernelSession = null;
                 }
 
                 GC.SuppressFinalize(this);
@@ -1450,11 +1427,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     if (!IsRealTimeSession)
                     {
                         throw new InvalidOperationException("Only non-file based, non-circular ('real time') sessions have can have a source associated with them.");
-                    }
-
-                    if (m_kernelSession != null && !m_associatedWithTraceLog)
-                    {
-                        throw new InvalidOperationException("Can only use Kernel events in real time sessions on Windows 7 if you use TraceLog.CreateFromTraceEventSession");
                     }
 
                     if (!IsValidSession)
@@ -2731,11 +2703,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
         private TraceEventNativeMethods.SafeTraceHandle m_SessionHandle; // OS handle
         private ETWTraceEventSource m_source;     // Sessions can have a source associated with them.
 
-        internal TraceEventSession m_kernelSession; // Only needed in Windows 7.   Before windows 8 you could not enable Kernel
-        // events on 'normal' user mode session.  This tried to 'fake' Win 8 behavior
-        // on Win 7.   We only do this for real time sessions that are using TraceLog.
-        internal bool m_associatedWithTraceLog;     // Currently we only allow m_kernelSession to be used if you are using TraceLog on the session.
-
         private readonly Dictionary<Guid, ulong> m_enabledProviders = new Dictionary<Guid, ulong>();
 
         #endregion
@@ -3543,4 +3510,3 @@ namespace Microsoft.Diagnostics.Tracing.Session
         CallstackEnable = 1 << 9,
     }
 }
-
