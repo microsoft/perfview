@@ -314,28 +314,6 @@ namespace PerfView
         {
             LaunchPerfViewElevatedIfNeeded("Start", parsedArgs);
 
-            // Are we on an X86 machine?
-            if (Environment.Is64BitOperatingSystem)
-            {
-                if (!IsKernelStacks64Enabled())
-                {
-                    var ver = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-                    if (ver <= 61)
-                    {
-                        LogFile.WriteLine("Warning: This trace is being collected on a X64 machine on a Pre Win8 OS");
-                        LogFile.WriteLine("         And paging is allowed in the kernel.  This can cause stack breakage");
-                        LogFile.WriteLine("         when samples are taken in the kernel and there is memory pressure.");
-                        LogFile.WriteLine("         It is recommended that you disable paging in the kernel to decrease");
-                        LogFile.WriteLine("         the number of broken stacks.   To do this run the command:");
-                        LogFile.WriteLine("");
-                        LogFile.WriteLine("         PerfView EnableKernelStacks ");
-                        LogFile.WriteLine("");
-                        LogFile.WriteLine("         A reboot will be required for the change to have an effect.");
-                        LogFile.WriteLine("");
-                    }
-                }
-            }
-
             ETWClrProfilerTraceEventParser.Keywords profilerKeywords = 0;
             if (parsedArgs.DotNetCalls)
             {
@@ -1898,16 +1876,6 @@ namespace PerfView
             ShowLog = true;
         }
 
-        public void EnableKernelStacks(CommandLineArgs parsedArgs)
-        {
-            SetKernelStacks64(true, LogFile);
-            ShowLog = true;
-        }
-        public void DisableKernelStacks(CommandLineArgs parsedArgs)
-        {
-            SetKernelStacks64(false, LogFile);
-            ShowLog = true;
-        }
         public void CreateExtensionProject(CommandLineArgs parsedArgs)
         {
 #if !PERFVIEW_COLLECT 
@@ -2615,82 +2583,6 @@ namespace PerfView
                     log.WriteLine("ERROR trying to remove EtwClrProfiler, found an existing Profiler {0} doing nothing.", existingValue);
                 }
             }
-        }
-
-        private static RegistryKey GetMemManagementKey(bool writable)
-        {
-            // Open this computer's 64 bit registry (even if this is a 32 bit process. 
-            RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
-            if (hklm == null)
-            {
-                Debug.Assert(false, "Could not get HKLM key");
-                return null;
-            }
-            RegistryKey memManagment = hklm.OpenSubKey(@"System\CurrentControlSet\Control\Session Manager\Memory Management", writable);
-            hklm.Dispose();
-            return memManagment;
-        }
-        private static void SetKernelStacks64(bool crawlable, TextWriter writer)
-        {
-            // Are we on a 64 bit system? 
-            if (!Environment.Is64BitOperatingSystem)
-            {
-                writer.WriteLine("Disabling kernel paging is only necessary on X64 machines");
-                return;
-            }
-
-            if (IsKernelStacks64Enabled() == crawlable)
-            {
-                writer.WriteLine(@"HLKM\" + @"System\CurrentControlSet\Control\Session Manager\Memory Management" + "DisablePagingExecutive" + " already {0}",
-                    crawlable ? "set" : "unset");
-                return;
-            }
-
-            // This is not needed on Windows 8 (mostly)
-            var ver = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-            if (ver > 61)
-            {
-                writer.WriteLine("Disabling kernel paging is not necessary on Win8 machines.");
-                return;
-            }
-
-            try
-            {
-                RegistryKey memKey = GetMemManagementKey(true);
-                if (memKey != null)
-                {
-                    memKey.SetValue("DisablePagingExecutive", crawlable ? 1 : 0, RegistryValueKind.DWord);
-                    memKey.Dispose();
-                    writer.WriteLine();
-                    writer.WriteLine("The memory management configuration has been {0} for stack crawling.", crawlable ? "enabled" : "disabled");
-                    writer.WriteLine("However a reboot is needed for it to take effect.  You can reboot by executing");
-                    writer.WriteLine("     shutdown /r /t 1 /f");
-                    writer.WriteLine();
-                }
-                else
-                {
-                    writer.WriteLine("Error: Could not access Kernel memory management registry keys.");
-                }
-            }
-            catch (Exception e)
-            {
-                writer.WriteLine("Error: Failure setting registry keys: {0}", e.Message);
-            }
-        }
-        private static bool IsKernelStacks64Enabled()
-        {
-            bool ret = false;
-            RegistryKey memKey = GetMemManagementKey(false);
-            if (memKey != null)
-            {
-                object valueObj = memKey.GetValue("DisablePagingExecutive", null);
-                if (valueObj != null && valueObj is int)
-                {
-                    ret = ((int)valueObj) != 0;
-                }
-                memKey.Dispose();
-            }
-            return ret;
         }
 
         public void LaunchPerfViewElevatedIfNeeded(string command, CommandLineArgs parsedArgs)

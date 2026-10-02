@@ -642,13 +642,6 @@ namespace PerfView
             parser.DefineParameterSet("ListCpuCounters", ref DoCommand, App.CommandProcessor.ListCpuCounters,
                 "Lists the ListCpuCounters CPU counters available on the system (win8+ only).");
 
-            parser.DefineParameterSet("EnableKernelStacks", ref DoCommand, App.CommandProcessor.EnableKernelStacks,
-                "On X64 machines if you have problems with broken stacks when the code is executing in the kernel," +
-                " setting this option and rebooting may improve things");
-
-            parser.DefineParameterSet("DisableKernelStacks", ref DoCommand, App.CommandProcessor.DisableKernelStacks,
-                "Resets the registry keys set by EnableKernelStack.");
-
             string ProcessParam = null;
             parser.DefineParameterSet("HeapSnapshot", ref DoCommand, App.CommandProcessor.HeapSnapshot,
                 "Take a snapshot of the CLR GC heap of a process.");
