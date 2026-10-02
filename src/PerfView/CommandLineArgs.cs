@@ -118,7 +118,7 @@ namespace PerfView
         public int CircularMB;
         public bool InMemoryCircularBuffer;         // Uses EVENT_TRACE_BUFFERING_MODE for an in-memory circular buffer
         public KernelTraceEventParser.Keywords KernelEvents = KernelTraceEventParser.Keywords.Default;
-        public string[] CpuCounters;        // Specifies any profile sources (CPU counters) to turn on (Win 8 only)
+        public string[] CpuCounters;        // Specifies any profile sources (CPU counters) to turn on
         public ClrTraceEventParser.Keywords ClrEvents = ClrTraceEventParser.Keywords.Default;
         public TraceEventLevel ClrEventLevel = Microsoft.Diagnostics.Tracing.TraceEventLevel.Verbose;    // The verbosity of CLR events
         public TplEtwProviderTraceEventParser.Keywords TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
@@ -432,7 +432,7 @@ namespace PerfView
 
             parser.DefineOptionalQualifier("CpuCounters", ref CpuCounters,
                 "A comma separated list of hardware CPU counters specifications NAME:COUNT to turn on.  " +
-                "See Users guide for details.  See ListCpuCounters for available sources (Win8 only)");
+                "See Users guide for details.  See ListCpuCounters for available sources.");
 
             parser.DefineOptionalQualifier("Providers", ref Providers,
                 "Additional providers.  This is comma separated list of ProviderGuid:Keywords:Level:Stack specs.  " +
@@ -638,7 +638,7 @@ namespace PerfView
                 "Lists active ETW sessions.");
 
             parser.DefineParameterSet("ListCpuCounters", ref DoCommand, App.CommandProcessor.ListCpuCounters,
-                "Lists the ListCpuCounters CPU counters available on the system (win8+ only).");
+                "Lists the CPU counters available on the system.");
 
             string ProcessParam = null;
             parser.DefineParameterSet("HeapSnapshot", ref DoCommand, App.CommandProcessor.HeapSnapshot,
