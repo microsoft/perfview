@@ -51,7 +51,6 @@
     <file src="$OutDir$netstandard2.0\amd64\msdia140.dll" target="build\native\amd64\msdia140.dll" />
 
     <file src="$OutDir$netstandard2.0\x86\KernelTraceControl.dll" target="build\native\x86\KernelTraceControl.dll" />
-    <file src="$OutDir$netstandard2.0\x86\KernelTraceControl.Win61.dll" target="build\native\x86\KernelTraceControl.Win61.dll" />
     <file src="$OutDir$netstandard2.0\x86\msdia140.dll" target="build\native\x86\msdia140.dll" />
 
     <file src="$OutDir$netstandard2.0\arm64\KernelTraceControl.dll" target="build\native\arm64\KernelTraceControl.dll" />
