@@ -47,9 +47,6 @@ Older traces and target runtimes can still be analyzed on supported hosts.
 
 To see more complete samples that use the APIs in more sophisticated (but not too sophisticated ways). In the [Samples directory](https://github.com/Microsoft/perfview/tree/main/src/TraceEvent/Samples) here are one or two page samples doing interesting things (collecting data, parsing from files or in real time, transforming one ETL file to another etc). Each sample is independent of the others.
 
-One way of getting the samples is to walk through the step by step guide in [Vance's Walkthough on TraceEvent](https://blogs.msdn.microsoft.com/vancem/2014/03/15/walk-through-getting-started-with-etw-traceevent-nuget-samples-package/). This walkthrough uses TraceEvent Samples package, however this code is old (but still completely relevant
-the APIs have not changed). These samples are exactly the samples in Github mentioned above.
-
 The easiest way to build the latest samples is to simply clone the [PerfView Repository](https://github.com/Microsoft/perfview) and and build it. The samples are in the _TraceEventSamples_ project in the PerfView solution. Simply set this project to be your _Startup Project_ (right click on it in Solution Explorer -> Set as Startup Project) and run it (F5). By default will run all the samples.
 
 ## Release Notes for the Microsoft.Diagnostics.Tracing.TraceEvent library

@@ -1078,11 +1078,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
         // These properties can be set both before and after a provider has been enabled in the session.
 
         /// <summary>
-        /// When you issue a EnableProvider command, on windows 7 and above it can be done synchronously (that is you know that because
-        /// the EnableProvider returned that the provider actually got the command).   However synchronous behavior means that
-        /// you may wait forever.   This is the time EnableProvider waits until it gives up.   Setting this
-        /// to 0 means asynchronous (fire and forget).   The default is 10000 (wait 10 seconds)
-        /// Before windows 7 EnableProvider is always asynchronous.
+        /// The time in milliseconds EnableProvider waits for the provider to receive the command.
+        /// Setting this to 0 means asynchronous (fire and forget). The default is 10000 (wait 10 seconds).
         /// </summary>
         public int EnableProviderTimeoutMSec { get; set; }
         /// <summary>

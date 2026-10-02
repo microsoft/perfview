@@ -287,7 +287,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("BufferSizeMB", ref BufferSizeMB, "The size the buffers (in MB) the OS should use to store events waiting to be written to disk.");
             parser.DefineOptionalQualifier("CircularMB", ref CircularMB, "Do Circular logging with a file size in MB.");
             parser.DefineOptionalQualifier("InMemoryCircularBuffer", ref InMemoryCircularBuffer, "Keeps the circular buffer in memory until the session is stopped.");
-            parser.DefineOptionalQualifier("StackCompression", ref StackCompression, "Use stack compression (only on Win 8+) to make collected file smaller.");
+            parser.DefineOptionalQualifier("StackCompression", ref StackCompression, "Use stack compression to make the collected file smaller.");
             parser.DefineOptionalQualifier("LbrSources", ref LastBranchRecordingSources,
                 $"Turn on LBR sampling from these sources (comma-separated numeric hex values with 0x prefix or 'PmcInterrupt'). At most {TraceEventSession.GetMaxLastBranchRecordingSources()} sources are supported.");
             parser.DefineOptionalQualifier(

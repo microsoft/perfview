@@ -436,7 +436,7 @@ Capabilities include:
 * The ability to turn on event providers selectively using ETW 'Keywords' and verbosity 'Levels'. You can also pass additional arguments to your provider which `EventSource` sources can pick up. In that way you can create very sophisticated filtering specification as well as execute simple commands (e.g. force a GC, flush the working set, and etc.).
 * The ability to enumerate the ETW providers on the system as well as in a particular process, and the ability to determine what ETW groups (Keywords) you can turn on.
 * Ability to take ETL files and merge them together into a single file.
-* Ability to read an ETL file or real time session and write an ETL file from it, filtering it or adding new events (Windows 8 only).
+* Ability to read an ETL file or real time session and write an ETL file from it, filtering it or adding new events.
 * The ability to capture stack traces when events are being logged.
 * The ability to convert the stacks to symbolic form both for .NET, Jscript, as well as native code.
 * The ability to store events in a new format (ETLX) that allows the events to be accessed efficiently in a random fashion as well as to enumerate the events backwards as well as forwards, and to efficiently represent the stack information.
@@ -456,7 +456,7 @@ Capabilities include:
     * Network I/O.
     * Every packet (with compete data) that comes on or off the network (network sniffer).
     * Every system call.
-    * Sampling of processor CPU counters (instructions executed, branch mispredicts, cache misses, ...) (Windows 8 only).
+    * Sampling of processor CPU counters (instructions executed, branch mispredicts, cache misses, ...).
     * Remote procedure calls.
     * How the machine is configured (disk, memory, CPUs, ...).
 * Access CLR (.NET Runtime) events, including:
@@ -481,13 +481,13 @@ You can also get a reasonably good idea of what is possible by taking a look at 
 
 Unfortunately, there are some limitations in ETW that sometimes block it from being used in scenarios where it would otherwise be a natural fit. They are listed here for emphasis.
 
-* You send commands to providers on a machine wide basis. Thus you can't target particular processes (however if you own the event provider code you can pass it extra information as arguments to 'enable' command to the provider and have your provider implement logic to ignore 'enable' commands not intended for it). (Fixed in Windows 8.1).
+* Provider control is machine-wide, but `TraceEventProviderOptions.ProcessIDFilter` and `ProcessNameFilter` can limit collected events to selected processes on supported Windows hosts.
 * Because commands are machine wide and thus give you access to all information on the system, you have to be Elevated (Admin) to turn an ETW session on or off.
 * By design the communication between the controllers and the providers is 'fire and forget'. Thus ETW is not intended to be a general purpose cross process communication mechanism. Don't try to use it as such.
 * In real time mode, events are buffered and there is at least a second or so delay (typically 3 sec) between the firing of the event and the reception by the session (to allow events to be delivered in efficient clumps of many events).
-* Before Windows 8, there could only one kernel session. Thus using kernel mode events for 'monitoring' scenarios was problematic because any other tools that used kernel sessions were likely to interfere by overriding the single Kernel model event logging session.
+* Named sessions can combine kernel and user providers. The special `NT Kernel Logger` session remains kernel-only; reusing its name can interfere with another tool using that session.
 * In general scenarios having multiple controllers (sessions) controlling the same providers is dangerous. It can be done in some cases, but there is a significant potential for interference between the sessions.
-* The file format is private, and before Windows 8 could be quite space inefficient (it compresses 8-to-1). Files can get big fast.
+* ETL files can get large. Compression is available on supported Windows hosts; historical uncompressed traces may be substantially larger.
 * Logging more than 10K events/sec will load the system noticeably (5%). Logging more frequently than 10K/sec should be avoided if possible. Logging 1M events/sec will completely swamp a typical machine.
 
 ## Next Step: Code Samples
@@ -827,7 +827,7 @@ Below are the steps in converting logging an event with a stack to a resolved sy
 1. When the event is logged, the ETW system tries to crawl the stack at runtime. However this can fail for various reasons:
 
     1. On 32-bit machines the crawler assumes the compiler stores unwinding information (EBP frames) on the stack. If the compile does not do this the stack 'breaks' (can't be unwound) and you lose any frames 'toward thread start'.
-    2. On 64-bit processes on 64-bit machines the crawler needs 'unwind' information. For native code this is stored in the EXE, but for Just In Time (JIT) compiled code on Systems **before Windows 8 (or Win2012 server)** the ETW system did not know how to find this unwind information and break at the first frame with JIT compiled code. This is the most common reason for stack breakage, but will diminish machines are upgraded to new OSes.
+    2. For 64-bit processes, the crawler needs unwind information. Historical traces collected **before Windows 8 (or Windows Server 2012)** may have stacks broken at JIT-compiled frames because ETW could not locate that information. This old-host limitation is not a restriction on current collection, but reading an old trace cannot recover frames that were never recorded.
 
     If either of these happen there is nothing wrong with your code as it is an issue with the APP or with the ETW infrastructure. PerfView should have the same problem.
 
