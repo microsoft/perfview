@@ -894,8 +894,7 @@ namespace PerfView
                         string perfMerge = "perfMerge=no";
                         string traceFile = CacheFiles.FindFile(parsedArgs.DataFile, ".netmon.etl");
 
-                        var osVer = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-                        if (parsedArgs.NetMonCapture || osVer < 62)
+                        if (parsedArgs.NetMonCapture)
                         {
                             traceFile = Path.GetFileNameWithoutExtension(parsedArgs.DataFile) + "_netmon.etl";  // We use the _ to avoid conventions about merging.  
                             maxSize = "";
