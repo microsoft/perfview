@@ -15,7 +15,7 @@ namespace Microsoft.Diagnostics.Symbols
     /// Reads ELF (Executable and Linkable Format) files and resolves RVAs to symbol names.
     /// Supports both 32-bit and 64-bit ELF, and parses both .symtab and .dynsym sections.
     /// </summary>
-    internal class ElfSymbolModule : ISymbolLookup
+    public sealed class ElfSymbolModule : ISymbolLookup
     {
         /// <summary>
         /// Opens an ELF file and loads its symbol tables.
@@ -23,7 +23,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <param name="filePath">Path to the ELF file (binary or .debug file).</param>
         /// <param name="pVaddr">Virtual address of first executable PT_LOAD segment (from trace metadata).</param>
         /// <param name="pOffset">File offset of first executable PT_LOAD segment (from trace metadata).</param>
-        public ElfSymbolModule(string filePath, ulong pVaddr, ulong pOffset)
+        internal ElfSymbolModule(string filePath, ulong pVaddr, ulong pOffset)
             : this(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read), pVaddr, pOffset)
         {
         }
@@ -62,9 +62,22 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         /// <param name="rva">The relative virtual address to look up.</param>
         /// <param name="symbolStart">Set to the start RVA of the matching symbol if found.</param>
-        /// <returns>The symbol name, or null if no matching symbol is found.</returns>
+        /// <returns>The symbol name, or an empty string if no matching symbol is found.</returns>
         public string FindNameForRva(uint rva, ref uint symbolStart)
         {
+            return FindNameForRva(rva, ref symbolStart, out _);
+        }
+
+        /// <summary>
+        /// Finds the symbol name for a given RVA and returns its recorded ELF symbol-table range.
+        /// </summary>
+        /// <param name="rva">The relative virtual address to look up.</param>
+        /// <param name="symbolStart">Set to the start RVA of the matching symbol if found.</param>
+        /// <param name="symbolSize">Receives the symbol's size in bytes, or zero on a miss.</param>
+        /// <returns>The symbol name, or an empty string if no matching symbol is found.</returns>
+        public string FindNameForRva(uint rva, ref uint symbolStart, out ulong symbolSize)
+        {
+            symbolSize = 0;
             if (m_symbols.Count == 0)
             {
                 return string.Empty;
@@ -89,6 +102,7 @@ namespace Microsoft.Diagnostics.Symbols
             if (hi >= 0 && rva <= m_symbols[hi].End)
             {
                 symbolStart = m_symbols[hi].Start;
+                symbolSize = (ulong)m_symbols[hi].End - symbolStart + 1;
 
                 // Thread-safe lazy name decode on first access.
                 if (Volatile.Read(ref m_symbolNames[hi]) == null)
@@ -117,80 +131,7 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    // Read and validate the ELF header.
-                    byte[] header = new byte[Unsafe.SizeOf<Elf64_Ehdr>()];
-                    int headerRead = ReadFully(stream, header, 0, header.Length);
-                    if (!TryReadElfHeader(header, headerRead, out var hdr, "ReadBuildId"))
-                    {
-                        return null;
-                    }
-
-                    bool is64Bit = hdr.Is64Bit;
-                    bool bigEndian = hdr.BigEndian;
-
-                    if (hdr.PhOffset == 0 || hdr.PhEntrySize == 0 || hdr.PhCount == 0)
-                    {
-                        Debug.WriteLine("ReadBuildId: No program headers found.");
-                        return null;
-                    }
-
-                    int minPhentsize = is64Bit ? Unsafe.SizeOf<Elf64_Phdr>() : Unsafe.SizeOf<Elf32_Phdr>();
-                    if (hdr.PhEntrySize < minPhentsize)
-                    {
-                        Debug.WriteLine("ReadBuildId: ePhentsize too small: " + hdr.PhEntrySize);
-                        return null;
-                    }
-
-                    if (hdr.PhCount > MaxProgramHeaderCount)
-                    {
-                        Debug.WriteLine("ReadBuildId: Program header count too large: " + hdr.PhCount);
-                        return null;
-                    }
-
-                    // Read all program headers in one bulk read.
-                    int phTableSize = hdr.PhCount * hdr.PhEntrySize;
-                    byte[] phTable = new byte[phTableSize];
-                    stream.Seek((long)hdr.PhOffset, SeekOrigin.Begin);
-                    if (ReadFully(stream, phTable, 0, phTableSize) < phTableSize)
-                    {
-                        Debug.WriteLine("ReadBuildId: Could not read program headers.");
-                        return null;
-                    }
-
-                    // Iterate program headers looking for PT_NOTE segments.
-                    for (int i = 0; i < hdr.PhCount; i++)
-                    {
-                        int phPos = i * hdr.PhEntrySize;
-                        ReadProgramHeader(phTable, phPos, is64Bit, bigEndian, out uint pType, out ulong pOffset, out ulong pFilesz, out _);
-
-                        if (pType != PT_NOTE)
-                        {
-                            continue;
-                        }
-
-                        if (pFilesz == 0 || pFilesz > MaxNoteSizeBytes)
-                        {
-                            continue;
-                        }
-
-                        // Read the PT_NOTE segment data.
-                        byte[] noteData = new byte[(int)pFilesz];
-                        stream.Seek((long)pOffset, SeekOrigin.Begin);
-                        if (ReadFully(stream, noteData, 0, noteData.Length) < noteData.Length)
-                        {
-                            continue;
-                        }
-
-                        // Iterate notes within the segment looking for GNU build-id.
-                        string buildId = ExtractBuildId(noteData, bigEndian);
-                        if (buildId != null)
-                        {
-                            return buildId;
-                        }
-                    }
-
-                    Debug.WriteLine("ReadBuildId: No GNU build-id note found.");
-                    return null;
+                    return ReadBuildIdFromStream(stream);
                 }
             }
             catch (Exception ex)
@@ -198,6 +139,85 @@ namespace Microsoft.Diagnostics.Symbols
                 Debug.WriteLine("ReadBuildId: Error reading file: " + ex.Message);
                 return null;
             }
+        }
+
+        internal static string ReadBuildIdFromStream(Stream stream)
+        {
+            // Read and validate the ELF header.
+            stream.Position = 0;
+            byte[] header = new byte[Unsafe.SizeOf<Elf64_Ehdr>()];
+            int headerRead = ReadFully(stream, header, 0, header.Length);
+            if (!TryReadElfHeader(header, headerRead, out var hdr, "ReadBuildId"))
+            {
+                return null;
+            }
+
+            bool is64Bit = hdr.Is64Bit;
+            bool bigEndian = hdr.BigEndian;
+
+            if (hdr.PhOffset == 0 || hdr.PhEntrySize == 0 || hdr.PhCount == 0)
+            {
+                Debug.WriteLine("ReadBuildId: No program headers found.");
+                return null;
+            }
+
+            int minPhentsize = is64Bit ? Unsafe.SizeOf<Elf64_Phdr>() : Unsafe.SizeOf<Elf32_Phdr>();
+            if (hdr.PhEntrySize < minPhentsize)
+            {
+                Debug.WriteLine("ReadBuildId: ePhentsize too small: " + hdr.PhEntrySize);
+                return null;
+            }
+
+            if (hdr.PhCount > MaxProgramHeaderCount)
+            {
+                Debug.WriteLine("ReadBuildId: Program header count too large: " + hdr.PhCount);
+                return null;
+            }
+
+            // Read all program headers in one bulk read.
+            int phTableSize = hdr.PhCount * hdr.PhEntrySize;
+            byte[] phTable = new byte[phTableSize];
+            stream.Seek((long)hdr.PhOffset, SeekOrigin.Begin);
+            if (ReadFully(stream, phTable, 0, phTableSize) < phTableSize)
+            {
+                Debug.WriteLine("ReadBuildId: Could not read program headers.");
+                return null;
+            }
+
+            // Iterate program headers looking for PT_NOTE segments.
+            for (int i = 0; i < hdr.PhCount; i++)
+            {
+                int phPos = i * hdr.PhEntrySize;
+                ReadProgramHeader(phTable, phPos, is64Bit, bigEndian, out uint pType, out ulong pOffset, out ulong pFilesz, out _);
+
+                if (pType != PT_NOTE)
+                {
+                    continue;
+                }
+
+                if (pFilesz == 0 || pFilesz > MaxNoteSizeBytes)
+                {
+                    continue;
+                }
+
+                // Read the PT_NOTE segment data.
+                byte[] noteData = new byte[(int)pFilesz];
+                stream.Seek((long)pOffset, SeekOrigin.Begin);
+                if (ReadFully(stream, noteData, 0, noteData.Length) < noteData.Length)
+                {
+                    continue;
+                }
+
+                // Iterate notes within the segment looking for GNU build-id.
+                string buildId = ExtractBuildId(noteData, bigEndian);
+                if (buildId != null)
+                {
+                    return buildId;
+                }
+            }
+
+            Debug.WriteLine("ReadBuildId: No GNU build-id note found.");
+            return null;
         }
 
         /// <summary>
@@ -1176,8 +1196,21 @@ namespace Microsoft.Diagnostics.Symbols
                 }
 
                 // Convert virtual address to RVA: (st_value - p_vaddr) + p_offset.
-                uint adjustedRva = (uint)((stValue - m_pVaddr) + m_pOffset);
-                uint adjustedEnd = (uint)(adjustedRva + (uint)stSize - 1);
+                ulong relativeAddress = stValue - m_pVaddr;
+                if (relativeAddress > uint.MaxValue || m_pOffset > uint.MaxValue - relativeAddress)
+                {
+                    Debug.WriteLine("ElfSymbolModule: Symbol start is outside the 32-bit RVA space.");
+                    continue;
+                }
+
+                uint adjustedRva = (uint)(relativeAddress + m_pOffset);
+                if (stSize - 1 > uint.MaxValue - (ulong)adjustedRva)
+                {
+                    Debug.WriteLine("ElfSymbolModule: Symbol end is outside the 32-bit RVA space.");
+                    continue;
+                }
+
+                uint adjustedEnd = (uint)(adjustedRva + stSize - 1);
 
                 m_symbols.Add(new ElfSymbolEntry
                 {
