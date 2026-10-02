@@ -436,52 +436,41 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         filterDescrPtr = null;
                     }
 
-                    int hr;
-                    try
+                    TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS();
+
+                    parameters.Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION;
+                    parameters.FilterDescCount = curDescrIdx;
+                    parameters.EnableFilterDesc = filterDescrPtr;
+
+                    if (options.StacksEnabled || options.EventIDStacksToEnable != null || options.EventIDStacksToDisable != null)
                     {
-                        // Try the Win7 API
-                        TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS();
-
-                        parameters.Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION;
-                        parameters.FilterDescCount = curDescrIdx;
-                        parameters.EnableFilterDesc = filterDescrPtr;
-
-                        if (options.StacksEnabled || options.EventIDStacksToEnable != null || options.EventIDStacksToDisable != null)
-                        {
-                            parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_STACK_TRACE;
-                        }
-                        if(options.EnableInContainers)
-                        {
-                            parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_ENABLE_SILOS;
-                        }
-                        if(options.EnableSourceContainerTracking)
-                        {
-                            parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_SOURCE_CONTAINER_TRACKING;
-                        }
-
-                        if (etwFilteringSupported)      // If we are on 8.1 we can use the newer API.
-                        {
-                            parameters.Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION_2;
-                        }
-                        else
-                        {
-                            Debug.Assert(curDescrIdx <= 1);
-                            Debug.Assert(filterDescrPtr == null || -100 <= filterDescrPtr[0].Type);   // We are not using any of the Win8.1 defined types.
-                        }
-
-                        uint eventControlCode = (valueDataType == ControllerCommand.SendManifest
-                                                     ? TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE
-                                                     : TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER);
-                        hr = TraceEventNativeMethods.EnableTraceEx2(m_SessionHandle, providerGuid,
-                            eventControlCode, providerLevel,
-                            matchAnyKeywords, matchAllKeywords, EnableProviderTimeoutMSec, parameters);
+                        parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_STACK_TRACE;
                     }
-                    catch (TypeLoadException)
+                    if (options.EnableInContainers)
                     {
-                        // OK that did not work, try the VISTA API
-                        hr = TraceEventNativeMethods.EnableTraceEx(providerGuid, null, m_SessionHandle, true,
-                            providerLevel, matchAnyKeywords, matchAllKeywords, 0, filterDescrPtr);
+                        parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_ENABLE_SILOS;
                     }
+                    if (options.EnableSourceContainerTracking)
+                    {
+                        parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_SOURCE_CONTAINER_TRACKING;
+                    }
+
+                    if (etwFilteringSupported)      // If we are on 8.1 we can use the newer API.
+                    {
+                        parameters.Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION_2;
+                    }
+                    else
+                    {
+                        Debug.Assert(curDescrIdx <= 1);
+                        Debug.Assert(filterDescrPtr == null || -100 <= filterDescrPtr[0].Type);   // We are not using any of the Win8.1 defined types.
+                    }
+
+                    uint eventControlCode = (valueDataType == ControllerCommand.SendManifest
+                                                 ? TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE
+                                                 : TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER);
+                    int hr = TraceEventNativeMethods.EnableTraceEx2(m_SessionHandle, providerGuid,
+                        eventControlCode, providerLevel,
+                        matchAnyKeywords, matchAllKeywords, EnableProviderTimeoutMSec, parameters);
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
                 }
 
@@ -829,28 +818,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
         {
             lock (this)
             {
-                int hr;
-                try
-                {
-                    try
-                    {
-                        // Try the Win7 API
-                        var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS { Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION };
-                        hr = TraceEventNativeMethods.EnableTraceEx2(
-                            m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_DISABLE_PROVIDER,
-                            0, 0, 0, EnableProviderTimeoutMSec, parameters);
-                    }
-                    catch (TypeLoadException)
-                    {
-                        // OK that did not work, try the VISTA API
-                        hr = TraceEventNativeMethods.EnableTraceEx(providerGuid, null, m_SessionHandle, false, 0, 0, 0, 0, null);
-                    }
-                }
-                catch (TypeLoadException)
-                {
-                    // Try with the old pre-vista API
-                    hr = TraceEventNativeMethods.EnableTrace(0, 0, 0, providerGuid, m_SessionHandle);
-                }
+                var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS { Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION };
+                int hr = TraceEventNativeMethods.EnableTraceEx2(
+                    m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_DISABLE_PROVIDER,
+                    0, 0, 0, EnableProviderTimeoutMSec, parameters);
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
             }
         }
