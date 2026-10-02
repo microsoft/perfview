@@ -648,7 +648,6 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         // Values for ENABLE_TRACE_PARAMETERS.Version
-        internal const uint ENABLE_TRACE_PARAMETERS_VERSION = 1;
         internal const uint ENABLE_TRACE_PARAMETERS_VERSION_2 = 2;      // Introduced in Windows 8.1 
 
         // Values for ENABLE_TRACE_PARAMETERS.EnableProperty

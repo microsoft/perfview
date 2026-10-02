@@ -338,94 +338,89 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 {
                     if (valueData != null)
                     {
-                        // This one must be first so it works pre-8.1
                         filterDescrPtr[curDescrIdx].Ptr = providerDataPtr;
                         filterDescrPtr[curDescrIdx].Size = valueDataSize;
                         filterDescrPtr[curDescrIdx].Type = (int)valueDataType;
                         curDescrIdx++;
                     }
 
-                    bool etwFilteringSupported = TraceEventProviderOptions.FilteringSupported;
-                    if (etwFilteringSupported)
+                    if (options.ProcessIDFilter != null && 0 < options.ProcessIDFilter.Count)
                     {
-                        if (options.ProcessIDFilter != null && 0 < options.ProcessIDFilter.Count)
+                        int* pids = stackalloc int[options.ProcessIDFilter.Count];
+                        for (int i = 0; i < options.ProcessIDFilter.Count; i++)
                         {
-                            int* pids = stackalloc int[options.ProcessIDFilter.Count];
-                            for (int i = 0; i < options.ProcessIDFilter.Count; i++)
+                            pids[i] = options.ProcessIDFilter[i];
+                        }
+
+                        filterDescrPtr[curDescrIdx].Ptr = (byte*)pids;
+                        filterDescrPtr[curDescrIdx].Size = options.ProcessIDFilter.Count * sizeof(int);
+                        filterDescrPtr[curDescrIdx].Type = TraceEventNativeMethods.EVENT_FILTER_TYPE_PID;
+                        curDescrIdx++;
+                    }
+                    if (options.ProcessNameFilter != null && 0 < options.ProcessNameFilter.Count)
+                    {
+                        int charCount = 0;
+                        for (int i = 0; i < options.ProcessNameFilter.Count; i++)
+                        {
+                            charCount += options.ProcessNameFilter[i].Length + 1;     // +1 for the separate or the null terminator.
+                        }
+
+                        byte* namesBuffer = stackalloc byte[charCount * 2];           // *2 because it is unicode.
+                        char* namesPtr = (char*)namesBuffer;
+                        // Fill in the names, ; separating them.
+                        for (int i = 0; i < options.ProcessNameFilter.Count; i++)
+                        {
+                            if (i != 0)
                             {
-                                pids[i] = options.ProcessIDFilter[i];
+                                *namesPtr++ = ';';
                             }
 
-                            filterDescrPtr[curDescrIdx].Ptr = (byte*)pids;
-                            filterDescrPtr[curDescrIdx].Size = options.ProcessIDFilter.Count * sizeof(int);
-                            filterDescrPtr[curDescrIdx].Type = TraceEventNativeMethods.EVENT_FILTER_TYPE_PID;
-                            curDescrIdx++;
-                        }
-                        if (options.ProcessNameFilter != null && 0 < options.ProcessNameFilter.Count)
-                        {
-                            int charCount = 0;
-                            for (int i = 0; i < options.ProcessNameFilter.Count; i++)
+                            string name = options.ProcessNameFilter[i];
+                            for (int j = 0; j < name.Length; j++)
                             {
-                                charCount += options.ProcessNameFilter[i].Length + 1;     // +1 for the separate or the null terminator.
+                                *namesPtr++ = name[j];
                             }
-
-                            byte* namesBuffer = stackalloc byte[charCount * 2];           // *2 because it is unicode.
-                            char* namesPtr = (char*)namesBuffer;
-                            // Fill in the names, ; separating them.
-                            for (int i = 0; i < options.ProcessNameFilter.Count; i++)
-                            {
-                                if (i != 0)
-                                {
-                                    *namesPtr++ = ';';
-                                }
-
-                                string name = options.ProcessNameFilter[i];
-                                for (int j = 0; j < name.Length; j++)
-                                {
-                                    *namesPtr++ = name[j];
-                                }
-                            }
-                            *namesPtr++ = '\0';
-                            filterDescrPtr[curDescrIdx].Ptr = namesBuffer;
-                            Debug.Assert(&filterDescrPtr[curDescrIdx].Ptr[charCount * 2] == (byte*)namesPtr);
-                            filterDescrPtr[curDescrIdx].Size = charCount * 2;       // *2 because it is unicode.
-                            filterDescrPtr[curDescrIdx].Type = TraceEventNativeMethods.EVENT_FILTER_TYPE_EXECUTABLE_NAME;
-                            if (filterDescrPtr[curDescrIdx].Size >= 1024)
-                            {
-                                throw new ArgumentException("ProcessNameFilters too large.");
-                            }
-
-                            curDescrIdx++;
+                        }
+                        *namesPtr++ = '\0';
+                        filterDescrPtr[curDescrIdx].Ptr = namesBuffer;
+                        Debug.Assert(&filterDescrPtr[curDescrIdx].Ptr[charCount * 2] == (byte*)namesPtr);
+                        filterDescrPtr[curDescrIdx].Size = charCount * 2;       // *2 because it is unicode.
+                        filterDescrPtr[curDescrIdx].Type = TraceEventNativeMethods.EVENT_FILTER_TYPE_EXECUTABLE_NAME;
+                        if (filterDescrPtr[curDescrIdx].Size >= 1024)
+                        {
+                            throw new ArgumentException("ProcessNameFilters too large.");
                         }
 
-                        var eventIdsBufferSize = ComputeEventIdsBufferSize(options.EventIDsToEnable);
-                        if (0 < eventIdsBufferSize)
-                        {
-                            var eventIds = stackalloc byte[eventIdsBufferSize];
-                            ComputeEventIds(&filterDescrPtr[curDescrIdx++], eventIds, eventIdsBufferSize,
-                                options.EventIDsToEnable, true, TraceEventNativeMethods.EVENT_FILTER_TYPE_EVENT_ID);
-                        }
-                        eventIdsBufferSize = ComputeEventIdsBufferSize(options.EventIDsToDisable);
-                        if (0 < eventIdsBufferSize)
-                        {
-                            var eventIds = stackalloc byte[eventIdsBufferSize];
-                            ComputeEventIds(&filterDescrPtr[curDescrIdx++], eventIds, eventIdsBufferSize,
-                                options.EventIDsToDisable, false, TraceEventNativeMethods.EVENT_FILTER_TYPE_EVENT_ID);
-                        }
-                        eventIdsBufferSize = ComputeEventIdsBufferSize(options.EventIDStacksToEnable);
-                        if (0 < eventIdsBufferSize)
-                        {
-                            var eventIds = stackalloc byte[eventIdsBufferSize];
-                            ComputeEventIds(&filterDescrPtr[curDescrIdx++], eventIds, eventIdsBufferSize,
-                                options.EventIDStacksToEnable, true, TraceEventNativeMethods.EVENT_FILTER_TYPE_STACKWALK);
-                        }
-                        eventIdsBufferSize = ComputeEventIdsBufferSize(options.EventIDStacksToDisable);
-                        if (0 < eventIdsBufferSize)
-                        {
-                            var eventIds = stackalloc byte[eventIdsBufferSize];
-                            ComputeEventIds(&filterDescrPtr[curDescrIdx++], eventIds, eventIdsBufferSize,
-                                options.EventIDStacksToDisable, false, TraceEventNativeMethods.EVENT_FILTER_TYPE_STACKWALK);
-                        }
+                        curDescrIdx++;
+                    }
+
+                    var eventIdsBufferSize = ComputeEventIdsBufferSize(options.EventIDsToEnable);
+                    if (0 < eventIdsBufferSize)
+                    {
+                        var eventIds = stackalloc byte[eventIdsBufferSize];
+                        ComputeEventIds(&filterDescrPtr[curDescrIdx++], eventIds, eventIdsBufferSize,
+                            options.EventIDsToEnable, true, TraceEventNativeMethods.EVENT_FILTER_TYPE_EVENT_ID);
+                    }
+                    eventIdsBufferSize = ComputeEventIdsBufferSize(options.EventIDsToDisable);
+                    if (0 < eventIdsBufferSize)
+                    {
+                        var eventIds = stackalloc byte[eventIdsBufferSize];
+                        ComputeEventIds(&filterDescrPtr[curDescrIdx++], eventIds, eventIdsBufferSize,
+                            options.EventIDsToDisable, false, TraceEventNativeMethods.EVENT_FILTER_TYPE_EVENT_ID);
+                    }
+                    eventIdsBufferSize = ComputeEventIdsBufferSize(options.EventIDStacksToEnable);
+                    if (0 < eventIdsBufferSize)
+                    {
+                        var eventIds = stackalloc byte[eventIdsBufferSize];
+                        ComputeEventIds(&filterDescrPtr[curDescrIdx++], eventIds, eventIdsBufferSize,
+                            options.EventIDStacksToEnable, true, TraceEventNativeMethods.EVENT_FILTER_TYPE_STACKWALK);
+                    }
+                    eventIdsBufferSize = ComputeEventIdsBufferSize(options.EventIDStacksToDisable);
+                    if (0 < eventIdsBufferSize)
+                    {
+                        var eventIds = stackalloc byte[eventIdsBufferSize];
+                        ComputeEventIds(&filterDescrPtr[curDescrIdx++], eventIds, eventIdsBufferSize,
+                            options.EventIDStacksToDisable, false, TraceEventNativeMethods.EVENT_FILTER_TYPE_STACKWALK);
                     }
                     Debug.Assert(curDescrIdx <= MaxDesc);
                     if (curDescrIdx == 0)
@@ -435,7 +430,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
                     TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS();
 
-                    parameters.Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION;
+                    parameters.Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION_2;
                     parameters.FilterDescCount = curDescrIdx;
                     parameters.EnableFilterDesc = filterDescrPtr;
 
@@ -450,16 +445,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     if (options.EnableSourceContainerTracking)
                     {
                         parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_SOURCE_CONTAINER_TRACKING;
-                    }
-
-                    if (etwFilteringSupported)      // If we are on 8.1 we can use the newer API.
-                    {
-                        parameters.Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION_2;
-                    }
-                    else
-                    {
-                        Debug.Assert(curDescrIdx <= 1);
-                        Debug.Assert(filterDescrPtr == null || -100 <= filterDescrPtr[0].Type);   // We are not using any of the Win8.1 defined types.
                     }
 
                     uint eventControlCode = (valueDataType == ControllerCommand.SendManifest
@@ -810,7 +795,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         {
             lock (this)
             {
-                var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS { Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION };
+                var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS { Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION_2 };
                 int hr = TraceEventNativeMethods.EnableTraceEx2(
                     m_SessionHandle, providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_DISABLE_PROVIDER,
                     0, 0, 0, EnableProviderTimeoutMSec, parameters);
@@ -1011,8 +996,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// EventSources will re-dump their manifest on this command.
         /// This API is OK to call from one thread while Process() is being run on another
         /// <para>
-        /// This routine only works Win7 and above, since previous versions don't have this concept.   The providers also has
-        /// to support it.
+        /// The provider must support capture-state requests.
         /// </para>
         /// </summary>
         /// <param name="providerGuid">The GUID that identifies the provider to send the CaptureState command to</param>
@@ -1031,7 +1015,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
                 var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS();
                 var filter = new TraceEventNativeMethods.EVENT_FILTER_DESCRIPTOR();
-                parameters.Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION;
+                parameters.Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION_2;
 
                 byte[] asArray = data as byte[];
                 if (data is int)
@@ -1077,6 +1061,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     if (asArray != null)
                     {
                         parameters.EnableFilterDesc = &filter;
+                        parameters.FilterDescCount = 1;
                         filter.Type = filterType;
                         filter.Size = asArray.Length;
                         filter.Ptr = filterDataPtr;
@@ -2856,50 +2841,17 @@ namespace Microsoft.Diagnostics.Tracing.Session
         // Payload Filters not implemented yet.
 
         /// <summary>
-        /// This return true on OS version beyond 8.1 (windows Version 6.3).   It means most of the
-        /// per-event filtering is supported.
+        /// Returns true on Windows, where supported hosts provide ETW per-event filtering.
+        /// Returns false on non-Windows platforms.
         /// </summary>
         public static bool FilteringSupported
         {
             get
             {
-                if (!s_IsEtwFilteringSupported.HasValue)
-                {
-                    var ret = false;
-
-                    // For Windows Versions above windows 8, OSVersion lies and returns 6.2 (window 8) even though
-                    // the windows version is higher.  We have to try harder to figure out whether we are windows 8 or something
-                    // later.   Currently we look at the file version number of an OS DLL.
-                    // There is probably a better way.
-                    var winDir = Environment.GetEnvironmentVariable("WinDir");
-                    var kernel32 = Path.Combine(winDir, @"system32\Kernel32.dll");
-                    if (File.Exists(kernel32))
-                    {
-                        using (var kernel32PE = new PEFile.PEFile(kernel32))
-                        {
-                            var versionInfo = kernel32PE.GetFileVersionInfo();
-                            if (versionInfo != null)
-                            {
-                                // versionInfo.FileVersion is now the real version number we want but it is a string, not a
-                                // number.   Our tests is if version number bigger than 6.3 (as a string) or a two or more digit
-                                // major version.
-                                if (string.Compare("6.3", versionInfo.FileVersion) <= 0 || 2 <= versionInfo.FileVersion.IndexOf('.'))
-                                {
-                                    ret = true;
-                                }
-                            }
-                        }
-                    }
-                    s_IsEtwFilteringSupported = ret;
-                }
-                return s_IsEtwFilteringSupported.Value;
+                return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
             }
         }
 
-        /// <summary>
-        /// This is the backing field for the lazily-computed <see cref="FilteringSupported"/> property.
-        /// </summary>
-        private static bool? s_IsEtwFilteringSupported;
     }
 
 

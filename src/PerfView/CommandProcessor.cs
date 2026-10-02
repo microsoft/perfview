@@ -699,13 +699,9 @@ namespace PerfView
                             if (parsedArgs.TplEvents != TplEtwProviderTraceEventParser.Keywords.None)
                             {
                                 // Used to determine what is going on with tasks.
-                                var netTaskStacks = stacksEnabled;
-                                if (TraceEventProviderOptions.FilteringSupported)
-                                {
-                                    // This turns on stacks only for TaskScheduled (7) TaskWaitSend (10) and AwaitTaskContinuationScheduled (12)
-                                    netTaskStacks = options.Clone();
-                                    netTaskStacks.EventIDStacksToEnable = new List<int>(3) { 7, 10, 12 };
-                                }
+                                // This turns on stacks only for TaskScheduled (7) TaskWaitSend (10) and AwaitTaskContinuationScheduled (12)
+                                var netTaskStacks = options.Clone();
+                                netTaskStacks.EventIDStacksToEnable = new List<int>(3) { 7, 10, 12 };
                                 EnableUserProvider(userModeSession, ".NETTasks",
                                     TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
                                     (ulong)parsedArgs.TplEvents,
@@ -3297,7 +3293,7 @@ namespace PerfView
                     }
 
                     TraceEventProviderOptions options = null;
-                    if (parsedArgs.FocusProcess != null && TraceEventProviderOptions.FilteringSupported)
+                    if (parsedArgs.FocusProcess != null)
                     {
                         options = new TraceEventProviderOptions();
                         int processId;

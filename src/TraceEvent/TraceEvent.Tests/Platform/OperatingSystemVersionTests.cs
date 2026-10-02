@@ -1,6 +1,8 @@
 using Microsoft.Diagnostics.Utilities;
+using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace TraceEventTests
@@ -40,5 +42,10 @@ namespace TraceEventTests
             Assert.True(OperatingSystemVersion.IsSupported);
         }
 
+        [Fact]
+        public void EtwFilteringIsOnlyAvailableOnWindows()
+        {
+            Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), TraceEventProviderOptions.FilteringSupported);
+        }
     }
 }
