@@ -226,10 +226,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             get
             {
-                var ret = (Keywords)unchecked((int)0xf84c8000); // PMCProfile ReferenceSet ThreadPriority IOQueue Handle VAMap 
-                if (OperatingSystemVersion.AtLeast(OperatingSystemVersion.Win8))
-                    ret &= ~Keywords.VAMap;
-                return ret;
+                return (Keywords)unchecked((int)0xf84c0000); // PMCProfile ReferenceSet ThreadPriority IOQueue Handle
             }
         }
 
