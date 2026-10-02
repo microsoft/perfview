@@ -97,14 +97,6 @@ namespace Triggers
                 throw new ApplicationException("Count not find performance counter " + counterName + " in category " + categoryName);
             }
 
-            if (categoryName.StartsWith(".NET"))                // TODO FIX NOW, remove this condition after we are confident of it.  
-            {
-                if (SpawnCounterIn64BitProcessIfNecessary())
-                {
-                    return;
-                }
-            }
-
             // If the instance does not exist, you won't discover it until we fetch the counter later.   
             m_counter = new PerformanceCounter(categoryName, counterName, instanceName);
 
@@ -206,14 +198,6 @@ namespace Triggers
         public override void Dispose()
         {
             m_monitoringDone = true;
-
-#if PERFVIEW
-            var cmd = m_cmd;
-            if (cmd != null)
-            {
-                cmd.Kill();
-            }
-#endif
         }
         public override string Status
         {
@@ -241,47 +225,6 @@ namespace Triggers
             }
         }
         #region private
-
-        /// <summary>
-        /// If you are in a 32 bit process you don't see 64 bit perf counters.  Returns true if we needed to do this.  
-        /// </summary>
-        private bool SpawnCounterIn64BitProcessIfNecessary()
-        {
-#if PERFVIEW   // TODO FIX NOW turn this on and test.
-            // Do we have to do this? 
-            if (m_triggered == null)
-            {
-                return false;
-            }
-
-            if (!(Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess))
-            {
-                return false;
-            }
-
-            m_task = Task.Factory.StartNew(delegate
-            {
-                m_log.WriteLine("To allow 64 bit processes to participate in the perf counters, we launch a 64 bit process to do the monitoring");
-                string heapDumpExe = Path.Combine(Utilities.SupportFiles.SupportFileDir, @"AMD64\HeapDump.exe");
-                string commandLine = heapDumpExe + " /MinSecForTrigger:" + MinSecForTrigger + " \"/StopOnPerfCounter:" + m_spec + "\"";
-                m_log.WriteLine("Exec: {0}", commandLine);
-                var options = new CommandOptions().AddNoThrow().AddTimeout(CommandOptions.Infinite).AddOutputStream(m_log);
-                m_cmd = Command.Run(commandLine, options);
-                if (m_cmd.ExitCode != 0)
-                {
-                    m_log.WriteLine("Error: heapdump failed with error code {0}", m_cmd.ExitCode);
-                }
-                else
-                {
-                    m_triggered?.Invoke(this);
-                }
-                m_cmd = null;
-            });
-            return true;
-#else
-            return false;
-#endif
-        }
 
         private bool IsCurrentlyTrue()
         {
@@ -330,9 +273,6 @@ namespace Triggers
         private bool m_instanceExists;
         private TextWriter m_log;
         public event Action<PerformanceCounterTrigger> m_triggered;
-#if PERFVIEW
-        private Microsoft.Diagnostics.Utilities.Command m_cmd;
-#endif
 
         private Task m_task;
         private volatile bool m_monitoringDone;
