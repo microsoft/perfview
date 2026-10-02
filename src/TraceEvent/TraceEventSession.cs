@@ -1598,7 +1598,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 EVENT_TRACE_MERGE_EXTENDED_DATA.EVENT_METADATA |
                 EVENT_TRACE_MERGE_EXTENDED_DATA.VOLUME_MAPPING;
 
-            if ((options & TraceEventMergeOptions.Compress) != 0 && OperatingSystemVersion.AtLeast(62))
+            if ((options & TraceEventMergeOptions.Compress) != 0)
             {
                 flags |= EVENT_TRACE_MERGE_EXTENDED_DATA.COMPRESS_TRACE;
             }
