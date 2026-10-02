@@ -1145,20 +1145,16 @@ namespace PerfView
                 PerfViewLogger.Log.StartAndStopTimes();
 
                 // Also log the CPU Counters mapping.
-                var osVersion = Environment.OSVersion.Version.Major + Environment.OSVersion.Version.Minor / 10.0;
-                if (6.2 <= osVersion)        // CPU Counters only supported on Windows 8 and above
+                var cpuCounters = TraceEventProfileSources.GetInfo();
+                foreach (var cpuCounter in cpuCounters.Values)
                 {
-                    var cpuCounters = TraceEventProfileSources.GetInfo();
-                    foreach (var cpuCounter in cpuCounters.Values)
+                    if (string.CompareOrdinal(cpuCounter.Name, "Timer") == 0)
                     {
-                        if (string.CompareOrdinal(cpuCounter.Name, "Timer") == 0)
-                        {
-                            continue;
-                        }
-
-                        PerfViewLogger.Log.CpuCounterIntervalSetting(cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
-                        // LogFile.WriteLine("Cpu Counter Config {0} ID {1} Interval {2}", cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
+                        continue;
                     }
+
+                    PerfViewLogger.Log.CpuCounterIntervalSetting(cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
+                    // LogFile.WriteLine("Cpu Counter Config {0} ID {1} Interval {2}", cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
                 }
 
                 // Try to stop the kernel session
