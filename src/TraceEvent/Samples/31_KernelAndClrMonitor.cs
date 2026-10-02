@@ -23,13 +23,7 @@ namespace TraceEventSamples
         {
             var monitoringTimeSec = 10;
 
-            if (Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor < 62)
-            {
-                Out.WriteLine("This demo only works on Win8 / Win 2012 an above)");
-                return;
-            }
-
-            Out.WriteLine("******************** KernelAndClrMonitor DEMO (Win 8) ********************");
+            Out.WriteLine("******************** KernelAndClrMonitor DEMO ********************");
             Out.WriteLine("Printing both Kernel and CLR (user mode) events simultaneously");
             Out.WriteLine("The monitor will run for a maximum of {0} seconds", monitoringTimeSec);
             Out.WriteLine("Press Ctrl-C to stop monitoring early.");
@@ -67,13 +61,12 @@ namespace TraceEventSamples
             }, null, monitoringTimeSec * 1000, Timeout.Infinite);
 
             // Create the new session to receive the events.  
-            // Because we are on Win 8 this single session can handle both kernel and non-kernel providers.  
+            // This single session handles both kernel and non-kernel providers.
             using (session = new TraceEventSession("MonitorKernelAndClrEventsSession"))
             {
                 // Enable the events we care about for the kernel
                 // For this instant the session will buffer any incoming events.  
                 // Enabling kernel events must be done before anything else.   
-                // This will fail on Win7.  
                 Out.WriteLine("Enabling Image load, Process and Thread events.");
                 session.EnableKernelProvider(
                     KernelTraceEventParser.Keywords.ImageLoad |

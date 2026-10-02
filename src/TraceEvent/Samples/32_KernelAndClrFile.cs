@@ -21,12 +21,6 @@ namespace TraceEventSamples
 
         public static void Run()
         {
-            if (Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor < 62)
-            {
-                Out.WriteLine("This demo only works on Win8 / Win 2012 an above)");
-                return;
-            }
-
             Out.WriteLine("******************** KernelAndClrFile DEMO ********************");
             string dataFileName = "output.etl";
             DataCollection(dataFileName);
@@ -49,7 +43,7 @@ namespace TraceEventSamples
                 return;
             }
 
-            // Create one user mode session and one kernel mode session
+            // Create one session for both user-mode and kernel events.
             Out.WriteLine("Creating a file mode session");
             using (var session = new TraceEventSession("MonitorKernelAndClrEventsSession", dataFileName))
             {
@@ -64,7 +58,7 @@ namespace TraceEventSamples
 
                 // Enable the events we care about for the kernel in the kernel session
                 // For this instant the session will buffer any incoming events.  
-                // THis has to be first, and it will fail if you are not on Win8.  
+                // Enable the kernel provider before other providers.
                 session.EnableKernelProvider(
                     KernelTraceEventParser.Keywords.ImageLoad |
                     KernelTraceEventParser.Keywords.Process |

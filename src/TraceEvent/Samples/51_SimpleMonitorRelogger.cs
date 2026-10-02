@@ -28,12 +28,6 @@ namespace TraceEventSamples
         {
             int monitoringTimeSec = 10;
 
-            if (Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor < 62)
-            {
-                Out.WriteLine("This demo only works on Win8 / Win 2012 an above)");
-                return;
-            }
-
             // Today you have to be Admin to turn on ETW events (anyone can write ETW events).   
             if (!(TraceEventSession.IsElevated() ?? false))
             {
@@ -72,7 +66,7 @@ namespace TraceEventSamples
             {
                 // Enable the events we care about for the kernel in the kernel session
                 // For this instant the session will buffer any incoming events.  
-                // This has to be first, and it will fail if you are not on Win8.  
+                // Enable the kernel provider before other providers.
                 session.EnableKernelProvider(
                     KernelTraceEventParser.Keywords.ImageLoad |
                     KernelTraceEventParser.Keywords.Process |
