@@ -2476,7 +2476,7 @@ namespace PerfView
         private static void InstallETWClrProfiler(TextWriter log, int profilerKeywords)
         {
             log.WriteLine("Ensuring that the .NET CLR Profiler is installed.");
-            var profilerDll = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.ProcessArchitectureDirectory, "EtwClrProfiler.dll");
+            var profilerDll = Path.Combine(SupportFiles.SupportFileDir, "amd64", "EtwClrProfiler.dll");
             if (File.Exists(profilerDll))
             {
                 log.WriteLine("Profiler DLL to load is {0}", profilerDll);
@@ -2484,13 +2484,13 @@ namespace PerfView
                 using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
                 using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
                 {
-                    InsertEtwClrProfilerKeys(key, "COR", profilerDll, profilerKeywords, SupportFiles.ProcessArch.ToString(), log);
-                    InsertEtwClrProfilerKeys(key, "CORECLR", profilerDll, profilerKeywords, SupportFiles.ProcessArch.ToString(), log);
+                    InsertEtwClrProfilerKeys(key, "COR", profilerDll, profilerKeywords, "Amd64", log);
+                    InsertEtwClrProfilerKeys(key, "CORECLR", profilerDll, profilerKeywords, "Amd64", log);
                 }
             }
             else
             {
-                log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", SupportFiles.ProcessArch);
+                log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture Amd64");
             }
 
             // The x64 host also profiles x86 targets through the 32-bit registry view.

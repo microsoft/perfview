@@ -87,14 +87,14 @@ namespace Utilities
                 }
 
                 // Also look in processor specific location
-                fileName = Path.Combine(SupportFileDir, ProcessArchitectureDirectory, simpleName + ".dll");
+                fileName = Path.Combine(SupportFileDir, "amd64", simpleName + ".dll");
                 if (File.Exists(fileName))
                 {
                     return System.Reflection.Assembly.LoadFrom(fileName);
                 }
 
                 // And look for an exe (we need this for HeapDump.exe)
-                fileName = Path.Combine(SupportFileDir, ProcessArchitectureDirectory, simpleName + ".exe");
+                fileName = Path.Combine(SupportFileDir, "amd64", simpleName + ".exe");
                 if (File.Exists(fileName))
                 {
                     return System.Reflection.Assembly.LoadFrom(fileName);
@@ -215,31 +215,13 @@ namespace Utilities
         }
 
         /// <summary>
-        /// Gets the architecture of the current process. PerfView is built and runs only as amd64,
-        /// including when running under x64 emulation on ARM64 hardware.
-        /// </summary>
-        public static ProcessorArchitecture ProcessArch
-        {
-            get { return ProcessorArchitecture.Amd64; }
-        }
-
-        /// <summary>
-        /// Gets the name of the directory containing compiled binaries (DLLs) which have the same architecture as the
-        /// currently executing process. PerfView is built and runs only as amd64, so this directory is always amd64.
-        /// </summary>
-        public static string ProcessArchitectureDirectory
-        {
-            get { return "amd64"; }
-        }
-
-        /// <summary>
         /// If you need to load an unmanaged DLL that is part of your distribution
-        /// This routine will do the load library using the correct architecture
+        /// This routine loads it from the amd64 directory for the x64 host.
         /// </summary>
         /// <param name="relativePath"></param>
         public static void LoadNative(string relativePath)
         {
-            var archPath = Path.Combine(ProcessArchitectureDirectory, relativePath);
+            var archPath = Path.Combine("amd64", relativePath);
             var fullPath = Path.Combine(SupportFileDir, archPath);
             var ret = LoadLibrary(fullPath);
             if (ret == IntPtr.Zero)

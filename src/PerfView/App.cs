@@ -568,7 +568,7 @@ namespace PerfView
                     var srcTraceEventPdb = Path.Combine(Path.GetDirectoryName(exe), "TraceEvent.pdb");
                     if (File.Exists(srcTraceEventPdb))
                     {
-                        var dstTraceEventPdb = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.ProcessArchitectureDirectory, "TraceEvent.pdb");
+                        var dstTraceEventPdb = Path.Combine(SupportFiles.SupportFileDir, "amd64", "TraceEvent.pdb");
                         File.Copy(srcTraceEventPdb, dstTraceEventPdb);
                     }
 
