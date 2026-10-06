@@ -684,7 +684,8 @@ public class GCHeapDumper
                 throw new HeapDumpException("Could not find process with ID " + processID, HR.CouldNotFindProcessId);
             }
 
-            // Resume packaged applications before collection.
+            // Resume packaged applications (apps with Windows package identity) before collection.
+            // See https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/package-identity-overview
             var fullPackageName = PackageUtil.FullPackageNameForProcess(process);
             if (fullPackageName != null)
             {
