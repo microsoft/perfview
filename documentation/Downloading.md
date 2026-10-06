@@ -5,9 +5,7 @@ See the [PerfView Overview](https://github.com/Microsoft/perfview#perfview-overv
 about PerfView.   
 
 PerfView is an x64 application requiring Windows 10 or Windows Server 2016 or later
-and .NET Framework 4.7.2 or later. It can collect from both x86 and x64 target processes.
-Windows-provided x64 emulation may be used where available; there is no native ARM64
-PerfView application build.
+and .NET Framework 4.7.2 or later. It can collect from x86 and x64 target processes.  It can also be used to capture traces on arm64 hardware.
 
 # PerfView Releases
 
@@ -64,4 +62,3 @@ so by visiting the [PerfView GitHub Releases](https://github.com/Microsoft/perfv
 The Microsoft Download Site for PerfView has
 been retired as the official download site for PerfView.  It has been replaced by
 [PerfView GitHub Releases page](https://github.com/Microsoft/perfview/releases) referenced above. 
-
