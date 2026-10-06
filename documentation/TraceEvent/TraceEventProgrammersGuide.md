@@ -826,7 +826,7 @@ Below are the steps in converting logging an event with a stack to a resolved sy
 
 1. When the event is logged, the ETW system tries to crawl the stack at runtime. However this can fail for various reasons:
 
-    1. On 32-bit machines the crawler assumes the compiler stores unwinding information (EBP frames) on the stack. If the compile does not do this the stack 'breaks' (can't be unwound) and you lose any frames 'toward thread start'.
+    1. On 32-bit machines the crawler assumes the compiler stores unwinding information (EBP frames) on the stack. If the compiler does not do this the stack 'breaks' (can't be unwound) and you lose any frames 'toward thread start'.
     2. For 64-bit processes, the crawler needs unwind information. Historical traces collected **before Windows 8 (or Windows Server 2012)** may have stacks broken at JIT-compiled frames because ETW could not locate that information. This old-host limitation is not a restriction on current collection, but reading an old trace cannot recover frames that were never recorded.
 
     If either of these happen there is nothing wrong with your code as it is an issue with the APP or with the ETW infrastructure. PerfView should have the same problem.
