@@ -52,7 +52,8 @@ This confirms that software is authentic. You can also do this by running the si
 
 # Additional Release Information
 
-The link above allows you to quickly download PerfView.exe which is what you need 95% of the time.
+The [aka.ms/perfview/latest](https://aka.ms/perfview/latest) shortcut allows you to quickly download
+PerfView.exe which is what you need 95% of the time.
 If you wish to get other files associated with the release (e.g. debugging symbols),
 or wish to download older releases (not recommended), you can do
 so by visiting the [PerfView GitHub Releases](https://github.com/Microsoft/perfview/releases).
