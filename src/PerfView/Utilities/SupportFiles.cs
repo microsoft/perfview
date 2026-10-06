@@ -47,6 +47,11 @@ namespace Utilities
     internal static class SupportFiles
     {
         /// <summary>
+        /// The support-file directory for the x64 PerfView host, including under emulation on ARM64.
+        /// </summary>
+        public const string HostArchitectureDirectory = "amd64";
+
+        /// <summary>
         /// Unpacks any resource that beginning with a .\ (so it looks like a relative path name)
         /// Such resources are unpacked into their relative position in SupportFileDir. 
         /// 'force' will force an update even if the files were unpacked already (usually not needed)
@@ -87,14 +92,14 @@ namespace Utilities
                 }
 
                 // Also look in processor specific location
-                fileName = Path.Combine(SupportFileDir, "amd64", simpleName + ".dll");
+                fileName = Path.Combine(SupportFileDir, HostArchitectureDirectory, simpleName + ".dll");
                 if (File.Exists(fileName))
                 {
                     return System.Reflection.Assembly.LoadFrom(fileName);
                 }
 
                 // And look for an exe (we need this for HeapDump.exe)
-                fileName = Path.Combine(SupportFileDir, "amd64", simpleName + ".exe");
+                fileName = Path.Combine(SupportFileDir, HostArchitectureDirectory, simpleName + ".exe");
                 if (File.Exists(fileName))
                 {
                     return System.Reflection.Assembly.LoadFrom(fileName);
@@ -221,7 +226,7 @@ namespace Utilities
         /// <param name="relativePath"></param>
         public static void LoadNative(string relativePath)
         {
-            var archPath = Path.Combine("amd64", relativePath);
+            var archPath = Path.Combine(HostArchitectureDirectory, relativePath);
             var fullPath = Path.Combine(SupportFileDir, archPath);
             var ret = LoadLibrary(fullPath);
             if (ret == IntPtr.Zero)

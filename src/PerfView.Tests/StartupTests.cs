@@ -17,6 +17,7 @@ namespace PerfViewTests
         [Fact]
         public void HostResourcesUseX64AndKeepBothHelpers()
         {
+            Assert.Equal("amd64", global::Utilities.SupportFiles.HostArchitectureDirectory);
             var resources = typeof(Startup).Assembly.GetManifestResourceNames();
             Assert.Contains(@".\runtimes\win-x64\native\WebView2Loader.dll", resources);
             Assert.DoesNotContain(@".\runtimes\win-x86\native\WebView2Loader.dll", resources);

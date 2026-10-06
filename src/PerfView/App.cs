@@ -465,7 +465,7 @@ namespace PerfView
                     // We have two versions of HeapDump.exe, and they each need their own copy of  Microsoft.Diagnostics.Runtime.dll 
                     // so copy this dll to the other architecture.
                     var fromDir = Path.Combine(SupportFiles.SupportFileDir, "x86");
-                    var toDir = Path.Combine(SupportFiles.SupportFileDir, "amd64");
+                    var toDir = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.HostArchitectureDirectory);
                     var fromFile = Path.Combine(fromDir, "Microsoft.Diagnostics.Runtime.dll");
                     if (Directory.Exists(toDir) && File.Exists(fromFile))
                     {
@@ -568,7 +568,7 @@ namespace PerfView
                     var srcTraceEventPdb = Path.Combine(Path.GetDirectoryName(exe), "TraceEvent.pdb");
                     if (File.Exists(srcTraceEventPdb))
                     {
-                        var dstTraceEventPdb = Path.Combine(SupportFiles.SupportFileDir, "amd64", "TraceEvent.pdb");
+                        var dstTraceEventPdb = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.HostArchitectureDirectory, "TraceEvent.pdb");
                         File.Copy(srcTraceEventPdb, dstTraceEventPdb);
                     }
 

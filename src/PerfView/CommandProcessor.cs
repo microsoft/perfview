@@ -2476,7 +2476,7 @@ namespace PerfView
         private static void InstallETWClrProfiler(TextWriter log, int profilerKeywords)
         {
             log.WriteLine("Ensuring that the .NET CLR Profiler is installed.");
-            var profilerDll = Path.Combine(SupportFiles.SupportFileDir, "amd64", "EtwClrProfiler.dll");
+            var profilerDll = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.HostArchitectureDirectory, "EtwClrProfiler.dll");
             if (File.Exists(profilerDll))
             {
                 log.WriteLine("Profiler DLL to load is {0}", profilerDll);
