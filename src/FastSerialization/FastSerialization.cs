@@ -1552,12 +1552,17 @@ namespace FastSerialization
         /// Read in a ForwardReference (a pointer to some other part of the stream which was not known at the tie it was written) and return it
         /// Use ResolveForwardReference to convert the ForwardReference to a StreamLabel
         /// </summary>
+        /// <exception cref="SerializationException">The stream contains a negative forward-reference index.</exception>
         public ForwardReference ReadForwardReference()
         {
 #if DEBUG
             StreamLabel label = reader.Current;
 #endif
             ForwardReference ret = (ForwardReference)reader.ReadInt32();
+            if ((int)ret < 0)
+            {
+                throw new SerializationException("Invalid forward reference index: " + (int)ret);
+            }
 #if DEBUG
             Log("<ReadForwardReference indexRef=\"" + ret + "\" StreamLabel=\"0x" + label.ToString("x") + "\"/>");
 #endif
@@ -1570,17 +1575,24 @@ namespace FastSerialization
         /// Normally this call preserves the current read location, but if you do don't care you can 
         /// set preserveCurrent as an optimization to make it more efficient.  
         /// </summary>
+        /// <returns>The stored label, which may be invalid, or an invalid label when resolution is deferred.</returns>
+        /// <exception cref="SerializationException">The forward-reference index is negative or has no definition when resolution is not deferred.</exception>
         public StreamLabel ResolveForwardReference(ForwardReference reference, bool preserveCurrent = true)
         {
+            if ((int)reference < 0)
+            {
+                throw new SerializationException("Invalid forward reference index: " + (int)reference);
+            }
+
             StreamLabel ret = StreamLabel.Invalid;
             if (forwardReferenceDefinitions == null)
             {
-                forwardReferenceDefinitions = new List<StreamLabel>();
+                forwardReferenceDefinitions = new Dictionary<ForwardReference, StreamLabel>();
             }
 
-            if ((uint)reference < (uint)forwardReferenceDefinitions.Count)
+            if (!forwardReferenceDefinitions.TryGetValue(reference, out ret))
             {
-                ret = forwardReferenceDefinitions[(int)reference];
+                ret = StreamLabel.Invalid;
             }
 
             if (ret == StreamLabel.Invalid && !deferForwardReferences)
@@ -1599,17 +1611,7 @@ namespace FastSerialization
                 for (int i = 0; i < fowardRefCount; i++)
                 {
                     StreamLabel defintionLabel = reader.ReadLabel();
-                    if (i >= forwardReferenceDefinitions.Count)
-                    {
-                        forwardReferenceDefinitions.Add(defintionLabel);
-                    }
-                    else
-                    {
-                        Debug.Assert(
-                            forwardReferenceDefinitions[i] == StreamLabel.Invalid ||
-                            forwardReferenceDefinitions[i] == defintionLabel);
-                        forwardReferenceDefinitions[i] = defintionLabel;
-                    }
+                    DefineForwardReference((ForwardReference)i, defintionLabel);
                     Log("<ForwardReference index=\"" + i + "\"  StreamLabelRef=\"0x" + defintionLabel.ToString("x") + "\"/>");
                 }
                 Log("</ForwardReferenceDefinitons>");
@@ -1618,7 +1620,10 @@ namespace FastSerialization
                     Goto(orig);
                 }
 
-                ret = forwardReferenceDefinitions[(int)reference];
+                if (!forwardReferenceDefinitions.TryGetValue(reference, out ret))
+                {
+                    throw new SerializationException("Undefined forward reference index: " + (int)reference);
+                }
                 Log("</GetFowardReferenceTable>");
             }
 
@@ -1950,7 +1955,7 @@ namespace FastSerialization
                 ForwardReference forwardReference = ForwardReference.Invalid;
                 if (tag == Tags.ForwardDefinition)
                 {
-                    forwardReference = (ForwardReference)reader.ReadInt32();
+                    forwardReference = ReadForwardReference();
                     Log("<ForwardDefintion index=\"" + forwardReference + "\"/>");
                     tag = ReadTag();
                 }
@@ -2141,21 +2146,16 @@ namespace FastSerialization
 
             if (forwardReferenceDefinitions == null)
             {
-                forwardReferenceDefinitions = new List<StreamLabel>();
-            }
-
-            int idx = (int)forwardReference;
-            while (forwardReferenceDefinitions.Count <= idx)
-            {
-                forwardReferenceDefinitions.Add(StreamLabel.Invalid);
+                forwardReferenceDefinitions = new Dictionary<ForwardReference, StreamLabel>();
             }
 
             // If it is already defined, it better match! 
-            Debug.Assert(forwardReferenceDefinitions[idx] == StreamLabel.Invalid ||
-                forwardReferenceDefinitions[idx] == definitionLabel);
+            StreamLabel previousDefinition;
+            Debug.Assert(!forwardReferenceDefinitions.TryGetValue(forwardReference, out previousDefinition) ||
+                previousDefinition == StreamLabel.Invalid || previousDefinition == definitionLabel);
 
             // Define the forward forwardReference
-            forwardReferenceDefinitions[idx] = definitionLabel;
+            forwardReferenceDefinitions[forwardReference] = definitionLabel;
         }
 
         private Tags ReadTag()
@@ -2177,7 +2177,8 @@ namespace FastSerialization
         internal IFastSerializable entryObject;
         internal IDictionary<StreamLabel, IFastSerializable> ObjectsInGraph;
         internal IDictionary<ForwardReference, IFastSerializable> unInitializedForwardReferences;
-        internal List<StreamLabel> forwardReferenceDefinitions;
+        // Definitions can be encountered out of order. Storage must depend on their count, not on an untrusted index.
+        internal Dictionary<ForwardReference, StreamLabel> forwardReferenceDefinitions;
         internal bool allowLazyDeserialization;
         /// <summary>
         /// When we encounter a forward reference, we can either go to the forward reference table immediately and resolve it 
