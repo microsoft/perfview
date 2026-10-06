@@ -4192,6 +4192,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
 
         internal override unsafe void FixupData()
         {
+            // V1 Stop events contain only IDs; newer versions require the pointer-sized fixed prefix.
+            int minimumLength = Version < 2 ? 8 : HostOffset(40, 7);
+            if (EventDataLength < minimumLength)
+            {
+                throw new FormatException($"Invalid thread event payload: version {Version} requires at least {minimumLength} bytes, but received {EventDataLength}.");
+            }
+
             if (Version < 2)
             {
                 return;
