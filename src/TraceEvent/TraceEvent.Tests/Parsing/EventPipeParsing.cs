@@ -68,6 +68,43 @@ namespace TraceEventTests
         {
         }
 
+        /// <summary>
+        /// Rejects a generic event whose claimed payload is missing from its block before any callback runs.
+        /// Covers compressed/uncompressed headers and immediate sorted dispatch versus queued unsorted dispatch.
+        /// </summary>
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NettraceTruncatedPayloadIsRejectedBeforeCallback(bool compressed, bool sorted)
+        {
+            // No native fixup or payload read: this remains safe on the unfixed implementation.
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent", 15));
+            writer.WriteThreadBlock(w => w.WriteThreadEntry(1, 202, 101));
+            // Claim 68 payload bytes but supply none; the length has no kernel-event layout significance.
+            writer.WriteEventBlock(compressed, w => w.WriteEventHeader(new WriteEventOptions
+            {
+                MetadataId = 1,
+                ThreadIndexOrId = 1,
+                CaptureThreadIndexOrId = 1,
+                SequenceNumber = 1,
+                Timestamp = 1,
+                IsSorted = sorted
+            }, 68));
+            writer.WriteEndBlock();
+
+            using (var source = new EventPipeEventSource(new MemoryStream(writer.ToArray())))
+            {
+                int callbacks = 0;
+                source.Dynamic.All += data => callbacks++;
+                Assert.Throws<FormatException>(() => source.Process());
+                Assert.Equal(0, callbacks);
+            }
+        }
+
 #if NETCOREAPP3_0_OR_GREATER
         [Theory(Skip = "Snapshot difs due to increased float accuracy on newer .NET versions.")]
 #else
