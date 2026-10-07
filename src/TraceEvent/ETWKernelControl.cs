@@ -528,46 +528,6 @@ namespace Microsoft.Diagnostics.Tracing
         private static string KernelSessionName { get { return "NT Kernel Logger"; } }
         private static Guid ProviderGuid = new Guid(unchecked((int)0x9e814aad), unchecked((short)0x3204), unchecked((short)0x11d2), 0x9a, 0x82, 0x00, 0x60, 0x08, 0xa8, 0x69, 0x39);
 
-        //// Code borrowed from CoreFX System.PlatformDetection.Windows to allow targeting netstandard1.6
-        //[StructLayout(LayoutKind.Sequential)]
-        //private struct RTL_OSVERSIONINFOEX
-        //{
-        //    internal uint dwOSVersionInfoSize;
-        //    internal uint dwMajorVersion;
-        //    internal uint dwMinorVersion;
-        //    internal uint dwBuildNumber;
-        //    internal uint dwPlatformId;
-        //    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
-        //    internal string szCSDVersion;
-        //}
-
-        //// Code borrowed from CoreFX System.PlatformDetection.Windows to allow targeting netstandard1.6
-        //[DllImport("ntdll.dll")]
-        //private static extern int RtlGetVersion(out RTL_OSVERSIONINFOEX lpVersionInformation);
-
-        //// Code borrowed from CoreFX System.PlatformDetection.Windows to allow targeting netstandard1.6
-        //private static bool IsWin8orNewer()
-        //{
-        //    RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
-        //    osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
-        //    return osvi.dwMajorVersion * 10 + osvi.dwMinorVersion >= 62;
-        //}
-
-        ///// <summary>
-        ///// These keywords are can't be passed to the OS.
-        ///// </summary>
-        //private static KernelKeywords NonOSKeywords
-        //{
-        //    get
-        //    {
-
-        //        var ret = (KernelKeywords)unchecked((int)0xf84c8000);
-        //        if (IsWin8orNewer())
-        //            ret &= ~KernelKeywords.VAMap;
-        //        return ret;
-        //    }
-        //}
-
         private static bool s_KernelTraceControlLoaded;
 #endregion
     }

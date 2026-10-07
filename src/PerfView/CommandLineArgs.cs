@@ -118,7 +118,7 @@ namespace PerfView
         public int CircularMB;
         public bool InMemoryCircularBuffer;         // Uses EVENT_TRACE_BUFFERING_MODE for an in-memory circular buffer
         public KernelTraceEventParser.Keywords KernelEvents = KernelTraceEventParser.Keywords.Default;
-        public string[] CpuCounters;        // Specifies any profile sources (CPU counters) to turn on (Win 8 only)
+        public string[] CpuCounters;        // Specifies any profile sources (CPU counters) to turn on
         public ClrTraceEventParser.Keywords ClrEvents = ClrTraceEventParser.Keywords.Default;
         public TraceEventLevel ClrEventLevel = Microsoft.Diagnostics.Tracing.TraceEventLevel.Verbose;    // The verbosity of CLR events
         public TplEtwProviderTraceEventParser.Keywords TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
@@ -287,7 +287,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("BufferSizeMB", ref BufferSizeMB, "The size the buffers (in MB) the OS should use to store events waiting to be written to disk.");
             parser.DefineOptionalQualifier("CircularMB", ref CircularMB, "Do Circular logging with a file size in MB.");
             parser.DefineOptionalQualifier("InMemoryCircularBuffer", ref InMemoryCircularBuffer, "Keeps the circular buffer in memory until the session is stopped.");
-            parser.DefineOptionalQualifier("StackCompression", ref StackCompression, "Use stack compression (only on Win 8+) to make collected file smaller.");
+            parser.DefineOptionalQualifier("StackCompression", ref StackCompression, "Use stack compression to make the collected file smaller.");
             parser.DefineOptionalQualifier("LbrSources", ref LastBranchRecordingSources,
                 $"Turn on LBR sampling from these sources (comma-separated numeric hex values with 0x prefix or 'PmcInterrupt'). At most {TraceEventSession.GetMaxLastBranchRecordingSources()} sources are supported.");
             parser.DefineOptionalQualifier(
@@ -432,7 +432,7 @@ namespace PerfView
 
             parser.DefineOptionalQualifier("CpuCounters", ref CpuCounters,
                 "A comma separated list of hardware CPU counters specifications NAME:COUNT to turn on.  " +
-                "See Users guide for details.  See ListCpuCounters for available sources (Win8 only)");
+                "See Users guide for details.  See ListCpuCounters for available sources.");
 
             parser.DefineOptionalQualifier("Providers", ref Providers,
                 "Additional providers.  This is comma separated list of ProviderGuid:Keywords:Level:Stack specs.  " +
@@ -576,7 +576,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("DisableDotNetVersionLogging", ref DisableDotNetVersionLogging,
                 "Disables capturing of .NET version information during collection.");
             parser.DefineOptionalQualifier("NoGui", ref NoGui,
-                "Use the Command line version of the command (like on ARM).  Brings up a console window.  For batch scripts/automation use /LogFile instead (see users guide under 'Scripting' for more).");
+                "Use the Command line version of the command.  Brings up a console window.  For batch scripts/automation use /LogFile instead (see users guide under 'Scripting' for more).");
             parser.DefineOptionalQualifier("SafeMode", ref SafeMode, "Turn off parallelism and other risky features.");
             parser.DefineOptionalQualifier("RestartingToElevelate", ref RestartingToElevelate, "Internal: indicates that perfView is restarting to get Admin privileges.");
 
@@ -584,8 +584,6 @@ namespace PerfView
             parser.DefineOptionalQualifier("SessionName", ref sessionName, "Define the name for the user mode session (kernel session will also be named analogously) Useful for collecting traces when another ETW profiler (including PerfView) is being used.");
             if (sessionName != null)
             {
-                if (Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor < 62)
-                    throw new ApplicationException("SessionName qualifier only works on Windows 8 and above.");
                 CommandProcessor.s_UserModeSessionName = sessionName;
                 CommandProcessor.s_KernelessionName = sessionName + "Kernel";
             }
@@ -640,14 +638,7 @@ namespace PerfView
                 "Lists active ETW sessions.");
 
             parser.DefineParameterSet("ListCpuCounters", ref DoCommand, App.CommandProcessor.ListCpuCounters,
-                "Lists the ListCpuCounters CPU counters available on the system (win8+ only).");
-
-            parser.DefineParameterSet("EnableKernelStacks", ref DoCommand, App.CommandProcessor.EnableKernelStacks,
-                "On X64 machines if you have problems with broken stacks when the code is executing in the kernel," +
-                " setting this option and rebooting may improve things");
-
-            parser.DefineParameterSet("DisableKernelStacks", ref DoCommand, App.CommandProcessor.DisableKernelStacks,
-                "Resets the registry keys set by EnableKernelStack.");
+                "Lists the CPU counters available on the system.");
 
             string ProcessParam = null;
             parser.DefineParameterSet("HeapSnapshot", ref DoCommand, App.CommandProcessor.HeapSnapshot,

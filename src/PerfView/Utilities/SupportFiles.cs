@@ -47,6 +47,11 @@ namespace Utilities
     internal static class SupportFiles
     {
         /// <summary>
+        /// The support-file directory for the x64 PerfView host, including under emulation on ARM64.
+        /// </summary>
+        public const string HostArchitectureDirectory = "amd64";
+
+        /// <summary>
         /// Unpacks any resource that beginning with a .\ (so it looks like a relative path name)
         /// Such resources are unpacked into their relative position in SupportFileDir. 
         /// 'force' will force an update even if the files were unpacked already (usually not needed)
@@ -87,14 +92,14 @@ namespace Utilities
                 }
 
                 // Also look in processor specific location
-                fileName = Path.Combine(SupportFileDir, ProcessArchitectureDirectory, simpleName + ".dll");
+                fileName = Path.Combine(SupportFileDir, HostArchitectureDirectory, simpleName + ".dll");
                 if (File.Exists(fileName))
                 {
                     return System.Reflection.Assembly.LoadFrom(fileName);
                 }
 
                 // And look for an exe (we need this for HeapDump.exe)
-                fileName = Path.Combine(SupportFileDir, ProcessArchitectureDirectory, simpleName + ".exe");
+                fileName = Path.Combine(SupportFileDir, HostArchitectureDirectory, simpleName + ".exe");
                 if (File.Exists(fileName))
                 {
                     return System.Reflection.Assembly.LoadFrom(fileName);
@@ -215,64 +220,19 @@ namespace Utilities
         }
 
         /// <summary>
-        /// Get the name of the architecture of the current process
-        /// </summary>
-        public static ProcessorArchitecture ProcessArch
-        {
-            get
-            {
-                if (s_ProcessArch == ProcessorArchitecture.None)
-                {
-                    var processorArchitecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
-                    if (!Enum.TryParse(processorArchitecture, ignoreCase: true, result: out s_ProcessArch))
-                    {
-                        s_ProcessArch = Environment.Is64BitProcess ? ProcessorArchitecture.Amd64 : ProcessorArchitecture.X86;
-                    }
-                }
-
-                return s_ProcessArch;
-            }
-        }
-
-        /// <summary>
-        /// Gets the name of the directory containing compiled binaries (DLLs) which have the same architecture as the
-        /// currently executing process.
-        /// </summary>
-        public static string ProcessArchitectureDirectory
-        {
-            get
-            {
-                if (s_ProcessArchDirectory == null)
-                {
-                    s_ProcessArchDirectory = ProcessArch.ToString().ToLowerInvariant();
-                }
-
-                return s_ProcessArchDirectory;
-            }
-        }
-
-        /// <summary>
         /// If you need to load an unmanaged DLL that is part of your distribution
-        /// This routine will do the load library using the correct architecture
+        /// This routine loads it from the amd64 directory for the x64 host.
         /// </summary>
         /// <param name="relativePath"></param>
         public static void LoadNative(string relativePath)
         {
-            var archPath = Path.Combine(ProcessArchitectureDirectory, relativePath);
+            var archPath = Path.Combine(HostArchitectureDirectory, relativePath);
             var fullPath = Path.Combine(SupportFileDir, archPath);
             var ret = LoadLibrary(fullPath);
             if (ret == IntPtr.Zero)
             {
                 if (!File.Exists(fullPath))
                 {
-                    if (ProcessArch != ProcessorArchitecture.X86)
-                    {
-                        var x86FullPath = Path.Combine(SupportFileDir, "x86", relativePath);
-                        if (File.Exists(x86FullPath))
-                        {
-                            throw new ApplicationException("This operation is not supported for the " + ProcessArch + " architecture.");
-                        }
-                    }
                     throw new ApplicationException("Could not find DLL " + archPath + " in distribution.  Application Error.");
                 }
             }
@@ -395,10 +355,6 @@ namespace Utilities
         /// </summary>
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
         private static extern IntPtr LoadLibrary(string lpFileName);
-
-
-        private static ProcessorArchitecture s_ProcessArch;
-        private static string s_ProcessArchDirectory;
 
 
         private static string s_supportFileDir;

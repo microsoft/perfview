@@ -38,13 +38,6 @@ namespace PerfView
 
             InitializeComponent();
 
-            var osVersion = Environment.OSVersion.Version.Major + Environment.OSVersion.Version.Minor / 10.0;
-            if (osVersion < 6.2)        // CPU Counters only supported on Windows 8 and above
-            {
-                CpuCountersListButton.IsEnabled = false;
-                CpuCountersTextBox.IsEnabled = false;
-            }
-
             if (args.DataFile == null)
             {
                 args.DataFile = "PerfViewData.etl";

@@ -46,6 +46,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="..\..\Utilities\OperatingSystemVersion.cs">
+      <Link>Library\Util\OperatingSystemVersion.cs</Link>
+    </Compile>
     <Compile Include="Library\Util\ArrayUtilities.cs" />
     <Compile Include="Library\Util\Command.cs" />
     <Compile Include="Library\Util\CommandLine.cs" />

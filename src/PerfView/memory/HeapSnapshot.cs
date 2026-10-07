@@ -96,27 +96,17 @@ namespace PerfView
         /// </summary>
         public static void DumpGCHeap(string processDumpFile, string outputFile, TextWriter log, string qualifiers = "")
         {
-            // Determine if we are on a 64 bit system.
-            if (Environment.Is64BitOperatingSystem)
+            // TODO FIX NOW.   Find a way of determing which architecture a dump is
+            try
             {
-                // TODO FIX NOW.   Find a way of determing which architecture a dump is
-                try
-                {
-                    log.WriteLine("********** TRYING TO OPEN THE DUMP AS 64 BIT ************");
-                    DumpGCHeap("/processDump " + qualifiers, processDumpFile, outputFile, log, ProcessorArchitecture.Amd64);
-                    return; // Yeah! success the first time
-                }
-                catch (ApplicationException)
-                {
-                    // It might have failed because this was a 32 bit dump, if so try again.  
-                    log.WriteLine("********** TRYING TO OPEN THE DUMP AS 32 BIT ************");
-                    DumpGCHeap("/processDump" + qualifiers, processDumpFile, outputFile, log, ProcessorArchitecture.X86);
-                    return;
-                }
+                log.WriteLine("********** TRYING TO OPEN THE DUMP AS 64 BIT ************");
+                DumpGCHeap("/processDump " + qualifiers, processDumpFile, outputFile, log, ProcessorArchitecture.Amd64);
             }
-            else
+            catch (ApplicationException)
             {
-                DumpGCHeap("/processDump", processDumpFile, outputFile, log, ProcessorArchitecture.X86);
+                // It might have failed because this was a 32 bit dump, if so try again.
+                log.WriteLine("********** TRYING TO OPEN THE DUMP AS 32 BIT ************");
+                DumpGCHeap("/processDump" + qualifiers, processDumpFile, outputFile, log, ProcessorArchitecture.X86);
             }
         }
         /// <summary>
@@ -204,19 +194,11 @@ namespace PerfView
         /// <summary>
         /// Returns processor architecture for a process with a specific process ID.
         /// </summary>
-        private static ProcessorArchitecture GetArchForProcess(int processID)
+        internal static ProcessorArchitecture GetArchForProcess(int processID)
         {
             try
             {
-                // To make error paths simple always try to access the process here even though we don't need it
-                // for a 32 bit machine.
                 var process = Process.GetProcessById(processID);
-
-                // Currently only AMD64 has a wow.
-                if (!Environment.Is64BitOperatingSystem)
-                {
-                    return ProcessorArchitecture.X86;
-                }
 
                 bool is32Bit = false;
                 bool ret = IsWow64Process(process.Handle, out is32Bit);

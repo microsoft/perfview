@@ -4,6 +4,11 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <RootNamespace>PerfView</RootNamespace>
+    <StartupObject>PerfView.Startup</StartupObject>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,6 +24,8 @@
 
   <ItemGroup>
     <Compile Include="..\PerfView\App.cs" />
+    <Compile Include="..\PerfView\Startup.cs" />
+    <Compile Include="..\Utilities\OperatingSystemVersion.cs" />
     <Compile Include="..\PerfView\CommandLineArgs.cs" />
     <Compile Include="..\PerfView\CommandProcessor.cs" />
     <Compile Include="..\PerfView\ConfigData.cs" />

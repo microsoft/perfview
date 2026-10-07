@@ -314,28 +314,6 @@ namespace PerfView
         {
             LaunchPerfViewElevatedIfNeeded("Start", parsedArgs);
 
-            // Are we on an X86 machine?
-            if (Environment.Is64BitOperatingSystem)
-            {
-                if (!IsKernelStacks64Enabled())
-                {
-                    var ver = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-                    if (ver <= 61)
-                    {
-                        LogFile.WriteLine("Warning: This trace is being collected on a X64 machine on a Pre Win8 OS");
-                        LogFile.WriteLine("         And paging is allowed in the kernel.  This can cause stack breakage");
-                        LogFile.WriteLine("         when samples are taken in the kernel and there is memory pressure.");
-                        LogFile.WriteLine("         It is recommended that you disable paging in the kernel to decrease");
-                        LogFile.WriteLine("         the number of broken stacks.   To do this run the command:");
-                        LogFile.WriteLine("");
-                        LogFile.WriteLine("         PerfView EnableKernelStacks ");
-                        LogFile.WriteLine("");
-                        LogFile.WriteLine("         A reboot will be required for the change to have an effect.");
-                        LogFile.WriteLine("");
-                    }
-                }
-            }
-
             ETWClrProfilerTraceEventParser.Keywords profilerKeywords = 0;
             if (parsedArgs.DotNetCalls)
             {
@@ -721,13 +699,9 @@ namespace PerfView
                             if (parsedArgs.TplEvents != TplEtwProviderTraceEventParser.Keywords.None)
                             {
                                 // Used to determine what is going on with tasks.
-                                var netTaskStacks = stacksEnabled;
-                                if (TraceEventProviderOptions.FilteringSupported)
-                                {
-                                    // This turns on stacks only for TaskScheduled (7) TaskWaitSend (10) and AwaitTaskContinuationScheduled (12)
-                                    netTaskStacks = options.Clone();
-                                    netTaskStacks.EventIDStacksToEnable = new List<int>(3) { 7, 10, 12 };
-                                }
+                                // This turns on stacks only for TaskScheduled (7) TaskWaitSend (10) and AwaitTaskContinuationScheduled (12)
+                                var netTaskStacks = options.Clone();
+                                netTaskStacks.EventIDStacksToEnable = new List<int>(3) { 7, 10, 12 };
                                 EnableUserProvider(userModeSession, ".NETTasks",
                                     TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
                                     (ulong)parsedArgs.TplEvents,
@@ -916,8 +890,7 @@ namespace PerfView
                         string perfMerge = "perfMerge=no";
                         string traceFile = CacheFiles.FindFile(parsedArgs.DataFile, ".netmon.etl");
 
-                        var osVer = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-                        if (parsedArgs.NetMonCapture || osVer < 62)
+                        if (parsedArgs.NetMonCapture)
                         {
                             traceFile = Path.GetFileNameWithoutExtension(parsedArgs.DataFile) + "_netmon.etl";  // We use the _ to avoid conventions about merging.  
                             maxSize = "";
@@ -940,14 +913,9 @@ namespace PerfView
 
                         LogFile.WriteLine("Executing the command: {0}", commandLine);
 
-                        // Make sure that if we are on a 64 bit machine we run the 64 bit version of netsh.  
-                        var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "cmd.exe");
-                        if (!File.Exists(cmdExe))
-                        {
-                            cmdExe = cmdExe.Replace("SysNative", "System32");
-                        }
+                        var cmdExe = Path.Combine(Environment.SystemDirectory, "cmd.exe");
 
-                        commandLine = cmdExe + " /c " + commandLine;
+                        commandLine = "\"" + cmdExe + "\" /c " + commandLine;
                         var command = Command.Run(commandLine, new CommandOptions().AddNoThrow().AddOutputStream(LogFile));
 
                         string netMonFile = Path.Combine(CacheFiles.CacheDir, "NetMonActive.txt");
@@ -1172,20 +1140,16 @@ namespace PerfView
                 PerfViewLogger.Log.StartAndStopTimes();
 
                 // Also log the CPU Counters mapping.
-                var osVersion = Environment.OSVersion.Version.Major + Environment.OSVersion.Version.Minor / 10.0;
-                if (6.2 <= osVersion)        // CPU Counters only supported on Windows 8 and above
+                var cpuCounters = TraceEventProfileSources.GetInfo();
+                foreach (var cpuCounter in cpuCounters.Values)
                 {
-                    var cpuCounters = TraceEventProfileSources.GetInfo();
-                    foreach (var cpuCounter in cpuCounters.Values)
+                    if (string.CompareOrdinal(cpuCounter.Name, "Timer") == 0)
                     {
-                        if (string.CompareOrdinal(cpuCounter.Name, "Timer") == 0)
-                        {
-                            continue;
-                        }
-
-                        PerfViewLogger.Log.CpuCounterIntervalSetting(cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
-                        // LogFile.WriteLine("Cpu Counter Config {0} ID {1} Interval {2}", cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
+                        continue;
                     }
+
+                    PerfViewLogger.Log.CpuCounterIntervalSetting(cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
+                    // LogFile.WriteLine("Cpu Counter Config {0} ID {1} Interval {2}", cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
                 }
 
                 // Try to stop the kernel session
@@ -1300,14 +1264,9 @@ namespace PerfView
 
                     LogFile.WriteLine("Executing /StopCommand: {0}", commandToRun);
 
-                    // We are in the wow, so run this in 64 bit if we need 
-                    var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "Cmd.exe");
-                    if (!File.Exists(cmdExe))
-                    {
-                        cmdExe = cmdExe.Replace("SysNative", "System32");
-                    }
+                    var cmdExe = Path.Combine(Environment.SystemDirectory, "cmd.exe");
 
-                    commandToRun = cmdExe + " /c " + commandToRun;
+                    commandToRun = "\"" + cmdExe + "\" /c " + commandToRun;
                     var cmd = Command.Run(commandToRun, new CommandOptions().AddOutputStream(LogFile).AddNoThrow().AddTimeout(60000));
                     if (cmd.ExitCode != 0)
                     {
@@ -1908,16 +1867,6 @@ namespace PerfView
             ShowLog = true;
         }
 
-        public void EnableKernelStacks(CommandLineArgs parsedArgs)
-        {
-            SetKernelStacks64(true, LogFile);
-            ShowLog = true;
-        }
-        public void DisableKernelStacks(CommandLineArgs parsedArgs)
-        {
-            SetKernelStacks64(false, LogFile);
-            ShowLog = true;
-        }
         public void CreateExtensionProject(CommandLineArgs parsedArgs)
         {
 #if !PERFVIEW_COLLECT 
@@ -2086,14 +2035,9 @@ namespace PerfView
                 LogFile.WriteLine("If /NetMonCapture is active this can take a while...");
 
                 string commandToRun = "netsh trace stop";
-                // We are in the wow, so run this in 64 bit if we need 
-                var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "Cmd.exe");
-                if (!File.Exists(cmdExe))
-                {
-                    cmdExe = cmdExe.Replace("SysNative", "System32");
-                }
+                var cmdExe = Path.Combine(Environment.SystemDirectory, "cmd.exe");
 
-                commandToRun = cmdExe + " /c " + commandToRun;
+                commandToRun = "\"" + cmdExe + "\" /c " + commandToRun;
 
                 Command.Run(commandToRun, new CommandOptions().AddNoThrow().AddOutputStream(LogFile));
                 FileUtilities.ForceDelete(netMonFile);
@@ -2527,66 +2471,44 @@ namespace PerfView
         }
 
         private static string s_dotNetKey = @"Software\Microsoft\.NETFramework";
-        private static string s_dotNetKey32 = @"Software\Wow6432Node\Microsoft\.NETFramework";
 
         // Ensures that our EtwClrProfiler is set up (for both X64 and X86).  Does not actually turn on the provider.  
         private static void InstallETWClrProfiler(TextWriter log, int profilerKeywords)
         {
             log.WriteLine("Ensuring that the .NET CLR Profiler is installed.");
-            var profilerDll = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.ProcessArchitectureDirectory, "EtwClrProfiler.dll");
+            var profilerDll = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.HostArchitectureDirectory, "EtwClrProfiler.dll");
             if (File.Exists(profilerDll))
             {
                 log.WriteLine("Profiler DLL to load is {0}", profilerDll);
                 log.WriteLine(@"Adding HKLM\Software\Microsoft\.NETFramework\COR* registry keys");
-                using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
+                using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
                 {
-                    InsertEtwClrProfilerKeys(key, "COR", profilerDll, profilerKeywords, SupportFiles.ProcessArch.ToString(), log);
-                    InsertEtwClrProfilerKeys(key, "CORECLR", profilerDll, profilerKeywords, SupportFiles.ProcessArch.ToString(), log);
+                    InsertEtwClrProfilerKeys(key, "COR", profilerDll, profilerKeywords, "Amd64", log);
+                    InsertEtwClrProfilerKeys(key, "CORECLR", profilerDll, profilerKeywords, "Amd64", log);
                 }
             }
             else
             {
-                log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", SupportFiles.ProcessArch);
+                log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture Amd64");
             }
 
-            // If we are on a 64 bit system (in the wow), also enable the 64 bit version.     
-            var nativeArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432");
-            if (nativeArch != null)
+            // The x64 host also profiles x86 targets through the 32-bit registry view.
+            var arch = "x86";
+            var profilerNativeDll = Path.Combine(SupportFiles.SupportFileDir, arch, "EtwClrProfiler.dll");
+            if (File.Exists(profilerNativeDll))
             {
-                var profilerNativeDll = Path.Combine(SupportFiles.SupportFileDir, nativeArch + "\\EtwClrProfiler.dll");
-                if (File.Exists(profilerNativeDll))
+                log.WriteLine(@"Installing in the 32 bit subsystem.");
+                using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
+                using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
                 {
-                    log.WriteLine(@"Detected 64 bit system, Adding 64 bit HKLM\Software\Microsoft\.NETFramework\COR* registry keys");
-                    using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
-                    using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
-                    {
-                        InsertEtwClrProfilerKeys(key, "COR", profilerNativeDll, profilerKeywords, nativeArch, log);
-                        InsertEtwClrProfilerKeys(key, "CORECLR", profilerNativeDll, profilerKeywords, nativeArch, log);
-                    }
-                }
-                else
-                {
-                    log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", nativeArch);
+                    InsertEtwClrProfilerKeys(key, "COR", profilerNativeDll, profilerKeywords, arch, log);
+                    InsertEtwClrProfilerKeys(key, "CORECLR", profilerNativeDll, profilerKeywords, arch, log);
                 }
             }
-            // If we are amd64 process, also install in the 32 bit subsystem.  
-            else if (SupportFiles.ProcessArch == ProcessorArchitecture.Amd64)
+            else
             {
-                var arch = "x86";
-                var profilerNativeDll = Path.Combine(SupportFiles.SupportFileDir, arch + "\\EtwClrProfiler.dll");
-                if (File.Exists(profilerNativeDll))
-                {
-                    log.WriteLine(@"Detected 64 bit system, installing in the 32 bit subsystem.");
-                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey32))
-                    {
-                        InsertEtwClrProfilerKeys(key, "COR", profilerNativeDll, profilerKeywords, arch, log);
-                        InsertEtwClrProfilerKeys(key, "CORECLR", profilerNativeDll, profilerKeywords, arch, log);
-                    }
-                }
-                else
-                {
-                    log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", arch);
-                }
+                log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", arch);
             }
         }
 
@@ -2615,32 +2537,19 @@ namespace PerfView
         {
             log.WriteLine("Ensuring .NET Allocation profiler not installed.");
 
-            using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
+            using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+            using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
             {
                 DeleteEtwClrProfilerKeys(key, "COR", log);
                 DeleteEtwClrProfilerKeys(key, "CORECLR", log);
             }
 
-            var nativeArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432");
-            if (nativeArch != null)
+            log.WriteLine(@"Removing 32 bit keys.");
+            using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
+            using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
             {
-                log.WriteLine(@"Detected 64 bit system, removing 64 bit keys");
-                using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
-                using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
-                {
-                    DeleteEtwClrProfilerKeys(key, "COR", log);
-                    DeleteEtwClrProfilerKeys(key, "CORECLR", log);
-                }
-            }
-            // If we are amd64 process, also uninstall in the WOW.  
-            else if (SupportFiles.ProcessArch == ProcessorArchitecture.Amd64)
-            {
-                log.WriteLine(@"Detected 64 bit system, removing 32 bit keys.");
-                using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey32))
-                {
-                    DeleteEtwClrProfilerKeys(key, "COR", log);
-                    DeleteEtwClrProfilerKeys(key, "CORECLR", log);
-                }
+                DeleteEtwClrProfilerKeys(key, "COR", log);
+                DeleteEtwClrProfilerKeys(key, "CORECLR", log);
             }
         }
 
@@ -2665,82 +2574,6 @@ namespace PerfView
                     log.WriteLine("ERROR trying to remove EtwClrProfiler, found an existing Profiler {0} doing nothing.", existingValue);
                 }
             }
-        }
-
-        private static RegistryKey GetMemManagementKey(bool writable)
-        {
-            // Open this computer's 64 bit registry (even if this is a 32 bit process. 
-            RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
-            if (hklm == null)
-            {
-                Debug.Assert(false, "Could not get HKLM key");
-                return null;
-            }
-            RegistryKey memManagment = hklm.OpenSubKey(@"System\CurrentControlSet\Control\Session Manager\Memory Management", writable);
-            hklm.Dispose();
-            return memManagment;
-        }
-        private static void SetKernelStacks64(bool crawlable, TextWriter writer)
-        {
-            // Are we on a 64 bit system? 
-            if (!Environment.Is64BitOperatingSystem)
-            {
-                writer.WriteLine("Disabling kernel paging is only necessary on X64 machines");
-                return;
-            }
-
-            if (IsKernelStacks64Enabled() == crawlable)
-            {
-                writer.WriteLine(@"HLKM\" + @"System\CurrentControlSet\Control\Session Manager\Memory Management" + "DisablePagingExecutive" + " already {0}",
-                    crawlable ? "set" : "unset");
-                return;
-            }
-
-            // This is not needed on Windows 8 (mostly)
-            var ver = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-            if (ver > 61)
-            {
-                writer.WriteLine("Disabling kernel paging is not necessary on Win8 machines.");
-                return;
-            }
-
-            try
-            {
-                RegistryKey memKey = GetMemManagementKey(true);
-                if (memKey != null)
-                {
-                    memKey.SetValue("DisablePagingExecutive", crawlable ? 1 : 0, RegistryValueKind.DWord);
-                    memKey.Dispose();
-                    writer.WriteLine();
-                    writer.WriteLine("The memory management configuration has been {0} for stack crawling.", crawlable ? "enabled" : "disabled");
-                    writer.WriteLine("However a reboot is needed for it to take effect.  You can reboot by executing");
-                    writer.WriteLine("     shutdown /r /t 1 /f");
-                    writer.WriteLine();
-                }
-                else
-                {
-                    writer.WriteLine("Error: Could not access Kernel memory management registry keys.");
-                }
-            }
-            catch (Exception e)
-            {
-                writer.WriteLine("Error: Failure setting registry keys: {0}", e.Message);
-            }
-        }
-        private static bool IsKernelStacks64Enabled()
-        {
-            bool ret = false;
-            RegistryKey memKey = GetMemManagementKey(false);
-            if (memKey != null)
-            {
-                object valueObj = memKey.GetValue("DisablePagingExecutive", null);
-                if (valueObj != null && valueObj is int)
-                {
-                    ret = ((int)valueObj) != 0;
-                }
-                memKey.Dispose();
-            }
-            return ret;
         }
 
         public void LaunchPerfViewElevatedIfNeeded(string command, CommandLineArgs parsedArgs)
@@ -3294,7 +3127,7 @@ namespace PerfView
                           "    See 'ASP.NET events' in help for more details.";
             LogFile.WriteLine(message);
 
-            if (App.CommandLineArgs.NoGui || SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
+            if (App.CommandLineArgs.NoGui)
             {
                 LogFile.WriteLine("[ASP.NET events will not fire, see log for details.]");
                 return;
@@ -3460,7 +3293,7 @@ namespace PerfView
                     }
 
                     TraceEventProviderOptions options = null;
-                    if (parsedArgs.FocusProcess != null && TraceEventProviderOptions.FilteringSupported)
+                    if (parsedArgs.FocusProcess != null)
                     {
                         options = new TraceEventProviderOptions();
                         int processId;

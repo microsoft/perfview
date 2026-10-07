@@ -41,8 +41,6 @@ namespace TraceEventTests
                     // These are not guaranteed to be the same due to bookkeeping events being removed.
                     // Assert.Equal(source.sessionEndTimeQPC, traceLog.sessionEndTimeQPC);
                     
-                    Assert.Equal(source.useClassicETW, traceLog.useClassicETW);
-
                     // Compare the TraceLog and the TraceLogEventSource.
                     TraceLogEventSource traceLogEventSource = traceLog.Events.GetSource();
 
@@ -56,7 +54,6 @@ namespace TraceEventTests
                     Assert.Equal(traceLog._syncTimeUTC, traceLogEventSource._syncTimeUTC);
                     Assert.Equal(traceLog.sessionStartTimeQPC, traceLogEventSource.sessionStartTimeQPC);
                     Assert.Equal(traceLog.sessionEndTimeQPC, traceLogEventSource.sessionEndTimeQPC);
-                    Assert.Equal(traceLog.useClassicETW, traceLogEventSource.useClassicETW);
                 }
             }
         }

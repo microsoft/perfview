@@ -151,9 +151,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// the .Log Property) which lets you get at aggregated information (Processes, threads, images loaded, and perhaps most
         /// importantly TraceEvent.CallStack() will work.  Thus you can get real time stacks from events).
         ///
-        /// Note that in order for native stacks to resolve symbolically, you need to have some Kernel events turned on (Image, and Process)
-        /// and only windows 8 has a session that allows both kernel and user mode events simultaneously.   Thus this is most useful
-        /// on Win 8 systems.
+        /// To resolve native stacks symbolically, enable the Image and Process kernel events in the session.
         /// </summary>
         public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session)
         {
@@ -166,9 +164,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// the .Log Property) which lets you get at aggregated information (Processes, threads, images loaded, and perhaps most
         /// importantly TraceEvent.CallStack() will work.  Thus you can get real time stacks from events).
         ///
-        /// Note that in order for native stacks to resolve symbolically, you need to have some Kernel events turned on (Image, and Process)
-        /// and only windows 8 has a session that allows both kernel and user mode events simultaneously.   Thus this is most useful
-        /// on Win 8 systems.
+        /// To resolve native stacks symbolically, enable the Image and Process kernel events in the session.
         /// </summary>
         /// <param name="minDispatchDelayMSec">The delay in milliseconds between when an event is received in TraceLog and when it is dispatched to the real time event source.</param>
         public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session, int minDispatchDelayMSec)
@@ -184,21 +180,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             traceLog.realTimeQueue = new Queue<QueueEntry>();
             traceLog.realTimeFlushTimer = new Timer(_ => traceLog.FlushRealTimeEvents(minDispatchDelayMSec), null, minDispatchDelayMSec, minDispatchDelayMSec);
             traceLog.rawEventSourceToConvert.AllEvents += traceLog.onAllEventsRealTime;
-
-            // See if we are on Win7 and have a separate kernel session associated with 'session'
-            if (session.m_kernelSession != null)
-            {
-                // Make sure both sources only dispatch one at a time by taking a lock during dispatch.
-                session.m_kernelSession.Source.lockObj = traceLog.realTimeQueue;
-                session.m_associatedWithTraceLog = true;                         // Indicate that it is OK to have the m_kernelSession.
-                session.Source.lockObj = traceLog.realTimeQueue;
-
-                // Set up the callbacks to the kernel session.
-                traceLog.rawKernelEventSource = session.m_kernelSession.Source;
-                traceLog.SetupCallbacks(traceLog.rawKernelEventSource);
-                traceLog.rawKernelEventSource.unhandledEventTemplate.traceEventSource = traceLog;       // Make everything point to the log as its source.
-                traceLog.rawKernelEventSource.AllEvents += traceLog.onAllEventsRealTime;
-            }
 
             return traceLog.realTimeSource;
         }
@@ -848,14 +829,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // Remember past events so we can hook up stacks to them.
                 data.eventIndex = (EventIndex)eventCount;
                 pastEventInfo.LogEvent(data, data.eventIndex, countForEvent);
-
-                // currentID is used by the dispatcher to define the EventIndex.  Make sure at both sources have the
-                // same notion of what that is if we have two dispatcher.
-                if (rawKernelEventSource != null)
-                {
-                    rawEventSourceToConvert.currentID = (EventIndex)eventCount;
-                    rawKernelEventSource.currentID = (EventIndex)eventCount;
-                }
 
                 // Skip samples from the idle thread.
                 if (data.ProcessID == 0 && data is SampledProfileTraceData)
@@ -4640,7 +4613,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         // These are only used when converting from ETL
         internal TraceEventDispatcher rawEventSourceToConvert;      // used to convert from raw format only.  Null for ETLX files.
-        internal TraceEventDispatcher rawKernelEventSource;         // Only used by real time TraceLog on Win7.   It is the
         internal TraceLogOptions options;
         internal bool registeringStandardParsers;                   // Are we registering
         internal NettraceUniversalConverter universalConverter;
@@ -4689,24 +4661,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 Debug.Assert(this == TraceLog.realTimeSource);
 
-                Task kernelTask = null;
-                if (TraceLog.rawKernelEventSource != null)
-                {
-                    kernelTask = Task.Factory.StartNew(delegate
-                    {
-                        TraceLog.rawKernelEventSource.Process();
-                        TraceLog.rawEventSourceToConvert.StopProcessing();
-                    });
-                }
                 TraceLog.rawEventSourceToConvert.Process();
-                if (kernelTask != null)
-                {
-                    TraceLog.rawKernelEventSource.StopProcessing();
-                    kernelTask.Wait();
-
-                    // Flush all outstanding events in the realTimeQueue.
-                    TraceLog.FlushRealTimeEvents();
-                }
                 return true;
             }
             Debug.Assert(unhandledEventTemplate.traceEventSource == TraceLog);

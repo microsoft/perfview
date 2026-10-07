@@ -1,15 +1,37 @@
+using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.Utilities
 {
-    // This class is a helper that hides the OS Version tests that you might have done with Evironment.OSVersion
-    // but can't because this API was removed in .NET COre. 
     internal static class OperatingSystemVersion
     {
+        #region TraceEvent Required Windows Version
+        public const string Requirement = "Windows 10 or Windows Server 2016 or later is required.";
         public const int Win10 = 100;
         public const int Win8 = 62;
         public const int Win7 = 61;
         public const int Vista = 60;
+
+        public static bool IsSupported
+        {
+            get { return IsSupportedPlatform(Environment.OSVersion.Platform, () => GetWindowsVersion().dwMajorVersion); }
+        }
+
+        internal static bool IsSupportedPlatform(PlatformID platform, Func<uint> getWindowsMajorVersion)
+        {
+            return platform != PlatformID.Win32NT || getWindowsMajorVersion() >= 10;
+        }
+
+        public static void EnsureSupported()
+        {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException(Requirement);
+            }
+        }
+        #endregion
+
         /// <summary>
         /// requiredOSVersion is a number that is the major version * 10 + minor.  Thus
         ///     Win 10 == 100
@@ -19,9 +41,35 @@ namespace Microsoft.Diagnostics.Utilities
         /// This returns true if true OS version is >= 'requiredOSVersion
         /// </summary>
 
-        // Code borrowed from CoreFX System.PlatformDetection.Windows to allow targeting nestandard1.6
-        [StructLayout(LayoutKind.Sequential)]
-        private struct RTL_OSVERSIONINFOEX
+        public static bool AtLeast(int requiredOSVersion)
+        {
+            var osvi = GetWindowsVersion();
+            uint osVersion = osvi.dwMajorVersion * 10 + osvi.dwMinorVersion;
+            return osVersion >= requiredOSVersion;
+        }
+
+        #region private
+        private static RTL_OSVERSIONINFO GetWindowsVersion()
+        {
+            var version = new RTL_OSVERSIONINFO();
+            version.dwOSVersionInfoSize = (uint)Marshal.SizeOf(version);
+            CheckVersionQueryStatus(RtlGetVersion(ref version));
+            return version;
+        }
+
+        internal static void CheckVersionQueryStatus(int status)
+        {
+            if (status < 0)
+            {
+                throw new Win32Exception(status, "Could not determine the Windows version (NTSTATUS 0x" + status.ToString("X8") + ").");
+            }
+        }
+
+        [DllImport("ntdll.dll")]
+        private static extern int RtlGetVersion(ref RTL_OSVERSIONINFO lpVersionInformation);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct RTL_OSVERSIONINFO
         {
             internal uint dwOSVersionInfoSize;
             internal uint dwMajorVersion;
@@ -31,19 +79,6 @@ namespace Microsoft.Diagnostics.Utilities
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
             internal string szCSDVersion;
         }
-
-        // Code borrowed from CoreFX System.PlatformDetection.Windows to allow targeting nestandard1.6
-        [DllImport("ntdll.dll")]
-        private static extern int RtlGetVersion(out RTL_OSVERSIONINFOEX lpVersionInformation);
-
-        // Code borrowed from CoreFX System.PlatformDetection.Windows to allow targeting nestandard1.6
-        public static bool AtLeast(int requiredOSVersion)
-        {
-            RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
-            osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
-            RtlGetVersion(out osvi);
-            uint osVersion = osvi.dwMajorVersion * 10 + osvi.dwMinorVersion;
-            return osVersion >= requiredOSVersion;
-        }
+        #endregion
     }
 }

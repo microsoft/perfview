@@ -7771,30 +7771,6 @@ namespace PerfView
                 }
             });
 
-            // Warn about possible Win8 incompatibility.  
-            var logVer = tracelog.OSVersion.Major * 10 + tracelog.OSVersion.Minor;
-            if (62 <= logVer)
-            {
-                var ver = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-                if (ver < 62)       // We are decoding on less than windows 8
-                {
-                    if (!m_notifiedAboutWin8)
-                    {
-                        m_notifiedAboutWin8 = true;
-                        var versionMismatchWarning = """
-                            This trace was captured on Window 8 and is being read
-                            on and earlier OS.  If you experience any problems please
-                            read the trace on an Windows 8 OS.
-                            """;
-                        worker.LogWriter.WriteLine(versionMismatchWarning);
-                        parentWindow.Dispatcher.BeginInvoke(() =>
-                        {
-                            XamlMessageBox.Show(parentWindow, versionMismatchWarning, "Log File Version Mismatch", MessageBoxButton.OK);
-                        });
-                    }
-                }
-            }
-
             var advanced = new PerfViewTreeGroup("Advanced");
             var memory = new PerfViewTreeGroup("Memory");
             var frameworkAspNetWcf = new PerfViewTreeGroup(".NET Framework ASP.NET/WCF");
@@ -8558,7 +8534,6 @@ namespace PerfView
         private bool m_hasVSEvents;
         private TraceLog m_traceLog;
         private bool m_notifiedAboutLostEvents;
-        private bool m_notifiedAboutWin8;
         private string m_extraTopStats;
         #endregion
     }

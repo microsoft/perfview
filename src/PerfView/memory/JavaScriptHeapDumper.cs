@@ -18,14 +18,6 @@ public class JavaScriptHeapDumper
     /// </summary>
     public static bool DumpAsEtlFile(int processID, string etlFileName, TextWriter log, MemoryGraph memoryGraph = null)
     {
-        var ver = Environment.OSVersion.Version;
-        var intVer = ver.Major * 10 + ver.Minor;
-        if (intVer < 62)
-        {
-            log.WriteLine("JavaScript Heap Dumping only supported on Win8 or above.");
-            return false;
-        }
-
         bool success = false;
         var kernelFileName = Path.ChangeExtension(etlFileName, ".kernel.etl");
         try
@@ -69,14 +61,6 @@ public class JavaScriptHeapDumper
     /// </summary>
     public static bool Dump(int processID, MemoryGraph memoryGraph, TextWriter log)
     {
-        var ver = Environment.OSVersion.Version;
-        var intVer = ver.Major * 10 + ver.Minor;
-        if (intVer < 62)
-        {
-            log.WriteLine("JavaScript Heap Dumping only supported on Win8 or above.");
-            return false;
-        }
-
         var sw = Stopwatch.StartNew();
         var dumper = new JavaScriptDumpGraphReader(log);
         bool dumpComplete = false;

@@ -119,7 +119,7 @@ namespace TraceEventSamples
 
                 // Enable the events we care about for the kernel in the kernel session
                 // For this instant the session will buffer any incoming events.  
-                // This has to be first, and it will fail if you are not on Win8.  
+                // Enable the kernel provider before other providers.
                 session.EnableKernelProvider(
                     KernelTraceEventParser.Keywords.ImageLoad |
                     KernelTraceEventParser.Keywords.Process |

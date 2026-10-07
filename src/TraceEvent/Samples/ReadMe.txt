@@ -4,6 +4,9 @@
  
 **** QUICK START
 
+These ETW samples require Windows 10 or Windows Server 2016 or later.
+Samples that start collection also require the privileges described in their source.
+
 To run all the samples, simply have your main program call
 
 	 TraceEventSamples.AllSamples.Run();
@@ -40,4 +43,3 @@ By default the output goes to Console.Out but you can redirect it to another
 TextWriter by setting AllSamples.Out.  This is useful for GUI Apps.  
 
 ******************************************************************************
-

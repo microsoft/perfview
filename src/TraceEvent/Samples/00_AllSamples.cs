@@ -51,8 +51,6 @@ namespace TraceEventSamples
             ModuleLoadMonitor.Run(); Debugger.Break();
             KernelAndClrMonitor.Run(); Debugger.Break();
             KernelAndClrFile.Run(); Debugger.Break();
-            KernelAndClrMonitorWin7.Run(); Debugger.Break();
-            KernelAndClrFileWin7.Run(); Debugger.Break();
             SimpleTraceLog.Run(); Debugger.Break();
             TraceLogMonitor.Run(); Debugger.Break();
             SimpleFileRelogger.Run(); Debugger.Break();

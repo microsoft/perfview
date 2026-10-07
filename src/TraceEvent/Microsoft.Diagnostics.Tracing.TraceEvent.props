@@ -13,11 +13,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
-    <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\x86\KernelTraceControl.Win61.dll') And ('$(ProcessorArchitecture)' == 'msil' Or ('$(ProcessorArchitecture)' == 'x86' And ('$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-')))))" Include="$(MSBuildThisFileDirectory)..\build\native\x86\KernelTraceControl.Win61.dll">
-      <Link>x86\KernelTraceControl.Win61.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
     <None Condition="Exists('$(MSBuildThisFileDirectory)..\build\native\x86\msdia140.dll') And ('$(ProcessorArchitecture)' == 'msil' Or ('$(ProcessorArchitecture)' == 'x86' And ('$(RuntimeIdentifier)' == '' Or $(RuntimeIdentifier.StartsWith('win-')))))" Include="$(MSBuildThisFileDirectory)..\build\native\x86\msdia140.dll">
       <Link>x86\msdia140.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
