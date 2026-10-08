@@ -280,27 +280,23 @@ public class GCHeapDumper
     private DataTarget InitializeClrRuntime(string processDumpFile, int processID, out ClrRuntime[] result)
     {
         List<ClrRuntime> runtimes = new List<ClrRuntime>();
+        DataTargetOptions options = ClrMdDataTargetOptions.Create(SymbolPath.SymbolPathFromEnvironment, SymbolsAuthTokenCredential, m_log);
 
         DataTarget dataTarget;
         if (string.IsNullOrWhiteSpace(processDumpFile))
         {
             try
             {
-                dataTarget = DataTarget.CreateSnapshotAndAttach(processID, SymbolsAuthTokenCredential);
+                dataTarget = DataTarget.CreateSnapshotAndAttach(processID, options);
             }
             catch
             {
-                dataTarget = DataTarget.AttachToProcess(processID, Freeze, SymbolsAuthTokenCredential);
+                dataTarget = DataTarget.AttachToProcess(processID, Freeze, options);
             }
         }
         else
         {
-            CacheOptions cacheOptions = new CacheOptions()
-            {
-                UseOSMemoryFeatures = false // disable AWE
-            };
-
-            dataTarget = DataTarget.LoadDump(processDumpFile, cacheOptions, SymbolsAuthTokenCredential);
+            dataTarget = DataTarget.LoadDump(processDumpFile, options);
         }
 
         if (dataTarget.DataReader.PointerSize != IntPtr.Size)
@@ -321,10 +317,6 @@ public class GCHeapDumper
         }
 
         m_log.WriteLine("Enumerating over {0} detected runtimes...", dataTarget.ClrVersions.Length);
-        var symbolReader = new SymbolReader(m_log, null);
-        if (symbolReader.SymbolPath.Length == 0)
-            symbolReader.SymbolPath = SymbolPath.MicrosoftSymbolServerPath;
-
         foreach (ClrInfo clr in dataTarget.ClrVersions)
         {
             m_log.WriteLine("Creating Runtime access object for runtime {0}.", clr.Version);
@@ -1122,6 +1114,10 @@ public class GCHeapDumper
                 return GCHeapDumpNames.AsyncPinnedHandleRootTitle;
             case ClrRootKind.SizedRefHandle:
                 return GCHeapDumpNames.SizedRefHandleRootTitle;
+            case ClrRootKind.ThreadStaticVar:
+                return GCHeapDumpNames.ThreadStaticVarsRootTitle;
+            case ClrRootKind.StaticVar:
+                return GCHeapDumpNames.StaticVarsRootTitle;
             case ClrRootKind.None:
                 return "None";
             default:
@@ -1649,5 +1645,3 @@ internal interface IPackageDebugSettings
 }
 
 #endregion
-
-

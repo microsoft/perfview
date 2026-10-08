@@ -240,6 +240,22 @@
     </ItemGroup>
   </Target>
 
+  <!-- New ClrMD/Azure dependencies must also be available when PerfView.exe is deployed by itself. -->
+  <Target Name="EmbedClrMdDependencies" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <EmbeddedResource Include="@(ReferenceCopyLocalPaths)"
+                        Condition="$([System.String]::Copy('%(ReferenceCopyLocalPaths.FileName)').StartsWith('Microsoft.Extensions.')) Or
+                                   '%(ReferenceCopyLocalPaths.FileName)' == 'System.ClientModel' Or
+                                   '%(ReferenceCopyLocalPaths.FileName)' == 'System.Memory.Data'">
+        <Type>Non-Resx</Type>
+        <WithCulture>false</WithCulture>
+        <LogicalName>.\%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)</LogicalName>
+        <Link>%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)</Link>
+        <Visible>False</Visible>
+      </EmbeddedResource>
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <!-- The x86 heap-dump helper uses this when merging JavaScript heap ETL files. -->
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
@@ -499,7 +515,7 @@
       <Link>Dia2Lib.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgAzure_Core)\lib\net461\Azure.Core.dll">
+    <EmbeddedResource Include="$(PkgAzure_Core)\lib\net462\Azure.Core.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Azure.Core.dll</LogicalName>
