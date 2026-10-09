@@ -280,7 +280,11 @@ public class GCHeapDumper
     private DataTarget InitializeClrRuntime(string processDumpFile, int processID, out ClrRuntime[] result)
     {
         List<ClrRuntime> runtimes = new List<ClrRuntime>();
-        DataTargetOptions options = ClrMdDataTargetOptions.Create(SymbolPath.SymbolPathFromEnvironment, SymbolsAuthTokenCredential, m_log);
+        if (!VerifyDacOnWindows)
+        {
+            m_log.WriteLine("WARNING: DAC signature verification is disabled. Only load DACs from trusted runtimes.");
+        }
+        DataTargetOptions options = ClrMdDataTargetOptions.Create(SymbolPath.SymbolPathFromEnvironment, SymbolsAuthTokenCredential, m_log, VerifyDacOnWindows);
 
         DataTarget dataTarget;
         if (string.IsNullOrWhiteSpace(processDumpFile))
@@ -354,6 +358,10 @@ public class GCHeapDumper
     /// Should we freeze the process during the dump
     /// </summary>
     public bool Freeze;
+    /// <summary>
+    /// Whether to verify DAC signatures on Windows. Disable only for trusted private runtimes.
+    /// </summary>
+    public bool VerifyDacOnWindows = true;
     /// <summary>
     /// Should we also dump the data associated with the objects
     /// TODO current does nothing. 

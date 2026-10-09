@@ -42,6 +42,21 @@ namespace TraceEventTests
         }
 
         [Theory]
+        [InlineData(null, true)]
+        [InlineData(null, false)]
+        [InlineData("https://symbols.example.com/", true)]
+        [InlineData("https://symbols.example.com/", false)]
+        [InlineData("SRV*C:\\PerfViewSymbols", true)]
+        [InlineData("SRV*C:\\PerfViewSymbols", false)]
+        public void DacVerificationUsesConfiguredValue(string symbolPath, bool verifyDacOnWindows)
+        {
+            DataTargetOptions options = ClrMdDataTargetOptions.Create(
+                symbolPath, null, TextWriter.Null, verifyDacOnWindows);
+
+            Assert.Equal(verifyDacOnWindows, options.VerifyDacOnWindows);
+        }
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void FindsLocalDacWithoutTreatingDirectoryAsHttpServer(bool symbolStore)

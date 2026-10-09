@@ -29,6 +29,7 @@ namespace PerfView.Dialogs
 
             // TODO FIX NOW when clrProfilerFormat is selected Freeze must be.
             FreezeCheckBox.IsChecked = m_args.Freeze;
+            VerifyDacOnWindowsCheckBox.IsChecked = m_args.VerifyDacOnWindows;
             SaveETLCheckBox.IsChecked = m_args.SaveETL;
             // DumpDataCheckBox.IsChecked = m_args.DumpData;
             MaxDumpTextBox.Text = m_args.MaxDumpCountK.ToString();
@@ -105,6 +106,10 @@ namespace PerfView.Dialogs
                 m_continuation();
             }
         }
+        private void VerifyDacOnWindowsClick(object sender, RoutedEventArgs e)
+        {
+            m_args.VerifyDacOnWindows = VerifyDacOnWindowsCheckBox.IsChecked ?? true;
+        }
         private void DumpHeap(bool closeOnComplete)
         {
             // Are we collecting from a live process?
@@ -138,6 +143,7 @@ namespace PerfView.Dialogs
             }
             m_args.DataFile = dataFile;
             m_args.Freeze = FreezeCheckBox.IsChecked ?? false;
+            m_args.VerifyDacOnWindows = VerifyDacOnWindowsCheckBox.IsChecked ?? true;
             m_args.SaveETL = SaveETLCheckBox.IsChecked ?? false;
             m_args.DumpData = false;  // TODO FIX NOW actually use
             if (!int.TryParse(MaxDumpTextBox.Text, out m_args.MaxDumpCountK))

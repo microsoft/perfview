@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 internal static class ClrMdDataTargetOptions
 {
-    internal static DataTargetOptions Create(string symbolPath, TokenCredential credential, TextWriter log)
+    internal static DataTargetOptions Create(string symbolPath, TokenCredential credential, TextWriter log, bool verifyDacOnWindows = true)
     {
         bool hasConfiguredPath = !string.IsNullOrWhiteSpace(symbolPath);
         var path = new SymbolPath(hasConfiguredPath ? symbolPath : SymbolPath.MicrosoftSymbolServerPath);
@@ -42,7 +42,7 @@ internal static class ClrMdDataTargetOptions
             SymbolTokenCredential = credential,
             // PerfView's explicitly configured symbol path may contain trusted internal or HTTP servers.
             AllowPrivateSymbolServers = hasConfiguredPath,
-            VerifyDacOnWindows = true,
+            VerifyDacOnWindows = verifyDacOnWindows,
             // The x86 HeapDump worker must not map large dumps into its limited address space.
             UseLockFreeMemoryMapReader = Environment.Is64BitProcess
         };
