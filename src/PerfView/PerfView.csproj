@@ -244,7 +244,14 @@
   <Target Name="EmbedClrMdDependencies" AfterTargets="ResolveAssemblyReferences">
     <ItemGroup>
       <EmbeddedResource Include="@(ReferenceCopyLocalPaths)"
-                        Condition="$([System.String]::Copy('%(ReferenceCopyLocalPaths.FileName)').StartsWith('Microsoft.Extensions.')) Or
+                        Condition="'%(ReferenceCopyLocalPaths.FileName)' == 'Microsoft.Extensions.Configuration.Abstractions' Or
+                                   '%(ReferenceCopyLocalPaths.FileName)' == 'Microsoft.Extensions.DependencyInjection.Abstractions' Or
+                                   '%(ReferenceCopyLocalPaths.FileName)' == 'Microsoft.Extensions.Diagnostics.Abstractions' Or
+                                   '%(ReferenceCopyLocalPaths.FileName)' == 'Microsoft.Extensions.FileProviders.Abstractions' Or
+                                   '%(ReferenceCopyLocalPaths.FileName)' == 'Microsoft.Extensions.Hosting.Abstractions' Or
+                                   '%(ReferenceCopyLocalPaths.FileName)' == 'Microsoft.Extensions.Logging.Abstractions' Or
+                                   '%(ReferenceCopyLocalPaths.FileName)' == 'Microsoft.Extensions.Options' Or
+                                   '%(ReferenceCopyLocalPaths.FileName)' == 'Microsoft.Extensions.Primitives' Or
                                    '%(ReferenceCopyLocalPaths.FileName)' == 'System.ClientModel' Or
                                    '%(ReferenceCopyLocalPaths.FileName)' == 'System.Memory.Data'">
         <Type>Non-Resx</Type>
