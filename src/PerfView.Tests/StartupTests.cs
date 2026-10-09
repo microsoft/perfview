@@ -49,6 +49,28 @@ namespace PerfViewTests
         }
 
         [Fact]
+        public void ClrMdAzureDependenciesAreEmbedded()
+        {
+            var resources = typeof(Startup).Assembly.GetManifestResourceNames();
+            foreach (string dependency in new[]
+            {
+                "System.ClientModel",
+                "System.Memory.Data",
+                "Microsoft.Extensions.Configuration.Abstractions",
+                "Microsoft.Extensions.DependencyInjection.Abstractions",
+                "Microsoft.Extensions.Diagnostics.Abstractions",
+                "Microsoft.Extensions.FileProviders.Abstractions",
+                "Microsoft.Extensions.Hosting.Abstractions",
+                "Microsoft.Extensions.Logging.Abstractions",
+                "Microsoft.Extensions.Options",
+                "Microsoft.Extensions.Primitives"
+            })
+            {
+                Assert.Contains(@".\" + dependency + ".dll", resources);
+            }
+        }
+
+        [Fact]
         public void SupportedWindowsReturnsApplicationStatus()
         {
             Assert.Equal(42, Startup.Run(() => true,
