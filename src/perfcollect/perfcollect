@@ -2,6 +2,13 @@
 
 #############################################################################################################
 # .NET Performance Data Collection Script
+#
+# Coordinate Linux perf/LTTng collection, package trace/symbol/log artifacts,
+# and support viewing the resulting archive. collect runs within one process;
+# start/stop share only validated data in root's account-home
+# ~/.perfcollect/sessioninfo, never executable shell declarations.
+# The private store and operation guard protect cross-process lifecycle work.
+# Failed finalization retains recoverable artifacts instead of guessing recovery.
 #############################################################################################################
 
 #############################################################################################################
@@ -657,8 +664,20 @@ declare logFile
 logFilePrefix='/tmp/perfcollect'
 logEnabled=0
 
-# Collect info to pass between processes
-collectInfoFile=$(dirname `mktemp -u`)/'perfcollect.sessioninfo'
+# State for a collection spanning separate start and stop processes.
+# Paths are established from ~root only. Ownership flags below describe resources
+# acquired by this invocation; they must not authorize cleanup of another session.
+sessionHomeDirectory=''
+sessionDirectory=''
+sessionStateFile=''
+# The EXIT trap releases only a guard this process successfully acquired.
+sessionGuardHeld=0
+# An unpublished temporary is removed on failure; published state is separate.
+sessionStateTemporary=''
+# Start rollback applies until SaveSessionState marks the new session committed.
+sessionStartPending=0
+sessionWorkspace=''
+sessionLTTngCreated=0
 
 ######################################
 ## Logging Functions
@@ -680,6 +699,22 @@ RunSilent()
         echo "" >> $logFile
     else
         $* > /dev/null 2>&1
+    fi
+}
+
+# Execute a command as an argv array, not the word-split string used by legacy
+# helpers. Saved paths/session names stay literal; %q is only a diagnostic display.
+# Return the command's own status so callers can stop finalization on failure.
+RunSilentArguments()
+{
+    if (( logEnabled == 1 ))
+    then
+        printf 'Running' >> "$logFile"
+        printf ' %q' "$@" >> "$logFile"
+        printf '\n' >> "$logFile"
+        "$@" >> "$logFile" 2>&1
+    else
+        "$@" > /dev/null 2>&1
     fi
 }
 
@@ -834,13 +869,218 @@ FatalError()
 EnsureRoot()
 {
     # Warn non-root users.
-    if [ `whoami` != "root" ]
+    if [ "$EUID" != "0" ]
     then
         RedText
         echo "This script must be run as root."
         ResetText
         exit 1;
     fi
+}
+
+# Walk an absolute directory path and every ancestor, rejecting symlinks and
+# non-root ownership. Sticky root-owned parents can be allowed for /tmp payloads.
+# Only trace-copy callers permit writable descendants behind a root-only ancestor;
+# state-store, workspace, and log-parent callers retain the stricter default.
+TrustedDirectoryPath()
+{
+    local path=$1
+    local allowSticky=${2:-0}
+    local allowPrivateAncestor=${3:-0}
+    local owner mode unsafeWrite=0
+    while :
+    do
+        [ -d "$path" ] && [ ! -L "$path" ] || return 1
+        read -r owner mode <<< "$(stat -c '%u %a' -- "$path")"
+        [ "$owner" == "0" ] && [[ "$mode" =~ ^[0-7]{3,4}$ ]] || return 1
+        if (( (8#$mode & 0022) != 0 ))
+        then
+            if [ "$allowSticky" != "1" ] || (( (8#$mode & 01000) == 0 ))
+            then
+                [ "$allowPrivateAncestor" == "1" ] || return 1
+                unsafeWrite=1
+            fi
+        fi
+        # A root-only ancestor prevents access to group-writable LTTng descendants.
+        # Ancestors above that privacy boundary are still checked on later passes.
+        (( (8#$mode & 0077) != 0 )) || unsafeWrite=0
+        [ "$path" == "/" ] && break
+        path=${path%/*}
+        [ -n "$path" ] || path=/
+    done
+    [ "$unsafeWrite" == "0" ]
+}
+
+# Check exact owner/mode without following a symlink. Callers separately require
+# the expected object type, so a mode match alone cannot authorize a FIFO/directory.
+PrivateSessionObject()
+{
+    local path=$1
+    local mode=$2
+    [ ! -L "$path" ] || return 1
+    [ "$(stat -c '%u %a' -- "$path")" == "0 $mode" ]
+}
+
+# Resolve authenticated root's account home, not inherited HOME/SUDO_USER/TMPDIR.
+# Create a private directory only when absent; never chmod/repair unsafe objects.
+InitializeSessionStore()
+{
+    EnsureRoot
+    local rootHome=~root
+    [[ "$rootHome" == /* ]] && TrustedDirectoryPath "$rootHome" ||
+        FatalError "Root's home directory is missing or unsafe."
+    sessionHomeDirectory=$(cd -P -- "$rootHome" && pwd -P) ||
+        FatalError "Cannot resolve root's home directory."
+    [ "$sessionHomeDirectory" != "/" ] || FatalError "Root's home directory cannot be /."
+    sessionDirectory="$sessionHomeDirectory/.perfcollect"
+    sessionStateFile="$sessionDirectory/sessioninfo"
+    if [ ! -e "$sessionDirectory" ] && [ ! -L "$sessionDirectory" ]
+    then
+        # A concurrent creator is acceptable only if the final object passes the
+        # same type/owner/mode checks. The subshell preserves the caller's umask.
+        (umask 077; mkdir -- "$sessionDirectory") || [ -d "$sessionDirectory" ] ||
+            FatalError "Cannot create the private session directory."
+    fi
+    [ -d "$sessionDirectory" ] && PrivateSessionObject "$sessionDirectory" 700 ||
+        FatalError "Session directory must be a root-owned, non-symlink directory with mode 0700."
+}
+
+# Atomic mkdir serializes start/stop across processes. An existing guard is never
+# stolen; forced termination therefore requires explicit administrator recovery.
+AcquireSessionGuard()
+{
+    (umask 077; mkdir -- "$sessionDirectory/.operation") ||
+        FatalError "Another session operation is running, or a stale operation guard requires administrator recovery."
+    sessionGuardHeld=1
+    # Install cleanup only after ownership is established; handled signals exit
+    # through the same resource-aware trap rather than bypassing final checks.
+    trap SessionExit EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+}
+
+# A workspace is later entered and recursively removed, so require root privacy
+# and a trusted chain, then canonicalize to exclude protected roots and aliases.
+ValidSessionWorkspace()
+{
+    local path=$1
+    [[ "$path" == /* ]] && [ -d "$path" ] &&
+        PrivateSessionObject "$path" 700 && TrustedDirectoryPath "$path" 1 || return 1
+    local resolved
+    resolved=$(cd -P -- "$path" && pwd -P) || return 1
+    # Exclude root/home/store, their protected ancestors, and store descendants.
+    [ "$resolved" != "/" ] && [ "$resolved" != "$sessionHomeDirectory" ] &&
+        [ "$resolved" != "$sessionDirectory" ] &&
+        [[ "$sessionHomeDirectory/" != "$resolved/"* ]] &&
+        [[ "$sessionDirectory/" != "$resolved/"* ]] &&
+        [[ "$resolved/" != "$sessionDirectory/"* ]]
+}
+
+# Validate all operational fields before assigning globals or invoking consumers.
+# Log contents are inert data, so caller umask permissions need not be tightened.
+ValidateSessionValues()
+{
+    local savedLog=$1 workspace=$2 name=$3 traceDirectory=$4 enabled=$5
+    [[ "$savedLog" == /* ]] && [ -f "$savedLog" ] && [ ! -L "$savedLog" ] ||
+        FatalError "Session log is missing or unsafe."
+    [ "$(stat -c '%u' -- "$savedLog")" == "0" ] || FatalError "Session log must be owned by root."
+    TrustedDirectoryPath "${savedLog%/*}" 1 || FatalError "Session log directory is unsafe."
+    ValidSessionWorkspace "$workspace" || FatalError "Session collection workspace is missing or unsafe."
+    case "$enabled" in
+        0)
+            # Disabled state has no stale/optional LTTng operands to fall back to.
+            [ -z "$name" ] && [ -z "$traceDirectory" ] ||
+                FatalError "Disabled LTTng session contains unexpected trace fields."
+            ;;
+        1)
+            # Names must be ordinary operands; the trace path must be absolute.
+            # Presence of the actual executable is required only for enabled state.
+            [ -n "$name" ] && [[ "$name" != -* && "$name" != *$'\n'* ]] &&
+                [[ "$traceDirectory" == /* && "$traceDirectory" != "/" ]] ||
+                FatalError "Invalid LTTng session fields."
+            [ -n "$lttngcmd" ] || FatalError "LTTng is required to stop this session."
+            ;;
+        *) FatalError "Invalid LTTng session flag." ;;
+    esac
+}
+
+# Write a private temporary, then atomically publish the complete versioned record.
+# A write/move failure leaves rollback responsible for this invocation's resources.
+SaveSessionState()
+{
+    ValidateSessionValues "$logFile" "$tempDir" "$lttngSessionName" "$lttngTraceDir" "$useLTTng"
+    sessionStateTemporary=$(umask 077; mktemp "$sessionDirectory/.state.XXXXXXXX") ||
+        FatalError "Cannot create session state."
+    # Fixed-order NUL-delimited values are data, never Bash declarations.
+    # Fields: version, log, workspace, LTTng name, trace directory, enabled flag.
+    printf '%s\0' 1 "$logFile" "$tempDir" "$lttngSessionName" "$lttngTraceDir" "$useLTTng" > "$sessionStateTemporary" ||
+        FatalError "Cannot write session state."
+    mv -T -- "$sessionStateTemporary" "$sessionStateFile" || FatalError "Cannot publish session state."
+    # Publication is the successful-start commit point, not a stop/cleanup action.
+    sessionStateTemporary=''
+    sessionStartPending=0
+}
+
+# Require exactly six terminated fields, the supported version, and consistent
+# safe values. No source/eval/unescaping is involved in reading persistent data.
+LoadSessionState()
+{
+    [ -f "$sessionStateFile" ] && PrivateSessionObject "$sessionStateFile" 600 ||
+        FatalError "Session state is missing or unsafe; expected a root-owned regular file with mode 0600."
+    local -a fields
+    local index extra
+    {
+        # Preserve whitespace/backslashes and reject every truncation boundary.
+        for (( index=0; index<6; index++ ))
+        do
+            IFS= read -r -d '' "fields[$index]" || FatalError "Incomplete session state."
+        done
+        if IFS= read -r -d '' extra || [ -n "$extra" ]
+        then
+            # Reject both extra terminated records and unterminated trailing bytes.
+            FatalError "Unexpected trailing session state."
+        fi
+    } < "$sessionStateFile"
+    [ "${fields[0]}" == "1" ] || FatalError "Unsupported session state version."
+    ValidateSessionValues "${fields[1]}" "${fields[2]}" "${fields[3]}" "${fields[4]}" "${fields[5]}"
+    # Only a fully validated record may supply operational globals. start/stop
+    # never captures perf, regardless of current CLI defaults or saved trace flags.
+    logFile=${fields[1]}
+    tempDir=${fields[2]}
+    lttngSessionName=${fields[3]}
+    lttngTraceDir=${fields[4]}
+    useLTTng=${fields[5]}
+    usePerf=0
+}
+
+# Preserve the operation status, remove unpublished state, and roll back only a
+# pending start's owned session/workspace. Stop failures retain recovery artifacts.
+SessionExit()
+{
+    local status=$?
+    if [ -n "$sessionStateTemporary" ]
+    then
+        rm -f -- "$sessionStateTemporary" || { WriteWarning "Cannot remove unpublished session state."; status=1; }
+    fi
+    if [ "$sessionStartPending" == "1" ]
+    then
+        # A failed create must not destroy an unrelated pre-existing session.
+        if [ "$sessionLTTngCreated" == "1" ]
+        then
+            RunSilentArguments "$lttngcmd" destroy "$lttngSessionName" ||
+                WriteWarning "Cannot destroy the incomplete LTTng session; administrator recovery is required."
+        fi
+        if [ -n "$sessionWorkspace" ] && ValidSessionWorkspace "$sessionWorkspace"
+        then
+            rm -rf -- "$sessionWorkspace" || WriteWarning "Cannot remove the incomplete collection workspace."
+        fi
+    fi
+    if [ "$sessionGuardHeld" == "1" ]
+    then
+        # Successful and failed handled operations both release their owned guard.
+        rmdir -- "$sessionDirectory/.operation" || { WriteWarning "Cannot release session operation guard."; status=1; }
+    fi
+    exit "$status"
 }
 
 ######################################
@@ -1328,7 +1568,7 @@ EnsurePrereqsInstalled()
     fi
 
     # Disable LTTng use if running on Alpine or Mariner.
-    if [ "$(IsAlpine)" == "1" ] || [ "$(IsMariner)" == "1" ]
+    if [ "$action" != "stop" ] && { [ "$(IsAlpine)" == "1" ] || [ "$(IsMariner)" == "1" ]; }
     then
         useLTTng=0
     fi
@@ -1537,13 +1777,21 @@ CreateLTTngSession()
 {
     if [ "$action" == "livetrace" ]
     then
-        output=`$lttngcmd create --live`
+        output=$("$lttngcmd" create --live) || return
     else
-        output=`$lttngcmd create`
+        output=$("$lttngcmd" create) || return
     fi
 
-    lttngSessionName=`echo $output | grep -o "Session.*created." | sed 's/\(Session \| created.\)//g'`
-    lttngTraceDir=`echo $output | grep -o "Traces.*" | sed 's/\(Traces will be written in \|\)//g' | sed 's/\(Traces will be output to \|\)//g'`
+    # Extract the CLI's reported operands as data. Track create ownership before
+    # later configuration/start steps so failure rollback knows what it may destroy.
+    lttngSessionName=$(printf '%s\n' "$output" | sed -n 's/^Session \(.*\) created\.$/\1/p')
+    lttngTraceDir=$(printf '%s\n' "$output" | sed -n -e 's/^Traces will be written in //p' -e 's/^Traces will be output to //p')
+    if [ "$action" == "start" ]
+    then
+        [ -n "$lttngSessionName" ] && [[ "$lttngSessionName" != -* && "$lttngSessionName" != *$'\n'* ]] ||
+            FatalError "Cannot determine the created LTTng session name."
+        sessionLTTngCreated=1
+    fi
 }
 
 SetupLTTngSession()
@@ -1627,22 +1875,24 @@ SetupLTTngSession()
     fi
 }
 
+# Stop/destroy consumers preserve the saved session name as one literal operand.
 DestroyLTTngSession()
 {
-    RunSilent "$lttngcmd destroy $lttngSessionName"
+    RunSilentArguments "$lttngcmd" destroy "$lttngSessionName"
 }
 
 StartLTTngCollection()
 {
-    CreateLTTngSession
+    CreateLTTngSession || return
     SetupLTTngSession
 
-    RunSilent "$lttngcmd start $lttngSessionName"
+    RunSilentArguments "$lttngcmd" start "$lttngSessionName"
 }
 
 StopLTTngCollection()
 {
-    RunSilent "$lttngcmd stop $lttngSessionName"
+    # Do not destroy/finalize after a failed stop; retain artifacts for recovery.
+    RunSilentArguments "$lttngcmd" stop "$lttngSessionName" || return
     DestroyLTTngSession
 }
 
@@ -1675,17 +1925,24 @@ ProcessCollectedData()
     local traceSuffix=".trace"
     local traceName=$inputTraceName
     local directoryName=$traceName$traceSuffix
-    mkdir $directoryName
+    mkdir -- "$directoryName" || FatalError "Cannot create the trace archive directory."
 
     # Save LTTng trace files.
     if [ "$useLTTng" == "1" ]
     then
         LogAppend "Saving LTTng trace files."
 
-        if [ -d $lttngTraceDir ]
+        if [ -d "$lttngTraceDir" ]
         then
-            RunSilent "mkdir lttngTrace"
-            RunSilent "cp -r $lttngTraceDir lttngTrace"
+            # LTTng commonly creates group-writable subdirectories. Accept those
+            # only when a root-only ancestor protects access to the trace tree.
+            [ ! -L "$lttngTraceDir" ] && TrustedDirectoryPath "$lttngTraceDir" 1 1 ||
+                FatalError "LTTng trace directory is unsafe."
+            RunSilentArguments mkdir lttngTrace || FatalError "Cannot create the LTTng archive directory."
+            RunSilentArguments cp -r -- "$lttngTraceDir" lttngTrace || FatalError "Cannot copy LTTng traces."
+        elif [ "$action" == "stop" ]
+        then
+            FatalError "LTTng trace directory is missing; session state has been retained for recovery."
         fi
     fi
 
@@ -1761,37 +2018,61 @@ ProcessCollectedData()
     WriteStatus "Compressing trace files"
     
     # Move all collected files to the new directory.
-    RunSilent "mv -f * $directoryName"
+    local item
+    for item in *
+    do
+        # Keep the archive directory in place and the original log outside it
+        # until successful finalization. -ef also recognizes a log inode alias.
+        [ "$item" == "$directoryName" ] && continue
+        [ "$item" -ef "$logFile" ] && continue
+        [ -e "$item" ] || [ -L "$item" ] || continue
+        RunSilentArguments mv -f -- "$item" "$directoryName" || FatalError "Cannot prepare trace files for archiving."
+    done
 
     # Close the log - this stops all writing to the log, so that we can move it into the archive.
     CloseLog
 
-    # Move the log file to the new directory and rename it to the standard log name.
-    RunSilent "mv $logFile $directoryName/perfcollect.log"
+    # Keep the original log available if compression or archive movement fails.
+    RunSilentArguments cp -- "$logFile" "$directoryName/perfcollect.log" || FatalError "Cannot archive the collection log."
 
     # Compress the data.
     local archiveSuffix=".zip"
     local archiveName=$directoryName$archiveSuffix
-    RunSilent "$zipcmd -r $archiveName $directoryName"
+    # Prefix relative operands and disable zip wildcard matching so trace names
+    # are filenames, not archive options or patterns.
+    RunSilentArguments "$zipcmd" -r -nw "./$archiveName" -- "./$directoryName" || FatalError "Cannot compress the trace."
 
     # Move back to the original directory.
-    popd > /dev/null
+    popd > /dev/null || FatalError "Cannot return to the archive destination."
 
     # Move the archive.
-    RunSilent "mv $tempDir/$archiveName ."
+    RunSilentArguments mv -- "$tempDir/$archiveName" . || FatalError "Cannot move the trace archive to its destination."
 
     WriteStatus "...FINISHED"
 
     WriteStatus "Cleaning up artifacts"
 
     # Delete the temp directory.
-    RunSilent "rm -rf $tempDir $collectInfoFile"
+    if [ "$action" == "stop" ]
+    then
+        # Revalidate before recursive removal, not only when state was loaded.
+        ValidSessionWorkspace "$tempDir" || FatalError "Collection workspace is unsafe to remove."
+    fi
+    RunSilentArguments rm -rf -- "$tempDir" || FatalError "Cannot remove the collection workspace."
+    RunSilentArguments rm -f -- "$logFile" || FatalError "Cannot remove the collection log."
+    if [ "$action" == "stop" ]
+    then
+        # Ordinary collect must never remove an unrelated start/stop record.
+        RunSilentArguments rm -- "$sessionStateFile" || FatalError "Cannot remove completed session state."
+    fi
 
     WriteStatus "...FINISHED"
 
     # Tell the user where the trace is.
     WriteStatus
     WriteStatus "Trace saved to $archiveName"
+    # Headless terminal formatting failures must not override completed work.
+    return 0
 }
 
 ##
@@ -1808,15 +2089,18 @@ EndCollect()
     # The user must either use "collect stop" or CTRL+C to stop collection.
     if [ "$action" == "stop" ]
     then 
-        # Recover trace info in the previous program.
-        source $collectInfoFile  # TODO: exit and dispose upon missing file
-        # New program started, so go back to the temp directory.
-        pushd $tempDir > /dev/null
+        # Restore/validate state under the guard before checking saved feature
+        # prerequisites; a -nolttng start can stop without a current CLI flag.
+        InitializeSessionStore
+        AcquireSessionGuard
+        LoadSessionState
+        EnsurePrereqsInstalled
+        pushd -- "$tempDir" > /dev/null || FatalError "Cannot enter the collection workspace."
     fi
 
     if [ "$useLTTng" == "1" ]
     then
-        StopLTTngCollection
+        StopLTTngCollection || FatalError "Cannot stop the LTTng session; collection artifacts have been retained."
     fi
 
     # Update the user.
@@ -1857,6 +2141,9 @@ PrintUsage()
     echo ""
     echo "stop:"
     echo "    Stop collection if 'start' action is used."
+    echo "    Start/stop metadata is stored in root's ~/.perfcollect (0700), as a private data file (0600)."
+    echo "    Missing, unsafe, or stale state fails without automatic recovery. Use root to inspect retained artifacts."
+    echo "    After an interrupted operation, verify no perfcollect operation is running before removing .operation."
     echo ""
     echo "view options:"
     echo "    -processfilter      : Filter data by the specified process name."
@@ -1963,25 +2250,45 @@ DoCollect()
 {
     # Ensure the script is run as root.
     EnsureRoot
+    if [ "$action" == "start" ]
+    then
+        # Reserve the lifecycle before allocating resources. Never overwrite an
+        # existing session or silently recover one whose artifacts need inspection.
+        InitializeSessionStore
+        AcquireSessionGuard
+        [ ! -e "$sessionStateFile" ] && [ ! -L "$sessionStateFile" ] ||
+            FatalError "A session already exists; stop it or recover its artifacts before starting another."
+        sessionStartPending=1
+    fi
 
     # Build collection args.
     # Places the resulting args in $collectionArgs
     BuildPerfRecordArgs
 
     # Trap CTRL+C
-    trap CTRLC_Handler SIGINT
+    if [ "$action" != "start" ]
+    then
+        trap CTRLC_Handler SIGINT
+    fi
 
     # Create a temp directory to use for collection.
-    local tempDir=`mktemp -d`
+    local tempDir
+    tempDir=$(mktemp -d) || FatalError "Cannot create the collection workspace."
+    if [ "$action" == "start" ]
+    then
+        # Keep the created path for start rollback even before metadata exists.
+        sessionWorkspace=$tempDir
+        ValidSessionWorkspace "$tempDir" || FatalError "Collection workspace is unsafe."
+    fi
     LogAppend "Created temp directory $tempDir"
 
     # Switch to the directory.
-    pushd $tempDir > /dev/null
+    pushd -- "$tempDir" > /dev/null || FatalError "Cannot enter the collection workspace."
 
     # Start LTTng collection.
     if [ "$useLTTng" == "1" ]
     then
-        StartLTTngCollection
+        StartLTTngCollection || FatalError "Cannot start the LTTng session."
     fi
 
     # Tell the user that collection has started and how to exit.
@@ -1999,10 +2306,10 @@ DoCollect()
     if [ "$action" == "start" ]
     then 
         # Skip perf, which can only be stopped by CTRL+C.
-        # Pass trace directory and session name to the stop process.
-        popd > /dev/null
+        # Return to the caller and persist only the ongoing LTTng/workspace state.
+        popd > /dev/null || FatalError "Cannot return from the collection workspace."
         usePerf=0
-        declare -p | grep -e lttngTraceDir -e lttngSessionName -e tempDir -e usePerf -e useLttng -e logFile > $collectInfoFile
+        SaveSessionState
     else
         if [ "$usePerf" == "1" ]
         then
@@ -2152,20 +2459,31 @@ then
     exit 0
 fi
 
-# Discover external commands that will be called by this script.
+# Reject non-root start/stop before discovery probes or persistent-state access.
+if [ "$1" == "start" ] || [ "$1" == "stop" ]
+then
+    EnsureRoot
+fi
+
 DiscoverCommands
 
 # Initialize the log.
+# Stop restores its original log from validated metadata; creating a new one here
+# would lose lifecycle evidence and change the saved-operation contract.
 if [ "$1" != "stop" ]
 then
     InitializeLog
 fi
 
 # Process arguments.
-ProcessArguments $@
+ProcessArguments "$@"
 
 # Ensure prerequisites are installed.
-EnsurePrereqsInstalled
+# Stop defers this until EndCollect restores its saved LTTng enabled/disabled flag.
+if [ "$action" != "stop" ]
+then
+    EnsurePrereqsInstalled
+fi
 
 # Take the appropriate action.
 if [ "$action" == "collect" ] || [ "$action" == "start" ]
