@@ -6,15 +6,16 @@ steps:
     script: 'docker --version'
 
 - task: Bash@3
-  displayName: 'Build Containers'
+  displayName: 'Run Tests in Containers'
   inputs:
     targetType: filePath
-    filePath: './src/perfcollect/tests/build-containers.sh'
+    filePath: './src/perfcollect/tests/run-container.sh'
+    arguments: '"$(baseImage)" "$(target)" "$(Build.ArtifactStagingDirectory)/perfcollect"'
     workingDirectory: src/perfcollect/tests
 
-- task: Bash@3
-  displayName: 'Run Tests'
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish Perfcollect Results'
+  condition: always()
   inputs:
-    targetType: filePath
-    filePath: './src/perfcollect/tests/run-containers.sh'
-    workingDirectory: src/perfcollect/tests
+    targetPath: '$(Build.ArtifactStagingDirectory)/perfcollect'
+    artifact: 'perfcollect-$(target)'

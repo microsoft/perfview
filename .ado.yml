@@ -41,6 +41,20 @@ jobs:
         parallel: true
 
   - job: PerfCollect
+    strategy:
+      matrix:
+        Mariner:
+          target: 'mariner-2.0'
+          baseImage: 'mcr.microsoft.com/cbl-mariner/base/core:2.0@sha256:c833841d2dcfd3081d2ee807050d19368854f70d9b6faef027463e2c6f45ee41'
+        Debian:
+          target: 'ci-debian12'
+          baseImage: 'mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim@sha256:ec9c0a0dc5f60adc2065762050638dd5ed5facfc53716d4580a42d86027c8e80'
+        Alpine:
+          target: 'alpine'
+          baseImage: 'mcr.microsoft.com/dotnet/sdk:8.0-alpine@sha256:3111b113abec80b4a8a3d4b5cebebf61a4cdab019b7e56ca3e6389e6ac4e1c8d'
+        AzureLinux:
+          target: 'azurelinux-3.0'
+          baseImage: 'mcr.microsoft.com/azurelinux/base/core:3.0@sha256:bfd3e44899fe7c17f6fda42a6ef2a322f2178c2dafb88e69fd87675cdcac39ec'
     pool:
       vmImage: 'ubuntu-latest'
       name: Azure Pipelines

@@ -38,6 +38,7 @@ bld/
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
+src/perfcollect/tests/.artifacts/
 
 #NUNIT
 *.VisualState.xml
