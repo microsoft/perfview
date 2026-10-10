@@ -8,10 +8,13 @@ steps:
 - task: Bash@3
   displayName: 'Run Tests in Containers'
   inputs:
-    targetType: filePath
-    filePath: './src/perfcollect/tests/run-container.sh'
-    arguments: '"$(baseImage)" "$(target)" "$(Build.ArtifactStagingDirectory)/perfcollect"'
+    targetType: inline
+    script: 'bash ./run-container.sh "$BASE_IMAGE" "$TARGET" "$RESULTS_DIR"'
     workingDirectory: src/perfcollect/tests
+  env:
+    BASE_IMAGE: $(baseImage)
+    TARGET: $(target)
+    RESULTS_DIR: $(Build.ArtifactStagingDirectory)/perfcollect
 
 - task: PublishPipelineArtifact@1
   displayName: 'Publish Perfcollect Results'

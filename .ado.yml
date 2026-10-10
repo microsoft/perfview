@@ -5,7 +5,46 @@ pr:
   - main
 
 jobs:
+  - job: Changes
+    displayName: 'Detect Changed Components'
+    pool:
+      vmImage: 'ubuntu-latest'
+      name: Azure Pipelines
+
+    steps:
+    - checkout: self
+      fetchDepth: 2
+    - task: Bash@3
+      name: classify
+      displayName: 'Select CI Jobs'
+      inputs:
+        targetType: inline
+        script: |
+          set -euo pipefail
+          changes=$(mktemp)
+          trap 'rm -f -- "$changes"' EXIT
+          # PR checkout is a merge commit; its first parent is the target branch.
+          git diff --no-renames --name-only -z HEAD^ HEAD > "$changes"
+          perfcollect=false
+          perfview=false
+          while IFS= read -r -d '' path; do
+            printf 'Changed: %q\n' "$path"
+            case "$path" in
+              src/perfcollect/*|.pipelines/perfcollect-job.yml) perfcollect=true ;;
+              # Shared scheduling and Git metadata do not identify an application change.
+              .ado.yml|.gitattributes|.gitignore) ;;
+              *) perfview=true ;;
+            esac
+          done < "$changes"
+          if [[ "$perfcollect" == false && "$perfview" == false ]]; then
+            perfview=true
+          fi
+          echo "##vso[task.setvariable variable=perfcollect;isOutput=true]$perfcollect"
+          echo "##vso[task.setvariable variable=perfview;isOutput=true]$perfview"
+
   - job: PerfView_Debug
+    dependsOn: Changes
+    condition: and(succeeded(), eq(dependencies.Changes.outputs['classify.perfview'], 'true'))
     pool:
       vmImage: 'windows-2025-vs2026'
       name: Azure Pipelines
@@ -24,6 +63,8 @@ jobs:
       condition: succeededOrFailed()
 
   - job: PerfView_Release
+    dependsOn: Changes
+    condition: and(succeeded(), eq(dependencies.Changes.outputs['classify.perfview'], 'true'))
     pool:
       vmImage: 'windows-2025-vs2026'
       name: Azure Pipelines
@@ -41,6 +82,8 @@ jobs:
         parallel: true
 
   - job: PerfCollect
+    dependsOn: Changes
+    condition: and(succeeded(), eq(dependencies.Changes.outputs['classify.perfcollect'], 'true'))
     strategy:
       matrix:
         Mariner:
