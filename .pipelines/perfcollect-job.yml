@@ -1,3 +1,8 @@
+parameters:
+- name: publishArtifacts
+  type: boolean
+  default: true
+
 steps:
 - task: Bash@3
   displayName: 'Get Docker Version'
@@ -16,9 +21,10 @@ steps:
     TARGET: $(target)
     RESULTS_DIR: $(Build.ArtifactStagingDirectory)/perfcollect
 
-- task: PublishPipelineArtifact@1
-  displayName: 'Publish Perfcollect Results'
-  condition: always()
-  inputs:
-    targetPath: '$(Build.ArtifactStagingDirectory)/perfcollect'
-    artifact: 'perfcollect-$(target)'
+- ${{ if parameters.publishArtifacts }}:
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish Perfcollect Results'
+    condition: always()
+    inputs:
+      targetPath: '$(Build.ArtifactStagingDirectory)/perfcollect'
+      artifact: 'perfcollect-$(target)'

@@ -5,6 +5,7 @@ pr:
   - main
 
 jobs:
+  # Classify changes once, then share the decision with both CI job groups.
   - job: Changes
     displayName: 'Detect Changed Components'
     pool:
@@ -13,6 +14,7 @@ jobs:
 
     steps:
     - checkout: self
+      # Include the PR merge commit's first parent without fetching full history.
       fetchDepth: 2
     - task: Bash@3
       name: classify
@@ -21,27 +23,38 @@ jobs:
         targetType: inline
         script: |
           set -euo pipefail
+          # Main-branch, manual, and scheduled builds always validate everything.
+          # Path filtering applies only to PR runs.
+          if [[ "$BUILD_REASON" != PullRequest ]]; then
+            echo "##vso[task.setvariable variable=perfcollect;isOutput=true]true"
+            echo "##vso[task.setvariable variable=perfview;isOutput=true]true"
+            exit 0
+          fi
           changes=$(mktemp)
           trap 'rm -f -- "$changes"' EXIT
           # PR checkout is a merge commit; its first parent is the target branch.
+          # This covers the whole PR, not just its latest commit. Disable rename
+          # detection to check both old/new paths; NUL delimiters preserve filenames.
           git diff --no-renames --name-only -z HEAD^ HEAD > "$changes"
+          # Leave both false when no path selects a group; do not force a fallback.
           perfcollect=false
           perfview=false
           while IFS= read -r -d '' path; do
             printf 'Changed: %q\n' "$path"
             case "$path" in
-              src/perfcollect/*|.pipelines/perfcollect-job.yml) perfcollect=true ;;
-              # Shared scheduling and Git metadata do not identify an application change.
-              .ado.yml|.gitattributes|.gitignore) ;;
+              # Shared Git configuration and pipeline files can affect both groups.
+              .gitattributes|.gitignore|.ado.yml|.pipelines/*) perfcollect=true; perfview=true ;;
+              # Detect changes to perfcollect.
+              src/perfcollect/*) perfcollect=true ;;
+              # Detect changes to PerfView.
               *) perfview=true ;;
             esac
           done < "$changes"
-          if [[ "$perfcollect" == false && "$perfview" == false ]]; then
-            perfview=true
-          fi
+          # Named step outputs are consumed by the dependent job conditions below.
           echo "##vso[task.setvariable variable=perfcollect;isOutput=true]$perfcollect"
           echo "##vso[task.setvariable variable=perfview;isOutput=true]$perfview"
 
+  # Each group requires successful classification and its own true output flag.
   - job: PerfView_Debug
     dependsOn: Changes
     condition: and(succeeded(), eq(dependencies.Changes.outputs['classify.perfview'], 'true'))
@@ -81,26 +94,7 @@ jobs:
         artifact: 'PerfViewBinaries-Release'
         parallel: true
 
-  - job: PerfCollect
-    dependsOn: Changes
-    condition: and(succeeded(), eq(dependencies.Changes.outputs['classify.perfcollect'], 'true'))
-    strategy:
-      matrix:
-        Mariner:
-          target: 'mariner-2.0'
-          baseImage: 'mcr.microsoft.com/cbl-mariner/base/core:2.0@sha256:c833841d2dcfd3081d2ee807050d19368854f70d9b6faef027463e2c6f45ee41'
-        Debian:
-          target: 'ci-debian12'
-          baseImage: 'mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim@sha256:ec9c0a0dc5f60adc2065762050638dd5ed5facfc53716d4580a42d86027c8e80'
-        Alpine:
-          target: 'alpine'
-          baseImage: 'mcr.microsoft.com/dotnet/sdk:8.0-alpine@sha256:3111b113abec80b4a8a3d4b5cebebf61a4cdab019b7e56ca3e6389e6ac4e1c8d'
-        AzureLinux:
-          target: 'azurelinux-3.0'
-          baseImage: 'mcr.microsoft.com/azurelinux/base/core:3.0@sha256:bfd3e44899fe7c17f6fda42a6ef2a322f2178c2dafb88e69fd87675cdcac39ec'
-    pool:
-      vmImage: 'ubuntu-latest'
-      name: Azure Pipelines
-
-    steps:
-    - template: /.pipelines/perfcollect-job.yml
+  - template: /.pipelines/perfcollect-jobs.yml
+    parameters:
+      dependsOn: [Changes]
+      condition: and(succeeded(), eq(dependencies.Changes.outputs['classify.perfcollect'], 'true'))
