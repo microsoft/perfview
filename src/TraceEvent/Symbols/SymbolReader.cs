@@ -851,22 +851,78 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// Opens an ELF symbol module, returning a cached instance if the same file and load
-        /// parameters have been seen before. This avoids re-parsing large ELF debug files when
-        /// the same binary is loaded across multiple processes in a trace.
+        /// Opens an ELF file located by the caller, without searching or downloading symbols.
         /// </summary>
-        internal ElfSymbolModule OpenElfSymbolFile(string filePath, ulong pVaddr, ulong pOffset)
+        /// <param name="filePath">The exact binary or debug-symbol file to open.</param>
+        /// <param name="pVaddr">The page-aligned virtual address of the executable PT_LOAD segment, using the target's page size.</param>
+        /// <param name="pOffset">
+        /// The bias added to symbol RVAs. Use the executable PT_LOAD file offset for TraceEvent's ELF
+        /// coordinate system, or zero to query offsets relative to the mapped executable segment.
+        /// </param>
+        /// <param name="expectedBuildId">The expected GNU build ID, encoded as 8 to 20 bytes of hexadecimal text, or null to skip identity validation.</param>
+        /// <returns>An in-memory symbol module. The file is closed before this method returns.</returns>
+        /// <remarks>
+        /// No TraceLog, module index, search path, or symbol server is required.
+        /// The caller is responsible for authorizing access to the supplied path.
+        /// When supplied, the build ID is checked on every open, including cache hits. Parsed modules are cached by
+        /// full path, expected build ID and address layout; file contents are assumed unchanged while cached.
+        /// This avoids re-parsing large ELF debug files when the same binary is loaded across multiple processes in a trace.
+        /// Identity validation and parsing use the same file handle on cache misses.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">The file path is null.</exception>
+        /// <exception cref="ArgumentException">The file path is empty or a supplied expected build ID is invalid.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The offset exceeds the 32-bit RVA space.</exception>
+        /// <exception cref="InvalidDataException">An expected build ID was supplied, but the file's build ID is missing or does not match.</exception>
+        public ElfSymbolModule OpenElfSymbolFile(string filePath, ulong pVaddr, ulong pOffset, string expectedBuildId = null)
         {
-            var cacheKey = new ElfModuleSignature() { FilePath = filePath, VAddr = pVaddr, Offset = pOffset };
-            if (m_elfModuleCache.TryGet(cacheKey, out ElfSymbolModule cached))
+            if (filePath is null)
             {
-                m_log.WriteLine("OpenElfSymbolFile: Cache hit for {0}", filePath);
-                return cached;
+                throw new ArgumentNullException(nameof(filePath));
             }
 
-            var module = new ElfSymbolModule(filePath, pVaddr, pOffset);
-            m_elfModuleCache.Add(cacheKey, module);
-            return module;
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                throw new ArgumentException("An ELF file path is required.", nameof(filePath));
+            }
+
+            string normalizedBuildId = null;
+            if (expectedBuildId is not null && !TryNormalizeElfBuildId(expectedBuildId, out normalizedBuildId))
+            {
+                throw new ArgumentException("A GNU build ID must contain 8 to 20 bytes of hexadecimal text.", nameof(expectedBuildId));
+            }
+
+            if (pOffset > uint.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(pOffset));
+            }
+
+            string fullPath = Path.GetFullPath(filePath);
+            using (var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                if (normalizedBuildId is not null)
+                {
+                    string actualBuildId = ElfSymbolModule.ReadBuildIdFromStream(stream);
+                    if (!TryNormalizeElfBuildId(actualBuildId, out string normalizedActualBuildId)
+                        || normalizedActualBuildId != normalizedBuildId)
+                    {
+                        m_log.WriteLine("OpenElfSymbolFile: Build ID mismatch for {0}; expected {1}, actual {2}.",
+                            fullPath, normalizedBuildId, actualBuildId ?? "(missing)");
+                        throw new InvalidDataException($"ELF file '{fullPath}' does not match expected build ID '{normalizedBuildId}'.");
+                    }
+                }
+
+                var cacheKey = new ElfModuleSignature { FilePath = fullPath, BuildId = normalizedBuildId, VAddr = pVaddr, Offset = pOffset };
+                if (m_elfModuleCache.TryGet(cacheKey, out ElfSymbolModule cached))
+                {
+                    m_log.WriteLine("OpenElfSymbolFile: Cache hit for {0}", fullPath);
+                    return cached;
+                }
+
+                stream.Position = 0;
+                var module = new ElfSymbolModule(stream, pVaddr, pOffset, leaveOpen: true);
+                m_elfModuleCache.Add(cacheKey, module);
+                return module;
+            }
         }
 
         // Various state that controls symbol and source file lookup.  
@@ -1291,6 +1347,7 @@ namespace Microsoft.Diagnostics.Symbols
         public void Dispose()
         {
             m_symbolModuleCache.Clear();
+            m_elfModuleCache.Clear();
 
             if (HttpClient != null)
             {
@@ -2262,9 +2319,10 @@ namespace Microsoft.Diagnostics.Symbols
 
         private struct ElfModuleSignature : IEquatable<ElfModuleSignature>
         {
-            public override int GetHashCode() { return HashCode.Combine(FilePath, VAddr, Offset); }
-            public bool Equals(ElfModuleSignature other) { return FilePath == other.FilePath && VAddr == other.VAddr && Offset == other.Offset; }
+            public override int GetHashCode() { return HashCode.Combine(FilePath, BuildId, VAddr, Offset); }
+            public bool Equals(ElfModuleSignature other) { return FilePath == other.FilePath && BuildId == other.BuildId && VAddr == other.VAddr && Offset == other.Offset; }
             public string FilePath;
+            public string BuildId;
             public ulong VAddr;
             public ulong Offset;
         }
