@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 internal static class ClrMdDataTargetOptions
 {
-    internal static DataTargetOptions Create(string symbolPath, TokenCredential credential, TextWriter log, bool verifyDacOnWindows = true)
+    internal static DataTargetOptions Create(string symbolPath, TokenCredential credential, TextWriter log, bool verifyDacOnWindows)
     {
         bool hasConfiguredPath = !string.IsNullOrWhiteSpace(symbolPath);
         var path = new SymbolPath(hasConfiguredPath ? symbolPath : SymbolPath.MicrosoftSymbolServerPath);

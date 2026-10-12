@@ -15,7 +15,7 @@ namespace TraceEventTests
         [InlineData(" ")]
         public void DefaultOptionsKeepSecureDefaults(string symbolPath)
         {
-            DataTargetOptions options = ClrMdDataTargetOptions.Create(symbolPath, null, TextWriter.Null);
+            DataTargetOptions options = ClrMdDataTargetOptions.Create(symbolPath, null, TextWriter.Null, true);
 
             Assert.Equal(new[] { "https://msdl.microsoft.com/download/symbols" }, options.SymbolPaths);
             Assert.True(options.VerifyDacOnWindows);
@@ -32,7 +32,7 @@ namespace TraceEventTests
             var credential = new Azure.Identity.InteractiveBrowserCredential();
             DataTargetOptions options = ClrMdDataTargetOptions.Create(
                 "SRV*" + cache + "*https://symweb.azurefd.net/;SRV*http://symbols.internal/",
-                credential, TextWriter.Null);
+                credential, TextWriter.Null, true);
 
             Assert.Equal(new[] { "https://symweb.azurefd.net/", "http://symbols.internal/" }, options.SymbolPaths);
             Assert.Equal(cache, options.SymbolCachePath);
@@ -83,7 +83,7 @@ namespace TraceEventTests
                 File.Copy(source, destination);
 
                 DataTargetOptions options = ClrMdDataTargetOptions.Create(
-                    symbolStore ? "SRV*" + directory : directory, null, TextWriter.Null);
+                    symbolStore ? "SRV*" + directory : directory, null, TextWriter.Null, true);
 
                 Assert.Empty(options.SymbolPaths);
                 Assert.Equal(destination, options.FileLocator.FindPEImage(fileName, timestamp, size, true));
@@ -117,7 +117,7 @@ namespace TraceEventTests
             try
             {
                 File.Copy(typeof(DataTarget).Assembly.Location, candidate);
-                DataTargetOptions options = ClrMdDataTargetOptions.Create("SRV*" + directory, null, TextWriter.Null);
+                DataTargetOptions options = ClrMdDataTargetOptions.Create("SRV*" + directory, null, TextWriter.Null, true);
                 Assert.Equal(candidate, options.FileLocator.FindPEImage(fileName, properties,
                     ImmutableArray.Create<byte>(1, 2, 3), OSPlatform.Create(platform), true));
             }
