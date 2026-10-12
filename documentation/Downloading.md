@@ -4,6 +4,9 @@ PerfView is a free profiling tool from Microsoft.   This page tells you how to g
 See the [PerfView Overview](https://github.com/Microsoft/perfview#perfview-overview) for general information
 about PerfView.   
 
+PerfView is an x64 application requiring Windows 10 or Windows Server 2016 or later
+and .NET Framework 4.7.2 or later. It can collect from x86 and x64 target processes.  It can also be used to capture traces on arm64 hardware.
+
 # PerfView Releases
 
 The [PerfView GitHub Releases page](https://github.com/Microsoft/perfview/releases) is now the official 
@@ -49,9 +52,10 @@ This confirms that software is authentic. You can also do this by running the si
 
 # Additional Release Information
 
-The link above allows you to quickly download PerfView.exe which is what you need 95% of the time.
-If you wish to get other files associated with the release (e.g. the 64 bit version, or
-the debugging symbols), or wish to download older releases (not recommended), you can do
+The [aka.ms/perfview/latest](https://aka.ms/perfview/latest) shortcut allows you to quickly download
+PerfView.exe which is what you need 95% of the time.
+If you wish to get other files associated with the release (e.g. debugging symbols),
+or wish to download older releases (not recommended), you can do
 so by visiting the [PerfView GitHub Releases](https://github.com/Microsoft/perfview/releases).
 
 
@@ -59,5 +63,3 @@ so by visiting the [PerfView GitHub Releases](https://github.com/Microsoft/perfv
 The Microsoft Download Site for PerfView has
 been retired as the official download site for PerfView.  It has been replaced by
 [PerfView GitHub Releases page](https://github.com/Microsoft/perfview/releases) referenced above. 
-
-

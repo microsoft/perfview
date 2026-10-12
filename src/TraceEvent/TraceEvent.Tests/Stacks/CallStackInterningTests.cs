@@ -49,6 +49,30 @@ namespace TraceEventTests.Stacks
             Assert.Equal(expected.Length + 1, stacks.Count);
         }
 
+        /// <summary>Verifies live-session clearing resets every compact lookup map before stacks are interned again.</summary>
+        [Fact]
+        public void ClearingRestoresEmptyIndexesForReuse()
+        {
+            var stacks = new TraceCallStacks(null, null);
+            CallStackIndex root0 = TraceCallStacks.GetRootForThread((ThreadIndex)0);
+            CallStackIndex root17 = TraceCallStacks.GetRootForThread((ThreadIndex)17);
+            for (int cycle = 0; cycle < 3; cycle++)
+            {
+                CallStackIndex first = stacks.InternCallStackIndex((CodeAddressIndex)10, root0);
+                Assert.Equal((CallStackIndex)0, first);
+                CallStackIndex otherRoot = stacks.InternCallStackIndex((CodeAddressIndex)10, root17);
+                CallStackIndex child = stacks.InternCallStackIndex((CodeAddressIndex)20, first);
+                stacks.InternCallStackIndex((CodeAddressIndex)30, first);
+                Assert.Equal(first, stacks.InternCallStackIndex((CodeAddressIndex)10, root0));
+                Assert.Equal(otherRoot, stacks.InternCallStackIndex((CodeAddressIndex)10, root17));
+                Assert.Equal(child, stacks.InternCallStackIndex((CodeAddressIndex)20, first));
+                Assert.Equal(4, stacks.Count);
+
+                stacks.Clear();
+                Assert.Equal(0, stacks.Count);
+            }
+        }
+
         /// <summary>Verifies array growth and interleaved branches produce the same IDs as an independent identity map.</summary>
         [Fact]
         public void GrowthAndInterleavingMatchIndependentIdentityMap()

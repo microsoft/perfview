@@ -127,23 +127,41 @@ namespace FastSerialization
         /// <summary>
         /// Implementation of IStreamReader
         /// </summary>
+        /// <exception cref="SerializationException">
+        /// The character count is invalid or exceeds the remaining bytes in a reader with a known length.
+        /// </exception>
         public string ReadString()
         {
             int len = ReadInt32();          // Expect first a character inclusiveCountRet.  -1 means null.
+            if (len == -1)
+            {
+                return null;
+            }
+
             if (len < 0)
             {
-                Debug.Assert(len == -1);
-                return null;
+                throw new SerializationException("Invalid string length.");
+            }
+
+            if (HasLength)
+            {
+                long current = (long)Current;
+                long length = Length;
+                // Each encoded UTF-16 code unit requires at least one byte.
+                if (current < 0 || current > length || len > length - current)
+                {
+                    throw new SerializationException("String length exceeds the remaining stream data.");
+                }
             }
 
             if (sb == null)
             {
-                sb = new StringBuilder(len);
+                // Non-seekable streams have no length to validate; grow only as content is read.
+                sb = new StringBuilder(HasLength ? len : Math.Min(len, 256));
             }
 
             sb.Length = 0;
 
-            Debug.Assert(!HasLength || len < Length);
             while (len > 0)
             {
                 int b = ReadByte();

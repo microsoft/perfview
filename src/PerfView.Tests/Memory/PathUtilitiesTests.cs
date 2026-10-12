@@ -130,6 +130,30 @@ namespace PerfViewTests.Memory
         {
             Assert.Equal(expected, PathUtilities.SanitizeFileName(input));
         }
+
+        [Theory]
+        [InlineData("foo.debug")]
+        [InlineData("My Provider")]
+        [InlineData("provider.with.dots")]
+        public void IsSafeFileName_AcceptsNamesThatNeedNoSanitization(string input)
+        {
+            Assert.True(PathUtilities.IsSafeFileName(input));
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(".")]
+        [InlineData("..")]
+        [InlineData("../outside")]
+        [InlineData(@"..\outside")]
+        [InlineData("with:stream")]
+        [InlineData("with?wildcard")]
+        [InlineData("Trailing.")]
+        [InlineData("NUL.debug")]
+        public void IsSafeFileName_RejectsNamesThatWouldBeSanitized(string input)
+        {
+            Assert.False(PathUtilities.IsSafeFileName(input));
+        }
     }
 }
-

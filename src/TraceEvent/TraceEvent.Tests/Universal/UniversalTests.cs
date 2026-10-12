@@ -1,4 +1,6 @@
-﻿using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
+﻿using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers.Universal.Events;
 using System;
 using Xunit;
 using Xunit.Abstractions;
@@ -10,6 +12,45 @@ namespace TraceEventTests
         public UniversalTests(ITestOutputHelper output)
             : base(output)
         {
+        }
+
+        [Theory]
+        [InlineData("cpu")]
+        [InlineData("cswitch")]
+        public unsafe void SampleClone_PreservesSourceAndCallback(string eventName)
+        {
+            using var source = (TraceLog)Activator.CreateInstance(typeof(TraceLog), true);
+            Action<TraceEvent> callback = _ => { };
+            TraceEventNativeMethods.EVENT_RECORD record = default;
+            var original = new SampleTraceData(eventName)
+            {
+                traceEventSource = source,
+                eventRecord = &record,
+                Target = callback,
+            };
+
+            var clone = original.Clone();
+
+            Assert.Same(source, clone.Source);
+            Assert.Same(callback, clone.Target);
+        }
+
+        [Fact]
+        public void SampleTemplateClone_ClearsSourceAndCallback()
+        {
+            using var source = (TraceLog)Activator.CreateInstance(typeof(TraceLog), true);
+            var template = new SampleTraceData("cpu")
+            {
+                traceEventSource = source,
+                Target = new Action<TraceEvent>(_ => { }),
+            };
+
+            var clone = template.Clone();
+
+            Assert.Null(clone.Source);
+            Assert.Null(clone.Target);
+            Assert.Same(source, template.Source);
+            Assert.NotNull(template.Target);
         }
 
         [Fact]

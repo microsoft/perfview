@@ -423,7 +423,6 @@ namespace Microsoft.Diagnostics.Tracing
             _syncTimeUTC = source._syncTimeUTC;
             sessionStartTimeQPC = source.sessionStartTimeQPC;
             sessionEndTimeQPC = source.sessionEndTimeQPC;
-            useClassicETW = source.useClassicETW;
         }
 
         internal /*protected*/ IDictionary<string, object> userData;
@@ -441,7 +440,6 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal /*protected*/ long sessionStartTimeQPC;
         internal /*protected*/ long sessionEndTimeQPC;
-        internal /*protected*/ bool useClassicETW;
         internal /*protected*/ ClrTraceEventParser _CLR;
         internal /*protected*/ KernelTraceEventParser _Kernel;
 #if !NOT_WINDOWS && !NO_DYNAMIC_TRACEEVENTPARSER
@@ -3655,7 +3653,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// Lookup up the event based on its ProviderID (GUID) and EventId (Classic use the TaskId and the
-        /// Opcode field for lookup, but use these same fields (see ETWTraceEventSource.RawDispatchClassic)
+        /// Opcode field for lookup, but use these same fields).
         /// </summary>
         internal TraceEvent Lookup(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
@@ -4073,13 +4071,12 @@ namespace Microsoft.Diagnostics.Tracing
             // Trace.WriteLine("Registering template " + template.ProviderName + " " + template.ID + " Name " + template.EventName + " Guid " + template.ProviderGuid + " Task " + template.taskGuid + " opcode " + template.Opcode);
             // Debug.WriteLine("callback count = " + CallbackCount());
 
-            // Use the old style exclusive if we are using old ETW APIs, or the provider does not
-            // support it (This currently includes the Kernel Events)
+            // Use classic lookup for providers without event IDs, including kernel events.
             // If the event is tracelogging, do not register it as classic.
 #if !NOT_WINDOWS
             Debug.Assert(!(template.ProviderGuid == KernelTraceEventParser.ProviderGuid && template.eventID != TraceEventID.Illegal));
 #endif
-            if (useClassicETW || template.eventID == TraceEventID.Illegal)
+            if (template.eventID == TraceEventID.Illegal)
             {
                 // Use classic lookup mechanism (Task Guid, Opcode)
                 template.lookupAsClassic = true;

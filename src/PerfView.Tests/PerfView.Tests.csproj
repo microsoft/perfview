@@ -5,6 +5,7 @@
     <TargetFrameworks>net462</TargetFrameworks>
     <RootNamespace>PerfViewTests</RootNamespace>
     <AssemblyName>PerfViewTests</AssemblyName>
+    <PlatformTarget>x64</PlatformTarget>
     <Description>Unit tests for PerfView.</Description>
     <Copyright>Copyright © Microsoft 2016</Copyright>
 

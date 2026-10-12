@@ -151,9 +151,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// the .Log Property) which lets you get at aggregated information (Processes, threads, images loaded, and perhaps most
         /// importantly TraceEvent.CallStack() will work.  Thus you can get real time stacks from events).
         ///
-        /// Note that in order for native stacks to resolve symbolically, you need to have some Kernel events turned on (Image, and Process)
-        /// and only windows 8 has a session that allows both kernel and user mode events simultaneously.   Thus this is most useful
-        /// on Win 8 systems.
+        /// To resolve native stacks symbolically, enable the Image and Process kernel events in the session.
         /// </summary>
         public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session)
         {
@@ -166,9 +164,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// the .Log Property) which lets you get at aggregated information (Processes, threads, images loaded, and perhaps most
         /// importantly TraceEvent.CallStack() will work.  Thus you can get real time stacks from events).
         ///
-        /// Note that in order for native stacks to resolve symbolically, you need to have some Kernel events turned on (Image, and Process)
-        /// and only windows 8 has a session that allows both kernel and user mode events simultaneously.   Thus this is most useful
-        /// on Win 8 systems.
+        /// To resolve native stacks symbolically, enable the Image and Process kernel events in the session.
         /// </summary>
         /// <param name="minDispatchDelayMSec">The delay in milliseconds between when an event is received in TraceLog and when it is dispatched to the real time event source.</param>
         public static TraceLogEventSource CreateFromTraceEventSession(TraceEventSession session, int minDispatchDelayMSec)
@@ -184,21 +180,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             traceLog.realTimeQueue = new Queue<QueueEntry>();
             traceLog.realTimeFlushTimer = new Timer(_ => traceLog.FlushRealTimeEvents(minDispatchDelayMSec), null, minDispatchDelayMSec, minDispatchDelayMSec);
             traceLog.rawEventSourceToConvert.AllEvents += traceLog.onAllEventsRealTime;
-
-            // See if we are on Win7 and have a separate kernel session associated with 'session'
-            if (session.m_kernelSession != null)
-            {
-                // Make sure both sources only dispatch one at a time by taking a lock during dispatch.
-                session.m_kernelSession.Source.lockObj = traceLog.realTimeQueue;
-                session.m_associatedWithTraceLog = true;                         // Indicate that it is OK to have the m_kernelSession.
-                session.Source.lockObj = traceLog.realTimeQueue;
-
-                // Set up the callbacks to the kernel session.
-                traceLog.rawKernelEventSource = session.m_kernelSession.Source;
-                traceLog.SetupCallbacks(traceLog.rawKernelEventSource);
-                traceLog.rawKernelEventSource.unhandledEventTemplate.traceEventSource = traceLog;       // Make everything point to the log as its source.
-                traceLog.rawKernelEventSource.AllEvents += traceLog.onAllEventsRealTime;
-            }
 
             return traceLog.realTimeSource;
         }
@@ -384,7 +365,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // We need to look up the event to get the dispatch Target assigned.
             TraceEvent rtEvent = realTimeSource.Lookup(data.eventRecord);
-            realTimeSource.Dispatch(rtEvent);
+            m_DispatchThreadID = Thread.CurrentThread.ManagedThreadId;
+            try
+            {
+                realTimeSource.Dispatch(rtEvent);
+            }
+            finally
+            {
+                m_DispatchThreadID = -1;
+            }
 
             // Clean up interim data structures - they're not necessary after the event has been processed (Dispatched).
             eventsToStacks.Clear();
@@ -841,14 +830,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 data.eventIndex = (EventIndex)eventCount;
                 pastEventInfo.LogEvent(data, data.eventIndex, countForEvent);
 
-                // currentID is used by the dispatcher to define the EventIndex.  Make sure at both sources have the
-                // same notion of what that is if we have two dispatcher.
-                if (rawKernelEventSource != null)
-                {
-                    rawEventSourceToConvert.currentID = (EventIndex)eventCount;
-                    rawKernelEventSource.currentID = (EventIndex)eventCount;
-                }
-
                 // Skip samples from the idle thread.
                 if (data.ProcessID == 0 && data is SampledProfileTraceData)
                 {
@@ -871,6 +852,27 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         /// <summary>
+        /// The managed thread ID of the thread currently dispatching an event to the real time source,
+        /// or -1 when no dispatch is in progress.
+        /// </summary>
+        private int m_DispatchThreadID = -1;
+
+        /// <summary>
+        /// Throws unless the caller is running on the thread that is currently dispatching an event.
+        /// Operations that mutate state the dispatcher is actively using can only run from within an
+        /// event callback, and this is how they enforce it.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The caller is not on the dispatch thread.</exception>
+        internal void ThrowIfNotRunningOnDispatchThread()
+        {
+            if (m_DispatchThreadID != Thread.CurrentThread.ManagedThreadId)
+            {
+                throw new InvalidOperationException(
+                    "This operation must be called from within an event callback, on the thread dispatching the event.");
+            }
+        }
+
+        /// <summary>
         /// Removes all but the last 'keepCount' entries in 'growableArray' by sliding them down.
         /// </summary>
         private static void RemoveAllButLastEntries<T>(ref GrowableArray<T> growableArray, int keepCount)
@@ -886,6 +888,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             realTimeEvent = toSend;
             TraceEvent eventInRealTimeSource = null;
+            m_DispatchThreadID = Thread.CurrentThread.ManagedThreadId;
             try
             {
                 eventInRealTimeSource = realTimeSource.Lookup(toSend.eventRecord);
@@ -897,6 +900,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             finally
             {
                 realTimeEvent = null;
+                m_DispatchThreadID = -1;
             }
 
             // Optimization, remove 'toSend' from the finalization queue.
@@ -973,6 +977,46 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 RemoveAllButLastEntries(ref cswitchBlockingEventsToStacks, realTimeQueue.Count);
             }
+        }
+
+        /// <summary>
+        /// Releases the state a live session can afford to discard.  Today that is the call stack
+        /// interning tables (see <see cref="CallStacks"/>); more may be trimmed here in future.
+        /// <para>
+        /// In a real time session those tables grow for the lifetime of the session: every distinct
+        /// call stack that is observed is interned and nothing is ever released.  For a long running
+        /// process with diverse stacks that growth is unbounded.  Trace files do not have this problem
+        /// because the session is finite, which is why this is restricted to real time sessions.
+        /// </para>
+        /// <para>
+        /// Every <see cref="CallStackIndex"/> obtained before this call is invalidated and must not be
+        /// used afterwards, so only call this when no such index is still live.  Call stacks observed
+        /// after the call are interned from scratch, so no information is lost going forward - only
+        /// the ability to resolve indexes handed out earlier.
+        /// </para>
+        /// <para>
+        /// Must be called from within an event callback, on the thread dispatching that event.  Calling
+        /// it concurrently with event processing would race with call stack interning
+        /// </para>
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The TraceLog is not a real time session, or the caller is not on the dispatch thread.
+        /// </exception>
+        public void TrimLiveSessionState()
+        {
+            if (!IsRealTime)
+            {
+                throw new InvalidOperationException("TrimLiveSessionState is only supported for real time sessions.");
+            }
+
+            ThrowIfNotRunningOnDispatchThread();
+
+            callStacks.Clear();
+
+            // These map events to the indexes we just invalidated, so also need clearing.
+            // A length reset is enough here - they hold structs, so nothing is retained.
+            eventsToStacks.Clear();
+            cswitchBlockingEventsToStacks.Clear();
         }
 
         /// <summary>
@@ -4569,7 +4613,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         // These are only used when converting from ETL
         internal TraceEventDispatcher rawEventSourceToConvert;      // used to convert from raw format only.  Null for ETLX files.
-        internal TraceEventDispatcher rawKernelEventSource;         // Only used by real time TraceLog on Win7.   It is the
         internal TraceLogOptions options;
         internal bool registeringStandardParsers;                   // Are we registering
         internal NettraceUniversalConverter universalConverter;
@@ -4618,24 +4661,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 Debug.Assert(this == TraceLog.realTimeSource);
 
-                Task kernelTask = null;
-                if (TraceLog.rawKernelEventSource != null)
-                {
-                    kernelTask = Task.Factory.StartNew(delegate
-                    {
-                        TraceLog.rawKernelEventSource.Process();
-                        TraceLog.rawEventSourceToConvert.StopProcessing();
-                    });
-                }
                 TraceLog.rawEventSourceToConvert.Process();
-                if (kernelTask != null)
-                {
-                    TraceLog.rawKernelEventSource.StopProcessing();
-                    kernelTask.Wait();
-
-                    // Flush all outstanding events in the realTimeQueue.
-                    TraceLog.FlushRealTimeEvents();
-                }
                 return true;
             }
             Debug.Assert(unhandledEventTemplate.traceEventSource == TraceLog);
@@ -7857,6 +7883,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal void SetSize(int origSize)
         {
             callStacks.RemoveRange(origSize, callStacks.Count - origSize);
+        }
+
+        /// <summary>
+        /// Discards every interned call stack, returning the interning tables to their initial state.
+        /// Only meaningful for a real time session, where these tables would otherwise grow for the
+        /// lifetime of the session.  See <see cref="TraceLog.TrimLiveSessionState"/>.
+        /// </summary>
+        internal void Clear()
+        {
+            // GrowableArray.Clear() only resets the length so we have to assign fresh arrays
+            callStacks = new GrowableArray<CallStackInfo>();
+            firstCallee = new GrowableArray<int>();
+            nextSibling = new GrowableArray<int>();
+            threads = new GrowableArray<int>();
         }
 
         /// <summary>

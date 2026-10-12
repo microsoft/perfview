@@ -1,8 +1,10 @@
 ﻿using Azure.Core;
 using Microsoft.Diagnostics.Symbols.Authentication;
 using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.Security.AntiSSRF;
 using PerfView;
 using System;
+using System.Net.Http;
 using Xunit;
 
 namespace PerfViewTests
@@ -44,5 +46,16 @@ namespace PerfViewTests
             Assert.Equal(expectedReturn, GitHub.TryGetAuthority(uri, out Uri actualAuthorityUri));
             Assert.Equal(expectedAuthorityUri, actualAuthorityUri);
         }
+
+        [Fact]
+        public void AntiSSRFTransportIsConfigured()
+        {
+            using (DelegatingHandler handler = AntiSSRFHandlerFactory.Create())
+            {
+                AntiSSRFHandler antiSSRFHandler = Assert.IsType<AntiSSRFHandler>(handler.InnerHandler);
+                Assert.True(antiSSRFHandler.CheckCertificateRevocationList);
+            }
+        }
+
     }
 }

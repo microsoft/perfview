@@ -46,6 +46,12 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             while (reader.RemainingBytes.Length > 0)
             {
                 _source.ReadEventHeader(ref reader, useHeaderCompression, ref eventMarker.Header);
+                // Validate the backing block before dispatching or retaining a payload pointer.
+                if ((uint)eventMarker.Header.PayloadSize > (uint)reader.RemainingBytes.Length)
+                {
+                    throw new FormatException($"Invalid event payload size {eventMarker.Header.PayloadSize} at stream offset 0x{reader.StreamOffset:x}.");
+                }
+
                 bool isSortedEvent = eventMarker.Header.IsSorted;
                 thread.LastCachedEventTimestamp = timestamp = eventMarker.Header.TimeStamp;
                 maxTimestamp = Math.Max(maxTimestamp, timestamp);

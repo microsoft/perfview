@@ -417,8 +417,9 @@ namespace Microsoft.Diagnostics.Symbols
         /// back to the binary ({filename}/elf-buildid-{buildId}/{filename}).
         /// </summary>
         /// <param name="fileName">The simple filename of the ELF module (e.g., "libcoreclr.so")</param>
-        /// <param name="buildId">The GNU build-id as a lowercase hex string</param>
+        /// <param name="buildId">The GNU build-id as 8-20 bytes represented by hexadecimal characters.</param>
         /// <returns>The local file path to the downloaded symbol file, or null if not found.</returns>
+        /// <exception cref="ArgumentException"><paramref name="buildId"/> is not a supported hexadecimal GNU build-id.</exception>
         public string FindElfSymbolFilePath(string fileName, string buildId, string elfFilePath = null)
         {
             if (fileName == null)
@@ -431,14 +432,10 @@ namespace Microsoft.Diagnostics.Symbols
                 throw new ArgumentNullException(nameof(buildId));
             }
 
-            m_log.WriteLine("FindElfSymbolFilePath: *{{ Searching for {0} with BuildId {1}", fileName, buildId);
+            string normalizedBuildId = NormalizeElfBuildId(buildId);
 
+            m_log.WriteLine("FindElfSymbolFilePath: *{{ Searching for {0} with BuildId {1}", fileName, normalizedBuildId);
             string simpleFileName = Path.GetFileName(fileName);
-
-            // Normalize the build ID to lowercase. Build IDs vary in length depending on the
-            // hash algorithm (e.g., SHA-1 = 40 hex chars, MD5/UUID = 32), so we use the exact
-            // value without padding.
-            string normalizedBuildId = buildId.ToLowerInvariant();
 
             ElfBuildIdSignature cacheKey = new ElfBuildIdSignature() { FileName = simpleFileName, BuildId = normalizedBuildId };
             if (m_elfPathCache.TryGet(cacheKey, out string cachedPath))
@@ -452,20 +449,32 @@ namespace Microsoft.Diagnostics.Symbols
             string binaryIndexPath = $"{simpleFileName}/elf-buildid-{normalizedBuildId}/{simpleFileName}";
 
             string resultPath = null;
+            string localElfFilePath = null;
+            if (elfFilePath != null)
+            {
+                if (!PathUtilities.TryGetSafeLocalFilePath(elfFilePath, out localElfFilePath))
+                {
+                    m_log.WriteLine(
+                        "FindElfSymbolFilePath: Ignoring unsafe ELF file path {0}.",
+                        elfFilePath);
+                }
+            }
 
             // Phase 1: Check for debug symbol files adjacent to the binary (mirrors PDB local search).
             // Only look for dedicated debug files here — the binary itself is deferred to Phase 3.
-            if (elfFilePath != null)
+            if (localElfFilePath != null)
             {
-                string elfDir = Path.GetDirectoryName(elfFilePath);
+                string elfDir = Path.GetDirectoryName(localElfFilePath);
                 if (!string.IsNullOrEmpty(elfDir))
                 {
-                    m_log.WriteLine("FindElfSymbolFilePath: Checking relative to ELF binary path {0}", elfFilePath);
-                    string basePath = elfFilePath;
+                    m_log.WriteLine("FindElfSymbolFilePath: Checking relative to ELF binary path {0}", localElfFilePath);
+                    string basePath = localElfFilePath;
+                    string executableFileName = Path.GetFileName(basePath);
 
                     // Try {path}.debug
-                    string candidate = basePath + ".debug";
-                    if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                    string candidate;
+                    if (TryGetDebugLinkCandidate(elfDir, executableFileName + ".debug", out candidate) &&
+                        ElfBuildIdMatches(candidate, normalizedBuildId))
                     {
                         resultPath = candidate;
                     }
@@ -473,8 +482,8 @@ namespace Microsoft.Diagnostics.Symbols
                     // Try {path}.dbg
                     if (resultPath == null)
                     {
-                        candidate = basePath + ".dbg";
-                        if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                        if (TryGetDebugLinkCandidate(elfDir, executableFileName + ".dbg", out candidate) &&
+                            ElfBuildIdMatches(candidate, normalizedBuildId))
                         {
                             resultPath = candidate;
                         }
@@ -497,8 +506,8 @@ namespace Microsoft.Diagnostics.Symbols
                         if (debugLink != null)
                         {
                             // Try {bindir}/{debuglink}
-                            candidate = Path.Combine(elfDir, debugLink);
-                            if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                            if (TryGetDebugLinkCandidate(elfDir, debugLink, out candidate) &&
+                                ElfBuildIdMatches(candidate, normalizedBuildId))
                             {
                                 resultPath = candidate;
                             }
@@ -506,8 +515,9 @@ namespace Microsoft.Diagnostics.Symbols
                             // Try {bindir}/.debug/{debuglink}
                             if (resultPath == null)
                             {
-                                candidate = Path.Combine(elfDir, ".debug", debugLink);
-                                if (ElfBuildIdMatches(candidate, normalizedBuildId))
+                                string debugDirectory = Path.Combine(elfDir, ".debug");
+                                if (TryGetDebugLinkCandidate(debugDirectory, debugLink, out candidate) &&
+                                    ElfBuildIdMatches(candidate, normalizedBuildId))
                                 {
                                     resultPath = candidate;
                                 }
@@ -532,14 +542,16 @@ namespace Microsoft.Diagnostics.Symbols
                         }
 
                         // Try debug symbols first (preferred — has .symtab with full symbols).
-                        resultPath = GetFileFromServer(element.Target, debugIndexPath, Path.Combine(cache, debugIndexPath));
+                        string debugCachePath = GetContainedElfCachePath(cache, debugIndexPath);
+                        resultPath = GetFileFromServer(element.Target, debugIndexPath, debugCachePath);
                         if (resultPath != null)
                         {
                             break;
                         }
 
                         // Fall back to the binary (may only have .dynsym).
-                        resultPath = GetFileFromServer(element.Target, binaryIndexPath, Path.Combine(cache, binaryIndexPath));
+                        string binaryCachePath = GetContainedElfCachePath(cache, binaryIndexPath);
+                        resultPath = GetFileFromServer(element.Target, binaryIndexPath, binaryCachePath);
                         if (resultPath != null)
                         {
                             break;
@@ -579,11 +591,11 @@ namespace Microsoft.Diagnostics.Symbols
             // Phase 3: Last resort — try the binary itself (has .dynsym at minimum).
             // This is deferred until after symbol servers so we prefer proper debug symbols
             // (.symtab) over the stripped binary whenever a symbol server can provide them.
-            if (resultPath == null && elfFilePath != null)
+            if (resultPath == null && localElfFilePath != null)
             {
-                if (ElfBuildIdMatches(elfFilePath, normalizedBuildId))
+                if (ElfBuildIdMatches(localElfFilePath, normalizedBuildId))
                 {
-                    resultPath = elfFilePath;
+                    resultPath = localElfFilePath;
                 }
             }
 
@@ -606,6 +618,48 @@ namespace Microsoft.Diagnostics.Symbols
             return resultPath;
         }
 
+        /// <summary>
+        /// Constructs a debug-link candidate that is a direct child of the intended search directory.
+        /// </summary>
+        internal static bool TryGetDebugLinkCandidate(string searchDirectory, string debugLink, out string candidate)
+        {
+            candidate = null;
+            if (string.IsNullOrEmpty(searchDirectory) ||
+                !PathUtilities.IsSafeFileName(debugLink))
+            {
+                return false;
+            }
+
+            try
+            {
+                string canonicalSearchDirectory = Path.GetFullPath(searchDirectory);
+                string canonicalCandidate = Path.GetFullPath(Path.Combine(canonicalSearchDirectory, debugLink));
+                if (!PathUtilities.IsPathWithinDirectory(canonicalCandidate, canonicalSearchDirectory))
+                {
+                    return false;
+                }
+
+                candidate = canonicalCandidate;
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (NotSupportedException)
+            {
+                return false;
+            }
+            catch (PathTooLongException)
+            {
+                return false;
+            }
+            catch (System.Security.SecurityException)
+            {
+                return false;
+            }
+        }
+
         // Find an executable file path (not a PDB) based on information about the file image.  
         /// <summary>
         /// This API looks up an executable file, by its build-timestamp and size (on a symbol server),  'fileName' should be 
@@ -623,7 +677,16 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     if (exeIndexPath == null)
                     {
-                        exeIndexPath = fileName + @"\" + buildTimestamp.ToString("x") + sizeOfImage.ToString("x") + @"\" + fileName;
+                        // Symbol-server convention (matched by symsrv.dll/symchk) is
+                        // <TimeDateStamp:X8><SizeOfImage:X> — TimeDateStamp zero-padded
+                        // to 8 hex digits, SizeOfImage variable-width with no padding.
+                        // Using "x" without width drops the leading hex zero when the
+                        // value is < 0x10000000, producing a malformed key that 404s
+                        // even when the binary is indexed on the server. This hits real
+                        // binaries built with /Brepro (deterministic builds), where the
+                        // PE TimeDateStamp is a hash that can have leading zeros (e.g.
+                        // SystemSettings.dll on recent Windows: TS=0x0D9F641E).
+                        exeIndexPath = fileName + @"\" + buildTimestamp.ToString("x8") + sizeOfImage.ToString("x") + @"\" + fileName;
                     }
 
                     string cache = element.Cache;
@@ -912,6 +975,18 @@ namespace Microsoft.Diagnostics.Symbols
         /// If this function returns true, we assume that it is OK to use the PDB.  
         /// </summary>
         public Func<string, bool> SecurityCheck { get; set; }
+
+        /// <summary>
+        /// We call back on this before downloading source code over HTTP. The callback receives a
+        /// <see cref="DownloadAuthorizationRequest"/> describing the download and must return
+        /// <c>true</c> to allow it or <c>false</c> to deny it. Authorization of the initial URI also
+        /// covers redirects followed by the HTTP client.
+        ///
+        /// If this property is <c>null</c>, source downloads are denied by default. To enable source
+        /// downloads, set this property to an interactive prompt, an allow-list policy, or
+        /// <c>request =&gt; true</c> for fully trusted scenarios.
+        /// </summary>
+        public Func<DownloadAuthorizationRequest, bool> AuthorizeDownload { get; set; }
 
         /// <summary>
         /// We call back on this before executing a source-server fetch command (e.g. <c>tf.exe view ...</c> or
@@ -1225,6 +1300,117 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         #region private
+        internal bool CheckDownloadAuthorization(DownloadAuthorizationRequest request)
+        {
+            var authorize = AuthorizeDownload;
+            if (authorize == null)
+            {
+                m_log.WriteLine("Source download denied by default because no authorization policy is installed: {0}", request.Uri.AbsoluteUri);
+                return false;
+            }
+
+            bool authorized;
+            try
+            {
+                authorized = authorize(request);
+            }
+            catch (Exception exception)
+            {
+                m_log.WriteLine(
+                    "Source download denied because the authorization policy threw an exception for {0}: {1}",
+                    request.Uri.AbsoluteUri,
+                    exception);
+                return false;
+            }
+
+            m_log.WriteLine(
+                "Source download authorization {0}: {1}",
+                authorized ? "GRANTED" : "DENIED",
+                request.Uri.AbsoluteUri);
+            return authorized;
+        }
+
+        /// <summary>
+        /// Validates and normalizes an ELF build-id for use in SSQP keys.
+        /// </summary>
+        private static string NormalizeElfBuildId(string buildId)
+        {
+            if (!TryNormalizeElfBuildId(buildId, out string normalizedBuildId))
+            {
+                throw new ArgumentException(
+                    $"ELF build-id '{buildId}' must contain an even number of hexadecimal characters representing 8 to 20 bytes.",
+                    nameof(buildId));
+            }
+
+            return normalizedBuildId;
+        }
+
+        /// <summary>
+        /// Converts a supported ELF build-id to the canonical 20-byte lowercase SSQP representation.
+        /// </summary>
+        private static bool TryNormalizeElfBuildId(string buildId, out string normalizedBuildId)
+        {
+            normalizedBuildId = null;
+            if (buildId == null ||
+                buildId.Length < MinElfBuildIdHexLength ||
+                buildId.Length > MaxElfBuildIdHexLength ||
+                (buildId.Length & 1) != 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < buildId.Length; i++)
+            {
+                char c = buildId[i];
+                if (!((c >= '0' && c <= '9') ||
+                      (c >= 'a' && c <= 'f') ||
+                      (c >= 'A' && c <= 'F')))
+                {
+                    return false;
+                }
+            }
+
+            normalizedBuildId = buildId.ToLowerInvariant().PadRight(MaxElfBuildIdHexLength, '0');
+            return true;
+        }
+
+        /// <summary>
+        /// Resolves an ELF symbol-server cache path and verifies that it remains under the configured cache root.
+        /// </summary>
+        private static string GetContainedElfCachePath(string cacheDirectory, string relativePath)
+        {
+            if (string.IsNullOrEmpty(cacheDirectory))
+            {
+                throw new ArgumentException("ELF symbol cache directory must not be null or empty.", nameof(cacheDirectory));
+            }
+
+            if (string.IsNullOrEmpty(relativePath) || Path.IsPathRooted(relativePath))
+            {
+                throw new ArgumentException("ELF symbol cache path must be relative.", nameof(relativePath));
+            }
+
+            string fullCacheDirectory = Path.GetFullPath(cacheDirectory);
+            string fullCachePath = Path.GetFullPath(Path.Combine(fullCacheDirectory, relativePath));
+            string cachePrefix = fullCacheDirectory;
+            char lastCachePrefixChar = cachePrefix[cachePrefix.Length - 1];
+            if (lastCachePrefixChar != Path.DirectorySeparatorChar &&
+                lastCachePrefixChar != Path.AltDirectorySeparatorChar)
+            {
+                cachePrefix += Path.DirectorySeparatorChar;
+            }
+
+            StringComparison comparison = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+            if (!fullCachePath.StartsWith(cachePrefix, comparison))
+            {
+                throw new InvalidOperationException(
+                    $"ELF symbol cache path '{fullCachePath}' is outside the configured cache directory '{fullCacheDirectory}'.");
+            }
+
+            return fullCachePath;
+        }
+
         /// <summary>
         /// Returns true if 'filePath' exists and is a PDB that has pdbGuid and pdbAge.  
         /// if pdbGuid == Guid.Empty, then the pdbGuid and pdbAge checks are skipped. 
@@ -1337,7 +1523,8 @@ namespace Microsoft.Diagnostics.Symbols
                     }
 
                     string actualBuildId = ElfSymbolModule.ReadBuildId(filePath);
-                    if (actualBuildId != null && string.Equals(actualBuildId, expectedBuildId, StringComparison.OrdinalIgnoreCase))
+                    if (TryNormalizeElfBuildId(actualBuildId, out string normalizedActualBuildId) &&
+                        string.Equals(normalizedActualBuildId, expectedBuildId, StringComparison.Ordinal))
                     {
                         return true;
                     }
@@ -1437,7 +1624,7 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             if (!canceled)
                             {
-                                m_log.WriteLine("FindSymbolFilePath: Probe of {0} failed: {1}", fullUri, e.Message);
+                                m_log.WriteLine("FindSymbolFilePath: Probe of {0} failed: {1}", fullUri, e.ToString());
                             }
                         }
                     }
@@ -2091,6 +2278,8 @@ namespace Microsoft.Diagnostics.Symbols
         private Cache<ElfBuildIdSignature, string> m_elfPathCache;
         private Cache<ElfModuleSignature, ElfSymbolModule> m_elfModuleCache;
         private string m_symbolPath;
+        private const int MinElfBuildIdHexLength = 16;
+        private const int MaxElfBuildIdHexLength = 40;
 
         #endregion
     }
@@ -2268,6 +2457,42 @@ namespace Microsoft.Diagnostics.Symbols
         private List<Tuple<string, string, bool>> _sourceLinkMapping;      // Used by SourceLink to map build paths to URLs (path, url, isWildcard)
         private bool _sourceLinkMappingInited;                       // Lazy init flag. 
         #endregion
+    }
+
+    /// <summary>
+    /// Describes a source download that is ready to start. Passed to
+    /// <see cref="SymbolReader.AuthorizeDownload"/> so the caller can choose whether to allow it.
+    /// </summary>
+    /// <remarks>
+    /// This is a class so that additional download context can be added in the future without changing
+    /// the <see cref="SymbolReader.AuthorizeDownload"/> delegate signature.
+    /// </remarks>
+    public sealed class DownloadAuthorizationRequest
+    {
+        internal DownloadAuthorizationRequest(
+            string buildTimeFilePath,
+            string symbolFilePath,
+            Uri uri)
+        {
+            BuildTimeFilePath = buildTimeFilePath;
+            SymbolFilePath = symbolFilePath;
+            Uri = uri;
+        }
+
+        /// <summary>
+        /// Gets the source file path recorded at build time.
+        /// </summary>
+        public string BuildTimeFilePath { get; }
+
+        /// <summary>
+        /// Gets the path of the PDB that supplied the source information.
+        /// </summary>
+        public string SymbolFilePath { get; }
+
+        /// <summary>
+        /// Gets the remote source URI.
+        /// </summary>
+        public Uri Uri { get; }
     }
 
     /// <summary>
@@ -2555,6 +2780,15 @@ namespace Microsoft.Diagnostics.Symbols
             string url = Url;
             if (url != null)
             {
+                var request = new DownloadAuthorizationRequest(
+                    BuildTimeFilePath,
+                    _symbolModule.SymbolFilePath,
+                    new Uri(url));
+                if (!_symbolModule.SymbolReader.CheckDownloadAuthorization(request))
+                {
+                    return null;
+                }
+
                 var httpClient = _symbolModule.SymbolReader.HttpClient;
                 HttpResponseMessage response = httpClient.GetAsync(url).Result;
 
@@ -2841,4 +3075,3 @@ namespace Microsoft.Diagnostics.Symbols
         #endregion
     }
 }
-

@@ -142,9 +142,8 @@ namespace TraceEventSamples
                 // Enable my provider, you can call many of these on the same session to get events from other providers  
 
                 // Turn on the eventSource given its name.   
-                // Note we turn on Verbose level all keywords (ulong.MaxValue == 0xFFF....) and turn on stacks for 
-                // this provider (for all events, until Windows 8.1 you can only turn on stacks for every event 
-                // for a particular provider or no stacks)
+                // Enable Verbose level, all keywords, and stacks for all events from this provider.
+                // EventIDStacksToEnable can instead select individual events for stack collection.
                 var options = new TraceEventProviderOptions() { StacksEnabled = true };
                 var restarted = session.EnableProvider(eventSourceName, TraceEventLevel.Verbose, ulong.MaxValue, options);
                 if (restarted)      // Generally you don't bother with this warning, but for the demo we do.  

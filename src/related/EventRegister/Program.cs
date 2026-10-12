@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Diagnostics.Eventing;
 using System.Collections.ObjectModel;
 using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Utilities;
 
 #if TARGET_FRAMEWORK_4_5_OR_HIGHER
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -140,6 +141,13 @@ class Program
 
     static int Main()
     {
+        return CommandLineUtilities.RunConsoleMainWithExceptionProcessing(Run);
+    }
+
+    static int Run()
+    {
+        OperatingSystemVersion.EnsureSupported();
+
 #if USE_EVENTSOURCE_REFLECTION
         // If this app does not take a dependency on a specific EventSource implementation we'll need to use the EventSource 
         // type that represents the base type of the custom event source that needs to be registered. To accomplish this we 
@@ -155,7 +163,7 @@ class Program
         if (AppDomain.CurrentDomain.FriendlyName != workerDomainFriendlyName)
         {
             // See code:#CommandLineDefinitions for Command line defintions
-            CommandLine commandLine = new CommandLine();
+            CommandLine workerCommandLine = new CommandLine();
             var ads = new AppDomainSetup();
             // ads.PrivateBinPath = Path.GetDirectoryName(Path.GetFullPath(commandLine.DllPath));
             ads.ApplicationBase = AppDomain.CurrentDomain.BaseDirectory;
@@ -165,47 +173,43 @@ class Program
             //     ads.ConfigurationFile = configName;
             var workerDom = AppDomain.CreateDomain(workerDomainFriendlyName, null, ads, new System.Security.PermissionSet(System.Security.Permissions.PermissionState.Unrestricted));
             // make sure the worker domain is aware of the additional paths to probe when resolving the EventSource base type
-            if (commandLine.ReferencePath != null)
-                workerDom.SetData("ReferencePath", Environment.ExpandEnvironmentVariables(commandLine.ReferencePath));
+            if (workerCommandLine.ReferencePath != null)
+                workerDom.SetData("ReferencePath", Environment.ExpandEnvironmentVariables(workerCommandLine.ReferencePath));
             return workerDom.ExecuteAssembly(typeof(Program).Assembly.Location);
         }
-        else
 #endif
-        return CommandLineUtilities.RunConsoleMainWithExceptionProcessing(delegate
+        // See code:#CommandLineDefinitions for Command line defintions
+        CommandLine commandLine = new CommandLine();
+        List<Tuple<string, string>> regDlls;
+        EventSourceReflectionProxy.ManifestGenerator = commandLine.ManifestGenerator;
+        switch (commandLine.Command)
         {
-            // See code:#CommandLineDefinitions for Command line defintions
-            CommandLine commandLine = new CommandLine();
-            List<Tuple<string, string>> regDlls;
-            EventSourceReflectionProxy.ManifestGenerator = commandLine.ManifestGenerator;
-            switch (commandLine.Command)
-            {
-                // Create the XML description in the data directory "will be called 
-                case CommandLine.CommandType.DumpManifest:
-                    var manifests = CreateManifestsFromManagedDll(commandLine.DllPath, commandLine.ManifestPrefix);
-                    if (manifests.Count == 0)
-                        Console.WriteLine("Info: No event source classes " + (commandLine.ForceAll ? "" : "needing registration ") + "found in " + commandLine.DllPath);
-                    break;
-                case CommandLine.CommandType.CompileManifest:
-                    CompileManifest(commandLine.ManPath, System.IO.Path.ChangeExtension(commandLine.ManPath, ".dll"));
-                    break;
-                case CommandLine.CommandType.DumpRegDlls:
-                    regDlls = CreateRegDllsFromManagedDll(commandLine.DllPath, commandLine.ForceAll, commandLine.ManifestPrefix);
-                    if (regDlls.Count == 0)
-                        Console.WriteLine("Info: No event source classes " + (commandLine.ForceAll ? "" : "needing registration ") + "found in " + commandLine.DllPath);
-                    break;
-                case CommandLine.CommandType.Install:
-                    regDlls = RegisterManagedDll(commandLine.DllPath, false, commandLine.ManifestPrefix);
-                    if (regDlls.Count == 0)
-                        Console.WriteLine("Info: No event source classes " + (commandLine.ForceAll ? "" : "needing registration ") + "found in " + commandLine.DllPath);
-                    break;
-                case CommandLine.CommandType.Uninstall:
-                    regDlls = RegisterManagedDll(commandLine.DllPath, true, commandLine.ManifestPrefix);
-                    if (regDlls.Count == 0)
-                        Console.WriteLine("Info: No event source classes " + (commandLine.ForceAll ? "" : "needing registration ") + "found in " + commandLine.DllPath);
-                    break;
-            }
-            return 0;
-        });
+            // Create the XML description in the data directory "will be called
+            case CommandLine.CommandType.DumpManifest:
+                var manifests = CreateManifestsFromManagedDll(commandLine.DllPath, commandLine.ManifestPrefix);
+                if (manifests.Count == 0)
+                    Console.WriteLine("Info: No event source classes " + (commandLine.ForceAll ? "" : "needing registration ") + "found in " + commandLine.DllPath);
+                break;
+            case CommandLine.CommandType.CompileManifest:
+                CompileManifest(commandLine.ManPath, System.IO.Path.ChangeExtension(commandLine.ManPath, ".dll"));
+                break;
+            case CommandLine.CommandType.DumpRegDlls:
+                regDlls = CreateRegDllsFromManagedDll(commandLine.DllPath, commandLine.ForceAll, commandLine.ManifestPrefix);
+                if (regDlls.Count == 0)
+                    Console.WriteLine("Info: No event source classes " + (commandLine.ForceAll ? "" : "needing registration ") + "found in " + commandLine.DllPath);
+                break;
+            case CommandLine.CommandType.Install:
+                regDlls = RegisterManagedDll(commandLine.DllPath, false, commandLine.ManifestPrefix);
+                if (regDlls.Count == 0)
+                    Console.WriteLine("Info: No event source classes " + (commandLine.ForceAll ? "" : "needing registration ") + "found in " + commandLine.DllPath);
+                break;
+            case CommandLine.CommandType.Uninstall:
+                regDlls = RegisterManagedDll(commandLine.DllPath, true, commandLine.ManifestPrefix);
+                if (regDlls.Count == 0)
+                    Console.WriteLine("Info: No event source classes " + (commandLine.ForceAll ? "" : "needing registration ") + "found in " + commandLine.DllPath);
+                break;
+        }
+        return 0;
     }
 
     // These correspond to command line commands
@@ -370,11 +374,7 @@ class Program
         {
             AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += CurrentDomain_ReflectionOnlyAssemblyResolve;
 
-            if (System.Environment.OSVersion.Version >= new Version(6, 2, 0, 0))
-            {
-                // on Win8+ support winmd assembly resolution
-                SubscribeToWinRTReflectionOnlyNamespaceResolve();
-            }
+            SubscribeToWinRTReflectionOnlyNamespaceResolve();
 
             assembly = Assembly.ReflectionOnlyLoadFrom(dllPath);
 
@@ -705,4 +705,3 @@ class CommandLine
     public string ManifestGenerator = "builtin"; // "base", "path_to_assm_containing_EventSource_type"
     public bool ForceAll;
 };
-

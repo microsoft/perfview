@@ -6,7 +6,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
-using Utilities;
 
 
 namespace PerfView.GuiUtilities
@@ -141,7 +140,8 @@ namespace PerfView.GuiUtilities
                 return;
             }
 
-            var userDataFolder = Path.Combine(SupportFiles.SupportFileDir, "WebView2");
+            // Support files may be installed in a read-only directory; browser state must remain per-user.
+            var userDataFolder = GetUserDataFolder(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
             Directory.CreateDirectory(userDataFolder);
 
             var environmentAwaiter = CoreWebView2Environment
@@ -174,6 +174,19 @@ namespace PerfView.GuiUtilities
                 // Navigate to the current specified source
                 Navigate();
             });
+        }
+
+        internal static string GetUserDataFolder(string localApplicationData)
+        {
+            // On Windows, roots such as "C:" and "\" still depend on the current directory or drive.
+            if (string.IsNullOrWhiteSpace(localApplicationData) ||
+                !Path.IsPathRooted(localApplicationData) ||
+                Path.GetPathRoot(localApplicationData).Length < 3)
+            {
+                throw new InvalidOperationException("A fully qualified LocalApplicationData directory is required for PerfView's WebView2 browser data.");
+            }
+
+            return Path.Combine(localApplicationData, "PerfView", "WebView2");
         }
 
         private const string CloseWindowMessage = "PerfView.CloseWindow";

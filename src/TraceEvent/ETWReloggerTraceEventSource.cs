@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using TraceReloggerLib;
-using Microsoft.Diagnostics.Utilities;
 
 #pragma warning disable 0414 // This is is because m_scratchBufferSize was #if conditionally removed, and I don't want it to complain about it.  
 
@@ -15,7 +14,6 @@ namespace Microsoft.Diagnostics.Tracing
 {
     /// <summary>
     /// ETWReloggerTraceEventSource is designed to be able to write ETW files using an existing ETW input stream (either a file, files or real time session) as a basis. 
-    /// The relogger capabilities only exist on Windows 8 OSes and beyond.  
     /// 
     /// The right way to think about this class is that it is just like ETWTraceEventSource, but it also has a output file associated with it, and WriteEvent APIs that
     /// can be used to either copy events from the event stream (the common case), or inject new events (high level stats).  
@@ -40,11 +38,6 @@ namespace Microsoft.Diagnostics.Tracing
         public ETWReloggerTraceEventSource(string fileOrSessionName, TraceEventSourceType type, string outputFileName)
             : base()
         {
-            if (!OperatingSystemVersion.AtLeast(62))
-            {
-                throw new NotSupportedException("System Tracing is only supported on Windows 8 and above.");
-            }
-
             m_relogger = new CTraceRelogger();
             if (type == TraceEventSourceType.FileOnly)
             {
@@ -78,7 +71,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// The output file can use a compressed form or not.  Compressed forms can only be read on Win8 and beyond.   Defaults to true.  
+        /// The output file can use a compressed form or not. Defaults to true.
         /// </summary>
         public bool OutputUsesCompressedFormat { set { m_relogger.SetCompressionMode((sbyte)(value ? 1 : 0)); } }
 

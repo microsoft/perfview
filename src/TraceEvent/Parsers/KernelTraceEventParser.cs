@@ -140,7 +140,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary> 
             VirtualAlloc = 0x004000,
             /// <summary>
-            /// Log mapping of files into memory (Win8 and above Only)
+            /// Log mapping of files into memory.
             /// Generally low volume.  
             /// </summary>
             VAMap = 0x8000,
@@ -198,11 +198,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // These are ones that I have made up  
             // All = 0x07B3FFFF, so 4'0000, 8'0000, 40'0000, and F000'00000 are free.  
             /// <summary>
-            /// Turn on PMC (Precise Machine Counter) events.   Only Win 8
+            /// Turn on PMC (Precise Machine Counter) events.
             /// </summary>
             PMCProfile = unchecked((int)0x80000000),
             /// <summary>
-            /// Kernel reference set events (like XPERF ReferenceSet).   Fully works only on Win 8.  
+            /// Kernel reference set events (like XPERF ReferenceSet).
             /// </summary>
             ReferenceSet = 0x40000000,
             /// <summary>
@@ -226,10 +226,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             get
             {
-                var ret = (Keywords)unchecked((int)0xf84c8000); // PMCProfile ReferenceSet ThreadPriority IOQueue Handle VAMap 
-                if (OperatingSystemVersion.AtLeast(OperatingSystemVersion.Win8))
-                    ret &= ~Keywords.VAMap;
-                return ret;
+                return (Keywords)unchecked((int)0xf84c0000); // PMCProfile ReferenceSet ThreadPriority IOQueue Handle
             }
         }
 
@@ -4192,6 +4189,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
 
         internal override unsafe void FixupData()
         {
+            // V1 Stop events contain only IDs; newer versions require the pointer-sized fixed prefix.
+            int minimumLength = Version < 2 ? 8 : HostOffset(40, 7);
+            if (EventDataLength < minimumLength)
+            {
+                throw new FormatException($"Invalid thread event payload: version {Version} requires at least {minimumLength} bytes, but received {EventDataLength}.");
+            }
+
             if (Version < 2)
             {
                 return;

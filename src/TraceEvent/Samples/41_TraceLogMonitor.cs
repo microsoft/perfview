@@ -31,20 +31,13 @@ namespace TraceEventSamples
             Out.WriteLine("This program Shows how to use the real-time support in TraceLog");
             Out.WriteLine("We do this by showing how to monitor exceptions in real time ");
             Out.WriteLine();
-            Out.WriteLine("This code depends on a Feature of Windows 8.1 (combined user and kernel sessions)");
-            Out.WriteLine("It will work on Win7 machines, however win7 can have only one kernel session");
-            Out.WriteLine("so it will disrupt any use of the kernel session on that OS. ");
+            Out.WriteLine("This code uses a combined user and kernel session.");
             Out.WriteLine();
             Out.WriteLine("Note that this support is currently experimental and subject to change");
             Out.WriteLine();
             Out.WriteLine("Monitoring .NET Module load and Exception events (with stacks).");
             Out.WriteLine("Run some managed code (ideally that has exceptions) while the monitor is running.");
             Out.WriteLine();
-
-            if (Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor < 62)
-            {
-                Out.WriteLine("This demo will preempt any use of the kernel provider. ");
-            }
 
             TraceEventSession session = null;
 
@@ -69,14 +62,12 @@ namespace TraceEventSamples
             Timer timer = null;
 
             // Create the new session to receive the events.  
-            // Because we are on Win 8 this single session can handle both kernel and non-kernel providers.  
+            // This single session handles both kernel and non-kernel providers.
             using (session = new TraceEventSession("TraceLogSession"))
             {
                 // Enable the events we care about for the kernel
                 // For this instant the session will buffer any incoming events.  
                 // Enabling kernel events must be done before anything else.   
-                // Note that on Win7 it will turn on the one and only NT Kernel Session, and thus interrupt any kernel session in progress.
-                // On WIn8 you get a new session (like you would expect).  
                 //
                 // Note that if you turn on the KernelTraceEventParser.Keywords.Profile, you can also get stacks for CPU sampling 
                 // (every millisecond).  (You can use the traceLogSource.Kernel.PerfInfoSample callback).  

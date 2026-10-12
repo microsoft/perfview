@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;net8.0</TargetFrameworks>
+    <TargetFrameworks>net462;net10.0</TargetFrameworks>
     <RootNamespace>TraceEventTests</RootNamespace>
     <AssemblyName>TraceEventTests</AssemblyName>
     <Description>Unit tests for TraceEvent.</Description>
@@ -51,6 +51,8 @@
     <Compile Include="..\..\PerfView.TestUtilities\DebugAssertionTests.cs">
       <Link>DebugAssertionTests.cs</Link>
     </Compile>
+    <Compile Remove="Properties\ModuleInitializerAttribute.cs" />
+    <Compile Include="Properties\ModuleInitializerAttribute.cs" Condition="'$(TargetFramework)' == 'net462'" />
   </ItemGroup>
 
   <ItemGroup>

@@ -54,12 +54,9 @@ namespace TraceEventSamples
                 return;
             }
 
-            // Start the session as a real time monitoring session,  
-            // Before windows 8, there is a restriction that if you wanted kernel events you must name your session 
-            // 'NT Kernel Logger' (the value of KernelSessionName) and there can only be one such session and no
-            // other ETW providers can be enabled for that session (thus you need two sessions if you want both
-            // kernel and non-kernel events (fixed in Win 8).  We want this to work on Win 7 so we live with those
-            // restrictions.   
+            // This sample uses the special 'NT Kernel Logger' session, which accepts only kernel events.
+            // Creating it replaces any existing session with that name. Use a separately named session
+            // as in KernelAndClrMonitor to collect kernel and non-kernel events together.
             using (TraceEventSession session = new TraceEventSession(KernelTraceEventParser.KernelSessionName))
             {
                 /* BY DEFAULT ETW SESSIONS SURVIVE THE DEATH OF THE PROESS THAT CREATES THEM! */

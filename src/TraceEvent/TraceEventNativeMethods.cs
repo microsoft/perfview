@@ -616,65 +616,6 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        private static extern int EnableTrace(
-            [In] uint enable,
-            [In] int enableFlag,
-            [In] int enableLevel,
-            [In] in Guid controlGuid,
-            [In] TRACEHANDLE sessionHandle);
-
-        internal static int EnableTrace(
-            uint enable,
-            int enableFlag,
-            int enableLevel,
-            in Guid controlGuid,
-            SafeTraceHandle sessionHandle)
-        {
-            return EnableTrace(
-                enable,
-                enableFlag,
-                enableLevel,
-                controlGuid,
-                sessionHandle.DangerousGetHandle());
-        }
-
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        private static extern int EnableTraceEx(
-            [In] in Guid ProviderId,
-            [In] Guid* SourceId,
-            [In] TRACEHANDLE TraceHandle,
-            [In] int IsEnabled,
-            [In] byte Level,
-            [In] ulong MatchAnyKeyword,
-            [In] ulong MatchAllKeyword,
-            [In] uint EnableProperty,
-            [In] EVENT_FILTER_DESCRIPTOR* filterData);
-
-        internal static int EnableTraceEx(
-            in Guid ProviderId,
-            Guid* SourceId,
-            SafeTraceHandle TraceHandle,
-            bool IsEnabled,
-            TraceEventLevel Level,
-            ulong MatchAnyKeyword,
-            ulong MatchAllKeyword,
-            uint EnableProperty,
-            EVENT_FILTER_DESCRIPTOR* filterData)
-        {
-            return EnableTraceEx(
-                ProviderId,
-                SourceId,
-                TraceHandle.DangerousGetHandle(),
-                IsEnabled ? 1 : 0,
-                (byte)Level,
-                MatchAnyKeyword,
-                MatchAllKeyword,
-                EnableProperty,
-                filterData
-                );
-        }
-
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         private static extern int EnableTraceEx2(
             [In] TRACEHANDLE TraceHandle,
             [In] in Guid ProviderId,
@@ -707,7 +648,6 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         // Values for ENABLE_TRACE_PARAMETERS.Version
-        internal const uint ENABLE_TRACE_PARAMETERS_VERSION = 1;
         internal const uint ENABLE_TRACE_PARAMETERS_VERSION_2 = 2;      // Introduced in Windows 8.1 
 
         // Values for ENABLE_TRACE_PARAMETERS.EnableProperty

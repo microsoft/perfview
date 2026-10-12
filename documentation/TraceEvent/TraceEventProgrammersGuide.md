@@ -436,7 +436,7 @@ Capabilities include:
 * The ability to turn on event providers selectively using ETW 'Keywords' and verbosity 'Levels'. You can also pass additional arguments to your provider which `EventSource` sources can pick up. In that way you can create very sophisticated filtering specification as well as execute simple commands (e.g. force a GC, flush the working set, and etc.).
 * The ability to enumerate the ETW providers on the system as well as in a particular process, and the ability to determine what ETW groups (Keywords) you can turn on.
 * Ability to take ETL files and merge them together into a single file.
-* Ability to read an ETL file or real time session and write an ETL file from it, filtering it or adding new events (Windows 8 only).
+* Ability to read an ETL file or real time session and write an ETL file from it, filtering it or adding new events.
 * The ability to capture stack traces when events are being logged.
 * The ability to convert the stacks to symbolic form both for .NET, Jscript, as well as native code.
 * The ability to store events in a new format (ETLX) that allows the events to be accessed efficiently in a random fashion as well as to enumerate the events backwards as well as forwards, and to efficiently represent the stack information.
@@ -456,7 +456,7 @@ Capabilities include:
     * Network I/O.
     * Every packet (with compete data) that comes on or off the network (network sniffer).
     * Every system call.
-    * Sampling of processor CPU counters (instructions executed, branch mispredicts, cache misses, ...) (Windows 8 only).
+    * Sampling of processor CPU counters (instructions executed, branch mispredicts, cache misses, ...).
     * Remote procedure calls.
     * How the machine is configured (disk, memory, CPUs, ...).
 * Access CLR (.NET Runtime) events, including:
@@ -481,13 +481,13 @@ You can also get a reasonably good idea of what is possible by taking a look at 
 
 Unfortunately, there are some limitations in ETW that sometimes block it from being used in scenarios where it would otherwise be a natural fit. They are listed here for emphasis.
 
-* You send commands to providers on a machine wide basis. Thus you can't target particular processes (however if you own the event provider code you can pass it extra information as arguments to 'enable' command to the provider and have your provider implement logic to ignore 'enable' commands not intended for it). (Fixed in Windows 8.1).
+* Provider control is machine-wide, but `TraceEventProviderOptions.ProcessIDFilter` and `ProcessNameFilter` can limit collected events to selected processes on supported Windows hosts.
 * Because commands are machine wide and thus give you access to all information on the system, you have to be Elevated (Admin) to turn an ETW session on or off.
 * By design the communication between the controllers and the providers is 'fire and forget'. Thus ETW is not intended to be a general purpose cross process communication mechanism. Don't try to use it as such.
 * In real time mode, events are buffered and there is at least a second or so delay (typically 3 sec) between the firing of the event and the reception by the session (to allow events to be delivered in efficient clumps of many events).
-* Before Windows 8, there could only one kernel session. Thus using kernel mode events for 'monitoring' scenarios was problematic because any other tools that used kernel sessions were likely to interfere by overriding the single Kernel model event logging session.
+* Named sessions can combine kernel and user providers. The special `NT Kernel Logger` session remains kernel-only; reusing its name can interfere with another tool using that session.
 * In general scenarios having multiple controllers (sessions) controlling the same providers is dangerous. It can be done in some cases, but there is a significant potential for interference between the sessions.
-* The file format is private, and before Windows 8 could be quite space inefficient (it compresses 8-to-1). Files can get big fast.
+* ETL files can get large. Compression is available on supported Windows hosts; historical uncompressed traces may be substantially larger.
 * Logging more than 10K events/sec will load the system noticeably (5%). Logging more frequently than 10K/sec should be avoided if possible. Logging 1M events/sec will completely swamp a typical machine.
 
 ## Next Step: Code Samples
@@ -826,8 +826,8 @@ Below are the steps in converting logging an event with a stack to a resolved sy
 
 1. When the event is logged, the ETW system tries to crawl the stack at runtime. However this can fail for various reasons:
 
-    1. On 32-bit machines the crawler assumes the compiler stores unwinding information (EBP frames) on the stack. If the compile does not do this the stack 'breaks' (can't be unwound) and you lose any frames 'toward thread start'.
-    2. On 64-bit processes on 64-bit machines the crawler needs 'unwind' information. For native code this is stored in the EXE, but for Just In Time (JIT) compiled code on Systems **before Windows 8 (or Win2012 server)** the ETW system did not know how to find this unwind information and break at the first frame with JIT compiled code. This is the most common reason for stack breakage, but will diminish machines are upgraded to new OSes.
+    1. On 32-bit machines the crawler assumes the compiler stores unwinding information (EBP frames) on the stack. If the compiler does not do this the stack 'breaks' (can't be unwound) and you lose any frames 'toward thread start'.
+    2. For 64-bit processes, the crawler needs unwind information. Historical traces collected **before Windows 8 (or Windows Server 2012)** may have stacks broken at JIT-compiled frames because ETW could not locate that information. This old-host limitation is not a restriction on current collection, but reading an old trace cannot recover frames that were never recorded.
 
     If either of these happen there is nothing wrong with your code as it is an issue with the APP or with the ETW infrastructure. PerfView should have the same problem.
 
@@ -843,6 +843,25 @@ Below are the steps in converting logging an event with a stack to a resolved sy
     1. You must set your `_NT_SYMBOL_PATH` environment variable to locations where to search for the PDBS. If you do not you will only know the module and hex address.
     2. For operating system DLLs, the PDBS live on what is called a symbol server. To find these your `_NT_SYMBOL_PATH` must include the name for these symbol servers (the public Microsoft symbol server is `SRV*https://msdl.microsoft.com/download/symbols`). However to look up a DLL in the symbol server, **you need a special GUID associated with the DLL, and a RAW ETL file does NOT INCLUDE this GUID**!. If you try to look up the DLL's PDB on the machine where the DLL exists, `TraceEvent` can fetch the necessary GUID from the DLL itself, but if the ETL file was copied to another machine this will not work and the PDB cannot be fetched. Running the `TraceEventSource.MergeInPlace` operation rewrites the raw ETL file so that it includes the necessary DLL GUIDs and thus is a requirement if you move the data off the collection machine (and you want symbolic information for native code stacks).
     3. For .NET code all the library code is precompiled (NGENed) and so is looked up using a PDB like the native case. However unlike native DLLs, the PDBs for the NGEN images are typically not saved on the Microsoft symbol server. Instead you must generate the PDBs for the NGEN images from the IL images as you need them. Again if you resolve the symbols on the machine where the collection happened, at the time you resolve the symbols `TraceEvent`'s `SymbolReader` class will automatically generate the NGEN image for you and cache it, however if you move the ETL file off the machine, you need to generate the NGEN PDBs as well as merge the ETL file to get the symbolic information for the .NET code in NGEN images. This is what the `SymbolReader.GenerateNGenSymbolsForModule` method can help you do. TODO MORE
+
+`SymbolReader` has three independent authorization checks:
+
+- `SecurityCheck` controls whether a PDB found in an unsafe local location, such as beside an executable or in its build directory, may be used. The callback receives the PDB path. If the property is not set or returns `false`, the PDB is rejected. Applications should prompt the user or allow only explicitly trusted directories.
+- `AuthorizeDownload` controls whether Source Link and HTTP source-server downloads may retrieve source code. The callback receives a `DownloadAuthorizationRequest` and runs immediately before the HTTP request; approval also covers redirects followed by the HTTP client. It does not run for symbol/PDB downloads, local source, embedded source, or a valid cached source file. If the property is not set, source downloads are denied by default. Applications should prompt the user or enforce an explicit host/repository allow-list.
+- `AuthorizeSourceServerCommand` controls whether a validated command derived from PDB source-server data may execute. The callback receives a `SourceServerAuthorizationRequest` containing the exact rebuilt command. If the property is not set or returns `false`, the command is not run. Applications should prompt the user before execution or use a narrowly scoped policy. Before invoking the callback, TraceEvent independently verifies that the command uses a supported executable and allowed arguments. Returning `true` from the callback does not bypass that validation.
+
+```C#
+using (var symbolReader = new SymbolReader(log))
+{
+    symbolReader.SecurityCheck = pdbPath =>
+        trustedPdbDirectories.Contains(Path.GetDirectoryName(pdbPath));
+    symbolReader.AuthorizeDownload = request =>
+        trustedSourceHosts.Contains(request.Uri.Host);
+    symbolReader.AuthorizeSourceServerCommand = request => false;
+}
+```
+
+Each `true` result authorizes only the operation described by that callback invocation. Exceptions from `AuthorizeDownload` are logged and deny the download.
 
 So in summary to get good stacks and have them work on any machine for any code you need to:
 

@@ -244,7 +244,8 @@ public class PdbScopeMemoryGraph : MemoryGraph
             }
 
             DebugWriteLine("Found DLL/EXE file " + dllFilePath);
-            using (var symReader = new SymbolReader(PerfView.App.CommandProcessor.LogFile))
+            TextWriter log = PerfView.App.CommandProcessor.LogFile;
+            using (var symReader = new SymbolReader(log, null, PerfView.AntiSSRFHandlerFactory.Create()))
             {
                 // TryResolveTrustedFilePath has already validated that dllFilePath is a
                 // real local file under the PdbScope XML's own directory, so the DLL

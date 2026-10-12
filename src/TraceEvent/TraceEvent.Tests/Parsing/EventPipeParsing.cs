@@ -12,6 +12,7 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -65,6 +66,43 @@ namespace TraceEventTests
         public EventPipeParsing(ITestOutputHelper output)
             : base(output)
         {
+        }
+
+        /// <summary>
+        /// Rejects a generic event whose claimed payload is missing from its block before any callback runs.
+        /// Covers compressed/uncompressed headers and immediate sorted dispatch versus queued unsorted dispatch.
+        /// </summary>
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NettraceTruncatedPayloadIsRejectedBeforeCallback(bool compressed, bool sorted)
+        {
+            // No native fixup or payload read: this remains safe on the unfixed implementation.
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent", 15));
+            writer.WriteThreadBlock(w => w.WriteThreadEntry(1, 202, 101));
+            // Claim 68 payload bytes but supply none; the length has no kernel-event layout significance.
+            writer.WriteEventBlock(compressed, w => w.WriteEventHeader(new WriteEventOptions
+            {
+                MetadataId = 1,
+                ThreadIndexOrId = 1,
+                CaptureThreadIndexOrId = 1,
+                SequenceNumber = 1,
+                Timestamp = 1,
+                IsSorted = sorted
+            }, 68));
+            writer.WriteEndBlock();
+
+            using (var source = new EventPipeEventSource(new MemoryStream(writer.ToArray())))
+            {
+                int callbacks = 0;
+                source.Dynamic.All += data => callbacks++;
+                Assert.Throws<FormatException>(() => source.Process());
+                Assert.Equal(0, callbacks);
+            }
         }
 
 #if NETCOREAPP3_0_OR_GREATER
@@ -211,6 +249,177 @@ namespace TraceEventTests
                     }
 
                     // Stop after receiving the first event.
+                    session.Stop();
+                    await processingTask;
+                }
+            }
+        }
+
+#if NETCOREAPP3_0_OR_GREATER
+        [Fact]
+#else
+        [Fact(Skip = "EventPipeSession connection is only available to target apps on .NET Core 3.0 or later")]
+#endif
+        public async Task TrimLiveSessionStateDiscardsInternedStacksAndKeepsInterning()
+        {
+            // In a real time session the call stack interning tables grow for the lifetime of the
+            // session: every distinct stack observed is interned and nothing is released, so a long
+            // running session grows without bound.  TrimLiveSessionState discards them.
+            //
+            // This verifies both halves of the contract: the tables are actually emptied, and stacks
+            // observed afterwards are still interned and still resolve to methods.
+            const int MinimumInternedStacks = 8;
+
+            var client = new DiagnosticsClient(Process.GetCurrentProcess().Id);
+            var providers = new[]
+            {
+                new EventPipeProvider(SampleProfilerTraceEventParser.ProviderName, EventLevel.Informational),
+            };
+
+            using (var session = client.StartEventPipeSession(providers, requestRundown: false))
+            {
+                using (var traceSource = CreateFromEventPipeSession(session, EventPipeRundownConfiguration.Enable(client)))
+                {
+                    var traceLog = traceSource.TraceLog;
+                    var sampleEventParser = new SampleProfilerTraceEventParser(traceSource);
+
+                    int stacksBeforeReset = 0;
+                    int stacksAfterReset = -1;
+                    // RunContinuationsAsynchronously so awaiting this cannot resume inline on the
+                    // event processing thread - the continuation below stops the session and waits
+                    // on the processing task, which would deadlock if it ran on that thread.
+                    var stackAfterReset = new TaskCompletionSource<CallStackIndex>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                    sampleEventParser.ThreadSample += delegate (ClrThreadSampleTraceData e)
+                    {
+                        // TrimLiveSessionState has to run on the thread that processes events, which is the
+                        // thread this callback runs on.
+                        if (stacksAfterReset < 0)
+                        {
+                            // Let enough distinct stacks accumulate for the 'before' value to be meaningful.
+                            if (traceLog.CallStacks.Count < MinimumInternedStacks)
+                            {
+                                return;
+                            }
+
+                            stacksBeforeReset = traceLog.CallStacks.Count;
+                            traceLog.TrimLiveSessionState();
+                            stacksAfterReset = traceLog.CallStacks.Count;
+                            return;
+                        }
+
+                        // Anything interned after the reset must still be usable.
+                        CallStackIndex callStackIndex = e.CallStackIndex();
+                        if (callStackIndex != CallStackIndex.Invalid)
+                        {
+                            stackAfterReset.TrySetResult(callStackIndex);
+                        }
+                    };
+
+                    var processingTask = Task.Run(traceSource.Process);
+
+                    // Keep a little work running so the sampler sees a variety of stacks.
+                    var workDone = new CancellationTokenSource();
+                    var workTask = Task.Run(() =>
+                    {
+                        while (!workDone.IsCancellationRequested)
+                        {
+                            RecursiveWork(12);
+                        }
+                    });
+
+                    try
+                    {
+                        Task completed = await Task.WhenAny(stackAfterReset.Task, Task.Delay(TimeSpan.FromSeconds(60)));
+                        Assert.True(completed == stackAfterReset.Task,
+                            $"Timed out waiting for a call stack after the reset (interned before reset: {stacksBeforeReset}).");
+                    }
+                    finally
+                    {
+                        workDone.Cancel();
+                        await workTask;
+                    }
+
+                    Assert.True(stacksBeforeReset >= MinimumInternedStacks,
+                        $"Expected at least {MinimumInternedStacks} interned call stacks before the reset, saw {stacksBeforeReset}.");
+
+                    // The interning tables were emptied.
+                    Assert.Equal(0, stacksAfterReset);
+
+                    // ...and interning continued to work afterwards, all the way through to a method name.
+                    CallStackIndex postResetStack = await stackAfterReset.Task;
+                    CodeAddressIndex codeAddressIndex = traceLog.CallStacks.CodeAddressIndex(postResetStack);
+                    Assert.NotEqual(CodeAddressIndex.Invalid, codeAddressIndex);
+                    MethodIndex methodIndex = traceLog.CodeAddresses.MethodIndex(codeAddressIndex);
+                    Assert.NotEqual(MethodIndex.Invalid, methodIndex);
+                    Assert.NotEmpty(traceLog.CodeAddresses.Methods[methodIndex].FullMethodName);
+                    Assert.True(traceLog.CallStacks.Count > 0, "Expected the interning tables to refill after the reset.");
+
+                    // Every index in a post-reset stack must refer to the *new* table.  If any part of
+                    // the interning state survived the reset (for example the per-thread roots), stale
+                    // indexes from the old table leak back in here.  Those do not throw - GrowableArray
+                    // indexes its backing store without bounds checking against Count - so the stack
+                    // would silently resolve to the wrong frames.  Walking the whole chain and range
+                    // checking each link is what actually catches that.
+                    int stackCount = traceLog.CallStacks.Count;
+                    int depth = 0;
+                    for (CallStackIndex frame = postResetStack; frame != CallStackIndex.Invalid; frame = traceLog.CallStacks.Caller(frame))
+                    {
+                        Assert.InRange((int)frame, 0, stackCount - 1);
+                        Assert.True(++depth <= stackCount,
+                            "Walking the post-reset call stack did not terminate; the interning tables are inconsistent.");
+                    }
+
+                    session.Stop();
+                    await processingTask;
+                }
+            }
+        }
+
+        private static long RecursiveWork(int depth)
+        {
+            if (depth <= 0)
+            {
+                double sink = 0;
+                for (int i = 1; i < 10000; i++)
+                {
+                    sink += Math.Sqrt(i);
+                }
+                return (long)sink;
+            }
+
+            return RecursiveWork(depth - 1) + depth;
+        }
+
+#if NETCOREAPP3_0_OR_GREATER
+        [Fact]
+#else
+        [Fact(Skip = "EventPipeSession connection is only available to target apps on .NET Core 3.0 or later")]
+#endif
+        public async Task TrimLiveSessionStateThrowsWhenCalledOffTheDispatchThread()
+        {
+            var client = new DiagnosticsClient(Process.GetCurrentProcess().Id);
+            var providers = new[]
+            {
+                new EventPipeProvider(SampleProfilerTraceEventParser.ProviderName, EventLevel.Informational),
+            };
+
+            using (var session = client.StartEventPipeSession(providers, requestRundown: false))
+            {
+                using (var traceSource = CreateFromEventPipeSession(session, EventPipeRundownConfiguration.None()))
+                {
+                    var traceLog = traceSource.TraceLog;
+
+                    // Wait until dispatching is under way, so we are asserting against a live dispatcher
+                    // rather than a session that has not started. The assertion below holds either way -
+                    // this thread is never the dispatch thread - so a timeout here is not a failure.
+                    var dispatching = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    traceSource.AllEvents += delegate (TraceEvent _) { dispatching.TrySetResult(true); };
+                    var processingTask = Task.Run(traceSource.Process);
+                    await Task.WhenAny(dispatching.Task, Task.Delay(TimeSpan.FromSeconds(30)));
+
+                    Assert.Throws<InvalidOperationException>(() => traceLog.TrimLiveSessionState());
+
                     session.Stop();
                     await processingTask;
                 }

@@ -5,7 +5,7 @@
     <TargetFramework>net462</TargetFramework>
     <OutputType>WinExe</OutputType>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <StartupObject>PerfView.App</StartupObject>
+    <StartupObject>PerfView.Startup</StartupObject>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <ExtrasEnableWpfProjectSetup>true</ExtrasEnableWpfProjectSetup>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
@@ -16,8 +16,9 @@
     <Copyright>Copyright © Microsoft 2010</Copyright>
     <FileVersion>$(PerfViewVersion)</FileVersion>
 
-    <!-- WebView2 downloads the wrong drivers unless this is set -->
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <!-- Explicitly select the x64 host and matching WebView2 loader. -->
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
 
   <ItemGroup>
@@ -95,6 +96,7 @@
     <PackageReference Include="Microsoft.IdentityModel.Abstractions" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Security.AntiSSRF" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.Web.WebView2" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.Windows.CsWin32">
       <PrivateAssets>all</PrivateAssets>
@@ -159,6 +161,7 @@
   </Target>
 
   <ItemGroup>
+    <Compile Include="..\Utilities\OperatingSystemVersion.cs" Link="Utilities\OperatingSystemVersion.cs" />
     <Compile Include="..\HeapDumpCommon\GCHeapDumpNames.cs">
       <Link>memory\GCHeapDumpNames.cs</Link>
     </Compile>
@@ -238,32 +241,12 @@
   </Target>
 
   <ItemGroup>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\msdia140.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\msdia140.dll</LogicalName>
-      <Link>x86\msdia140.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
+    <!-- The x86 heap-dump helper uses this when merging JavaScript heap ETL files. -->
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\KernelTraceControl.dll</LogicalName>
       <Link>x86\KernelTraceControl.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.Win61.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\KernelTraceControl.Win61.dll</LogicalName>
-      <Link>x86\KernelTraceControl.Win61.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\arm\KernelTraceControl.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\arm\KernelTraceControl.dll</LogicalName>
-      <Link>arm\KernelTraceControl.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll">
@@ -558,6 +541,13 @@
       <Link>Microsoft.IdentityModel.JsonWebTokens.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgMicrosoft_Security_AntiSSRF)\lib\netstandard2.0\Microsoft.Security.AntiSSRF.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Security.AntiSSRF.dll</LogicalName>
+      <Link>Microsoft.Security.AntiSSRF.dll</Link>
+      <Visible>False</Visible>
+    </EmbeddedResource>
     <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\lib\net462\Microsoft.Web.WebView2.Core.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
@@ -579,25 +569,11 @@
       <Link>Microsoft.Web.WebView2.Wpf.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x86\native\WebView2Loader.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\runtimes\win-x86\native\WebView2Loader.dll</LogicalName>
-      <Link>runtimes\win-x86\native\WebView2Loader.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
     <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x64\native\WebView2Loader.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\runtimes\win-x64\native\WebView2Loader.dll</LogicalName>
       <Link>runtimes\win-x64\native\WebView2Loader.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-arm64\native\WebView2Loader.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\runtimes\win-arm64\native\WebView2Loader.dll</LogicalName>
-      <Link>runtimes\win-arm64\native\WebView2Loader.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PkgMicrosoft_IdentityModel_Tokens)\lib\net462\Microsoft.IdentityModel.Tokens.dll">
