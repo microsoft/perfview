@@ -7914,36 +7914,42 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return start;
         }
 
+        /// <summary>
+        /// Interns a frame under its caller, searching the newest sibling first.
+        /// The child links are conversion-only indexes and do not change the serialized stack representation.
+        /// </summary>
         internal CallStackIndex InternCallStackIndex(CodeAddressIndex codeAddressIndex, CallStackIndex callerIndex)
         {
             if (callStacks.Count == 0)
             {
                 // allocate a reasonable size for the interning tables.
                 callStacks = new GrowableArray<CallStackInfo>(10000);
-                callees = new GrowableArray<List<CallStackIndex>>(10000);
+                firstCallee = new GrowableArray<int>(10000);
+                nextSibling = new GrowableArray<int>(10000);
             }
 
-            List<CallStackIndex> frameCallees;
+            int threadIndex = -1;
+            int firstChild;
             if (callerIndex < 0)        // Hit the last stack as we unwind to the root.  We need to encode the thread.
             {
                 Debug.Assert(callerIndex != CallStackIndex.Invalid);        // We always end with the thread.
-                int threadIndex = (int)GetThreadForRoot(callerIndex);
+                threadIndex = (int)GetThreadForRoot(callerIndex);
                 if (threadIndex >= threads.Count)
                 {
                     threads.Count = threadIndex + 1;
                 }
 
-                frameCallees = threads[threadIndex] ?? (threads[threadIndex] = new List<CallStackIndex>());
+                firstChild = threads[threadIndex];
             }
             else
             {
-                frameCallees = callees[(int)callerIndex] ?? (callees[(int)callerIndex] = new List<CallStackIndex>(4));
+                firstChild = firstCallee[(int)callerIndex];
             }
 
-            // Search backwards, assuming that most recently added is the most likely hit.
-            for (int i = frameCallees.Count - 1; i >= 0; --i)
+            // Zero means no child; other values encode the stack index plus one.
+            for (int child = firstChild; child != 0; child = nextSibling[child - 1])
             {
-                CallStackIndex calleeIndex = frameCallees[i];
+                CallStackIndex calleeIndex = (CallStackIndex)(child - 1);
                 if (callStacks[(int)calleeIndex].codeAddressIndex == codeAddressIndex)
                 {
                     Debug.Assert(calleeIndex > callerIndex);
@@ -7953,9 +7959,18 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             CallStackIndex ret = (CallStackIndex)callStacks.Count;
             callStacks.Add(new CallStackInfo(codeAddressIndex, callerIndex));
-            frameCallees.Add(ret);
-            callees.Add(null);
-            Debug.Assert(callees.Count == callStacks.Count);
+            firstCallee.Add(0);
+            nextSibling.Add(firstChild);
+            if (threadIndex >= 0)
+            {
+                threads[threadIndex] = (int)ret + 1;
+            }
+            else
+            {
+                firstCallee[(int)callerIndex] = (int)ret + 1;
+            }
+            Debug.Assert(firstCallee.Count == callStacks.Count);
+            Debug.Assert(nextSibling.Count == callStacks.Count);
             return ret;
         }
 
@@ -8014,11 +8029,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             throw new NotImplementedException(); // GetEnumerator
         }
 
-        // This is only used when converting maps.  Maps a call stack index to a list of call stack indexes that
-        // were callees of it.    This is the list you need to search when interning.  There is also 'threads'
-        // which is the list of call stack indexes where stack crawling stopped.
-        private GrowableArray<List<CallStackIndex>> callees;    // For each callstack, these are all the call stacks that it calls.
-        private GrowableArray<List<CallStackIndex>> threads;    // callees for threads of stacks, one for each thread
+        // These maps are only used while building stacks. Each caller and thread root has a head
+        // pointing into the sibling chain of its children; none of these lookup maps are serialized.
+        // Conversion-only child links use index-plus-one so default entries are empty.
+        // Most frames have only one child; arrays avoid a List and its backing array for each caller.
+        private GrowableArray<int> firstCallee;
+        private GrowableArray<int> nextSibling;
+        private GrowableArray<int> threads;    // First child for each thread root.
         private GrowableArray<CallStackInfo> callStacks;        // a field on CallStackInfo
         private DeferedRegion lazyCallStacks;
         private TraceCodeAddresses codeAddresses;
@@ -11444,13 +11461,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public bool KeepAllEvents;
         /// <summary>
-        /// Sometimes ETL files are too big , and you just want to look at a fraction of it to speed things up
-        /// (or to keep file size under control).  The MaxEventCount property allows that.   10M will produce a 3-4GB ETLX file.
-        /// 1M is a good value to keep ETLX file size under control.  Note that that the conversion still scan the entire
-        /// original ETL file too look for bookkeeping events, however MaxEventCount events will be transferred to the ETLX
-        /// file as events.
+        /// Limits the number of events retained in the ETLX file when set to at least 1,000.
+        /// The default value of zero does not impose an event-count limit. Conversion still scans
+        /// the complete input for bookkeeping events even when retained events are limited.
         /// <para>
-        /// The default is 10M because ETLX has a restriction of 4GB in size.
+        /// Output size depends on event payloads, stacks and metadata, not just event count or ETL byte size.
+        /// Default serialization uses eight-byte stream labels; a four-byte-label writer has a 4-GB limit.
+        /// Other index and count limits still apply.
         /// </para>
         /// </summary>
         public int MaxEventCount;
