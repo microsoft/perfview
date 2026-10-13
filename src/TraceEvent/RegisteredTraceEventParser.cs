@@ -98,6 +98,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             int buffSize = 84000;       // Still in the small object heap.  
             var buffer = new byte[buffSize]; // Still in the small object heap.
             byte* enumBuffer = null;
+            // Unmanaged buffers filled by TdhGetAllEventsInformation, one per event version; freed with enumBuffer.
+            var allEventsBuffers = new List<IntPtr>();
 
             TraceEventNativeMethods.EVENT_RECORD eventRecord = new TraceEventNativeMethods.EVENT_RECORD();
             eventRecord.EventHeader.ProviderId = providerGuid;
@@ -174,27 +176,48 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     Marshal.Copy(buffer, FirstDescriptorOffset, (IntPtr)pDescriptors, descriptors.Length * sizeof(EVENT_DESCRIPTOR));
                 }
 
+                // Events in the win:EventlogClassic keyword keep their Event Log message ids (Severity|Facility|Code).
+                // mc.exe packs them into the descriptor's Id (bits 0-15), Version (bits 16-23) and Opcode (bits 24-31),
+                // so a manifest can declare two events with the same Id and Version, e.g. MSDTC 0x8000D01A and
+                // 0xC000D01A. TdhGetManifestEventInformation looks events up by Id and Version only and returns the
+                // first event's fields for both; TdhGetAllEventsInformation returns every event of a version with its
+                // own metadata. So use the latter for the versions that contain classic events.
+                var classicVersions = new HashSet<byte>();
                 foreach (var descriptor in descriptors)
                 {
-                    for (; ; )
+                    if ((descriptor.Keyword & WINEVENT_KEYWORD_EVENTLOG_CLASSIC) != 0)
                     {
-                        int size = buffer.Length;
-                        status = TdhGetManifestEventInformation(eventRecord.EventHeader.ProviderId, descriptor, buffer, ref size);
-                        if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
+                        classicVersions.Add(descriptor.Version);
+                    }
+                }
+                var allEventsInfo = GetAllEventsInformation(providerGuid, classicVersions, allEventsBuffers);
+
+                foreach (var descriptor in descriptors)
+                {
+                    IntPtr allEventInfo;
+                    if (!allEventsInfo.TryGetValue(descriptor, out allEventInfo))
+                    {
+                        for (; ; )
                         {
-                            break;
+                            int size = buffer.Length;
+                            status = TdhGetManifestEventInformation(eventRecord.EventHeader.ProviderId, descriptor, buffer, ref size);
+                            if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
+                            {
+                                break;
+                            }
+
+                            buffer = new byte[size];
                         }
 
-                        buffer = new byte[size];
+                        if (status != 0)
+                        {
+                            continue;
+                        }
                     }
 
-                    if (status != 0)
+                    fixed (byte* manifestEventInfoBuff = buffer)
                     {
-                        continue;
-                    }
-
-                    fixed (byte* eventInfoBuff = buffer)
-                    {
+                        byte* eventInfoBuff = allEventInfo != IntPtr.Zero ? (byte*)allEventInfo : manifestEventInfoBuff;
                         var eventInfo = (TRACE_EVENT_INFO*)eventInfoBuff;
                         EVENT_PROPERTY_INFO* propertyInfos = &eventInfo->EventPropertyInfoArray;
 
@@ -506,6 +529,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)enumBuffer);
             }
+            foreach (var allEventsBuffer in allEventsBuffers)
+            {
+                Marshal.FreeHGlobal(allEventsBuffer);
+            }
 
             if (providerName == null)
             {
@@ -688,6 +715,69 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
+        /// <summary>
+        /// Calls TdhGetAllEventsInformation for each of 'versions' and returns the TRACE_EVENT_INFO of every event it
+        /// reports, keyed by descriptor. The infos point into unmanaged buffers that are added to 'buffers', which the
+        /// caller must free. Versions it cannot provide, or an OS whose tdh.dll does not export it, are simply
+        /// absent, and the caller falls back to TdhGetManifestEventInformation.
+        /// </summary>
+        /// <remarks>
+        /// Each call costs about as much as reading the whole manifest, so ask only for the versions that need it.
+        /// </remarks>
+        private static Dictionary<EVENT_DESCRIPTOR, IntPtr> GetAllEventsInformation(Guid providerGuid, IEnumerable<byte> versions, List<IntPtr> buffers)
+        {
+            var infos = new Dictionary<EVENT_DESCRIPTOR, IntPtr>();
+
+            // Only the provider and version are used to select the events.
+            TraceEventNativeMethods.EVENT_RECORD eventRecord = new TraceEventNativeMethods.EVENT_RECORD();
+            eventRecord.EventHeader.ProviderId = providerGuid;
+
+            foreach (var version in versions)
+            {
+                eventRecord.EventHeader.Version = version;
+                int size = 84000;
+                byte* buffer = (byte*)Marshal.AllocHGlobal(size);
+                int count, status;
+                try
+                {
+                    for (; ; )
+                    {
+                        // pIndex is the position of the event whose Id matches the record's, not an offset to the first.
+                        status = TdhGetAllEventsInformation(&eventRecord, IntPtr.Zero, out _, out count, buffer, ref size);
+                        if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
+                        {
+                            break;
+                        }
+
+                        Marshal.FreeHGlobal((IntPtr)buffer);
+                        buffer = (byte*)Marshal.AllocHGlobal(size);
+                    }
+                }
+                catch (EntryPointNotFoundException)
+                {
+                    // tdh.dll on this OS does not export TdhGetAllEventsInformation.
+                    Marshal.FreeHGlobal((IntPtr)buffer);
+                    break;
+                }
+
+                if (status != 0)
+                {
+                    Marshal.FreeHGlobal((IntPtr)buffer);
+                    continue;
+                }
+
+                buffers.Add((IntPtr)buffer);
+
+                // The buffer starts with 'count' TRACE_EVENT_INFO pointers into itself.
+                var eventInfos = (TRACE_EVENT_INFO**)buffer;
+                for (int i = 0; i < count; i++)
+                {
+                    infos[eventInfos[i]->EventDescriptor] = (IntPtr)eventInfos[i];
+                }
+            }
+
+            return infos;
+        }
 
         private static string MakeLegalIdentifier(string name)
         {
@@ -1324,6 +1414,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             ref int pBufferSize
         );
 
+        // https://learn.microsoft.com/windows/win32/etw/tdhgetalleventsinformation - exported by tdh.dll but not
+        // declared in an SDK header.
+        [DllImport("tdh.dll")]
+        internal static extern int TdhGetAllEventsInformation(
+            TraceEventNativeMethods.EVENT_RECORD* pEvent,
+            IntPtr pWbemService,
+            out int pIndex,
+            out int pCount,
+            byte* pBuffer, // PTRACE_EVENT_INFO[], followed by the TRACE_EVENT_INFOs they point to
+            ref int pBufferSize
+        );
+
         [Flags]
         internal enum MAP_FLAGS
         {
@@ -1521,6 +1623,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             ReducedString = 300,        // Start of TDH outtypes for WBEM.
             NoPrint,
         };
+
+        // win:EventlogClassic in winmeta.xml: events that keep their Event Log (ReportEvent) message ids.
+        private const ulong WINEVENT_KEYWORD_EVENTLOG_CLASSIC = 0x80000000000000;
         #endregion
     }
 
