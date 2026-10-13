@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
 internal static class ClrMdDataTargetOptions
@@ -63,7 +64,84 @@ internal static class ClrMdDataTargetOptions
         return options;
     }
 
+    internal static void AddLocalDacCandidate(ClrInfo clr, TextWriter log)
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+            clr.DataTarget.DataReader.TargetPlatform != OSPlatform.Windows ||
+            clr.DataTarget.DataReader.Architecture != RuntimeInformation.ProcessArchitecture ||
+            clr.IsSingleFile || clr.IndexTimeStamp == 0 || clr.IndexFileSize == 0 ||
+            !IsAbsoluteLocalPath(clr.ModuleInfo.FileName))
+            return;
+
+        string dacName;
+        switch (clr.Flavor)
+        {
+            case ClrFlavor.Desktop:
+                dacName = "mscordacwks.dll";
+                break;
+            case ClrFlavor.Core:
+                dacName = "mscordaccore.dll";
+                break;
+            default:
+                return;
+        }
+
+        // A dump's runtime path is useful only if the installed image still matches the target.
+        if (!MatchesPEImage(clr.ModuleInfo.FileName, clr.IndexTimeStamp, clr.IndexFileSize, log))
+            return;
+
+        string dacPath = Path.Combine(Path.GetDirectoryName(clr.ModuleInfo.FileName), dacName);
+        if (!File.Exists(dacPath))
+        {
+            log.WriteLine("No runtime-adjacent DAC at {0}.", dacPath);
+            return;
+        }
+
+        var libraries = clr.DebuggingLibraries.IsDefault
+            ? ImmutableArray<DebugLibraryInfo>.Empty : clr.DebuggingLibraries;
+        if (libraries.Any(library => library.Kind == DebugLibraryKind.Dac &&
+            string.Equals(library.FileName, dacPath, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        var candidate = new DebugLibraryInfo(DebugLibraryKind.Dac, dacPath,
+            clr.DataTarget.DataReader.Architecture, SymbolProperties.Coreclr, clr.IndexFileSize, clr.IndexTimeStamp);
+        clr.DebuggingLibraries = libraries.Insert(0, candidate);
+        log.WriteLine("Using runtime-adjacent DAC candidate {0}.", dacPath);
+    }
+
     #region private
+    private static bool IsAbsoluteLocalPath(string path)
+    {
+        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !string.IsNullOrEmpty(path) &&
+            path.Length >= 3 && ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z')) &&
+            path[1] == ':' && (path[2] == '\\' || path[2] == '/');
+    }
+
+    private static bool MatchesPEImage(string path, int timestamp, int imageSize, TextWriter log)
+    {
+        if (!File.Exists(path))
+            return false;
+
+        try
+        {
+            using (var stream = File.OpenRead(path))
+            using (var image = new PEReader(stream))
+            {
+                var headers = image.PEHeaders;
+                if (headers.PEHeader != null && headers.CoffHeader.TimeDateStamp == timestamp &&
+                    headers.PEHeader.SizeOfImage == imageSize)
+                    return true;
+            }
+            log.WriteLine("Rejecting local image {0}: PE properties do not match timestamp {1:x8}, size {2:x}.",
+                path, timestamp, imageSize);
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is BadImageFormatException)
+        {
+            log.WriteLine("Could not inspect local image {0}: {1}", path, ex.Message);
+        }
+        return false;
+    }
+
     private sealed class LocalFileLocator : IFileLocator
     {
         public LocalFileLocator(string symbolPath, TextWriter log, DataTargetOptions remoteOptions)
@@ -75,6 +153,10 @@ internal static class ClrMdDataTargetOptions
 
         public string FindPEImage(string fileName, int buildTimeStamp, int imageSize, bool checkProperties)
         {
+            if (IsAbsoluteLocalPath(fileName) && File.Exists(fileName) &&
+                (!checkProperties || MatchesPEImage(fileName, buildTimeStamp, imageSize, m_log)))
+                return fileName;
+
             using (var reader = new SymbolReader(m_log, m_symbolPath))
             {
                 string localFile = reader.FindExecutableFilePath(Path.GetFileName(fileName), buildTimeStamp, imageSize);

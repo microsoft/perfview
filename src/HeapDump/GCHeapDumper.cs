@@ -327,6 +327,7 @@ public class GCHeapDumper
 
             try
             {
+                ClrMdDataTargetOptions.AddLocalDacCandidate(clr, m_log);
                 runtimes.Add(clr.CreateRuntime());
             }
             catch (InvalidDataException ex)
