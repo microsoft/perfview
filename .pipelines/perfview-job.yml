@@ -38,6 +38,7 @@ steps:
   displayName: 'Run TraceEvent Tests (x86)'
   inputs:
     testAssemblyVer2: |
+      **\bin\**\FastSerializationTests.dll
       **\bin\**\LinuxTracingTests.dll
       **\bin\**\CtfTracingTests.dll
       **\bin\**\SymbolsAuthTests.dll
@@ -53,6 +54,7 @@ steps:
   displayName: 'Run TraceEvent Tests (x64)'
   inputs:
     testAssemblyVer2: |
+      **\bin\**\FastSerializationTests.dll
       **\bin\**\LinuxTracingTests.dll
       **\bin\**\CtfTracingTests.dll
       **\bin\**\SymbolsAuthTests.dll
