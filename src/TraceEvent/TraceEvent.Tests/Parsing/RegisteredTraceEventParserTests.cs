@@ -367,6 +367,42 @@ namespace TraceEventTests
             Assert.Equal(normalizedLegacy, normalizedNew);
         }
 
+        /// <summary>
+        /// Test that the string table is labeled with the language of its strings. TDH follows the thread's preferred UI
+        /// languages, so with de-DE preferred Microsoft-Windows-MsiServer's strings are German where Windows has its
+        /// de-DE resources (de-DE\msimsg.dll.mui), and fall back to en-US where it does not. No other test reads
+        /// MsiServer, which matters because TDH keeps the strings it first read for a provider for the process.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_LabelsStringTableWithTheLanguageOfItsStrings()
+        {
+            const string providerName = "Microsoft-Windows-MsiServer";
+            const uint MUI_LANGUAGE_NAME = 0x8;
+            bool hasGerman = File.Exists(Path.Combine(Environment.SystemDirectory, "de-DE", "msimsg.dll.mui"));
+
+            string manifest;
+            uint count;
+            Assert.True(SetThreadPreferredUILanguages(MUI_LANGUAGE_NAME, "de-DE\0\0", out count));
+            try
+            {
+                manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
+            }
+            finally
+            {
+                // Null restores the thread's default languages.
+                SetThreadPreferredUILanguages(MUI_LANGUAGE_NAME, null, out count);
+            }
+
+            var doc = new XmlDocument();
+            doc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(doc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            string culture = ((XmlElement)doc.SelectSingleNode("//e:localization/e:resources", nsmgr)).GetAttribute("culture");
+            _output.WriteLine($"de-DE resources installed: {hasGerman}; string table culture: {culture}");
+            Assert.Equal(hasGerman ? "de-DE" : "en-US", culture);
+        }
+
         [Fact]
         public unsafe void EmbeddedTdhMetadataParser_ToleratesOutOfRangeTopLevelStringOffset()
         {
@@ -1293,6 +1329,11 @@ namespace TraceEventTests
             RemoveNonSignificantTextNodes(doc.DocumentElement);
             NormalizeTemplateNames(doc);
             SortAttributes(doc.DocumentElement);
+            // The legacy implementation labeled the string table with CurrentCulture, not the language of its strings.
+            foreach (XmlElement resources in doc.GetElementsByTagName("resources"))
+            {
+                resources.RemoveAttribute("culture");
+            }
         }
 
         /// <summary>
@@ -1476,6 +1517,13 @@ namespace TraceEventTests
                 SortAttributes(child);
             }
         }
+
+        #endregion
+
+        #region Native methods
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool SetThreadPreferredUILanguages(uint flags, string languages, out uint numLanguages);
 
         #endregion
     }
