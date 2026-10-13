@@ -230,6 +230,89 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that the Event Log channels are declared and referenced by the events that use them.
+        /// Microsoft-Windows-TaskScheduler declares Microsoft-Windows-TaskScheduler/Operational (value 16), imports
+        /// System, and logs event 100 to Operational.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_IncludesEventLogChannels()
+        {
+            const string providerName = "Microsoft-Windows-TaskScheduler";
+
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
+
+            var doc = new XmlDocument();
+            doc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(doc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var chids = new HashSet<string>();
+            foreach (XmlElement channel in doc.SelectNodes("//e:channels/*", nsmgr))
+            {
+                _output.WriteLine($"{channel.LocalName} chid={channel.GetAttribute("chid")} name={channel.GetAttribute("name")} type={channel.GetAttribute("type")} value={channel.GetAttribute("value")}");
+                Assert.True(chids.Add(channel.GetAttribute("chid")), "Duplicate chid " + channel.GetAttribute("chid"));
+            }
+
+            Assert.NotNull(doc.SelectSingleNode("//e:channels/e:importChannel[@name='System']", nsmgr));
+            var operational = (XmlElement)doc.SelectSingleNode("//e:channels/e:channel[@name='Microsoft-Windows-TaskScheduler/Operational']", nsmgr);
+            Assert.NotNull(operational);
+            Assert.Equal("Operational", operational.GetAttribute("type"));
+            Assert.Equal("16", operational.GetAttribute("value"));
+
+            var event100 = (XmlElement)doc.SelectSingleNode("//e:events/e:event[@value='100'][@version='0']", nsmgr);
+            Assert.NotNull(event100);
+            Assert.Equal(operational.GetAttribute("chid"), event100.GetAttribute("channel"));
+
+            foreach (XmlElement evt in doc.SelectNodes("//e:events/e:event[@channel]", nsmgr))
+            {
+                Assert.Contains(evt.GetAttribute("channel"), chids);
+            }
+        }
+
+        /// <summary>
+        /// Test that event messages are emitted with their string table entries, without the trailing space TDH
+        /// appends. Microsoft-Windows-TaskScheduler event 100 is "Task Scheduler started "%3" instance of the "%1"
+        /// task for user "%2"." in English; only its insertion strings are checked so that the test is culture neutral.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_IncludesEventMessages()
+        {
+            const string providerName = "Microsoft-Windows-TaskScheduler";
+
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
+
+            var doc = new XmlDocument();
+            doc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(doc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var strings = new Dictionary<string, string>();
+            foreach (XmlElement str in doc.SelectNodes("//e:stringTable/e:string", nsmgr))
+            {
+                strings.Add(str.GetAttribute("id"), str.GetAttribute("value"));
+            }
+
+            var withMessages = doc.SelectNodes("//e:events/e:event[@message]", nsmgr);
+            _output.WriteLine($"{providerName}: {withMessages.Count} events with messages");
+            Assert.True(withMessages.Count > 0, "Expected events with messages");
+            foreach (XmlElement evt in withMessages)
+            {
+                var match = Regex.Match(evt.GetAttribute("message"), @"^\$\(string\.(.*)\)$");
+                Assert.True(match.Success, "Unexpected message reference " + evt.GetAttribute("message"));
+                Assert.True(strings.ContainsKey(match.Groups[1].Value), "Missing string " + match.Groups[1].Value);
+            }
+
+            var event100 = (XmlElement)doc.SelectSingleNode("//e:events/e:event[@value='100'][@version='0']", nsmgr);
+            Assert.NotNull(event100);
+            string message = strings[Regex.Match(event100.GetAttribute("message"), @"^\$\(string\.(.*)\)$").Groups[1].Value];
+            _output.WriteLine($"Event 100: {message}");
+            Assert.Contains("%1", message);
+            Assert.Contains("%2", message);
+            Assert.Contains("%3", message);
+            Assert.False(message.EndsWith(" "), "Expected the trailing space TDH appends to be removed");
+        }
+
+        /// <summary>
         /// Test that the new XmlWriter-based implementation produces semantically identical output
         /// to the legacy string-based implementation. The comparison normalizes both outputs as XML
         /// to account for formatting differences.
@@ -1291,8 +1374,29 @@ namespace TraceEventTests
         private void NormalizeXml(XmlDocument doc)
         {
             RemoveNonSignificantTextNodes(doc.DocumentElement);
+            RemoveEventLogDetails(doc);
             NormalizeTemplateNames(doc);
             SortAttributes(doc.DocumentElement);
+        }
+
+        /// <summary>
+        /// Removes the Event Log channels and event messages, which the legacy implementation did not emit.
+        /// </summary>
+        private void RemoveEventLogDetails(XmlDocument doc)
+        {
+            var nsmgr = new XmlNamespaceManager(doc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            foreach (XmlNode node in doc.SelectNodes("//e:channels | //e:string[starts-with(@id, 'event_')]", nsmgr))
+            {
+                node.ParentNode.RemoveChild(node);
+            }
+
+            foreach (XmlElement eventElement in doc.SelectNodes("//e:events/e:event", nsmgr))
+            {
+                eventElement.RemoveAttribute("channel");
+                eventElement.RemoveAttribute("message");
+            }
         }
 
         /// <summary>
