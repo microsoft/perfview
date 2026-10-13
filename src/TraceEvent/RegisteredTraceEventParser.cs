@@ -731,6 +731,33 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
+        /// <summary>
+        /// Opens the Event Log (wevtapi) metadata of the provider, or returns IntPtr.Zero if the provider is not a
+        /// registered Event Log publisher or wevtapi cannot read it. The caller must EvtClose the handle.
+        /// </summary>
+        private static IntPtr OpenEventLogPublisher(Guid providerGuid)
+        {
+            // EvtOpenPublisherMetadata takes the publisher name, not its GUID.
+            string publisherName = GetEventLogPublisherValue(providerGuid, null);
+            if (string.IsNullOrEmpty(publisherName))
+            {
+                return IntPtr.Zero;
+            }
+
+            try
+            {
+                return EvtOpenPublisherMetadata(IntPtr.Zero, publisherName, null, 0, 0);
+            }
+            catch (DllNotFoundException)
+            {
+                return IntPtr.Zero;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                return IntPtr.Zero;
+            }
+        }
+
         // Borrowed from Core CLR System.Globalization.CultureInfo
         private static string IetfLanguageTag(CultureInfo culture)
         {
@@ -1657,6 +1684,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         // win:EventlogClassic in winmeta.xml: events that keep their Event Log (ReportEvent) message ids.
         private const ulong WINEVENT_KEYWORD_EVENTLOG_CLASSIC = 0x80000000000000;
+
+        [DllImport("wevtapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr EvtOpenPublisherMetadata(IntPtr session, string publisherId, string logFilePath, int locale, int flags);
+
+        [DllImport("wevtapi.dll")]
+        private static extern bool EvtClose(IntPtr handle);
         #endregion
     }
 
