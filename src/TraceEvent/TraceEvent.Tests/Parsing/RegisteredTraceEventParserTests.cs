@@ -313,6 +313,49 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that ToValidXmlText, which cleans event messages and channel paths, returns text that XmlWriter can
+        /// write as an attribute value (otherwise GetManifestForRegisteredProvider throws for the whole provider),
+        /// leaves text that XmlWriter can already write untouched, and replaces only the characters XML disallows.
+        /// </summary>
+        [Fact]
+        public void ToValidXmlText_MakesTextXmlWriterCanWrite()
+        {
+            var cases = new[]
+            {
+                "a <b> & \"c\" 'd'",
+                "line1\r\nline2\tend",
+                "a\u000Bb",
+                "a\u0001b",
+                "a\uD800b",
+                "a\uD800",
+                "a\uDC00b",
+                "a\uFFFEb",
+                "a\uD83D\uDE00b",
+            };
+
+            foreach (string text in cases)
+            {
+                string result = RegisteredTraceEventParser.ToValidXmlText(text);
+                _output.WriteLine($"{Hex(text)} -> {Hex(result)}");
+
+                Assert.True(IsWritableAsXmlAttribute(result), "XmlWriter rejects " + Hex(result));
+                if (IsWritableAsXmlAttribute(text))
+                {
+                    Assert.Same(text, result);
+                }
+                else
+                {
+                    Assert.Equal(text.Length, result.Length);
+                    for (int i = 0; i < text.Length; i++)
+                    {
+                        Assert.True(result[i] == text[i] || result[i] == '\uFFFD', "Unexpected change at " + i + " in " + Hex(result));
+                    }
+                    Assert.Contains('\uFFFD', result);
+                }
+            }
+        }
+
+        /// <summary>
         /// Test that the new XmlWriter-based implementation produces semantically identical output
         /// to the legacy string-based implementation. The comparison normalizes both outputs as XML
         /// to account for formatting differences.
@@ -1396,6 +1439,31 @@ namespace TraceEventTests
             {
                 eventElement.RemoveAttribute("channel");
                 eventElement.RemoveAttribute("message");
+            }
+        }
+
+        // The UTF-16 code units of 'text' in hex, for messages about strings with unprintable characters.
+        private static string Hex(string text)
+        {
+            return string.Join(" ", text.Select(c => ((int)c).ToString("X4")));
+        }
+
+        // True if XmlWriter can write 'text' as an attribute value, as GetManifestForRegisteredProvider does.
+        private static bool IsWritableAsXmlAttribute(string text)
+        {
+            try
+            {
+                using (var writer = XmlWriter.Create(new StringBuilder()))
+                {
+                    writer.WriteStartElement("string");
+                    writer.WriteAttributeString("value", text);
+                    writer.WriteEndElement();
+                }
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                return false;
             }
         }
 

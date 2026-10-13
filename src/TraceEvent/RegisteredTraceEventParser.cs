@@ -483,6 +483,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 message = message.Substring(0, message.Length - 1);
                             }
 
+                            message = ToValidXmlText(message);
+
                             // Events that share an Id and Version share a symbol, so make the string ID unique.
                             messageStringId = $"event_{symbolName}";
                             for (int suffix = 2; !emittedStringIds.Add(messageStringId); suffix++)
@@ -811,6 +813,38 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
 
         /// <summary>
+        /// Returns 's' with each character that XML 1.0 does not allow (such as U+000B, a lone surrogate or U+FFFE)
+        /// replaced by U+FFFD. XmlWriter throws on them, and XML has no way to escape them.
+        /// </summary>
+        internal static string ToValidXmlText(string s)
+        {
+            StringBuilder sb = null;
+            for (int i = 0; i < s.Length; i++)
+            {
+                if (XmlConvert.IsXmlChar(s[i]))
+                {
+                    sb?.Append(s[i]);
+                }
+                else if (i + 1 < s.Length && XmlConvert.IsXmlSurrogatePair(s[i + 1], s[i]))
+                {
+                    sb?.Append(s, i, 2);
+                    i++;
+                }
+                else
+                {
+                    if (sb == null)
+                    {
+                        sb = new StringBuilder(s.Length);
+                        sb.Append(s, 0, i);
+                    }
+                    sb.Append('\uFFFD');
+                }
+            }
+
+            return sb?.ToString() ?? s;
+        }
+
+        /// <summary>
         /// The Event Log channels that the provider's manifest declares or imports, keyed by the channel value in its
         /// event descriptors, or null if the provider is not a registered Event Log publisher or wevtapi cannot read it.
         /// </summary>
@@ -858,14 +892,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         continue;
                     }
 
+                    string path = new string(*(char**)variant);
                     var channel = new ChannelInfo();
-                    channel.Path = new string(*(char**)variant);
+                    channel.Path = ToValidXmlText(path);
                     channel.Id = Regex.Replace(channel.Path, @"[^\w]", "_");
                     channel.Imported = (flags & EvtChannelReferenceImported) != 0;
                     if (!channel.Imported)
                     {
                         // A declared channel must have a type.
-                        channel.Type = GetChannelType(channel.Path);
+                        channel.Type = GetChannelType(path);
                         if (channel.Type == null)
                         {
                             continue;
