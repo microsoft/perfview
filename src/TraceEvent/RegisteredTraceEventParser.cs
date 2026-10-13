@@ -881,6 +881,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
 
                 var channels = new SortedDictionary<byte, ChannelInfo>();
+                var channelIds = new HashSet<string>();
                 for (int i = 0; i < count; i++)
                 {
                     uint value, flags;
@@ -892,10 +893,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         continue;
                     }
 
+                    // An event descriptor's channel is a byte, so no event can refer to a larger value.
+                    if (value > byte.MaxValue)
+                    {
+                        continue;
+                    }
+
                     string path = new string(*(char**)variant);
                     var channel = new ChannelInfo();
                     channel.Path = ToValidXmlText(path);
-                    channel.Id = Regex.Replace(channel.Path, @"[^\w]", "_");
                     channel.Imported = (flags & EvtChannelReferenceImported) != 0;
                     if (!channel.Imported)
                     {
@@ -907,6 +913,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         }
                     }
 
+                    // Paths that differ only in non-word characters would share an id, so make it unique.
+                    string id = Regex.Replace(channel.Path, @"[^\w]", "_");
+                    channel.Id = id;
+                    for (int suffix = 2; !channelIds.Add(channel.Id); suffix++)
+                    {
+                        channel.Id = id + "_" + suffix;
+                    }
+
+                    // The manifest compiler gives each channel its own value.
+                    Debug.Assert(!channels.ContainsKey((byte)value), "Two channels share value " + value);
                     channels[(byte)value] = channel;
                 }
 
