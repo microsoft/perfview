@@ -46,7 +46,7 @@
   </ItemGroup>
   <!-- ClrMD -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="4.2.750101" />
+    <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="4.2.751201" />
   </ItemGroup>
   <!-- Test dependencies -->
   <ItemGroup>

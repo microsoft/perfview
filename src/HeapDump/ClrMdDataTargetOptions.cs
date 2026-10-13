@@ -187,24 +187,38 @@ internal static class ClrMdDataTargetOptions
                 (!checkProperties || MatchesPEImage(localPath, buildTimeStamp, imageSize, m_log)))
                 return localPath;
 
-            using (var reader = new SymbolReader(m_log, m_symbolPath))
+            string name = Path.GetFileName(fileName);
+            foreach (SymbolPathElement element in new SymbolPath(m_symbolPath).Elements)
             {
-                string localFile = reader.FindExecutableFilePath(Path.GetFileName(fileName), buildTimeStamp, imageSize);
-                if (localFile != null)
+                if (string.IsNullOrEmpty(element.Target))
+                    continue;
+
+                try
                 {
-                    if (!checkProperties)
-                        return localFile;
-
-                    using (var image = new PEFile.PEFile(localFile))
+                    string candidate;
+                    if (element.IsSymServer)
                     {
-                        if (image.Header.TimeDateStampSec == buildTimeStamp &&
-                            image.Header.SizeOfImage == unchecked((uint)imageSize))
-                            return localFile;
+                        using (var reader = new SymbolReader(m_log, new SymbolPath().Add(element).ToString()))
+                        {
+                            candidate = reader.FindExecutableFilePath(name, buildTimeStamp, imageSize);
+                        }
                     }
-                }
+                    else
+                    {
+                        candidate = Path.Combine(element.Target, name);
+                    }
 
-                return m_remoteOptions.FileLocator.FindPEImage(fileName, buildTimeStamp, imageSize, checkProperties);
+                    if (File.Exists(candidate) &&
+                        (!checkProperties || MatchesPEImage(candidate, buildTimeStamp, imageSize, m_log)))
+                        return candidate;
+                }
+                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is BadImageFormatException)
+                {
+                    m_log.WriteLine("Could not search local symbol path {0}: {1}", element.Target, ex.Message);
+                }
             }
+
+            return m_remoteOptions.FileLocator.FindPEImage(fileName, buildTimeStamp, imageSize, checkProperties);
         }
 
         /// <summary>
@@ -228,7 +242,12 @@ internal static class ClrMdDataTargetOptions
                     if (string.IsNullOrEmpty(directory))
                         continue;
 
-                    string candidate = Path.Combine(directory, name.ToLowerInvariant(), key, name.ToLowerInvariant());
+                    if (!element.IsSymServer && checkProperties)
+                        continue;
+
+                    string candidate = element.IsSymServer
+                        ? Path.Combine(directory, name.ToLowerInvariant(), key, name.ToLowerInvariant())
+                        : Path.Combine(directory, name);
                     if (File.Exists(candidate))
                         return candidate;
                 }

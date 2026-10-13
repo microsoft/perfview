@@ -132,6 +132,98 @@ namespace TraceEventTests
         }
 
         [WindowsFact]
+        public void FindsFlatDacWithoutCheckingRuntimeIndexingProperties()
+        {
+            using (var fixture = new LocalRuntimeFixture(ClrFlavor.Core))
+            {
+                DataTargetOptions options = ClrMdDataTargetOptions.Create(
+                    fixture.DirectoryPath, null, TextWriter.Null, true);
+                string name = Path.GetFileName(fixture.DacPath);
+                int timestamp = unchecked(fixture.Timestamp + 1);
+                int size = fixture.ImageSize + 1;
+
+                Assert.Equal(fixture.DacPath, options.FileLocator.FindPEImage(name, timestamp, size, false));
+                Assert.Null(options.FileLocator.FindPEImage(name, timestamp, size, true));
+            }
+        }
+
+        [Theory]
+        [InlineData("LINUX", SymbolProperties.Self)]
+        [InlineData("LINUX", SymbolProperties.Coreclr)]
+        [InlineData("OSX", SymbolProperties.Self)]
+        [InlineData("OSX", SymbolProperties.Coreclr)]
+        public void FindsFlatCrossPlatformDacWithoutCheckingProperties(string platform, SymbolProperties properties)
+        {
+            using (var fixture = new LocalRuntimeFixture(ClrFlavor.Core))
+            {
+                DataTargetOptions options = ClrMdDataTargetOptions.Create(
+                    fixture.DirectoryPath, null, TextWriter.Null, true);
+                string name = Path.GetFileName(fixture.DacPath);
+                var buildId = ImmutableArray.Create<byte>(1, 2, 3);
+                var originalPlatform = OSPlatform.Create(platform);
+
+                Assert.Equal(fixture.DacPath, options.FileLocator.FindPEImage(
+                    name, properties, buildId, originalPlatform, false));
+                Assert.Null(options.FileLocator.FindPEImage(
+                    name, properties, buildId, originalPlatform, true));
+            }
+        }
+
+        [WindowsFact]
+        public void RejectedIndexedImageContinuesLocalSearch()
+        {
+            foreach (bool secondIsSymbolStore in new[] { false, true })
+            using (var fixture = new LocalRuntimeFixture())
+            {
+                string name = Path.GetFileName(fixture.RuntimePath);
+                string key = fixture.Timestamp.ToString("x8") + fixture.ImageSize.ToString("x");
+                string firstDirectory = Path.Combine(fixture.SymbolStore, name, key);
+                Directory.CreateDirectory(firstDirectory);
+                string rejected = Path.Combine(firstDirectory, name);
+                File.Copy(fixture.RuntimePath, rejected);
+                WriteImageTimestamp(rejected, unchecked(fixture.Timestamp + 1));
+
+                string secondStore = Path.Combine(fixture.DirectoryPath, "second");
+                string secondDirectory = secondIsSymbolStore ? Path.Combine(secondStore, name, key) : secondStore;
+                Directory.CreateDirectory(secondDirectory);
+                string expected = Path.Combine(secondDirectory, name);
+                File.Copy(fixture.RuntimePath, expected);
+                string path = "SRV*" + fixture.SymbolStore + ";" + (secondIsSymbolStore ? "SRV*" : "") + secondStore;
+                var log = new StringWriter();
+                DataTargetOptions options = ClrMdDataTargetOptions.Create(path, null, log, true);
+
+                Assert.Equal(expected, options.FileLocator.FindPEImage(name, fixture.Timestamp, fixture.ImageSize, true));
+                Assert.Contains("Rejecting local image", log.ToString());
+            }
+        }
+
+        [WindowsFact]
+        public void UnreadableLocalImageContinuesLocalSearch()
+        {
+            foreach (bool firstIsSymbolStore in new[] { false, true })
+            using (var fixture = new LocalRuntimeFixture())
+            {
+                string name = Path.GetFileName(fixture.RuntimePath);
+                string firstDirectory = firstIsSymbolStore
+                    ? Path.Combine(fixture.SymbolStore, name, fixture.Timestamp.ToString("x8") + fixture.ImageSize.ToString("x"))
+                    : fixture.SymbolStore;
+                Directory.CreateDirectory(firstDirectory);
+                string locked = Path.Combine(firstDirectory, name);
+                File.Copy(fixture.RuntimePath, locked);
+                string path = (firstIsSymbolStore ? "SRV*" : "") + fixture.SymbolStore + ";" + fixture.DirectoryPath;
+                var log = new StringWriter();
+                DataTargetOptions options = ClrMdDataTargetOptions.Create(path, null, log, true);
+
+                using (File.Open(locked, FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    Assert.Equal(fixture.RuntimePath,
+                        options.FileLocator.FindPEImage(name, fixture.Timestamp, fixture.ImageSize, true));
+                }
+                Assert.Contains("Could not", log.ToString());
+            }
+        }
+
+        [WindowsFact]
         public void FindsAbsoluteImageOutsideConfiguredSymbolStore()
         {
             using (var fixture = new LocalRuntimeFixture())
@@ -316,6 +408,19 @@ namespace TraceEventTests
         }
 
         #region private
+        private static void WriteImageTimestamp(string path, int timestamp)
+        {
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite))
+            using (var reader = new BinaryReader(stream))
+            using (var writer = new BinaryWriter(stream))
+            {
+                stream.Position = 0x3c;
+                int peOffset = reader.ReadInt32();
+                stream.Position = peOffset + 8;
+                writer.Write(timestamp);
+            }
+        }
+
         private static (int Rva, int Size) FindRelocation(PEReader pe)
         {
             var directory = pe.PEHeaders.PEHeader.BaseRelocationTableDirectory;
