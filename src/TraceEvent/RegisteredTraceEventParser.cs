@@ -706,6 +706,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         #region private
+        /// <summary>
+        /// Reads a value of the provider's Event Log publisher registration (null 'valueName' reads the publisher name),
+        /// or returns null if the provider is not a registered Event Log publisher.
+        /// </summary>
+        private static string GetEventLogPublisherValue(Guid providerGuid, string valueName)
+        {
+            // The publishers are only in the native registry (64 bit on a 64 bit machine); a 32 bit process would
+            // otherwise be redirected away from them.  Ask the OS rather than check PROCESSOR_ARCHITEW6432, which a
+            // 32 bit process does not have if it was started with a cleared environment.
+            var registryView = Environment.Is64BitOperatingSystem ? Microsoft.Win32.RegistryView.Registry64 : Microsoft.Win32.RegistryView.Default;
+
+            try
+            {
+                using (var hklm = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, registryView))
+                using (var key = hklm.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Publishers\{" + providerGuid.ToString() + "}"))
+                {
+                    return key?.GetValue(valueName) as string;
+                }
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         // Borrowed from Core CLR System.Globalization.CultureInfo
         private static string IetfLanguageTag(CultureInfo culture)
         {
