@@ -1,6 +1,7 @@
 using Azure.Core;
 using Microsoft.Diagnostics.Runtime;
 using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -85,7 +86,7 @@ internal static class ClrMdDataTargetOptions
             clr.DataTarget.DataReader.TargetPlatform != OSPlatform.Windows ||
             clr.DataTarget.DataReader.Architecture != RuntimeInformation.ProcessArchitecture ||
             clr.IsSingleFile || clr.IndexTimeStamp == 0 || clr.IndexFileSize == 0 ||
-            !IsAbsoluteLocalPath(clr.ModuleInfo.FileName))
+            !PathUtilities.TryGetSafeLocalFilePath(clr.ModuleInfo.FileName, out string runtimePath))
             return;
 
         string dacName;
@@ -102,10 +103,10 @@ internal static class ClrMdDataTargetOptions
         }
 
         // A dump's runtime path is useful only if the installed image still matches the target.
-        if (!MatchesPEImage(clr.ModuleInfo.FileName, clr.IndexTimeStamp, clr.IndexFileSize, log))
+        if (!MatchesPEImage(runtimePath, clr.IndexTimeStamp, clr.IndexFileSize, log))
             return;
 
-        string dacPath = Path.Combine(Path.GetDirectoryName(clr.ModuleInfo.FileName), dacName);
+        string dacPath = Path.Combine(Path.GetDirectoryName(runtimePath), dacName);
         if (!File.Exists(dacPath))
         {
             log.WriteLine("No runtime-adjacent DAC at {0}.", dacPath);
@@ -128,17 +129,6 @@ internal static class ClrMdDataTargetOptions
     }
 
     #region private
-    /// <summary>
-    /// Recognizes fully qualified Windows drive paths without accessing the filesystem.
-    /// Relative, UNC, and device paths are not eligible for implicit local probing.
-    /// </summary>
-    private static bool IsAbsoluteLocalPath(string path)
-    {
-        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !string.IsNullOrEmpty(path) &&
-            path.Length >= 3 && ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z')) &&
-            path[1] == ':' && (path[2] == '\\' || path[2] == '/');
-    }
-
     /// <summary>
     /// Matches an installed PE image against the target's symbol-server identity.
     /// Logs mismatches and inspection failures so callers can continue with other candidates.
@@ -192,9 +182,10 @@ internal static class ClrMdDataTargetOptions
         {
             // Returning the path here lets ClrMD retain the target load address and apply PE relocations.
             // DAC queries can use runtime indexing properties, so honor checkProperties=false here.
-            if (IsAbsoluteLocalPath(fileName) && File.Exists(fileName) &&
-                (!checkProperties || MatchesPEImage(fileName, buildTimeStamp, imageSize, m_log)))
-                return fileName;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
+                PathUtilities.TryGetSafeLocalFilePath(fileName, out string localPath) && File.Exists(localPath) &&
+                (!checkProperties || MatchesPEImage(localPath, buildTimeStamp, imageSize, m_log)))
+                return localPath;
 
             using (var reader = new SymbolReader(m_log, m_symbolPath))
             {

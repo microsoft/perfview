@@ -139,6 +139,8 @@ namespace TraceEventTests
                 DataTargetOptions options = fixture.CreateOptions();
                 Assert.Equal(fixture.RuntimePath, options.FileLocator.FindPEImage(
                     fixture.RuntimePath, fixture.Timestamp, fixture.ImageSize, true));
+                Assert.Equal(fixture.RuntimePath, options.FileLocator.FindPEImage(
+                    fixture.RuntimePath.Replace('\\', '/'), fixture.Timestamp, fixture.ImageSize, true));
                 Assert.Null(options.FileLocator.FindPEImage(
                     fixture.RuntimePath, unchecked(fixture.Timestamp + 1), fixture.ImageSize, true));
                 Assert.Null(options.FileLocator.FindPEImage(
@@ -155,7 +157,7 @@ namespace TraceEventTests
         }
 
         [WindowsFact]
-        public void DoesNotProbeRelativeOrDeviceImagePaths()
+        public void DoesNotProbeUnsafeImagePaths()
         {
             using (var fixture = new LocalRuntimeFixture())
             {
@@ -164,11 +166,27 @@ namespace TraceEventTests
                 {
                     "clr.dll", "C:clr.dll", @"\clr.dll", @"\\server\share\clr.dll",
                     @"\\?\" + fixture.RuntimePath, @"\\.\" + fixture.RuntimePath,
-                    "https://example.com/clr.dll"
+                    "https://example.com/clr.dll",
+                    Path.Combine(fixture.DirectoryPath, "unused", "..", "clr.dll"),
+                    Path.Combine(fixture.DirectoryPath, "CON", "clr.dll"),
+                    fixture.RuntimePath + ".", fixture.RuntimePath + " "
                 })
                 {
                     Assert.Null(options.FileLocator.FindPEImage(path, fixture.Timestamp, fixture.ImageSize, true));
+                    Assert.Null(options.FileLocator.FindPEImage(path, fixture.Timestamp, fixture.ImageSize, false));
                 }
+            }
+        }
+
+        [WindowsFact]
+        public void NormalizesRuntimePathBeforeAddingAdjacentDac()
+        {
+            using (var fixture = new LocalRuntimeFixture())
+            using (var target = new DataTarget(new EmptyDataReader(), fixture.CreateOptions()))
+            {
+                ClrInfo clr = fixture.CreateClrInfo(target, ClrFlavor.Desktop, fixture.RuntimePath.Replace('\\', '/'));
+                ClrMdDataTargetOptions.AddLocalDacCandidate(clr, TextWriter.Null);
+                Assert.Equal(fixture.DacPath, clr.DebuggingLibraries[0].FileName);
             }
         }
 
@@ -256,7 +274,7 @@ namespace TraceEventTests
             {
                 "timestamp", "size", "zero timestamp", "zero size", "single file",
                 "missing runtime", "missing dac", "invalid runtime", "relative path", "device path",
-                "platform", "architecture"
+                "traversal", "reserved segment", "platform", "architecture"
             })
             {
                 using (var fixture = new LocalRuntimeFixture())
@@ -270,6 +288,8 @@ namespace TraceEventTests
                         case "invalid runtime": File.WriteAllText(runtimePath, "Not a PE image"); break;
                         case "relative path": runtimePath = Path.GetFileName(runtimePath); break;
                         case "device path": runtimePath = @"\\?\" + runtimePath; break;
+                        case "traversal": runtimePath = Path.Combine(fixture.DirectoryPath, "unused", "..", "clr.dll"); break;
+                        case "reserved segment": runtimePath = Path.Combine(fixture.DirectoryPath, "CON", "clr.dll"); break;
                         case "platform": reader.TargetPlatform = OSPlatform.Linux; break;
                         case "architecture":
                             reader.Architecture = RuntimeInformation.ProcessArchitecture == Architecture.X64
