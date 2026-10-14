@@ -13,6 +13,7 @@
   <PropertyGroup>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
+    <ChecksumAlgorithm>SHA256</ChecksumAlgorithm>
     <PublishRepositoryUrl>false</PublishRepositoryUrl>
     <EmbedAllSources>false</EmbedAllSources>
   </PropertyGroup>
