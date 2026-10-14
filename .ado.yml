@@ -5,7 +5,59 @@ pr:
   - main
 
 jobs:
+  # Classify changes once, then share the decision with both CI job groups.
+  - job: Changes
+    displayName: 'Detect Changed Components'
+    pool:
+      vmImage: 'ubuntu-latest'
+      name: Azure Pipelines
+
+    steps:
+    - checkout: self
+      # Include the PR merge commit's first parent without fetching full history.
+      fetchDepth: 2
+    - task: Bash@3
+      name: classify
+      displayName: 'Select CI Jobs'
+      inputs:
+        targetType: inline
+        script: |
+          set -euo pipefail
+          # Main-branch, manual, and scheduled builds always validate everything.
+          # Path filtering applies only to PR runs.
+          if [[ "$BUILD_REASON" != PullRequest ]]; then
+            echo "##vso[task.setvariable variable=perfcollect;isOutput=true]true"
+            echo "##vso[task.setvariable variable=perfview;isOutput=true]true"
+            exit 0
+          fi
+          changes=$(mktemp)
+          trap 'rm -f -- "$changes"' EXIT
+          # PR checkout is a merge commit; its first parent is the target branch.
+          # This covers the whole PR, not just its latest commit. Disable rename
+          # detection to check both old/new paths; NUL delimiters preserve filenames.
+          git diff --no-renames --name-only -z HEAD^ HEAD > "$changes"
+          # Leave both false when no path selects a group; do not force a fallback.
+          perfcollect=false
+          perfview=false
+          while IFS= read -r -d '' path; do
+            printf 'Changed: %q\n' "$path"
+            case "$path" in
+              # Shared Git configuration and pipeline files can affect both groups.
+              .gitattributes|.gitignore|.ado.yml|.pipelines/*) perfcollect=true; perfview=true ;;
+              # Detect changes to perfcollect.
+              src/perfcollect/*) perfcollect=true ;;
+              # Detect changes to PerfView.
+              *) perfview=true ;;
+            esac
+          done < "$changes"
+          # Named step outputs are consumed by the dependent job conditions below.
+          echo "##vso[task.setvariable variable=perfcollect;isOutput=true]$perfcollect"
+          echo "##vso[task.setvariable variable=perfview;isOutput=true]$perfview"
+
+  # Each group requires successful classification and its own true output flag.
   - job: PerfView_Debug
+    dependsOn: Changes
+    condition: and(succeeded(), eq(dependencies.Changes.outputs['classify.perfview'], 'true'))
     pool:
       vmImage: 'windows-2025-vs2026'
       name: Azure Pipelines
@@ -24,6 +76,8 @@ jobs:
       condition: succeededOrFailed()
 
   - job: PerfView_Release
+    dependsOn: Changes
+    condition: and(succeeded(), eq(dependencies.Changes.outputs['classify.perfview'], 'true'))
     pool:
       vmImage: 'windows-2025-vs2026'
       name: Azure Pipelines
@@ -40,10 +94,7 @@ jobs:
         artifact: 'PerfViewBinaries-Release'
         parallel: true
 
-  - job: PerfCollect
-    pool:
-      vmImage: 'ubuntu-latest'
-      name: Azure Pipelines
-
-    steps:
-    - template: /.pipelines/perfcollect-job.yml
+  - template: /.pipelines/perfcollect-jobs.yml
+    parameters:
+      dependsOn: [Changes]
+      condition: and(succeeded(), eq(dependencies.Changes.outputs['classify.perfcollect'], 'true'))
