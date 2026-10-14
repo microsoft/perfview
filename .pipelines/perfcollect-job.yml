@@ -1,8 +1,3 @@
-parameters:
-- name: publishArtifacts
-  type: boolean
-  default: true
-
 steps:
 - task: Bash@3
   displayName: 'Get Docker Version'
@@ -11,20 +6,15 @@ steps:
     script: 'docker --version'
 
 - task: Bash@3
-  displayName: 'Run Tests in Containers'
+  displayName: 'Build Containers'
   inputs:
-    targetType: inline
-    script: 'bash ./run-container.sh "$BASE_IMAGE" "$TARGET" "$RESULTS_DIR"'
+    targetType: filePath
+    filePath: './src/perfcollect/tests/build-containers.sh'
     workingDirectory: src/perfcollect/tests
-  env:
-    BASE_IMAGE: $(baseImage)
-    TARGET: $(target)
-    RESULTS_DIR: $(Build.ArtifactStagingDirectory)/perfcollect
 
-- ${{ if parameters.publishArtifacts }}:
-  - task: PublishPipelineArtifact@1
-    displayName: 'Publish Perfcollect Results'
-    condition: always()
-    inputs:
-      targetPath: '$(Build.ArtifactStagingDirectory)/perfcollect'
-      artifact: 'perfcollect-$(target)'
+- task: Bash@3
+  displayName: 'Run Tests'
+  inputs:
+    targetType: filePath
+    filePath: './src/perfcollect/tests/run-containers.sh'
+    workingDirectory: src/perfcollect/tests
