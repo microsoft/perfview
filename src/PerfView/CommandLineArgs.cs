@@ -73,6 +73,10 @@ namespace PerfView
         public bool SaveETL;                // Save the ETL file when dumping the JS heap
         public bool DumpData;               // Dump the heap data as well as the connectivity info
         public bool Freeze;                 // Freeze the process while the dump is taken
+        /// <summary>
+        /// Whether to verify DAC signatures on Windows when capturing or converting a heap snapshot.
+        /// </summary>
+        public bool VerifyDacOnWindows = true;
         public int MaxDumpCountK = 250;     // Maximum size of the File to generate.   We sample aggressively enough to try to hit this count of objects in the file
         public int MaxNodeCountK;           // Maximum size to even look at in the heap 
 
@@ -591,6 +595,8 @@ namespace PerfView
             parser.DefineOptionalQualifier("MaxNodeCountK", ref MaxNodeCountK,
                 "The maximum number of objects (in K or thousands) that will even be examined when dumping the heap.  Avoids memory use at collection time.  " +
                  "This is useful if heap dumping causes out of memory exceptions.");
+            parser.DefineOptionalQualifier("VerifyDacOnWindows", ref VerifyDacOnWindows,
+                "Verify DAC signatures on Windows when capturing or converting a heap snapshot (default true). Disable only for trusted private runtimes.");
 
             parser.DefineOptionalQualifier("EnableEventsInContainers", ref EnableEventsInContainers,
                 "Enable user mode events inside of containers to flow back to the host for collection.");
