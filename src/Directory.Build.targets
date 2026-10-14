@@ -3,7 +3,7 @@
 
   <ItemDefinitionGroup Condition="'$(MSBuildProjectExtension)' == '.vcxproj'">
     <ClCompile>
-      <AdditionalOptions>/ZH:SHA_256 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>%(AdditionalOptions) /ZH:SHA_256</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
 
