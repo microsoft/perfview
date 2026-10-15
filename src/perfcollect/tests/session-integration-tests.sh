@@ -300,7 +300,7 @@ ust_capability_case()
         # A userspace-only daemon needs no host LTTng kernel modules. In
         # particular, production's optional kernel add-context errors are not
         # evidence that userspace tracing is unavailable.
-        lttng-sessiond --no-kernel > "$results_dir/IT-UST-CAP.sessiond.log" 2>&1 &
+        lttng-sessiond --no-kernel > "$results_dir/lttng-tools-record-and-decode-events.sessiond.log" 2>&1 &
         sessiond_pid=$!
         for (( attempt=0; attempt<100; attempt++ )); do
             if timeout 2s lttng list && kill -0 "$sessiond_pid" 2>/dev/null; then
@@ -311,7 +311,7 @@ ust_capability_case()
             sleep 0.1
         done
         if (( ready == 0 )); then
-            cat "$results_dir/IT-UST-CAP.sessiond.log"
+            cat "$results_dir/lttng-tools-record-and-decode-events.sessiond.log"
             case_block "userspace session daemon did not become ready"
             return 77
         fi
@@ -538,7 +538,7 @@ perf_capability_case()
     timeout 60s cc -std=c99 -O2 -g -fno-omit-frame-pointer -Wall -Wextra -Werror \
         "$fixtures/cpu-workload.c" -o "$scratch/perfcollect_cpu" ||
         { case_fail "could not compile CPU fixture"; return 1; }
-    start_cpu IT-PERF-CAP || { case_block "CPU fixture unavailable"; return 77; }
+    start_cpu perf-tools-record-and-export-samples || { case_block "CPU fixture unavailable"; return 77; }
     timeout -s TERM -k 5s 20s "$perf_binary" record \
         -o "$scratch/probe-perf.data" -k 1 -g --pid="$cpu_pid" -F 1000 -e cpu-clock -- sleep 1
     rc=$?
@@ -560,7 +560,7 @@ perf_capability_case()
 perf_collect_case()
 {
     local rc
-    start_cpu IT-PERF-COLLECT || return 1
+    start_cpu perf-collect-creates-trace-archive || return 1
     perf_collect_attempted=1
     invoke_perfcollect "$scratch/collect" collect cpu-integration "${disabled_lttng_options[@]}" -pid "$cpu_pid" -collectsec 3
     rc=$?
@@ -651,7 +651,7 @@ finish()
 {
     local rc=$?
     trap - EXIT INT TERM
-    run_case IT-CLEANUP cleanup_case
+    run_case test-owned-resources-are-cleaned-up cleanup_case
     printf '[%s] integration failures=%s blocked=%s\n' "$target" "$failures" "$blocked"
     if (( failures != 0 || blocked != 0 || rc != 0 )); then
         exit 1
@@ -666,32 +666,32 @@ trap 'exit 143' TERM
 # Target selection defines two real-tool paths. Stop/cleanup stages depend on a
 # successful start, not successful emission, so failed assertions still finalize
 # a known live session whenever possible.
-run_case IT-ENV environment_case
+run_case environment-meets-prerequisites environment_case
 if [[ $target == mariner-2.0 ]]; then
-    run_case IT-INSTALL install_case IT-ENV
+    run_case install-completes-successfully install_case environment-meets-prerequisites
 fi
 case "$target" in
     ubuntu-20.04|debian-bookworm|ci-debian12)
-        run_case IT-UST-CAP ust_capability_case IT-ENV
-        run_case IT-UST-START ust_start_case IT-UST-CAP
-        run_case IT-UST-EMIT ust_emit_case IT-UST-START
-        run_case IT-START-ROOT root_start_case IT-UST-START
+        run_case lttng-tools-record-and-decode-events ust_capability_case environment-meets-prerequisites
+        run_case lttng-start-creates-live-session ust_start_case lttng-tools-record-and-decode-events
+        run_case lttng-fixture-emits-marked-events ust_emit_case lttng-start-creates-live-session
+        run_case session-start-rejects-nonroot-user root_start_case lttng-start-creates-live-session
         # Still finalize a started session if emission or root rejection failed.
-        run_case IT-UST-STOP ust_stop_case IT-UST-START
-        run_case IT-UST-ARCHIVE ust_archive_case IT-UST-STOP
+        run_case lttng-stop-destroys-session-and-creates-archive ust_stop_case lttng-start-creates-live-session
+        run_case lttng-archive-contains-decodable-events ust_archive_case lttng-stop-destroys-session-and-creates-archive
         # The disabled lifecycle remains independently runnable even when the
         # host's real UST capability is blocked.
-        run_case IT-NOLTTNG-START disabled_start_case IT-ENV
-        run_case IT-NOLTTNG-STOP disabled_stop_case IT-NOLTTNG-START
+        run_case lttng-disabled-start-saves-session-state disabled_start_case environment-meets-prerequisites
+        run_case lttng-disabled-stop-archives-and-cleans-up disabled_stop_case lttng-disabled-start-saves-session-state
         ;;
     ubuntu-24.04|mariner-2.0|alpine|azurelinux-3.0)
-        run_case IT-PERF-CAP perf_capability_case IT-ENV
+        run_case perf-tools-record-and-export-samples perf_capability_case environment-meets-prerequisites
         # This disabled session is real production state, not fabricated data.
-        run_case IT-NOLTTNG-START disabled_start_case IT-ENV
-        run_case IT-START-ROOT root_start_case IT-NOLTTNG-START
-        run_case IT-NOLTTNG-STOP disabled_stop_case IT-NOLTTNG-START
-        run_case IT-PERF-COLLECT perf_collect_case IT-PERF-CAP IT-NOLTTNG-STOP
-        run_case IT-PERF-ARCHIVE perf_archive_case IT-PERF-COLLECT
-        run_case IT-PERF-STATE perf_state_case IT-PERF-ARCHIVE IT-NOLTTNG-STOP
+        run_case lttng-disabled-start-saves-session-state disabled_start_case environment-meets-prerequisites
+        run_case session-start-rejects-nonroot-user root_start_case lttng-disabled-start-saves-session-state
+        run_case lttng-disabled-stop-archives-and-cleans-up disabled_stop_case lttng-disabled-start-saves-session-state
+        run_case perf-collect-creates-trace-archive perf_collect_case perf-tools-record-and-export-samples lttng-disabled-stop-archives-and-cleans-up
+        run_case perf-archive-contains-decodable-samples perf_archive_case perf-collect-creates-trace-archive
+        run_case perf-collect-cleans-up-and-preserves-prior-archive perf_state_case perf-archive-contains-decodable-samples lttng-disabled-stop-archives-and-cleans-up
         ;;
 esac
