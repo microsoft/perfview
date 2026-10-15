@@ -26,8 +26,8 @@ set -u
 set -o pipefail
 export LC_ALL=C
 export TMPDIR=/tmp
-# Legacy stop returns the final tput status, so supply a noninteractive terminal.
-export TERM=dumb
+# Legacy stop returns the final tput status; xterm supplies the reset capability.
+export TERM=xterm
 
 # Refuse before creating results, installing cleanup traps, or touching any
 # session/home/scratch path. A target name alone is not a container fence.
@@ -175,6 +175,10 @@ environment_case()
     readlink --version 2>&1 || readlink --help 2>&1
     timeout --version 2>&1 || timeout --help 2>&1
     cc --version
+    if command -v tput >/dev/null; then
+        tput sgr0 ||
+            { case_block "terminal reset capability required by the current CLI is unavailable"; return 77; }
+    fi
     state_file="$TMPDIR/perfcollect.sessioninfo"
     if [[ -e "$state_file" || -L "$state_file" ]]; then
         case_block "container already has session state; refusing destructive recovery"
