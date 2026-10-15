@@ -751,7 +751,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return str;
             }
 
-            return (str.Substring(1).ToUpper() + str.Substring(1));
+            return (str.Substring(0, 1).ToUpper() + str.Substring(1));
         }
 
         internal override DynamicTraceEventData TryLookup(TraceEvent unknownEvent)
