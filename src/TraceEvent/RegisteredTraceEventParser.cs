@@ -98,6 +98,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             int buffSize = 84000;       // Still in the small object heap.  
             var buffer = new byte[buffSize]; // Still in the small object heap.
             byte* enumBuffer = null;
+            // Unmanaged buffers filled by TdhGetAllEventsInformation, one per event version; freed with enumBuffer.
+            var allEventsBuffers = new List<IntPtr>();
 
             TraceEventNativeMethods.EVENT_RECORD eventRecord = new TraceEventNativeMethods.EVENT_RECORD();
             eventRecord.EventHeader.ProviderId = providerGuid;
@@ -163,348 +165,431 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 buffer = new byte[size];
             }
 
-            if (status == 0)
+            try
             {
-                const int NumberOfEventsOffset = 0;
-                const int FirstDescriptorOffset = 8;
-                int eventCount = BitConverter.ToInt32(buffer, NumberOfEventsOffset);
-                var descriptors = new EVENT_DESCRIPTOR[eventCount];
-                fixed (EVENT_DESCRIPTOR* pDescriptors = descriptors)
+                // TdhEnumerateManifestProviderEvents walks versions upwards and stops after 11 empty versions in a row.
+                // When the first version is above 11 it finds nothing and returns ERROR_EMPTY, e.g.
+                // CertificateServicesClient-CertEnroll, whose events are all version 90; carry on so that the versions
+                // from the Event Log API below can still be read.
+                if (status == 0 || status == ERROR_EMPTY)
                 {
-                    Marshal.Copy(buffer, FirstDescriptorOffset, (IntPtr)pDescriptors, descriptors.Length * sizeof(EVENT_DESCRIPTOR));
-                }
-
-                foreach (var descriptor in descriptors)
-                {
-                    for (; ; )
+                    const int NumberOfEventsOffset = 0;
+                    const int FirstDescriptorOffset = 8;
+                    int eventCount = status == 0 ? BitConverter.ToInt32(buffer, NumberOfEventsOffset) : 0;
+                    var descriptors = new EVENT_DESCRIPTOR[eventCount];
+                    if (eventCount != 0)
                     {
-                        int size = buffer.Length;
-                        status = TdhGetManifestEventInformation(eventRecord.EventHeader.ProviderId, descriptor, buffer, ref size);
-                        if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
+                        fixed (EVENT_DESCRIPTOR* pDescriptors = descriptors)
                         {
-                            break;
+                            Marshal.Copy(buffer, FirstDescriptorOffset, (IntPtr)pDescriptors, descriptors.Length * sizeof(EVENT_DESCRIPTOR));
                         }
-
-                        buffer = new byte[size];
                     }
 
-                    if (status != 0)
+                    // Events in the win:EventlogClassic keyword keep their Event Log message ids (Severity|Facility|Code).
+                    // mc.exe packs them into the descriptor's Id (bits 0-15), Version (bits 16-23) and Opcode (bits 24-31),
+                    // so a manifest can declare two events with the same Id and Version, e.g. MSDTC 0x8000D01A and
+                    // 0xC000D01A. TdhGetManifestEventInformation looks events up by Id and Version only and returns the
+                    // first event's fields for both; TdhGetAllEventsInformation returns every event of a version with its
+                    // own metadata. So use the latter for the versions that contain classic events.
+                    var classicVersions = new HashSet<byte>();
+                    foreach (var descriptor in descriptors)
                     {
-                        continue;
+                        if ((descriptor.Keyword & WINEVENT_KEYWORD_EVENTLOG_CLASSIC) != 0)
+                        {
+                            classicVersions.Add(descriptor.Version);
+                        }
                     }
 
-                    fixed (byte* eventInfoBuff = buffer)
+                    // The enumeration also omits every version more than 11 above the last one it found
+                    // (Microsoft-AppV-Client-StreamingUX 1 then 22-24, Microsoft-Windows-MSMPEG2VDEC 0 then 12). The Event
+                    // Log API lists every event in the manifest, so also read the versions it reports that the enumeration
+                    // did not. Only if it cannot read the publisher either, and the enumeration found nothing, read every
+                    // version.
+                    var versions = new HashSet<byte>(classicVersions);
+                    var enumeratedVersions = new HashSet<byte>();
+                    foreach (var descriptor in descriptors)
                     {
-                        var eventInfo = (TRACE_EVENT_INFO*)eventInfoBuff;
-                        EVENT_PROPERTY_INFO* propertyInfos = &eventInfo->EventPropertyInfoArray;
-
-                        if (providerName == null)
+                        enumeratedVersions.Add(descriptor.Version);
+                    }
+                    var eventLogVersions = GetEventLogVersions(providerGuid);
+                    if (eventLogVersions != null)
+                    {
+                        foreach (var version in eventLogVersions)
                         {
-                            if (eventInfo->ProviderNameOffset != 0)
+                            if (!enumeratedVersions.Contains(version))
                             {
-                                providerName = new string((char*)(&eventInfoBuff[eventInfo->ProviderNameOffset]));
-                            }
-                            else
-                            {
-                                providerName = "provider(" + eventInfo->ProviderGuid.ToString() + ")";
+                                versions.Add(version);
                             }
                         }
-
-                        // Compute task name
-                        string taskName = null;
-                        if (eventInfo->TaskNameOffset != 0)
+                    }
+                    else if (descriptors.Length == 0)
+                    {
+                        for (int version = 0; version <= byte.MaxValue; version++)
                         {
-                            taskName = MakeLegalIdentifier((new string((char*)(&eventInfoBuff[eventInfo->TaskNameOffset]))));
+                            versions.Add((byte)version);
                         }
-                        if (taskName == null)
+                    }
+
+                    var reportedDescriptors = new List<EVENT_DESCRIPTOR>();
+                    var allEventsInfo = GetAllEventsInformation(providerGuid, versions, allEventsBuffers, reportedDescriptors);
+
+                    // Events only TdhGetAllEventsInformation reported go after the enumerated ones, so that the enumerated
+                    // events keep the names they get when processed in enumeration order.
+                    var knownDescriptors = new HashSet<EVENT_DESCRIPTOR>(descriptors);
+                    var allDescriptors = new List<EVENT_DESCRIPTOR>(descriptors);
+                    foreach (var descriptor in reportedDescriptors)
+                    {
+                        if (knownDescriptors.Add(descriptor))
                         {
-                            taskName = "task_" + eventInfo->EventDescriptor.Task.ToString();
+                            allDescriptors.Add(descriptor);
                         }
+                    }
+                    descriptors = allDescriptors.ToArray();
 
-                        // Ensure task name is unique.  
-                        int taskNumForName;
-                        if (taskNames.TryGetValue(taskName, out taskNumForName) && taskNumForName != eventInfo->EventDescriptor.Task)
+                    foreach (var descriptor in descriptors)
+                    {
+                        IntPtr allEventInfo;
+                        if (!allEventsInfo.TryGetValue(descriptor, out allEventInfo))
                         {
-                            taskName = taskName + "_" + eventInfo->EventDescriptor.Task.ToString();
-                        }
-
-                        taskNames[taskName] = eventInfo->EventDescriptor.Task;
-
-                        // Compute opcode name
-                        string opcodeName = "";
-                        if (eventInfo->EventDescriptor.Opcode != 0)
-                        {
-                            if (eventInfo->OpcodeNameOffset != 0)
+                            for (; ; )
                             {
-                                opcodeName = MakeLegalIdentifier((new string((char*)(&eventInfoBuff[eventInfo->OpcodeNameOffset]))));
-                            }
-                            else
-                            {
-                                opcodeName = "opcode_" + eventInfo->EventDescriptor.Opcode.ToString();
-                            }
-                        }
-
-                        // Ensure opcode name is unique.  
-                        int opcodeNumForName;
-                        if (opcodeNames.TryGetValue(opcodeName, out opcodeNumForName) && opcodeNumForName != eventInfo->EventDescriptor.Opcode)
-                        {
-                            // If we did not find a name, use 'opcode and the disambiguator
-                            if (eventInfo->OpcodeNameOffset == 0)
-                            {
-                                opcodeName = "opcode";
-                            }
-
-                            opcodeName = opcodeName + "_" + eventInfo->EventDescriptor.Task.ToString() + "_" + eventInfo->EventDescriptor.Opcode.ToString();
-                        }
-                        opcodeNames[opcodeName] = eventInfo->EventDescriptor.Opcode;
-
-                        // And event name 
-                        string eventName = taskName;
-                        if (!taskName.EndsWith(opcodeName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            eventName += Capitalize(opcodeName);
-                        }
-
-                        // Ensure uniqueness of the event name
-                        int eventNumForName;
-                        if (eventNames.TryGetValue(eventName, out eventNumForName) && eventNumForName != eventInfo->EventDescriptor.Id)
-                        {
-                            eventName = eventName + eventInfo->EventDescriptor.Id.ToString();
-                        }
-
-                        eventNames[eventName] = eventInfo->EventDescriptor.Id;
-
-                        // Get task information
-                        TaskInfo taskInfo;
-                        if (!tasks.TryGetValue(eventInfo->EventDescriptor.Task, out taskInfo))
-                        {
-                            tasks[eventInfo->EventDescriptor.Task] = taskInfo = new TaskInfo() { Name = taskName };
-                        }
-
-                        var symbolName = eventName;
-                        if (eventInfo->EventDescriptor.Version > 0)
-                        {
-                            symbolName += "_V" + eventInfo->EventDescriptor.Version;
-                        }
-
-                        // Compute opcode attribute and register non-reserved opcodes with task
-                        string opcodeId = null;
-                        if (eventInfo->EventDescriptor.Opcode != 0)
-                        {
-                            if (eventInfo->EventDescriptor.Opcode < 10)       // It is a reserved opcode.  
-                            {
-                                // For some reason opcodeName does not have the underscore, which we need. 
-                                if (eventInfo->EventDescriptor.Opcode == (byte)TraceEventOpcode.DataCollectionStart)
+                                int size = buffer.Length;
+                                status = TdhGetManifestEventInformation(eventRecord.EventHeader.ProviderId, descriptor, buffer, ref size);
+                                if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
                                 {
-                                    opcodeId = "win:DC_Start";
+                                    break;
                                 }
-                                else if (eventInfo->EventDescriptor.Opcode == (byte)TraceEventOpcode.DataCollectionStop)
+
+                                buffer = new byte[size];
+                            }
+
+                            if (status != 0)
+                            {
+                                continue;
+                            }
+                        }
+
+                        fixed (byte* manifestEventInfoBuff = buffer)
+                        {
+                            byte* eventInfoBuff = allEventInfo != IntPtr.Zero ? (byte*)allEventInfo : manifestEventInfoBuff;
+                            var eventInfo = (TRACE_EVENT_INFO*)eventInfoBuff;
+                            EVENT_PROPERTY_INFO* propertyInfos = &eventInfo->EventPropertyInfoArray;
+
+                            if (providerName == null)
+                            {
+                                if (eventInfo->ProviderNameOffset != 0)
                                 {
-                                    opcodeId = "win:DC_Stop";
+                                    providerName = new string((char*)(&eventInfoBuff[eventInfo->ProviderNameOffset]));
                                 }
                                 else
                                 {
-                                    opcodeId = "win:" + opcodeName;
+                                    providerName = "provider(" + eventInfo->ProviderGuid.ToString() + ")";
                                 }
                             }
-                            else
-                            {
-                                opcodeId = opcodeName;
-                                if (taskInfo.Opcodes == null)
-                                {
-                                    taskInfo.Opcodes = new SortedDictionary<int, string>();
-                                }
 
-                                if (!taskInfo.Opcodes.ContainsKey(eventInfo->EventDescriptor.Opcode))
+                            // Compute task name
+                            string taskName = null;
+                            if (eventInfo->TaskNameOffset != 0)
+                            {
+                                taskName = MakeLegalIdentifier((new string((char*)(&eventInfoBuff[eventInfo->TaskNameOffset]))));
+                            }
+                            if (taskName == null)
+                            {
+                                taskName = "task_" + eventInfo->EventDescriptor.Task.ToString();
+                            }
+
+                            // Ensure task name is unique.  
+                            int taskNumForName;
+                            if (taskNames.TryGetValue(taskName, out taskNumForName) && taskNumForName != eventInfo->EventDescriptor.Task)
+                            {
+                                taskName = taskName + "_" + eventInfo->EventDescriptor.Task.ToString();
+                            }
+
+                            taskNames[taskName] = eventInfo->EventDescriptor.Task;
+
+                            // Compute opcode name
+                            string opcodeName = "";
+                            if (eventInfo->EventDescriptor.Opcode != 0)
+                            {
+                                if (eventInfo->OpcodeNameOffset != 0)
                                 {
-                                    taskInfo.Opcodes[eventInfo->EventDescriptor.Opcode] = opcodeId;
+                                    opcodeName = MakeLegalIdentifier((new string((char*)(&eventInfoBuff[eventInfo->OpcodeNameOffset]))));
+                                }
+                                else
+                                {
+                                    opcodeName = "opcode_" + eventInfo->EventDescriptor.Opcode.ToString();
                                 }
                             }
-                        }
-                        
-                        // TODO handle cases outside standard levels 
-                        string level = null;
-                        if ((int)TraceEventLevel.Always <= eventInfo->EventDescriptor.Level && eventInfo->EventDescriptor.Level <= (int)TraceEventLevel.Verbose)
-                        {
-                            var asLevel = (TraceEventLevel)eventInfo->EventDescriptor.Level;
-                            level = "win:" + asLevel;
-                        }
 
-                        var keywordStr = GetKeywordStr(keywords, (ulong)eventInfo->EventDescriptor.Keyword);
-
-                        // Process properties and build template content using XmlWriter
-                        string templateName = null;
-                        if (eventInfo->TopLevelPropertyCount != 0)
-                        {
-                            string[] propertyNames = new string[eventInfo->TopLevelPropertyCount];
-                            var templateSb = new StringBuilder();
-                            using (var tw = XmlWriter.Create(templateSb, fragmentSettings))
+                            // Ensure opcode name is unique.  
+                            int opcodeNumForName;
+                            if (opcodeNames.TryGetValue(opcodeName, out opcodeNumForName) && opcodeNumForName != eventInfo->EventDescriptor.Opcode)
                             {
-                                for (int j = 0; j < eventInfo->TopLevelPropertyCount; j++)
+                                // If we did not find a name, use 'opcode and the disambiguator
+                                if (eventInfo->OpcodeNameOffset == 0)
                                 {
-                                    EVENT_PROPERTY_INFO* propertyInfo = &propertyInfos[j];
-                                    var propertyName = new string((char*)(&eventInfoBuff[propertyInfo->NameOffset]));
-                                    propertyNames[j] = propertyName;
-                                    string mapAttrib = null;
+                                    opcodeName = "opcode";
+                                }
 
-                                    // Deal with any maps (bit fields or enumerations)
-                                    if (propertyInfo->MapNameOffset != 0)
+                                opcodeName = opcodeName + "_" + eventInfo->EventDescriptor.Task.ToString() + "_" + eventInfo->EventDescriptor.Opcode.ToString();
+                            }
+                            opcodeNames[opcodeName] = eventInfo->EventDescriptor.Opcode;
+
+                            // And event name 
+                            string eventName = taskName;
+                            if (!taskName.EndsWith(opcodeName, StringComparison.OrdinalIgnoreCase))
+                            {
+                                eventName += Capitalize(opcodeName);
+                            }
+
+                            // Ensure uniqueness of the event name
+                            int eventNumForName;
+                            if (eventNames.TryGetValue(eventName, out eventNumForName) && eventNumForName != eventInfo->EventDescriptor.Id)
+                            {
+                                eventName = eventName + eventInfo->EventDescriptor.Id.ToString();
+                            }
+
+                            eventNames[eventName] = eventInfo->EventDescriptor.Id;
+
+                            // Get task information
+                            TaskInfo taskInfo;
+                            if (!tasks.TryGetValue(eventInfo->EventDescriptor.Task, out taskInfo))
+                            {
+                                tasks[eventInfo->EventDescriptor.Task] = taskInfo = new TaskInfo() { Name = taskName };
+                            }
+
+                            var symbolName = eventName;
+                            if (eventInfo->EventDescriptor.Version > 0)
+                            {
+                                symbolName += "_V" + eventInfo->EventDescriptor.Version;
+                            }
+
+                            // Compute opcode attribute and register non-reserved opcodes with task
+                            string opcodeId = null;
+                            if (eventInfo->EventDescriptor.Opcode != 0)
+                            {
+                                if (eventInfo->EventDescriptor.Opcode < 10)       // It is a reserved opcode.  
+                                {
+                                    // For some reason opcodeName does not have the underscore, which we need. 
+                                    if (eventInfo->EventDescriptor.Opcode == (byte)TraceEventOpcode.DataCollectionStart)
                                     {
-                                        string mapName = new string((char*)(&eventInfoBuff[propertyInfo->MapNameOffset]));
+                                        opcodeId = "win:DC_Start";
+                                    }
+                                    else if (eventInfo->EventDescriptor.Opcode == (byte)TraceEventOpcode.DataCollectionStop)
+                                    {
+                                        opcodeId = "win:DC_Stop";
+                                    }
+                                    else
+                                    {
+                                        opcodeId = "win:" + opcodeName;
+                                    }
+                                }
+                                else
+                                {
+                                    opcodeId = opcodeName;
+                                    if (taskInfo.Opcodes == null)
+                                    {
+                                        taskInfo.Opcodes = new SortedDictionary<int, string>();
+                                    }
 
-                                        if (enumBuffer == null)
-                                        {
-                                            enumBuffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
-                                        }
+                                    if (!taskInfo.Opcodes.ContainsKey(eventInfo->EventDescriptor.Opcode))
+                                    {
+                                        taskInfo.Opcodes[eventInfo->EventDescriptor.Opcode] = opcodeId;
+                                    }
+                                }
+                            }
+                            
+                            // TODO handle cases outside standard levels 
+                            string level = null;
+                            if ((int)TraceEventLevel.Always <= eventInfo->EventDescriptor.Level && eventInfo->EventDescriptor.Level <= (int)TraceEventLevel.Verbose)
+                            {
+                                var asLevel = (TraceEventLevel)eventInfo->EventDescriptor.Level;
+                                level = "win:" + asLevel;
+                            }
 
-                                        string existingDisplayName;
-                                        if (!enumIntern.ContainsKey(mapName))
+                            var keywordStr = GetKeywordStr(keywords, (ulong)eventInfo->EventDescriptor.Keyword);
+
+                            // Process properties and build template content using XmlWriter
+                            string templateName = null;
+                            if (eventInfo->TopLevelPropertyCount != 0)
+                            {
+                                string[] propertyNames = new string[eventInfo->TopLevelPropertyCount];
+                                var templateSb = new StringBuilder();
+                                using (var tw = XmlWriter.Create(templateSb, fragmentSettings))
+                                {
+                                    for (int j = 0; j < eventInfo->TopLevelPropertyCount; j++)
+                                    {
+                                        EVENT_PROPERTY_INFO* propertyInfo = &propertyInfos[j];
+                                        var propertyName = new string((char*)(&eventInfoBuff[propertyInfo->NameOffset]));
+                                        propertyNames[j] = propertyName;
+                                        string mapAttrib = null;
+
+                                        // Deal with any maps (bit fields or enumerations)
+                                        if (propertyInfo->MapNameOffset != 0)
                                         {
-                                            EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
-                                            var hr = TdhGetEventMapInformation(&eventRecord, mapName, enumInfo, ref buffSize);
-                                            if (hr == 0)
+                                            string mapName = new string((char*)(&eventInfoBuff[propertyInfo->MapNameOffset]));
+
+                                            if (enumBuffer == null)
                                             {
-                                                // We only support manifest enums for now.  
-                                                if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP ||
-                                                    enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_BITMAP)
+                                                enumBuffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
+                                            }
+
+                                            string existingDisplayName;
+                                            if (!enumIntern.ContainsKey(mapName))
+                                            {
+                                                EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
+                                                var hr = TdhGetEventMapInformation(&eventRecord, mapName, enumInfo, ref buffSize);
+                                                if (hr == 0)
                                                 {
-                                                    string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
-
-                                                    // Render map XML using XmlWriter
-                                                    var mapSb = new StringBuilder();
-                                                    using (var mw = XmlWriter.Create(mapSb, fragmentSettings))
+                                                    // We only support manifest enums for now.  
+                                                    if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP ||
+                                                        enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_BITMAP)
                                                     {
-                                                        mw.WriteStartElement(
-                                                            enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP
-                                                                ? "valueMap" : "bitMap");
-                                                        mw.WriteAttributeString("name", enumName);
+                                                        string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
 
-                                                        EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
-                                                        for (int k = 0; k < enumInfo->EntryCount; k++)
+                                                        // Render map XML using XmlWriter
+                                                        var mapSb = new StringBuilder();
+                                                        using (var mw = XmlWriter.Create(mapSb, fragmentSettings))
                                                         {
-                                                            int value = mapEntries[k].Value;
-                                                            string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
-                                                            string stringId = $"map_{enumName}{valueName}";
+                                                            mw.WriteStartElement(
+                                                                enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP
+                                                                    ? "valueMap" : "bitMap");
+                                                            mw.WriteAttributeString("name", enumName);
 
-                                                            mw.WriteStartElement("map");
-                                                            mw.WriteAttributeString("value", $"0x{value:x}");
-                                                            mw.WriteAttributeString("message", $"$(string.{stringId})");
-                                                            mw.WriteEndElement();
-
-                                                            if (emittedStringIds.Add(stringId))
+                                                            EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
+                                                            for (int k = 0; k < enumInfo->EntryCount; k++)
                                                             {
-                                                                enumLocalizations.Add(new KeyValuePair<string, string>(stringId, valueName));
+                                                                int value = mapEntries[k].Value;
+                                                                string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
+                                                                string stringId = $"map_{enumName}{valueName}";
+
+                                                                mw.WriteStartElement("map");
+                                                                mw.WriteAttributeString("value", $"0x{value:x}");
+                                                                mw.WriteAttributeString("message", $"$(string.{stringId})");
+                                                                mw.WriteEndElement();
+
+                                                                if (emittedStringIds.Add(stringId))
+                                                                {
+                                                                    enumLocalizations.Add(new KeyValuePair<string, string>(stringId, valueName));
+                                                                }
                                                             }
+
+                                                            mw.WriteEndElement(); // valueMap or bitMap
                                                         }
 
-                                                        mw.WriteEndElement(); // valueMap or bitMap
+                                                        enumIntern[mapName] = mapSb.ToString();
+                                                        enumDisplayNames[mapName] = enumName;
                                                     }
-
-                                                    enumIntern[mapName] = mapSb.ToString();
-                                                    enumDisplayNames[mapName] = enumName;
                                                 }
+                                            }
+
+                                            if (enumDisplayNames.TryGetValue(mapName, out existingDisplayName))
+                                            {
+                                                mapAttrib = existingDisplayName;
                                             }
                                         }
 
-                                        if (enumDisplayNames.TryGetValue(mapName, out existingDisplayName))
+                                        // Remove anything that does not look like an ID (.e.g space)
+                                        propertyName = Regex.Replace(propertyName, "[^A-Za-z0-9_]", "");
+                                        TdhInputType propertyType = propertyInfo->InType;
+                                        string countAttrib = null;
+                                        string lengthAttrib = null;
+
+                                        if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamCount) != 0)
                                         {
-                                            mapAttrib = existingDisplayName;
+                                            countAttrib = propertyNames[propertyInfo->CountOrCountIndex];
                                         }
-                                    }
+                                        else if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamLength) != 0)
+                                        {
+                                            lengthAttrib = propertyNames[propertyInfo->LengthOrLengthIndex];
+                                        }
 
-                                    // Remove anything that does not look like an ID (.e.g space)
-                                    propertyName = Regex.Replace(propertyName, "[^A-Za-z0-9_]", "");
-                                    TdhInputType propertyType = propertyInfo->InType;
-                                    string countAttrib = null;
-                                    string lengthAttrib = null;
-
-                                    if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamCount) != 0)
-                                    {
-                                        countAttrib = propertyNames[propertyInfo->CountOrCountIndex];
+                                        tw.WriteStartElement("data");
+                                        tw.WriteAttributeString("name", propertyName);
+                                        tw.WriteAttributeString("inType", "win:" + propertyType.ToString());
+                                        if (mapAttrib != null)
+                                        {
+                                            tw.WriteAttributeString("map", mapAttrib);
+                                        }
+                                        if (countAttrib != null)
+                                        {
+                                            tw.WriteAttributeString("count", countAttrib);
+                                        }
+                                        if (lengthAttrib != null)
+                                        {
+                                            tw.WriteAttributeString("length", lengthAttrib);
+                                        }
+                                        tw.WriteEndElement();
                                     }
-                                    else if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamLength) != 0)
-                                    {
-                                        lengthAttrib = propertyNames[propertyInfo->LengthOrLengthIndex];
-                                    }
-
-                                    tw.WriteStartElement("data");
-                                    tw.WriteAttributeString("name", propertyName);
-                                    tw.WriteAttributeString("inType", "win:" + propertyType.ToString());
-                                    if (mapAttrib != null)
-                                    {
-                                        tw.WriteAttributeString("map", mapAttrib);
-                                    }
-                                    if (countAttrib != null)
-                                    {
-                                        tw.WriteAttributeString("count", countAttrib);
-                                    }
-                                    if (lengthAttrib != null)
-                                    {
-                                        tw.WriteAttributeString("length", lengthAttrib);
-                                    }
-                                    tw.WriteEndElement();
                                 }
-                            }
 
-                            // Template dedup using rendered content
-                            string templateContent = templateSb.ToString();
-                            if (!templateIntern.TryGetValue(templateContent, out templateName))
-                            {
-                                templateName = eventName + "Args";
-                                if (eventInfo->EventDescriptor.Version > 0)
+                                // Template dedup using rendered content
+                                string templateContent = templateSb.ToString();
+                                if (!templateIntern.TryGetValue(templateContent, out templateName))
                                 {
-                                    templateName += "_V" + eventInfo->EventDescriptor.Version;
+                                    templateName = eventName + "Args";
+                                    if (eventInfo->EventDescriptor.Version > 0)
+                                    {
+                                        templateName += "_V" + eventInfo->EventDescriptor.Version;
+                                    }
+
+                                    templateIntern[templateContent] = templateName;
                                 }
+                            }
 
-                                templateIntern[templateContent] = templateName;
+                            // Render event element using XmlWriter
+                            var eventSb = new StringBuilder();
+                            using (var ew = XmlWriter.Create(eventSb, fragmentSettings))
+                            {
+                                ew.WriteStartElement("event");
+                                ew.WriteAttributeString("value", eventInfo->EventDescriptor.Id.ToString());
+                                ew.WriteAttributeString("symbol", symbolName);
+                                ew.WriteAttributeString("version", eventInfo->EventDescriptor.Version.ToString());
+                                ew.WriteAttributeString("task", taskName);
+                                
+                                if (opcodeId != null)
+                                {
+                                    ew.WriteAttributeString("opcode", opcodeId);
+                                }
+                                
+                                if (level != null)
+                                {
+                                    ew.WriteAttributeString("level", level);
+                                }
+                                
+                                if (keywordStr.Length > 0)
+                                {
+                                    ew.WriteAttributeString("keywords", keywordStr);
+                                }
+                                
+                                if (templateName != null)
+                                {
+                                    ew.WriteAttributeString("template", templateName);
+                                }
+                                
+                                ew.WriteEndElement();
                             }
-                        }
 
-                        // Render event element using XmlWriter
-                        var eventSb = new StringBuilder();
-                        using (var ew = XmlWriter.Create(eventSb, fragmentSettings))
-                        {
-                            ew.WriteStartElement("event");
-                            ew.WriteAttributeString("value", eventInfo->EventDescriptor.Id.ToString());
-                            ew.WriteAttributeString("symbol", symbolName);
-                            ew.WriteAttributeString("version", eventInfo->EventDescriptor.Version.ToString());
-                            ew.WriteAttributeString("task", taskName);
-                            
-                            if (opcodeId != null)
+                            List<string> eventList;
+                            if (!events.TryGetValue(eventInfo->EventDescriptor.Id, out eventList))
                             {
-                                ew.WriteAttributeString("opcode", opcodeId);
+                                events[eventInfo->EventDescriptor.Id] = eventList = new List<string>();
                             }
-                            
-                            if (level != null)
-                            {
-                                ew.WriteAttributeString("level", level);
-                            }
-                            
-                            if (keywordStr.Length > 0)
-                            {
-                                ew.WriteAttributeString("keywords", keywordStr);
-                            }
-                            
-                            if (templateName != null)
-                            {
-                                ew.WriteAttributeString("template", templateName);
-                            }
-                            
-                            ew.WriteEndElement();
+                            eventList.Add(eventSb.ToString());
                         }
-
-                        List<string> eventList;
-                        if (!events.TryGetValue(eventInfo->EventDescriptor.Id, out eventList))
-                        {
-                            events[eventInfo->EventDescriptor.Id] = eventList = new List<string>();
-                        }
-                        eventList.Add(eventSb.ToString());
                     }
                 }
             }
-            if (enumBuffer != null)
+            finally
             {
-                System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)enumBuffer);
+                if (enumBuffer != null)
+                {
+                    System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)enumBuffer);
+                }
+                foreach (var allEventsBuffer in allEventsBuffers)
+                {
+                    Marshal.FreeHGlobal(allEventsBuffer);
+                }
             }
 
             if (providerName == null)
@@ -673,6 +758,58 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         #region private
+        /// <summary>
+        /// Reads a value of the provider's Event Log publisher registration (null 'valueName' reads the publisher name),
+        /// or returns null if the provider is not a registered Event Log publisher.
+        /// </summary>
+        private static string GetEventLogPublisherValue(Guid providerGuid, string valueName)
+        {
+            // The publishers are only in the native registry (64 bit on a 64 bit machine); a 32 bit process would
+            // otherwise be redirected away from them.  Ask the OS rather than check PROCESSOR_ARCHITEW6432, which a
+            // 32 bit process does not have if it was started with a cleared environment.
+            var registryView = Environment.Is64BitOperatingSystem ? Microsoft.Win32.RegistryView.Registry64 : Microsoft.Win32.RegistryView.Default;
+
+            try
+            {
+                using (var hklm = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, registryView))
+                using (var key = hklm.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Publishers\{" + providerGuid.ToString() + "}"))
+                {
+                    return key?.GetValue(valueName) as string;
+                }
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Opens the Event Log (wevtapi) metadata of the provider, or returns IntPtr.Zero if the provider is not a
+        /// registered Event Log publisher or wevtapi cannot read it. The caller must EvtClose the handle.
+        /// </summary>
+        private static IntPtr OpenEventLogPublisher(Guid providerGuid)
+        {
+            // EvtOpenPublisherMetadata takes the publisher name, not its GUID.
+            string publisherName = GetEventLogPublisherValue(providerGuid, null);
+            if (string.IsNullOrEmpty(publisherName))
+            {
+                return IntPtr.Zero;
+            }
+
+            try
+            {
+                return EvtOpenPublisherMetadata(IntPtr.Zero, publisherName, null, 0, 0);
+            }
+            catch (DllNotFoundException)
+            {
+                return IntPtr.Zero;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                return IntPtr.Zero;
+            }
+        }
+
         // Borrowed from Core CLR System.Globalization.CultureInfo
         private static string IetfLanguageTag(CultureInfo culture)
         {
@@ -688,6 +825,168 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
+        /// <summary>
+        /// Calls TdhGetAllEventsInformation for each of 'versions' and returns the TRACE_EVENT_INFO of every event it
+        /// reports, keyed by descriptor; 'reported' receives those descriptors in the order TDH returned them. The infos
+        /// point into unmanaged buffers that are added to 'buffers', which the caller must free. Versions it cannot
+        /// provide, or an OS whose tdh.dll does not export it, are simply absent, and the caller falls back to
+        /// TdhGetManifestEventInformation.
+        /// </summary>
+        /// <remarks>
+        /// Each call costs about as much as reading the whole manifest, so ask only for the versions that need it.
+        /// </remarks>
+        private static Dictionary<EVENT_DESCRIPTOR, IntPtr> GetAllEventsInformation(Guid providerGuid, IEnumerable<byte> versions, List<IntPtr> buffers, List<EVENT_DESCRIPTOR> reported)
+        {
+            var infos = new Dictionary<EVENT_DESCRIPTOR, IntPtr>();
+
+            // Only the provider and version are used to select the events.
+            TraceEventNativeMethods.EVENT_RECORD eventRecord = new TraceEventNativeMethods.EVENT_RECORD();
+            eventRecord.EventHeader.ProviderId = providerGuid;
+
+            foreach (var version in versions)
+            {
+                eventRecord.EventHeader.Version = version;
+                int size = 84000;
+                byte* buffer = (byte*)Marshal.AllocHGlobal(size);
+                int count, status;
+                try
+                {
+                    for (; ; )
+                    {
+                        // pIndex is the position of the event whose Id matches the record's, not an offset to the first.
+                        status = TdhGetAllEventsInformation(&eventRecord, IntPtr.Zero, out _, out count, buffer, ref size);
+                        if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
+                        {
+                            break;
+                        }
+
+                        Marshal.FreeHGlobal((IntPtr)buffer);
+                        buffer = (byte*)Marshal.AllocHGlobal(size);
+                    }
+                }
+                catch (EntryPointNotFoundException)
+                {
+                    // tdh.dll on this OS does not export TdhGetAllEventsInformation.
+                    Marshal.FreeHGlobal((IntPtr)buffer);
+                    break;
+                }
+
+                if (status != 0)
+                {
+                    Marshal.FreeHGlobal((IntPtr)buffer);
+                    continue;
+                }
+
+                buffers.Add((IntPtr)buffer);
+
+                // The buffer starts with 'count' TRACE_EVENT_INFO pointers into itself.
+                var eventInfos = (TRACE_EVENT_INFO**)buffer;
+                for (int i = 0; i < count; i++)
+                {
+                    infos[eventInfos[i]->EventDescriptor] = (IntPtr)eventInfos[i];
+                    reported.Add(eventInfos[i]->EventDescriptor);
+                }
+            }
+
+            return infos;
+        }
+
+        /// <summary>
+        /// The event versions that the Event Log API (wevtapi) reports for the provider's manifest, as TDH sees them,
+        /// or null if the provider is not a registered Event Log publisher or wevtapi cannot read it.
+        /// </summary>
+        /// <remarks>
+        /// wevtapi reports win:EventlogClassic events by their whole Event Log message id (e.g. 0xC0060001) with
+        /// Version 0, while TDH sees the descriptor the manifest compiler stored, whose Version is bits 16-23 of that
+        /// id (Volsnap's 0xC0060001 is version 6). That packing is observed, not documented, so for an id wider than
+        /// 16 bits return both candidates; asking TdhGetAllEventsInformation about a version with no events costs
+        /// one failed call.
+        /// </remarks>
+        private static HashSet<byte> GetEventLogVersions(Guid providerGuid)
+        {
+            IntPtr publisherMetadata = OpenEventLogPublisher(providerGuid);
+            if (publisherMetadata == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            IntPtr eventMetadataEnum = IntPtr.Zero;
+            try
+            {
+                eventMetadataEnum = EvtOpenEventMetadataEnum(publisherMetadata, 0);
+                if (eventMetadataEnum == IntPtr.Zero)
+                {
+                    return null;
+                }
+
+                var versions = new HashSet<byte>();
+                IntPtr eventMetadata;
+                while ((eventMetadata = EvtNextEventMetadata(eventMetadataEnum, 0)) != IntPtr.Zero)
+                {
+                    try
+                    {
+                        uint id, version;
+                        if (!TryGetEventMetadataUInt32(eventMetadata, EventMetadataEventID, out id) ||
+                            !TryGetEventMetadataUInt32(eventMetadata, EventMetadataEventVersion, out version))
+                        {
+                            return null;
+                        }
+
+                        versions.Add((byte)version);
+                        if (id > ushort.MaxValue)
+                        {
+                            versions.Add((byte)(id >> 16));
+                        }
+                    }
+                    finally
+                    {
+                        EvtClose(eventMetadata);
+                    }
+                }
+
+                // EvtNextEventMetadata returns ERROR_NO_MORE_ITEMS at the end of the list; anything else means the
+                // list is incomplete.
+                return Marshal.GetLastWin32Error() == 259 ? versions : null;
+            }
+            catch (DllNotFoundException)
+            {
+                return null;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                return null;
+            }
+            finally
+            {
+                if (eventMetadataEnum != IntPtr.Zero)
+                {
+                    EvtClose(eventMetadataEnum);
+                }
+                if (publisherMetadata != IntPtr.Zero)
+                {
+                    EvtClose(publisherMetadata);
+                }
+            }
+        }
+
+        // Reads an EvtVarTypeUInt32 property of an event metadata handle.
+        private static bool TryGetEventMetadataUInt32(IntPtr eventMetadata, int propertyId, out uint value)
+        {
+            // EVT_VARIANT: 8-byte value union, then DWORD Count, then DWORD Type.
+            const int EvtVariantSize = 16;
+            const int EvtVarTypeUInt32 = 8;
+            byte* variant = stackalloc byte[EvtVariantSize];
+            int used;
+            value = 0;
+            if (!EvtGetEventMetadataProperty(eventMetadata, propertyId, 0, EvtVariantSize, variant, out used) ||
+                *(int*)(variant + 12) != EvtVarTypeUInt32)
+            {
+                return false;
+            }
+
+            value = *(uint*)variant;
+            return true;
+        }
 
         private static string MakeLegalIdentifier(string name)
         {
@@ -1324,6 +1623,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             ref int pBufferSize
         );
 
+        // https://learn.microsoft.com/windows/win32/etw/tdhgetalleventsinformation - exported by tdh.dll but not
+        // declared in an SDK header.
+        [DllImport("tdh.dll")]
+        internal static extern int TdhGetAllEventsInformation(
+            TraceEventNativeMethods.EVENT_RECORD* pEvent,
+            IntPtr pWbemService,
+            out int pIndex,
+            out int pCount,
+            byte* pBuffer, // PTRACE_EVENT_INFO[], followed by the TRACE_EVENT_INFOs they point to
+            ref int pBufferSize
+        );
+
         [Flags]
         internal enum MAP_FLAGS
         {
@@ -1521,6 +1832,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             ReducedString = 300,        // Start of TDH outtypes for WBEM.
             NoPrint,
         };
+
+        // win:EventlogClassic in winmeta.xml: events that keep their Event Log (ReportEvent) message ids.
+        private const ulong WINEVENT_KEYWORD_EVENTLOG_CLASSIC = 0x80000000000000;
+
+        // TdhEnumerateManifestProviderEvents: no events found (winerror.h).
+        private const int ERROR_EMPTY = 4306;
+
+        // EVT_EVENT_METADATA_PROPERTY_ID (winevt.h)
+        private const int EventMetadataEventID = 0;
+        private const int EventMetadataEventVersion = 1;
+
+        [DllImport("wevtapi.dll", SetLastError = true)]
+        private static extern IntPtr EvtOpenEventMetadataEnum(IntPtr publisherMetadata, int flags);
+
+        [DllImport("wevtapi.dll", SetLastError = true)]
+        private static extern IntPtr EvtNextEventMetadata(IntPtr eventMetadataEnum, int flags);
+
+        [DllImport("wevtapi.dll", SetLastError = true)]
+        private static extern bool EvtGetEventMetadataProperty(IntPtr eventMetadata, int propertyId, int flags, int bufferSize, byte* buffer, out int bufferUsed);
+
+        [DllImport("wevtapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr EvtOpenPublisherMetadata(IntPtr session, string publisherId, string logFilePath, int locale, int flags);
+
+        [DllImport("wevtapi.dll")]
+        private static extern bool EvtClose(IntPtr handle);
         #endregion
     }
 

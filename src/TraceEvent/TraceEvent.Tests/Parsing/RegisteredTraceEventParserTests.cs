@@ -230,6 +230,110 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that events sharing an Id and Version keep their own fields. Kerberos event 13 is two Event Log
+        /// message ids, 0x0000000D and 0x8000000D, that differ only in the severity bits.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_EventsSharingIdAndVersionKeepTheirOwnFields()
+        {
+            const string providerName = "Microsoft-Windows-Security-Kerberos";
+
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
+
+            Assert.NotNull(manifest);
+            Assert.NotEmpty(manifest);
+
+            _output.WriteLine($"Generated manifest for {providerName} (length: {manifest.Length} chars)");
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            // Template id -> its field names
+            var templateFields = new Dictionary<string, string>();
+            foreach (XmlNode template in xmlDoc.SelectNodes("//e:template", nsmgr))
+            {
+                var fieldNames = new List<string>();
+                foreach (XmlNode data in template.SelectNodes("e:data", nsmgr))
+                {
+                    fieldNames.Add(data.Attributes?["name"]?.Value);
+                }
+                templateFields[template.Attributes?["tid"]?.Value] = string.Join(", ", fieldNames);
+            }
+
+            var eventFields = new List<string>();
+            foreach (XmlNode eventNode in xmlDoc.SelectNodes("//e:event[@value='13'][@version='0']", nsmgr))
+            {
+                string templateId = eventNode.Attributes?["template"]?.Value;
+                string fields = templateId != null ? templateFields[templateId] : string.Empty;
+                _output.WriteLine($"Event 13 opcode={eventNode.Attributes?["opcode"]?.Value ?? "(none)"}: {fields}");
+                eventFields.Add(fields);
+            }
+
+            Assert.Equal(2, eventFields.Count);
+            Assert.Contains("Error, __binLength, binary", eventFields);
+            Assert.Contains("Username, __binLength, binary", eventFields);
+        }
+
+        /// <summary>
+        /// Test that events are found even when TdhEnumerateManifestProviderEvents cannot list them.
+        /// For Microsoft-Windows-CertificateServicesClient-CertEnroll it returns ERROR_EMPTY: its events are all
+        /// version 90 (Event Log message ids with facility 0x25A), more than 11 versions above 0.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_FindsEventsTheEnumerationOmits()
+        {
+            const string providerName = "Microsoft-Windows-CertificateServicesClient-CertEnroll";
+
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
+
+            var doc = new XmlDocument();
+            doc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(doc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            int eventCount = doc.SelectNodes("//e:event", nsmgr).Count;
+            _output.WriteLine($"{providerName}: {eventCount} events");
+            Assert.True(eventCount > 0, "Expected the manifest to contain events");
+        }
+
+        /// <summary>
+        /// Test that events past a gap of more than 11 versions are found.
+        /// TdhEnumerateManifestProviderEvents walks versions upwards and stops after 11 empty versions in a row.
+        /// Microsoft-Windows-MSMPEG2VDEC declares all its events at version 0 except event 13 (version 12 on Windows
+        /// 11 26200), so the enumeration never lists it; it is the only id missing from 0..N in every Windows 10 and 11
+        /// release. The provider is absent on some editions (e.g. N), so it is optional.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_FindsEventsPastAVersionGap()
+        {
+            const string providerName = "Microsoft-Windows-MSMPEG2VDEC";
+            var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
+            if (providerGuid == Guid.Empty)
+            {
+                _output.WriteLine($"{providerName} is not registered on this machine; nothing to test");
+                return;
+            }
+
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerGuid);
+
+            var doc = new XmlDocument();
+            doc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(doc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var versions = new List<string>();
+            foreach (XmlNode evt in doc.SelectNodes("//e:event[@value='13']", nsmgr))
+            {
+                versions.Add(evt.Attributes["version"].Value);
+            }
+            _output.WriteLine($"{providerName} event 13 versions: {string.Join(", ", versions)}");
+            Assert.NotEmpty(versions);
+        }
+
+        /// <summary>
         /// Test that the new XmlWriter-based implementation produces semantically identical output
         /// to the legacy string-based implementation. The comparison normalizes both outputs as XML
         /// to account for formatting differences.
