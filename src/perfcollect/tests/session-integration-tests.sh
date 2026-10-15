@@ -26,6 +26,8 @@ set -u
 set -o pipefail
 export LC_ALL=C
 export TMPDIR=/tmp
+# Legacy stop returns the final tput status, so supply a noninteractive terminal.
+export TERM=dumb
 
 # Refuse before creating results, installing cleanup traps, or touching any
 # session/home/scratch path. A target name alone is not a container fence.
