@@ -26,6 +26,7 @@ jobs:
           # Main-branch, manual, and scheduled builds always validate everything.
           # Path filtering applies only to PR runs.
           if [[ "$BUILD_REASON" != PullRequest ]]; then
+            echo "Jobs to schedule: perfview=true, perfcollect=true"
             echo "##vso[task.setvariable variable=perfcollect;isOutput=true]true"
             echo "##vso[task.setvariable variable=perfview;isOutput=true]true"
             exit 0
@@ -50,6 +51,7 @@ jobs:
               *) perfview=true ;;
             esac
           done < "$changes"
+          echo "Jobs to schedule: perfview=$perfview, perfcollect=$perfcollect"
           # Named step outputs are consumed by the dependent job conditions below.
           echo "##vso[task.setvariable variable=perfcollect;isOutput=true]$perfcollect"
           echo "##vso[task.setvariable variable=perfview;isOutput=true]$perfview"
