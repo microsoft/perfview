@@ -5,7 +5,6 @@ using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -650,7 +649,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     writer.WriteStartElement("localization");
                     writer.WriteStartElement("resources");
-                    writer.WriteAttributeString("culture", IetfLanguageTag(CultureInfo.CurrentCulture));
+                    writer.WriteAttributeString("culture", GetStringTableCulture(providerGuid));
                     
                     writer.WriteStartElement("stringTable");
                     foreach (var entry in localizedStrings)
@@ -673,19 +672,111 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         #region private
-        // Borrowed from Core CLR System.Globalization.CultureInfo
-        private static string IetfLanguageTag(CultureInfo culture)
+        /// <summary>
+        /// Reads a value of the provider's Event Log publisher registration (null 'valueName' reads the publisher name),
+        /// or returns null if the provider is not a registered Event Log publisher.
+        /// </summary>
+        private static string GetEventLogPublisherValue(Guid providerGuid, string valueName)
         {
-            // special case the compatibility cultures
-            switch (culture.Name)
+            // The publishers are only in the native registry (64 bit on a 64 bit machine); a 32 bit process would
+            // otherwise be redirected away from them.  Ask the OS rather than check PROCESSOR_ARCHITEW6432, which a
+            // 32 bit process does not have if it was started with a cleared environment.
+            var registryView = Environment.Is64BitOperatingSystem ? Microsoft.Win32.RegistryView.Registry64 : Microsoft.Win32.RegistryView.Default;
+
+            try
             {
-                case "zh-CHT":
-                    return "zh-Hant";
-                case "zh-CHS":
-                    return "zh-Hans";
-                default:
-                    return culture.Name;
+                using (var hklm = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, registryView))
+                using (var key = hklm.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Publishers\{" + providerGuid.ToString() + "}"))
+                {
+                    return key?.GetValue(valueName) as string;
+                }
             }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Opens the Event Log (wevtapi) metadata of the provider, or returns IntPtr.Zero if the provider is not a
+        /// registered Event Log publisher or wevtapi cannot read it. The caller must EvtClose the handle.
+        /// </summary>
+        private static IntPtr OpenEventLogPublisher(Guid providerGuid)
+        {
+            // EvtOpenPublisherMetadata takes the publisher name, not its GUID.
+            string publisherName = GetEventLogPublisherValue(providerGuid, null);
+            if (string.IsNullOrEmpty(publisherName))
+            {
+                return IntPtr.Zero;
+            }
+
+            try
+            {
+                return EvtOpenPublisherMetadata(IntPtr.Zero, publisherName, null, 0, 0);
+            }
+            catch (DllNotFoundException)
+            {
+                return IntPtr.Zero;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                return IntPtr.Zero;
+            }
+        }
+
+        /// <summary>
+        /// The culture of the strings that TDH returns for the provider: the language of the provider's message file
+        /// that the resource loader picks from the thread's preferred UI languages, or en-US if the file does not have
+        /// language-specific (.mui) resources.
+        /// </summary>
+        /// <remarks>
+        /// TDH follows the thread's preferred UI languages (SetThreadPreferredUILanguages), not
+        /// CultureInfo.CurrentUICulture, and falls back to en-US when the file has no resources for them;
+        /// GetFileMUIPath reported the language TDH used in every case probed. Message files without .mui resources
+        /// carry their strings in the file itself, which on Windows 11 26200 are all en-US. TDH keeps the strings it
+        /// first read for a provider for the life of the process, so the label is wrong if the thread's preferred UI
+        /// languages changed since then.
+        /// </remarks>
+        private static string GetStringTableCulture(Guid providerGuid)
+        {
+            const string DefaultCulture = "en-US";
+            string messageFile = GetEventLogPublisherValue(providerGuid, "MessageFileName");
+            if (string.IsNullOrEmpty(messageFile))
+            {
+                return DefaultCulture;
+            }
+
+            // TDH reads the native System32, but a 32 bit process on a 64 bit machine is redirected to SysWOW64, which
+            // may not have the same .mui resources, so look in the native directory through its Sysnative alias.
+            messageFile = Environment.ExpandEnvironmentVariables(messageFile);
+            string systemDirectory = Environment.SystemDirectory + Path.DirectorySeparatorChar;
+            if (!Environment.Is64BitProcess && Environment.Is64BitOperatingSystem &&
+                messageFile.StartsWith(systemDirectory, StringComparison.OrdinalIgnoreCase))
+            {
+                messageFile = Path.Combine(Path.GetDirectoryName(Environment.SystemDirectory), "Sysnative", messageFile.Substring(systemDirectory.Length));
+            }
+
+            try
+            {
+                var language = new StringBuilder(LOCALE_NAME_MAX_LENGTH);
+                uint languageLength = (uint)language.Capacity;
+                // Only the language is needed; with no path buffer GetFileMUIPath still returns it.
+                uint muiPathLength = 0;
+                ulong enumerator = 0;
+                if (GetFileMUIPath(MUI_LANGUAGE_NAME, messageFile, language, ref languageLength, null, ref muiPathLength, ref enumerator) &&
+                    language.Length > 0)
+                {
+                    return language.ToString();
+                }
+            }
+            catch (DllNotFoundException)
+            {
+            }
+            catch (EntryPointNotFoundException)
+            {
+            }
+
+            return DefaultCulture;
         }
 
 
@@ -1324,6 +1415,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             ref int pBufferSize
         );
 
+        // GetFileMUIPath flag (winnls.h): languages are names (en-US), not LANGIDs.
+        private const uint MUI_LANGUAGE_NAME = 0x8;
+        // winnls.h
+        private const int LOCALE_NAME_MAX_LENGTH = 85;
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool GetFileMUIPath(uint flags, string filePath, StringBuilder language, ref uint languageLength, StringBuilder fileMUIPath, ref uint fileMUIPathLength, ref ulong enumerator);
+
         [Flags]
         internal enum MAP_FLAGS
         {
@@ -1521,6 +1619,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             ReducedString = 300,        // Start of TDH outtypes for WBEM.
             NoPrint,
         };
+
+        [DllImport("wevtapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr EvtOpenPublisherMetadata(IntPtr session, string publisherId, string logFilePath, int locale, int flags);
+
+        [DllImport("wevtapi.dll")]
+        private static extern bool EvtClose(IntPtr handle);
         #endregion
     }
 
