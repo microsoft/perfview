@@ -1058,6 +1058,13 @@ LoadSessionState()
 SessionExit()
 {
     local status=$?
+    # Under our guard, an existing record can only be this start's publication.
+    # A signal after rename may arrive before SaveSessionState clears its flags.
+    if [ "$sessionStartPending" == "1" ] && [ -f "$sessionStateFile" ] &&
+        PrivateSessionObject "$sessionStateFile" 600
+    then
+        sessionStartPending=0
+    fi
     if [ -n "$sessionStateTemporary" ]
     then
         rm -f -- "$sessionStateTemporary" || { WriteWarning "Cannot remove unpublished session state."; status=1; }
@@ -2023,7 +2030,7 @@ ProcessCollectedData()
     do
         # Keep the archive directory in place and the original log outside it
         # until successful finalization. -ef also recognizes a log inode alias.
-        [ "$item" == "$directoryName" ] && continue
+        [ "$item" -ef "$directoryName" ] && continue
         [ "$item" -ef "$logFile" ] && continue
         [ -e "$item" ] || [ -L "$item" ] || continue
         RunSilentArguments mv -f -- "$item" "$directoryName" || FatalError "Cannot prepare trace files for archiving."
