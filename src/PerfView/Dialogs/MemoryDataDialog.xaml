@@ -138,6 +138,10 @@
                     </TextBlock>
                     <CheckBox Name="SaveETLCheckBox" VerticalAlignment="Center" Margin="0,0,10,0" AutomationProperties.Name="Save ETL"/>
                 </StackPanel>
+                <CheckBox Name="VerifyDacOnWindowsCheckBox" Content="Verify DAC signatures"
+                          VerticalAlignment="Center" Margin="5,5,10,5"
+                          Click="VerifyDacOnWindowsClick" AutomationProperties.Name="Verify DAC signatures"
+                          ToolTip="Verify DAC signatures on Windows. Disable only for trusted private runtimes: unverified DACs execute inside the heap-dump helper. This setting is kept only for this PerfView session."/>
             </WrapPanel>
 
             <WrapPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -161,4 +165,3 @@
         </Grid>
     </Grid>
 </src:WindowBase>
-

@@ -67,6 +67,7 @@
     <Compile Include="..\HeapDump\CollectionMetadata.cs" />
     <Compile Include="..\HeapDump\Debugger\**\*.cs" />
     <Compile Include="..\HeapDump\GCHeapDumper.cs" />
+    <Compile Include="..\HeapDump\ClrMdDataTargetOptions.cs" />
     <Compile Include="..\HeapDump\HeapDumpException.cs" />
     <Compile Include="..\HeapDump\HeapDumpHResult.cs" />
     <Compile Include="..\PerfView\Triggers.cs" />

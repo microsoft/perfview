@@ -44,7 +44,8 @@ namespace Samples
             /*** Begin Example ***/
 
             // Setup the token credential that the handler will use to authenticate.
-            ManagedIdentityCredential credential = new ManagedIdentityCredential(clientId);
+            ManagedIdentityCredential credential = new ManagedIdentityCredential(
+                ManagedIdentityId.FromUserAssignedClientId(clientId));
 
             // Create a new symbols authentication handler and configure it for authentication to symweb.
             SymbolReaderAuthenticationHandler symbolReaderAuthHandler = new SymbolReaderAuthenticationHandler()

@@ -1756,6 +1756,11 @@ namespace PerfView
                 qualifiers += " /MaxNodeCountK=" + parsedArgs.MaxNodeCountK;
             }
 
+            if (!parsedArgs.VerifyDacOnWindows)
+            {
+                qualifiers += " /VerifyDacOnWindows:false";
+            }
+
             if (parsedArgs.Process != null)
             {
                 LogFile.WriteLine("Collecting a GC Heap SnapShot for process {0}", parsedArgs.Process);
@@ -2988,6 +2993,11 @@ namespace PerfView
             if (parsedArgs.MaxNodeCountK != 0)
             {
                 cmdLineArgs += " /MaxNodeCountK=" + parsedArgs.MaxNodeCountK;
+            }
+
+            if (!parsedArgs.VerifyDacOnWindows)
+            {
+                cmdLineArgs += " /VerifyDacOnWindows:false";
             }
 
             if (parsedArgs.CCWRefCount)
