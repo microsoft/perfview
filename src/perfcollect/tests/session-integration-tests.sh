@@ -428,7 +428,7 @@ root_stop_case()
 # not merely a failed list caused by a missing session daemon.
 ust_stop_case()
 {
-    invoke_perfcollect "$scratch/stop" stop ust-integration ||
+    invoke_perfcollect "$scratch/stop" stop ./ust-integration ||
         { case_fail "real perfcollect stop failed"; return 1; }
     # A missing daemon must not masquerade as successful session removal.
     timeout 15s lttng list ||
@@ -441,7 +441,7 @@ ust_stop_case()
     ust_archive="$scratch/stop/ust-integration.trace.zip"
     [[ -s "$ust_archive" ]] ||
         { case_fail "stop did not place a nonempty archive in its different working directory"; return 1; }
-    CASE_DETAIL="stop/destroy removed actual session; archive uses stop process's working directory"
+    CASE_DETAIL="./-prefixed stop removed actual session; archive uses stop process's working directory"
 }
 
 # Finalization retains the protected state directory and releases its guard.
@@ -571,6 +571,117 @@ invalid_state_case()
     CASE_DETAIL="real stop rejected unsafe mode, version, truncation, and shell payload without execution; state restored"
 }
 
+# Interrupt the unmodified CLI at exact publication boundaries, not a timing
+# approximation. The hook never substitutes filesystem or tracing commands.
+interrupted_start_case()
+{
+    local helper="$scratch/interrupt-start.bash" evidence="$scratch/interrupt-state"
+    local name="interrupt-${interrupt_signal,,}-$interrupt_boundary"
+    local rc expected=143 field saved_log workspace session trace enabled temporary extra=''
+    local -a options=("${disabled_lttng_options[@]}")
+    [[ ! -e "$state_file" && ! -L "$state_file" &&
+        ! -e "$state_dir/.operation" && ! -L "$state_dir/.operation" ]] ||
+        { case_block "previous operation retained state/guard; refusing interruption test"; return 77; }
+    if [[ "$target" == ubuntu-20.04 || "$target" == debian-bookworm || "$target" == ci-debian12 ]]; then
+        options=(-rawevents perfcollect_test:tick)
+    fi
+    cat > "$helper" <<'INTERRUPT_START'
+unset BASH_ENV
+perfcollect_interrupt_pid=$BASHPID
+perfcollect_interrupt()
+{
+    [[ "$BASHPID" == "$perfcollect_interrupt_pid" &&
+        "${FUNCNAME[1]:-}" == SaveSessionState ]] || return 0
+    case "$PERFCOLLECT_INTERRUPT_BOUNDARY:$1" in
+        'before-publish:mv -T -- "$sessionStateTemporary" "$sessionStateFile"'|\
+        "after-publish:sessionStateTemporary=''"|\
+        'after-temporary-clear:sessionStartPending=0') ;;
+        *) return 0 ;;
+    esac
+    trap - DEBUG
+    set +T
+    printf '%s\0' "$logFile" "$tempDir" "$lttngSessionName" "$lttngTraceDir" \
+        "$useLTTng" "$sessionStateTemporary" > "$PERFCOLLECT_INTERRUPT_EVIDENCE" || exit 1
+    printf 'Injecting %s at %s in CLI PID %s\n' "$PERFCOLLECT_INTERRUPT_SIGNAL" \
+        "$PERFCOLLECT_INTERRUPT_BOUNDARY" "$BASHPID"
+    kill -s "$PERFCOLLECT_INTERRUPT_SIGNAL" "$BASHPID"
+}
+set -T
+trap 'perfcollect_interrupt "$BASH_COMMAND"' DEBUG
+INTERRUPT_START
+    [[ "$interrupt_signal" != INT ]] || expected=130
+    BASH_ENV="$helper" PERFCOLLECT_INTERRUPT_BOUNDARY="$interrupt_boundary" \
+        PERFCOLLECT_INTERRUPT_SIGNAL="$interrupt_signal" PERFCOLLECT_INTERRUPT_EVIDENCE="$evidence" \
+        invoke_perfcollect "$scratch/start" start "$name" -noperf "${options[@]}"
+    rc=$?
+    [[ "$rc" == "$expected" && -s "$evidence" ]] ||
+        { case_fail "interrupted start returned $rc, expected $expected with boundary evidence"; return 1; }
+    {
+        for field in saved_log workspace session trace enabled temporary; do
+            IFS= read -r -d '' "$field" ||
+                { case_fail "interruption hook did not capture exact owned resources"; return 1; }
+        done
+        if IFS= read -r -d '' extra || [[ -n "$extra" ]]; then
+            case_fail "unexpected interruption evidence"
+            return 1
+        fi
+    } < "$evidence"
+    rm -- "$evidence" || return 1
+    active_session=$session
+    [[ ! -e "$state_dir/.operation" && ! -L "$state_dir/.operation" &&
+        -z "$(find "$state_dir" -maxdepth 1 -name '.state.*' -print -quit)" ]] ||
+        { case_fail "interruption leaked the guard or unpublished state"; return 1; }
+    if [[ "$interrupt_boundary" == before-publish ]]; then
+        [[ ! -e "$state_file" && ! -L "$state_file" && ! -e "$workspace" && ! -L "$workspace" ]] ||
+            { case_fail "interruption before publication did not roll back state/workspace"; return 1; }
+        if [[ -n "$session" ]]; then
+            timeout 15s lttng list ||
+                { case_fail "cannot query daemon to verify rollback"; return 1; }
+            if timeout 15s lttng list "$session"; then
+                case_fail "interrupted unpublished start retained its actual LTTng session"
+                return 1
+            fi
+        fi
+        active_session=''
+        CASE_DETAIL="$interrupt_signal exit=$rc before publication; owned session/workspace/temp rolled back; guard released"
+        return 0
+    fi
+    read_state || return 1
+    [[ "${state_fields[logFile]}" == "$saved_log" && "${state_fields[tempDir]}" == "$workspace" &&
+        "${state_fields[lttngSessionName]}" == "$session" && "${state_fields[lttngTraceDir]}" == "$trace" &&
+        "${state_fields[useLTTng]}" == "$enabled" ]] ||
+        { case_fail "interrupted published state does not describe the retained resources"; return 1; }
+    if [[ "$enabled" == 1 ]]; then
+        timeout 15s lttng list "$session" &&
+            timeout 25s "$scratch/ust-producer" "$name-$token" ||
+            { case_fail "published session is not live after interruption"; return 1; }
+    fi
+    invoke_perfcollect "$scratch/stop" stop "./$name" ||
+        { case_fail "published interrupted start cannot be finalized by normal stop"; return 1; }
+    local archive="$scratch/stop/$name.trace.zip"
+    local extracted="$scratch/$name-extracted"
+    timeout 30s unzip -t "$archive" && timeout 30s unzip -q "$archive" -d "$extracted" ||
+        { case_fail "interrupted session archive is corrupt or missing"; return 1; }
+    [[ -s "$extracted/$name.trace/perfcollect.log" &&
+        ! -e "$extracted/$name.trace/perf.data" && ! -e "$extracted/$name.trace/perf.data.txt" ]] ||
+        { case_fail "interrupted start archive lacks its log or unexpectedly captured perf"; return 1; }
+    if [[ "$enabled" == 1 ]]; then
+        verify_fixture_events "$extracted/$name.trace/lttngTrace" "$name-$token" "$scratch/$name.events" || return 1
+        timeout 15s lttng list ||
+            { case_fail "cannot query daemon after interrupted session stop"; return 1; }
+        if timeout 15s lttng list "$session"; then
+            case_fail "stop retained the interrupted start's actual LTTng session"
+            return 1
+        fi
+    else
+        [[ ! -e "$extracted/$name.trace/lttngTrace" ]] ||
+            { case_fail "disabled interrupted start archived unexpected LTTng data"; return 1; }
+    fi
+    active_session=''
+    verify_finalized_state "$workspace" || return 1
+    CASE_DETAIL="$interrupt_signal exit=$rc at $interrupt_boundary; published resources retained, archived, and finalized by plain stop"
+}
+
 # Launch only the compiled test workload and wait for its explicit readiness
 # record; track its PID for bounded cleanup rather than killing by executable name.
 start_cpu()
@@ -649,14 +760,14 @@ perf_collect_case()
     local rc
     start_cpu perf-collect-creates-trace-archive || return 1
     perf_collect_attempted=1
-    invoke_perfcollect "$scratch/collect" collect cpu-integration "${disabled_lttng_options[@]}" -pid "$cpu_pid" -collectsec 3
+    invoke_perfcollect "$scratch/collect" collect ./cpu-integration "${disabled_lttng_options[@]}" -pid "$cpu_pid" -collectsec 3
     rc=$?
     stop_cpu
     (( rc == 0 )) ||
         { case_fail "real perfcollect collect failed after successful host capability probe"; return 1; }
     [[ -s "$scratch/collect/cpu-integration.trace.zip" ]] ||
         { case_fail "real perf collect produced no nonempty archive"; return 1; }
-    CASE_DETAIL="real perf collect produced an archive while a separate disabled session remained active"
+    CASE_DETAIL="./-prefixed real perf collect produced an archive while a separate disabled session remained active"
 }
 
 # Require raw data, exported data, and log bytes, then decode raw data again to
@@ -804,3 +915,16 @@ case "$target" in
         run_case preservation-session-stops-after-collect disabled_stop_case preservation-session-starts-before-collect
         ;;
 esac
+
+for interrupt_signal in TERM INT; do
+    for interrupt_boundary in before-publish after-publish after-temporary-clear; do
+        case "$target" in
+            ubuntu-20.04|debian-bookworm|ci-debian12)
+                run_case "session-start-${interrupt_signal,,}-$interrupt_boundary" interrupted_start_case lttng-tools-record-and-decode-events
+                ;;
+            ubuntu-24.04|mariner-2.0|alpine|azurelinux-3.0)
+                run_case "session-start-${interrupt_signal,,}-$interrupt_boundary" interrupted_start_case environment-meets-prerequisites
+                ;;
+        esac
+    done
+done
