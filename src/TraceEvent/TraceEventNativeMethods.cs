@@ -399,6 +399,7 @@ namespace Microsoft.Diagnostics.Tracing
         */
 
         internal const ushort EVENT_HEADER_FLAG_STRING_ONLY = 0x0004;
+        internal const ushort EVENT_HEADER_FLAG_TRACE_MESSAGE = 0x0008;
         internal const ushort EVENT_HEADER_FLAG_NO_CPUTIME = 0x0010;
         internal const ushort EVENT_HEADER_FLAG_32_BIT_HEADER = 0x0020;
         internal const ushort EVENT_HEADER_FLAG_64_BIT_HEADER = 0x0040;
