@@ -230,14 +230,16 @@ namespace TraceEventTests
         }
 
         /// <summary>
-        /// Test that the Event Log channels are declared and referenced by the events that use them.
-        /// Microsoft-Windows-TaskScheduler declares Microsoft-Windows-TaskScheduler/Operational (value 16), imports
-        /// System, and logs event 100 to Operational.
+        /// Test that the Event Log channels are declared and that each event refers to its own channel.
+        /// Microsoft-Windows-TaskScheduler imports System, declares Microsoft-Windows-TaskScheduler/Operational
+        /// (value 16), and logs event 100 to Operational. Each event's channel (which the manifest takes from TDH) is
+        /// also compared with the channel the Event Log API (wevtapi) gives the same Id and Version.
         /// </summary>
         [WindowsFact]
         public void GetManifestForRegisteredProvider_IncludesEventLogChannels()
         {
             const string providerName = "Microsoft-Windows-TaskScheduler";
+            const string operationalChid = "Microsoft_Windows_TaskScheduler_Operational";
 
             string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
 
@@ -246,33 +248,50 @@ namespace TraceEventTests
             var nsmgr = new XmlNamespaceManager(doc.NameTable);
             nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
 
-            var chids = new HashSet<string>();
-            foreach (XmlElement channel in doc.SelectNodes("//e:channels/*", nsmgr))
-            {
-                _output.WriteLine($"{channel.LocalName} chid={channel.GetAttribute("chid")} name={channel.GetAttribute("name")} type={channel.GetAttribute("type")} value={channel.GetAttribute("value")}");
-                Assert.True(chids.Add(channel.GetAttribute("chid")), "Duplicate chid " + channel.GetAttribute("chid"));
-            }
-
-            Assert.NotNull(doc.SelectSingleNode("//e:channels/e:importChannel[@name='System']", nsmgr));
+            // Every attribute of the two channels TaskScheduler has always had.
+            var system = (XmlElement)doc.SelectSingleNode("//e:channels/e:importChannel[@name='System']", nsmgr);
+            Assert.NotNull(system);
+            Assert.Equal("chid=System name=System", Attributes(system));
             var operational = (XmlElement)doc.SelectSingleNode("//e:channels/e:channel[@name='Microsoft-Windows-TaskScheduler/Operational']", nsmgr);
             Assert.NotNull(operational);
-            Assert.Equal("Operational", operational.GetAttribute("type"));
-            Assert.Equal("16", operational.GetAttribute("value"));
+            Assert.Equal($"chid={operationalChid} name=Microsoft-Windows-TaskScheduler/Operational type=Operational value=16", Attributes(operational));
 
             var event100 = (XmlElement)doc.SelectSingleNode("//e:events/e:event[@value='100'][@version='0']", nsmgr);
             Assert.NotNull(event100);
-            Assert.Equal(operational.GetAttribute("chid"), event100.GetAttribute("channel"));
+            Assert.Equal(operationalChid, event100.GetAttribute("channel"));
 
-            foreach (XmlElement evt in doc.SelectNodes("//e:events/e:event[@channel]", nsmgr))
+            // chid -> channel value. An imported channel has no value attribute; its value is fixed by winmeta.xml.
+            var importedValues = new Dictionary<string, uint> { { "System", 8 }, { "Application", 9 }, { "Security", 10 } };
+            var channelValues = new Dictionary<string, uint>();
+            foreach (XmlElement channel in doc.SelectNodes("//e:channels/*", nsmgr))
             {
-                Assert.Contains(evt.GetAttribute("channel"), chids);
+                _output.WriteLine($"{channel.LocalName} {Attributes(channel)}");
+                uint value = channel.LocalName == "importChannel" ? importedValues[channel.GetAttribute("name")] : uint.Parse(channel.GetAttribute("value"));
+                channelValues.Add(channel.GetAttribute("chid"), value);
             }
+
+            // Event "Id/Version" -> channel value, 0 for an event without a channel.
+            var manifestChannels = new Dictionary<string, uint>();
+            foreach (XmlElement evt in doc.SelectNodes("//e:events/e:event", nsmgr))
+            {
+                uint value = evt.HasAttribute("channel") ? channelValues[evt.GetAttribute("channel")] : 0;
+                manifestChannels.Add(evt.GetAttribute("value") + "/" + evt.GetAttribute("version"), value);
+            }
+
+            Dictionary<string, EventLogEvent> eventLogEvents = GetEventLogEvents(providerName);
+            _output.WriteLine($"{providerName}: {manifestChannels.Count} events in the manifest, {eventLogEvents.Count} in the Event Log API, " +
+                $"{manifestChannels.Values.Count(v => v != 0)} with a channel");
+            Assert.Equal(
+                eventLogEvents.OrderBy(e => e.Key).Select(e => e.Key + "=" + e.Value.Channel),
+                manifestChannels.OrderBy(e => e.Key).Select(e => e.Key + "=" + e.Value));
         }
 
         /// <summary>
-        /// Test that event messages are emitted with their string table entries, without the trailing space TDH
-        /// appends. Microsoft-Windows-TaskScheduler event 100 is "Task Scheduler started "%3" instance of the "%1"
-        /// task for user "%2"." in English; only its insertion strings are checked so that the test is culture neutral.
+        /// Test that each event gets exactly its own message. The manifest's messages (read through TDH) are compared
+        /// with those the Event Log API (wevtapi) formats for the same Id and Version, which also checks that TDH's
+        /// trailing space is removed and that no event gains or loses a message. Both read the same localized
+        /// resources, so the test is culture neutral. Microsoft-Windows-TaskScheduler is used because none of its
+        /// messages has a %n!S! insertion, the first of which EvtFormatMessage rewrites to %n.
         /// </summary>
         [WindowsFact]
         public void GetManifestForRegisteredProvider_IncludesEventMessages()
@@ -292,65 +311,67 @@ namespace TraceEventTests
                 strings.Add(str.GetAttribute("id"), str.GetAttribute("value"));
             }
 
-            var withMessages = doc.SelectNodes("//e:events/e:event[@message]", nsmgr);
-            _output.WriteLine($"{providerName}: {withMessages.Count} events with messages");
-            Assert.True(withMessages.Count > 0, "Expected events with messages");
-            foreach (XmlElement evt in withMessages)
+            // Event "Id/Version" -> message
+            var manifestMessages = new Dictionary<string, string>();
+            foreach (XmlElement evt in doc.SelectNodes("//e:events/e:event[@message]", nsmgr))
             {
                 var match = Regex.Match(evt.GetAttribute("message"), @"^\$\(string\.(.*)\)$");
                 Assert.True(match.Success, "Unexpected message reference " + evt.GetAttribute("message"));
                 Assert.True(strings.ContainsKey(match.Groups[1].Value), "Missing string " + match.Groups[1].Value);
+                manifestMessages.Add(evt.GetAttribute("value") + "/" + evt.GetAttribute("version"), strings[match.Groups[1].Value]);
             }
 
-            var event100 = (XmlElement)doc.SelectSingleNode("//e:events/e:event[@value='100'][@version='0']", nsmgr);
-            Assert.NotNull(event100);
-            string message = strings[Regex.Match(event100.GetAttribute("message"), @"^\$\(string\.(.*)\)$").Groups[1].Value];
-            _output.WriteLine($"Event 100: {message}");
-            Assert.Contains("%1", message);
-            Assert.Contains("%2", message);
-            Assert.Contains("%3", message);
-            Assert.False(message.EndsWith(" "), "Expected the trailing space TDH appends to be removed");
+            var eventLogMessages = GetEventLogEvents(providerName)
+                .Where(e => e.Value.Message != null)
+                .ToDictionary(e => e.Key, e => e.Value.Message);
+            _output.WriteLine($"{providerName}: {manifestMessages.Count} events with messages in the manifest, {eventLogMessages.Count} in the Event Log API");
+            Assert.NotEmpty(eventLogMessages);
+
+            Assert.Equal(eventLogMessages.Keys.OrderBy(k => k), manifestMessages.Keys.OrderBy(k => k));
+            foreach (var expected in eventLogMessages)
+            {
+                Assert.Equal(expected.Value, manifestMessages[expected.Key]);
+            }
         }
 
         /// <summary>
-        /// Test that ToValidXmlText, which cleans event messages and channel paths, returns text that XmlWriter can
-        /// write as an attribute value (otherwise GetManifestForRegisteredProvider throws for the whole provider),
-        /// leaves text that XmlWriter can already write untouched, and replaces only the characters XML disallows.
+        /// Test that ToValidXmlText, which cleans event messages and channel paths, replaces exactly the characters
+        /// that XML does not allow with U+FFFD and keeps everything else, including valid surrogate pairs. Its result
+        /// must be text that XmlWriter can write as an attribute value, or GetManifestForRegisteredProvider throws for
+        /// the whole provider.
         /// </summary>
         [Fact]
-        public void ToValidXmlText_MakesTextXmlWriterCanWrite()
+        public void ToValidXmlText_ReplacesOnlyCharactersXmlDisallows()
         {
             var cases = new[]
             {
-                "a <b> & \"c\" 'd'",
-                "line1\r\nline2\tend",
-                "a\u000Bb",
-                "a\u0001b",
-                "a\uD800b",
-                "a\uD800",
-                "a\uDC00b",
-                "a\uFFFEb",
-                "a\uD83D\uDE00b",
+                // Valid text, returned unchanged.
+                new { Input = "a <b> & \"c\" 'd'", Expected = "a <b> & \"c\" 'd'" },
+                new { Input = "line1\r\nline2\tend", Expected = "line1\r\nline2\tend" },
+                new { Input = "a\uD83D\uDE00b", Expected = "a\uD83D\uDE00b" },
+                // Characters XML does not allow.
+                new { Input = "a\u000Bb", Expected = "a\uFFFDb" },
+                new { Input = "a\u0001b", Expected = "a\uFFFDb" },
+                new { Input = "a\uFFFEb", Expected = "a\uFFFDb" },
+                new { Input = "a\uD800b", Expected = "a\uFFFDb" },
+                new { Input = "a\uD800", Expected = "a\uFFFD" },
+                new { Input = "a\uDC00b", Expected = "a\uFFFDb" },
+                new { Input = "\u000B\u0001", Expected = "\uFFFD\uFFFD" },
+                // A valid surrogate pair after a replacement, and before one, survives.
+                new { Input = "a\u000B\uD83D\uDE00b", Expected = "a\uFFFD\uD83D\uDE00b" },
+                new { Input = "a\uD83D\uDE00\u000Bb", Expected = "a\uD83D\uDE00\uFFFDb" },
             };
 
-            foreach (string text in cases)
+            foreach (var c in cases)
             {
-                string result = RegisteredTraceEventParser.ToValidXmlText(text);
-                _output.WriteLine($"{Hex(text)} -> {Hex(result)}");
+                string result = RegisteredTraceEventParser.ToValidXmlText(c.Input);
+                _output.WriteLine($"{Hex(c.Input)} -> {Hex(result)}");
 
+                Assert.True(c.Expected == result, $"Expected {Hex(c.Expected)} but got {Hex(result)}");
                 Assert.True(IsWritableAsXmlAttribute(result), "XmlWriter rejects " + Hex(result));
-                if (IsWritableAsXmlAttribute(text))
+                if (c.Expected == c.Input)
                 {
-                    Assert.Same(text, result);
-                }
-                else
-                {
-                    Assert.Equal(text.Length, result.Length);
-                    for (int i = 0; i < text.Length; i++)
-                    {
-                        Assert.True(result[i] == text[i] || result[i] == '\uFFFD', "Unexpected change at " + i + " in " + Hex(result));
-                    }
-                    Assert.Contains('\uFFFD', result);
+                    Assert.Same(c.Input, result);
                 }
             }
         }
@@ -1442,6 +1463,13 @@ namespace TraceEventTests
             }
         }
 
+        // Every attribute of 'element' as "name=value", sorted by name and separated by spaces, so that one comparison
+        // checks both the values and that there are no others.
+        private static string Attributes(XmlElement element)
+        {
+            return string.Join(" ", element.Attributes.Cast<XmlAttribute>().OrderBy(a => a.Name, StringComparer.Ordinal).Select(a => a.Name + "=" + a.Value));
+        }
+
         // The UTF-16 code units of 'text' in hex, for messages about strings with unprintable characters.
         private static string Hex(string text)
         {
@@ -1648,6 +1676,126 @@ namespace TraceEventTests
                 SortAttributes(child);
             }
         }
+
+        #endregion
+
+        #region Event Log API Helpers
+
+        /// <summary>
+        /// An event of a publisher as the Event Log API (wevtapi) describes it.
+        /// </summary>
+        private class EventLogEvent
+        {
+            // The channel value, 0 if the event is not logged to a channel.
+            public uint Channel;
+            // The message as EvtFormatMessage formats it, or null if the event has none.
+            public string Message;
+        }
+
+        /// <summary>
+        /// Each event of 'publisherName' as the Event Log API (wevtapi) describes it, keyed by "Id/Version".
+        /// </summary>
+        private static Dictionary<string, EventLogEvent> GetEventLogEvents(string publisherName)
+        {
+            const int EvtEventMetadataEventID = 0;
+            const int EvtEventMetadataEventVersion = 1;
+            const int EvtEventMetadataEventChannel = 2;
+            const int EvtEventMetadataEventMessageID = 7;
+            const int EvtFormatMessageId = 8;
+            const int ErrorInsufficientBuffer = 122;
+            const uint NoMessage = 0xFFFFFFFF;
+
+            var events = new Dictionary<string, EventLogEvent>();
+            IntPtr publisher = EvtOpenPublisherMetadata(IntPtr.Zero, publisherName, null, 0, 0);
+            Assert.True(publisher != IntPtr.Zero, $"EvtOpenPublisherMetadata({publisherName}) failed: {Marshal.GetLastWin32Error()}");
+            IntPtr enumerator = IntPtr.Zero;
+            try
+            {
+                enumerator = EvtOpenEventMetadataEnum(publisher, 0);
+                Assert.True(enumerator != IntPtr.Zero, $"EvtOpenEventMetadataEnum failed: {Marshal.GetLastWin32Error()}");
+
+                IntPtr eventMetadata;
+                while ((eventMetadata = EvtNextEventMetadata(enumerator, 0)) != IntPtr.Zero)
+                {
+                    try
+                    {
+                        uint id = GetEventMetadataUInt32(eventMetadata, EvtEventMetadataEventID);
+                        uint version = GetEventMetadataUInt32(eventMetadata, EvtEventMetadataEventVersion);
+                        var evt = new EventLogEvent();
+                        evt.Channel = GetEventMetadataUInt32(eventMetadata, EvtEventMetadataEventChannel);
+
+                        uint messageId = GetEventMetadataUInt32(eventMetadata, EvtEventMetadataEventMessageID);
+                        if (messageId != NoMessage)
+                        {
+                            var buffer = new StringBuilder(1024);
+                            int used;
+                            if (!EvtFormatMessage(publisher, IntPtr.Zero, messageId, 0, IntPtr.Zero, EvtFormatMessageId, buffer.Capacity, buffer, out used) &&
+                                Marshal.GetLastWin32Error() == ErrorInsufficientBuffer)
+                            {
+                                buffer = new StringBuilder(used);
+                                EvtFormatMessage(publisher, IntPtr.Zero, messageId, 0, IntPtr.Zero, EvtFormatMessageId, buffer.Capacity, buffer, out used);
+                            }
+                            evt.Message = buffer.ToString();
+                        }
+
+                        events.Add(id + "/" + version, evt);
+                    }
+                    finally
+                    {
+                        EvtClose(eventMetadata);
+                    }
+                }
+            }
+            finally
+            {
+                if (enumerator != IntPtr.Zero)
+                {
+                    EvtClose(enumerator);
+                }
+                EvtClose(publisher);
+            }
+
+            return events;
+        }
+
+        // Reads an EvtVarTypeUInt32 property of an event metadata handle. EVT_VARIANT is an 8-byte value union, then
+        // a DWORD Count, then a DWORD Type.
+        private static uint GetEventMetadataUInt32(IntPtr eventMetadata, int propertyId)
+        {
+            const int EvtVariantSize = 16;
+            const int EvtVarTypeUInt32 = 8;
+            IntPtr variant = Marshal.AllocHGlobal(EvtVariantSize);
+            try
+            {
+                int used;
+                Assert.True(EvtGetEventMetadataProperty(eventMetadata, propertyId, 0, EvtVariantSize, variant, out used),
+                    $"EvtGetEventMetadataProperty({propertyId}) failed: {Marshal.GetLastWin32Error()}");
+                Assert.Equal(EvtVarTypeUInt32, Marshal.ReadInt32(variant, 12));
+                return (uint)Marshal.ReadInt32(variant);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(variant);
+            }
+        }
+
+        [DllImport("wevtapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr EvtOpenPublisherMetadata(IntPtr session, string publisherId, string logFilePath, int locale, int flags);
+
+        [DllImport("wevtapi.dll", SetLastError = true)]
+        private static extern IntPtr EvtOpenEventMetadataEnum(IntPtr publisherMetadata, int flags);
+
+        [DllImport("wevtapi.dll", SetLastError = true)]
+        private static extern IntPtr EvtNextEventMetadata(IntPtr eventMetadataEnum, int flags);
+
+        [DllImport("wevtapi.dll", SetLastError = true)]
+        private static extern bool EvtGetEventMetadataProperty(IntPtr eventMetadata, int propertyId, int flags, int bufferSize, IntPtr buffer, out int bufferUsed);
+
+        [DllImport("wevtapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool EvtFormatMessage(IntPtr publisherMetadata, IntPtr eventHandle, uint messageId, int valueCount, IntPtr values, int flags, int bufferSize, StringBuilder buffer, out int bufferUsed);
+
+        [DllImport("wevtapi.dll")]
+        private static extern bool EvtClose(IntPtr handle);
 
         #endregion
     }
