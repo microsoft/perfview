@@ -158,7 +158,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 int size = buffer.Length;
                 status = TdhEnumerateManifestProviderEvents(eventRecord.EventHeader.ProviderId, buffer, ref size);
-                if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
+                if (status != 122 || 2_000_000 < size) // 122 == Insufficient buffer keep it under 2Meg
                 {
                     break;
                 }
@@ -213,7 +213,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             {
                                 int size = buffer.Length;
                                 status = TdhGetManifestEventInformation(eventRecord.EventHeader.ProviderId, descriptor, buffer, ref size);
-                                if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
+                                if (status != 122 || 2_000_000 < size) // 122 == Insufficient buffer keep it under 2Meg
                                 {
                                     break;
                                 }
