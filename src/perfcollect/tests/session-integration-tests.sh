@@ -1008,8 +1008,10 @@ ARCHIVE_ATTACK
             [[ "$workspace" == /tmp/tmp.* && -d "$workspace" && ! -L "$workspace" &&
                 "$(stat -c '%u %a' -- "$workspace")" == '0 700' ]] &&
                 rm -rf -- "$workspace" || return 1
-            [[ "$saved_log" == /tmp/perfcollect.*.log && -f "$saved_log" && ! -L "$saved_log" &&
-                "$(stat -c %u -- "$saved_log")" == 0 ]] && rm -- "$saved_log" || return 1
+            # InitializeLog uses perfcollect.log, or perfcollect.<RANDOM>.log on collision.
+            [[ "$saved_log" =~ ^/tmp/perfcollect(\.[0-9]+)?\.log$ && -f "$saved_log" && ! -L "$saved_log" &&
+                "$(stat -c %u -- "$saved_log")" == 0 ]] && rm -- "$saved_log" ||
+                { case_fail "unexpected retained log after failed publication: $saved_log"; return 1; }
         fi
     done
     CASE_DETAIL="real UID 65534 $archive_attack_mode attack; existing file/directory targets unchanged; exact archive publication verified"
