@@ -70,6 +70,7 @@ disabled_name=''
 disabled_metadata_stat=''
 token=''
 perf_collect_attempted=0
+archive_test_roots=()
 disabled_lttng_options=(-nolttng)
 case "$target" in
     mariner-2.0|alpine|azurelinux-3.0) disabled_lttng_options=() ;;
@@ -876,6 +877,144 @@ absolute_collect_case()
     CASE_DETAIL="absolute collect destination with spaces contains independently decoded real traces; staging/workspace finalized"
 }
 
+# Substitute only attacker-accessible output paths, using a real unprivileged
+# process while the actual root CLI is paused at the vulnerable boundary.
+archive_attack_case()
+{
+    local helper="$scratch/archive-attack.bash" evidence="$scratch/archive-attack.state"
+    local root parent victim="$scratch/archive-existing-file" destination rc expected variant
+    local workspace stage archive saved_log extra=''
+    local -a variants=(staging)
+    case "$archive_attack_mode" in
+        staging|same-filesystem) parent=/tmp ;;
+        cross-filesystem)
+            [[ -d /dev/shm && "$(stat -c %d /tmp)" != "$(stat -c %d /dev/shm)" ]] ||
+                { case_block "a distinct /dev/shm filesystem is required for archive publication"; return 77; }
+            parent=/dev/shm
+            ;;
+    esac
+    root=$(umask 077; mktemp -d "$parent/perfcollect-archive.XXXXXXXX") || return 1
+    archive_test_roots+=("$root")
+    chmod 755 "$root" && mkdir -- "$root/shared output" && chmod 777 "$root/shared output" || return 1
+    printf 'existing file must remain unchanged: %s\n' "$token" > "$victim"
+    chmod 600 "$victim" && cp -- "$victim" "$scratch/archive-existing-file.before" || return 1
+    [[ "$archive_attack_mode" == staging ]] || variants=(symlink hardlink directory symlink-directory)
+    cat > "$helper" <<'ARCHIVE_ATTACK'
+unset BASH_ENV
+perfcollect_archive_pid=$BASHPID
+perfcollect_archive_attack()
+{
+    [[ "$BASHPID" == "$perfcollect_archive_pid" &&
+        "${FUNCNAME[1]:-}" == ProcessCollectedData ]] || return 0
+    case "$PERFCOLLECT_ARCHIVE_VARIANT:$1" in
+        'staging:RunSilentArguments cp -- "$logFile" "$directoryName/perfcollect.log"') ;;
+        *':RunSilentArguments mv -T -- "$tempDir/$archiveName" "$archiveDestination"')
+            [[ "$PERFCOLLECT_ARCHIVE_VARIANT" != staging ]] || return 0 ;;
+        *) return 0 ;;
+    esac
+    trap - DEBUG
+    set +T
+    printf '%s\0' "$tempDir" "$directoryName" "${archiveName:-}" "$logFile" > "$PERFCOLLECT_ARCHIVE_EVIDENCE" || exit 1
+    setpriv --reuid=65534 --regid=65534 --clear-groups bash -c '
+        set -euo pipefail
+        [[ "$(id -u)" == 65534 ]]
+        case "$1" in
+            staging)
+                if [[ -e "$2.trace" || -L "$2.trace" ]]; then
+                    mv -T -- "$2.trace" "$2.displaced"
+                    echo "Replaced root staging directory as UID 65534."
+                else
+                    echo "No external staging directory; planting attacker decoy as UID 65534."
+                fi
+                mkdir -- "$2.trace"
+                ln -s -- "$3" "$2.trace/perfcollect.log"
+                ;;
+            symlink) ln -s -- "$3" "$2.trace.zip" ;;
+            hardlink) test -f "$2.trace.zip" ;;
+            directory) mkdir -- "$2.trace.zip" ;;
+            symlink-directory) ln -s -- "$4" "$2.trace.zip" ;;
+        esac
+        printf "Archive attack injected: variant=%s uid=%s\n" "$1" "$(id -u)"
+    ' _ "$PERFCOLLECT_ARCHIVE_VARIANT" "$PERFCOLLECT_ARCHIVE_DESTINATION" \
+        "$PERFCOLLECT_ARCHIVE_VICTIM" "$PERFCOLLECT_ARCHIVE_DIRECTORY" || exit 1
+}
+set -T
+trap 'perfcollect_archive_attack "$BASH_COMMAND"' DEBUG
+ARCHIVE_ATTACK
+    for variant in "${variants[@]}"; do
+        destination="$root/shared output/$variant"
+        mkdir -- "$root/shared output/$variant-target" || return 1
+        printf '%s\n' "$token" > "$root/shared output/$variant-target/sentinel"
+        if [[ "$variant" == hardlink ]]; then
+            # A cross-filesystem destination hardlink must refer to a victim on
+            # that filesystem; root creates the fixture, not the attacker.
+            victim="$root/existing-file"
+            cp -- "$scratch/archive-existing-file.before" "$victim" &&
+                chmod 600 "$victim" && ln -- "$victim" "$destination.trace.zip" || return 1
+        fi
+        BASH_ENV="$helper" PERFCOLLECT_ARCHIVE_VARIANT="$variant" \
+            PERFCOLLECT_ARCHIVE_DESTINATION="$destination" PERFCOLLECT_ARCHIVE_VICTIM="$victim" \
+            PERFCOLLECT_ARCHIVE_DIRECTORY="$root/shared output/$variant-target" \
+            PERFCOLLECT_ARCHIVE_EVIDENCE="$evidence" \
+            invoke_perfcollect "$scratch/collect" collect "$destination" -noperf -nolttng -collectsec 1
+        rc=$?
+        expected=0
+        [[ "$variant" != directory ]] || expected=1
+        # BusyBox rejects a directory symlink with -T; GNU mv can replace it.
+        # Either is safe only if the target remains untouched.
+        if [[ "$variant" == symlink-directory && "$rc" == 1 ]]; then expected=1; fi
+        [[ "$rc" == "$expected" && -s "$evidence" ]] ||
+            { case_fail "archive $variant returned $rc, expected $expected with attack evidence"; return 1; }
+        {
+            IFS= read -r -d '' workspace && IFS= read -r -d '' stage &&
+                IFS= read -r -d '' archive && IFS= read -r -d '' saved_log ||
+                { case_fail "archive attack did not record the real workspace"; return 1; }
+            if IFS= read -r -d '' extra || [[ -n "$extra" ]]; then
+                case_fail "unexpected archive attack evidence"
+                return 1
+            fi
+        } < "$evidence"
+        rm -- "$evidence" || return 1
+        cmp -s -- "$scratch/archive-existing-file.before" "$victim" &&
+            grep -Fx "$token" "$root/shared output/$variant-target/sentinel" ||
+            { case_fail "privileged archiving changed an existing target"; return 1; }
+        if [[ "$variant" == staging ]]; then
+            [[ -L "$destination.trace/perfcollect.log" &&
+                "$(readlink -- "$destination.trace/perfcollect.log")" == "$victim" &&
+                "$stage" == staging.trace ]] ||
+                { case_fail "archive staging used or removed attacker-controlled output"; return 1; }
+        fi
+        if [[ "$expected" == 0 ]]; then
+            [[ -f "$destination.trace.zip" && ! -L "$destination.trace.zip" && ! -e "$workspace" ]] &&
+                timeout 30s unzip -t "$destination.trace.zip" &&
+                timeout 30s unzip -p "$destination.trace.zip" "$variant.trace/perfcollect.log" > "$scratch/archive-attack.log" &&
+                [[ -s "$scratch/archive-attack.log" ]] ||
+                { case_fail "completed archive was not safely published to the exact filename"; return 1; }
+        else
+            [[ -f "$workspace/$archive" ]] && timeout 30s unzip -t "$workspace/$archive" &&
+                [[ -z "$(find "$root/shared output/$variant-target" -mindepth 1 ! -name sentinel -print -quit)" ]] ||
+                { case_fail "failed publication lost the private archive or followed a destination directory"; return 1; }
+            if [[ "$variant" == symlink-directory ]]; then
+                [[ -L "$destination.trace.zip" &&
+                    "$(readlink -- "$destination.trace.zip")" == "$root/shared output/$variant-target" ]] ||
+                    { case_fail "failed publication changed the destination symlink"; return 1; }
+            else
+                [[ -d "$destination.trace.zip" && ! -L "$destination.trace.zip" &&
+                    -z "$(find "$destination.trace.zip" -mindepth 1 -print -quit)" ]] ||
+                    { case_fail "failed publication wrote into the destination directory"; return 1; }
+            fi
+            # This collect has no persistent session; reclaim only the exact
+            # private workspace captured from this test-owned CLI.
+            [[ "$workspace" == /tmp/tmp.* && -d "$workspace" && ! -L "$workspace" &&
+                "$(stat -c '%u %a' -- "$workspace")" == '0 700' ]] &&
+                rm -rf -- "$workspace" || return 1
+            [[ "$saved_log" == /tmp/perfcollect.*.log && -f "$saved_log" && ! -L "$saved_log" &&
+                "$(stat -c %u -- "$saved_log")" == 0 ]] && rm -- "$saved_log" || return 1
+        fi
+    done
+    CASE_DETAIL="real UID 65534 $archive_attack_mode attack; existing file/directory targets unchanged; exact archive publication verified"
+}
+
 # Launch only the compiled test workload and wait for its explicit readiness
 # record; track its PID for bounded cleanup rather than killing by executable name.
 start_cpu()
@@ -1019,7 +1158,7 @@ active_state_case()
 # state/artifacts are not automatically guessed or deleted after a failed case.
 cleanup_case()
 {
-    local rc=0 attempt
+    local rc=0 attempt archive_root
     stop_cpu || rc=1
     # Destroy only individually tracked sessions created by this test. Never
     # destroy all sessions, guess stale state, or remove referenced workspaces.
@@ -1048,6 +1187,11 @@ cleanup_case()
         [[ "$scratch" == /tmp/perfcollect-integration.* && -d "$scratch" && ! -L "$scratch" ]] &&
             rm -rf -- "$scratch" || rc=1
     fi
+    for archive_root in "${archive_test_roots[@]}"; do
+        [[ "$archive_root" == /tmp/perfcollect-archive.* || "$archive_root" == /dev/shm/perfcollect-archive.* ]] &&
+            [[ -d "$archive_root" && ! -L "$archive_root" && "$(stat -c %u -- "$archive_root")" == 0 ]] &&
+            rm -rf -- "$archive_root" || rc=1
+    done
     (( rc == 0 )) || { case_fail "could not reclaim tracked test-owned process/session/scratch"; return 1; }
     CASE_DETAIL="tracked processes/scratch reclaimed; results and private .perfcollect retained"
 }
@@ -1120,6 +1264,10 @@ case "$target" in
         run_case absolute-collect-archives-decodable-traces absolute_collect_case perf-tools-record-and-export-samples
         ;;
 esac
+
+for archive_attack_mode in staging same-filesystem cross-filesystem; do
+    run_case "archive-$archive_attack_mode-resists-path-substitution" archive_attack_case environment-meets-prerequisites
+done
 
 for interrupt_signal in TERM INT; do
     interrupt_boundaries=(guard-created guard-allocator-exit workspace-created workspace-allocator-exit

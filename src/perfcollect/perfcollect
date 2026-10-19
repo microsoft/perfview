@@ -1977,10 +1977,12 @@ EnableLTTngKernelEvents()
 ##
 ProcessCollectedData()
 {
-    # Make a new target directory.
+    # Stage only a leaf name inside the private workspace, never at a
+    # caller-selected destination whose parent could replace the directory.
     local traceSuffix=".trace"
-    local traceName=$inputTraceName
+    local traceName=${inputTraceName##*/}
     local directoryName=$traceName$traceSuffix
+    local archiveDestination="$inputTraceName$traceSuffix.zip"
     mkdir -- "$directoryName" || FatalError "Cannot create the trace archive directory."
 
     # Save LTTng trace files.
@@ -2096,26 +2098,16 @@ ProcessCollectedData()
     # Compress the data.
     local archiveSuffix=".zip"
     local archiveName=$directoryName$archiveSuffix
-    # Prefix relative operands and disable zip wildcard matching so trace names
-    # are filenames, not archive options or patterns.
-    local archiveOperand=$archiveName directoryOperand=$directoryName
-    if [[ "$directoryName" != /* ]]
-    then
-        archiveOperand="./$archiveName"
-        directoryOperand="./$directoryName"
-    fi
-    RunSilentArguments "$zipcmd" -r -nw "$archiveOperand" -- "$directoryOperand" || FatalError "Cannot compress the trace."
+    # Disable wildcard matching and keep options out of filename operands.
+    RunSilentArguments "$zipcmd" -r -nw "./$archiveName" -- "./$directoryName" || FatalError "Cannot compress the trace."
 
     # Move back to the original directory.
     popd > /dev/null || FatalError "Cannot return to the archive destination."
 
-    # Move the archive.
-    if [[ "$archiveName" != /* ]]
-    then
-        RunSilentArguments mv -- "$tempDir/$archiveName" . || FatalError "Cannot move the trace archive to its destination."
-    else
-        RunSilentArguments rm -rf -- "$directoryName" || FatalError "Cannot remove the trace archive staging directory."
-    fi
+    # Publish only the completed file. -T replaces a destination symlink rather
+    # than following a symlink-to-directory or treating a directory as a target.
+    RunSilentArguments mv -T -- "$tempDir/$archiveName" "$archiveDestination" ||
+        FatalError "Cannot move the trace archive to its destination."
 
     WriteStatus "...FINISHED"
 
@@ -2139,7 +2131,7 @@ ProcessCollectedData()
 
     # Tell the user where the trace is.
     WriteStatus
-    WriteStatus "Trace saved to $archiveName"
+    WriteStatus "Trace saved to $archiveDestination"
     # Headless terminal formatting failures must not override completed work.
     return 0
 }
@@ -2212,6 +2204,7 @@ PrintUsage()
     echo "    Stop collection if 'start' action is used."
     echo "    Start/stop metadata is stored in root's ~/.perfcollect (0700), as a private data file (0600)."
     echo "    LTTng output is kept in the private collection workspace, independent of caller HOME/LTTNG_HOME."
+    echo "    Archive staging stays in that workspace; failed publication retains it for recovery."
     echo "    Missing, unsafe, or stale state fails without automatic recovery. Use root to inspect retained artifacts."
     echo "    After an interrupted operation, verify no perfcollect operation is running before removing .operation."
     echo ""
@@ -2352,6 +2345,10 @@ DoCollect()
         sessionWorkspace=$tempDir
         ResumeSessionSignals
         ValidSessionWorkspace "$tempDir" || FatalError "Collection workspace is unsafe."
+    else
+        [[ "$tempDir" == /* ]] && [ -d "$tempDir" ] &&
+            PrivateSessionObject "$tempDir" 700 && TrustedDirectoryPath "$tempDir" 1 ||
+            FatalError "Collection workspace is unsafe."
     fi
     LogAppend "Created temp directory $tempDir"
 
