@@ -142,9 +142,11 @@ run_case()
 invoke_perfcollect()
 {
     local directory=$1
+    local -a launcher=()
     shift
+    [[ "${PERFCOLLECT_TEST_SETSID:-0}" != 1 ]] || launcher=(setsid --wait)
     (cd -- "$directory" &&
-        timeout -s TERM -k 5s 90s bash "$perfcollect" "$@")
+        timeout -s TERM -k 5s 90s "${launcher[@]}" bash "$perfcollect" "$@")
 }
 
 # Confirm target/distro/tool identity and an empty, safe state starting point.
@@ -168,7 +170,7 @@ environment_case()
         mariner-2.0:mariner:2.0|alpine:alpine:3.*|azurelinux-3.0:azurelinux:3.0) ;;
         *) case_block "target $target does not match actual distro $distro_id $distro_version"; return 77 ;;
     esac
-    for tool in timeout mktemp stat cmp cp rm mkdir grep sed awk find zip unzip cc perf; do
+    for tool in timeout mktemp stat cmp cp rm mkdir grep sed awk find zip unzip cc perf setsid; do
         command -v "$tool" || { case_block "required test tool missing: $tool"; return 77; }
     done
     bash --version
@@ -265,6 +267,12 @@ read_state()
     [[ -f "${state_fields[logFile]}" && "${state_fields[tempDir]}" == /tmp/* && -d "${state_fields[tempDir]}" &&
         ! -L "${state_fields[tempDir]}" && "$(stat -c '%u %a' -- "${state_fields[tempDir]}")" == '0 700' ]] ||
         { case_fail "saved workspace is not a private root-owned absolute directory"; return 1; }
+    if [[ "${state_fields[useLTTng]}" == 1 ]]; then
+        [[ "${state_fields[lttngTraceDir]}" == "${state_fields[tempDir]}/lttngTrace" &&
+            -d "${state_fields[lttngTraceDir]}" && ! -L "${state_fields[lttngTraceDir]}" &&
+            "$(stat -c '%u' -- "${state_fields[lttngTraceDir]}")" == 0 ]] ||
+            { case_fail "enabled trace output is not rooted in its private collection workspace"; return 1; }
+    fi
     [[ ! -e "$state_dir/.operation" && ! -L "$state_dir/.operation" ]] ||
         { case_fail "completed operation leaked its guard"; return 1; }
     stat -c '%n uid=%u gid=%g mode=%a type=%F' -- "$state_dir" "$state_file" "${state_fields[logFile]}" "${state_fields[tempDir]}"
@@ -359,7 +367,9 @@ ust_capability_case()
 # prove saved metadata describes a session that actually exists.
 ust_start_case()
 {
-    invoke_perfcollect "$scratch/start" start ust-integration -noperf -rawevents perfcollect_test:tick ||
+    chown 65534:65534 "$scratch/caller-home" || return 1
+    HOME="$scratch/caller-home" LTTNG_HOME="$scratch/caller-home" SUDO_USER=nobody \
+        invoke_perfcollect "$scratch/start" start ust-integration -noperf -rawevents perfcollect_test:tick ||
         { case_fail "real perfcollect start failed after successful UST capability probe"; return 1; }
     read_state || return 1
     [[ "${state_fields[useLTTng]}" == 1 && -n "${state_fields[lttngSessionName]}" && "${state_fields[lttngSessionName]}" != -* &&
@@ -368,6 +378,9 @@ ust_start_case()
     active_session=${state_fields[lttngSessionName]}
     ust_workspace=${state_fields[tempDir]}
     ust_trace_dir=${state_fields[lttngTraceDir]}
+    [[ "$ust_trace_dir" == "$ust_workspace/lttngTrace" &&
+        ! -e "$scratch/caller-home/lttng-traces" ]] ||
+        { case_fail "enabled start placed trace output outside its private workspace"; return 1; }
     cp -- "$state_file" "$scratch/ust-state.before" || return 1
     timeout 15s lttng list "$active_session" ||
         { case_fail "the persisted actual LTTng session does not exist after start"; return 1; }
@@ -381,6 +394,36 @@ ust_emit_case()
     timeout 25s "$scratch/ust-producer" "archive-$token" ||
         { case_fail "fixture tracepoint was not enabled/emitted by perfcollect"; return 1; }
     CASE_DETAIL="actual UST fixture emitted 128 uniquely marked events"
+}
+
+unsafe_trace_case()
+{
+    local variant path rc unchanged
+    for variant in user-owned symlink missing; do
+        case "$variant" in
+            user-owned) path="$scratch/caller-home" ;;
+            symlink)
+                path="$scratch/unsafe-trace"
+                ln -s -- "$ust_trace_dir" "$path" || return 1
+                ;;
+            missing) path="$scratch/missing-trace" ;;
+        esac
+        printf '%s\0' 1 "${state_fields[logFile]}" "$ust_workspace" "$active_session" "$path" 1 > "$state_file"
+        cp -- "$state_file" "$scratch/unsafe-trace-state.before" || return 1
+        invoke_perfcollect "$scratch/stop" stop unsafe-trace > "$scratch/unsafe-trace.output" 2>&1
+        rc=$?
+        cat "$scratch/unsafe-trace.output"
+        cmp -s -- "$scratch/unsafe-trace-state.before" "$state_file"
+        unchanged=$?
+        cp -- "$scratch/ust-state.before" "$state_file" || return 1
+        [[ "$rc" == 1 && "$unchanged" == 0 ]] &&
+            grep -F 'LTTng trace directory is missing or unsafe' "$scratch/unsafe-trace.output" &&
+            timeout 15s lttng list "$active_session" &&
+            [[ -d "$ust_workspace" && -d "$ust_trace_dir" && ! -e "$state_dir/.operation" ]] ||
+            { case_fail "unsafe $variant output changed the live session or leaked its guard"; return 1; }
+    done
+    read_state || return 1
+    CASE_DETAIL="user-owned, symlink, and missing trace paths rejected before stopping/destroying the actual live session"
 }
 
 # Exercise both privilege guards with a real UID switch while a session exists.
@@ -571,7 +614,7 @@ invalid_state_case()
     CASE_DETAIL="real stop rejected unsafe mode, version, truncation, and shell payload without execution; state restored"
 }
 
-# Interrupt the unmodified CLI at exact publication boundaries, not a timing
+# Interrupt the unmodified CLI at exact ownership/publication boundaries, not a timing
 # approximation. The hook never substitutes filesystem or tracing commands.
 interrupted_start_case()
 {
@@ -585,33 +628,86 @@ interrupted_start_case()
     if [[ "$target" == ubuntu-20.04 || "$target" == debian-bookworm || "$target" == ci-debian12 ]]; then
         options=(-rawevents perfcollect_test:tick)
     fi
+    mkdir -p -- "$scratch/interrupt-allocations" || return 1
     cat > "$helper" <<'INTERRUPT_START'
 unset BASH_ENV
 perfcollect_interrupt_pid=$BASHPID
+# Bash keeps BASH_COMMAND at the exit instruction inside EXIT handlers; source
+# line metadata still identifies the real cleanup command about to run.
+perfcollect_cleanup_lines=$(awk '/RunSilentArguments.*destroy.*lttngSessionName|rm -rf -- "\$sessionWorkspace"/ {print NR}' "$0")
+perfcollect_cleanup_lines=" ${perfcollect_cleanup_lines//$'\n'/ } "
+perfcollect_inject()
+{
+    local workspace=${tempDir:-} temporary=$sessionStateTemporary
+    if [[ -z "$workspace" ]]; then
+        workspace=$(find "$PERFCOLLECT_INTERRUPT_TMPDIR" -mindepth 1 -maxdepth 1 -type d -name 'tmp.*' -print)
+    fi
+    if [[ -z "$temporary" ]]; then
+        temporary=$(find "$sessionDirectory" -maxdepth 1 -name '.state.*' -print)
+    fi
+    if [[ "$PERFCOLLECT_INTERRUPT_BOUNDARY" != cleanup-repeat || "$1" == cleanup ]]; then
+        trap - DEBUG
+        set +T
+    fi
+    if [[ "$1" != cleanup ]]; then
+        printf '%s\0' "$logFile" "$workspace" "$lttngSessionName" "$lttngTraceDir" \
+            "$useLTTng" "$temporary" > "$PERFCOLLECT_INTERRUPT_EVIDENCE" || exit 1
+    else
+        printf '%s\n' "$PERFCOLLECT_INTERRUPT_SIGNAL" > "$PERFCOLLECT_INTERRUPT_EVIDENCE.repeated" || exit 1
+        trap -p INT TERM >&2
+    fi
+    printf 'Injecting %s at %s (%s) in CLI PID %s from %s\n' "$PERFCOLLECT_INTERRUPT_SIGNAL" \
+        "$PERFCOLLECT_INTERRUPT_BOUNDARY" "$1" "$perfcollect_interrupt_pid" "$BASHPID" >&2
+    # setsid makes this the exact CLI group, including any allocating subprocess.
+    kill -s "$PERFCOLLECT_INTERRUPT_SIGNAL" -- "-$perfcollect_interrupt_pid"
+}
 perfcollect_interrupt()
 {
-    [[ "$BASHPID" == "$perfcollect_interrupt_pid" &&
-        "${FUNCNAME[1]:-}" == SaveSessionState ]] || return 0
-    case "$PERFCOLLECT_INTERRUPT_BOUNDARY:$1" in
-        'before-publish:mv -T -- "$sessionStateTemporary" "$sessionStateFile"'|\
-        "after-publish:sessionStateTemporary=''"|\
-        'after-temporary-clear:sessionStartPending=0') ;;
+    local command=$1
+    shift
+    if [[ "$BASHPID" != "$perfcollect_interrupt_pid" &&
+        "${FUNCNAME[1]:-}" == SessionAllocate && "$command" == 'return "$status"' ]]; then
+        perfcollect_interrupt_allocator "$@"
+        return 0
+    fi
+    [[ "$BASHPID" == "$perfcollect_interrupt_pid" ]] || return 0
+    if [[ "$PERFCOLLECT_INTERRUPT_BOUNDARY" == cleanup-repeat && "${FUNCNAME[1]:-}" == SessionExit &&
+        "$perfcollect_cleanup_lines" == *" ${BASH_LINENO[0]} "* ]]; then
+        perfcollect_inject cleanup
+        return
+    fi
+    case "$PERFCOLLECT_INTERRUPT_BOUNDARY:${FUNCNAME[1]:-}:$command" in
+        'guard-created:AcquireSessionGuard:sessionGuardHeld=1'|\
+        'workspace-created:DoCollect:sessionWorkspace=$tempDir'|\
+        'lttng-created:CreateLTTngSession:sessionLTTngCreated=1'|\
+        'before-publish:SaveSessionState:mv -T -- "$sessionStateTemporary" "$sessionStateFile"'|\
+        "after-publish:SaveSessionState:sessionStateTemporary=''"|\
+        'after-temporary-clear:SaveSessionState:sessionStartPending=0') ;;
         *) return 0 ;;
     esac
-    trap - DEBUG
-    set +T
-    printf '%s\0' "$logFile" "$tempDir" "$lttngSessionName" "$lttngTraceDir" \
-        "$useLTTng" "$sessionStateTemporary" > "$PERFCOLLECT_INTERRUPT_EVIDENCE" || exit 1
-    printf 'Injecting %s at %s in CLI PID %s\n' "$PERFCOLLECT_INTERRUPT_SIGNAL" \
-        "$PERFCOLLECT_INTERRUPT_BOUNDARY" "$BASHPID"
-    kill -s "$PERFCOLLECT_INTERRUPT_SIGNAL" "$BASHPID"
+    perfcollect_inject boundary
+}
+perfcollect_interrupt_allocator()
+{
+    [[ "$BASHPID" != "$perfcollect_interrupt_pid" ]] || return 0
+    printf 'Allocator completed in PID %s: %s\n' "$BASHPID" "$*" >&2
+    case "$PERFCOLLECT_INTERRUPT_BOUNDARY:$*" in
+        'guard-allocator-exit:mkdir -- '*'/'.operation) ;;
+        'workspace-allocator-exit:mktemp -d') ;;
+        'state-allocator-exit:mktemp '*'/'.state.*|'cleanup-repeat:mktemp '*'/'.state.*) ;;
+        'lttng-allocator-exit:RunSilentArguments '*)
+            [[ "${3:-}" == create ]] || return 0 ;;
+        *) return 0 ;;
+    esac
+    perfcollect_inject allocator-exit
 }
 set -T
-trap 'perfcollect_interrupt "$BASH_COMMAND"' DEBUG
+trap 'perfcollect_interrupt "$BASH_COMMAND" "$@"' DEBUG
 INTERRUPT_START
     [[ "$interrupt_signal" != INT ]] || expected=130
-    BASH_ENV="$helper" PERFCOLLECT_INTERRUPT_BOUNDARY="$interrupt_boundary" \
+    TMPDIR="$scratch/interrupt-allocations" BASH_ENV="$helper" PERFCOLLECT_INTERRUPT_BOUNDARY="$interrupt_boundary" \
         PERFCOLLECT_INTERRUPT_SIGNAL="$interrupt_signal" PERFCOLLECT_INTERRUPT_EVIDENCE="$evidence" \
+        PERFCOLLECT_INTERRUPT_TMPDIR="$scratch/interrupt-allocations" PERFCOLLECT_TEST_SETSID=1 \
         invoke_perfcollect "$scratch/start" start "$name" -noperf "${options[@]}"
     rc=$?
     [[ "$rc" == "$expected" && -s "$evidence" ]] ||
@@ -631,7 +727,7 @@ INTERRUPT_START
     [[ ! -e "$state_dir/.operation" && ! -L "$state_dir/.operation" &&
         -z "$(find "$state_dir" -maxdepth 1 -name '.state.*' -print -quit)" ]] ||
         { case_fail "interruption leaked the guard or unpublished state"; return 1; }
-    if [[ "$interrupt_boundary" == before-publish ]]; then
+    if [[ "$interrupt_boundary" != after-publish && "$interrupt_boundary" != after-temporary-clear ]]; then
         [[ ! -e "$state_file" && ! -L "$state_file" && ! -e "$workspace" && ! -L "$workspace" ]] ||
             { case_fail "interruption before publication did not roll back state/workspace"; return 1; }
         if [[ -n "$session" ]]; then
@@ -643,6 +739,13 @@ INTERRUPT_START
             fi
         fi
         active_session=''
+        [[ -z "$(find "$scratch/interrupt-allocations" -mindepth 1 -print -quit)" ]] ||
+            { case_fail "interrupted allocation leaked a workspace"; return 1; }
+        if [[ "$interrupt_boundary" == cleanup-repeat ]]; then
+            [[ -n "$temporary" ]] && grep -Fx "$interrupt_signal" "$evidence.repeated" &&
+                rm -- "$evidence.repeated" ||
+                { case_fail "repeated signal did not enter rollback with allocated state"; return 1; }
+        fi
         CASE_DETAIL="$interrupt_signal exit=$rc before publication; owned session/workspace/temp rolled back; guard released"
         return 0
     fi
@@ -680,6 +783,94 @@ INTERRUPT_START
     active_session=''
     verify_finalized_state "$workspace" || return 1
     CASE_DETAIL="$interrupt_signal exit=$rc at $interrupt_boundary; published resources retained, archived, and finalized by plain stop"
+}
+
+absolute_stop_case()
+{
+    local destination="$scratch/absolute output/stopped" workspace session enabled trace
+    local -a options=("${disabled_lttng_options[@]}")
+    case "$target" in
+        ubuntu-20.04|debian-bookworm|ci-debian12) options=(-rawevents perfcollect_test:tick) ;;
+    esac
+    mkdir -p -- "${destination%/*}" || return 1
+    HOME="$scratch/caller-home" LTTNG_HOME="$scratch/caller-home" \
+        invoke_perfcollect "$scratch/start" start absolute-integration -noperf "${options[@]}" || return 1
+    read_state || return 1
+    workspace=${state_fields[tempDir]}
+    session=${state_fields[lttngSessionName]}
+    enabled=${state_fields[useLTTng]}
+    active_session=$session
+    printf '%s\n' "$token" > "$workspace/absolute-sentinel" || return 1
+    if [[ "$enabled" == 1 ]]; then
+        timeout 25s "$scratch/ust-producer" "absolute-stop-$token" || return 1
+    fi
+    invoke_perfcollect "$scratch/stop" stop "$destination" || return 1
+    timeout 30s unzip -t "$destination.trace.zip" &&
+        timeout 30s unzip -q "$destination.trace.zip" -d "$scratch/absolute-stop-extracted" || return 1
+    trace=$(find "$scratch/absolute-stop-extracted" -type f -name perfcollect.log -print) || return 1
+    [[ -n "$trace" && "$trace" != *$'\n'* && -s "$trace" && ! -e "$destination.trace" ]] ||
+        { case_fail "absolute stop lost its log or retained external staging"; return 1; }
+    trace=${trace%/*}
+    grep -Fx "$token" "$trace/absolute-sentinel" &&
+        [[ ! -e "$trace/perf.data" ]] || return 1
+    if [[ "$enabled" == 1 ]]; then
+        verify_fixture_events "$trace/lttngTrace" "absolute-stop-$token" "$scratch/absolute-stop.events" || return 1
+        timeout 15s lttng list || return 1
+        if timeout 15s lttng list "$session"; then
+            case_fail "absolute stop retained its LTTng session"
+            return 1
+        fi
+    fi
+    active_session=''
+    verify_finalized_state "$workspace" || return 1
+    CASE_DETAIL="absolute stop destination with spaces contains actual session data; staging/workspace/state/guard finalized"
+}
+
+absolute_collect_case()
+{
+    local destination="$scratch/absolute output/collected" rc emitter_rc=0 collect_pid trace workspace
+    mkdir -p -- "${destination%/*}" || return 1
+    case "$target" in
+        ubuntu-20.04|debian-bookworm|ci-debian12)
+            HOME="$scratch/caller-home" LTTNG_HOME="$scratch/caller-home" \
+                invoke_perfcollect "$scratch/collect" collect "$destination" -noperf \
+                    -rawevents perfcollect_test:tick -collectsec 5 > "$scratch/absolute-collect.output" 2>&1 &
+            collect_pid=$!
+            timeout 25s "$scratch/ust-producer" "absolute-collect-$token" || emitter_rc=$?
+            wait "$collect_pid"
+            rc=$?
+            cat "$scratch/absolute-collect.output"
+            ;;
+        *)
+            start_cpu absolute-collect || return 1
+            invoke_perfcollect "$scratch/collect" collect "$destination" "${disabled_lttng_options[@]}" \
+                -pid "$cpu_pid" -collectsec 3
+            rc=$?
+            stop_cpu
+            ;;
+    esac
+    [[ "$rc" == 0 && "$emitter_rc" == 0 ]] ||
+        { case_fail "real absolute collect or UST emission failed"; return 1; }
+    timeout 30s unzip -t "$destination.trace.zip" &&
+        timeout 30s unzip -q "$destination.trace.zip" -d "$scratch/absolute-collect-extracted" || return 1
+    trace=$(find "$scratch/absolute-collect-extracted" -type f -name perfcollect.log -print) || return 1
+    [[ -n "$trace" && "$trace" != *$'\n'* && -s "$trace" && ! -e "$destination.trace" ]] || return 1
+    workspace=$(sed -n 's/^Created temp directory //p' "$trace")
+    [[ "$workspace" == /tmp/tmp.* && ! -e "$workspace" && ! -e "$state_file" && ! -e "$state_dir/.operation" ]] ||
+        { case_fail "absolute collect retained workspace/state/guard"; return 1; }
+    trace=${trace%/*}
+    case "$target" in
+        ubuntu-20.04|debian-bookworm|ci-debian12)
+            verify_fixture_events "$trace/lttngTrace" "absolute-collect-$token" "$scratch/absolute-collect.events" || return 1
+            ;;
+        *)
+            [[ -s "$trace/perf.data" && -s "$trace/perf.data.txt" ]] &&
+                grep -F perfcollect_cpu "$trace/perf.data.txt" &&
+                timeout 20s "$perf_binary" script -i "$trace/perf.data" > "$scratch/absolute-perf.events" &&
+                grep -F perfcollect_cpu "$scratch/absolute-perf.events" || return 1
+            ;;
+    esac
+    CASE_DETAIL="absolute collect destination with spaces contains independently decoded real traces; staging/workspace finalized"
 }
 
 # Launch only the compiled test workload and wait for its explicit readiness
@@ -888,6 +1079,7 @@ case "$target" in
         run_case lttng-tools-record-and-decode-events ust_capability_case environment-meets-prerequisites
         run_case lttng-start-creates-live-session ust_start_case lttng-tools-record-and-decode-events
         run_case lttng-fixture-emits-marked-events ust_emit_case lttng-start-creates-live-session
+        run_case lttng-stop-rejects-unsafe-trace-output unsafe_trace_case lttng-start-creates-live-session
         run_case session-start-rejects-nonroot-user root_start_case lttng-start-creates-live-session
         run_case session-stop-rejects-nonroot-user root_stop_case lttng-start-creates-live-session
         # Still finalize a started session if emission or root rejection failed.
@@ -916,8 +1108,25 @@ case "$target" in
         ;;
 esac
 
+run_case absolute-stop-archives-and-cleans-up absolute_stop_case lttng-disabled-stop-archives-and-cleans-up
+case "$target" in
+    ubuntu-20.04|debian-bookworm|ci-debian12)
+        run_case absolute-collect-archives-decodable-traces absolute_collect_case lttng-tools-record-and-decode-events
+        ;;
+    *)
+        run_case absolute-collect-archives-decodable-traces absolute_collect_case perf-tools-record-and-export-samples
+        ;;
+esac
+
 for interrupt_signal in TERM INT; do
-    for interrupt_boundary in before-publish after-publish after-temporary-clear; do
+    interrupt_boundaries=(guard-created guard-allocator-exit workspace-created workspace-allocator-exit
+        state-allocator-exit cleanup-repeat before-publish after-publish after-temporary-clear)
+    case "$target" in
+        ubuntu-20.04|debian-bookworm|ci-debian12)
+            interrupt_boundaries+=(lttng-created lttng-allocator-exit)
+            ;;
+    esac
+    for interrupt_boundary in "${interrupt_boundaries[@]}"; do
         case "$target" in
             ubuntu-20.04|debian-bookworm|ci-debian12)
                 run_case "session-start-${interrupt_signal,,}-$interrupt_boundary" interrupted_start_case lttng-tools-record-and-decode-events

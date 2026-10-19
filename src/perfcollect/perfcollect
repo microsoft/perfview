@@ -678,6 +678,8 @@ sessionStateTemporary=''
 sessionStartPending=0
 sessionWorkspace=''
 sessionLTTngCreated=0
+sessionSignalDeferred=0
+sessionSignalStatus=0
 
 ######################################
 ## Logging Functions
@@ -949,14 +951,48 @@ InitializeSessionStore()
 # stolen; forced termination therefore requires explicit administrator recovery.
 AcquireSessionGuard()
 {
-    (umask 077; mkdir -- "$sessionDirectory/.operation") ||
-        FatalError "Another session operation is running, or a stale operation guard requires administrator recovery."
-    sessionGuardHeld=1
-    # Install cleanup only after ownership is established; handled signals exit
-    # through the same resource-aware trap rather than bypassing final checks.
     trap SessionExit EXIT
-    trap 'exit 130' INT
-    trap 'exit 143' TERM
+    trap 'SessionSignal 130' INT
+    trap 'SessionSignal 143' TERM
+    sessionSignalDeferred=1
+    # Protect both the allocator and its status until ownership is registered.
+    if (umask 077; SessionAllocate mkdir -- "$sessionDirectory/.operation")
+    then
+        sessionGuardHeld=1
+    else
+        ResumeSessionSignals
+        FatalError "Another session operation is running, or a stale operation guard requires administrator recovery."
+    fi
+    ResumeSessionSignals
+}
+
+SessionSignal()
+{
+    [ "$sessionSignalStatus" != "0" ] || sessionSignalStatus=$1
+    [ "$sessionSignalDeferred" == "1" ] || exit "$sessionSignalStatus"
+}
+
+ResumeSessionSignals()
+{
+    sessionSignalDeferred=0
+    [ "$sessionSignalStatus" == "0" ] || exit "$sessionSignalStatus"
+}
+
+SessionAllocate()
+{
+    # Invoked only in a subshell; ignored signals also protect the external tool.
+    trap '' INT TERM
+    "$@"
+    local status=$?
+    return "$status"
+}
+
+ValidateLTTngTraceDirectory()
+{
+    local path=${1:-$lttngTraceDir}
+    [ "$path" != "/" ] && [ ! -L "$path" ] &&
+        TrustedDirectoryPath "$path" 1 1 ||
+        FatalError "LTTng trace directory is missing or unsafe."
 }
 
 # A workspace is later entered and recursively removed, so require root privacy
@@ -993,12 +1029,13 @@ ValidateSessionValues()
                 FatalError "Disabled LTTng session contains unexpected trace fields."
             ;;
         1)
-            # Names must be ordinary operands; the trace path must be absolute.
+            # Names must be ordinary operands and output must have a trusted chain.
             # Presence of the actual executable is required only for enabled state.
             [ -n "$name" ] && [[ "$name" != -* && "$name" != *$'\n'* ]] &&
                 [[ "$traceDirectory" == /* && "$traceDirectory" != "/" ]] ||
                 FatalError "Invalid LTTng session fields."
             [ -n "$lttngcmd" ] || FatalError "LTTng is required to stop this session."
+            ValidateLTTngTraceDirectory "$traceDirectory"
             ;;
         *) FatalError "Invalid LTTng session flag." ;;
     esac
@@ -1009,8 +1046,10 @@ ValidateSessionValues()
 SaveSessionState()
 {
     ValidateSessionValues "$logFile" "$tempDir" "$lttngSessionName" "$lttngTraceDir" "$useLTTng"
-    sessionStateTemporary=$(umask 077; mktemp "$sessionDirectory/.state.XXXXXXXX") ||
-        FatalError "Cannot create session state."
+    sessionSignalDeferred=1
+    sessionStateTemporary=$(umask 077; SessionAllocate mktemp "$sessionDirectory/.state.XXXXXXXX") ||
+        { ResumeSessionSignals; FatalError "Cannot create session state."; }
+    ResumeSessionSignals
     # Fixed-order NUL-delimited values are data, never Bash declarations.
     # Fields: version, log, workspace, LTTng name, trace directory, enabled flag.
     printf '%s\0' 1 "$logFile" "$tempDir" "$lttngSessionName" "$lttngTraceDir" "$useLTTng" > "$sessionStateTemporary" ||
@@ -1058,6 +1097,8 @@ LoadSessionState()
 SessionExit()
 {
     local status=$?
+    # Repeated signals must not interrupt rollback or its child commands.
+    trap '' INT TERM
     # Under our guard, an existing record can only be this start's publication.
     # A signal after rename may arrive before SaveSessionState clears its flags.
     if [ "$sessionStartPending" == "1" ] && [ -f "$sessionStateFile" ] &&
@@ -1785,19 +1826,25 @@ CreateLTTngSession()
     if [ "$action" == "livetrace" ]
     then
         output=$("$lttngcmd" create --live) || return
+        lttngSessionName=$(printf '%s\n' "$output" | sed -n 's/^Session \(.*\) created\.$/\1/p')
+        lttngTraceDir=$(printf '%s\n' "$output" | sed -n -e 's/^Traces will be written in //p' -e 's/^Traces will be output to //p')
     else
-        output=$("$lttngcmd" create) || return
-    fi
-
-    # Extract the CLI's reported operands as data. Track create ownership before
-    # later configuration/start steps so failure rollback knows what it may destroy.
-    lttngSessionName=$(printf '%s\n' "$output" | sed -n 's/^Session \(.*\) created\.$/\1/p')
-    lttngTraceDir=$(printf '%s\n' "$output" | sed -n -e 's/^Traces will be written in //p' -e 's/^Traces will be output to //p')
-    if [ "$action" == "start" ]
-    then
-        [ -n "$lttngSessionName" ] && [[ "$lttngSessionName" != -* && "$lttngSessionName" != *$'\n'* ]] ||
-            FatalError "Cannot determine the created LTTng session name."
-        sessionLTTngCreated=1
+        # The unique private workspace supplies both identity and output, never
+        # the caller's HOME/LTTNG_HOME or parsed CLI output.
+        lttngSessionName="perfcollect-${PWD##*/}"
+        lttngTraceDir="$PWD/lttngTrace"
+        [ "$action" != "start" ] || sessionSignalDeferred=1
+        if (SessionAllocate RunSilentArguments "$lttngcmd" create "$lttngSessionName" --output="$lttngTraceDir")
+        then
+            if [ "$action" == "start" ]
+            then
+                sessionLTTngCreated=1
+                ResumeSessionSignals
+            fi
+        else
+            [ "$action" != "start" ] || ResumeSessionSignals
+            return 1
+        fi
     fi
 }
 
@@ -1805,10 +1852,10 @@ SetupLTTngSession()
 {
     
     # Setup per-event context information.
-    RunSilent "$lttngcmd add-context --userspace --type vpid"
-    RunSilent "$lttngcmd add-context --userspace --type vtid"
-    RunSilent "$lttngcmd add-context --userspace --type procname"
-    RunSilent "$lttngcmd add-context --kernel -t pid -t procname"
+    RunSilentArguments "$lttngcmd" add-context --session="$lttngSessionName" --userspace --type vpid
+    RunSilentArguments "$lttngcmd" add-context --session="$lttngSessionName" --userspace --type vtid
+    RunSilentArguments "$lttngcmd" add-context --session="$lttngSessionName" --userspace --type procname
+    RunSilentArguments "$lttngcmd" add-context --session="$lttngSessionName" --kernel -t pid -t procname
 
     if [ "$action" == "livetrace" ]
     then
@@ -1898,6 +1945,8 @@ StartLTTngCollection()
 
 StopLTTngCollection()
 {
+    # Reject unsafe/missing output before changing the live session.
+    [ "$action" == "livetrace" ] || ValidateLTTngTraceDirectory
     # Do not destroy/finalize after a failed stop; retain artifacts for recovery.
     RunSilentArguments "$lttngcmd" stop "$lttngSessionName" || return
     DestroyLTTngSession
@@ -1943,10 +1992,12 @@ ProcessCollectedData()
         then
             # LTTng commonly creates group-writable subdirectories. Accept those
             # only when a root-only ancestor protects access to the trace tree.
-            [ ! -L "$lttngTraceDir" ] && TrustedDirectoryPath "$lttngTraceDir" 1 1 ||
-                FatalError "LTTng trace directory is unsafe."
-            RunSilentArguments mkdir lttngTrace || FatalError "Cannot create the LTTng archive directory."
-            RunSilentArguments cp -r -- "$lttngTraceDir" lttngTrace || FatalError "Cannot copy LTTng traces."
+            ValidateLTTngTraceDirectory
+            if [ ! "$lttngTraceDir" -ef lttngTrace ]
+            then
+                RunSilentArguments mkdir lttngTrace || FatalError "Cannot create the LTTng archive directory."
+                RunSilentArguments cp -r -- "$lttngTraceDir" lttngTrace || FatalError "Cannot copy LTTng traces."
+            fi
         elif [ "$action" == "stop" ]
         then
             FatalError "LTTng trace directory is missing; session state has been retained for recovery."
@@ -2047,13 +2098,24 @@ ProcessCollectedData()
     local archiveName=$directoryName$archiveSuffix
     # Prefix relative operands and disable zip wildcard matching so trace names
     # are filenames, not archive options or patterns.
-    RunSilentArguments "$zipcmd" -r -nw "./$archiveName" -- "./$directoryName" || FatalError "Cannot compress the trace."
+    local archiveOperand=$archiveName directoryOperand=$directoryName
+    if [[ "$directoryName" != /* ]]
+    then
+        archiveOperand="./$archiveName"
+        directoryOperand="./$directoryName"
+    fi
+    RunSilentArguments "$zipcmd" -r -nw "$archiveOperand" -- "$directoryOperand" || FatalError "Cannot compress the trace."
 
     # Move back to the original directory.
     popd > /dev/null || FatalError "Cannot return to the archive destination."
 
     # Move the archive.
-    RunSilentArguments mv -- "$tempDir/$archiveName" . || FatalError "Cannot move the trace archive to its destination."
+    if [[ "$archiveName" != /* ]]
+    then
+        RunSilentArguments mv -- "$tempDir/$archiveName" . || FatalError "Cannot move the trace archive to its destination."
+    else
+        RunSilentArguments rm -rf -- "$directoryName" || FatalError "Cannot remove the trace archive staging directory."
+    fi
 
     WriteStatus "...FINISHED"
 
@@ -2149,6 +2211,7 @@ PrintUsage()
     echo "stop:"
     echo "    Stop collection if 'start' action is used."
     echo "    Start/stop metadata is stored in root's ~/.perfcollect (0700), as a private data file (0600)."
+    echo "    LTTng output is kept in the private collection workspace, independent of caller HOME/LTTNG_HOME."
     echo "    Missing, unsafe, or stale state fails without automatic recovery. Use root to inspect retained artifacts."
     echo "    After an interrupted operation, verify no perfcollect operation is running before removing .operation."
     echo ""
@@ -2280,11 +2343,14 @@ DoCollect()
 
     # Create a temp directory to use for collection.
     local tempDir
-    tempDir=$(mktemp -d) || FatalError "Cannot create the collection workspace."
+    [ "$action" != "start" ] || sessionSignalDeferred=1
+    tempDir=$(SessionAllocate mktemp -d) ||
+        { ResumeSessionSignals; FatalError "Cannot create the collection workspace."; }
     if [ "$action" == "start" ]
     then
         # Keep the created path for start rollback even before metadata exists.
         sessionWorkspace=$tempDir
+        ResumeSessionSignals
         ValidSessionWorkspace "$tempDir" || FatalError "Collection workspace is unsafe."
     fi
     LogAppend "Created temp directory $tempDir"
