@@ -634,7 +634,9 @@ unset BASH_ENV
 perfcollect_interrupt_pid=$BASHPID
 # Bash keeps BASH_COMMAND at the exit instruction inside EXIT handlers; source
 # line metadata still identifies the real cleanup command about to run.
-perfcollect_cleanup_lines=$(awk '/RunSilentArguments.*destroy.*lttngSessionName|rm -rf -- "\$sessionWorkspace"/ {print NR}' "$0")
+perfcollect_cleanup_lines=$(awk '/RunSilentArguments.*destroy.*lttngSessionName|rm -rf -- "\$sessionWorkspace"/ {print NR}' \
+    "$PERFCOLLECT_INTERRUPT_SCRIPT") || exit 1
+[[ -n "$perfcollect_cleanup_lines" ]] || exit 1
 perfcollect_cleanup_lines=" ${perfcollect_cleanup_lines//$'\n'/ } "
 perfcollect_inject()
 {
@@ -707,7 +709,8 @@ INTERRUPT_START
     [[ "$interrupt_signal" != INT ]] || expected=130
     TMPDIR="$scratch/interrupt-allocations" BASH_ENV="$helper" PERFCOLLECT_INTERRUPT_BOUNDARY="$interrupt_boundary" \
         PERFCOLLECT_INTERRUPT_SIGNAL="$interrupt_signal" PERFCOLLECT_INTERRUPT_EVIDENCE="$evidence" \
-        PERFCOLLECT_INTERRUPT_TMPDIR="$scratch/interrupt-allocations" PERFCOLLECT_TEST_SETSID=1 \
+        PERFCOLLECT_INTERRUPT_TMPDIR="$scratch/interrupt-allocations" PERFCOLLECT_INTERRUPT_SCRIPT="$perfcollect" \
+        PERFCOLLECT_TEST_SETSID=1 \
         invoke_perfcollect "$scratch/start" start "$name" -noperf "${options[@]}"
     rc=$?
     [[ "$rc" == "$expected" && -s "$evidence" ]] ||
