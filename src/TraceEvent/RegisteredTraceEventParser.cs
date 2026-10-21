@@ -693,7 +693,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     writer.WriteStartElement("localization");
                     writer.WriteStartElement("resources");
-                    writer.WriteAttributeString("culture", IetfLanguageTag(CultureInfo.CurrentCulture));
+                    writer.WriteAttributeString("culture", IetfLanguageTag(CultureInfo.CurrentUICulture));
                     
                     writer.WriteStartElement("stringTable");
                     foreach (var entry in localizedStrings)

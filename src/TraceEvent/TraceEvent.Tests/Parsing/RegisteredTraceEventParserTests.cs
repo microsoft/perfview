@@ -1243,7 +1243,7 @@ namespace TraceEventTests
             if (strings.Length > 0)
             {
                 manifest.WriteLine(" <localization>");
-                manifest.WriteLine("  <resources culture=\"{0}\">", IetfLanguageTag(CultureInfo.CurrentCulture));
+                manifest.WriteLine("  <resources culture=\"{0}\">", IetfLanguageTag(CultureInfo.CurrentUICulture));
                 manifest.WriteLine("   <stringTable>");
                 manifest.Write(strings);
                 manifest.WriteLine("   </stringTable>");
