@@ -1667,6 +1667,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         Size = 1;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Int16:
+                        Size = 2;
+                        if (outType == RegisteredTraceEventParser.TdhOutputType.String)
+                        {
+                            Type = typeof(char);
+                            break;
+                        }
+                        Type = typeof(short);
+                        break;
                     case RegisteredTraceEventParser.TdhInputType.UInt16:
                         Size = 2;
                         if (outType == RegisteredTraceEventParser.TdhOutputType.String)
@@ -1674,7 +1682,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             Type = typeof(char);
                             break;
                         }
-                        Type = inType == RegisteredTraceEventParser.TdhInputType.UInt16 ? typeof(ushort) : typeof(short);
+                        Type = typeof(ushort);
                         break;
                     case RegisteredTraceEventParser.TdhInputType.UInt32:
                         Type = typeof(uint);

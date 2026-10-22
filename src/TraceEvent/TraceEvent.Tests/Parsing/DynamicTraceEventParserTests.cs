@@ -223,6 +223,7 @@ namespace TraceEventTests
 
         [Theory]
         [InlineData(TdhInputType.Int16, TdhOutputType.Null, typeof(short))]
+        [InlineData(TdhInputType.Int16, TdhOutputType.String, typeof(char))]
         [InlineData(TdhInputType.UInt16, TdhOutputType.Null, typeof(ushort))]
         [InlineData(TdhInputType.UInt16, TdhOutputType.String, typeof(char))]
         [InlineData(TdhInputType.Int32, TdhOutputType.Null, typeof(int))]
