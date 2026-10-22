@@ -902,7 +902,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         sb.Append(" ]");
 
                     }
-                    else if (value is int || value is bool || value is double || value is float)
+                    else if (value is int || value is uint || value is bool || value is double || value is float)
                     {
                         sb.Append(value);
                     }
@@ -984,7 +984,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return "";
                 }
 
-                long asLong = (long)((IConvertible)value).ToInt64(formatProvider);
+                // Reinterpret large ulong values rather than throwing an OverflowException.
+                long asLong = value is ulong asULong ? unchecked((long)asULong) : ((IConvertible)value).ToInt64(formatProvider);
                 if (map is SortedDictionary<long, string>)
                 {
                     StringBuilder sb = new StringBuilder();
@@ -1049,8 +1050,65 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return hinted;
             }
 
+            string unsigned = FormatUnsignedInteger(index, formatProvider);
+            if (unsigned != null)
+            {
+                return unsigned;
+            }
+
             // Otherwise do the default transformations.
             return base.PayloadString(index, formatProvider);
+        }
+
+        /// <summary>
+        /// Formats unsigned integer fields (ushort, uint, ulong) the same way the base class formats
+        /// their signed counterparts.  This is needed because the base class treats every ulong as an
+        /// address (and renders it in hex), and does not add digit separators to the other unsigned
+        /// types.  Pointer-sized fields have a fetch type of IntPtr and so are not affected.
+        /// Returns null if the field is not an unsigned integer.
+        /// </summary>
+        private string FormatUnsignedInteger(int index, IFormatProvider formatProvider)
+        {
+            Type type = payloadFetches[index].Type;
+            if (type != typeof(ushort) && type != typeof(uint) && type != typeof(ulong))
+            {
+                return null;
+            }
+
+            object value;
+            try
+            {
+                value = PayloadValue(index);
+            }
+            catch (Exception)
+            {
+                // Let the base class produce its standard error string.
+                return null;
+            }
+
+            if (!(value is ushort || value is uint || value is ulong))
+            {
+                return null;
+            }
+
+            // Preserve the field-name based special cases that the base class applies to the signed types.
+            string payloadName = PayloadNames[index];
+            if (value is uint asUInt && asUInt != 0 && payloadName == "IPv4Address")
+            {
+                return FormatUtils.FormatIpV4Address(asUInt);
+            }
+            if (value is ulong asULong && payloadName == "objectId")
+            {
+                return "0x" + asULong.ToString("x8");
+            }
+
+            var formattable = (IFormattable)value;
+            if (formatProvider != null)
+            {
+                return formattable.ToString(null, formatProvider);
+            }
+
+            return formattable.ToString("n0", null);
         }
 
         /// <summary>
@@ -1619,16 +1677,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             Type = typeof(char);
                             break;
                         }
-                        Type = typeof(short);
+                        Type = inType == RegisteredTraceEventParser.TdhInputType.UInt16 ? typeof(ushort) : typeof(short);
+                        break;
+                    case RegisteredTraceEventParser.TdhInputType.UInt32:
+                        Type = typeof(uint);
+                        Size = 4;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Int32:
-                    case RegisteredTraceEventParser.TdhInputType.UInt32:
                     case RegisteredTraceEventParser.TdhInputType.HexInt32:
                         Type = typeof(int);
                         Size = 4;
                         break;
-                    case RegisteredTraceEventParser.TdhInputType.Int64:
                     case RegisteredTraceEventParser.TdhInputType.UInt64:
+                        Type = typeof(ulong);
+                        Size = 8;
+                        break;
+                    case RegisteredTraceEventParser.TdhInputType.Int64:
                     case RegisteredTraceEventParser.TdhInputType.HexInt64:
                         Type = typeof(long);
                         Size = 8;
@@ -2843,6 +2907,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
 
                     var fieldFetch = new DynamicTraceEventData.PayloadFetch(offset, size, type, map);
+                    fieldFetch.FormatHint = DynamicTraceEventData.PayloadFetch.ComputeFormatHintFromInOutTypes(
+                        inType == "win:Pointer" ? RegisteredTraceEventParser.TdhInputType.Pointer : RegisteredTraceEventParser.TdhInputType.Null,
+                        GetOutputTypeForManifestTypeName(reader.GetAttribute("outType")));
                     if (inType == "win:Binary")
                     {
                         // Check to ensure that the length field is the preceding field. 
@@ -2939,6 +3006,49 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return typeof(DateTime);
                 default:
                     return null;
+            }
+        }
+
+        /// <summary>
+        /// Returns the TDH output type corresponding to the manifest outType 'manifestTypeName', for the
+        /// output types that affect how a value is displayed.  Returns TdhOutputType.Null otherwise.
+        /// </summary>
+        private static RegisteredTraceEventParser.TdhOutputType GetOutputTypeForManifestTypeName(string manifestTypeName)
+        {
+            switch (manifestTypeName)
+            {
+                case "win:HexInt8":
+                    return RegisteredTraceEventParser.TdhOutputType.HexInt8;
+                case "win:HexInt16":
+                    return RegisteredTraceEventParser.TdhOutputType.HexInt16;
+                case "win:HexInt32":
+                    return RegisteredTraceEventParser.TdhOutputType.HexInt32;
+                case "win:HexInt64":
+                    return RegisteredTraceEventParser.TdhOutputType.HexInt64;
+                case "win:PID":
+                    return RegisteredTraceEventParser.TdhOutputType.Pid;
+                case "win:TID":
+                    return RegisteredTraceEventParser.TdhOutputType.Tid;
+                case "win:Port":
+                    return RegisteredTraceEventParser.TdhOutputType.Port;
+                case "win:IPv4":
+                    return RegisteredTraceEventParser.TdhOutputType.Ipv4;
+                case "win:IPv6":
+                    return RegisteredTraceEventParser.TdhOutputType.Ipv6;
+                case "win:SocketAddress":
+                    return RegisteredTraceEventParser.TdhOutputType.SocketAddress;
+                case "win:ErrorCode":
+                    return RegisteredTraceEventParser.TdhOutputType.ErrorCode;
+                case "win:Win32Error":
+                    return RegisteredTraceEventParser.TdhOutputType.Win32Error;
+                case "win:NTSTATUS":
+                    return RegisteredTraceEventParser.TdhOutputType.NtStatus;
+                case "win:HResult":
+                    return RegisteredTraceEventParser.TdhOutputType.HResult;
+                case "win:CodePointer":
+                    return RegisteredTraceEventParser.TdhOutputType.CodePointer;
+                default:
+                    return RegisteredTraceEventParser.TdhOutputType.Null;
             }
         }
 
