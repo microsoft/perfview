@@ -222,7 +222,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Used as a key to look up templates by provider GUID and event name
         /// </summary>
-        private class TemplateKey : IEquatable<TemplateKey>
+        private readonly struct TemplateKey : IEquatable<TemplateKey>
         {
             public Guid ProviderGuid { get; }
             public string EventName { get; }
