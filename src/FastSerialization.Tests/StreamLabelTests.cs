@@ -43,6 +43,44 @@ namespace FastSerializationTests
     /// </summary>
     public class StreamLabelTests
     {
+        [Theory]
+        [InlineData(2047)]
+        [InlineData(16383)]
+        [InlineData(16384)]
+        [InlineData(32769)]
+        public void FileWriterPreservesBytesAndLabelsAcrossBufferBoundaries(int count)
+        {
+            string path = Path.GetTempFileName();
+            try
+            {
+                using (var expected = new MemoryStreamWriter(SerializationSettings.Default))
+                {
+                    using (var writer = new IOStreamStreamWriter(path, SerializationSettings.Default))
+                    {
+                        for (int i = 0; i < count; i++)
+                        {
+                            expected.Write(i);
+                            writer.Write(i);
+                        }
+                        Assert.Equal(expected.GetLabel(), writer.GetLabel());
+                        writer.Flush();
+                        expected.Write(long.MaxValue);
+                        writer.Write(long.MaxValue);
+                        Assert.Equal(expected.GetLabel(), writer.GetLabel());
+                    }
+                    byte[] actual = File.ReadAllBytes(path);
+                    Assert.Equal(expected.Length, actual.Length);
+                    byte[] expectedBytes = new byte[expected.Length];
+                    Array.Copy(expected.GetBytes(), expectedBytes, expectedBytes.Length);
+                    Assert.Equal(expectedBytes, actual);
+                }
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
         [Fact]
         public void StreamLabelInvalidValue()
         {

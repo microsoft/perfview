@@ -1032,7 +1032,8 @@ namespace FastSerialization
         /// Create a IOStreamStreamWriter that writes its data to a given file that it creates
         /// </summary>
         /// <param name="fileName"></param>
-        public IOStreamStreamWriter(string fileName, SerializationSettings settings, FileShare share = FileShare.Read) : this(new FileStream(fileName, FileMode.Create, FileAccess.ReadWrite, share), settings: settings) { }
+        public IOStreamStreamWriter(string fileName, SerializationSettings settings, FileShare share = FileShare.Read)
+            : this(new FileStream(fileName, FileMode.Create, FileAccess.ReadWrite, share), settings: settings, bufferSize: 64 * 1024) { }
 
         /// <summary>
         /// Create a IOStreamStreamWriter that writes its data to a System.IO.Stream
