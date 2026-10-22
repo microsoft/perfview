@@ -1043,7 +1043,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-            // Otherwise apply any TraceLogging formatting hints
+            // Otherwise apply any field formatting hints.
             string hinted = FormatWithHint(index, formatProvider);
             if (hinted != null)
             {
@@ -1061,16 +1061,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
-        /// Formats unsigned integer fields (ushort, uint, ulong) the same way the base class formats
-        /// their signed counterparts.  This is needed because the base class treats every ulong as an
-        /// address (and renders it in hex), and does not add digit separators to the other unsigned
-        /// types.  Pointer-sized fields have a fetch type of IntPtr and so are not affected.
-        /// Returns null if the field is not an unsigned integer.
+        /// Formats ushort and uint fields like their signed counterparts.  UInt64 fields retain the
+        /// base class's hexadecimal formatting, which is also used for addresses and bitmasks.
+        /// Returns null if the field should use the base class's formatting.
         /// </summary>
         private string FormatUnsignedInteger(int index, IFormatProvider formatProvider)
         {
             Type type = payloadFetches[index].Type;
-            if (type != typeof(ushort) && type != typeof(uint) && type != typeof(ulong))
+            if (type != typeof(ushort) && type != typeof(uint))
             {
                 return null;
             }
@@ -1086,7 +1084,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return null;
             }
 
-            if (!(value is ushort || value is uint || value is ulong))
+            if (!(value is ushort || value is uint))
             {
                 return null;
             }
@@ -1097,11 +1095,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 return FormatUtils.FormatIpV4Address(asUInt);
             }
-            if (value is ulong asULong && payloadName == "objectId")
-            {
-                return "0x" + asULong.ToString("x8");
-            }
-
             var formattable = (IFormattable)value;
             if (formatProvider != null)
             {
@@ -1133,6 +1126,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             object value = PayloadValue(index);
+            if (format == TdhFormatter.FormatHint.Decimal && PayloadNames[index] == "objectId")
+            {
+                return TdhFormatter.Format(value, TdhFormatter.FormatHint.Pointer, formatProvider: formatProvider);
+            }
             return TdhFormatter.Format(value, format, elementFormat, formatProvider);
         }
 
@@ -1803,6 +1800,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     case RegisteredTraceEventParser.TdhInputType.HexInt32:
                     case RegisteredTraceEventParser.TdhInputType.HexInt64:
                         return TdhFormatter.FormatHint.Hex;
+                    case RegisteredTraceEventParser.TdhInputType.UInt64:
+                        // These fields were decoded as Int64, so preserve their decimal display.
+                        return TdhFormatter.FormatHint.Decimal;
                 }
 
                 return TdhFormatter.FormatHint.None;

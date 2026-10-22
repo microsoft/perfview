@@ -166,6 +166,8 @@ namespace TraceEventTests
         [Theory]
         [InlineData(FormatHint.None, TdhInputType.Int32, TdhOutputType.Null)]
         [InlineData(FormatHint.None, TdhInputType.Int32, TdhOutputType.Int)]
+        [InlineData(FormatHint.Decimal, TdhInputType.UInt64, TdhOutputType.Null)]
+        [InlineData(FormatHint.Decimal, TdhInputType.UInt64, TdhOutputType.UnsignedLong)]
         [InlineData(FormatHint.None, TdhInputType.Pointer, TdhOutputType.HexBinary)]
         [InlineData(FormatHint.Hex, TdhInputType.UInt8, TdhOutputType.HexInt8)]
         [InlineData(FormatHint.Hex, TdhInputType.Int16, TdhOutputType.HexInt16)]
@@ -259,7 +261,7 @@ namespace TraceEventTests
                 Assert.Equal(uint.MaxValue, Assert.IsType<uint>(traceEvent.PayloadValue(1)));
                 Assert.Equal(ulong.MaxValue, Assert.IsType<ulong>(traceEvent.PayloadValue(2)));
 
-                // Unsigned values are displayed in decimal like their signed counterparts, unless a hint says otherwise.
+                // Preserve decimal formatting for TDH integers unless an explicit hint requests hex.
                 Assert.Equal(ushort.MaxValue.ToString("n0"), traceEvent.PayloadString(0));
                 Assert.Equal(uint.MaxValue.ToString("n0"), traceEvent.PayloadString(1));
                 Assert.Equal(ulong.MaxValue.ToString("n0"), traceEvent.PayloadString(2));
@@ -268,6 +270,33 @@ namespace TraceEventTests
                 Assert.Equal("65535", traceEvent.PayloadString(0, CultureInfo.InvariantCulture));
                 Assert.Equal("4294967295", traceEvent.PayloadString(1, CultureInfo.InvariantCulture));
                 Assert.Equal("18446744073709551615", traceEvent.PayloadString(2, CultureInfo.InvariantCulture));
+            });
+        }
+
+        [Theory]
+        [InlineData(0UL, "0x00000000")]
+        [InlineData(112UL, "0x00000070")]
+        [InlineData(0x80070138UL, "0x80070138")]
+        [InlineData(ulong.MaxValue, "0xffffffffffffffff")]
+        public void PayloadString_UInt64WithoutFormatHint_PreservesHexadecimal(ulong value, string expected)
+        {
+            var fetches = new[] { new DynamicTraceEventData.PayloadFetch(0, 8, typeof(ulong)) };
+            WithEvent(BitConverter.GetBytes(value), fetches, traceEvent =>
+            {
+                Assert.Equal(value, Assert.IsType<ulong>(traceEvent.PayloadValue(0)));
+                Assert.Equal(expected, traceEvent.PayloadString(0));
+                Assert.Equal(expected, traceEvent.PayloadString(0, CultureInfo.InvariantCulture));
+            });
+        }
+
+        [Fact]
+        public void PayloadString_TdhUInt64ObjectId_PreservesHexadecimal()
+        {
+            var fetches = new[] { new DynamicTraceEventData.PayloadFetch(0, TdhInputType.UInt64, TdhOutputType.Null) };
+            WithEvent(BitConverter.GetBytes(0xabcdefUL), fetches, traceEvent =>
+            {
+                traceEvent.payloadNames[0] = "objectId";
+                Assert.Equal("0x00abcdef", traceEvent.PayloadString(0));
             });
         }
 
@@ -304,6 +333,7 @@ namespace TraceEventTests
                 "          <template tid=\"MyEventArgs\">" +
                 "            <data name=\"Count\" inType=\"win:UInt32\" />" +
                 "            <data name=\"Flags\" inType=\"win:UInt64\" outType=\"win:HexInt64\" />" +
+                "            <data name=\"Keywords\" inType=\"win:UInt64\" />" +
                 "            <data name=\"Pointer\" inType=\"win:Pointer\" />" +
                 "          </template>" +
                 "        </templates>" +
@@ -324,13 +354,15 @@ namespace TraceEventTests
             }, false);
 
             Assert.NotNull(template);
-            Assert.Equal(new[] { "Count", "Flags", "Pointer" }, template.payloadNames);
+            Assert.Equal(new[] { "Count", "Flags", "Keywords", "Pointer" }, template.payloadNames);
             Assert.Equal(typeof(uint), template.payloadFetches[0].Type);
             Assert.Equal(FormatHint.None, template.payloadFetches[0].FormatHint);
             Assert.Equal(typeof(ulong), template.payloadFetches[1].Type);
             Assert.Equal(FormatHint.Hex, template.payloadFetches[1].FormatHint);
-            Assert.Equal(typeof(IntPtr), template.payloadFetches[2].Type);
+            Assert.Equal(typeof(ulong), template.payloadFetches[2].Type);
             Assert.Equal(FormatHint.None, template.payloadFetches[2].FormatHint);
+            Assert.Equal(typeof(IntPtr), template.payloadFetches[3].Type);
+            Assert.Equal(FormatHint.None, template.payloadFetches[3].FormatHint);
         }
 
         [Fact]

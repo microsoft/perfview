@@ -156,6 +156,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// SOCKADDR_STORAGE struct.
             /// </remarks>
             SocketAddress,
+            /// <summary>
+            /// Renders a UInt64 in decimal, with digit separators unless a format provider is supplied.
+            /// </summary>
+            Decimal,
         }
 
         /// <summary>
@@ -237,6 +241,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return ToHexString(value, formatProvider);
                 case FormatHint.Pointer:
                     return ToPointerString(value, formatProvider);
+                case FormatHint.Decimal:
+                    if (value is ulong unsignedValue)
+                    {
+                        return formatProvider == null ? unsignedValue.ToString("n0") : unsignedValue.ToString(formatProvider);
+                    }
+                    return null;
                 case FormatHint.GenericError:
                     return ToErrorCodeString(value, zeroPad: false, formatProvider);
                 case FormatHint.Win32Error:

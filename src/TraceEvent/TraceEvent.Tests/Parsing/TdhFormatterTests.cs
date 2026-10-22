@@ -1,6 +1,7 @@
 using Microsoft.Diagnostics.Tracing.Parsers;
 
 using System;
+using System.Globalization;
 
 using Xunit;
 
@@ -47,6 +48,14 @@ namespace TraceEventTests
             Assert.Equal("0xfedca1234", TdhFormatter.Format((UInt64)0xF_EDCA1234, FormatHint.Pointer));
             Assert.Equal("0x00000003", TdhFormatter.Format((IntPtr)0x3, FormatHint.Pointer));
             Assert.Equal("0xf1e2d3c4", TdhFormatter.Format((UIntPtr)0xF1E2D3C4, FormatHint.Pointer));
+        }
+
+        [Fact]
+        public void Format_DecimalHint()
+        {
+            Assert.Equal(ulong.MaxValue.ToString("n0"), TdhFormatter.Format(ulong.MaxValue, FormatHint.Decimal));
+            Assert.Equal("18446744073709551615", TdhFormatter.Format(ulong.MaxValue, FormatHint.Decimal, formatProvider: CultureInfo.InvariantCulture));
+            Assert.Null(TdhFormatter.Format("not a number", FormatHint.Decimal));
         }
 
         [Fact]
