@@ -157,7 +157,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </remarks>
             SocketAddress,
             /// <summary>
-            /// Renders a UInt64 in decimal, with digit separators unless a format provider is supplied.
+            /// Renders a UInt16, UInt32, or UInt64 in decimal, with digit separators unless a format
+            /// provider is supplied.
             /// </summary>
             Decimal,
         }
@@ -242,9 +243,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 case FormatHint.Pointer:
                     return ToPointerString(value, formatProvider);
                 case FormatHint.Decimal:
-                    if (value is ulong unsignedValue)
+                    if (value is ushort || value is uint || value is ulong)
                     {
-                        return formatProvider == null ? unsignedValue.ToString("n0") : unsignedValue.ToString(formatProvider);
+                        return ((IFormattable)value).ToString(formatProvider == null ? "n0" : null, formatProvider);
                     }
                     return null;
                 case FormatHint.GenericError:

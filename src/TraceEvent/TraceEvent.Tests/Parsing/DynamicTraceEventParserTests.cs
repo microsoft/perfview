@@ -275,6 +275,111 @@ namespace TraceEventTests
         }
 
         [Theory]
+        [InlineData(0U, false, "0")]
+        [InlineData(0x0100007FU, false, "127.0.0.1")]
+        [InlineData(0x0100007FU, true, "0x0100007F")]
+        public void PayloadString_UnsignedIPv4Address_PreservesNameBasedFormatting(uint value, bool hexadecimal, string expected)
+        {
+            var outType = hexadecimal ? TdhOutputType.HexInt32 : TdhOutputType.Null;
+            var fetches = new[] { new DynamicTraceEventData.PayloadFetch(0, TdhInputType.UInt32, outType) };
+            WithEvent(BitConverter.GetBytes(value), fetches, traceEvent =>
+            {
+                traceEvent.payloadNames[0] = "IPv4Address";
+                Assert.Equal(expected, traceEvent.PayloadString(0));
+            });
+        }
+
+        [Fact]
+        public void PayloadString_UnhintedUnsignedScalars_UseDecimalWithoutChangingMetadata()
+        {
+            var fetches = new[]
+            {
+                new DynamicTraceEventData.PayloadFetch(0, 2, typeof(ushort)),
+                new DynamicTraceEventData.PayloadFetch(2, 4, typeof(uint)),
+            };
+            WithEvent(new byte[] { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }, fetches, traceEvent =>
+            {
+                Assert.Equal(ushort.MaxValue.ToString("n0"), traceEvent.PayloadString(0));
+                Assert.Equal(uint.MaxValue.ToString("n0"), traceEvent.PayloadString(1));
+                Assert.Equal("65535", traceEvent.PayloadString(0, CultureInfo.InvariantCulture));
+                Assert.Equal("4294967295", traceEvent.PayloadString(1, CultureInfo.InvariantCulture));
+                Assert.Equal(FormatHint.None, traceEvent.payloadFetches[0].FormatHint);
+                Assert.Equal(FormatHint.None, traceEvent.payloadFetches[1].FormatHint);
+
+                traceEvent.payloadNames[1] = "objectId";
+                Assert.Equal(uint.MaxValue.ToString("n0"), traceEvent.PayloadString(1));
+            });
+        }
+
+        [Theory]
+        [InlineData(TdhOutputType.Null)]
+        [InlineData(TdhOutputType.HexInt32)]
+        public void PayloadString_UnsignedValueMap_TakesPrecedenceOverFormatting(object outType)
+        {
+            var fetch = new DynamicTraceEventData.PayloadFetch(0, TdhInputType.UInt32, (TdhOutputType)outType);
+            fetch.Map = new Dictionary<long, string> { { uint.MaxValue, "AllBitsSet" } };
+            WithEvent(BitConverter.GetBytes(uint.MaxValue), new[] { fetch }, traceEvent =>
+            {
+                Assert.Equal("AllBitsSet", traceEvent.PayloadString(0));
+            });
+        }
+
+        [Fact]
+        public void PayloadString_UnsupportedHint_FallsBackToUnsignedDecimal()
+        {
+            var fetch = new DynamicTraceEventData.PayloadFetch(0, TdhInputType.UInt16, TdhOutputType.HResult);
+            WithEvent(BitConverter.GetBytes(ushort.MaxValue), new[] { fetch }, traceEvent =>
+            {
+                Assert.Equal(ushort.MaxValue.ToString("n0"), traceEvent.PayloadString(0));
+                Assert.Equal("65535", traceEvent.PayloadString(0, CultureInfo.InvariantCulture));
+            });
+        }
+
+        [Fact]
+        public void PayloadString_UnhintedUnsignedArray_PreservesPlainDecimalElements()
+        {
+            var element = new DynamicTraceEventData.PayloadFetch(0, TdhInputType.UInt32, TdhOutputType.Null);
+            var fetch = DynamicTraceEventData.PayloadFetch.FixedCountArrayPayloadFetch(0, element, 2);
+            WithEvent(new byte[] { 0xff, 0xff, 0xff, 0xff, 0xe8, 0x03, 0x00, 0x00 }, new[] { fetch }, traceEvent =>
+            {
+                Assert.Equal("[4294967295,1000]", traceEvent.PayloadString(0));
+                Assert.Equal(FormatHint.None, traceEvent.payloadFetches[0].Array.Element.FormatHint);
+            });
+        }
+
+        [Fact]
+        public void StructValue_ToString_PreservesUnhintedUnsignedFormatting()
+        {
+            var fetches = new[]
+            {
+                new DynamicTraceEventData.PayloadFetch(0, TdhInputType.UInt16, TdhOutputType.Null),
+                new DynamicTraceEventData.PayloadFetch(2, TdhInputType.UInt32, TdhOutputType.Null),
+            };
+            var value = new DynamicTraceEventData.StructValue(fetches);
+            value.Add("UInt16Field", ushort.MaxValue);
+            value.Add("UInt32Field", uint.MaxValue);
+
+            Assert.Equal("{ \"UInt16Field\":\"65535\", \"UInt32Field\":4294967295 }", value.ToString());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void PayloadString_UnsignedLookupFailure_PreservesErrorHandling(bool explicitHint)
+        {
+            var traceEvent = new ThrowingUnsignedTraceEvent();
+            if (explicitHint)
+            {
+                traceEvent.payloadFetches[0].FormatHint = FormatHint.Hex;
+                Assert.Throws<InvalidOperationException>(() => traceEvent.PayloadString(0));
+            }
+            else
+            {
+                Assert.Equal("<<<EXCEPTION_DURING_VALUE_LOOKUP InvalidOperationException>>>", traceEvent.PayloadString(0));
+            }
+        }
+
+        [Theory]
         [InlineData(0UL, "0x00000000")]
         [InlineData(112UL, "0x00000070")]
         [InlineData(0x80070138UL, "0x80070138")]
@@ -429,6 +534,20 @@ namespace TraceEventTests
             Assert.Equal(
                 "{ \"ArrayOfInner\":[ { \"InnerError\":\"0x80004005\" }, { \"InnerError\":\"0x00000000\" } ], \"ChildOfInner\":{ \"InnerError\":\"0x80070005\" } }",
                 value.ToString());
+        }
+
+        private sealed class ThrowingUnsignedTraceEvent : DynamicTraceEventData
+        {
+            public ThrowingUnsignedTraceEvent()
+                : base(null, 1, 0, "Task", Guid.Empty, 0, "Opcode", Guid.Empty, "Provider")
+            {
+                payloadFetches = new[] { new PayloadFetch(0, TdhInputType.UInt32, TdhOutputType.Null) };
+            }
+
+            public override object PayloadValue(int index)
+            {
+                throw new InvalidOperationException("Payload lookup failed.");
+            }
         }
 
         private static unsafe void WithEvent(byte[] payload, DynamicTraceEventData.PayloadFetch[] fetches, Action<DynamicTraceEventData> action)

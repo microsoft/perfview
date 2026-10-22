@@ -53,9 +53,14 @@ namespace TraceEventTests
         [Fact]
         public void Format_DecimalHint()
         {
+            Assert.Equal(ushort.MaxValue.ToString("n0"), TdhFormatter.Format(ushort.MaxValue, FormatHint.Decimal));
+            Assert.Equal(uint.MaxValue.ToString("n0"), TdhFormatter.Format(uint.MaxValue, FormatHint.Decimal));
             Assert.Equal(ulong.MaxValue.ToString("n0"), TdhFormatter.Format(ulong.MaxValue, FormatHint.Decimal));
+            Assert.Equal("65535", TdhFormatter.Format(ushort.MaxValue, FormatHint.Decimal, formatProvider: CultureInfo.InvariantCulture));
+            Assert.Equal("4294967295", TdhFormatter.Format(uint.MaxValue, FormatHint.Decimal, formatProvider: CultureInfo.InvariantCulture));
             Assert.Equal("18446744073709551615", TdhFormatter.Format(ulong.MaxValue, FormatHint.Decimal, formatProvider: CultureInfo.InvariantCulture));
             Assert.Null(TdhFormatter.Format("not a number", FormatHint.Decimal));
+            Assert.Null(TdhFormatter.Format(-1, FormatHint.Decimal));
         }
 
         [Fact]

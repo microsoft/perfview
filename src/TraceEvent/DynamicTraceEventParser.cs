@@ -1050,63 +1050,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return hinted;
             }
 
-            string unsigned = FormatUnsignedInteger(index, formatProvider);
-            if (unsigned != null)
-            {
-                return unsigned;
-            }
-
             // Otherwise do the default transformations.
             return base.PayloadString(index, formatProvider);
         }
 
         /// <summary>
-        /// Formats ushort and uint fields like their signed counterparts.  UInt64 fields retain the
-        /// base class's hexadecimal formatting, which is also used for addresses and bitmasks.
-        /// Returns null if the field should use the base class's formatting.
-        /// </summary>
-        private string FormatUnsignedInteger(int index, IFormatProvider formatProvider)
-        {
-            Type type = payloadFetches[index].Type;
-            if (type != typeof(ushort) && type != typeof(uint))
-            {
-                return null;
-            }
-
-            object value;
-            try
-            {
-                value = PayloadValue(index);
-            }
-            catch (Exception)
-            {
-                // Let the base class produce its standard error string.
-                return null;
-            }
-
-            if (!(value is ushort || value is uint))
-            {
-                return null;
-            }
-
-            // Preserve the field-name based special cases that the base class applies to the signed types.
-            string payloadName = PayloadNames[index];
-            if (value is uint asUInt && asUInt != 0 && payloadName == "IPv4Address")
-            {
-                return FormatUtils.FormatIpV4Address(asUInt);
-            }
-            var formattable = (IFormattable)value;
-            if (formatProvider != null)
-            {
-                return formattable.ToString(null, formatProvider);
-            }
-
-            return formattable.ToString("n0", null);
-        }
-
-        /// <summary>
         /// Applies the field's <see cref="TdhFormatter.FormatHint"/> hint to the value at <paramref
-        /// name="index"/>. Returns the formatted string, or null if no hint applies.
+        /// name="index"/>, defaulting unhinted ushort/uint scalars to decimal without changing their
+        /// metadata. Returns the formatted string, or null if no hint applies.
         /// </summary>
         private string FormatWithHint(int index, IFormatProvider formatProvider)
         {
@@ -1119,18 +1070,42 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 elementFormat = payloadFetches[index].Array?.Element.FormatHint;
             }
 
-            // If no hint applies, don't fetch the value to just ignore it.
-            if (format == TdhFormatter.FormatHint.None && elementFormat.GetValueOrDefault(TdhFormatter.FormatHint.None) == TdhFormatter.FormatHint.None)
+            bool hasHint = format != TdhFormatter.FormatHint.None || elementFormat.GetValueOrDefault(TdhFormatter.FormatHint.None) != TdhFormatter.FormatHint.None;
+            Type type = payloadFetches[index].Type;
+            bool unsignedScalar = type == typeof(ushort) || type == typeof(uint);
+            if (!hasHint && !unsignedScalar)
             {
                 return null;
             }
 
-            object value = PayloadValue(index);
-            if (format == TdhFormatter.FormatHint.Decimal && PayloadNames[index] == "objectId")
+            object value;
+            try
             {
-                return TdhFormatter.Format(value, TdhFormatter.FormatHint.Pointer, formatProvider: formatProvider);
+                value = PayloadValue(index);
             }
-            return TdhFormatter.Format(value, format, elementFormat, formatProvider);
+            catch (Exception) when (!hasHint)
+            {
+                // Let the base class produce its standard error string for default formatting.
+                return null;
+            }
+
+            if (format == TdhFormatter.FormatHint.Decimal && value is ulong && PayloadNames[index] == "objectId")
+            {
+                format = TdhFormatter.FormatHint.Pointer;
+            }
+
+            string formatted = TdhFormatter.Format(value, format, elementFormat, formatProvider);
+            if (formatted != null || !unsignedScalar)
+            {
+                return formatted;
+            }
+
+            if (value is uint asUInt && asUInt != 0 && PayloadNames[index] == "IPv4Address")
+            {
+                return TdhFormatter.Format(value, TdhFormatter.FormatHint.IPv4, formatProvider: formatProvider);
+            }
+
+            return TdhFormatter.Format(value, TdhFormatter.FormatHint.Decimal, formatProvider: formatProvider);
         }
 
         /// <summary>
