@@ -363,6 +363,38 @@ namespace TraceEventTests
             Assert.Equal(FormatHint.None, template.payloadFetches[2].FormatHint);
             Assert.Equal(typeof(IntPtr), template.payloadFetches[3].Type);
             Assert.Equal(FormatHint.None, template.payloadFetches[3].FormatHint);
+
+            using (var payload = new MemoryStream())
+            using (var writer = new BinaryWriter(payload))
+            using (var source = new EventPipeEventSource(new MemoryStream()))
+            {
+                source._QPCFreq = 1;
+                source._syncTimeQPC = 1;
+                source._syncTimeUTC = DateTime.UtcNow;
+                source.sessionStartTimeQPC = 1;
+
+                writer.Write(uint.MaxValue);
+                writer.Write(0xabcdefUL);
+                writer.Write(0x70UL);
+                writer.Write(0x123456789abcdef0UL);
+
+                WithEvent(payload.ToArray(), template.payloadFetches, traceEvent =>
+                {
+                    traceEvent.payloadNames = template.payloadNames;
+                    traceEvent.traceEventSource = source;
+
+                    Assert.Equal("4294967295", traceEvent.PayloadString(0, CultureInfo.InvariantCulture));
+                    Assert.Equal("0x0000000000ABCDEF", traceEvent.PayloadString(1));
+                    Assert.Equal("0x00000070", traceEvent.PayloadString(2));
+                    Assert.Equal("0x123456789abcdef0", traceEvent.PayloadString(3));
+
+                    string rendered = traceEvent.ToString();
+                    Assert.Contains("Count=\"" + uint.MaxValue.ToString("n0") + "\"", rendered);
+                    Assert.Contains("Flags=\"0x0000000000ABCDEF\"", rendered);
+                    Assert.Contains("Keywords=\"0x00000070\"", rendered);
+                    Assert.Contains("Pointer=\"0x123456789abcdef0\"", rendered);
+                });
+            }
         }
 
         [Fact]
@@ -404,6 +436,7 @@ namespace TraceEventTests
             {
                 TraceEventNativeMethods.EVENT_RECORD eventRecord = new TraceEventNativeMethods.EVENT_RECORD();
                 eventRecord.EventHeader.Id = 1;
+                eventRecord.EventHeader.Flags = TraceEventNativeMethods.EVENT_HEADER_FLAG_64_BIT_HEADER;
                 eventRecord.UserDataLength = checked((ushort)payload.Length);
                 eventRecord.UserData = (IntPtr)payloadBytes;
 
