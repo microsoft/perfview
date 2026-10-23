@@ -146,6 +146,38 @@ namespace PerfViewTests
         }
 
         [WpfFact]
+        public Task EventPipeKeepsCachedStacksIfTraceChangesDuringProcessSelectionAsync()
+        {
+            return RunStackTestAsync(() => new TestEventPipeFile(), async source =>
+            {
+                source.SkipSelectProcess = true;
+                await OpenAsync(source);
+                var cachedStacks = source.m_StackSource;
+                source.Viewer.Close();
+
+                source.SkipSelectProcess = false;
+                Task opened = OpenAsync(source);
+                await WaitForWorkerAsync();
+                Assert.True(source.DataFile.IsUpToDate);
+                Assert.True(source.m_SelectProcess.IsVisible);
+
+                source.DataFile.m_utcLastWriteAtOpen = DateTime.MinValue;
+                Assert.False(source.DataFile.IsUpToDate);
+                source.m_SelectProcess.OKClicked(null, null);
+                await opened;
+
+                Assert.Equal(1, source.ConstructionCount);
+                Assert.Same(cachedStacks, source.Viewer.StackSource);
+
+                source.Viewer.Close();
+                source.SkipSelectProcess = true;
+                await OpenAsync(source);
+                Assert.Equal(2, source.ConstructionCount);
+                Assert.NotSame(cachedStacks, source.Viewer.StackSource);
+            });
+        }
+
+        [WpfFact]
         public Task NetOsHeapAllocSkipsProcessDiscoveryAndRebuildsAsync()
         {
             return RunStackTestAsync(() => new TestEventPipeFile(), async source =>

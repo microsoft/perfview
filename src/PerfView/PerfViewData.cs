@@ -4784,7 +4784,7 @@ namespace PerfView
         #region private
         private void EnsureStackSource(TextWriter log)
         {
-            if (m_StackSource == null || !DataFile.IsUpToDate)
+            if (m_StackSource == null)
             {
                 m_StackSource = OpenStackSource(SourceName, log);
                 if (m_StackSource == null)
