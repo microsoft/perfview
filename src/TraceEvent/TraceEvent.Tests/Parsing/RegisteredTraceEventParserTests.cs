@@ -434,6 +434,20 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public unsafe void EmbeddedTdhMetadataParser_DecodesUInt32AsUnsigned()
+        {
+            // Regression test for https://github.com/microsoft/perfview/issues/2493
+            byte[] buffer = CreateSinglePropertyEventInfoBuffer();
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                DynamicTraceEventData template = new RegisteredTraceEventParser.TdhEventParser(eventInfoBuffer, buffer.Length, null, null).ParseEventMetaData();
+
+                Assert.NotNull(template);
+                Assert.Equal(typeof(uint), template.payloadFetches[0].Type);
+            }
+        }
+
+        [Fact]
         public unsafe void EmbeddedTdhMetadataParser_ValidatesPropertyArrayBounds()
         {
             byte[] buffer = CreateSinglePropertyEventInfoBuffer();
