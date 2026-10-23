@@ -64,6 +64,22 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void Format_DecimalArrayHint_DoesNotGroupDigits()
+        {
+            var arrays = new Array[]
+            {
+                new ushort[] { 1000, 2000 },
+                new uint[] { 1000, 2000 },
+                new ulong[] { 1000, 2000 },
+            };
+            foreach (Array values in arrays)
+            {
+                Assert.Equal("[1000,2000]", TdhFormatter.Format(values, FormatHint.None, FormatHint.Decimal));
+                Assert.Equal("[1000,2000]", TdhFormatter.Format(values, FormatHint.None, FormatHint.Decimal, CultureInfo.InvariantCulture));
+            }
+        }
+
+        [Fact]
         public void Format_ErrorCodeHints()
         {
             // Error-code hints hex format for generic and Win32. No zero-padding.

@@ -158,7 +158,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             SocketAddress,
             /// <summary>
             /// Renders a UInt16, UInt32, or UInt64 in decimal, with digit separators unless a format
-            /// provider is supplied.
+            /// provider is supplied. Array elements never use digit separators.
             /// </summary>
             Decimal,
         }
@@ -199,6 +199,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 var sb = new StringBuilder(Math.Max(16, 8 * array.Length + 2));
                 sb.Append('[');
                 bool first = true;
+                // Supplying a provider suppresses decimal grouping so commas only delimit elements.
+                IFormatProvider elementFormatProvider = formatProvider ?? CultureInfo.CurrentCulture;
                 foreach (object elem in array)
                 {
                     if (!first)
@@ -207,7 +209,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                     first = false;
 
-                    string formatted = FormatScalar(elem, elementFormatHint ?? formatHint, formatProvider);
+                    string formatted = FormatScalar(elem, elementFormatHint ?? formatHint, elementFormatProvider);
                     if (formatted != null)
                     {
                         sb.Append(formatted);

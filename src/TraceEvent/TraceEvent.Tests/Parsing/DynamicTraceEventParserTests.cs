@@ -348,6 +348,24 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void PayloadString_TdhUInt64Array_DoesNotGroupDecimalElements()
+        {
+            var element = new DynamicTraceEventData.PayloadFetch(0, TdhInputType.UInt64, TdhOutputType.Null);
+            var fetch = DynamicTraceEventData.PayloadFetch.FixedCountArrayPayloadFetch(0, element, 2);
+            using (var payload = new MemoryStream())
+            using (var writer = new BinaryWriter(payload))
+            {
+                writer.Write(1000UL);
+                writer.Write(2000UL);
+                WithEvent(payload.ToArray(), new[] { fetch }, traceEvent =>
+                {
+                    Assert.Equal("[1000,2000]", traceEvent.PayloadString(0));
+                    Assert.Equal("[1000,2000]", traceEvent.PayloadString(0, CultureInfo.InvariantCulture));
+                });
+            }
+        }
+
+        [Fact]
         public void StructValue_ToString_PreservesUnhintedUnsignedFormatting()
         {
             var fetches = new[]
