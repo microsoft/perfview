@@ -1,2 +1,7 @@
 # Automatically detect text files
 * text=auto
+
+src/perfcollect/perfcollect text eol=lf
+src/perfcollect/**/*.sh text eol=lf
+src/perfcollect/**/*.dockerfile text eol=lf
+src/perfcollect/**/*.tsv text eol=lf

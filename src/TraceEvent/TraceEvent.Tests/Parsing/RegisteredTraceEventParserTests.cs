@@ -1299,7 +1299,7 @@ namespace TraceEventTests
             if (strings.Length > 0)
             {
                 manifest.WriteLine(" <localization>");
-                manifest.WriteLine("  <resources culture=\"{0}\">", IetfLanguageTag(CultureInfo.CurrentCulture));
+                manifest.WriteLine("  <resources culture=\"{0}\">", IetfLanguageTag(CultureInfo.CurrentUICulture));
                 manifest.WriteLine("   <stringTable>");
                 manifest.Write(strings);
                 manifest.WriteLine("   </stringTable>");
@@ -1341,7 +1341,7 @@ namespace TraceEventTests
                 return str;
             }
 
-            return (str.Substring(1).ToUpper() + str.Substring(1));
+            return (str.Substring(0, 1).ToUpper() + str.Substring(1));
         }
 
         private static string GetKeywordStr(SortedDictionary<ulong, string> keywords, ulong keywordSet)

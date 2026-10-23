@@ -98,8 +98,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             int buffSize = 84000;       // Still in the small object heap.  
             var buffer = new byte[buffSize]; // Still in the small object heap.
             byte* enumBuffer = null;
-            // Unmanaged buffers filled by TdhGetAllEventsInformation, one per event version; freed with enumBuffer.
-            var allEventsBuffers = new List<IntPtr>();
+            // Reused for each event version read with TdhGetAllEventsInformation; freed with enumBuffer.
+            byte* versionBuffer = null;
+            int versionBufferSize = 128 * 1024;
 
             TraceEventNativeMethods.EVENT_RECORD eventRecord = new TraceEventNativeMethods.EVENT_RECORD();
             eventRecord.EventHeader.ProviderId = providerGuid;
@@ -157,7 +158,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 int size = buffer.Length;
                 status = TdhEnumerateManifestProviderEvents(eventRecord.EventHeader.ProviderId, buffer, ref size);
-                if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
+                if (status != 122 || 2_000_000 < size) // 122 == Insufficient buffer keep it under 2Meg
                 {
                     break;
                 }
@@ -200,17 +201,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         }
                     }
 
+                    // The descriptors are grouped by version, so each of those versions is read once, when the loop reaches it.
+                    var versionEventInfos = new Dictionary<EVENT_DESCRIPTOR, IntPtr>();
+                    int loadedVersion = -1;
+
                     // The enumeration also omits every version more than 11 above the last one it found
                     // (Microsoft-AppV-Client-StreamingUX 1 then 22-24, Microsoft-Windows-MSMPEG2VDEC 0 then 12). The Event
                     // Log API lists every event in the manifest, so also read the versions it reports that the enumeration
                     // did not. Only if it cannot read the publisher either, and the enumeration found nothing, read every
-                    // version.
-                    var versions = new HashSet<byte>(classicVersions);
+                    // version. Their events go after the enumerated ones, grouped by version, so that the enumerated events
+                    // keep the names they get when processed in enumeration order.
                     var enumeratedVersions = new HashSet<byte>();
                     foreach (var descriptor in descriptors)
                     {
                         enumeratedVersions.Add(descriptor.Version);
                     }
+                    var missedVersions = new List<byte>();
                     var eventLogVersions = GetEventLogVersions(providerGuid);
                     if (eventLogVersions != null)
                     {
@@ -218,44 +224,54 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         {
                             if (!enumeratedVersions.Contains(version))
                             {
-                                versions.Add(version);
+                                missedVersions.Add(version);
                             }
                         }
+                        missedVersions.Sort();
                     }
                     else if (descriptors.Length == 0)
                     {
                         for (int version = 0; version <= byte.MaxValue; version++)
                         {
-                            versions.Add((byte)version);
+                            missedVersions.Add((byte)version);
                         }
                     }
 
-                    var reportedDescriptors = new List<EVENT_DESCRIPTOR>();
-                    var allEventsInfo = GetAllEventsInformation(providerGuid, versions, allEventsBuffers, reportedDescriptors);
-
-                    // Events only TdhGetAllEventsInformation reported go after the enumerated ones, so that the enumerated
-                    // events keep the names they get when processed in enumeration order.
-                    var knownDescriptors = new HashSet<EVENT_DESCRIPTOR>(descriptors);
-                    var allDescriptors = new List<EVENT_DESCRIPTOR>(descriptors);
-                    foreach (var descriptor in reportedDescriptors)
+                    var missedVersionsWithEvents = new HashSet<byte>();
+                    if (missedVersions.Count != 0)
                     {
-                        if (knownDescriptors.Add(descriptor))
+                        var allDescriptors = new List<EVENT_DESCRIPTOR>(descriptors);
+                        var reportedDescriptors = new List<EVENT_DESCRIPTOR>();
+                        foreach (var version in missedVersions)
                         {
-                            allDescriptors.Add(descriptor);
+                            reportedDescriptors.Clear();
+                            GetAllEventsInformation(providerGuid, version, ref versionBuffer, ref versionBufferSize, versionEventInfos, reportedDescriptors);
+                            if (reportedDescriptors.Count != 0)
+                            {
+                                missedVersionsWithEvents.Add(version);
+                                allDescriptors.AddRange(reportedDescriptors);
+                            }
                         }
+                        descriptors = allDescriptors.ToArray();
+                        versionEventInfos.Clear();
                     }
-                    descriptors = allDescriptors.ToArray();
 
                     foreach (var descriptor in descriptors)
                     {
-                        IntPtr allEventInfo;
-                        if (!allEventsInfo.TryGetValue(descriptor, out allEventInfo))
+                        if (descriptor.Version != loadedVersion && (classicVersions.Contains(descriptor.Version) || missedVersionsWithEvents.Contains(descriptor.Version)))
+                        {
+                            loadedVersion = descriptor.Version;
+                            GetAllEventsInformation(providerGuid, descriptor.Version, ref versionBuffer, ref versionBufferSize, versionEventInfos);
+                        }
+
+                        IntPtr versionEventInfo;
+                        if (!versionEventInfos.TryGetValue(descriptor, out versionEventInfo))
                         {
                             for (; ; )
                             {
                                 int size = buffer.Length;
                                 status = TdhGetManifestEventInformation(eventRecord.EventHeader.ProviderId, descriptor, buffer, ref size);
-                                if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
+                                if (status != 122 || 2_000_000 < size) // 122 == Insufficient buffer keep it under 2Meg
                                 {
                                     break;
                                 }
@@ -271,7 +287,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                         fixed (byte* manifestEventInfoBuff = buffer)
                         {
-                            byte* eventInfoBuff = allEventInfo != IntPtr.Zero ? (byte*)allEventInfo : manifestEventInfoBuff;
+                            byte* eventInfoBuff = versionEventInfo != IntPtr.Zero ? (byte*)versionEventInfo : manifestEventInfoBuff;
                             var eventInfo = (TRACE_EVENT_INFO*)eventInfoBuff;
                             EVENT_PROPERTY_INFO* propertyInfos = &eventInfo->EventPropertyInfoArray;
 
@@ -586,9 +602,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)enumBuffer);
                 }
-                foreach (var allEventsBuffer in allEventsBuffers)
+                if (versionBuffer != null)
                 {
-                    Marshal.FreeHGlobal(allEventsBuffer);
+                    Marshal.FreeHGlobal((IntPtr)versionBuffer);
                 }
             }
 
@@ -735,7 +751,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     writer.WriteStartElement("localization");
                     writer.WriteStartElement("resources");
-                    writer.WriteAttributeString("culture", IetfLanguageTag(CultureInfo.CurrentCulture));
+                    writer.WriteAttributeString("culture", IetfLanguageTag(CultureInfo.CurrentUICulture));
                     
                     writer.WriteStartElement("stringTable");
                     foreach (var entry in localizedStrings)
@@ -826,69 +842,63 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
-        /// Calls TdhGetAllEventsInformation for each of 'versions' and returns the TRACE_EVENT_INFO of every event it
-        /// reports, keyed by descriptor; 'reported' receives those descriptors in the order TDH returned them. The infos
-        /// point into unmanaged buffers that are added to 'buffers', which the caller must free. Versions it cannot
-        /// provide, or an OS whose tdh.dll does not export it, are simply absent, and the caller falls back to
+        /// Reads every event of 'version' with TdhGetAllEventsInformation into 'buffer', which the caller owns and
+        /// frees, allocating or growing it as needed. 'eventInfos' is refilled with each event's TRACE_EVENT_INFO,
+        /// keyed by descriptor; the infos point into 'buffer' and are valid until the next call. If 'reported' is given,
+        /// the descriptors are also appended to it in the order TDH returned them. If the call fails, or tdh.dll on this
+        /// OS does not export it, 'eventInfos' is left empty and the caller falls back to
         /// TdhGetManifestEventInformation.
         /// </summary>
-        /// <remarks>
-        /// Each call costs about as much as reading the whole manifest, so ask only for the versions that need it.
-        /// </remarks>
-        private static Dictionary<EVENT_DESCRIPTOR, IntPtr> GetAllEventsInformation(Guid providerGuid, IEnumerable<byte> versions, List<IntPtr> buffers, List<EVENT_DESCRIPTOR> reported)
+        private static void GetAllEventsInformation(Guid providerGuid, byte version, ref byte* buffer, ref int bufferSize, Dictionary<EVENT_DESCRIPTOR, IntPtr> eventInfos, List<EVENT_DESCRIPTOR> reported = null)
         {
-            var infos = new Dictionary<EVENT_DESCRIPTOR, IntPtr>();
+            eventInfos.Clear();
 
             // Only the provider and version are used to select the events.
             TraceEventNativeMethods.EVENT_RECORD eventRecord = new TraceEventNativeMethods.EVENT_RECORD();
             eventRecord.EventHeader.ProviderId = providerGuid;
+            eventRecord.EventHeader.Version = version;
 
-            foreach (var version in versions)
+            int count, status;
+            try
             {
-                eventRecord.EventHeader.Version = version;
-                int size = 84000;
-                byte* buffer = (byte*)Marshal.AllocHGlobal(size);
-                int count, status;
-                try
+                for (; ; )
                 {
-                    for (; ; )
+                    if (buffer == null)
                     {
-                        // pIndex is the position of the event whose Id matches the record's, not an offset to the first.
-                        status = TdhGetAllEventsInformation(&eventRecord, IntPtr.Zero, out _, out count, buffer, ref size);
-                        if (status != 122 || 20000000 < size) // 122 == Insufficient buffer keep it under 2Meg
-                        {
-                            break;
-                        }
-
-                        Marshal.FreeHGlobal((IntPtr)buffer);
-                        buffer = (byte*)Marshal.AllocHGlobal(size);
+                        buffer = (byte*)Marshal.AllocHGlobal(bufferSize);
                     }
-                }
-                catch (EntryPointNotFoundException)
-                {
-                    // tdh.dll on this OS does not export TdhGetAllEventsInformation.
+
+                    int size = bufferSize;
+                    // pIndex is the position of the event whose Id matches the record's, not an offset to the first.
+                    status = TdhGetAllEventsInformation(&eventRecord, IntPtr.Zero, out _, out count, buffer, ref size);
+                    if (status != 122 || 2_000_000 < size) // 122 == Insufficient buffer keep it under 2Meg
+                    {
+                        break;
+                    }
+
                     Marshal.FreeHGlobal((IntPtr)buffer);
-                    break;
-                }
-
-                if (status != 0)
-                {
-                    Marshal.FreeHGlobal((IntPtr)buffer);
-                    continue;
-                }
-
-                buffers.Add((IntPtr)buffer);
-
-                // The buffer starts with 'count' TRACE_EVENT_INFO pointers into itself.
-                var eventInfos = (TRACE_EVENT_INFO**)buffer;
-                for (int i = 0; i < count; i++)
-                {
-                    infos[eventInfos[i]->EventDescriptor] = (IntPtr)eventInfos[i];
-                    reported.Add(eventInfos[i]->EventDescriptor);
+                    buffer = null;
+                    bufferSize = size;
                 }
             }
+            catch (EntryPointNotFoundException)
+            {
+                // tdh.dll on this OS does not export TdhGetAllEventsInformation.
+                return;
+            }
 
-            return infos;
+            if (status != 0)
+            {
+                return;
+            }
+
+            // The buffer starts with 'count' TRACE_EVENT_INFO pointers into itself.
+            var versionEventInfos = (TRACE_EVENT_INFO**)buffer;
+            for (int i = 0; i < count; i++)
+            {
+                eventInfos[versionEventInfos[i]->EventDescriptor] = (IntPtr)versionEventInfos[i];
+                reported?.Add(versionEventInfos[i]->EventDescriptor);
+            }
         }
 
         /// <summary>
@@ -1050,7 +1060,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return str;
             }
 
-            return (str.Substring(1).ToUpper() + str.Substring(1));
+            return (str.Substring(0, 1).ToUpper() + str.Substring(1));
         }
 
         internal override DynamicTraceEventData TryLookup(TraceEvent unknownEvent)

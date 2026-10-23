@@ -280,27 +280,27 @@ public class GCHeapDumper
     private DataTarget InitializeClrRuntime(string processDumpFile, int processID, out ClrRuntime[] result)
     {
         List<ClrRuntime> runtimes = new List<ClrRuntime>();
+        if (!VerifyDacOnWindows)
+        {
+            m_log.WriteLine("WARNING: DAC signature verification is disabled. Only load DACs from trusted runtimes.");
+        }
+        DataTargetOptions options = ClrMdDataTargetOptions.Create(SymbolPath.SymbolPathFromEnvironment, SymbolsAuthTokenCredential, m_log, VerifyDacOnWindows);
 
         DataTarget dataTarget;
         if (string.IsNullOrWhiteSpace(processDumpFile))
         {
             try
             {
-                dataTarget = DataTarget.CreateSnapshotAndAttach(processID, SymbolsAuthTokenCredential);
+                dataTarget = DataTarget.CreateSnapshotAndAttach(processID, options);
             }
             catch
             {
-                dataTarget = DataTarget.AttachToProcess(processID, Freeze, SymbolsAuthTokenCredential);
+                dataTarget = DataTarget.AttachToProcess(processID, Freeze, options);
             }
         }
         else
         {
-            CacheOptions cacheOptions = new CacheOptions()
-            {
-                UseOSMemoryFeatures = false // disable AWE
-            };
-
-            dataTarget = DataTarget.LoadDump(processDumpFile, cacheOptions, SymbolsAuthTokenCredential);
+            dataTarget = DataTarget.LoadDump(processDumpFile, options);
         }
 
         if (dataTarget.DataReader.PointerSize != IntPtr.Size)
@@ -321,16 +321,13 @@ public class GCHeapDumper
         }
 
         m_log.WriteLine("Enumerating over {0} detected runtimes...", dataTarget.ClrVersions.Length);
-        var symbolReader = new SymbolReader(m_log, null);
-        if (symbolReader.SymbolPath.Length == 0)
-            symbolReader.SymbolPath = SymbolPath.MicrosoftSymbolServerPath;
-
         foreach (ClrInfo clr in dataTarget.ClrVersions)
         {
             m_log.WriteLine("Creating Runtime access object for runtime {0}.", clr.Version);
 
             try
             {
+                ClrMdDataTargetOptions.AddLocalDacCandidate(clr, m_log);
                 runtimes.Add(clr.CreateRuntime());
             }
             catch (InvalidDataException ex)
@@ -362,6 +359,10 @@ public class GCHeapDumper
     /// Should we freeze the process during the dump
     /// </summary>
     public bool Freeze;
+    /// <summary>
+    /// Whether to verify DAC signatures on Windows. Disable only for trusted private runtimes.
+    /// </summary>
+    public bool VerifyDacOnWindows = true;
     /// <summary>
     /// Should we also dump the data associated with the objects
     /// TODO current does nothing. 
@@ -1122,6 +1123,10 @@ public class GCHeapDumper
                 return GCHeapDumpNames.AsyncPinnedHandleRootTitle;
             case ClrRootKind.SizedRefHandle:
                 return GCHeapDumpNames.SizedRefHandleRootTitle;
+            case ClrRootKind.ThreadStaticVar:
+                return GCHeapDumpNames.ThreadStaticVarsRootTitle;
+            case ClrRootKind.StaticVar:
+                return GCHeapDumpNames.StaticVarsRootTitle;
             case ClrRootKind.None:
                 return "None";
             default:
@@ -1649,5 +1654,3 @@ internal interface IPackageDebugSettings
 }
 
 #endregion
-
-
