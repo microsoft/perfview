@@ -88,21 +88,21 @@ namespace Utilities
                 string fileName = Path.Combine(SupportFileDir, simpleName + ".dll");
                 if (File.Exists(fileName))
                 {
-                    return LoadAssemblyFrom(fileName);
+                    return System.Reflection.Assembly.LoadFrom(fileName);
                 }
 
                 // Also look in processor specific location
                 fileName = Path.Combine(SupportFileDir, HostArchitectureDirectory, simpleName + ".dll");
                 if (File.Exists(fileName))
                 {
-                    return LoadAssemblyFrom(fileName);
+                    return System.Reflection.Assembly.LoadFrom(fileName);
                 }
 
                 // And look for an exe (we need this for HeapDump.exe)
                 fileName = Path.Combine(SupportFileDir, HostArchitectureDirectory, simpleName + ".exe");
                 if (File.Exists(fileName))
                 {
-                    return LoadAssemblyFrom(fileName);
+                    return System.Reflection.Assembly.LoadFrom(fileName);
                 }
 
                 // If asked, look in other locations as well. 
@@ -113,7 +113,7 @@ namespace Utilities
                         fileName = Path.Combine(dir, simpleName + ".dll");
                         if (File.Exists(fileName))
                         {
-                            return LoadAssemblyFrom(fileName);
+                            return System.Reflection.Assembly.LoadFrom(fileName);
                         }
                     }
                 }
@@ -259,21 +259,6 @@ namespace Utilities
         }
 
         #region private
-        private static Assembly LoadAssemblyFrom(string fileName)
-        {
-            // A version fallback must not load a second copy of an app-local assembly from the support directory.
-            string fullName = AssemblyName.GetAssemblyName(fileName).FullName;
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (!assembly.ReflectionOnly && string.Equals(assembly.FullName, fullName, StringComparison.OrdinalIgnoreCase))
-                {
-                    return assembly;
-                }
-            }
-
-            return Assembly.LoadFrom(fileName);
-        }
-
         private static void UnpackResources()
         {
             // We don't unpack into the final directory so we can be transactional (all or nothing).  
