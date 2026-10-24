@@ -286,8 +286,14 @@ namespace TraceEventTests
         public void GetManifestForRegisteredProvider_FindsEventsTheEnumerationOmits()
         {
             const string providerName = "Microsoft-Windows-CertificateServicesClient-CertEnroll";
+            var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
+            if (providerGuid == Guid.Empty)
+            {
+                _output.WriteLine($"{providerName} is not registered on this machine; nothing to test");
+                return;
+            }
 
-            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerGuid);
 
             var doc = new XmlDocument();
             doc.LoadXml(manifest);

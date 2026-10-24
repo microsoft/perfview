@@ -246,10 +246,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         {
                             reportedDescriptors.Clear();
                             GetAllEventsInformation(providerGuid, version, ref versionBuffer, ref versionBufferSize, versionEventInfos, reportedDescriptors);
-                            if (reportedDescriptors.Count != 0)
+                            foreach (var reportedDescriptor in reportedDescriptors)
                             {
-                                missedVersionsWithEvents.Add(version);
-                                allDescriptors.AddRange(reportedDescriptors);
+                                // Only this version's events; any other version is either enumerated or read on its own.
+                                if (reportedDescriptor.Version == version)
+                                {
+                                    missedVersionsWithEvents.Add(version);
+                                    allDescriptors.Add(reportedDescriptor);
+                                }
                             }
                         }
                         descriptors = allDescriptors.ToArray();
@@ -775,42 +779,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         #region private
         /// <summary>
-        /// Reads a value of the provider's Event Log publisher registration (null 'valueName' reads the publisher name),
-        /// or returns null if the provider is not a registered Event Log publisher.
-        /// </summary>
-        private static string GetEventLogPublisherValue(Guid providerGuid, string valueName)
-        {
-            // The publishers are only in the native registry (64 bit on a 64 bit machine); a 32 bit process would
-            // otherwise be redirected away from them.  Ask the OS rather than check PROCESSOR_ARCHITEW6432, which a
-            // 32 bit process does not have if it was started with a cleared environment.
-            var registryView = Environment.Is64BitOperatingSystem ? Microsoft.Win32.RegistryView.Registry64 : Microsoft.Win32.RegistryView.Default;
-
-            try
-            {
-                using (var hklm = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, registryView))
-                using (var key = hklm.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Publishers\{" + providerGuid.ToString() + "}"))
-                {
-                    return key?.GetValue(valueName) as string;
-                }
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
         /// Opens the Event Log (wevtapi) metadata of the provider, or returns IntPtr.Zero if the provider is not a
         /// registered Event Log publisher or wevtapi cannot read it. The caller must EvtClose the handle.
         /// </summary>
         private static IntPtr OpenEventLogPublisher(Guid providerGuid)
         {
-            // EvtOpenPublisherMetadata takes the publisher name, not its GUID.
-            string publisherName = GetEventLogPublisherValue(providerGuid, null);
-            if (string.IsNullOrEmpty(publisherName))
-            {
-                return IntPtr.Zero;
-            }
+            // EvtOpenPublisherMetadata takes the publisher name, not its GUID. TDH's provider list has the same names
+            // as the Event Log publisher registrations, in 32 bit processes too, so no registry lookup is needed.
+            string publisherName = TraceEventProviders.GetProviderName(providerGuid);
 
             try
             {
@@ -939,7 +915,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         if (!TryGetEventMetadataUInt32(eventMetadata, EventMetadataEventID, out id) ||
                             !TryGetEventMetadataUInt32(eventMetadata, EventMetadataEventVersion, out version))
                         {
-                            return null;
+                            // Skip just this event rather than lose the versions of every other one.
+                            continue;
                         }
 
                         versions.Add((byte)version);
