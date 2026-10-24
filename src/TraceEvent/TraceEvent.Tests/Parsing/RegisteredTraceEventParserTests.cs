@@ -377,6 +377,54 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that events sharing an Id and Version keep their own fields. Kerberos event 13 is two Event Log
+        /// message ids, 0x0000000D and 0x8000000D, that differ only in the severity bits.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_EventsSharingIdAndVersionKeepTheirOwnFields()
+        {
+            const string providerName = "Microsoft-Windows-Security-Kerberos";
+
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
+
+            Assert.NotNull(manifest);
+            Assert.NotEmpty(manifest);
+
+            _output.WriteLine($"Generated manifest for {providerName} (length: {manifest.Length} chars)");
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            // Template id -> its field names
+            var templateFields = new Dictionary<string, string>();
+            foreach (XmlNode template in xmlDoc.SelectNodes("//e:template", nsmgr))
+            {
+                var fieldNames = new List<string>();
+                foreach (XmlNode data in template.SelectNodes("e:data", nsmgr))
+                {
+                    fieldNames.Add(data.Attributes?["name"]?.Value);
+                }
+                templateFields[template.Attributes?["tid"]?.Value] = string.Join(", ", fieldNames);
+            }
+
+            var eventFields = new List<string>();
+            foreach (XmlNode eventNode in xmlDoc.SelectNodes("//e:event[@value='13'][@version='0']", nsmgr))
+            {
+                string templateId = eventNode.Attributes?["template"]?.Value;
+                string fields = templateId != null ? templateFields[templateId] : string.Empty;
+                _output.WriteLine($"Event 13 opcode={eventNode.Attributes?["opcode"]?.Value ?? "(none)"}: {fields}");
+                eventFields.Add(fields);
+            }
+
+            Assert.Equal(2, eventFields.Count);
+            Assert.Contains("Error, __binLength, binary", eventFields);
+            Assert.Contains("Username, __binLength, binary", eventFields);
+        }
+
+        /// <summary>
         /// Test that the new XmlWriter-based implementation produces semantically identical output
         /// to the legacy string-based implementation. The comparison normalizes both outputs as XML
         /// to account for formatting differences.
@@ -529,6 +577,20 @@ namespace TraceEventTests
                 // unreadable provider name falls back to its default rather than rejecting the event.
                 Assert.NotNull(template);
                 Assert.Equal("UnknownProvider", template.ProviderName);
+            }
+        }
+
+        [Fact]
+        public unsafe void EmbeddedTdhMetadataParser_DecodesUInt32AsUnsigned()
+        {
+            // Regression test for https://github.com/microsoft/perfview/issues/2493
+            byte[] buffer = CreateSinglePropertyEventInfoBuffer();
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                DynamicTraceEventData template = new RegisteredTraceEventParser.TdhEventParser(eventInfoBuffer, buffer.Length, null, null).ParseEventMetaData();
+
+                Assert.NotNull(template);
+                Assert.Equal(typeof(uint), template.payloadFetches[0].Type);
             }
         }
 
@@ -1342,7 +1404,7 @@ namespace TraceEventTests
             if (strings.Length > 0)
             {
                 manifest.WriteLine(" <localization>");
-                manifest.WriteLine("  <resources culture=\"{0}\">", IetfLanguageTag(CultureInfo.CurrentCulture));
+                manifest.WriteLine("  <resources culture=\"{0}\">", IetfLanguageTag(CultureInfo.CurrentUICulture));
                 manifest.WriteLine("   <stringTable>");
                 manifest.Write(strings);
                 manifest.WriteLine("   </stringTable>");
@@ -1384,7 +1446,7 @@ namespace TraceEventTests
                 return str;
             }
 
-            return (str.Substring(1).ToUpper() + str.Substring(1));
+            return (str.Substring(0, 1).ToUpper() + str.Substring(1));
         }
 
         private static string GetKeywordStr(SortedDictionary<ulong, string> keywords, ulong keywordSet)

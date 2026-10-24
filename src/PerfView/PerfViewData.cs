@@ -4606,21 +4606,19 @@ namespace PerfView
 
             if (Viewer == null || !DataFile.IsUpToDate)
             {
+                // ETLX-backed files can discover processes without computing the selected stacks.
+                bool selectProcessBeforeStacks = DataFile is ETLPerfViewData || DataFile is EventPipePerfViewData;
                 worker.StartWork("Opening " + Name, delegate ()
                 {
-                    if (m_StackSource == null || !DataFile.IsUpToDate)
+                    // GetProcesses can reopen the trace and make IsUpToDate true.
+                    if (!DataFile.IsUpToDate)
                     {
-                        // Compute the stack events
-                        m_StackSource = OpenStackSource(SourceName, worker.LogWriter);
-                        if (m_StackSource == null)
-                        {
-                            m_StackSource = OpenStackSourceImpl(worker.LogWriter);
-                        }
+                        m_StackSource = null;
+                    }
 
-                        if (m_StackSource == null)
-                        {
-                            throw new ApplicationException("Not a file type that supports the StackView.");
-                        }
+                    if (!selectProcessBeforeStacks)
+                    {
+                        EnsureStackSource(worker.LogWriter);
                     }
 
                     // Get the process summary if needed. 
@@ -4722,26 +4720,42 @@ namespace PerfView
                             });
                         };
 
+                        Action<List<IProcess>> openViewer = delegate (List<IProcess> selectedProcesses)
+                        {
+                            if (selectProcessBeforeStacks)
+                            {
+                                worker.StartWork("Opening " + Name, delegate ()
+                                {
+                                    EnsureStackSource(worker.LogWriter);
+                                    worker.EndWork(() => launchViewer(selectedProcesses));
+                                });
+                            }
+                            else
+                            {
+                                launchViewer(selectedProcesses);
+                            }
+                        };
+
                         if (processes != null && !SkipSelectProcess)
                         {
                             if (DataFile.InitiallyIncludedProcesses == null)
                             {
                                 m_SelectProcess = new SelectProcess(parentWindow, processes, new TimeSpan(1, 0, 0), delegate (List<IProcess> selectedProcesses)
                                 {
-                                    launchViewer(selectedProcesses);
+                                    openViewer(selectedProcesses);
                                 }, hasAllProc: true);
                                 m_SelectProcess.Show();
                             }
                             else
                             {
-                                launchViewer(processes.Where(p => DataFile.InitiallyIncludedProcesses
+                                openViewer(processes.Where(p => DataFile.InitiallyIncludedProcesses
                                     .Any(iip => string.Equals(p.Name, iip, StringComparison.OrdinalIgnoreCase)))
                                     .ToList());
                             }
                         }
                         else
                         {
-                            launchViewer(null);
+                            openViewer(null);
                         }
                     });
                 });
@@ -4768,6 +4782,23 @@ namespace PerfView
         // If set, we don't show the process selection dialog.  
         public bool SkipSelectProcess;
         #region private
+        private void EnsureStackSource(TextWriter log)
+        {
+            if (m_StackSource == null)
+            {
+                m_StackSource = OpenStackSource(SourceName, log);
+                if (m_StackSource == null)
+                {
+                    m_StackSource = OpenStackSourceImpl(log);
+                }
+
+                if (m_StackSource == null)
+                {
+                    throw new ApplicationException("Not a file type that supports the StackView.");
+                }
+            }
+        }
+
         internal void ViewClosing(StackWindow viewer)
         {
             Viewer = null;

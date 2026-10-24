@@ -96,8 +96,8 @@ PerfView is developed in Visual Studio 2026 using features through C# 7.3.
   * The solution file is PerfView.sln.  Opening this file in Visual Studio (or double clicking on it in 
   the Windows Explorer) and selecting Build -> Build Solution, will build it. You can also build from the
   command line using the build.cmd file at the base of the repository. The .NET SDK selected by global.json
-  must be installed on the machine for both command-line and Visual Studio builds. SDK 10.0.401 or a later
-  patch in the 10.0.4xx feature band is compatible. If no compatible SDK is installed, build.cmd reports a
+  or a compatible later patch must be installed on the machine for both command-line and Visual Studio
+  builds. If no compatible SDK is installed, build.cmd reports an error and provides a
   `winget install` command using the version selected by global.json. build.cmd builds Debug by default; use
   `build.cmd -Configuration Release` to build Release.
   The build follows standard Visual Studio conventions, and the resulting PerfView.exe file ends up in
