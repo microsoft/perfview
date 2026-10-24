@@ -258,6 +258,7 @@ namespace TraceEventTests
 
             var event100 = (XmlElement)doc.SelectSingleNode("//e:events/e:event[@value='100'][@version='0']", nsmgr);
             Assert.NotNull(event100);
+            Assert.True(event100.HasAttribute("channel"), "Expected event 100 to have a channel");
             Assert.Equal(operationalChid, event100.GetAttribute("channel"));
 
             // chid -> channel value. An imported channel has no value attribute; its value is fixed by winmeta.xml.
