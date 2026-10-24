@@ -786,12 +786,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             try
             {
-                // EvtOpenPublisherMetadata takes the publisher name, not its GUID. That is the provider's name in its
-                // manifest, which is not always the name TDH lists first: Microsoft-Windows-RestartManager is also the
-                // MOF provider RmClient_RestartManager. Reading it from TDH also avoids the registry, which redirects a
-                // 32 bit process away from the publisher registrations. A provider without a manifest is not a
-                // publisher, and no other name is tried: EvtOpenPublisherMetadata opens by name, so another source's
-                // name could open a different provider's publisher.
+                // EvtOpenPublisherMetadata takes the publisher name, which is the name TDH lists for the GUID's
+                // manifest. TDH can also list the GUID under a MOF name (RmClient_RestartManager for
+                // Microsoft-Windows-RestartManager). No other name is tried, since it could open a different provider's
+                // publisher.
                 string publisherName;
                 try
                 {

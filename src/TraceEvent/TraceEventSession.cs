@@ -1761,7 +1761,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
         }
 
         /// <summary>
-        /// For every provider registered on the system with a manifest, its name in the manifest.
+        /// For every provider registered on the system with a manifest, the name it is registered under with the
+        /// manifest.
         /// </summary>
         internal static Dictionary<Guid, string> ManifestProviderNames
         {
@@ -3028,7 +3029,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
         }
 
         /// <summary>
-        /// Finds the name of 'providerGuid' in its manifest, or returns null if it is not registered with a manifest.
+        /// Finds the name 'providerGuid' is registered under with a manifest, or returns null if it is not registered
+        /// with a manifest.
         /// This can differ from GetProviderName(Guid): Microsoft-Windows-RestartManager's manifest shares its GUID with
         /// the MOF provider RmClient_RestartManager, which GetProviderName(Guid) may return. It sees the providers that
         /// were registered when they were first enumerated in this process.
