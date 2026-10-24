@@ -168,15 +168,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             try
             {
-                if (status == 0)
+                // TdhEnumerateManifestProviderEvents walks versions upwards and stops after 11 empty versions in a row.
+                // When the first version is above 11 it finds nothing and returns ERROR_EMPTY, e.g.
+                // CertificateServicesClient-CertEnroll, whose events are all version 90; carry on so that the versions
+                // from the Event Log API below can still be read.
+                if (status == 0 || status == ERROR_EMPTY)
                 {
                     const int NumberOfEventsOffset = 0;
                     const int FirstDescriptorOffset = 8;
-                    int eventCount = BitConverter.ToInt32(buffer, NumberOfEventsOffset);
+                    int eventCount = status == 0 ? BitConverter.ToInt32(buffer, NumberOfEventsOffset) : 0;
                     var descriptors = new EVENT_DESCRIPTOR[eventCount];
-                    fixed (EVENT_DESCRIPTOR* pDescriptors = descriptors)
+                    if (eventCount != 0)
                     {
-                        Marshal.Copy(buffer, FirstDescriptorOffset, (IntPtr)pDescriptors, descriptors.Length * sizeof(EVENT_DESCRIPTOR));
+                        fixed (EVENT_DESCRIPTOR* pDescriptors = descriptors)
+                        {
+                            Marshal.Copy(buffer, FirstDescriptorOffset, (IntPtr)pDescriptors, descriptors.Length * sizeof(EVENT_DESCRIPTOR));
+                        }
                     }
 
                     // Events in the win:EventlogClassic keyword keep their Event Log message ids (Severity|Facility|Code).
@@ -198,9 +205,64 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     var versionEventInfos = new Dictionary<EVENT_DESCRIPTOR, IntPtr>();
                     int loadedVersion = -1;
 
+                    // The enumeration also omits every version more than 11 above the last one it found
+                    // (Microsoft-AppV-Client-StreamingUX 1 then 22-24, Microsoft-Windows-MSMPEG2VDEC 0 then 12). The Event
+                    // Log API lists every event in the manifest, so also read the versions it reports that the enumeration
+                    // did not. Only if it cannot read the publisher either, and the enumeration found nothing, read every
+                    // version. Their events go after the enumerated ones, grouped by version, so that the enumerated events
+                    // keep the names they get when processed in enumeration order.
+                    var enumeratedVersions = new HashSet<byte>();
                     foreach (var descriptor in descriptors)
                     {
-                        if (descriptor.Version != loadedVersion && classicVersions.Contains(descriptor.Version))
+                        enumeratedVersions.Add(descriptor.Version);
+                    }
+                    var missedVersions = new List<byte>();
+                    var eventLogVersions = GetEventLogVersions(providerGuid);
+                    if (eventLogVersions != null)
+                    {
+                        foreach (var version in eventLogVersions)
+                        {
+                            if (!enumeratedVersions.Contains(version))
+                            {
+                                missedVersions.Add(version);
+                            }
+                        }
+                        missedVersions.Sort();
+                    }
+                    else if (descriptors.Length == 0)
+                    {
+                        for (int version = 0; version <= byte.MaxValue; version++)
+                        {
+                            missedVersions.Add((byte)version);
+                        }
+                    }
+
+                    var missedVersionsWithEvents = new HashSet<byte>();
+                    if (missedVersions.Count != 0)
+                    {
+                        var allDescriptors = new List<EVENT_DESCRIPTOR>(descriptors);
+                        var reportedDescriptors = new List<EVENT_DESCRIPTOR>();
+                        foreach (var version in missedVersions)
+                        {
+                            reportedDescriptors.Clear();
+                            GetAllEventsInformation(providerGuid, version, ref versionBuffer, ref versionBufferSize, versionEventInfos, reportedDescriptors);
+                            foreach (var reportedDescriptor in reportedDescriptors)
+                            {
+                                // Only this version's events; any other version is either enumerated or read on its own.
+                                if (reportedDescriptor.Version == version)
+                                {
+                                    missedVersionsWithEvents.Add(version);
+                                    allDescriptors.Add(reportedDescriptor);
+                                }
+                            }
+                        }
+                        descriptors = allDescriptors.ToArray();
+                        versionEventInfos.Clear();
+                    }
+
+                    foreach (var descriptor in descriptors)
+                    {
+                        if (descriptor.Version != loadedVersion && (classicVersions.Contains(descriptor.Version) || missedVersionsWithEvents.Contains(descriptor.Version)))
                         {
                             loadedVersion = descriptor.Version;
                             GetAllEventsInformation(providerGuid, descriptor.Version, ref versionBuffer, ref versionBufferSize, versionEventInfos);
@@ -716,6 +778,47 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         #region private
+        /// <summary>
+        /// Opens the Event Log (wevtapi) metadata of the provider, or returns IntPtr.Zero if the provider is not a
+        /// registered Event Log publisher or wevtapi cannot read it. The caller must EvtClose the handle.
+        /// </summary>
+        private static IntPtr OpenEventLogPublisher(Guid providerGuid)
+        {
+            try
+            {
+                // EvtOpenPublisherMetadata takes the publisher name, which is the name TDH lists for the GUID's
+                // manifest. TDH can also list the GUID under a MOF name (RmClient_RestartManager for
+                // Microsoft-Windows-RestartManager). No other name is tried, since it could open a different provider's
+                // publisher.
+                string publisherName;
+                try
+                {
+                    publisherName = TraceEventProviders.GetManifestProviderName(providerGuid);
+                }
+                catch (Exception)
+                {
+                    // TdhEnumerateProviders failed (it throws, not returns); the manifest is still written, without
+                    // the Event Log details.
+                    return IntPtr.Zero;
+                }
+
+                if (publisherName == null)
+                {
+                    return IntPtr.Zero;
+                }
+
+                return EvtOpenPublisherMetadata(IntPtr.Zero, publisherName, null, 0, 0);
+            }
+            catch (DllNotFoundException)
+            {
+                return IntPtr.Zero;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                return IntPtr.Zero;
+            }
+        }
+
         // Borrowed from Core CLR System.Globalization.CultureInfo
         private static string IetfLanguageTag(CultureInfo culture)
         {
@@ -734,11 +837,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Reads every event of 'version' with TdhGetAllEventsInformation into 'buffer', which the caller owns and
         /// frees, allocating or growing it as needed. 'eventInfos' is refilled with each event's TRACE_EVENT_INFO,
-        /// keyed by descriptor; the infos point into 'buffer' and are valid until the next call. If the call fails,
-        /// or tdh.dll on this OS does not export it, 'eventInfos' is left empty and the caller falls back to
+        /// keyed by descriptor; the infos point into 'buffer' and are valid until the next call. If 'reported' is given,
+        /// the descriptors are also appended to it in the order TDH returned them. If the call fails, or tdh.dll on this
+        /// OS does not export it, 'eventInfos' is left empty and the caller falls back to
         /// TdhGetManifestEventInformation.
         /// </summary>
-        private static void GetAllEventsInformation(Guid providerGuid, byte version, ref byte* buffer, ref int bufferSize, Dictionary<EVENT_DESCRIPTOR, IntPtr> eventInfos)
+        private static void GetAllEventsInformation(Guid providerGuid, byte version, ref byte* buffer, ref int bufferSize, Dictionary<EVENT_DESCRIPTOR, IntPtr> eventInfos, List<EVENT_DESCRIPTOR> reported = null)
         {
             eventInfos.Clear();
 
@@ -786,7 +890,106 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             for (int i = 0; i < count; i++)
             {
                 eventInfos[versionEventInfos[i]->EventDescriptor] = (IntPtr)versionEventInfos[i];
+                reported?.Add(versionEventInfos[i]->EventDescriptor);
             }
+        }
+
+        /// <summary>
+        /// The event versions that the Event Log API (wevtapi) reports for the provider's manifest, as TDH sees them,
+        /// or null if the provider is not a registered Event Log publisher or wevtapi cannot read it.
+        /// </summary>
+        /// <remarks>
+        /// wevtapi reports win:EventlogClassic events by their whole Event Log message id (e.g. 0xC0060001) with
+        /// Version 0, while TDH sees the descriptor the manifest compiler stored, whose Version is bits 16-23 of that
+        /// id (Volsnap's 0xC0060001 is version 6). That packing is observed, not documented, so for an id wider than
+        /// 16 bits return both candidates; asking TdhGetAllEventsInformation about a version with no events costs
+        /// one failed call.
+        /// </remarks>
+        private static HashSet<byte> GetEventLogVersions(Guid providerGuid)
+        {
+            IntPtr publisherMetadata = OpenEventLogPublisher(providerGuid);
+            if (publisherMetadata == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            IntPtr eventMetadataEnum = IntPtr.Zero;
+            try
+            {
+                eventMetadataEnum = EvtOpenEventMetadataEnum(publisherMetadata, 0);
+                if (eventMetadataEnum == IntPtr.Zero)
+                {
+                    return null;
+                }
+
+                var versions = new HashSet<byte>();
+                IntPtr eventMetadata;
+                while ((eventMetadata = EvtNextEventMetadata(eventMetadataEnum, 0)) != IntPtr.Zero)
+                {
+                    try
+                    {
+                        uint id, version;
+                        if (!TryGetEventMetadataUInt32(eventMetadata, EventMetadataEventID, out id) ||
+                            !TryGetEventMetadataUInt32(eventMetadata, EventMetadataEventVersion, out version))
+                        {
+                            // Skip just this event rather than lose the versions of every other one.
+                            continue;
+                        }
+
+                        versions.Add((byte)version);
+                        if (id > ushort.MaxValue)
+                        {
+                            versions.Add((byte)(id >> 16));
+                        }
+                    }
+                    finally
+                    {
+                        EvtClose(eventMetadata);
+                    }
+                }
+
+                // EvtNextEventMetadata returns ERROR_NO_MORE_ITEMS at the end of the list; anything else means the
+                // list is incomplete.
+                return Marshal.GetLastWin32Error() == 259 ? versions : null;
+            }
+            catch (DllNotFoundException)
+            {
+                return null;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                return null;
+            }
+            finally
+            {
+                if (eventMetadataEnum != IntPtr.Zero)
+                {
+                    EvtClose(eventMetadataEnum);
+                }
+                if (publisherMetadata != IntPtr.Zero)
+                {
+                    EvtClose(publisherMetadata);
+                }
+            }
+        }
+
+        // Reads an EvtVarTypeUInt32 property of an event metadata handle.
+        private static bool TryGetEventMetadataUInt32(IntPtr eventMetadata, int propertyId, out uint value)
+        {
+            // EVT_VARIANT: 8-byte value union, then DWORD Count, then DWORD Type.
+            const int EvtVariantSize = 16;
+            const int EvtVarTypeUInt32 = 8;
+            byte* variant = stackalloc byte[EvtVariantSize];
+            int used;
+            value = 0;
+            if (!EvtGetEventMetadataProperty(eventMetadata, propertyId, 0, EvtVariantSize, variant, out used) ||
+                *(int*)(variant + 12) != EvtVarTypeUInt32)
+            {
+                return false;
+            }
+
+            value = *(uint*)variant;
+            return true;
         }
 
         private static string MakeLegalIdentifier(string name)
@@ -1636,6 +1839,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         // win:EventlogClassic in winmeta.xml: events that keep their Event Log (ReportEvent) message ids.
         private const ulong WINEVENT_KEYWORD_EVENTLOG_CLASSIC = 0x80000000000000;
+
+        // TdhEnumerateManifestProviderEvents: no events found (winerror.h).
+        private const int ERROR_EMPTY = 4306;
+
+        // EVT_EVENT_METADATA_PROPERTY_ID (winevt.h)
+        private const int EventMetadataEventID = 0;
+        private const int EventMetadataEventVersion = 1;
+
+        [DllImport("wevtapi.dll", SetLastError = true)]
+        private static extern IntPtr EvtOpenEventMetadataEnum(IntPtr publisherMetadata, int flags);
+
+        [DllImport("wevtapi.dll", SetLastError = true)]
+        private static extern IntPtr EvtNextEventMetadata(IntPtr eventMetadataEnum, int flags);
+
+        [DllImport("wevtapi.dll", SetLastError = true)]
+        private static extern bool EvtGetEventMetadataProperty(IntPtr eventMetadata, int propertyId, int flags, int bufferSize, byte* buffer, out int bufferUsed);
+
+        [DllImport("wevtapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr EvtOpenPublisherMetadata(IntPtr session, string publisherId, string logFilePath, int locale, int flags);
+
+        [DllImport("wevtapi.dll")]
+        private static extern bool EvtClose(IntPtr handle);
         #endregion
     }
 
