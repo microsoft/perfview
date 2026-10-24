@@ -1725,7 +1725,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
                                 }
                             }
 
-                            // Assigned before s_providersByName, which is what the other threads check.
                             s_manifestProviderNames = manifestProviderNames;
 
                             // Always assign providersByName to avoid NullReferenceException on subsequent lookups
@@ -1770,9 +1769,16 @@ namespace Microsoft.Diagnostics.Tracing.Session
             {
                 if (s_manifestProviderNames == null)
                 {
-                    // Built along with ProviderNameToGuid.
-                    var providersByName = ProviderNameToGuid;
-                    Debug.Assert(s_manifestProviderNames != null);
+                    // Built along with ProviderNameToGuid, under the same lock, so read it under the lock too.
+                    lock (s_lock)
+                    {
+                        if (s_manifestProviderNames == null)
+                        {
+                            _ = ProviderNameToGuid;
+                        }
+                        Debug.Assert(s_manifestProviderNames != null);
+                        return s_manifestProviderNames;
+                    }
                 }
                 return s_manifestProviderNames;
             }

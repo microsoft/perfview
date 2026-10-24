@@ -984,8 +984,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         continue;
                     }
 
-                    // An event descriptor's channel is a byte, so no event can refer to a larger value.
-                    if (value > byte.MaxValue)
+                    // An event descriptor's channel is a byte, so no event can refer to a larger value. The manifest
+                    // compiler gives each channel its own value; keep the first if a registration does not.
+                    if (value > byte.MaxValue || channels.ContainsKey((byte)value))
                     {
                         continue;
                     }
@@ -1012,8 +1013,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         channel.Id = id + "_" + suffix;
                     }
 
-                    // The manifest compiler gives each channel its own value.
-                    Debug.Assert(!channels.ContainsKey((byte)value), "Two channels share value " + value);
                     channels[(byte)value] = channel;
                 }
 

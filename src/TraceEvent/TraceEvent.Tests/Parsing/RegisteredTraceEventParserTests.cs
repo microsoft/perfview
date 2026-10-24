@@ -1817,12 +1817,15 @@ namespace TraceEventTests
                         {
                             var buffer = new StringBuilder(1024);
                             int used;
-                            if (!EvtFormatMessage(publisher, IntPtr.Zero, messageId, 0, IntPtr.Zero, EvtFormatMessageId, buffer.Capacity, buffer, out used) &&
-                                Marshal.GetLastWin32Error() == ErrorInsufficientBuffer)
+                            bool formatted = EvtFormatMessage(publisher, IntPtr.Zero, messageId, 0, IntPtr.Zero, EvtFormatMessageId, buffer.Capacity, buffer, out used);
+                            int error = formatted ? 0 : Marshal.GetLastWin32Error();
+                            if (!formatted && error == ErrorInsufficientBuffer)
                             {
                                 buffer = new StringBuilder(used);
-                                EvtFormatMessage(publisher, IntPtr.Zero, messageId, 0, IntPtr.Zero, EvtFormatMessageId, buffer.Capacity, buffer, out used);
+                                formatted = EvtFormatMessage(publisher, IntPtr.Zero, messageId, 0, IntPtr.Zero, EvtFormatMessageId, buffer.Capacity, buffer, out used);
+                                error = formatted ? 0 : Marshal.GetLastWin32Error();
                             }
+                            Assert.True(formatted, $"EvtFormatMessage(0x{messageId:X8}) for event {id}/{version} failed: {error}");
                             evt.Message = buffer.ToString();
                         }
 
