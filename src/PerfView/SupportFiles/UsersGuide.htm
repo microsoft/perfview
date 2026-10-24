@@ -4659,7 +4659,24 @@
             that this currently only works for JavaScript or .NET project N (not desktop .NET).
             tool.
         </li>
+        <li>
+            <strong>Verify DAC signatures CheckBox</strong> controls whether ClrMD verifies
+            the signature of the Data Access Component (DAC) before loading it on Windows.
+            It is enabled by default for both live heap snapshots and process dump conversion.
+            Disable it only when using a trusted private runtime whose DAC is unsigned or
+            privately signed. DACs execute inside the heap-dump helper process, so disabling
+            verification allows unverified code to execute.
+            The choice is retained only for the current PerfView session and is not saved
+            to the user configuration.
+        </li>
     </ul>
+    <p>
+        The same option is available on the command line. It defaults to true on each
+        new invocation and can also initialize the checkbox when opening the GUI.
+        To disable verification for a trusted private runtime, use:
+    </p>
+    <pre>PerfView /VerifyDacOnWindows:false HeapSnapshot &lt;process&gt; &lt;output.gcdump&gt;
+PerfView /VerifyDacOnWindows:false HeapSnapshotFromProcessDump &lt;dump&gt; &lt;output.gcdump&gt;</pre>
     <!--  ********************************** -->
     <h2>
         <a id="FilteringGroupingStackData">Filtering / Grouping Stack Data</a>

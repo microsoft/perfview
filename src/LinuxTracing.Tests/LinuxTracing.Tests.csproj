@@ -5,6 +5,7 @@
     <TargetFrameworks>net462</TargetFrameworks>
     <RootNamespace>LinuxTracingTests</RootNamespace>
     <AssemblyName>LinuxTracingTests</AssemblyName>
+    <PlatformTarget>x64</PlatformTarget>
     <Description>Unit tests.</Description>
     <Copyright>Copyright © Microsoft 2016</Copyright>
 

@@ -153,15 +153,23 @@ namespace System.Collections.Generic
                 throw new IndexOutOfRangeException();
             }
 
-            Debug.Assert(index + count <= arrayLength);     // If you violate this it does not hurt
-
-            // Shift everything down. 
-            for (int endIndex = index + count; endIndex < arrayLength; endIndex++)
+            // Reject overflow while preserving truncation for ranges extending past the end.
+            if (count > int.MaxValue - index)
             {
-                array[index++] = array[endIndex];
+                throw new IndexOutOfRangeException();
             }
 
-            arrayLength = index;
+            Debug.Assert(count <= arrayLength - index);     // If you violate this it does not hurt
+
+            int tailStartIndex = index + count;
+            int tailCount = Math.Max(0, arrayLength - tailStartIndex);
+            if (tailCount > 0)
+            {
+                // Shift everything down.
+                Array.Copy(array, tailStartIndex, array, index, tailCount);
+            }
+
+            arrayLength = index + tailCount;
         }
 
         // Support for using an array as a map from int to T.    

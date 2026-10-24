@@ -25,6 +25,8 @@ namespace TraceEventTests
                     case ClrRootKind.RefCountedHandle:
                     case ClrRootKind.AsyncPinnedHandle:
                     case ClrRootKind.SizedRefHandle:
+                    case ClrRootKind.ThreadStaticVar:
+                    case ClrRootKind.StaticVar:
                         break;
                     default:
                         Assert.Fail($"Unexpected ClrRootKind: {kind}");

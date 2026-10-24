@@ -99,6 +99,14 @@ internal class Program
                     {
                         dumper.Freeze = true;
                     }
+                    else if (arg.StartsWith("/VerifyDacOnWindows:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!bool.TryParse(arg.Substring(20), out dumper.VerifyDacOnWindows))
+                        {
+                            Console.WriteLine("Invalid value for /VerifyDacOnWindows. Expected true or false.");
+                            goto Usage;
+                        }
+                    }
                     else if (string.Compare(arg, 0, "/MaxDumpCountK=", 0, 15, StringComparison.OrdinalIgnoreCase) == 0)
                     {
                         string value = arg.Substring(15);
@@ -272,8 +280,8 @@ internal class Program
             }
             return 0;
             Usage:
-            Console.WriteLine("Usage: HeapDump [/MaxDumpCountK=n /Freeze] ProcessIdOrName OutputHeapDumpFile");
-            Console.WriteLine("Usage: HeapDump [/MaxDumpCountK=n] /processDump  DumpFile OutputHeapDumpFile");
+            Console.WriteLine("Usage: HeapDump [/MaxDumpCountK=n /Freeze /VerifyDacOnWindows:true|false] ProcessIdOrName OutputHeapDumpFile");
+            Console.WriteLine("Usage: HeapDump [/MaxDumpCountK=n /VerifyDacOnWindows:true|false] /processDump  DumpFile OutputHeapDumpFile");
             Console.WriteLine("Usage: HeapDump /forceGC ProcessIdOrName");
             return 1;
         }
@@ -398,4 +406,3 @@ internal class Program
          [Out, MarshalAs(UnmanagedType.Bool)] out bool wow64Process);
     #endregion
 }
-
