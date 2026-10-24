@@ -288,6 +288,31 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that the Event Log publisher is found by the provider's manifest name. TDH also lists
+        /// Microsoft-Windows-RestartManager's GUID as the MOF provider RmClient_RestartManager, which
+        /// EvtOpenPublisherMetadata cannot open, so using that name would silently lose its channels.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_FindsPublisherByManifestName()
+        {
+            var providerGuid = new Guid("0888e5ef-9b98-4695-979d-e92ce4247224");
+
+            Assert.Equal("Microsoft-Windows-RestartManager", TraceEventProviders.GetManifestProviderName(providerGuid));
+            _output.WriteLine($"GetProviderName: {TraceEventProviders.GetProviderName(providerGuid)}");
+
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerGuid);
+
+            var doc = new XmlDocument();
+            doc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(doc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var operational = (XmlElement)doc.SelectSingleNode("//e:channels/e:channel[@name='Microsoft-Windows-RestartManager/Operational']", nsmgr);
+            Assert.NotNull(operational);
+            Assert.Equal("chid=Microsoft_Windows_RestartManager_Operational name=Microsoft-Windows-RestartManager/Operational type=Operational value=16", Attributes(operational));
+        }
+
+        /// <summary>
         /// Test that each event gets exactly its own message. The manifest's messages (read through TDH) are compared
         /// with those the Event Log API (wevtapi) formats for the same Id and Version, which also checks that TDH's
         /// trailing space is removed and that no event gains or loses a message. Both read the same localized

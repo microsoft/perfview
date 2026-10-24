@@ -1676,6 +1676,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         if (s_providersByName == null)
                         {
                             SortedDictionary<string, Guid> providersByName = new SortedDictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+                            var manifestProviderNames = new Dictionary<Guid, string>();
                             int buffSize = 0;
                             byte[] buffer = null;
                             int hr;
@@ -1703,6 +1704,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
                                             {
                                                 var name = new string((char*)&bufferPtr[providers[i].ProviderNameOffset]);
                                                 providersByName[name] = providers[i].ProviderGuid;
+
+                                                // A provider can be listed once per schema source, under different names (e.g.
+                                                // the MOF provider RmClient_RestartManager is Microsoft-Windows-RestartManager).
+                                                // SchemaSource 0 (DecodingSourceXMLFile) is a manifest.
+                                                if (providers[i].SchemaSource == 0 && !manifestProviderNames.ContainsKey(providers[i].ProviderGuid))
+                                                {
+                                                    manifestProviderNames[providers[i].ProviderGuid] = name;
+                                                }
                                             }
                                         }
                                         break;
@@ -1715,6 +1724,9 @@ namespace Microsoft.Diagnostics.Tracing.Session
                                     throw new Exception("Failed to enumerate trace providers. TdhEnumerateProviders failed HR = " + hr);
                                 }
                             }
+
+                            // Assigned before s_providersByName, which is what the other threads check.
+                            s_manifestProviderNames = manifestProviderNames;
 
                             // Always assign providersByName to avoid NullReferenceException on subsequent lookups
                             s_providersByName = providersByName;
@@ -1746,6 +1758,23 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     }
                 }
                 return s_providerNames;
+            }
+        }
+
+        /// <summary>
+        /// For every provider registered on the system with a manifest, its name in the manifest.
+        /// </summary>
+        internal static Dictionary<Guid, string> ManifestProviderNames
+        {
+            get
+            {
+                if (s_manifestProviderNames == null)
+                {
+                    // Built along with ProviderNameToGuid.
+                    var providersByName = ProviderNameToGuid;
+                    Debug.Assert(s_manifestProviderNames != null);
+                }
+                return s_manifestProviderNames;
             }
         }
 
@@ -1800,6 +1829,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
         private static object s_lock = new object();
         private static SortedDictionary<string, Guid> s_providersByName;
         private static Dictionary<Guid, string> s_providerNames;
+        // Filled in with s_providersByName.
+        private static Dictionary<Guid, string> s_manifestProviderNames;
 
         private static int FindFreeSessionKeyword(Guid providerGuid)
         {
@@ -2988,6 +3019,18 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
 
             return ret;
+        }
+
+        /// <summary>
+        /// Finds the name of 'providerGuid' in its manifest, or returns null if it is not registered with a manifest.
+        /// This can differ from GetProviderName(Guid): Microsoft-Windows-RestartManager's manifest shares its GUID with
+        /// the MOF provider RmClient_RestartManager, which GetProviderName(Guid) may return.
+        /// </summary>
+        internal static string GetManifestProviderName(Guid providerGuid)
+        {
+            string name;
+            TraceEventSession.ManifestProviderNames.TryGetValue(providerGuid, out name);
+            return name;
         }
 
         /// <summary>
