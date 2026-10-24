@@ -801,7 +801,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 // 32 bit process away from the publisher registrations. A provider without a manifest is not a
                 // publisher, and no other name is tried: EvtOpenPublisherMetadata opens by name, so another source's
                 // name could open a different provider's publisher.
-                string publisherName = TraceEventProviders.GetManifestProviderName(providerGuid);
+                string publisherName;
+                try
+                {
+                    publisherName = TraceEventProviders.GetManifestProviderName(providerGuid);
+                }
+                catch (Exception)
+                {
+                    // TdhEnumerateProviders failed (it throws, not returns); the manifest is still written, without
+                    // the Event Log details.
+                    return IntPtr.Zero;
+                }
+
                 if (publisherName == null)
                 {
                     return IntPtr.Zero;
