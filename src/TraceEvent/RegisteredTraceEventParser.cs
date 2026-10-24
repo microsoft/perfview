@@ -784,12 +784,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         private static IntPtr OpenEventLogPublisher(Guid providerGuid)
         {
-            // EvtOpenPublisherMetadata takes the publisher name, not its GUID. TDH's provider list has the same names
-            // as the Event Log publisher registrations, in 32 bit processes too, so no registry lookup is needed.
-            string publisherName = TraceEventProviders.GetProviderName(providerGuid);
-
             try
             {
+                // EvtOpenPublisherMetadata takes the publisher name, not its GUID. That is the provider's name in its
+                // manifest, which is not always the name TDH lists first: Microsoft-Windows-RestartManager is also the
+                // MOF provider RmClient_RestartManager. Reading it from TDH also avoids the registry, which redirects a
+                // 32 bit process away from the publisher registrations. A provider without a manifest is not a
+                // publisher, and no other name is tried: EvtOpenPublisherMetadata opens by name, so another source's
+                // name could open a different provider's publisher.
+                string publisherName;
+                try
+                {
+                    publisherName = TraceEventProviders.GetManifestProviderName(providerGuid);
+                }
+                catch (Exception)
+                {
+                    // TdhEnumerateProviders failed (it throws, not returns); the manifest is still written, without
+                    // the Event Log details.
+                    return IntPtr.Zero;
+                }
+
+                if (publisherName == null)
+                {
+                    return IntPtr.Zero;
+                }
+
                 return EvtOpenPublisherMetadata(IntPtr.Zero, publisherName, null, 0, 0);
             }
             catch (DllNotFoundException)
