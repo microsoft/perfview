@@ -1078,6 +1078,95 @@ namespace TraceEventTests
             Assert.Equal(1, eventCount);
         }
 
+        [Fact]
+        public void StopProcessingStopsDispatchV5()
+        {
+            EventPipeWriterV5 writer = new EventPipeWriterV5();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(w => w.WriteMetadataEventBlobV5OrLess(new EventMetadata(1, "TestProvider", "TestEvent", 15)));
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlobV4Or5(1, 999, 1, new byte[0]);
+                w.WriteEventBlobV4Or5(1, 999, 2, new byte[0]);
+                w.WriteEventBlobV4Or5(1, 999, 3, new byte[0]);
+            });
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlobV4Or5(1, 999, 4, new byte[0]);
+                w.WriteEventBlobV4Or5(1, 999, 5, new byte[0]);
+            });
+            writer.WriteEndObject();
+
+            EventPipeEventSource source = new EventPipeEventSource(new MemoryStream(writer.ToArray()));
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                source.StopProcessing();
+            };
+            Assert.False(source.Process());
+            Assert.Equal(1, eventCount);
+        }
+
+        [Fact] //V6
+        public void StopProcessingDoesNotReadAnotherBlockV6()
+        {
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent", 15));
+            writer.WriteThreadBlock(w => w.WriteThreadEntry(999, threadId: 12, processId: 84));
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 1, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, Timestamp = 10_000, IsSorted = true }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 2, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, Timestamp = 11_000, IsSorted = false }, p => { });
+            });
+            // No end block, as in a live session that has gone quiet: reading another block would fail here.
+
+            EventPipeEventSource source = new EventPipeEventSource(new MemoryStream(writer.ToArray()));
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                source.StopProcessing();
+            };
+            Assert.False(source.Process());
+            Assert.Equal(1, eventCount);
+            Assert.Equal(0, RetainedEventBlockCount(source));
+        }
+
+        [Fact] //V6
+        public void StopProcessingSkipsTimestampCheckForUndispatchedEventsV6()
+        {
+            // QPC frequency is 1,000, so these events are 12 hours and just over 24 hours after the first.
+            EventPipeWriterV6 writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(new EventMetadata(1, "TestProvider", "TestEvent", 15));
+            writer.WriteThreadBlock(w => w.WriteThreadEntry(999, threadId: 12, processId: 84));
+            writer.WriteEventBlock(w =>
+            {
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 1, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, Timestamp = 10_000, IsSorted = true }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 2, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, Timestamp = 10_000 + 43_200_000, IsSorted = true }, p => { });
+                w.WriteEventBlob(new WriteEventOptions() { MetadataId = 1, SequenceNumber = 3, ThreadIndexOrId = 999, CaptureThreadIndexOrId = 999, Timestamp = 10_000 + 86_400_001, IsSorted = true }, p => { });
+            });
+            writer.WriteEndBlock();
+
+            EventPipeEventSource source = new EventPipeEventSource(new MemoryStream(writer.ToArray()));
+            int eventCount = 0;
+            source.Dynamic.All += e =>
+            {
+                eventCount++;
+                source.StopProcessing();
+            };
+            Assert.False(source.Process());
+            Assert.Equal(1, eventCount);
+        }
+
+        private static int RetainedEventBlockCount(EventPipeEventSource source)
+        {
+            var buffers = typeof(EventCache).GetField("_buffers", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            return ((System.Collections.ICollection)buffers.GetValue(source.EventCache)).Count;
+        }
+
         [Fact] //V6
         public void ParseMinimalTraceV6()
         {

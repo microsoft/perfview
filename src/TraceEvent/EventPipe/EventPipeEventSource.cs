@@ -169,6 +169,13 @@ namespace Microsoft.Diagnostics.Tracing
 
             HeadersDeserialized?.Invoke();
             _parser.ParseRemainder();
+            if (stopProcessing)
+            {
+                // Free the event buffers the cache still holds; DispatchEvent suppresses their callbacks.
+                EventCache.Flush();
+                return false;
+            }
+
             return true;
         }
 
@@ -422,6 +429,11 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void DispatchEvent(ref EventPipeEventHeader eventHeader)
         {
+            if (stopProcessing)
+            {
+                return;
+            }
+
             if (!_eventMetadataDictionary.TryGetValue(eventHeader.MetaDataId, out var metadata))
             {
                 throw new FormatException($"Event is referencing undefined Metadata ID {eventHeader.MetaDataId}");
@@ -509,7 +521,8 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Basic sanity checks.  Are the timestamps and sizes sane.
             Debug.Assert(sessionEndTimeQPC <= eventData.TimeStamp);
-            Debug.Assert(sessionEndTimeQPC == 0 || eventData.TimeStamp - sessionEndTimeQPC < _QPCFreq * 24 * 3600);
+            // After StopProcessing() sessionEndTimeQPC stops advancing, so the remaining events of the block can be further away.
+            Debug.Assert(stopProcessing || sessionEndTimeQPC == 0 || eventData.TimeStamp - sessionEndTimeQPC < _QPCFreq * 24 * 3600);
             Debug.Assert(0 <= eventData.PayloadSize && eventData.PayloadSize <= eventData.TotalNonHeaderSize);
             Debug.Assert(0 <= eventData.TotalNonHeaderSize && eventData.TotalNonHeaderSize < 0x20000);  // TODO really should be 64K but BulkSurvivingObjectRanges needs fixing.
             Debug.Assert(FileFormatVersionNumber != 3 ||
@@ -725,7 +738,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         public void ParseRemainder()
         {
-            while (true)
+            while (!_source.stopProcessing)
             {
                 using (Block block = ReadBlock())
                 {
