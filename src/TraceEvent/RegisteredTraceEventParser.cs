@@ -293,18 +293,43 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
                             opcodeNames[opcodeName] = eventInfo->EventDescriptor.Opcode;
 
-                            // And event name 
-                            string eventName = taskName;
-                            if (!taskName.EndsWith(opcodeName, StringComparison.OrdinalIgnoreCase))
+                            // And event name
+                            string eventName;
+                            bool versionInName = eventInfo->EventDescriptor.Version > 0;
+                            if (eventInfo->TaskNameOffset != 0)
                             {
-                                eventName += Capitalize(opcodeName);
-                            }
+                                eventName = taskName;
+                                if (!taskName.EndsWith(opcodeName, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    eventName += Capitalize(opcodeName);
+                                }
 
-                            // Ensure uniqueness of the event name
-                            int eventNumForName;
-                            if (eventNames.TryGetValue(eventName, out eventNumForName) && eventNumForName != eventInfo->EventDescriptor.Id)
+                                // Ensure uniqueness of the event name
+                                int eventNumForName;
+                                if (eventNames.TryGetValue(eventName, out eventNumForName) && eventNumForName != eventInfo->EventDescriptor.Id)
+                                {
+                                    eventName = eventName + eventInfo->EventDescriptor.Id.ToString();
+                                }
+                            }
+                            else if ((eventInfo->EventDescriptor.Keyword & WINEVENT_KEYWORD_EVENTLOG_CLASSIC) != 0)
                             {
-                                eventName = eventName + eventInfo->EventDescriptor.Id.ToString();
+                                // An Event Log-era event without a task name is identified by its 32-bit message id,
+                                // which the manifest compiler packs into the descriptor: bits 0-15 are the Id,
+                                // bits 16-23 the Version and bits 24-31 the Opcode.
+                                uint messageId = ((uint)eventInfo->EventDescriptor.Opcode << 24) | ((uint)eventInfo->EventDescriptor.Version << 16) | eventInfo->EventDescriptor.Id;
+                                eventName = "Message_0x" + messageId.ToString("X8");
+
+                                // Its Version is part of the message id (the facility's low byte), not a version.
+                                versionInName = false;
+                            }
+                            else
+                            {
+                                // Without a task name, the event id says more than task_<n> - and is unique.
+                                eventName = "Event_" + eventInfo->EventDescriptor.Id.ToString();
+                                if (eventInfo->EventDescriptor.Opcode != 0)
+                                {
+                                    eventName += "_" + (eventInfo->OpcodeNameOffset != 0 ? opcodeName : "Opcode" + eventInfo->EventDescriptor.Opcode.ToString());
+                                }
                             }
 
                             eventNames[eventName] = eventInfo->EventDescriptor.Id;
@@ -317,7 +342,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
 
                             var symbolName = eventName;
-                            if (eventInfo->EventDescriptor.Version > 0)
+                            if (versionInName)
                             {
                                 symbolName += "_V" + eventInfo->EventDescriptor.Version;
                             }
@@ -486,7 +511,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 if (!templateIntern.TryGetValue(templateContent, out templateName))
                                 {
                                     templateName = eventName + "Args";
-                                    if (eventInfo->EventDescriptor.Version > 0)
+                                    if (versionInName)
                                     {
                                         templateName += "_V" + eventInfo->EventDescriptor.Version;
                                     }
