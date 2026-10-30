@@ -407,8 +407,15 @@ namespace Microsoft.Diagnostics.Tracing
 
             for (ushort i = 0; i < eventRecord->ExtendedDataCount; ++i)
             {
-                eventRecord->ExtendedData[i].DataPtr = (ulong)(buffer + bufferOffset);
-                Advance(ref bufferOffset, eventRecord->ExtendedData[i].DataSize, alignTo: 8, remainingBufferInBytes);
+                var item = &eventRecord->ExtendedData[i];
+                if (item->ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID &&
+                    item->DataSize < sizeof(Guid))
+                {
+                    throw new InvalidDataException("Truncated related-activity GUID.");
+                }
+                int dataOffset = bufferOffset;
+                Advance(ref bufferOffset, item->DataSize, alignTo: 8, remainingBufferInBytes);
+                item->DataPtr = (ulong)(buffer + dataOffset);
             }
 
             Advance(ref bufferOffset, 0, alignTo: 16, remainingBufferInBytes);

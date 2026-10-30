@@ -548,7 +548,7 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
                     {
-                        return *((Guid*)extendedData[i].DataPtr);
+                        return *TraceEventNativeMethods.GetRelatedActivityIDPointer(&extendedData[i]);
                     }
                 }
             }
@@ -899,8 +899,10 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// ETW supports the ability to take events with another GUID called the related activity that is either
         /// causes or is caused by the current activity.   This property returns that GUID (or Guid.Empty if the
-        /// event has not related activity.  
+        /// event has not related activity.
+        /// A present descriptor must contain a complete GUID.
         /// </summary>
+        /// <exception cref="InvalidDataException">A present related-activity descriptor is incomplete or has a null data pointer.</exception>
         public Guid RelatedActivityID
         {
             get

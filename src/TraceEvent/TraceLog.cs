@@ -3387,9 +3387,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
                 // In live sessions, preserve the original ExtendedData for readers to access directly.
                 // Only persist RelatedActivityID in file conversion mode.
-                else if (!isLiveSession && extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
+                else if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
                 {
-                    relatedActivityIDPtr = (Guid*)(extendedData[i].DataPtr);
+                    Guid* pointer = TraceEventNativeMethods.GetRelatedActivityIDPointer(&extendedData[i]);
+                    if (!isLiveSession)
+                    {
+                        relatedActivityIDPtr = pointer;
+                    }
                 }
                 else if (!isLiveSession && extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_CONTAINER_ID)
                 {
