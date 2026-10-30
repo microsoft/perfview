@@ -330,6 +330,11 @@ namespace Microsoft.Diagnostics.Tracing
         {
             if (eventRecord->EventHeader.ProviderId == EventTraceGuid)
             {
+                if (eventRecord->UserDataLength < sizeof(FAKE_TRACE_LOGFILE_HEADER))
+                {
+                    throw new InvalidDataException("Truncated BPerf session header.");
+                }
+
                 var logfile = (FAKE_TRACE_LOGFILE_HEADER*)eventRecord->UserData;
                 this.pointerSize = (int)logfile->PointerSize;
                 this._QPCFreq = logfile->PerfFreq;
@@ -347,6 +352,11 @@ namespace Microsoft.Diagnostics.Tracing
 
                 kernelParser.EventTraceHeader += delegate (EventTraceHeaderTraceData data)
                 {
+                    if (data.EventDataLength < OffsetToUTCOffsetMinutes + sizeof(int))
+                    {
+                        throw new InvalidDataException("Truncated BPerf event trace header.");
+                    }
+
                     Marshal.WriteInt32(data.userData, OffsetToUTCOffsetMinutes, this.utcOffsetMinutes.Value); // Since this is a FakeTraceHeader
                 };
 
