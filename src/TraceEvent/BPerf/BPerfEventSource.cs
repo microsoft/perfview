@@ -112,8 +112,27 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// This constructor is used when the consumer is supplying the buffers for reasons like buffer pooling.
         /// </summary>
+        /// <exception cref="ArgumentException">The output buffer is empty or the input buffer cannot hold a block header.</exception>
+        /// <exception cref="InvalidDataException">A block is incomplete or does not fit the supplied buffers.</exception>
         public BPerfEventSource(string btlFilePath, TraceEventDispatcherOptions options, byte[] uncompressedBuffer, byte[] compressedBuffer, bool skipReadingUnreachableEvents = false, BPerfEventSourceDecompress decompressDelegate = null)
         {
+            if (uncompressedBuffer == null)
+            {
+                throw new ArgumentNullException(nameof(uncompressedBuffer));
+            }
+            if (compressedBuffer == null)
+            {
+                throw new ArgumentNullException(nameof(compressedBuffer));
+            }
+            if (uncompressedBuffer.Length == 0)
+            {
+                throw new ArgumentException("The output buffer must not be empty.", nameof(uncompressedBuffer));
+            }
+            if (compressedBuffer.Length < 8)
+            {
+                throw new ArgumentException("The input buffer must hold a block header.", nameof(compressedBuffer));
+            }
+
             var startTime = DateTime.MinValue;
             var endTime = DateTime.MaxValue;
 
@@ -274,53 +293,51 @@ namespace Microsoft.Diagnostics.Tracing
                     fs.Seek(startingPosition, SeekOrigin.Begin);
                 }
 
-                long remainingFileSize = Math.Min(this.endFileOffset - startingPosition, (fs.Length - startingPosition + (16 - 1)) & ~(16 - 1)); // align up to 16 byte boundary
+                long remainingFileSize = Math.Min(this.endFileOffset - startingPosition, fs.Length - startingPosition);
+                int capacity = this.compressedBuffer.Length & ~3;
                 int offset = 0;
 
-                while (remainingFileSize > 0 && !this.stopProcessing)
+                while ((remainingFileSize > 0 || offset > 0) && !this.stopProcessing)
                 {
-                    bool exitCondition = false;
-                    int bytesToRead = (int)Math.Min(remainingFileSize, ReadAheadBufferSize);
-                    int savedOffset = offset;
-                    int remainder = 0;
-
-                    if (bytesToRead < ReadAheadBufferSize)
+                    int bytesToRead = (int)Math.Min(remainingFileSize,
+                        Math.Min(ReadAheadBufferSize, capacity - offset));
+                    if (bytesToRead == 0 && remainingFileSize > 0)
                     {
-                        remainder = offset;
-                        offset = 0;
+                        throw new InvalidDataException("BPerf block exceeds the input buffer.");
                     }
-
                     int realReadBytes = 0;
-                    while (bytesToRead > offset)
+                    while (realReadBytes < bytesToRead)
                     {
-                        int bytesRead = fs.Read(this.compressedBuffer, savedOffset, bytesToRead - offset);
+                        int bytesRead = fs.Read(this.compressedBuffer, offset + realReadBytes, bytesToRead - realReadBytes);
 
                         // this can happen when we open a not completely written file
                         // so we don't want to end up in an infinte loop so check if we're making forward progress
                         // and if not break.
                         if (bytesRead == 0)
                         {
-                            exitCondition = true;
                             break;
                         }
-
-                        offset += bytesRead;
                         realReadBytes += bytesRead;
                     }
-
-                    // Since we align up the boundary, because the available bytes may less than bytesToRead, the real buffer size is current offset + remainder.
-                    // if the are enough bytes to read, offset equals bytesToRead.
-                    int retval = this.ProcessBTLInner(offset + remainder);
-
-                    if (exitCondition || retval == -1) // retval == -1 means initialization loop, so bail.
+                    // Because the available bytes may be less than bytesToRead, the real buffer size is current offset + realReadBytes.
+                    // If there are enough bytes to read, realReadBytes equals bytesToRead.
+                    offset += realReadBytes;
+                    remainingFileSize -= realReadBytes;
+                    int retval = this.ProcessBTLInner(offset);
+                    if (retval == -1 || this.stopProcessing) // retval == -1 means initialization loop, so bail.
                     {
                         break;
                     }
-
-                    Array.Copy(this.compressedBuffer, retval, this.compressedBuffer, 0, bytesToRead + remainder - retval);
-
-                    offset = bytesToRead - retval;
-                    remainingFileSize -= realReadBytes;
+                    offset -= retval;
+                    Array.Copy(this.compressedBuffer, retval, this.compressedBuffer, 0, offset);
+                    if (remainingFileSize == 0 || realReadBytes < bytesToRead)
+                    {
+                        if (offset != 0)
+                        {
+                            throw new InvalidDataException("Truncated BPerf block.");
+                        }
+                        break;
+                    }
                 }
             }
         }
@@ -545,8 +562,12 @@ namespace Microsoft.Diagnostics.Tracing
 
         private unsafe int ProcessBTLInner(int eof)
         {
+            if (eof < 0 || eof > this.compressedBuffer.Length)
+            {
+                throw new InvalidDataException("Invalid BPerf input length.");
+            }
             int offset = 0;
-            while (offset + 8 < eof && !this.stopProcessing)
+            while (eof - offset >= 8 && !this.stopProcessing)
             {
                 int compressedBufferSize = BitConverter.ToInt32(this.compressedBuffer, offset);
                 offset += 4;
@@ -554,17 +575,25 @@ namespace Microsoft.Diagnostics.Tracing
                 int uncompressedBufferSize = BitConverter.ToInt32(this.compressedBuffer, offset);
                 offset += 4;
 
-                if (offset + compressedBufferSize > eof)
+                if (compressedBufferSize < 0 || uncompressedBufferSize < 0 ||
+                    uncompressedBufferSize > this.uncompressedBuffer.Length)
+                {
+                    throw new InvalidDataException("Invalid BPerf block size.");
+                }
+
+                if (compressedBufferSize > eof - offset)
                 {
                     return offset - 8; // the two ints compressedBufferSize & uncompressedBufferSize
                 }
 
                 fixed (byte* uncompressedBufferPtr = &this.uncompressedBuffer[0])
                 {
-                    var finalUncompressedSize = this.DecompressDelegate(this.compressedBuffer, offset,  compressedBufferSize, this.uncompressedBuffer, BufferSize);
-                    if (finalUncompressedSize != uncompressedBufferSize)
+                    var finalUncompressedSize = this.DecompressDelegate(this.compressedBuffer, offset, compressedBufferSize,
+                        this.uncompressedBuffer, this.uncompressedBuffer.Length);
+                    if (finalUncompressedSize < 0 || finalUncompressedSize > this.uncompressedBuffer.Length ||
+                        finalUncompressedSize != uncompressedBufferSize)
                     {
-                        throw new Exception($"Decompression failed. Expecting {uncompressedBufferSize}, but got {finalUncompressedSize}!");
+                        throw new InvalidDataException($"Decompression failed. Expecting {uncompressedBufferSize}, but got {finalUncompressedSize}!");
                     }
 
                     int bufferOffset = 0;
@@ -588,7 +617,7 @@ namespace Microsoft.Diagnostics.Tracing
                     }
 
                     offset += compressedBufferSize;
-                    offset = AlignUp(offset, 4);
+                    offset = (int)Math.Min(((long)offset + 3) & ~3L, eof);
                 }
             }
 
@@ -684,20 +713,44 @@ namespace Microsoft.Diagnostics.Tracing
         /// <returns></returns>
         internal unsafe static int ULZ777Decompress(byte[] input, int inputOffset, int inputLength, byte[] output, int outputLength)
         {
-            fixed (byte* uncompressedBufferPtr = &output[0])
-            fixed (byte* compressedBufferPtr = &input[inputOffset])
+            if (input == null)
             {
-                return ULZ777DecompressInternal(compressedBufferPtr, inputLength, uncompressedBufferPtr, outputLength);
+                throw new ArgumentNullException(nameof(input));
+            }
+            if (output == null)
+            {
+                throw new ArgumentNullException(nameof(output));
+            }
+            if (inputOffset < 0 || inputOffset > input.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inputOffset));
+            }
+            if (inputLength < 0 || inputLength > input.Length - inputOffset)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inputLength));
+            }
+            if (outputLength < 0 || outputLength > output.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(outputLength));
+            }
+            fixed (byte* uncompressedBufferPtr = output)
+            fixed (byte* compressedBufferPtr = input)
+            {
+                return ULZ777DecompressInternal(compressedBufferPtr + inputOffset, inputLength, uncompressedBufferPtr, outputLength);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe uint DecodeMod(ref byte* p)
+        private static unsafe int DecodeMod(ref byte* p, byte* end)
         {
             uint x = 0;
 
             for (int i = 0; i <= 21; i += 7)
             {
+                if (p == end)
+                {
+                    return -1;
+                }
                 uint c = *p++;
                 x += c << i;
                 if (c < 128)
@@ -706,7 +759,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
             }
 
-            return x;
+            return (int)x;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -742,7 +795,12 @@ namespace Microsoft.Diagnostics.Tracing
                     int run = token >> 5;
                     if (run == 7)
                     {
-                        run += (int)DecodeMod(ref ip);
+                        int extra = DecodeMod(ref ip, ipEnd);
+                        if (extra < 0)
+                        {
+                            return -1;
+                        }
+                        run += extra;
                     }
 
                     // Overrun check
@@ -763,7 +821,12 @@ namespace Microsoft.Diagnostics.Tracing
                 int len = (token & 15) + MIN_MATCH;
                 if (len == 15 + MIN_MATCH)
                 {
-                    len += (int)DecodeMod(ref ip);
+                    int extra = DecodeMod(ref ip, ipEnd);
+                    if (extra < 0)
+                    {
+                        return -1;
+                    }
+                    len += extra;
                 }
 
                 // Overrun check
@@ -772,12 +835,16 @@ namespace Microsoft.Diagnostics.Tracing
                     return -1;
                 }
 
+                if (ipEnd - ip < sizeof(ushort))
+                {
+                    return -1;
+                }
                 int dist = ((token & 16) << 12) + *(ushort*)ip;
                 ip += 2;
                 byte* cp = op - dist;
 
                 // Range check
-                if (op - output < dist)
+                if (dist == 0 || op - output < dist)
                 {
                     return -1;
                 }
