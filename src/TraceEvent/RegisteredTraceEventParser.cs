@@ -118,6 +118,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // Maps: KEY is the map name, VALUE is the display name for the map attribute
             Dictionary<string, string> enumDisplayNames = new Dictionary<string, string>();
             List<KeyValuePair<string, string>> enumLocalizations = new List<KeyValuePair<string, string>>();
+            // Event messages: KEY is the string ID, VALUE is the message
+            List<KeyValuePair<string, string>> eventLocalizations = new List<KeyValuePair<string, string>>();
+
+            // Event Log channels, keyed by the channel value in the event descriptors (null if not an Event Log publisher)
+            SortedDictionary<byte, ChannelInfo> channels = GetEventLogChannels(providerGuid);
 
             // Track emitted string IDs to prevent duplicates in the stringTable
             HashSet<string> emittedStringIds = new HashSet<string>();
@@ -495,6 +500,35 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 }
                             }
 
+                            // Only channels that the Event Log API could describe are declared, so only those can be referenced.
+                            ChannelInfo channel = null;
+                            if (eventInfo->EventDescriptor.Channel != 0 && channels != null)
+                            {
+                                channels.TryGetValue(eventInfo->EventDescriptor.Channel, out channel);
+                            }
+
+                            string messageStringId = null;
+                            if (eventInfo->EventMessageOffset != 0)
+                            {
+                                // TDH appends a space to the manifest's message. That is observed, not documented: it did for all but 4
+                                // of the 41827 messages on Windows 11 26200.
+                                string message = new string((char*)(&eventInfoBuff[eventInfo->EventMessageOffset]));
+                                if (message.EndsWith(" ", StringComparison.Ordinal))
+                                {
+                                    message = message.Substring(0, message.Length - 1);
+                                }
+
+                                message = ToValidXmlText(message);
+
+                                // Events that share an Id and Version share a symbol, so make the string ID unique.
+                                messageStringId = $"event_{symbolName}";
+                                for (int suffix = 2; !emittedStringIds.Add(messageStringId); suffix++)
+                                {
+                                    messageStringId = $"event_{symbolName}_{suffix}";
+                                }
+                                eventLocalizations.Add(new KeyValuePair<string, string>(messageStringId, message));
+                            }
+
                             // Render event element using XmlWriter
                             var eventSb = new StringBuilder();
                             using (var ew = XmlWriter.Create(eventSb, fragmentSettings))
@@ -504,6 +538,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 ew.WriteAttributeString("symbol", symbolName);
                                 ew.WriteAttributeString("version", eventInfo->EventDescriptor.Version.ToString());
                                 ew.WriteAttributeString("task", taskName);
+                                
+                                if (channel != null)
+                                {
+                                    ew.WriteAttributeString("channel", channel.Id);
+                                }
                                 
                                 if (opcodeId != null)
                                 {
@@ -523,6 +562,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 if (templateName != null)
                                 {
                                     ew.WriteAttributeString("template", templateName);
+                                }
+                                
+                                if (messageStringId != null)
+                                {
+                                    ew.WriteAttributeString("message", $"$(string.{messageStringId})");
                                 }
                                 
                                 ew.WriteEndElement();
@@ -586,6 +630,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 // Collect localized strings
                 List<KeyValuePair<string, string>> localizedStrings = new List<KeyValuePair<string, string>>();
+
+                // Channels
+                if (channels != null && channels.Count > 0)
+                {
+                    writer.WriteStartElement("channels");
+                    foreach (var keyValue in channels)
+                    {
+                        var channel = keyValue.Value;
+                        if (channel.Imported)
+                        {
+                            writer.WriteStartElement("importChannel");
+                            writer.WriteAttributeString("chid", channel.Id);
+                            writer.WriteAttributeString("name", channel.Path);
+                        }
+                        else
+                        {
+                            writer.WriteStartElement("channel");
+                            writer.WriteAttributeString("chid", channel.Id);
+                            writer.WriteAttributeString("name", channel.Path);
+                            writer.WriteAttributeString("type", channel.Type);
+                            writer.WriteAttributeString("value", keyValue.Key.ToString());
+                        }
+                        writer.WriteEndElement();
+                    }
+                    writer.WriteEndElement(); // channels
+                }
 
                 // Keywords
                 if (keywords != null && keywords.Count > 0)
@@ -672,6 +742,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                 }
                 writer.WriteEndElement(); // events
+                localizedStrings.AddRange(eventLocalizations);
 
                 // Templates
                 writer.WriteStartElement("templates");
@@ -716,6 +787,47 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         #region private
+        /// <summary>
+        /// Opens the Event Log (wevtapi) metadata of the provider, or returns IntPtr.Zero if the provider is not a
+        /// registered Event Log publisher or wevtapi cannot read it. The caller must EvtClose the handle.
+        /// </summary>
+        private static IntPtr OpenEventLogPublisher(Guid providerGuid)
+        {
+            try
+            {
+                // EvtOpenPublisherMetadata takes the publisher name, which is the name TDH lists for the GUID's
+                // manifest. TDH can also list the GUID under a MOF name (RmClient_RestartManager for
+                // Microsoft-Windows-RestartManager). No other name is tried, since it could open a different provider's
+                // publisher.
+                string publisherName;
+                try
+                {
+                    publisherName = TraceEventProviders.GetManifestProviderName(providerGuid);
+                }
+                catch (Exception)
+                {
+                    // TdhEnumerateProviders failed (it throws, not returns); the manifest is still written, without
+                    // the Event Log details.
+                    return IntPtr.Zero;
+                }
+
+                if (publisherName == null)
+                {
+                    return IntPtr.Zero;
+                }
+
+                return EvtOpenPublisherMetadata(IntPtr.Zero, publisherName, null, 0, 0);
+            }
+            catch (DllNotFoundException)
+            {
+                return IntPtr.Zero;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                return IntPtr.Zero;
+            }
+        }
+
         // Borrowed from Core CLR System.Globalization.CultureInfo
         private static string IetfLanguageTag(CultureInfo culture)
         {
@@ -787,6 +899,199 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 eventInfos[versionEventInfos[i]->EventDescriptor] = (IntPtr)versionEventInfos[i];
             }
+        }
+
+        /// <summary>
+        /// Returns 's' with each character that XML 1.0 does not allow (such as U+000B, a lone surrogate or U+FFFE)
+        /// replaced by U+FFFD. XmlWriter throws on them, and XML has no way to escape them.
+        /// </summary>
+        internal static string ToValidXmlText(string s)
+        {
+            StringBuilder sb = null;
+            for (int i = 0; i < s.Length; i++)
+            {
+                if (XmlConvert.IsXmlChar(s[i]))
+                {
+                    sb?.Append(s[i]);
+                }
+                else if (i + 1 < s.Length && XmlConvert.IsXmlSurrogatePair(s[i + 1], s[i]))
+                {
+                    sb?.Append(s, i, 2);
+                    i++;
+                }
+                else
+                {
+                    if (sb == null)
+                    {
+                        sb = new StringBuilder(s.Length);
+                        sb.Append(s, 0, i);
+                    }
+                    sb.Append('\uFFFD');
+                }
+            }
+
+            return sb?.ToString() ?? s;
+        }
+
+        /// <summary>
+        /// The Event Log channels that the provider's manifest declares or imports, keyed by the channel value in its
+        /// event descriptors, or null if the provider is not a registered Event Log publisher or wevtapi cannot read it.
+        /// </summary>
+        /// <remarks>
+        /// TDH reports only a channel's display name (TaskScheduler's Operational channel is just "Operational"), not
+        /// its path, type or whether it is imported, which a manifest needs to declare it.
+        /// </remarks>
+        private static SortedDictionary<byte, ChannelInfo> GetEventLogChannels(Guid providerGuid)
+        {
+            IntPtr publisherMetadata = OpenEventLogPublisher(providerGuid);
+            if (publisherMetadata == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            IntPtr channelReferences = IntPtr.Zero;
+            try
+            {
+                // Big enough for an EVT_VARIANT followed by the longest channel path (255 characters).
+                const int VariantBufferSize = 1024;
+                byte* variant = stackalloc byte[VariantBufferSize];
+                int used;
+                if (!EvtGetPublisherMetadataProperty(publisherMetadata, PublisherMetadataChannelReferences, 0, VariantBufferSize, variant, out used) ||
+                    *(int*)(variant + 12) != EvtVarTypeEvtHandle)
+                {
+                    return null;
+                }
+
+                channelReferences = *(IntPtr*)variant;
+                int count;
+                if (!EvtGetObjectArraySize(channelReferences, out count))
+                {
+                    return null;
+                }
+
+                var channels = new SortedDictionary<byte, ChannelInfo>();
+                var channelIds = new HashSet<string>();
+                for (int i = 0; i < count; i++)
+                {
+                    uint value, flags;
+                    if (!EvtGetObjectArrayProperty(channelReferences, PublisherMetadataChannelReferencePath, i, 0, VariantBufferSize, variant, out used) ||
+                        *(int*)(variant + 12) != EvtVarTypeString ||
+                        !TryGetChannelReferenceUInt32(channelReferences, PublisherMetadataChannelReferenceID, i, out value) ||
+                        !TryGetChannelReferenceUInt32(channelReferences, PublisherMetadataChannelReferenceFlags, i, out flags))
+                    {
+                        continue;
+                    }
+
+                    // An event descriptor's channel is a byte, so no event can refer to a larger value. The manifest
+                    // compiler gives each channel its own value; keep the first if a registration does not.
+                    if (value > byte.MaxValue || channels.ContainsKey((byte)value))
+                    {
+                        continue;
+                    }
+
+                    string path = new string(*(char**)variant);
+                    var channel = new ChannelInfo();
+                    channel.Path = ToValidXmlText(path);
+                    channel.Imported = (flags & EvtChannelReferenceImported) != 0;
+                    if (!channel.Imported)
+                    {
+                        // A declared channel must have a type.
+                        channel.Type = GetChannelType(path);
+                        if (channel.Type == null)
+                        {
+                            continue;
+                        }
+                    }
+
+                    // Paths that differ only in non-word characters would share an id, so make it unique.
+                    string id = Regex.Replace(channel.Path, @"[^\w]", "_");
+                    channel.Id = id;
+                    for (int suffix = 2; !channelIds.Add(channel.Id); suffix++)
+                    {
+                        channel.Id = id + "_" + suffix;
+                    }
+
+                    channels[(byte)value] = channel;
+                }
+
+                return channels;
+            }
+            finally
+            {
+                if (channelReferences != IntPtr.Zero)
+                {
+                    EvtClose(channelReferences);
+                }
+                EvtClose(publisherMetadata);
+            }
+        }
+
+        // Reads an EvtVarTypeUInt32 property of the 'index'th channel reference.
+        private static bool TryGetChannelReferenceUInt32(IntPtr channelReferences, int propertyId, int index, out uint value)
+        {
+            // EVT_VARIANT: 8-byte value union, then DWORD Count, then DWORD Type.
+            const int EvtVariantSize = 16;
+            byte* variant = stackalloc byte[EvtVariantSize];
+            int used;
+            value = 0;
+            if (!EvtGetObjectArrayProperty(channelReferences, propertyId, index, 0, EvtVariantSize, variant, out used) ||
+                *(int*)(variant + 12) != EvtVarTypeUInt32)
+            {
+                return false;
+            }
+
+            value = *(uint*)variant;
+            return true;
+        }
+
+        // The manifest name of a channel's type (EVT_CHANNEL_TYPE), or null if wevtapi cannot read its configuration.
+        private static string GetChannelType(string channelPath)
+        {
+            IntPtr channelConfig = EvtOpenChannelConfig(IntPtr.Zero, channelPath, 0);
+            if (channelConfig == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            try
+            {
+                const int EvtVariantSize = 16;
+                byte* variant = stackalloc byte[EvtVariantSize];
+                int used;
+                if (!EvtGetChannelConfigProperty(channelConfig, ChannelConfigType, 0, EvtVariantSize, variant, out used) ||
+                    *(int*)(variant + 12) != EvtVarTypeUInt32)
+                {
+                    return null;
+                }
+
+                switch (*(uint*)variant)
+                {
+                    case 0: return "Admin";
+                    case 1: return "Operational";
+                    case 2: return "Analytic";
+                    case 3: return "Debug";
+                    default: return null;
+                }
+            }
+            finally
+            {
+                EvtClose(channelConfig);
+            }
+        }
+
+        /// <summary>
+        /// An Event Log channel that a provider writes to, as the Event Log API (wevtapi) reports it.
+        /// </summary>
+        private class ChannelInfo
+        {
+            // The chid that events use to refer to the channel.
+            public string Id;
+            // e.g. Microsoft-Windows-TaskScheduler/Operational, or System for an imported channel.
+            public string Path;
+            // An imported channel (System, Application, Security) is declared by another manifest.
+            public bool Imported;
+            // Admin, Operational, Analytic or Debug; null for an imported channel.
+            public string Type;
         }
 
         private static string MakeLegalIdentifier(string name)
@@ -1636,6 +1941,44 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         // win:EventlogClassic in winmeta.xml: events that keep their Event Log (ReportEvent) message ids.
         private const ulong WINEVENT_KEYWORD_EVENTLOG_CLASSIC = 0x80000000000000;
+
+        // EVT_PUBLISHER_METADATA_PROPERTY_ID (winevt.h)
+        private const int PublisherMetadataChannelReferences = 6;
+        private const int PublisherMetadataChannelReferencePath = 7;
+        private const int PublisherMetadataChannelReferenceID = 9;
+        private const int PublisherMetadataChannelReferenceFlags = 10;
+
+        // EVT_CHANNEL_REFERENCE_FLAGS (winevt.h)
+        private const uint EvtChannelReferenceImported = 1;
+
+        // EVT_CHANNEL_CONFIG_PROPERTY_ID (winevt.h)
+        private const int ChannelConfigType = 2;
+
+        // EVT_VARIANT_TYPE (winevt.h)
+        private const int EvtVarTypeString = 1;
+        private const int EvtVarTypeUInt32 = 8;
+        private const int EvtVarTypeEvtHandle = 32;
+
+        [DllImport("wevtapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr EvtOpenPublisherMetadata(IntPtr session, string publisherId, string logFilePath, int locale, int flags);
+
+        [DllImport("wevtapi.dll", SetLastError = true)]
+        private static extern bool EvtGetPublisherMetadataProperty(IntPtr publisherMetadata, int propertyId, int flags, int bufferSize, byte* buffer, out int bufferUsed);
+
+        [DllImport("wevtapi.dll", SetLastError = true)]
+        private static extern bool EvtGetObjectArraySize(IntPtr objectArray, out int objectArraySize);
+
+        [DllImport("wevtapi.dll", SetLastError = true)]
+        private static extern bool EvtGetObjectArrayProperty(IntPtr objectArray, int propertyId, int arrayIndex, int flags, int bufferSize, byte* buffer, out int bufferUsed);
+
+        [DllImport("wevtapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr EvtOpenChannelConfig(IntPtr session, string channelPath, int flags);
+
+        [DllImport("wevtapi.dll", SetLastError = true)]
+        private static extern bool EvtGetChannelConfigProperty(IntPtr channelConfig, int propertyId, int flags, int bufferSize, byte* buffer, out int bufferUsed);
+
+        [DllImport("wevtapi.dll")]
+        private static extern bool EvtClose(IntPtr handle);
         #endregion
     }
 
