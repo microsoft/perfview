@@ -48,6 +48,8 @@
                 [ScenarioConfig]
                     [Scenarios files="*.etl" process="$1.exe" name="scenario $1" /]
                 [/ScenarioConfig]
+            The optional 'output' attribute names an archive beside each matched trace. After
+            $-substitution it must be a safe file name, not a path; .perfView.xml.zip is appended.
             </summary>
         </member>
         <member name="M:PerfViewExtensibility.Commands.DumpEventSourceManifests(System.String,System.String,System.String)">
@@ -298,7 +300,9 @@
             - start, end (optional)
               The start and end times of the region of interest in the trace.
             - output (optional)
-              Specify name of output perfview.xml.zip.  This is needed to allow outputting different scenarios with the same etl file name to different file. 
+              Specify the output file name without .perfView.xml.zip, which is appended.
+              After $-substitution this must be a safe file name, not a path. Output is saved beside the matched ETL file.
+              This allows different scenarios from the same ETL file to be saved to different files.
             </remarks>
         </member>
         <member name="M:PerfViewExtensibility.Commands.FindProcessOfInterest(PerfViewExtensibility.ETLDataFile)">
