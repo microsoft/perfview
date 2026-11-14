@@ -203,6 +203,8 @@ namespace PerfViewExtensibility
         ///     [ScenarioConfig]
         ///         [Scenarios files="*.etl" process="$1.exe" name="scenario $1" /]
         ///     [/ScenarioConfig]
+        /// The optional 'output' attribute names an archive beside each matched trace. After
+        /// $-substitution it must be a safe file name, not a path; .perfView.xml.zip is appended.
         /// </summary>
         public void SaveScenarioCPUStacks(string scenario)
         {
@@ -1500,7 +1502,7 @@ namespace PerfViewExtensibility
         /// <summary>
         /// The configuration data for an ETL file dumped by SaveCPUStacksForProcess.
         /// </summary>
-        private class ScenarioConfig
+        internal class ScenarioConfig
         {
             /// <summary>
             /// The file to read in.
@@ -1563,9 +1565,11 @@ namespace PerfViewExtensibility
         /// - start, end (optional)
         ///   The start and end times of the region of interest in the trace.
         /// - output (optional)
-        ///   Specify name of output perfview.xml.zip.  This is needed to allow outputting different scenarios with the same etl file name to different file. 
+        ///   Specify the output file name without .perfView.xml.zip, which is appended.
+        ///   After $-substitution this must be a safe file name, not a path. Output is saved beside the matched ETL file.
+        ///   This allows different scenarios from the same ETL file to be saved to different files.
         /// </remarks>
-        private Dictionary<string, ScenarioConfig> DeserializeScenarioConfig(XmlReader reader, XmlWriter output, TextWriter log, string baseDir)
+        internal Dictionary<string, ScenarioConfig> DeserializeScenarioConfig(XmlReader reader, XmlWriter output, TextWriter log, string baseDir)
         {
             var config = new Dictionary<string, ScenarioConfig>();
 
@@ -1641,7 +1645,13 @@ namespace PerfViewExtensibility
                         if (match.Groups.Count < 1)
                             match = defaultRegex.Match(PerfViewFile.GetFileNameWithoutExtension(file));
 
-                        outputName = Path.Combine(Path.GetDirectoryName(file), match.Result(outputPattern));
+                        string expandedOutputName = match.Result(outputPattern);
+                        if (!PathUtilities.IsSafeFileName(expandedOutputName))
+                        {
+                            throw new ApplicationException("The scenario output '" + expandedOutputName +
+                                "' must be a safe, nonempty file name, not a path.");
+                        }
+                        outputName = Path.Combine(Path.GetDirectoryName(file), expandedOutputName);
                     }
                     else
                     {
