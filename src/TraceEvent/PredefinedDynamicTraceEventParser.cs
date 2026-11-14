@@ -144,6 +144,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             PredefinedDynamicEvent dynamicTraceEventData = null;
             Guid providerGuid = data.ProviderGuid;
+            // EventPipe metadata preserves the provider GUID. ETW classic metadata can resolve a different provider.
+            if (data.Source is EventPipeEventSource && !state.HasProvider(providerGuid))
+            {
+                return false;
+            }
+
             string eventName = data.EventName;
 
             // If we haven't yet seen this unknown event, we need to lookup its metadata.
@@ -256,6 +262,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             registeredTemplates = new Dictionary<TemplateKey, PredefinedDynamicEvent>();
             templateLookups = new Dictionary<TemplateKey, PredefinedDynamicEvent>();
+            registeredProviders = new HashSet<Guid>();
         }
 
         /// <summary>
@@ -265,6 +272,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             var key = new TemplateKey(providerGuid, eventName);
             registeredTemplates[key] = template;
+            registeredProviders.Add(providerGuid);
+        }
+
+        /// <summary>
+        /// Whether any predefined templates have been registered for the provider.
+        /// </summary>
+        public bool HasProvider(Guid providerGuid)
+        {
+            return registeredProviders.Contains(providerGuid);
         }
 
         /// <summary>
@@ -304,5 +320,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         private Dictionary<TemplateKey, PredefinedDynamicEvent> registeredTemplates;
         private Dictionary<TemplateKey, PredefinedDynamicEvent> templateLookups;
+        private HashSet<Guid> registeredProviders;
     }
 }
