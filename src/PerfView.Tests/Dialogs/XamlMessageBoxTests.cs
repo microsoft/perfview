@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -8,8 +9,7 @@ using Xunit;
 namespace PerfViewTests.Dialogs
 {
     /// <summary>
-    /// Regression tests for <see cref="XamlMessageBox"/> threading behavior.
-    /// See https://github.com/microsoft/perfview/issues/2300
+    /// Regression tests for <see cref="XamlMessageBox"/> threading and modal ownership.
     /// </summary>
     public class XamlMessageBoxTests
     {
@@ -20,6 +20,8 @@ namespace PerfViewTests.Dialogs
         /// Also verifies that calling from the UI thread directly still works (no-op dispatch).
         /// An owner which has never been shown must also be ignored rather than assigned.
         /// This is the core regression test for issue #2300.
+        /// Also verifies owner selection keeps modal dialogs reachable after switching
+        /// applications (issue #2506).
         /// </summary>
 #pragma warning disable VSTHRD200 // Keep the original regression test name stable.
         [WpfFact]
@@ -31,7 +33,7 @@ namespace PerfViewTests.Dialogs
             RegisterMinimalThemeResources(app);
 
             // Auto-close any XamlMessageBox dialogs as soon as they load.
-            RegisterAutoCloseHandler();
+            var dialogs = RegisterAutoCloseHandler();
 
             // Part 1: Call directly from the UI thread (dispatch is a no-op).
             MessageBoxResult uiResult = XamlMessageBox.Show("Test message", "XamlMBTest_UI", MessageBoxButton.OK);
@@ -62,23 +64,64 @@ namespace PerfViewTests.Dialogs
             Assert.Equal(MessageBoxResult.None, unshownOwnerResult);
             Assert.Equal(MessageBoxResult.None, bgResult);
             Assert.False(unshownOwner.IsLoaded);
+
+            VerifyDialogOwnership(app, dialogs);
         }
 
-        private static bool s_autoCloseHandlerRegistered;
+        private static void VerifyDialogOwnership(
+            Application app,
+            List<(Window Owner, bool ShowInTaskbar, WindowStartupLocation StartupLocation)> dialogs)
+        {
+            Window originalMainWindow = app.MainWindow;
+            Window mainWindow = new Window { ShowInTaskbar = false, ShowActivated = false };
+            Window secondaryWindow = new Window { ShowInTaskbar = false };
+            try
+            {
+                app.MainWindow = mainWindow;
+
+                // With no loaded owner, the dialog must be independently reachable.
+                XamlMessageBox.Show("Test message", "XamlMBTest_NoOwner");
+                Assert.Null(dialogs[dialogs.Count - 1].Owner);
+                Assert.True(dialogs[dialogs.Count - 1].ShowInTaskbar);
+                Assert.Equal(WindowStartupLocation.CenterScreen, dialogs[dialogs.Count - 1].StartupLocation);
+
+                mainWindow.Show();
+                Assert.False(mainWindow.IsActive);
+
+                // Symbol resolution can prompt after the user has switched applications.
+                XamlMessageBox.Show("Test message", "XamlMBTest_MainOwner");
+                Assert.Same(mainWindow, dialogs[dialogs.Count - 1].Owner);
+                Assert.False(dialogs[dialogs.Count - 1].ShowInTaskbar);
+
+                secondaryWindow.Show();
+                secondaryWindow.Activate();
+                Assert.True(secondaryWindow.IsActive);
+
+                XamlMessageBox.Show("Test message", "XamlMBTest_ActiveOwner");
+                Assert.Same(secondaryWindow, dialogs[dialogs.Count - 1].Owner);
+
+                XamlMessageBox.Show(new Window(), "Test message", "XamlMBTest_UnshownOwnerFallback");
+                Assert.Same(secondaryWindow, dialogs[dialogs.Count - 1].Owner);
+
+                XamlMessageBox.Show(mainWindow, "Test message", "XamlMBTest_ExplicitOwner");
+                Assert.Same(mainWindow, dialogs[dialogs.Count - 1].Owner);
+            }
+            finally
+            {
+                secondaryWindow.Close();
+                mainWindow.Close();
+                app.MainWindow = originalMainWindow;
+            }
+        }
 
         /// <summary>
         /// Registers a class-level handler that auto-closes any <see cref="Window"/> with
         /// a test caption as soon as it finishes loading. The handler fires inside
         /// <see cref="Window.ShowDialog"/>'s nested message loop.
         /// </summary>
-        private static void RegisterAutoCloseHandler()
+        private static List<(Window Owner, bool ShowInTaskbar, WindowStartupLocation StartupLocation)> RegisterAutoCloseHandler()
         {
-            if (s_autoCloseHandlerRegistered)
-            {
-                return;
-            }
-
-            s_autoCloseHandlerRegistered = true;
+            var dialogs = new List<(Window Owner, bool ShowInTaskbar, WindowStartupLocation StartupLocation)>();
             EventManager.RegisterClassHandler(
                 typeof(Window),
                 FrameworkElement.LoadedEvent,
@@ -87,11 +130,13 @@ namespace PerfViewTests.Dialogs
                     Window w = sender as Window;
                     if (w != null && w.Title != null && w.Title.StartsWith("XamlMBTest_"))
                     {
+                        dialogs.Add((w.Owner, w.ShowInTaskbar, w.WindowStartupLocation));
 #pragma warning disable VSTHRD001, VSTHRD110 // Loaded is already on the WPF thread; defer Close until loading completes.
                         w.Dispatcher.BeginInvoke((Action)(() => w.Close()));
 #pragma warning restore VSTHRD001, VSTHRD110
                     }
                 }));
+            return dialogs;
         }
 
         /// <summary>
