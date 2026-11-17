@@ -95,13 +95,15 @@ namespace PerfViewTests.Dialogs
 
                 secondaryWindow.Show();
                 secondaryWindow.Activate();
-                Assert.True(secondaryWindow.IsActive);
 
+                // Windows may deny foreground activation to the test host.
+                Window expectedOwner = secondaryWindow.IsActive ? secondaryWindow : mainWindow;
                 XamlMessageBox.Show("Test message", "XamlMBTest_ActiveOwner");
-                Assert.Same(secondaryWindow, dialogs[dialogs.Count - 1].Owner);
+                Assert.Same(expectedOwner, dialogs[dialogs.Count - 1].Owner);
 
+                expectedOwner = secondaryWindow.IsActive ? secondaryWindow : mainWindow;
                 XamlMessageBox.Show(new Window(), "Test message", "XamlMBTest_UnshownOwnerFallback");
-                Assert.Same(secondaryWindow, dialogs[dialogs.Count - 1].Owner);
+                Assert.Same(expectedOwner, dialogs[dialogs.Count - 1].Owner);
 
                 XamlMessageBox.Show(mainWindow, "Test message", "XamlMBTest_ExplicitOwner");
                 Assert.Same(mainWindow, dialogs[dialogs.Count - 1].Owner);
