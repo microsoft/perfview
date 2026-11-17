@@ -3378,6 +3378,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                             // Note that we don't interfere with the splicing of kernel and user mode stacks because we do
                             // see user mode stacks delayed and have a new style user mode stack spliced in.
                             AddStackToEvent(eventIndex, callStackIndex);
+                            universalConverter?.OnStackAddedToEvent(thread.Process, eventIndex, data.TimeStampQPC, callStackIndex);
                             if (countForEvent != null)
                             {
                                 countForEvent.m_stackCount++;   // Update stack counts
@@ -4585,6 +4586,23 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 #endif
             eventsToStacks.Insert(whereToInsertIndex, new EventsToStackIndex(eventIndex, stackIndex));
+        }
+
+        /// <summary>
+        /// Changes the stack associated with 'eventIndex' (previously set by AddStackToEvent) to 'stackIndex'.
+        /// This is intended for recent events, so the search starts at the end.
+        /// </summary>
+        internal void ReplaceStackForEvent(EventIndex eventIndex, CallStackIndex stackIndex)
+        {
+            for (int i = eventsToStacks.Count - 1; 0 <= i; --i)
+            {
+                if (eventsToStacks[i].EventIndex == eventIndex)
+                {
+                    eventsToStacks[i] = new EventsToStackIndex(eventIndex, stackIndex);
+                    return;
+                }
+            }
+            // Not found: in real time sessions the table is periodically flushed, in which case there is nothing to update.
         }
 
         private static readonly Func<EventIndex, EventsToStackIndex, int> stackComparer = delegate (EventIndex eventID, EventsToStackIndex elem)
@@ -7195,7 +7213,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // The loaded module is looked up by StartAddress and time to ensure that we don't use a module that hasn't been loaded yet.
             // If the StartAddress or size don't match, then create a new one.  This handles overlapping cases.
             TraceLoadedModule loadedModule = FindModuleAndIndexContainingAddress(startAddress, timeStampQPC, out index);
-            if (loadedModule == null || loadedModule.ImageBase != startAddress || loadedModule.ModuleFile.imageSize != newImageSize)
+            // A different file mapped at the same range (address reuse) also gets its own loaded module.
+            if (loadedModule == null || loadedModule.ImageBase != startAddress || loadedModule.ModuleFile.imageSize != newImageSize ||
+                (fileName != null && loadedModule.ModuleFile != moduleFile))
             {
                 // The module file is what is used when looking up the module for an arbitrary address, so it must save both the start address and image size.
                 loadedModule = new TraceLoadedModule(process, moduleFile, startAddress);
@@ -8014,6 +8034,42 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return ret;
         }
 
+        /// <summary>
+        /// Returns the call stack that is 'stackIndex' with every frame whose code address is in 'takenCodeAddresses'
+        /// replaced by the code address that its address currently maps to in 'process'.   Returns 'stackIndex' if no
+        /// frame needs to change.  See TraceCodeAddresses.TakeUnresolvedCodeAddressesInRange.
+        /// </summary>
+        internal CallStackIndex ReplaceTakenCodeAddresses(CallStackIndex stackIndex, TraceProcess process, HashSet<CodeAddressIndex> takenCodeAddresses)
+        {
+            // Collect the frames from the leaf to the root.
+            var frames = new List<CallStackIndex>();
+            bool needsReplace = false;
+            for (CallStackIndex cur = stackIndex; cur >= 0; cur = callStacks[(int)cur].callerIndex)
+            {
+                frames.Add(cur);
+                needsReplace |= takenCodeAddresses.Contains(callStacks[(int)cur].codeAddressIndex);
+            }
+
+            if (!needsReplace)
+            {
+                return stackIndex;
+            }
+
+            // Re-intern from the root (the thread) to the leaf.
+            CallStackIndex ret = callStacks[(int)frames[frames.Count - 1]].callerIndex;
+            for (int i = frames.Count - 1; 0 <= i; --i)
+            {
+                CodeAddressIndex codeAddressIndex = callStacks[(int)frames[i]].codeAddressIndex;
+                if (takenCodeAddresses.Contains(codeAddressIndex))
+                {
+                    codeAddressIndex = codeAddresses.ReplaceTakenCodeAddressIndex(process, codeAddressIndex);
+                }
+                ret = InternCallStackIndex(codeAddressIndex, ret);
+            }
+
+            return ret;
+        }
+
         private struct CallStackInfo
         {
             internal CallStackInfo(CodeAddressIndex codeAddressIndex, CallStackIndex callerIndex)
@@ -8663,6 +8719,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal void AddUniversalDynamicSymbol(ProcessSymbolTraceData data, TraceProcess process)
         {
+            AddUniversalDynamicSymbol(data, process, null);
+        }
+
+        /// <summary>
+        /// Resolves code addresses in the range of the universal symbol 'data' to a method.   If 'codeAddressesInMapping'
+        /// is null, all unresolved code addresses of 'process' in the range are resolved (and considered resolved).
+        /// Otherwise only the code addresses in 'codeAddressesInMapping' (which must be sorted by address) are
+        /// considered.  This is used when the same address range is reused by different mappings over time.
+        /// </summary>
+        internal void AddUniversalDynamicSymbol(ProcessSymbolTraceData data, TraceProcess process, List<CodeAddressIndex> codeAddressesInMapping)
+        {
             Debug.Assert(process != null);
 
             // EndAddress is inclusive, so add one to get the exclusive length.
@@ -8680,7 +8747,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             MethodIndex methodIndex = Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid;
             ModuleFileIndex moduleFileIndex = Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid;
             TraceManagedModule module = null;
-            ForAllUnresolvedCodeAddressesInRange(process, data.StartAddress, symbolLength, true, delegate (ref CodeAddressInfo info)
+            ForAllCodeAddrAction resolve = delegate (ref CodeAddressInfo info)
             {
                 // If we already resolved, that means that the address was reused, so only add something if it does not already have
                 // information associated with it.
@@ -8730,7 +8797,99 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         info.SetMethodIndex(this, methodIndex);
                     }
                 }
-            });
+            };
+
+            if (codeAddressesInMapping == null)
+            {
+                ForAllUnresolvedCodeAddressesInRange(process, data.StartAddress, symbolLength, true, resolve);
+                return;
+            }
+
+            // Binary search for the first code address >= StartAddress, then walk to the (inclusive) EndAddress.
+            int lo = 0;
+            int hi = codeAddressesInMapping.Count;
+            while (lo < hi)
+            {
+                int mid = lo + (hi - lo) / 2;
+                if (codeAddresses[(int)codeAddressesInMapping[mid]].Address < data.StartAddress)
+                {
+                    lo = mid + 1;
+                }
+                else
+                {
+                    hi = mid;
+                }
+            }
+
+            for (int i = lo; i < codeAddressesInMapping.Count; i++)
+            {
+                CodeAddressIndex codeAddressIndex = codeAddressesInMapping[i];
+                if (data.EndAddress < codeAddresses[(int)codeAddressIndex].Address)
+                {
+                    break;
+                }
+
+                resolve(ref codeAddresses.UnderlyingArray[(int)codeAddressIndex]);
+            }
+        }
+
+        /// <summary>
+        /// Removes all unresolved code addresses of 'process' in the inclusive range [start, endInclusive] from the
+        /// per-process tables and appends their indexes to 'taken'.   Later references to these addresses in
+        /// 'process' get new code address indexes.  This is used to separate code that reuses the same address
+        /// over time (e.g. code that is unloaded and replaced) so each use can be resolved independently.
+        /// </summary>
+        internal void TakeUnresolvedCodeAddressesInRange(TraceProcess process, Address start, Address endInclusive, List<CodeAddressIndex> taken)
+        {
+            if (process.codeAddressesInProcess == null || endInclusive < start)
+            {
+                return;
+            }
+
+            if (!process.unresolvedCodeAddressesIsSorted)
+            {
+                process.unresolvedCodeAddresses.Sort(
+                    (CodeAddressIndex x, CodeAddressIndex y) => codeAddresses[(int)x].Address.CompareTo(codeAddresses[(int)y].Address));
+                process.unresolvedCodeAddressesIsSorted = true;
+            }
+
+            int startIdx;
+            if (!process.unresolvedCodeAddresses.BinarySearch(start, out startIdx, (addr, codeIdx) => addr.CompareTo(codeAddresses[(int)codeIdx].Address)))
+            {
+                startIdx++;
+            }
+
+            int curIdx = startIdx;
+            while (curIdx < process.unresolvedCodeAddresses.Count)
+            {
+                CodeAddressIndex codeAddrIdx = process.unresolvedCodeAddresses[curIdx];
+                Address codeAddr = codeAddresses[(int)codeAddrIdx].Address;
+                if (endInclusive < codeAddr)
+                {
+                    break;
+                }
+
+                taken.Add(codeAddrIdx);
+                process.codeAddressesInProcess.Remove(codeAddr);
+                curIdx++;
+            }
+
+            if (curIdx != startIdx)
+            {
+                process.unresolvedCodeAddresses.RemoveRange(startIdx, curIdx - startIdx);
+            }
+            Debug.Assert(process.unresolvedCodeAddresses.Count == process.codeAddressesInProcess.Count);
+        }
+
+        /// <summary>
+        /// Returns the code address index that 'address' currently maps to in 'process' (creating it if necessary)
+        /// in place of 'oldCodeAddressIndex', which must have been removed by TakeUnresolvedCodeAddressesInRange.
+        /// The usage count is moved from the old index to the new one.
+        /// </summary>
+        internal CodeAddressIndex ReplaceTakenCodeAddressIndex(TraceProcess process, CodeAddressIndex oldCodeAddressIndex)
+        {
+            codeAddresses.UnderlyingArray[(int)oldCodeAddressIndex].InclusiveCount--;
+            return GetOrCreateCodeAddressIndex(process, codeAddresses[(int)oldCodeAddressIndex].Address);
         }
 
         /// <summary>
