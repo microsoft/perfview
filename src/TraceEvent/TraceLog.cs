@@ -8848,9 +8848,26 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             if (!process.unresolvedCodeAddressesIsSorted)
             {
-                process.unresolvedCodeAddresses.Sort(
-                    (CodeAddressIndex x, CodeAddressIndex y) => codeAddresses[(int)x].Address.CompareTo(codeAddresses[(int)y].Address));
-                process.unresolvedCodeAddressesIsSorted = true;
+                // This is called for every mapping, and code addresses are added between mappings, so avoid
+                // sorting.  Compact the list in place, which preserves the order of the remaining entries.
+                int keep = 0;
+                for (int i = 0; i < process.unresolvedCodeAddresses.Count; i++)
+                {
+                    CodeAddressIndex codeAddrIdx = process.unresolvedCodeAddresses[i];
+                    Address codeAddr = codeAddresses[(int)codeAddrIdx].Address;
+                    if (start <= codeAddr && codeAddr <= endInclusive)
+                    {
+                        taken.Add(codeAddrIdx);
+                        process.codeAddressesInProcess.Remove(codeAddr);
+                    }
+                    else
+                    {
+                        process.unresolvedCodeAddresses[keep++] = codeAddrIdx;
+                    }
+                }
+                process.unresolvedCodeAddresses.Count = keep;
+                Debug.Assert(process.unresolvedCodeAddresses.Count == process.codeAddressesInProcess.Count);
+                return;
             }
 
             int startIdx;

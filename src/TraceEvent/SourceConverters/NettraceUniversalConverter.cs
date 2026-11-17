@@ -69,10 +69,13 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                 MappingGeneration generation = new MappingGeneration(data.Id, data.StartAddress, data.EndAddress);
                 if (state.Overlaps(generation))
                 {
-                    // The address range is being reused.  Code addresses seen so far belong to the older mappings.
+                    // The address range is being reused.
                     state.HasOverlappingGenerations = true;
-                    SeparateCodeAddressesForNewMapping(traceLog, process, state, generation, data.TimeStampQPC);
                 }
+
+                // Code addresses seen so far in the range were seen before this mapping was loaded, so they belong to
+                // older mappings, or to no mapping at all (an unknown gap, e.g. before the first load).
+                SeparateCodeAddressesForNewMapping(traceLog, process, state, generation, data.TimeStampQPC);
                 state.Generations.Add(generation);
 
                 string fileName = data.FileName;
@@ -204,9 +207,9 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
         }
 
         /// <summary>
-        /// 'newGeneration' overlaps existing mappings in 'process'.   Hand the code addresses seen so far in its range to the
-        /// newest existing mapping that contains them (or none if they were seen in a gap), so that later uses of the same
-        /// addresses get new code addresses which resolve against 'newGeneration'.
+        /// 'newGeneration' is being loaded in 'process'.   Hand the code addresses seen so far in its range to the newest
+        /// existing mapping that contains them (or to none if they were seen in a gap, e.g. before the first load), so that
+        /// later uses of the same addresses get new code addresses which resolve against 'newGeneration'.
         /// </summary>
         private static void SeparateCodeAddressesForNewMapping(TraceLog traceLog, TraceProcess process, ProcessMappingState state,
             MappingGeneration newGeneration, long mappingTimeStampQPC)

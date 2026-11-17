@@ -61,8 +61,9 @@ namespace TraceEventTests
             byte[] nettrace = BuildNettrace(mappingsBeforeSamplesAtSameTime);
             List<(int pid, long time, ulong address, string method, string module)> samples = GetLeafFrames(nettrace);
 
-            // Before the first load: no symbol.
+            // Before the first load: no symbol, whether or not an earlier mapping (the kernel) covers the address.
             AssertSample(samples, ReusePid, 150, Base + 0x40, null);
+            AssertSample(samples, OtherPid, 150, Base + 0x40, null);
 
             // Program A, including its exact load time and its inclusive last byte, but not the byte after it.
             AssertSample(samples, ReusePid, 200, Base, "progA");
@@ -220,11 +221,12 @@ namespace TraceEventTests
                 Emit(ReuseThreadIndex, ProcessCreateMetadataId, 100, 0, bw => WriteProcessCreatePayload(bw, "reuse"));
                 Emit(OtherThreadIndex, ProcessCreateMetadataId, 100, 0, bw => WriteProcessCreatePayload(bw, "other"));
 
-                // Like real producers, map the kernel address space first; BPF programs are mapped over parts of it.
-                Emit(ReuseThreadIndex, ProcessMappingMetadataId, 100, 0, bw => WriteProcessMappingPayload(bw, 100, KernelStart, ulong.MaxValue, "vmlinux"));
+                // Like real producers, map the kernel address space in process 20; BPF programs are mapped over parts
+                // of it.  Process 10 has no mapping covering the programs before the first one is loaded.
                 Emit(OtherThreadIndex, ProcessMappingMetadataId, 100, 0, bw => WriteProcessMappingPayload(bw, 100, KernelStart, ulong.MaxValue, "vmlinux"));
 
                 Sample(ReuseThreadIndex, 150, 0x40);
+                Sample(OtherThreadIndex, 150, 0x40);
 
                 AtSameTime(
                     () =>
