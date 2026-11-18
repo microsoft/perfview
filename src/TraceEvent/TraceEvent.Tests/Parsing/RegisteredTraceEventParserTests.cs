@@ -233,7 +233,8 @@ namespace TraceEventTests
         /// Test that the Event Log channels are declared and that each event refers to its own channel.
         /// Microsoft-Windows-TaskScheduler imports System, declares Microsoft-Windows-TaskScheduler/Operational
         /// (value 16), and logs event 100 to Operational. Each event's channel (which the manifest takes from TDH) is
-        /// also compared with the channel the Event Log API (wevtapi) gives the same Id and Version.
+        /// also compared with the channel the Event Log API (wevtapi) gives the same Id and Version. Without
+        /// ManifestGenerationOptions.IncludeChannels, the manifest has no channels.
         /// </summary>
         [WindowsFact]
         public void GetManifestForRegisteredProvider_IncludesEventLogChannels()
@@ -241,7 +242,11 @@ namespace TraceEventTests
             const string providerName = "Microsoft-Windows-TaskScheduler";
             const string operationalChid = "Microsoft_Windows_TaskScheduler_Operational";
 
-            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
+            string withoutChannels = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
+            Assert.DoesNotContain("<channels>", withoutChannels);
+            Assert.DoesNotContain(" channel=", withoutChannels);
+
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName, ManifestGenerationOptions.IncludeChannels);
 
             var doc = new XmlDocument();
             doc.LoadXml(manifest);
@@ -300,7 +305,7 @@ namespace TraceEventTests
             Assert.Equal("Microsoft-Windows-RestartManager", TraceEventProviders.GetManifestProviderName(providerGuid));
             _output.WriteLine($"GetProviderName: {TraceEventProviders.GetProviderName(providerGuid)}");
 
-            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerGuid);
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerGuid, ManifestGenerationOptions.IncludeChannels);
 
             var doc = new XmlDocument();
             doc.LoadXml(manifest);

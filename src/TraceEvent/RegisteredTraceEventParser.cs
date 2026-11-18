@@ -15,6 +15,23 @@ using System.Xml;
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     /// <summary>
+    /// Options for RegisteredTraceEventParser.GetManifestForRegisteredProvider.
+    /// </summary>
+    [Flags]
+    public enum ManifestGenerationOptions
+    {
+        /// <summary>
+        /// The manifest as TDH describes the provider.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Also include the provider's Event Log channels. Reading them from the Event Log service costs about a
+        /// millisecond per provider.
+        /// </summary>
+        IncludeChannels = 1,
+    }
+
+    /// <summary>
     /// RegisteredTraceEventParser uses the standard windows provider database (TDH, what gets registered with wevtutil)
     /// to find the names of events and fields of the events).   
     /// </summary>
@@ -77,7 +94,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// manifest is not as rich as the original source manifest because some information
         /// is not actually compiled into the binary manifest that is registered with the OS.  
         /// </summary>
-        public static string GetManifestForRegisteredProvider(string providerName)
+        /// <param name="providerName">The name of the provider.</param>
+        /// <param name="options">What to include in the manifest beyond what TDH describes.</param>
+        public static string GetManifestForRegisteredProvider(string providerName, ManifestGenerationOptions options = ManifestGenerationOptions.None)
         {
             var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
             if (providerGuid == Guid.Empty)
@@ -85,7 +104,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 throw new ApplicationException("Could not find provider with name " + providerName);
             }
 
-            return GetManifestForRegisteredProvider(providerGuid);
+            return GetManifestForRegisteredProvider(providerGuid, options);
         }
         /// <summary>
         /// Given a provider GUID that has been registered with the operating system, get
@@ -93,7 +112,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// manifest is not as rich as the original source manifest because some information
         /// is not actually compiled into the binary manifest that is registered with the OS.  
         /// </summary>
-        public static string GetManifestForRegisteredProvider(Guid providerGuid)
+        /// <param name="providerGuid">The GUID of the provider.</param>
+        /// <param name="options">What to include in the manifest beyond what TDH describes.</param>
+        public static string GetManifestForRegisteredProvider(Guid providerGuid, ManifestGenerationOptions options = ManifestGenerationOptions.None)
         {
             int buffSize = 84000;       // Still in the small object heap.  
             var buffer = new byte[buffSize]; // Still in the small object heap.
@@ -121,8 +142,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // Event messages: KEY is the string ID, VALUE is the message
             List<KeyValuePair<string, string>> eventLocalizations = new List<KeyValuePair<string, string>>();
 
-            // Event Log channels, keyed by the channel value in the event descriptors (null if not an Event Log publisher)
-            SortedDictionary<byte, ChannelInfo> channels = GetEventLogChannels(providerGuid);
+            // Event Log channels, keyed by the channel value in the event descriptors (null if not requested or not an
+            // Event Log publisher)
+            SortedDictionary<byte, ChannelInfo> channels = (options & ManifestGenerationOptions.IncludeChannels) != 0
+                ? GetEventLogChannels(providerGuid) : null;
 
             // Track emitted string IDs to prevent duplicates in the stringTable
             HashSet<string> emittedStringIds = new HashSet<string>();
