@@ -430,7 +430,6 @@ namespace TraceEventTests
                         Mapping(ReuseThreadIndex, 200, 1, 0xff, "[bpf]");
                         Symbol(ReuseThreadIndex, 200, 1, 1, 0xff, "progA");
                         Mapping(OtherThreadIndex, 200, 1, 0xff, "[bpf]");
-                        Symbol(OtherThreadIndex, 200, 1, 1, 0xff, "progA");
                     },
                     () => Sample(ReuseThreadIndex, 200, 0x0));
 
