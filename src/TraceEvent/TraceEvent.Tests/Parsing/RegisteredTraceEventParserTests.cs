@@ -854,7 +854,7 @@ namespace TraceEventTests
             {
                 foreach (var keywordItem in keywordsItems)
                 {
-                    if (keywordItem.Value >= 1000000000000UL)
+                    if (keywordItem.Value >= 0x1000000000000UL)
                     {
                         continue;
                     }
