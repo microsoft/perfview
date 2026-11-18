@@ -157,7 +157,16 @@ namespace TraceEventTests
             }
         }
 
-        private static byte[] BuildLifecycleNettrace(bool mappingFirst, bool includeUnloads = true)
+        [Fact]
+        public void SymbolsDoNotLeakAcrossProcessInstances()
+        {
+            var samples = GetLeafFrames(BuildLifecycleNettrace(true, includeNewProcessSymbols: false));
+            AssertSample(samples, 40, 400, Base + 0x40, null);
+            AssertSample(samples, ReusePid, 950, Base + 0x40, null);
+            AssertSample(samples, OtherPid, 950, Base + 0x40, "other-process");
+        }
+
+        private static byte[] BuildLifecycleNettrace(bool mappingFirst, bool includeUnloads = true, bool includeNewProcessSymbols = true)
         {
             const int unloadMetadataId = 5;
             const int exitMetadataId = 6;
@@ -177,6 +186,7 @@ namespace TraceEventTests
                 w.WriteThreadEntry(2, 200, OtherPid);
                 w.WriteThreadEntry(3, 300, 30);
                 w.WriteThreadEntry(4, 101, ReusePid);
+                w.WriteThreadEntry(5, 400, 40);
             });
             ulong[] addresses = { Base, Base + 0x40, Base + 0x4f, Base + 0x50, Base + 0x5f, Base + 0x60, Base + 0x80, ulong.MaxValue - 1, ulong.MaxValue };
             writer.WriteBlock(5, w =>
@@ -212,7 +222,10 @@ namespace TraceEventTests
                 void Map(long thread, long time, ulong id, ulong start, ulong end, string name)
                 {
                     Emit(thread, ProcessMappingMetadataId, time, 0, bw => WriteProcessMappingPayload(bw, id, start, end, "[bpf]"));
-                    Emit(thread, ProcessSymbolMetadataId, time, 0, bw => WriteProcessSymbolPayload(bw, id, id, start, end, name));
+                    if (name != null)
+                    {
+                        Emit(thread, ProcessSymbolMetadataId, time, 0, bw => WriteProcessSymbolPayload(bw, id, id, start, end, name));
+                    }
                 }
                 void Unload(long thread, long time, ulong id, ulong start, ulong end)
                 {
@@ -235,15 +248,18 @@ namespace TraceEventTests
                 Emit(1, ProcessCreateMetadataId, 100, 0, bw => WriteProcessCreatePayload(bw, "reuse"));
                 Emit(2, ProcessCreateMetadataId, 100, 0, bw => WriteProcessCreatePayload(bw, "other"));
                 Emit(3, ProcessCreateMetadataId, 100, 0, bw => WriteProcessCreatePayload(bw, "last"));
+                Emit(5, ProcessCreateMetadataId, 100, 0, bw => WriteProcessCreatePayload(bw, "no-symbol"));
                 Map(1, 200, 1, Base, Base + 0xff, "A");
                 Map(2, 200, 1, Base, Base + 0xff, "other-process");
                 Map(3, 200, 1, ulong.MaxValue - 0xff, ulong.MaxValue, "last-byte");
+                Map(5, 200, 1, Base, Base + 0xff, null);
                 AtTime(() => Map(1, 300, 2, Base + 0x40, Base + 0x7f, "B"),
                     () => Sample(1, 300, Base, Base + 0x40, Base + 0x80));
                 Unload(1, 350, 999, 0, ulong.MaxValue);
                 Unload(1, 350, 2, Base + 0x80, Base + 0xff);
                 Sample(1, 399, Base + 0x50);
                 Sample(3, 399, ulong.MaxValue);
+                Sample(5, 400, Base + 0x40);
                 AtTime(() =>
                     {
                         Unload(1, 400, 2, Base + 0x50, Base + 0x5f);
@@ -273,7 +289,7 @@ namespace TraceEventTests
                 Emit(1, exitMetadataId, 800, 0, bw => { });
                 Sample(1, 850, Base + 0x40);
                 Emit(4, ProcessCreateMetadataId, 900, 0, bw => WriteProcessCreatePayload(bw, "new"));
-                Map(4, 900, 1, Base, Base + 0xff, "new-process");
+                Map(4, 900, 1, Base, Base + 0xff, includeNewProcessSymbols ? "new-process" : null);
                 Sample(4, 950, Base + 0x40);
                 Sample(2, 950, Base + 0x40);
             });
@@ -430,6 +446,7 @@ namespace TraceEventTests
                         Mapping(ReuseThreadIndex, 200, 1, 0xff, "[bpf]");
                         Symbol(ReuseThreadIndex, 200, 1, 1, 0xff, "progA");
                         Mapping(OtherThreadIndex, 200, 1, 0xff, "[bpf]");
+                        Symbol(OtherThreadIndex, 200, 1, 1, 0xff, "progA");
                     },
                     () => Sample(ReuseThreadIndex, 200, 0x0));
 

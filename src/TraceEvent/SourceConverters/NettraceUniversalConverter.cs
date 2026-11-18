@@ -11,7 +11,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
     {
         private const string DotnetJittedCodeMappingName = "/memfd:doublemapper";
 
-        private List<KeyValuePair<MappingGeneration, ProcessSymbolTraceData>> _dynamicSymbols = new List<KeyValuePair<MappingGeneration, ProcessSymbolTraceData>>();    // Generation is null if the symbol's process had no mapping with its MappingId.
+        private List<KeyValuePair<TraceProcess, ProcessSymbolTraceData>> _dynamicSymbols = new List<KeyValuePair<TraceProcess, ProcessSymbolTraceData>>();
         private Dictionary<ulong, ProcessMappingMetadataTraceData> _mappingMetadata = new Dictionary<ulong, ProcessMappingMetadataTraceData>();
         private Dictionary<TraceProcess, ProcessMappingState> _mappingStates = new Dictionary<TraceProcess, ProcessMappingState>();
         private bool _trackRecentStacks;
@@ -65,13 +65,13 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             {
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 ProcessMappingState state = GetOrCreateMappingState(process);
-                MappingGeneration generation = new MappingGeneration(process, data.Id, data.StartAddress, data.EndAddress);
+                MappingGeneration generation = new MappingGeneration(data.StartAddress, data.EndAddress);
 
                 // Code addresses seen so far in the range were seen before this mapping was loaded, so they belong to
                 // older mappings, or to no mapping at all (an unknown gap, e.g. before the first load).
                 SeparateCodeAddressesForMappingChange(traceLog, process, state, data.StartAddress, data.EndAddress, data.TimeStampQPC);
                 state.Generations.Add(generation);
-                // Ids are unique per process instance, but tolerate reuse by letting later events refer to the newest mapping.
+                // Ids are unique per process instance.
                 state.GenerationsById[data.Id] = generation;
 
                 string fileName = data.FileName;
@@ -112,15 +112,8 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             };
             universalSystemParser.ProcessSymbol += delegate (ProcessSymbolTraceData data)
             {
-                // Bind the symbol to its process's mapping with this Id as of the symbol's timestamp.
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                MappingGeneration generation = null;
-                if (_mappingStates.TryGetValue(process, out ProcessMappingState state) &&
-                    state.GenerationsById.TryGetValue(data.MappingId, out generation))
-                {
-                    generation.HasOwnSymbols = true;
-                }
-                _dynamicSymbols.Add(new KeyValuePair<MappingGeneration, ProcessSymbolTraceData>(generation, (ProcessSymbolTraceData)data.Clone()));
+                _dynamicSymbols.Add(new KeyValuePair<TraceProcess, ProcessSymbolTraceData>(process, (ProcessSymbolTraceData)data.Clone()));
             };
 
             UniversalEventsTraceEventParser universalEventsParser = new UniversalEventsTraceEventParser(source);
@@ -163,36 +156,13 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                 }
             }
 
-            var symbolsByMappingId = new Dictionary<ulong, List<ProcessSymbolTraceData>>();
-            foreach (KeyValuePair<MappingGeneration, ProcessSymbolTraceData> generationSymbol in _dynamicSymbols)
+            foreach (KeyValuePair<TraceProcess, ProcessSymbolTraceData> processSymbol in _dynamicSymbols)
             {
-                ProcessSymbolTraceData universalProcessSymbol = generationSymbol.Value;
-                if (generationSymbol.Key != null)
+                ProcessSymbolTraceData symbol = processSymbol.Value;
+                if (_mappingStates.TryGetValue(processSymbol.Key, out ProcessMappingState state) &&
+                    state.GenerationsById.TryGetValue(symbol.MappingId, out MappingGeneration generation))
                 {
-                    traceLog.CodeAddresses.AddUniversalDynamicSymbol(universalProcessSymbol, generationSymbol.Key.Process, generationSymbol.Key.CodeAddresses);
-                }
-
-                if (!symbolsByMappingId.TryGetValue(universalProcessSymbol.MappingId, out List<ProcessSymbolTraceData> symbols))
-                {
-                    symbols = new List<ProcessSymbolTraceData>();
-                    symbolsByMappingId[universalProcessSymbol.MappingId] = symbols;
-                }
-                symbols.Add(universalProcessSymbol);
-            }
-
-            // Older producers could emit a shared mapping's symbols once, in one of the processes that share its Id
-            // (e.g. after fork). Mappings without symbols of their own use the symbols emitted for their Id elsewhere.
-            foreach (KeyValuePair<TraceProcess, ProcessMappingState> processState in _mappingStates)
-            {
-                foreach (MappingGeneration generation in processState.Value.Generations)
-                {
-                    if (!generation.HasOwnSymbols && symbolsByMappingId.TryGetValue(generation.Id, out List<ProcessSymbolTraceData> symbols))
-                    {
-                        foreach (ProcessSymbolTraceData universalProcessSymbol in symbols)
-                        {
-                            traceLog.CodeAddresses.AddUniversalDynamicSymbol(universalProcessSymbol, processState.Key, generation.CodeAddresses);
-                        }
-                    }
+                    traceLog.CodeAddresses.AddUniversalDynamicSymbol(symbol, processSymbol.Key, generation.CodeAddresses);
                 }
             }
 
@@ -293,10 +263,8 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
         /// </summary>
         private sealed class MappingGeneration
         {
-            public MappingGeneration(TraceProcess process, ulong id, ulong startAddress, ulong endAddress)
+            public MappingGeneration(ulong startAddress, ulong endAddress)
             {
-                Process = process;
-                Id = id;
                 if (startAddress <= endAddress)
                 {
                     LiveRanges.Add(new KeyValuePair<ulong, ulong>(startAddress, endAddress));
@@ -340,9 +308,6 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                 }
             }
 
-            public readonly TraceProcess Process;
-            public readonly ulong Id;                       // Unique within Process, but may be shared with other processes.
-            public bool HasOwnSymbols;                      // True if ProcessSymbol events in Process referred to this mapping.
             public TraceModuleFile ModuleFile;              // Null for jitted code mappings.
             public readonly List<CodeAddressIndex> CodeAddresses = new List<CodeAddressIndex>();
             public readonly List<KeyValuePair<ulong, ulong>> LiveRanges = new List<KeyValuePair<ulong, ulong>>();
