@@ -1,10 +1,15 @@
-﻿using System.Windows;
+﻿using System.Linq;
+using System.Windows;
 
 namespace PerfView.Dialogs;
 
 /// <summary>
 ///  Themed replacement for <see cref="MessageBox"/> that uses a custom XAML window.
 /// </summary>
+/// <remarks>
+/// Without a loaded owner, uses the active application window or the main window.
+/// If neither is loaded, the dialog has its own taskbar entry.
+/// </remarks>
 public static class XamlMessageBox
 {
     /// <inheritdoc cref="MessageBox.Show(string)"/>
@@ -56,10 +61,23 @@ public static class XamlMessageBox
             return dispatcher.Invoke(() => Show(owner, message, caption, buttons, icon, defaultResult));
         }
 
+        if (owner?.IsLoaded != true)
+        {
+            // An unowned modal tool window can disappear behind the disabled application
+            // after Alt+Tab. Keep it above the active window, or the main window if inactive.
+            owner = Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive)
+                ?? Application.Current?.MainWindow;
+        }
+
         MessageBoxWindow window = new(message, caption, buttons, icon, defaultResult);
         if (owner?.IsLoaded == true)
         {
             window.Owner = owner;
+        }
+        else
+        {
+            window.ShowInTaskbar = true;
+            window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
         }
 
         window.ShowDialog();
