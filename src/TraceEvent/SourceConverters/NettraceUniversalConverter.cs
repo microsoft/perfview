@@ -11,8 +11,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
     {
         private const string DotnetJittedCodeMappingName = "/memfd:doublemapper";
 
-        private List<ProcessSymbolTraceData> _dynamicSymbols = new List<ProcessSymbolTraceData>();
-        private Dictionary<ulong, HashSet<TraceProcess>> _mappingIdToProcesses = new Dictionary<ulong, HashSet<TraceProcess>>();
+        private List<KeyValuePair<TraceProcess, ProcessSymbolTraceData>> _dynamicSymbols = new List<KeyValuePair<TraceProcess, ProcessSymbolTraceData>>();
         private Dictionary<ulong, ProcessMappingMetadataTraceData> _mappingMetadata = new Dictionary<ulong, ProcessMappingMetadataTraceData>();
         private Dictionary<TraceProcess, ProcessMappingState> _mappingStates = new Dictionary<TraceProcess, ProcessMappingState>();
         private bool _trackRecentStacks;
@@ -53,30 +52,26 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             universalSystemParser.ProcessExit += delegate (EmptyTraceData data)
             {
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
+                ProcessMappingState state = GetOrCreateMappingState(process);
+                // Exit follows samples at its timestamp, unlike a mapping transition.
+                SeparateCodeAddressesForMappingChange(traceLog, process, state, 0, ulong.MaxValue, data.TimeStampQPC, false);
+                foreach (MappingGeneration generation in state.Generations)
+                {
+                    generation.LiveRanges.Clear();
+                }
                 process.UniversalProcessStop(data);
             };
             universalSystemParser.ProcessMapping += delegate (ProcessMappingTraceData data)
             {
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                if (!_mappingIdToProcesses.TryGetValue(data.Id, out HashSet<TraceProcess> processes))
-                {
-                    processes = new HashSet<TraceProcess>();
-                    _mappingIdToProcesses[data.Id] = processes;
-                }
-                processes.Add(process);
-
                 ProcessMappingState state = GetOrCreateMappingState(process);
-                MappingGeneration generation = new MappingGeneration(data.Id, data.StartAddress, data.EndAddress);
-                if (state.Overlaps(generation))
-                {
-                    // The address range is being reused.
-                    state.HasOverlappingGenerations = true;
-                }
+                MappingGeneration generation = new MappingGeneration(data.StartAddress, data.EndAddress);
 
                 // Code addresses seen so far in the range were seen before this mapping was loaded, so they belong to
                 // older mappings, or to no mapping at all (an unknown gap, e.g. before the first load).
-                SeparateCodeAddressesForNewMapping(traceLog, process, state, generation, data.TimeStampQPC);
+                SeparateCodeAddressesForMappingChange(traceLog, process, state, data.StartAddress, data.EndAddress, data.TimeStampQPC);
                 state.Generations.Add(generation);
+                state.GenerationsById.Add(data.Id, generation);
 
                 string fileName = data.FileName;
                 if (!string.IsNullOrEmpty(fileName) && fileName.StartsWith(DotnetJittedCodeMappingName, StringComparison.Ordinal))
@@ -89,13 +84,35 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                 _mappingMetadata.TryGetValue(data.MetadataId, out ProcessMappingMetadataTraceData metadata);
                 generation.ModuleFile = process.LoadedModules.UniversalMapping(fileName, data.StartAddress, data.EndAddress, data.TimeStampQPC, metadata);
             };
+            universalSystemParser.ProcessMappingUnload += delegate (ProcessMappingUnloadTraceData data)
+            {
+                TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
+                if (!_mappingStates.TryGetValue(process, out ProcessMappingState state) ||
+                    !state.GenerationsById.TryGetValue(data.Id, out MappingGeneration generation))
+                {
+                    return;
+                }
+                // Preserve the old ownership before removing any live pieces. Other mappings,
+                // including overlays, remain live and are not unloaded by this event.
+                foreach (KeyValuePair<ulong, ulong> range in generation.LiveRanges)
+                {
+                    ulong start = Math.Max(range.Key, data.StartAddress);
+                    ulong end = Math.Min(range.Value, data.EndAddress);
+                    if (start <= end)
+                    {
+                        SeparateCodeAddressesForMappingChange(traceLog, process, state, start, end, data.TimeStampQPC);
+                    }
+                }
+                generation.Unload(data.StartAddress, data.EndAddress);
+            };
             universalSystemParser.ProcessMappingMetadata += delegate (ProcessMappingMetadataTraceData data)
             {
                 _mappingMetadata[data.Id] = (ProcessMappingMetadataTraceData)data.Clone();
             };
             universalSystemParser.ProcessSymbol += delegate (ProcessSymbolTraceData data)
             {
-                _dynamicSymbols.Add((ProcessSymbolTraceData)data.Clone());
+                TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
+                _dynamicSymbols.Add(new KeyValuePair<TraceProcess, ProcessSymbolTraceData>(process, (ProcessSymbolTraceData)data.Clone()));
             };
 
             UniversalEventsTraceEventParser universalEventsParser = new UniversalEventsTraceEventParser(source);
@@ -109,53 +126,42 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
 
         public void AfterProcess(TraceLog traceLog)
         {
-            // In processes where mappings reused address ranges, the remaining code addresses belong to the newest
-            // mapping that contains them.
+            // The remaining code addresses belong to the newest still-live mapping that contains them.
             foreach (KeyValuePair<TraceProcess, ProcessMappingState> processState in _mappingStates)
             {
                 ProcessMappingState state = processState.Value;
-                if (!state.HasOverlappingGenerations)
+                if (state.Generations.Count == 0)
                 {
                     continue;
                 }
-
                 var taken = new List<CodeAddressIndex>();
                 for (int i = state.Generations.Count - 1; 0 <= i; --i)
                 {
                     MappingGeneration generation = state.Generations[i];
-                    taken.Clear();
-                    traceLog.CodeAddresses.TakeUnresolvedCodeAddressesInRange(processState.Key, generation.StartAddress, generation.EndAddress, taken);
-                    generation.CodeAddresses.AddRange(taken);
+                    foreach (KeyValuePair<ulong, ulong> range in generation.LiveRanges)
+                    {
+                        taken.Clear();
+                        traceLog.CodeAddresses.TakeUnresolvedCodeAddressesInRange(processState.Key, range.Key, range.Value, taken);
+                        generation.CodeAddresses.AddRange(taken);
+                    }
                 }
 
+                // Do not let TraceLog's final module fallback attach unmapped samples to an unloaded module.
+                taken.Clear();
+                traceLog.CodeAddresses.TakeUnresolvedCodeAddressesInRange(processState.Key, 0, ulong.MaxValue, taken);
                 foreach (MappingGeneration generation in state.Generations)
                 {
                     generation.CodeAddresses.Sort((x, y) => traceLog.CodeAddresses.Address(x).CompareTo(traceLog.CodeAddresses.Address(y)));
                 }
             }
 
-            foreach (var universalProcessSymbol in _dynamicSymbols)
+            foreach (var processSymbol in _dynamicSymbols)
             {
-                if (_mappingIdToProcesses.TryGetValue(universalProcessSymbol.MappingId, out HashSet<TraceProcess> processes))
+                ProcessSymbolTraceData universalProcessSymbol = processSymbol.Value;
+                if (_mappingStates.TryGetValue(processSymbol.Key, out ProcessMappingState state) &&
+                    state.GenerationsById.TryGetValue(universalProcessSymbol.MappingId, out MappingGeneration generation))
                 {
-                    foreach (TraceProcess process in processes)
-                    {
-                        if (_mappingStates.TryGetValue(process, out ProcessMappingState state) && state.HasOverlappingGenerations)
-                        {
-                            // Only apply the symbol to code addresses that were seen while its mapping was current.
-                            foreach (MappingGeneration generation in state.Generations)
-                            {
-                                if (generation.Id == universalProcessSymbol.MappingId)
-                                {
-                                    traceLog.CodeAddresses.AddUniversalDynamicSymbol(universalProcessSymbol, process, generation.CodeAddresses);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            traceLog.CodeAddresses.AddUniversalDynamicSymbol(universalProcessSymbol, process);
-                        }
-                    }
+                    traceLog.CodeAddresses.AddUniversalDynamicSymbol(universalProcessSymbol, processSymbol.Key, generation.CodeAddresses);
                 }
             }
 
@@ -163,11 +169,6 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             // not to another mapping that used the same addresses at a different time.
             foreach (ProcessMappingState state in _mappingStates.Values)
             {
-                if (!state.HasOverlappingGenerations)
-                {
-                    continue;
-                }
-
                 foreach (MappingGeneration generation in state.Generations)
                 {
                     if (generation.ModuleFile == null)
@@ -196,7 +197,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                 return;
             }
 
-            // Remember the stacks of the events at the latest timestamp, see SeparateCodeAddressesForNewMapping.
+            // Remember the stacks of the events at the latest timestamp, see SeparateCodeAddressesForMappingChange.
             ProcessMappingState state = GetOrCreateMappingState(process);
             if (state.RecentStacksQPC != timeStampQPC)
             {
@@ -207,15 +208,14 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
         }
 
         /// <summary>
-        /// 'newGeneration' is being loaded in 'process'.   Hand the code addresses seen so far in its range to the newest
-        /// existing mapping that contains them (or to none if they were seen in a gap, e.g. before the first load), so that
-        /// later uses of the same addresses get new code addresses which resolve against 'newGeneration'.
+        /// Preserve the ownership of samples seen before a mapping change. Later samples get fresh code addresses,
+        /// allowing overlays and partial unloads to change ownership independently at each address.
         /// </summary>
-        private static void SeparateCodeAddressesForNewMapping(TraceLog traceLog, TraceProcess process, ProcessMappingState state,
-            MappingGeneration newGeneration, long mappingTimeStampQPC)
+        private static void SeparateCodeAddressesForMappingChange(TraceLog traceLog, TraceProcess process, ProcessMappingState state,
+            ulong startAddress, ulong endAddress, long mappingTimeStampQPC, bool moveSameTimeSamples = true)
         {
             var taken = new List<CodeAddressIndex>();
-            traceLog.CodeAddresses.TakeUnresolvedCodeAddressesInRange(process, newGeneration.StartAddress, newGeneration.EndAddress, taken);
+            traceLog.CodeAddresses.TakeUnresolvedCodeAddressesInRange(process, startAddress, endAddress, taken);
             if (taken.Count == 0)
             {
                 return;
@@ -227,9 +227,9 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                 owner?.CodeAddresses.Add(codeAddressIndex);
             }
 
-            // Events at the same timestamp as the mapping belong to it, but may have been written before it.
-            // Move their stacks to new code addresses so they resolve against the new mapping.
-            if (state.RecentStacks.Count != 0 && mappingTimeStampQPC <= state.RecentStacksQPC)
+            // A mapping change governs samples at its timestamp, even if they were written before it.
+            // Move their stacks to fresh code addresses so they resolve against the updated live mappings.
+            if (moveSameTimeSamples && state.RecentStacks.Count != 0 && mappingTimeStampQPC <= state.RecentStacksQPC)
             {
                 var takenSet = new HashSet<CodeAddressIndex>(taken);
                 for (int i = 0; i < state.RecentStacks.Count; i++)
@@ -262,29 +262,19 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
         /// </summary>
         private sealed class MappingGeneration
         {
-            public MappingGeneration(ulong id, ulong startAddress, ulong endAddress)
+            public MappingGeneration(ulong startAddress, ulong endAddress)
             {
-                Id = id;
-                StartAddress = startAddress;
-                EndAddress = endAddress;
+                if (startAddress <= endAddress)
+                {
+                    LiveRanges.Add(new KeyValuePair<ulong, ulong>(startAddress, endAddress));
+                }
             }
 
-            public bool Contains(ulong address) { return StartAddress <= address && address <= EndAddress; }
-
-            public readonly ulong Id;
-            public readonly ulong StartAddress;
-            public readonly ulong EndAddress;               // Inclusive
-            public TraceModuleFile ModuleFile;              // Null for jitted code mappings.
-            public readonly List<CodeAddressIndex> CodeAddresses = new List<CodeAddressIndex>();     // Only used when HasOverlappingGenerations.
-        }
-
-        private sealed class ProcessMappingState
-        {
-            public bool Overlaps(MappingGeneration newGeneration)
+            public bool Contains(ulong address)
             {
-                foreach (MappingGeneration generation in Generations)
+                foreach (KeyValuePair<ulong, ulong> range in LiveRanges)
                 {
-                    if (generation.StartAddress <= newGeneration.EndAddress && newGeneration.StartAddress <= generation.EndAddress)
+                    if (range.Key <= address && address <= range.Value)
                     {
                         return true;
                     }
@@ -292,6 +282,38 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                 return false;
             }
 
+            public void Unload(ulong start, ulong end)
+            {
+                if (end < start)
+                {
+                    return;
+                }
+                for (int i = LiveRanges.Count - 1; i >= 0; --i)
+                {
+                    KeyValuePair<ulong, ulong> range = LiveRanges[i];
+                    if (end < range.Key || range.Value < start)
+                    {
+                        continue;
+                    }
+                    LiveRanges.RemoveAt(i);
+                    if (end < range.Value)
+                    {
+                        LiveRanges.Insert(i, new KeyValuePair<ulong, ulong>(end + 1, range.Value));
+                    }
+                    if (range.Key < start)
+                    {
+                        LiveRanges.Insert(i, new KeyValuePair<ulong, ulong>(range.Key, start - 1));
+                    }
+                }
+            }
+
+            public TraceModuleFile ModuleFile;              // Null for jitted code mappings.
+            public readonly List<CodeAddressIndex> CodeAddresses = new List<CodeAddressIndex>();
+            public readonly List<KeyValuePair<ulong, ulong>> LiveRanges = new List<KeyValuePair<ulong, ulong>>();
+        }
+
+        private sealed class ProcessMappingState
+        {
             public MappingGeneration FindNewestGenerationContaining(ulong address)
             {
                 for (int i = Generations.Count - 1; 0 <= i; --i)
@@ -305,7 +327,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             }
 
             public readonly List<MappingGeneration> Generations = new List<MappingGeneration>();     // In event order.
-            public bool HasOverlappingGenerations;                                                    // True if any address range was mapped more than once.
+            public readonly Dictionary<ulong, MappingGeneration> GenerationsById = new Dictionary<ulong, MappingGeneration>();
             public long RecentStacksQPC = long.MinValue;
             public readonly List<KeyValuePair<EventIndex, CallStackIndex>> RecentStacks = new List<KeyValuePair<EventIndex, CallStackIndex>>();    // Stacks of events at RecentStacksQPC.
         }

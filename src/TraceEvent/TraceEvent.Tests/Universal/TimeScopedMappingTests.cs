@@ -5,6 +5,7 @@ using FastSerialization;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.EventPipe;
+using Microsoft.Diagnostics.Tracing.Parsers;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -83,6 +84,201 @@ namespace TraceEventTests
             // Another process that only loaded A at the same addresses is unaffected.
             AssertSample(samples, OtherPid, 700, Base + 0x40, "progA");
             AssertSample(samples, OtherPid, 700, Base + 0x80, "progA");
+        }
+
+        /// <summary>
+        /// Explicit unloads remove only the named mapping's intersection, preserving overlays and surviving pieces.
+        /// </summary>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ExplicitUnloadsPreserveLivePiecesAndProcessIsolation(bool mappingsBeforeSamplesAtSameTime)
+        {
+            var samples = GetLeafFrames(BuildLifecycleNettrace(mappingsBeforeSamplesAtSameTime));
+            AssertSample(samples, ReusePid, 300, Base, "A");
+            AssertSample(samples, ReusePid, 300, Base + 0x40, "B");
+            AssertSample(samples, ReusePid, 300, Base + 0x80, "A");
+            AssertSample(samples, ReusePid, 399, Base + 0x50, "B");
+            AssertSample(samples, ReusePid, 400, Base + 0x4f, "B");
+            AssertSample(samples, ReusePid, 400, Base + 0x50, "A");
+            AssertSample(samples, ReusePid, 400, Base + 0x5f, "A");
+            AssertSample(samples, ReusePid, 400, Base + 0x60, "B");
+            AssertSample(samples, ReusePid, 450, Base, null, "");
+            AssertSample(samples, ReusePid, 450, Base + 0x40, "B");
+            AssertSample(samples, ReusePid, 450, Base + 0x50, null, "");
+            AssertSample(samples, ReusePid, 500, Base + 0x40, null, "");
+            AssertSample(samples, ReusePid, 600, Base + 0x40, "C");
+            AssertSample(samples, ReusePid, 650, Base + 0x40, "replacement");
+            AssertSample(samples, ReusePid, 700, Base + 0x40, null, "");
+            AssertSample(samples, ReusePid, 800, Base + 0x40, "D");
+            AssertSample(samples, ReusePid, 850, Base + 0x40, null, "");
+            AssertSample(samples, ReusePid, 950, Base + 0x40, "new-process");
+            AssertSample(samples, OtherPid, 950, Base + 0x40, "other-process");
+            AssertSample(samples, 30, 400, ulong.MaxValue - 1, "last-byte");
+            AssertSample(samples, 30, 399, ulong.MaxValue, "last-byte");
+            AssertSample(samples, 30, 400, ulong.MaxValue, null, "");
+        }
+
+        /// <summary>
+        /// Readers that ignore stable event ID 6 keep mappings and can incorrectly retain unloaded symbols.
+        /// </summary>
+        [Fact]
+        public void IgnoringUnloadEventsRetainsStaleSymbols()
+        {
+            var samples = GetLeafFrames(BuildLifecycleNettrace(true, includeUnloads: false));
+            AssertSample(samples, ReusePid, 500, Base + 0x40, "B");
+            AssertSample(samples, ReusePid, 700, Base + 0x40, "replacement");
+        }
+
+        /// <summary>
+        /// The stable unload template exposes its three varints and process header to raw readers.
+        /// </summary>
+        [Fact]
+        public void MappingUnloadPayloadIsAvailableToRawReaders()
+        {
+            using (var stream = new MemoryStream(BuildLifecycleNettrace(true)))
+            using (var source = new EventPipeEventSource(stream))
+            {
+                var parser = new UniversalSystemTraceEventParser(source);
+                var unloads = new List<(int pid, ulong id, ulong start, ulong end)>();
+                parser.ProcessMappingUnload += data =>
+                {
+                    Assert.Equal(6, (int)data.ID);
+                    Assert.Equal(new[] { "Id", "StartAddress", "EndAddress" }, data.PayloadNames);
+                    Assert.Equal(data.Id, data.PayloadValue(0));
+                    Assert.Equal(data.StartAddress, data.PayloadValue(1));
+                    Assert.Equal(data.EndAddress, data.PayloadValue(2));
+                    unloads.Add((data.ProcessID, data.Id, data.StartAddress, data.EndAddress));
+                };
+                source.Process();
+                Assert.Equal(8, unloads.Count);
+                Assert.Contains((ReusePid, 2UL, Base + 0x50, Base + 0x5f), unloads);
+                Assert.Contains((30, 1UL, ulong.MaxValue, ulong.MaxValue), unloads);
+            }
+        }
+
+        private static byte[] BuildLifecycleNettrace(bool mappingFirst, bool includeUnloads = true)
+        {
+            const int unloadMetadataId = 5;
+            const int exitMetadataId = 6;
+            var writer = new TimeScopedEventPipeWriter();
+            writer.WriteHeadersWithNonZeroSyncTime();
+            writer.WriteMetadataBlock(
+                new EventMetadata(ProcessCreateMetadataId, "Universal.System", "ProcessCreate", 1) { ProviderId = UniversalSystemProviderGuid },
+                new EventMetadata(ProcessMappingMetadataId, "Universal.System", "ProcessMapping", 3) { ProviderId = UniversalSystemProviderGuid },
+                new EventMetadata(ProcessSymbolMetadataId, "Universal.System", "ProcessSymbol", 4) { ProviderId = UniversalSystemProviderGuid },
+                new EventMetadata(unloadMetadataId, "Universal.System", "ProcessMappingUnload", 6) { ProviderId = UniversalSystemProviderGuid },
+                new EventMetadata(exitMetadataId, "Universal.System", "ProcessExit", 2) { ProviderId = UniversalSystemProviderGuid },
+                new EventMetadata(CpuSampleMetadataId, "Universal.Events", "cpu", 1,
+                    new MetadataParameter("Value", MetadataTypeCode.VarUInt)) { ProviderId = UniversalEventsProviderGuid });
+            writer.WriteThreadBlock(w =>
+            {
+                w.WriteThreadEntry(1, 100, ReusePid);
+                w.WriteThreadEntry(2, 200, OtherPid);
+                w.WriteThreadEntry(3, 300, 30);
+                w.WriteThreadEntry(4, 101, ReusePid);
+            });
+            ulong[] addresses = { Base, Base + 0x40, Base + 0x4f, Base + 0x50, Base + 0x5f, Base + 0x60, Base + 0x80, ulong.MaxValue - 1, ulong.MaxValue };
+            writer.WriteBlock(5, w =>
+            {
+                w.Write(1);
+                w.Write(addresses.Length);
+                foreach (ulong address in addresses)
+                {
+                    w.Write(8);
+                    w.Write(address);
+                }
+            });
+            var sequenceNumbers = new Dictionary<long, int>();
+            writer.WriteEventBlock(w =>
+            {
+                void Emit(long thread, int metadata, long time, int stack, Action<BinaryWriter> payload)
+                {
+                    sequenceNumbers.TryGetValue(thread, out int sequence);
+                    sequenceNumbers[thread] = ++sequence;
+                    w.WriteEventBlob(new WriteEventOptions
+                    {
+                        MetadataId = metadata, ThreadIndexOrId = thread, CaptureThreadIndexOrId = thread,
+                        SequenceNumber = sequence, StackId = stack, Timestamp = time,
+                    }, payload);
+                }
+                void Sample(long thread, long time, params ulong[] values)
+                {
+                    foreach (ulong value in values)
+                    {
+                        Emit(thread, CpuSampleMetadataId, time, Array.IndexOf(addresses, value) + 1, bw => bw.WriteVarUInt(1));
+                    }
+                }
+                void Map(long thread, long time, ulong id, ulong start, ulong end, string name)
+                {
+                    Emit(thread, ProcessMappingMetadataId, time, 0, bw => WriteProcessMappingPayload(bw, id, start, end, "[bpf]"));
+                    Emit(thread, ProcessSymbolMetadataId, time, 0, bw => WriteProcessSymbolPayload(bw, id, id, start, end, name));
+                }
+                void Unload(long thread, long time, ulong id, ulong start, ulong end)
+                {
+                    if (includeUnloads)
+                    {
+                        Emit(thread, unloadMetadataId, time, 0, bw =>
+                        {
+                            bw.WriteVarUInt(id);
+                            bw.WriteVarUInt(start);
+                            bw.WriteVarUInt(end);
+                        });
+                    }
+                }
+                void AtTime(Action change, Action sample)
+                {
+                    if (mappingFirst) { change(); sample(); }
+                    else { sample(); change(); }
+                }
+
+                Emit(1, ProcessCreateMetadataId, 100, 0, bw => WriteProcessCreatePayload(bw, "reuse"));
+                Emit(2, ProcessCreateMetadataId, 100, 0, bw => WriteProcessCreatePayload(bw, "other"));
+                Emit(3, ProcessCreateMetadataId, 100, 0, bw => WriteProcessCreatePayload(bw, "last"));
+                Map(1, 200, 1, Base, Base + 0xff, "A");
+                Map(2, 200, 1, Base, Base + 0xff, "other-process");
+                Map(3, 200, 1, ulong.MaxValue - 0xff, ulong.MaxValue, "last-byte");
+                AtTime(() => Map(1, 300, 2, Base + 0x40, Base + 0x7f, "B"),
+                    () => Sample(1, 300, Base, Base + 0x40, Base + 0x80));
+                Unload(1, 350, 999, 0, ulong.MaxValue);
+                Unload(1, 350, 2, Base + 0x80, Base + 0xff);
+                Sample(1, 399, Base + 0x50);
+                Sample(3, 399, ulong.MaxValue);
+                AtTime(() =>
+                    {
+                        Unload(1, 400, 2, Base + 0x50, Base + 0x5f);
+                        Unload(3, 400, 1, ulong.MaxValue, ulong.MaxValue);
+                    },
+                    () =>
+                    {
+                        Sample(1, 400, Base + 0x4f, Base + 0x50, Base + 0x5f, Base + 0x60);
+                        Sample(3, 400, ulong.MaxValue - 1, ulong.MaxValue);
+                    });
+                AtTime(() => Unload(1, 450, 1, 0, ulong.MaxValue),
+                    () => Sample(1, 450, Base, Base + 0x40, Base + 0x50));
+                AtTime(() => Unload(1, 500, 2, 0, ulong.MaxValue),
+                    () => Sample(1, 500, Base + 0x40));
+                AtTime(() => Map(1, 600, 3, Base, Base + 0xff, "C"),
+                    () => Sample(1, 600, Base + 0x40));
+                AtTime(() =>
+                    {
+                        Unload(1, 650, 3, Base, Base + 0xff);
+                        Map(1, 650, 5, Base, Base + 0xff, "replacement");
+                    },
+                    () => Sample(1, 650, Base + 0x40));
+                AtTime(() => Unload(1, 700, 5, Base, Base + 0xff),
+                    () => Sample(1, 700, Base + 0x40));
+                Map(1, 750, 4, Base, Base + 0xff, "D");
+                Sample(1, 800, Base + 0x40);
+                Emit(1, exitMetadataId, 800, 0, bw => { });
+                Sample(1, 850, Base + 0x40);
+                Emit(4, ProcessCreateMetadataId, 900, 0, bw => WriteProcessCreatePayload(bw, "new"));
+                Map(4, 900, 1, Base, Base + 0xff, "new-process");
+                Sample(4, 950, Base + 0x40);
+                Sample(2, 950, Base + 0x40);
+            });
+            writer.WriteEndBlock();
+            return writer.ToArray();
         }
 
         private static void AssertSample(List<(int pid, long time, ulong address, string method, string module)> samples,
@@ -234,6 +430,7 @@ namespace TraceEventTests
                         Mapping(ReuseThreadIndex, 200, 1, 0xff, "[bpf]");
                         Symbol(ReuseThreadIndex, 200, 1, 1, 0xff, "progA");
                         Mapping(OtherThreadIndex, 200, 1, 0xff, "[bpf]");
+                        Symbol(OtherThreadIndex, 200, 1, 1, 0xff, "progA");
                     },
                     () => Sample(ReuseThreadIndex, 200, 0x0));
 
