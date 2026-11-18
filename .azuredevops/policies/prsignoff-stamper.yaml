@@ -1,0 +1,14 @@
+name: Disable Dependabot API sign-off
+description: Prevent API sign-off without triggering the default configuration
+resource: repository
+
+configuration:
+  pullRequestSignOffSettings:
+    enabled: true
+    configuration:
+      - name: Dependabot
+        enabled: false
+        pullRequestAllowedAuthors:
+          - "00000072-0000-8888-8000-000000000000"
+        pathFilter: []
+        workItemIdsToLink: []
