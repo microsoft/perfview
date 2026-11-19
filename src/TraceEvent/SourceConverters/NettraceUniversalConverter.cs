@@ -14,7 +14,6 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
         private List<KeyValuePair<TraceProcess, ProcessSymbolTraceData>> _dynamicSymbols = new List<KeyValuePair<TraceProcess, ProcessSymbolTraceData>>();
         private Dictionary<ulong, ProcessMappingMetadataTraceData> _mappingMetadata = new Dictionary<ulong, ProcessMappingMetadataTraceData>();
         private Dictionary<TraceProcess, ProcessMappingState> _mappingStates = new Dictionary<TraceProcess, ProcessMappingState>();
-        private bool _trackRecentStacks;
 
         internal NettraceUniversalConverter()
         {
@@ -31,7 +30,6 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             // Extract system page size for ELF RVA calculations.
             if (source is EventPipeEventSource eventPipeSource)
             {
-                _trackRecentStacks = true;
                 eventPipeSource.HeadersDeserialized += delegate ()
                 {
                     traceLog.systemPageSize = eventPipeSource._systemPageSize;
@@ -54,9 +52,12 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                 TraceProcess process = traceLog.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 ProcessMappingState state = GetOrCreateMappingState(process);
                 // Exit follows samples at its timestamp, unlike a mapping transition.
-                SeparateCodeAddressesForMappingChange(traceLog, process, state, 0, ulong.MaxValue, data.TimeStampQPC, false);
                 foreach (MappingGeneration generation in state.Generations)
                 {
+                    foreach (KeyValuePair<ulong, ulong> range in generation.LiveRanges)
+                    {
+                        SeparateCodeAddressesForMappingChange(traceLog, process, state, range.Key, range.Value, data.TimeStampQPC, false);
+                    }
                     generation.LiveRanges.Clear();
                 }
                 process.UniversalProcessStop(data);
@@ -162,7 +163,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                 if (_mappingStates.TryGetValue(processSymbol.Key, out ProcessMappingState state) &&
                     state.GenerationsById.TryGetValue(symbol.MappingId, out MappingGeneration generation))
                 {
-                    traceLog.CodeAddresses.AddUniversalDynamicSymbol(symbol, processSymbol.Key, generation.CodeAddresses);
+                    traceLog.CodeAddresses.AddUniversalDynamicSymbol(symbol, processSymbol.Key, generation.CodeAddresses, generation.ModuleFile);
                 }
             }
 
@@ -193,7 +194,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
         /// </summary>
         internal void OnStackAddedToEvent(TraceProcess process, EventIndex eventIndex, long timeStampQPC, CallStackIndex callStackIndex)
         {
-            if (!_trackRecentStacks || process == null)
+            if (process == null)
             {
                 return;
             }
@@ -206,6 +207,15 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                 state.RecentStacksQPC = timeStampQPC;
             }
             state.RecentStacks.Add(new KeyValuePair<EventIndex, CallStackIndex>(eventIndex, callStackIndex));
+        }
+
+        internal void ClearRecentStacks()
+        {
+            foreach (ProcessMappingState state in _mappingStates.Values)
+            {
+                state.RecentStacks.Clear();
+                state.RecentStacksQPC = long.MinValue;
+            }
         }
 
         /// <summary>

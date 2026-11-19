@@ -1011,6 +1011,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             ThrowIfNotRunningOnDispatchThread();
 
+            universalConverter?.ClearRecentStacks();
             callStacks.Clear();
 
             // These map events to the indexes we just invalidated, so also need clearing.
@@ -8719,7 +8720,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal void AddUniversalDynamicSymbol(ProcessSymbolTraceData data, TraceProcess process)
         {
-            AddUniversalDynamicSymbol(data, process, null);
+            AddUniversalDynamicSymbol(data, process, null, null);
         }
 
         /// <summary>
@@ -8728,7 +8729,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Otherwise only the code addresses in 'codeAddressesInMapping' (which must be sorted by address) are
         /// considered.  This is used when the same address range is reused by different mappings over time.
         /// </summary>
-        internal void AddUniversalDynamicSymbol(ProcessSymbolTraceData data, TraceProcess process, List<CodeAddressIndex> codeAddressesInMapping)
+        internal void AddUniversalDynamicSymbol(ProcessSymbolTraceData data, TraceProcess process, List<CodeAddressIndex> codeAddressesInMapping, TraceModuleFile mappingModuleFile)
         {
             Debug.Assert(process != null);
 
@@ -8745,8 +8746,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             dynamicMethodCount++;
             MethodIndex methodIndex = Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid;
-            ModuleFileIndex moduleFileIndex = Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid;
-            TraceManagedModule module = null;
             ForAllCodeAddrAction resolve = delegate (ref CodeAddressInfo info)
             {
                 // If we already resolved, that means that the address was reused, so only add something if it does not already have
@@ -8754,12 +8753,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (info.GetMethodIndex(this) == Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid)
                 {
                     // Lazily create the method since many methods never have code samples in them.
-                    if (module == null)
+                    if (methodIndex == Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid)
                     {
                         int index;
                         string moduleName = "UNKNOWN";
                         string methodName = data.Name;
-                        TraceLoadedModule loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
+                        TraceModuleFile moduleFile = mappingModuleFile;
 
                         // Try to parse the symbol as a universal symbol.
                         var parsed = NettraceUniversalConverter.ParseDotnetJittedSymbolName(data.Name);
@@ -8769,33 +8768,25 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                             methodName = parsed.Value.methodSignature;
                         }
 
-                        // We don't create a blanket jitted code module, so create one here.
-                        // Non-jitted symbols will already have a module, so loadedModule will not be null.
-                        if (loadedModule == null)
+                        // Jitted mappings have no blanket module; create one for the symbol.
+                        if (moduleFile == null)
                         {
-                            TraceModuleFile moduleFile = process.LoadedModules.UniversalMapping(moduleName, data.StartAddress, data.EndAddress, data.TimeStampQPC, null);
-                            loadedModule = process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index);
+                            TraceLoadedModule loadedModule = codeAddressesInMapping == null
+                                ? process.LoadedModules.FindModuleAndIndexContainingAddress(data.StartAddress, data.TimeStampQPC, out index)
+                                : null;
+                            if (loadedModule == null)
+                            {
+                                moduleFile = process.LoadedModules.UniversalMapping(moduleName, data.StartAddress, data.EndAddress, data.TimeStampQPC, null);
+                            }
+                            else
+                            {
+                                moduleFile = loadedModule.ModuleFile;
+                            }
                         }
 
-                        // If the module still can't be found (e.g. invalid image size), skip this symbol.
-                        if (loadedModule == null)
-                        {
-                            return;
-                        }
-
-                        module = process.LoadedModules.GetOrCreateManagedModule(loadedModule.ModuleID, data.TimeStampQPC);
-                        moduleFileIndex = module.ModuleFile.ModuleFileIndex;
-                            
-                        methodIndex = methods.NewMethod(methodName, moduleFileIndex, (int)data.Id);
-                        
-                        // When universal traces support re-use of address space, we'll need to support it here.
+                        methodIndex = methods.NewMethod(methodName, moduleFile.ModuleFileIndex, (int)data.Id);
                     }
-
-                    // Set the info (only if we found a module)
-                    if (module != null)
-                    {
-                        info.SetMethodIndex(this, methodIndex);
-                    }
+                    info.SetMethodIndex(this, methodIndex);
                 }
             };
 

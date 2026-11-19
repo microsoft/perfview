@@ -6,6 +6,7 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.SourceConverters;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -158,6 +159,75 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void MappingUnloadHandlerCanBeRemoved()
+        {
+            using (var stream = new MemoryStream(BuildLifecycleNettrace(true)))
+            using (var source = new EventPipeEventSource(stream))
+            {
+                var parser = new UniversalSystemTraceEventParser(source);
+                int count = 0;
+                Action<Microsoft.Diagnostics.Tracing.Parsers.Universal.Events.ProcessMappingUnloadTraceData> handler = _ => count++;
+                parser.ProcessMappingUnload += handler;
+                parser.ProcessMappingUnload -= handler;
+                source.Process();
+                Assert.Equal(0, count);
+            }
+        }
+
+        [Fact]
+        public void DelayedSymbolUsesItsMappingModule()
+        {
+            var samples = GetLeafFrames(BuildLifecycleNettrace(true, distinctModules: true));
+            AssertSample(samples, ReusePid, 299, Base + 0x40, "A", "old.so");
+            AssertSample(samples, ReusePid, 300, Base + 0x40, "B", "new.so");
+        }
+
+        [Fact]
+        public void ProcessExitPreservesDeferredClrSymbolsOutsideUniversalMappings()
+        {
+            byte[] trace = BuildLifecycleNettrace(true, includeClrMethod: true);
+            int methodEvents = 0;
+            using (var stream = new MemoryStream(trace))
+            using (var source = new EventPipeEventSource(stream))
+            {
+                source.Clr.MethodLoadVerbose += _ => methodEvents++;
+                source.Process();
+            }
+            Assert.Equal(1, methodEvents);
+            var samples = GetLeafFrames(trace);
+            var sample = samples.Find(s => s.pid == ReusePid && s.time == 799 && s.address == 0x12345000);
+            Assert.Equal(ReusePid, sample.pid);
+            Assert.NotNull(sample.method);
+            Assert.Contains("ClrMethod", sample.method);
+        }
+
+        [Fact]
+        public void TracksRecentStacksForNonEventPipeSources()
+        {
+            using (var stream = new MemoryStream(BuildLifecycleNettrace(true)))
+            using (var etlx = new MemoryStream())
+            {
+                TraceLog.CreateFromEventPipeEventSources(new EventPipeEventSource(stream),
+                    new IOStreamStreamWriter(etlx, SerializationSettings.Default, leaveOpen: true), null);
+                etlx.Position = 0;
+                using (var log = new TraceLog(etlx))
+                using (var source = log.Events.GetSource())
+                {
+                    var converter = new NettraceUniversalConverter();
+                    converter.BeforeProcess(log, source);
+                    var process = log.Processes.GetProcess(ReusePid, 299);
+                    converter.OnStackAddedToEvent(process, (EventIndex)1, 300, (CallStackIndex)1);
+                    var states = (System.Collections.IDictionary)converter.GetType()
+                        .GetField("_mappingStates", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                        .GetValue(converter);
+                    Assert.True(states.Contains(process));
+                    var stacks = (System.Collections.ICollection)states[process].GetType().GetField("RecentStacks").GetValue(states[process]);
+                    Assert.Single(stacks);
+                }
+            }
+        }
+
+        [Fact]
         public void SymbolsDoNotLeakAcrossProcessInstances()
         {
             var samples = GetLeafFrames(BuildLifecycleNettrace(true, includeNewProcessSymbols: false));
@@ -166,10 +236,12 @@ namespace TraceEventTests
             AssertSample(samples, OtherPid, 950, Base + 0x40, "other-process");
         }
 
-        private static byte[] BuildLifecycleNettrace(bool mappingFirst, bool includeUnloads = true, bool includeNewProcessSymbols = true)
+        private static byte[] BuildLifecycleNettrace(bool mappingFirst, bool includeUnloads = true, bool includeNewProcessSymbols = true,
+            bool distinctModules = false, bool includeClrMethod = false)
         {
             const int unloadMetadataId = 5;
             const int exitMetadataId = 6;
+            const int clrMethodMetadataId = 7;
             var writer = new TimeScopedEventPipeWriter();
             writer.WriteHeadersWithNonZeroSyncTime();
             writer.WriteMetadataBlock(
@@ -178,6 +250,7 @@ namespace TraceEventTests
                 new EventMetadata(ProcessSymbolMetadataId, "Universal.System", "ProcessSymbol", 4) { ProviderId = UniversalSystemProviderGuid },
                 new EventMetadata(unloadMetadataId, "Universal.System", "ProcessMappingUnload", 6) { ProviderId = UniversalSystemProviderGuid },
                 new EventMetadata(exitMetadataId, "Universal.System", "ProcessExit", 2) { ProviderId = UniversalSystemProviderGuid },
+                new EventMetadata(clrMethodMetadataId, "Microsoft-Windows-DotNETRuntime", "MethodLoadVerbose", 143) { ProviderId = ClrTraceEventParser.ProviderGuid },
                 new EventMetadata(CpuSampleMetadataId, "Universal.Events", "cpu", 1,
                     new MetadataParameter("Value", MetadataTypeCode.VarUInt)) { ProviderId = UniversalEventsProviderGuid });
             writer.WriteThreadBlock(w =>
@@ -188,7 +261,7 @@ namespace TraceEventTests
                 w.WriteThreadEntry(4, 101, ReusePid);
                 w.WriteThreadEntry(5, 400, 40);
             });
-            ulong[] addresses = { Base, Base + 0x40, Base + 0x4f, Base + 0x50, Base + 0x5f, Base + 0x60, Base + 0x80, ulong.MaxValue - 1, ulong.MaxValue };
+            ulong[] addresses = { Base, Base + 0x40, Base + 0x4f, Base + 0x50, Base + 0x5f, Base + 0x60, Base + 0x80, ulong.MaxValue - 1, ulong.MaxValue, 0x12345000 };
             writer.WriteBlock(5, w =>
             {
                 w.Write(1);
@@ -221,8 +294,10 @@ namespace TraceEventTests
                 }
                 void Map(long thread, long time, ulong id, ulong start, ulong end, string name)
                 {
-                    Emit(thread, ProcessMappingMetadataId, time, 0, bw => WriteProcessMappingPayload(bw, id, start, end, "[bpf]"));
-                    if (name != null)
+                    string fileName = distinctModules && thread == 1 && id == 1 ? "old.so" :
+                        distinctModules && thread == 1 && id == 2 ? "new.so" : "[bpf]";
+                    Emit(thread, ProcessMappingMetadataId, time, 0, bw => WriteProcessMappingPayload(bw, id, start, end, fileName));
+                    if (name != null && !(distinctModules && thread == 1 && id == 1))
                     {
                         Emit(thread, ProcessSymbolMetadataId, time, 0, bw => WriteProcessSymbolPayload(bw, id, id, start, end, name));
                     }
@@ -253,8 +328,16 @@ namespace TraceEventTests
                 Map(2, 200, 1, Base, Base + 0xff, "other-process");
                 Map(3, 200, 1, ulong.MaxValue - 0xff, ulong.MaxValue, "last-byte");
                 Map(5, 200, 1, Base, Base + 0xff, null);
+                if (distinctModules)
+                {
+                    Sample(1, 299, Base + 0x40);
+                }
                 AtTime(() => Map(1, 300, 2, Base + 0x40, Base + 0x7f, "B"),
                     () => Sample(1, 300, Base, Base + 0x40, Base + 0x80));
+                if (distinctModules)
+                {
+                    Emit(1, ProcessSymbolMetadataId, 301, 0, bw => WriteProcessSymbolPayload(bw, 1, 1, Base, Base + 0xff, "A"));
+                }
                 Unload(1, 350, 999, 0, ulong.MaxValue);
                 Unload(1, 350, 2, Base + 0x80, Base + 0xff);
                 Sample(1, 399, Base + 0x50);
@@ -285,6 +368,16 @@ namespace TraceEventTests
                 AtTime(() => Unload(1, 700, 5, Base, Base + 0xff),
                     () => Sample(1, 700, Base + 0x40));
                 Map(1, 750, 4, Base, Base + 0xff, "D");
+                if (includeClrMethod)
+                {
+                    Sample(1, 799, 0x12345000);
+                    Emit(1, clrMethodMetadataId, 799, 0, bw =>
+                    {
+                        bw.Write((long)1); bw.Write((long)2); bw.Write((long)0x12345000);
+                        bw.Write(64); bw.Write(0); bw.Write((int)Microsoft.Diagnostics.Tracing.Parsers.Clr.MethodFlags.Jitted);
+                        bw.Write(System.Text.Encoding.Unicode.GetBytes("Example\0ClrMethod\0()\0"));
+                    });
+                }
                 Sample(1, 800, Base + 0x40);
                 Emit(1, exitMetadataId, 800, 0, bw => { });
                 Sample(1, 850, Base + 0x40);

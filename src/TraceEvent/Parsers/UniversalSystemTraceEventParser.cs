@@ -105,7 +105,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 6, Guid.Empty);
+                source.UnregisterEventTemplate(value, 6, ProviderGuid);
             }
         }
 
