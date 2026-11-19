@@ -78,6 +78,7 @@
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" />
     <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" />
     <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="System.Memory" />
   </ItemGroup>
 
   <ItemGroup>
