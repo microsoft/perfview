@@ -141,49 +141,64 @@ namespace CtfTracingTests
         [Fact]
         public void LTTng_KernelEvents()
         {
-            var assertValues = new Dictionary<string, List<int>>(3)
+            string path = Path.Combine(TestDataDirectory, "kernel-only.trace.zip");
+            using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
             {
-                // key: trace file name, value: {expected number of ProcessStart events, expected number of GCStart events}
-                { "kernel-only.trace.zip", new List<int> { 20, 0 } },
-                { "clr-only.trace.zip", new List<int> { 0, 11 } },
-                { "kernel-clr.trace.zip", new List<int> { 19, 12 } }
-            };
-            foreach (string file in assertValues.Keys)
-            {
-                string path = Path.Combine(TestDataDirectory, file);
-                using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
+                var kernelParser = new LinuxKernelEventParser(ctfSource);
+
+                int processStartCount = 0;
+                int gcStartCount = 0;
+                kernelParser.ProcessStart += delegate (ProcessStartTraceData data)
                 {
-                    var kernelParser = new LinuxKernelEventParser(ctfSource);
+                    processStartCount++;
+                    // Check payload fields
+                    Assert.True(!string.IsNullOrEmpty(data.FileName));
+                    Assert.True(data.PayloadThreadID != 0);
+                    Assert.True(data.OldThreadID != 0);
+                };
 
-                    int processStartCount = 0;
-                    int gcStartCount = 0;
-                    kernelParser.ProcessStart += delegate (ProcessStartTraceData data)
-                    {
-                        processStartCount++;
-                        // Check payload fields
-                        Assert.True(!string.IsNullOrEmpty(data.FileName));
-                        Assert.True(data.PayloadThreadID != 0);
-                        Assert.True(data.OldThreadID != 0);
-                    };
+                kernelParser.ProcessStop += delegate (ProcessStopTraceData data)
+                {
+                    // Check payload fields
+                    Assert.True(!string.IsNullOrEmpty(data.Command));
+                    Assert.True(data.PayloadThreadID != 0);
+                    Assert.True(data.ThreadPriority != 0); // There's no event with priority 0 in this source
+                };
 
-                    kernelParser.ProcessStop += delegate (ProcessStopTraceData data)
-                    {
-                        // Check payload fields
-                        Assert.True(!string.IsNullOrEmpty(data.Command));
-                        Assert.True(data.PayloadThreadID != 0);
-                        Assert.True(data.ThreadPriority != 0); // There's no event with priority 0 in this source
-                    };
+                ctfSource.Clr.GCStart += delegate (GCStartTraceData data)
+                {
+                    gcStartCount++;
+                };
 
-                    ctfSource.Clr.GCStart += delegate (GCStartTraceData data)
-                    {
-                        gcStartCount++;
-                    };
+                Assert.True(ctfSource.Process());
 
-                    ctfSource.Process();
+                Assert.Equal(20, processStartCount);
+                Assert.Equal(0, gcStartCount);
+            }
+        }
 
-                    Assert.Equal(assertValues[file][0], processStartCount);
-                    Assert.Equal(assertValues[file][1], gcStartCount);
-                }
+        [Theory]
+        [InlineData("clr-only.trace.zip")]
+        [InlineData("kernel-clr.trace.zip")]
+        public void LTTng_OversizedEventSourcePayloadsAreRejected(string file)
+        {
+            string path = Path.Combine(TestDataDirectory, file);
+            using (var source = new CtfTraceEventSource(path))
+            {
+                int eventSourceEvents = 0;
+                source.Clr.EventSourceEvent += data =>
+                {
+                    eventSourceEvents++;
+                    Assert.False(string.IsNullOrEmpty(data.Name));
+                    Assert.False(string.IsNullOrEmpty(data.EventSourceName));
+                    Assert.NotNull(data.Payload);
+                    Assert.Equal(data.EventDataLength, data.Clone().EventData().Length);
+                };
+
+                // These captures contain valid CTF strings whose UTF-16 payload exceeds the native 16-bit length.
+                var error = Assert.Throws<InvalidDataException>(() => source.Process());
+                Assert.Equal("Invalid CTF native payload length.", error.Message);
+                Assert.True(eventSourceEvents > 0);
             }
         }
 

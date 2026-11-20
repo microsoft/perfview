@@ -175,6 +175,47 @@ namespace TraceEventTests.Regression
             }, GetType());
         }
 
+        [Fact]
+        public void ConvertedStringPayloadsMustFitNativeLength()
+        {
+            IsolatedTest.Run(() =>
+            {
+                foreach (int characters in new[] { 32766, 32767 })
+                {
+                    byte[] bytes = new byte[3 + characters + 1];
+                    bytes[1] = 1;
+                    for (int i = 0; i < characters; i++)
+                        bytes[3 + i] = (byte)'A';
+
+                    int convertedLength = (characters + 1) * sizeof(char);
+                    WithTrace(false, bytes, path =>
+                    {
+                        using (var source = new CtfTraceEventSource(path))
+                        {
+                            int dispatched = 0;
+                            source.AllEvents += data =>
+                            {
+                                dispatched++;
+                                Assert.Equal(convertedLength, data.EventDataLength);
+                                byte[] payload = data.Clone().EventData();
+                                Assert.Equal(new string('A', characters) + "\0", Encoding.Unicode.GetString(payload));
+                            };
+                            if (convertedLength <= ushort.MaxValue)
+                            {
+                                Assert.True(source.Process());
+                                Assert.Equal(1, dispatched);
+                            }
+                            else
+                            {
+                                Assert.Throws<InvalidDataException>(() => source.Process());
+                                Assert.Equal(0, dispatched);
+                            }
+                        }
+                    }, fields: "string value;");
+                }
+            }, GetType());
+        }
+
         #region private
         private static CtfInteger Integer(int size, int alignment)
         {
@@ -193,14 +234,14 @@ namespace TraceEventTests.Regression
             return result;
         }
 
-        private static void WithTrace(bool packed, byte[] bytes, Action<string> test)
+        private static void WithTrace(bool packed, byte[] bytes, Action<string> test, string fields = null)
         {
             string path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".ctf.zip");
             try
             {
-                string fields = packed ?
+                fields = fields ?? (packed ?
                     "uint32_t length; uint32_t reserved; uint8_t ___data__[length];" :
-                    "integer { size = 16; align = 16; signed = false; } value;";
+                    "integer { size = 16; align = 16; signed = false; } value;");
                 byte[] metadata = Encoding.UTF8.GetBytes(Metadata.Replace("PAYLOAD_FIELDS", fields));
                 using (var archive = new ZipArchive(File.Create(path), ZipArchiveMode.Create))
                 {
