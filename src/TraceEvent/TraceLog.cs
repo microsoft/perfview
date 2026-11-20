@@ -2523,6 +2523,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         module.unloadTimeQPC = sessionEndTimeQPC;
                     }
                 }
+                process.LoadedModules.EndUniversalMappingsAtSessionEnd(sessionEndTimeQPC);
 
                 if (process.endTimeQPC > sessionEndTimeQPC)
                 {
@@ -6908,7 +6909,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     /// TraceLoadedModules represents the collection of modules (loaded DLLs or EXEs) in a
     /// particular process.
     /// </summary>
-    public sealed class TraceLoadedModules : IEnumerable<TraceLoadedModule>, IFastSerializable
+    public sealed class TraceLoadedModules : IEnumerable<TraceLoadedModule>, IFastSerializable, IFastSerializableVersion
     {
         /// <summary>
         /// The process in which this Module is loaded.
@@ -6923,8 +6924,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public TraceLoadedModule GetModuleContainingAddress(Address address, double timeRelativeMSec)
         {
+            long timeQPC = process.Log.RelativeMSecToQPC(timeRelativeMSec);
+            if (universalMappings != null)
+            {
+                for (int i = universalMappings.Count - 1; i >= 0; --i)
+                {
+                    if (universalMappings[i].Contains(address, timeQPC))
+                    {
+                        return universalMappings[i].Module;
+                    }
+                }
+            }
             int index;
-            TraceLoadedModule module = FindModuleAndIndexContainingAddress(address, process.Log.RelativeMSecToQPC(timeRelativeMSec), out index);
+            TraceLoadedModule module = FindModuleAndIndexContainingAddress(address, timeQPC, out index, true);
             return module;
         }
 
@@ -6933,10 +6945,30 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public TraceLoadedModule GetLoadedModule(string fileName, double timeRelativeMSec)
         {
-            long timeQPC = process.Log.RelativeMSecToQPC(timeRelativeMSec);
+            return GetLoadedModule(fileName, process.Log.RelativeMSecToQPC(timeRelativeMSec));
+        }
+
+        private TraceLoadedModule GetLoadedModuleAtTime(string fileName, long timeQPC)
+        {
+            if (universalMappings != null)
+            {
+                for (int i = universalMappings.Count - 1; i >= 0; --i)
+                {
+                    var mapping = universalMappings[i];
+                    if (mapping.Module != null && string.Equals(mapping.Module.FilePath, fileName, StringComparison.OrdinalIgnoreCase) &&
+                        mapping.IsLive(timeQPC))
+                    {
+                        return mapping.Module;
+                    }
+                }
+            }
             for (int i = 0; i < modules.Count; i++)
             {
                 TraceLoadedModule module = modules[i];
+                if (universalModuleRecords != null && universalModuleRecords.Contains(module))
+                {
+                    continue;
+                }
                 if (string.Compare(module.FilePath, fileName, StringComparison.OrdinalIgnoreCase) == 0 && module.loadTimeQPC <= timeQPC && timeQPC < module.unloadTimeQPC)
                 {
                     return module;
@@ -6979,15 +7011,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         internal TraceLoadedModule GetLoadedModule(string fileName, long timeQPC)
         {
-            for (int i = 0; i < modules.Count; i++)
-            {
-                TraceLoadedModule module = modules[i];
-                if (string.Compare(module.FilePath, fileName, StringComparison.OrdinalIgnoreCase) == 0 && module.loadTimeQPC <= timeQPC && timeQPC < module.unloadTimeQPC)
-                {
-                    return module;
-                }
-            }
-            return null;
+            return GetLoadedModuleAtTime(fileName, timeQPC);
         }
 
         // #ModuleHandlersCalledFromTraceLog
@@ -7196,6 +7220,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal TraceModuleFile UniversalMapping(string fileName, Address startAddress, Address endAddress, long timeStampQPC, ProcessMappingMetadataTraceData metadata)
         {
+            return UniversalMapping(fileName, startAddress, endAddress, timeStampQPC, metadata, false, out _, out _);
+        }
+
+        internal TraceModuleFile UniversalMapping(string fileName, Address startAddress, Address endAddress, long timeStampQPC,
+            ProcessMappingMetadataTraceData metadata, bool forceNew, out TraceLoadedModule loadedModule, out TraceManagedModule managedModule)
+        {
             int index;
 
             // A loaded and managed modules depend on a module file, so get or create one.
@@ -7213,11 +7243,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // The loaded module is looked up by StartAddress and time to ensure that we don't use a module that hasn't been loaded yet.
             // If the StartAddress or size don't match, then create a new one.  This handles overlapping cases.
-            TraceLoadedModule loadedModule = FindModuleAndIndexContainingAddress(startAddress, timeStampQPC, out index);
+            loadedModule = FindModuleAndIndexContainingAddress(startAddress, timeStampQPC, out index);
             // A different file mapped at the same range (address reuse) also gets its own loaded module.
-            if (loadedModule == null || loadedModule.ImageBase != startAddress || loadedModule.ModuleFile.imageSize != newImageSize ||
+            if (forceNew || loadedModule == null || loadedModule.ImageBase != startAddress || loadedModule.ModuleFile.imageSize != newImageSize ||
                 (fileName != null && loadedModule.ModuleFile != moduleFile))
             {
+                if (forceNew)
+                {
+                    modules.BinarySearch((ulong)startAddress, out index, compareByKey);
+                    while (index >= 0 && modules[index].key == startAddress && modules[index] is TraceManagedModule)
+                    {
+                        --index;
+                    }
+                }
                 // The module file is what is used when looking up the module for an arbitrary address, so it must save both the start address and image size.
                 loadedModule = new TraceLoadedModule(process, moduleFile, startAddress);
 
@@ -7228,8 +7266,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             // Get or create a managed module.  This module is the container for dynamic symbols.
-            TraceManagedModule managedModule = FindManagedModuleAndIndex((long)startAddress, timeStampQPC, out index);
-            if (managedModule == null)
+            managedModule = FindManagedModuleAndIndex((long)startAddress, timeStampQPC, out index);
+            if (forceNew || managedModule == null)
             {
                 managedModule = new TraceManagedModule(process, moduleFile, (long)startAddress);
                 managedModule.loadTimeQPC = timeStampQPC;
@@ -7357,6 +7395,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         internal TraceLoadedModule FindModuleAndIndexContainingAddress(Address address, long timeQPC, out int index)
         {
+            return FindModuleAndIndexContainingAddress(address, timeQPC, out index, false);
+        }
+
+        private TraceLoadedModule FindModuleAndIndexContainingAddress(Address address, long timeQPC, out int index, bool excludeUniversal)
+        {
             modules.BinarySearch((ulong)address, out index, compareByKey);
             // Index now points at the last place where module.ImageBase <= address;
             // Search backwards from where for a module that is loaded and in range.
@@ -7364,6 +7407,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             while (candidateIndex >= 0)
             {
                 TraceLoadedModule canidateModule = modules[candidateIndex];
+                if (excludeUniversal && universalModuleRecords != null && universalModuleRecords.Contains(canidateModule))
+                {
+                    --candidateIndex;
+                    continue;
+                }
                 // The table contains both native modules (where the key is the image base) and managed (where it is the ModuleID)
                 // We only care about the native case.
                 if (canidateModule.key == canidateModule.ImageBase)
@@ -7465,6 +7513,154 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             this.process = process;
         }
+
+        // Version 1 appends a tagged Universal mapping timeline to the original module list.
+        int IFastSerializableVersion.Version => 1;
+        int IFastSerializableVersion.MinimumVersionCanRead => 0;
+        int IFastSerializableVersion.MinimumReaderVersion => 0;
+
+        internal UniversalMappingLifetime RecordUniversalMapping(Address start, Address end, long timeQPC,
+            TraceLoadedModule module, TraceManagedModule managedModule)
+        {
+            if (universalMappings == null)
+            {
+                universalMappings = new List<UniversalMappingLifetime>();
+            }
+            var mapping = new UniversalMappingLifetime(module, managedModule);
+            if (start <= end)
+            {
+                mapping.Segments.Add(new UniversalMappingSegment(start, end, timeQPC, long.MaxValue, false));
+            }
+            universalMappings.Add(mapping);
+            RememberUniversalModule(module);
+            RememberUniversalModule(managedModule);
+            return mapping;
+        }
+
+        internal void RememberUniversalModule(TraceLoadedModule module)
+        {
+            if (module != null)
+            {
+                if (universalModuleRecords == null)
+                {
+                    universalModuleRecords = new HashSet<TraceLoadedModule>();
+                }
+                universalModuleRecords.Add(module);
+            }
+        }
+
+        internal void EndUniversalMappingsAtSessionEnd(long timeQPC)
+        {
+            if (universalMappings != null)
+            {
+                foreach (var mapping in universalMappings)
+                {
+                    mapping.Unload(0, ulong.MaxValue, timeQPC, afterSamples: true);
+                }
+            }
+        }
+
+        internal sealed class UniversalMappingLifetime
+        {
+            internal UniversalMappingLifetime(TraceLoadedModule module, TraceManagedModule managedModule)
+            {
+                Module = module;
+                ManagedModule = managedModule;
+            }
+
+            internal bool Contains(Address address, long timeQPC)
+            {
+                foreach (var segment in Segments)
+                {
+                    if (segment.Start <= address && address <= segment.End && segment.IsLive(timeQPC))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            internal bool IsLive(long timeQPC)
+            {
+                foreach (var segment in Segments)
+                {
+                    if (segment.IsLive(timeQPC))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            internal void Unload(Address start, Address end, long timeQPC, bool afterSamples = false)
+            {
+                if (end < start)
+                {
+                    return;
+                }
+
+                // Close each intersecting live segment and carry its surviving pieces forward.
+                int count = Segments.Count;
+                bool changed = false;
+                for (int i = 0; i < count; i++)
+                {
+                    var segment = Segments[i];
+                    if (segment.EndTimeQPC != long.MaxValue || end < segment.Start || segment.End < start)
+                    {
+                        continue;
+                    }
+                    changed = true;
+                    segment.EndTimeQPC = timeQPC;
+                    segment.EndAfterSamples = afterSamples;
+                    Segments[i] = segment;
+                    if (segment.Start < start)
+                    {
+                        Segments.Add(new UniversalMappingSegment(segment.Start, start - 1, timeQPC, long.MaxValue, false));
+                    }
+                    if (end < segment.End)
+                    {
+                        Segments.Add(new UniversalMappingSegment(end + 1, segment.End, timeQPC, long.MaxValue, false));
+                    }
+                }
+
+                bool anyLive = false;
+                foreach (var segment in Segments)
+                {
+                    anyLive |= segment.EndTimeQPC == long.MaxValue;
+                }
+                if (changed && !anyLive)
+                {
+                    if (Module != null) { Module.unloadTimeQPC = timeQPC; }
+                    if (ManagedModule != null) { ManagedModule.unloadTimeQPC = timeQPC; }
+                }
+            }
+
+            internal readonly TraceLoadedModule Module;
+            internal readonly TraceManagedModule ManagedModule;
+            internal readonly List<UniversalMappingSegment> Segments = new List<UniversalMappingSegment>();
+        }
+
+        internal struct UniversalMappingSegment
+        {
+            internal UniversalMappingSegment(Address start, Address end, long startTimeQPC, long endTimeQPC, bool endAfterSamples)
+            {
+                Start = start;
+                End = end;
+                StartTimeQPC = startTimeQPC;
+                EndTimeQPC = endTimeQPC;
+                EndAfterSamples = endAfterSamples;
+            }
+
+            internal bool IsLive(long timeQPC) =>
+                StartTimeQPC <= timeQPC && (timeQPC < EndTimeQPC || (EndAfterSamples && timeQPC == EndTimeQPC));
+
+            internal Address Start;
+            internal Address End;
+            internal long StartTimeQPC;
+            internal long EndTimeQPC;
+            internal bool EndAfterSamples;
+        }
+
         void IFastSerializable.ToStream(Serializer serializer)
         {
             serializer.Write(process);
@@ -7476,6 +7672,33 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             serializer.Log("</WriteCollection>\r\n");
+            if (universalMappings != null)
+            {
+                serializer.WriteTagged(1);
+                serializer.WriteTagged(universalMappings.Count);
+                foreach (var mapping in universalMappings)
+                {
+                    serializer.WriteTagged(mapping.Module);
+                    serializer.WriteTagged(mapping.ManagedModule);
+                    serializer.WriteTagged(mapping.Segments.Count);
+                    foreach (var segment in mapping.Segments)
+                    {
+                        serializer.WriteTagged(unchecked((long)segment.Start));
+                        serializer.WriteTagged(unchecked((long)segment.End));
+                        serializer.WriteTagged(segment.StartTimeQPC);
+                        serializer.WriteTagged(segment.EndTimeQPC);
+                        serializer.WriteTagged(segment.EndAfterSamples);
+                    }
+                }
+                serializer.WriteTagged(universalModuleRecords?.Count ?? 0);
+                if (universalModuleRecords != null)
+                {
+                    foreach (var module in universalModuleRecords)
+                    {
+                        serializer.WriteTagged(module);
+                    }
+                }
+            }
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -7487,6 +7710,60 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 TraceLoadedModule elem; deserializer.Read(out elem);
                 modules.Add(elem);
             }
+            int version = 0;
+            if (deserializer.TryReadTagged(ref version))
+            {
+                if (version != 1)
+                {
+                    throw new InvalidDataException("Unsupported Universal mapping timeline version.");
+                }
+                int mappingCount = 0;
+                if (!deserializer.TryReadTagged(ref mappingCount) || mappingCount < 0)
+                {
+                    throw new InvalidDataException("Invalid Universal mapping count.");
+                }
+                universalMappings = new List<UniversalMappingLifetime>(mappingCount);
+                for (int i = 0; i < mappingCount; i++)
+                {
+                    TraceLoadedModule module = null;
+                    TraceManagedModule managed = null;
+                    int segmentCount = 0;
+                    if (!deserializer.TryReadTagged(ref module) || !deserializer.TryReadTagged(ref managed) ||
+                        !deserializer.TryReadTagged(ref segmentCount) || segmentCount < 0)
+                    {
+                        throw new InvalidDataException("Invalid Universal mapping.");
+                    }
+                    var mapping = new UniversalMappingLifetime(module, managed);
+                    for (int j = 0; j < segmentCount; j++)
+                    {
+                        long start = 0, end = 0, startTime = 0, endTime = 0;
+                        bool endAfterSamples = false;
+                        if (!deserializer.TryReadTagged(ref start) || !deserializer.TryReadTagged(ref end) ||
+                            !deserializer.TryReadTagged(ref startTime) || !deserializer.TryReadTagged(ref endTime) ||
+                            !deserializer.TryReadTagged(ref endAfterSamples))
+                        {
+                            throw new InvalidDataException("Invalid Universal mapping segment.");
+                        }
+                        mapping.Segments.Add(new UniversalMappingSegment(unchecked((ulong)start), unchecked((ulong)end),
+                            startTime, endTime, endAfterSamples));
+                    }
+                    universalMappings.Add(mapping);
+                }
+                int moduleCount = 0;
+                if (!deserializer.TryReadTagged(ref moduleCount) || moduleCount < 0)
+                {
+                    throw new InvalidDataException("Invalid Universal module count.");
+                }
+                for (int i = 0; i < moduleCount; i++)
+                {
+                    TraceLoadedModule module = null;
+                    if (!deserializer.TryReadTagged(ref module) || module == null)
+                    {
+                        throw new InvalidDataException("Invalid Universal module.");
+                    }
+                    RememberUniversalModule(module);
+                }
+            }
         }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
@@ -7496,6 +7773,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private TraceProcess process;
         private GrowableArray<TraceLoadedModule> modules;               // Contains unmanaged modules sorted by key
         private TraceModuleFile jitHelperModuleFile;
+        private List<UniversalMappingLifetime> universalMappings;
+        private HashSet<TraceLoadedModule> universalModuleRecords;
         #endregion
     }
 
@@ -8776,7 +9055,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                                 : null;
                             if (loadedModule == null)
                             {
-                                moduleFile = process.LoadedModules.UniversalMapping(moduleName, data.StartAddress, data.EndAddress, data.TimeStampQPC, null);
+                                if (codeAddressesInMapping != null)
+                                {
+                                    moduleFile = process.LoadedModules.UniversalMapping(moduleName, data.StartAddress, data.EndAddress,
+                                        data.TimeStampQPC, null, true, out TraceLoadedModule syntheticModule, out TraceManagedModule syntheticManagedModule);
+                                    process.LoadedModules.RememberUniversalModule(syntheticModule);
+                                    process.LoadedModules.RememberUniversalModule(syntheticManagedModule);
+                                }
+                                else
+                                {
+                                    moduleFile = process.LoadedModules.UniversalMapping(moduleName, data.StartAddress, data.EndAddress, data.TimeStampQPC, null);
+                                }
                             }
                             else
                             {

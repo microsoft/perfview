@@ -227,6 +227,55 @@ namespace TraceEventTests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ModuleQueriesPreserveMappingLifetimesAfterEtlxRoundTrip(bool mappingFirst)
+        {
+            using (var stream = new MemoryStream(BuildLifecycleNettrace(mappingFirst, distinctModules: true)))
+            using (var etlx = new MemoryStream())
+            {
+                TraceLog.CreateFromEventPipeEventSources(new EventPipeEventSource(stream),
+                    new IOStreamStreamWriter(etlx, SerializationSettings.Default, leaveOpen: true), null);
+                etlx.Position = 0;
+                using (var log = new TraceLog(etlx))
+                {
+                    var process = log.Processes.GetProcess(ReusePid, 299);
+                    Assert.NotNull(process);
+                    var modules = process.LoadedModules;
+                    Assert.Equal("old.so", modules.GetModuleContainingAddress(Base + 0x40, 298).FilePath);
+                    Assert.Equal("new.so", modules.GetModuleContainingAddress(Base + 0x40, 299).FilePath);
+                    Assert.NotNull(modules.GetLoadedModule("old.so", 299.0));
+                    Assert.Equal("new.so", modules.GetModuleContainingAddress(Base + 0x4f, 399).FilePath);
+                    Assert.Equal("old.so", modules.GetModuleContainingAddress(Base + 0x50, 399).FilePath);
+                    Assert.Equal("old.so", modules.GetModuleContainingAddress(Base + 0x5f, 399).FilePath);
+                    Assert.Equal("new.so", modules.GetModuleContainingAddress(Base + 0x60, 399).FilePath);
+                    Assert.Equal("old.so", modules.GetModuleContainingAddress(Base + 0xff, 399).FilePath);
+                    Assert.Null(modules.GetModuleContainingAddress(Base + 0x100, 399));
+                    Assert.NotNull(modules.GetLoadedModule("new.so", 399.0));
+                    Assert.Equal(449, modules.GetLoadedModule("old.so", 399.0).UnloadTimeRelativeMSec);
+                    Assert.Equal(499, modules.GetLoadedModule("new.so", 399.0).UnloadTimeRelativeMSec);
+                    Assert.Null(modules.GetLoadedModule("old.so", 449.0));
+                    Assert.Null(modules.GetModuleContainingAddress(Base + 0x50, 449));
+                    Assert.Equal("new.so", modules.GetModuleContainingAddress(Base + 0x40, 449).FilePath);
+                    Assert.Null(modules.GetModuleContainingAddress(Base + 0x40, 499));
+                    Assert.Null(modules.GetLoadedModule("new.so", 499.0));
+                    Assert.Null(modules.GetModuleContainingAddress(Base + 0x40, 599));
+                    Assert.Null(modules.GetLoadedModule("UNKNOWN", 599.0));
+                    Assert.Equal(649, modules.GetModuleContainingAddress(Base + 0x40, 649).LoadTimeRelativeMSec);
+                    Assert.Equal(749, modules.GetModuleContainingAddress(Base + 0x40, 749).LoadTimeRelativeMSec);
+                    Assert.NotNull(modules.GetModuleContainingAddress(Base + 0x40, 799));
+                    Assert.Null(modules.GetModuleContainingAddress(Base + 0x40, 800));
+                    Assert.NotNull(log.Processes.GetProcess(OtherPid, 699).LoadedModules.GetModuleContainingAddress(Base + 0x40, 699));
+                    Assert.Null(log.Processes.GetProcess(OtherPid, 699).LoadedModules.GetModuleContainingAddress(Base + 0x40, 1000));
+                    var last = log.Processes.GetProcess(30, 398).LoadedModules;
+                    Assert.NotNull(last.GetModuleContainingAddress(ulong.MaxValue, 398));
+                    Assert.Null(last.GetModuleContainingAddress(ulong.MaxValue, 399));
+                    Assert.NotNull(last.GetModuleContainingAddress(ulong.MaxValue - 1, 399));
+                }
+            }
+        }
+
         [Fact]
         public void SymbolsDoNotLeakAcrossProcessInstances()
         {
@@ -295,7 +344,8 @@ namespace TraceEventTests
                 void Map(long thread, long time, ulong id, ulong start, ulong end, string name)
                 {
                     string fileName = distinctModules && thread == 1 && id == 1 ? "old.so" :
-                        distinctModules && thread == 1 && id == 2 ? "new.so" : "[bpf]";
+                        distinctModules && thread == 1 && id == 2 ? "new.so" :
+                        distinctModules && thread == 1 && id == 3 ? "/memfd:doublemapper" : "[bpf]";
                     Emit(thread, ProcessMappingMetadataId, time, 0, bw => WriteProcessMappingPayload(bw, id, start, end, fileName));
                     if (name != null && !(distinctModules && thread == 1 && id == 1))
                     {

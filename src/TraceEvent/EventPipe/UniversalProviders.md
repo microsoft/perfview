@@ -71,6 +71,8 @@ A mapping overlays the latest still-live mapping at each address it covers. Unlo
 
 An unload applies at its timestamp, so samples exactly at that timestamp see the remaining live mappings, not the unloaded range. At equal timestamps, emit ProcessCreate first, then unloads, then mappings and their symbols, then samples, and finally ProcessExit. TraceLog also accommodates samples written before mapping changes at the same timestamp.
 
+TraceLog persists these lifetimes in ETLX for module lookup, including partial unloads and restored overlays. `GetLoadedModule` returns a mapping while any portion remains live; `GetModuleContainingAddress` returns the mapping visible at the requested address and time.
+
 Readers that do not recognize ProcessMappingUnload (stable event ID 6) can continue to parse the trace but may retain stale symbols after an unload. No lifecycle completeness signal or tombstone compatibility mode is provided.
 
 ## Universal Events Provider

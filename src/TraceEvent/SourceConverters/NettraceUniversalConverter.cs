@@ -58,6 +58,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                     {
                         SeparateCodeAddressesForMappingChange(traceLog, process, state, range.Key, range.Value, data.TimeStampQPC, false);
                     }
+                    generation.ModuleLifetime.Unload(0, ulong.MaxValue, data.TimeStampQPC, afterSamples: true);
                     generation.LiveRanges.Clear();
                 }
                 process.UniversalProcessStop(data);
@@ -80,11 +81,16 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                 {
                     // Don't create a module for jitted code.
                     // These will be created for each jitted code symbol.
+                    generation.ModuleLifetime = process.LoadedModules.RecordUniversalMapping(data.StartAddress, data.EndAddress,
+                        data.TimeStampQPC, null, null);
                     return;
                 }
 
                 _mappingMetadata.TryGetValue(data.MetadataId, out ProcessMappingMetadataTraceData metadata);
-                generation.ModuleFile = process.LoadedModules.UniversalMapping(fileName, data.StartAddress, data.EndAddress, data.TimeStampQPC, metadata);
+                generation.ModuleFile = process.LoadedModules.UniversalMapping(fileName, data.StartAddress, data.EndAddress,
+                    data.TimeStampQPC, metadata, true, out TraceLoadedModule module, out TraceManagedModule managedModule);
+                generation.ModuleLifetime = process.LoadedModules.RecordUniversalMapping(data.StartAddress, data.EndAddress,
+                    data.TimeStampQPC, module, managedModule);
             };
             universalSystemParser.ProcessMappingUnload += delegate (ProcessMappingUnloadTraceData data)
             {
@@ -106,6 +112,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
                     }
                 }
                 generation.Unload(data.StartAddress, data.EndAddress);
+                generation.ModuleLifetime.Unload(data.StartAddress, data.EndAddress, data.TimeStampQPC);
             };
             universalSystemParser.ProcessMappingMetadata += delegate (ProcessMappingMetadataTraceData data)
             {
@@ -319,6 +326,7 @@ namespace Microsoft.Diagnostics.Tracing.SourceConverters
             }
 
             public TraceModuleFile ModuleFile;              // Null for jitted code mappings.
+            public TraceLoadedModules.UniversalMappingLifetime ModuleLifetime;
             public readonly List<CodeAddressIndex> CodeAddresses = new List<CodeAddressIndex>();
             public readonly List<KeyValuePair<ulong, ulong>> LiveRanges = new List<KeyValuePair<ulong, ulong>>();
         }
