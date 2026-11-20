@@ -502,6 +502,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 ew.WriteStartElement("event");
                                 ew.WriteAttributeString("value", eventInfo->EventDescriptor.Id.ToString());
                                 ew.WriteAttributeString("symbol", symbolName);
+
+                                // The manifest's own event name and attributes.  The name need not be a valid or
+                                // unique symbol, so the symbol above is still built from the task and opcode.
+                                if (eventInfo->EventNameOffset != 0)
+                                {
+                                    ew.WriteAttributeString("name", new string((char*)(&eventInfoBuff[eventInfo->EventNameOffset])));
+                                }
+
+                                if (eventInfo->EventAttributesOffset != 0)
+                                {
+                                    ew.WriteAttributeString("attributes", new string((char*)(&eventInfoBuff[eventInfo->EventAttributesOffset])));
+                                }
+
                                 ew.WriteAttributeString("version", eventInfo->EventDescriptor.Version.ToString());
                                 ew.WriteAttributeString("task", taskName);
                                 
@@ -1482,8 +1495,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public int ProviderMessageOffset;
             public int BinaryXmlOffset;
             public int BinaryXmlSize;
-            public int ActivityIDNameOffset;
-            public int RelatedActivityIDNameOffset;
+            public int EventNameOffset;         // ActivityIDNameOffset for WBEM (MOF) events.
+            public int EventAttributesOffset;   // RelatedActivityIDNameOffset for WBEM (MOF) events.
             public int PropertyCount;
             public int TopLevelPropertyCount;
             public int Flags;

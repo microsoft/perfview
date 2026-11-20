@@ -230,6 +230,26 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that an event's manifest name is kept. Application Error event 1000 is named UserCrashLog, while its
+        /// symbol comes from its task, ApplicationCrashingEvents.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_IncludesEventName()
+        {
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider("Application Error");
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var eventNode = (XmlElement)xmlDoc.SelectSingleNode("//e:event[@value='1000'][@version='0']", nsmgr);
+            Assert.NotNull(eventNode);
+            _output.WriteLine(eventNode.OuterXml);
+            Assert.Equal("UserCrashLog", eventNode.GetAttribute("name"));
+        }
+
+        /// <summary>
         /// Test that events sharing an Id and Version keep their own fields. Kerberos event 13 is two Event Log
         /// message ids, 0x0000000D and 0x8000000D, that differ only in the severity bits.
         /// </summary>
