@@ -1572,10 +1572,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             SID,
             HexInt32,
             HexInt64,
-            CountedUnicodeString = 22,
-            CountedAnsiString = 23,
-            Reserved = 24,
-            CountedBinary = 25,         // End of winmeta intypes
+            CountedUnicodeString,
+            CountedAnsiString,
+            Reserved,
+            CountedBinary,              // End of winmeta intypes
 
             CountedString = 300,        // Start of TDH intypes for WBEM
             WbemCountedAnsiString,
