@@ -2241,12 +2241,26 @@ namespace FastSerialization
         /// </summary>
         public void Read(Deserializer deserializer, Action fromStream)
         {
+            ReadCore(deserializer, fromStream, false);
+        }
+        /// <summary>
+        /// Like <see cref="Read"/>, but retains the read delegate after the first
+        /// <see cref="FinishRead"/> so <see cref="ResetRead"/> can make the region lazy again.
+        /// </summary>
+        public void ReadReloadable(Deserializer deserializer, Action fromStream)
+        {
+            ReadCore(deserializer, fromStream, true);
+        }
+        private void ReadCore(Deserializer deserializer, Action fromStream, bool reloadable)
+        {
             Debug.Assert(this.fromStream == null);      // For now, don't call this more than once. 
             deserializer.Log("<DeferRegionRead StreamLabel=\"0x" + deserializer.Current.ToString("x") + "\">");
             ForwardReference endReference = deserializer.ReadForwardReference();
             this.deserializer = deserializer;
             startPosition = deserializer.Current;
             this.fromStream = fromStream;
+            this.reloadable = reloadable;
+            isFinished = false;
             deserializer.Goto(endReference);
             deserializer.Log("</DeferRegionRead>");
         }
@@ -2258,15 +2272,32 @@ namespace FastSerialization
         /// </summary>
         public void FinishRead(bool preserveStreamPosition = false)
         {
-            if (fromStream != null)
+            if (fromStream != null && !isFinished)
             {
                 FinishReadHelper(preserveStreamPosition);
             }
         }
         /// <summary>
+        /// Makes a reloadable region lazy again. The next <see cref="FinishRead"/> rereads it from its
+        /// original stream position.
+        /// </summary>
+        public void ResetRead()
+        {
+            if (!reloadable || fromStream == null)
+            {
+                throw new InvalidOperationException("The deferred region is not reloadable.");
+            }
+
+            isFinished = false;
+        }
+        /// <summary>
         /// Returns true if the FinsihRead() has already been called. 
         /// </summary>
-        public bool IsFinished { get { return fromStream == null; } }
+        public bool IsFinished { get { return fromStream == null || isFinished; } }
+        /// <summary>
+        /// Returns true if <see cref="ResetRead"/> can make this region lazy again.
+        /// </summary>
+        public bool CanReload { get { return reloadable && fromStream != null; } }
 
         /// <summary>
         /// Get the deserializer associated with this DeferredRegion
@@ -2289,20 +2320,31 @@ namespace FastSerialization
             }
 
             deserializer.Log("<DeferRegionFinish StreamLabelRef=\"0x" + startPosition.ToString("x") + "\">");
-            deserializer.Goto(startPosition);
-            fromStream();
-            deserializer.Log("</DeferRegionFinish>");
-            fromStream = null;      // Indicates we ran it. 
-
-            if (preserveStreamPosition)
+            try
             {
-                deserializer.Goto(originalPosition);
+                deserializer.Goto(startPosition);
+                fromStream();
+                deserializer.Log("</DeferRegionFinish>");
+                isFinished = true;
+                if (!reloadable)
+                {
+                    fromStream = null;
+                }
+            }
+            finally
+            {
+                if (preserveStreamPosition)
+                {
+                    deserializer.Goto(originalPosition);
+                }
             }
         }
 
         internal Deserializer deserializer;
         internal StreamLabel startPosition;
         internal Action fromStream;
+        private bool reloadable;
+        private bool isFinished;
         #endregion
     }
 
