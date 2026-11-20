@@ -45,8 +45,23 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         private int _bufferStartOffset;
         private bool _readHeader;
 
-        public int BufferLength { get { return _bufferLength - _bufferStartOffset; } }
-        public IntPtr BufferPtr { get { return IntPtr.Add(_handle.AddrOfPinnedObject(), _bufferStartOffset); } }
+        public int BufferLength
+        {
+            get
+            {
+                if ((uint)_bufferStartOffset > (uint)_bufferLength || (uint)_bufferLength > (uint)_buffer.Length)
+                    throw new InvalidDataException("Invalid CTF buffer extent.");
+                return _bufferLength - _bufferStartOffset;
+            }
+        }
+        public IntPtr BufferPtr
+        {
+            get
+            {
+                _ = BufferLength;
+                return IntPtr.Add(_handle.AddrOfPinnedObject(), _bufferStartOffset);
+            }
+        }
 
         public CtfReader(Stream stream, CtfMetadata metadata, CtfStream ctfStream)
         {
@@ -67,6 +82,8 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             Debug.Assert(_buffer.Length < size);
 
+            if (size <= 0 || size > int.MaxValue - 7)
+                throw new InvalidDataException("Invalid CTF buffer size.");
             // We'll make this a nice round number.
             size = IntHelpers.AlignUp(size, 8);
 
@@ -144,8 +161,11 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                 _header.Clear();
                 ResetBuffer();
-                ReadStruct(header);
-                if (_eof)
+                try
+                {
+                    ReadStruct(header);
+                }
+                catch (EndOfStreamException) when (_eof && _bufferLength == 0)
                 {
                     break;
                 }
@@ -240,7 +260,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public void ResetBuffer()
         {
             _bitOffset = 0;
-            _bitOffsetBase = _stream.Position * 8;
+            _bitOffsetBase = checked(_stream.Position * 8);
             _bufferLength = 0;
             _bufferStartOffset = 0;
         }
@@ -272,6 +292,8 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             ReadBits(32);
 
             int len = BitConverter.ToInt32(_buffer, offset);
+            if (len < 0 || len > int.MaxValue / 8)
+                throw new InvalidDataException("Invalid packed CTF payload length.");
 
             ResetBuffer();
             ReadBits(8 * len);
@@ -315,6 +337,8 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                     var indexType = context.GetField(array.Index).Type;
                     int len = CtfInteger.ReadInt<int>(indexType, _buffer, indexType.BitOffset);
+                    if (len < 0)
+                        throw new InvalidDataException("Negative CTF array length.");
 
                     int elemSize = array.Type.GetSize();
                     if (elemSize == CtfEvent.SizeIndeterminate)
@@ -452,85 +476,84 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
         private void Align(int bits)
         {
-            Debug.Assert(bits > 0);
+            if (bits <= 0 || (bits & (bits - 1)) != 0)
+                throw new InvalidDataException("Invalid CTF alignment.");
 
             if (bits == 1)
             {
                 return;
             }
 
-            long offset = _bitOffsetBase + _bitOffset;
-            int amount = (int)(IntHelpers.AlignUp(offset, bits) - offset);
+            long offset = checked(_bitOffsetBase + _bitOffset);
+            int amount = (int)((-offset) & (bits - 1));
             if (amount != 0)
             {
-                if (_bitOffset == 0)
+                bool startsBuffer = _bitOffset == 0;
+                ReadBits(amount);
+                if (startsBuffer)
                 {
                     _bufferStartOffset = amount / 8;
                 }
-                ReadBits(amount);
             }
         }
 
         private int ReadBits(int bits)
         {
             int currentOffset = _bitOffset;
-            _bitOffset += bits;
-
-            int bufferLength = _bufferLength;
-            int bitLength = bufferLength * 8;
-            if (_bitOffset > bitLength)
+            if (bits < 0 || bits > int.MaxValue - currentOffset)
+                throw new InvalidDataException("Invalid CTF field size.");
+            int nextOffset = currentOffset + bits;
+            int requiredBytes = (int)(((long)nextOffset + 7) / 8);
+            if (requiredBytes > _bufferLength)
             {
-                int newBufferLength = IntHelpers.AlignUp(_bitOffset, 8) / 8;
-
-                FillBuffer(bufferLength, newBufferLength - bufferLength);
+                FillBuffer(requiredBytes - _bufferLength);
             }
-
+            _bitOffset = nextOffset;
             return currentOffset;
         }
 
-        private void FillBuffer(int offset, int count)
+        private void FillBuffer(int count)
         {
-            Debug.Assert(count >= 0);
-
-            if (_eof)
-            {
-                return;
-            }
+            if (_bufferLength < 0 || count < 0 || count > int.MaxValue - _bufferLength)
+                throw new InvalidDataException("Invalid CTF read extent.");
 
             if (count == 0)
             {
                 return;
             }
 
-            if (offset + count > _buffer.Length)
+            if (_eof)
+                throw new EndOfStreamException("Truncated CTF event.");
+
+            int required = _bufferLength + count;
+            if (required > _buffer.Length)
             {
-                byte[] buffer = ReallocateBuffer((int)((offset + count) * 1.5));
-                System.Buffer.BlockCopy(buffer, 0, _buffer, 0, offset);
+                int capacity = (int)Math.Min(int.MaxValue - 7L, Math.Max((long)required, (long)_buffer.Length * 3 / 2));
+                byte[] buffer = ReallocateBuffer(capacity);
+                System.Buffer.BlockCopy(buffer, 0, _buffer, 0, _bufferLength);
             }
 
-            if (count == 1)
+            while (_bufferLength < required)
             {
-                int value = _stream.ReadByte();
-                if (value != -1)
+                int remaining = required - _bufferLength;
+                int read;
+                if (remaining == 1)
                 {
-                    _buffer[_bufferLength++] = (byte)value;
+                    int value = _stream.ReadByte();
+                    read = value < 0 ? 0 : 1;
+                    if (read != 0)
+                        _buffer[_bufferLength] = (byte)value;
                 }
                 else
                 {
-                    _eof = true;
+                    read = _stream.Read(_buffer, _bufferLength, remaining);
                 }
-            }
-            else
-            {
-                int read = _stream.Read(_buffer, offset, count);
-                if (read == count)
-                {
-                    _bufferLength = offset + count;
-                }
-                else
+                if (read == 0)
                 {
                     _eof = true;
+                    throw new EndOfStreamException("Truncated CTF event.");
                 }
+                _bufferLength += read;
             }
         }
     }
