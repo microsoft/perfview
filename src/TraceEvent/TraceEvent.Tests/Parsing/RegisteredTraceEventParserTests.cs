@@ -230,6 +230,40 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that a struct property is written as a struct element holding its members. DotNETRuntime's
+        /// GCBulkRootEdge (event 16) ends in an array of structs whose members include maps.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_WritesStructMembers()
+        {
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider("Microsoft-Windows-DotNETRuntime");
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var eventNode = (XmlElement)xmlDoc.SelectSingleNode("//e:event[@value='16'][@version='0']", nsmgr);
+            Assert.NotNull(eventNode);
+            var template = xmlDoc.SelectSingleNode($"//e:template[@tid='{eventNode.GetAttribute("template")}']", nsmgr);
+            Assert.NotNull(template);
+
+            string fields = template.InnerXml.Replace(" xmlns=\"http://schemas.microsoft.com/win/2004/08/events\"", "");
+            _output.WriteLine(fields);
+            Assert.Equal(
+                "<data name=\"Index\" inType=\"win:UInt32\" />" +
+                "<data name=\"Count\" inType=\"win:UInt32\" />" +
+                "<data name=\"ClrInstanceID\" inType=\"win:UInt16\" />" +
+                "<struct name=\"Values\" count=\"Count\">" +
+                "<data name=\"RootedNodeAddress\" inType=\"win:Pointer\" />" +
+                "<data name=\"GCRootKind\" inType=\"win:UInt8\" map=\"GCRootKindMap\" />" +
+                "<data name=\"GCRootFlag\" inType=\"win:UInt32\" map=\"GCRootFlagsMap\" />" +
+                "<data name=\"GCRootID\" inType=\"win:Pointer\" />" +
+                "</struct>",
+                fields);
+        }
+
+        /// <summary>
         /// Test that events sharing an Id and Version keep their own fields. Kerberos event 13 is two Event Log
         /// message ids, 0x0000000D and 0x8000000D, that differ only in the severity bits.
         /// </summary>
@@ -1053,15 +1087,35 @@ namespace TraceEventTests
                         if (eventInfo->TopLevelPropertyCount != 0)
                         {
                             var templateWriter = new StringWriter();
-                            string[] propertyNames = new string[eventInfo->TopLevelPropertyCount];
-                            for (int j = 0; j < eventInfo->TopLevelPropertyCount; j++)
+                            string[] propertyNames = new string[eventInfo->PropertyCount];
+                            var runs = new Stack<KeyValuePair<int, int>>();
+                            runs.Push(new KeyValuePair<int, int>(0, eventInfo->TopLevelPropertyCount));
+                            int propertiesWritten = 0;
+                            while (runs.Count > 0)
                             {
+                                var run = runs.Pop();
+                                if (run.Key >= run.Value)
+                                {
+                                    if (runs.Count > 0)
+                                    {
+                                        templateWriter.WriteLine("      </struct>");
+                                    }
+                                    continue;
+                                }
+
+                                if (++propertiesWritten > eventInfo->PropertyCount)
+                                {
+                                    break;
+                                }
+
+                                runs.Push(new KeyValuePair<int, int>(run.Key + 1, run.Value));
+                                int j = run.Key;
                                 RegisteredTraceEventParser.EVENT_PROPERTY_INFO* propertyInfo = &propertyInfos[j];
                                 var propertyName = new string((char*)(&eventInfoBuff[propertyInfo->NameOffset]));
-                                propertyNames[j] = propertyName;
                                 var enumAttrib = "";
+                                bool isStruct = (propertyInfo->Flags & RegisteredTraceEventParser.PROPERTY_FLAGS.Struct) != 0;
 
-                                if (propertyInfo->MapNameOffset != 0)
+                                if (!isStruct && propertyInfo->MapNameOffset != 0)
                                 {
                                     string mapName = new string((char*)(&eventInfoBuff[propertyInfo->MapNameOffset]));
 
@@ -1120,16 +1174,42 @@ namespace TraceEventTests
                                 }
 
                                 propertyName = Regex.Replace(propertyName, "[^A-Za-z0-9_]", "");
+                                propertyNames[j] = propertyName;
                                 RegisteredTraceEventParser.TdhInputType propertyType = propertyInfo->InType;
                                 string countOrLengthAttrib = "";
 
                                 if ((propertyInfo->Flags & RegisteredTraceEventParser.PROPERTY_FLAGS.ParamCount) != 0)
                                 {
-                                    countOrLengthAttrib = " count=\"" + propertyNames[propertyInfo->CountOrCountIndex] + "\"";
+                                    countOrLengthAttrib += " count=\"" + propertyNames[propertyInfo->CountOrCountIndex] + "\"";
                                 }
-                                else if ((propertyInfo->Flags & RegisteredTraceEventParser.PROPERTY_FLAGS.ParamLength) != 0)
+                                else if ((propertyInfo->Flags & RegisteredTraceEventParser.PROPERTY_FLAGS.ParamFixedCount) != 0 || propertyInfo->CountOrCountIndex > 1)
                                 {
-                                    countOrLengthAttrib = " length=\"" + propertyNames[propertyInfo->LengthOrLengthIndex] + "\"";
+                                    countOrLengthAttrib += " count=\"" + propertyInfo->CountOrCountIndex + "\"";
+                                }
+
+                                if ((propertyInfo->Flags & RegisteredTraceEventParser.PROPERTY_FLAGS.ParamLength) != 0)
+                                {
+                                    countOrLengthAttrib += " length=\"" + propertyNames[propertyInfo->LengthOrLengthIndex] + "\"";
+                                }
+                                else if ((propertyInfo->Flags & RegisteredTraceEventParser.PROPERTY_FLAGS.ParamFixedLength) != 0)
+                                {
+                                    countOrLengthAttrib += " length=\"" + propertyInfo->LengthOrLengthIndex + "\"";
+                                }
+
+                                if (isStruct)
+                                {
+                                    int memberStart = propertyInfo->StructStartIndex;
+                                    int memberCount = propertyInfo->NumOfStructMembers;
+                                    if (j < memberStart && memberCount <= eventInfo->PropertyCount - memberStart)
+                                    {
+                                        templateWriter.WriteLine("      <struct name=\"{0}\"{1}>", propertyName, countOrLengthAttrib);
+                                        runs.Push(new KeyValuePair<int, int>(memberStart, memberStart + memberCount));
+                                    }
+                                    else
+                                    {
+                                        templateWriter.WriteLine("      <struct name=\"{0}\"{1}/>", propertyName, countOrLengthAttrib);
+                                    }
+                                    continue;
                                 }
 
                                 templateWriter.WriteLine("      <data name=\"{0}\" inType=\"win:{1}\"{2}{3}/>", propertyName, propertyType.ToString(), enumAttrib, countOrLengthAttrib);
