@@ -409,9 +409,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                         string mapAttrib = null;
                                         bool isStruct = (propertyInfo->Flags & PROPERTY_FLAGS.Struct) != 0;
 
-                                        // Deal with any maps (bit fields or enumerations).  A struct has no map; its
-                                        // MapNameOffset slot is padding.
-                                        if (!isStruct && propertyInfo->MapNameOffset != 0)
+                                        // Deal with any maps (bit fields or enumerations).  Structs and custom schema
+                                        // properties have no map; their MapNameOffset slot is padding or CustomSchemaOffset.
+                                        if (!isStruct && (propertyInfo->Flags & PROPERTY_FLAGS.HasCustomSchema) == 0 && propertyInfo->MapNameOffset != 0)
                                         {
                                             string mapName = new string((char*)(&eventInfoBuff[propertyInfo->MapNameOffset]));
 
@@ -527,6 +527,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                                 tw.WriteEndElement(); // struct
                                             }
                                             continue;
+                                        }
+
+                                        if ((propertyInfo->Flags & PROPERTY_FLAGS.HasCustomSchema) != 0)
+                                        {
+                                            // A manifest cannot express the schema, so say that it was left out.
+                                            tw.WriteComment(" PropertyHasCustomSchema: schema not included ");
                                         }
 
                                         tw.WriteStartElement("data");
@@ -1157,8 +1163,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             goto Exit;
                         }
 
-                        // Deal with any maps (bit fields or enumerations)
-                        if (propertyInfo->MapNameOffset != 0)
+                        if ((propertyInfo->Flags & PROPERTY_FLAGS.HasCustomSchema) != 0)
+                        {
+                            Trace.WriteLine("    Custom schema for " + propertyName + " is not supported; decoding it as " + propertyInfo->InType.ToString() + ".");
+                        }
+
+                        // Deal with any maps (bit fields or enumerations).  A custom schema property has no map; its
+                        // MapNameOffset slot is CustomSchemaOffset.
+                        if ((propertyInfo->Flags & PROPERTY_FLAGS.HasCustomSchema) == 0 && propertyInfo->MapNameOffset != 0)
                         {
                             string mapName = ReadString(propertyInfo->MapNameOffset);
 
@@ -1576,6 +1588,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // These are valid if Flags & Struct not set.
             public TdhInputType InType;
             public TdhOutputType OutType;
+            // Valid only if neither Struct nor HasCustomSchema is set.  The same slot holds a struct's padding
+            // and a custom schema property's CustomSchemaOffset.
             public int MapNameOffset;
 
             // These are valid if Flags & Struct is set.
@@ -1612,7 +1626,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             ParamCount = 0x4,
             WbemXmlFragment = 0x8,
             ParamFixedLength = 0x10,
-            ParamFixedCount = 0x20
+            ParamFixedCount = 0x20,
+            HasTags = 0x40,
+            HasCustomSchema = 0x80
         }
 
         internal enum TdhInputType : ushort

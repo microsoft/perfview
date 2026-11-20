@@ -580,6 +580,32 @@ namespace TraceEventTests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public unsafe void EmbeddedTdhMetadataParser_ReadsMapNameOnlyWithoutCustomSchema(bool hasCustomSchema)
+        {
+            // A custom schema property keeps CustomSchemaOffset where other properties keep MapNameOffset.  Point that
+            // slot at a valid string so that reading it as a map name would succeed.
+            byte[] buffer = CreateSinglePropertyEventInfoBuffer();
+            fixed (byte* eventInfoBuffer = buffer)
+            {
+                var eventInfo = (RegisteredTraceEventParser.TRACE_EVENT_INFO*)eventInfoBuffer;
+                RegisteredTraceEventParser.EVENT_PROPERTY_INFO* propertyInfo = &eventInfo->EventPropertyInfoArray;
+                propertyInfo->MapNameOffset = eventInfo->TaskNameOffset;
+                if (hasCustomSchema)
+                {
+                    propertyInfo->Flags = RegisteredTraceEventParser.PROPERTY_FLAGS.HasCustomSchema;
+                }
+
+                DynamicTraceEventData template = new RegisteredTraceEventParser.TdhEventParser(
+                    eventInfoBuffer, buffer.Length, null, null).ParseEventMetaData();
+
+                Assert.NotNull(template);
+                Assert.Equal(!hasCustomSchema, template.payloadFetches[0].LazyMap != null);
+            }
+        }
+
         [Fact]
         public unsafe void EmbeddedTdhMetadataParser_CapturesFormatHintFromOutType()
         {
@@ -1115,7 +1141,7 @@ namespace TraceEventTests
                                 var enumAttrib = "";
                                 bool isStruct = (propertyInfo->Flags & RegisteredTraceEventParser.PROPERTY_FLAGS.Struct) != 0;
 
-                                if (!isStruct && propertyInfo->MapNameOffset != 0)
+                                if (!isStruct && (propertyInfo->Flags & RegisteredTraceEventParser.PROPERTY_FLAGS.HasCustomSchema) == 0 && propertyInfo->MapNameOffset != 0)
                                 {
                                     string mapName = new string((char*)(&eventInfoBuff[propertyInfo->MapNameOffset]));
 
@@ -1210,6 +1236,11 @@ namespace TraceEventTests
                                         templateWriter.WriteLine("      <struct name=\"{0}\"{1}/>", propertyName, countOrLengthAttrib);
                                     }
                                     continue;
+                                }
+
+                                if ((propertyInfo->Flags & RegisteredTraceEventParser.PROPERTY_FLAGS.HasCustomSchema) != 0)
+                                {
+                                    templateWriter.WriteLine("      <!-- PropertyHasCustomSchema: schema not included -->");
                                 }
 
                                 templateWriter.WriteLine("      <data name=\"{0}\" inType=\"win:{1}\"{2}{3}/>", propertyName, propertyType.ToString(), enumAttrib, countOrLengthAttrib);
