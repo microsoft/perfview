@@ -1710,7 +1710,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     case RegisteredTraceEventParser.TdhInputType.WbemCountedAnsiString:
                     case RegisteredTraceEventParser.TdhInputType.CountedAnsiString:
                         Type = typeof(string);
-                        Size = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.IS_ANSI + DynamicTraceEventData.ELEM_COUNT; // 16 Bit.
+                        Size = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.IS_ANSI + DynamicTraceEventData.ELEM_COUNT; // 16 Bit. 
                         break;
                     case RegisteredTraceEventParser.TdhInputType.SYSTEMTIME:
                         Type = typeof(DateTime);
