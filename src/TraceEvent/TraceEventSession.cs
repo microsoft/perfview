@@ -3095,6 +3095,15 @@ namespace Microsoft.Diagnostics.Tracing.Session
         #region private
 
         /// <summary>
+        /// Returns the levels a provider's manifest declares, including the standard ones it uses.  Only works if the
+        /// provider has published its manifest to the operating system.
+        /// </summary>
+        internal static List<ProviderDataItem> GetProviderLevels(Guid providerGuid)
+        {
+            return GetProviderFields(providerGuid, TraceEventNativeMethods.EVENT_FIELD_TYPE.EventLevelInformation);
+        }
+
+        /// <summary>
         /// Returns a list of TRACE_ENABLE_INFO structures that tell about each session (what keywords and level they are
         /// set to, for the provider associated with 'providerGuid'.  If 'processId != 0, then only providers in that process
         /// are returned.
@@ -3170,8 +3179,9 @@ namespace Microsoft.Diagnostics.Tracing.Session
             for (int i = 0; i < fieldsDesc->NumberOfElements; i++)
             {
                 var field = new ProviderDataItem();
-                field.Name = new string((char*)&buffer[fields[i].NameOffset]);
-                field.Description = new string((char*)&buffer[fields[i].DescriptionOffset]);
+                // An offset of 0 means there is no string (the buffer starts with the element count).
+                field.Name = fields[i].NameOffset == 0 ? string.Empty : new string((char*)&buffer[fields[i].NameOffset]);
+                field.Description = fields[i].DescriptionOffset == 0 ? string.Empty : new string((char*)&buffer[fields[i].DescriptionOffset]);
                 field.Value = fields[i].Value;
                 ret.Add(field);
             }

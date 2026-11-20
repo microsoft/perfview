@@ -683,7 +683,8 @@ namespace ETWManifest
         {
             switch (levelStr)
             {
-                case "win:Always":
+                case "win:Always":      // What GetManifestForRegisteredProvider wrote before it used winmeta.xml's name.
+                case "win:LogAlways":
                     return 0;
                 case "win:Critical":
                     return 1;
@@ -696,12 +697,20 @@ namespace ETWManifest
                 case "win:Verbose":
                     return 5;
                 default:
+                    // winmeta.xml names levels 6-15 win:ReservedLevel6 to win:ReservedLevel15.
+                    const string reservedLevelPrefix = "win:ReservedLevel";
+                    if (levelStr != null && levelStr.StartsWith(reservedLevelPrefix, StringComparison.Ordinal))
+                    {
+                        levelStr = levelStr.Substring(reservedLevelPrefix.Length);
+                    }
+
                     int ret;
                     if (int.TryParse(levelStr, out ret) && (byte)ret == ret)
                     {
                         return (byte)ret;
                     }
 
+                    // A level the provider declares in <levels> is not looked up.
                     return 4;   // Informational
             }
         }

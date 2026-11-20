@@ -145,6 +145,40 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
+            // Levels the provider defines itself (16 and above; winmeta.xml defines 0-15).  KEY is the level, VALUE
+            // is its name and message.
+            SortedDictionary<int, KeyValuePair<string, string>> providerLevels = new SortedDictionary<int, KeyValuePair<string, string>>();
+            List<ProviderDataItem> levelItems;
+            try
+            {
+                levelItems = TraceEventProviders.GetProviderLevels(providerGuid);
+            }
+            catch (InvalidOperationException)
+            {
+                // Without the provider's levels, its events get generated level names (see GetLevelName).
+                levelItems = new List<ProviderDataItem>();
+            }
+
+            foreach (var levelItem in levelItems)
+            {
+                if (levelItem.Value >= 16 && levelItem.Value <= byte.MaxValue)
+                {
+                    string name = MakeLegalLevelName(levelItem.Name);
+                    if (name.Length == 0)
+                    {
+                        name = "level_" + levelItem.Value.ToString();
+                    }
+
+                    // TDH appends a space to the description.
+                    string message = levelItem.Description.Trim();
+                    if (message.Length == 0)
+                    {
+                        message = levelItem.Name.Length != 0 ? levelItem.Name : name;
+                    }
+                    providerLevels[(int)levelItem.Value] = new KeyValuePair<string, string>(name, message);
+                }
+            }
+
             // XmlWriter settings for rendering XML fragments during enumeration
             var fragmentSettings = new XmlWriterSettings
             {
@@ -357,13 +391,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 }
                             }
                             
-                            // TODO handle cases outside standard levels 
-                            string level = null;
-                            if ((int)TraceEventLevel.Always <= eventInfo->EventDescriptor.Level && eventInfo->EventDescriptor.Level <= (int)TraceEventLevel.Verbose)
-                            {
-                                var asLevel = (TraceEventLevel)eventInfo->EventDescriptor.Level;
-                                level = "win:" + asLevel;
-                            }
+                            string level = GetLevelName(providerLevels, eventInfo->EventDescriptor.Level);
 
                             var keywordStr = GetKeywordStr(keywords, (ulong)eventInfo->EventDescriptor.Keyword);
 
@@ -510,10 +538,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     ew.WriteAttributeString("opcode", opcodeId);
                                 }
                                 
-                                if (level != null)
-                                {
-                                    ew.WriteAttributeString("level", level);
-                                }
+                                ew.WriteAttributeString("level", level);
                                 
                                 if (keywordStr.Length > 0)
                                 {
@@ -586,6 +611,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 // Collect localized strings
                 List<KeyValuePair<string, string>> localizedStrings = new List<KeyValuePair<string, string>>();
+
+                // Levels
+                if (providerLevels.Count > 0)
+                {
+                    writer.WriteStartElement("levels");
+                    foreach (var levelValue in providerLevels)
+                    {
+                        string stringId = $"level_{levelValue.Value.Key}";
+                        writer.WriteStartElement("level");
+                        writer.WriteAttributeString("name", levelValue.Value.Key);
+                        writer.WriteAttributeString("value", levelValue.Key.ToString());
+                        writer.WriteAttributeString("message", $"$(string.{stringId})");
+                        writer.WriteEndElement();
+
+                        if (emittedStringIds.Add(stringId))
+                        {
+                            localizedStrings.Add(new KeyValuePair<string, string>(stringId, levelValue.Value.Value));
+                        }
+                    }
+                    writer.WriteEndElement(); // levels
+                }
 
                 // Keywords
                 if (keywords != null && keywords.Count > 0)
@@ -795,6 +841,36 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             name = name.Replace(" ", "");
             name = name.Replace("-", "_");
             return name;
+        }
+
+        /// <summary>
+        /// Returns a level name usable in a manifest.  A provider's own level name can carry a namespace prefix
+        /// (e.g. "wls:Verbose10"), which the generated manifest does not declare.
+        /// </summary>
+        private static string MakeLegalLevelName(string name)
+        {
+            return MakeLegalIdentifier(name).Replace(":", "_");
+        }
+
+        /// <summary>
+        /// Returns the manifest name of 'level': winmeta.xml's name for 0-15, otherwise the provider's own level.
+        /// A level the provider does not declare is added to 'providerLevels' with a generated name.
+        /// </summary>
+        private static string GetLevelName(SortedDictionary<int, KeyValuePair<string, string>> providerLevels, byte level)
+        {
+            if (level < s_winmetaLevelNames.Length)
+            {
+                return s_winmetaLevelNames[level];
+            }
+
+            KeyValuePair<string, string> providerLevel;
+            if (!providerLevels.TryGetValue(level, out providerLevel))
+            {
+                string name = "level_" + level.ToString();
+                providerLevels[level] = providerLevel = new KeyValuePair<string, string>(name, name);
+            }
+
+            return providerLevel.Key;
         }
 
         /// <summary>
@@ -1636,6 +1712,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         // win:EventlogClassic in winmeta.xml: events that keep their Event Log (ReportEvent) message ids.
         private const ulong WINEVENT_KEYWORD_EVENTLOG_CLASSIC = 0x80000000000000;
+
+        // The level names winmeta.xml defines, indexed by level.  6-15 are reserved but some providers use them.
+        private static readonly string[] s_winmetaLevelNames =
+        {
+            "win:LogAlways", "win:Critical", "win:Error", "win:Warning", "win:Informational", "win:Verbose",
+            "win:ReservedLevel6", "win:ReservedLevel7", "win:ReservedLevel8", "win:ReservedLevel9", "win:ReservedLevel10",
+            "win:ReservedLevel11", "win:ReservedLevel12", "win:ReservedLevel13", "win:ReservedLevel14", "win:ReservedLevel15",
+        };
         #endregion
     }
 
