@@ -6567,10 +6567,38 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
         public int dport { get { if (Version >= 1) { return ByteSwap16(GetInt16At(16)); } return ByteSwap16(GetInt16At(8)); } }
         public int sport { get { if (Version >= 1) { return ByteSwap16(GetInt16At(18)); } return ByteSwap16(GetInt16At(10)); } }
-        public Address connid { get { if (Version >= 1) { return GetAddressAt(HostOffset(20, 1)); } return 0; } }
-        public int seqnum { get { if (Version >= 1) { return GetInt32At(HostOffset(24, 1)); } return 0; } }
+        // Version 2 moves seqnum before connid.
+        public Address connid
+        {
+            get
+            {
+                if (Version >= 2) { return GetConnectionId(this, 24); }
+                if (Version >= 1) { return GetAddressAt(20); }
+                return 0;
+            }
+        }
+        public int seqnum
+        {
+            get
+            {
+                if (Version >= 2) { return GetInt32At(20); }
+                if (Version >= 1) { return GetInt32At(HostOffset(24, 1)); }
+                return 0;
+            }
+        }
 
         internal static int ByteSwap16(int val) { return ((val << 8) & 0xFF00) + ((val >> 8) & 0xFF); }
+        internal static Address GetConnectionId(TraceEvent data, int offset)
+        {
+            // V2 producers emit both ULONG and pointer-sized connid fields, even with 64-bit headers.
+            // Recognize only the complete ULONG layout, not arbitrary short pointer-sized fields.
+            if (data.Version == 2 && data.EventDataLength == offset + sizeof(uint))
+            {
+                return unchecked((uint)data.GetInt32At(offset));
+            }
+
+            return data.GetAddressAt(offset);
+        }
         #region Private
         internal TcpIpTraceData(Action<TcpIpTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
@@ -6740,7 +6768,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public int startime { get { return GetInt32At(20); } }
         public int endtime { get { return GetInt32At(24); } }
         public int seqnum { get { return GetInt32At(28); } }
-        public Address connid { get { return GetAddressAt(32); } }
+        public Address connid { get { return TcpIpTraceData.GetConnectionId(this, 32); } }
 
         #region Private
         internal TcpIpSendTraceData(Action<TcpIpSendTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
@@ -6848,7 +6876,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public int rcvwinscale { get { return GetInt16At(32); } }
         public int sndwinscale { get { return GetInt16At(34); } }
         public int seqnum { get { return GetInt32At(36); } }
-        public Address connid { get { return GetAddressAt(40); } }
+        public Address connid { get { return TcpIpTraceData.GetConnectionId(this, 40); } }
 
         #region Private
         internal TcpIpConnectTraceData(Action<TcpIpConnectTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
@@ -6960,8 +6988,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public System.Net.IPAddress saddr { get { return GetIPAddrV6At(24); } }
         public int dport { get { return TcpIpTraceData.ByteSwap16(GetInt16At(40)); } }
         public int sport { get { return TcpIpTraceData.ByteSwap16(GetInt16At(42)); } }
-        public Address connid { get { return GetAddressAt(44); } }
-        public int seqnum { get { return GetInt32At(HostOffset(48, 1)); } }
+        public Address connid { get { return Version >= 2 ? TcpIpTraceData.GetConnectionId(this, 48) : GetAddressAt(44); } }
+        public int seqnum { get { return GetInt32At(Version >= 2 ? 44 : HostOffset(48, 1)); } }
 
         #region Private
         internal TcpIpV6TraceData(Action<TcpIpV6TraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
@@ -6978,7 +7006,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
         protected internal override void Dispatch()
         {
-            Debug.Assert(!(Version >= 1 && EventDataLength < HostOffset(52, 1)));
+            Debug.Assert(Version < 1 || EventDataLength >= HostOffset(52, 1) ||
+                (Version == 2 && EventDataLength == 52));
             Action(this);
         }
         public override StringBuilder ToXml(StringBuilder sb)
@@ -7051,7 +7080,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public int startime { get { return GetInt32At(44); } }
         public int endtime { get { return GetInt32At(48); } }
         public int seqnum { get { return GetInt32At(52); } }
-        public Address connid { get { return GetAddressAt(56); } }
+        public Address connid { get { return TcpIpTraceData.GetConnectionId(this, 56); } }
 
         #region Private
         internal TcpIpV6SendTraceData(Action<TcpIpV6SendTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
@@ -7068,7 +7097,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
         protected internal override void Dispatch()
         {
-            Debug.Assert(!(Version == 2 && EventDataLength != HostOffset(60, 1)));
+            Debug.Assert(!(Version == 2 && EventDataLength != 60 && EventDataLength != HostOffset(60, 1)));
             Debug.Assert(!(Version > 2 && EventDataLength < HostOffset(60, 1)));
             Action(this);
         }
@@ -7153,7 +7182,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public int rcvwinscale { get { return GetInt16At(56); } }
         public int sndwinscale { get { return GetInt16At(58); } }
         public int seqnum { get { return GetInt32At(60); } }
-        public Address connid { get { return GetAddressAt(64); } }
+        public Address connid { get { return TcpIpTraceData.GetConnectionId(this, 64); } }
 
         #region Private
         internal TcpIpV6ConnectTraceData(Action<TcpIpV6ConnectTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
@@ -7170,7 +7199,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
         protected internal override void Dispatch()
         {
-            Debug.Assert(!(Version == 2 && EventDataLength != HostOffset(68, 1)));
+            Debug.Assert(!(Version == 2 && EventDataLength != 68 && EventDataLength != HostOffset(68, 1)));
             Debug.Assert(!(Version > 2 && EventDataLength < HostOffset(68, 1)));
             Action(this);
         }
