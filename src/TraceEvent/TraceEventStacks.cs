@@ -6,6 +6,7 @@
 // 
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers.AsyncProfiler;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,97 @@ using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.Tracing.Stacks
 {
+    /// <summary>Raw async-profiler identity associated with a frame in a generated stack source.</summary>
+    internal readonly struct AsyncProfilerCallStackSourceFrameInfo
+    {
+        internal AsyncProfilerCallStackSourceFrameInfo(
+            AsyncCallstackKind kind,
+            ProcessIndex processIndex,
+            CodeAddressIndex codeAddress,
+            ulong methodId,
+            int state,
+            bool isParentContext,
+            bool isParentContextCurrent,
+            bool isDispatchTarget,
+            bool isCurrent,
+            bool isStateMachineBoxCarrier,
+            bool isCompleting,
+            bool isCompletionUnwind)
+        {
+            Kind = kind;
+            ProcessIndex = processIndex;
+            CodeAddress = codeAddress;
+            MethodId = methodId;
+            State = state;
+            IsParentContext = isParentContext;
+            IsParentContextCurrent = isParentContextCurrent;
+            IsDispatchTarget = isDispatchTarget;
+            IsCurrent = isCurrent;
+            IsStateMachineBoxCarrier = isStateMachineBoxCarrier;
+            IsCompleting = isCompleting;
+            IsCompletionUnwind = isCompletionUnwind;
+        }
+
+        /// <summary>The async-profiler call-stack kind.</summary>
+        public AsyncCallstackKind Kind { get; }
+
+        /// <summary>The process containing the frame.</summary>
+        public ProcessIndex ProcessIndex { get; }
+
+        /// <summary>The code address in the originating TraceLog, or <see cref="CodeAddressIndex.Invalid"/>.
+        /// A valid address does not guarantee a resolved method. Physically matched current, completing, and
+        /// box-carrier frames retain the sampled address; historical frames retain the captured continuation IP.</summary>
+        public CodeAddressIndex CodeAddress { get; }
+
+        /// <summary>The native code IP emitted by the async profiler for either V1 or V2.
+        /// This is not a CLR MethodLoad identifier or MethodDesc handle, and can differ from the sampled code address.</summary>
+        public ulong MethodId { get; }
+
+        /// <summary>
+        /// The raw signed compiler state for <see cref="AsyncCallstackKind.StateMachineAsync"/>, not an IL/native offset. This value is not
+        /// meaningful for <see cref="AsyncCallstackKind.RuntimeAsync"/>. This is the captured value, even when
+        /// an active or historical current frame displays inferred running state -1, or a completing/unwind frame
+        /// displays inferred state -2.
+        /// </summary>
+        public int State { get; }
+
+        /// <summary>True when this frame comes from a historical creation-parent context's recorded resume/append stack.
+        /// Progress records can trim that stack, but the captured state and code address remain unchanged.</summary>
+        public bool IsParentContext { get; }
+
+        /// <summary>
+        /// True when completion and unwind records identify this as the current logical historical parent frame
+        /// at child creation. V1 displays inferred state -1. This does not claim physically matched execution or a
+        /// newly observed execution IP.
+        /// </summary>
+        public bool IsParentContextCurrent { get; }
+
+        /// <summary>
+        /// True when this is an indexed V1 or V2 dispatch/resumption target without a separately matched physical
+        /// application body. V1 targets may retain a sampled box carrier. Any displayed compiler state remains captured;
+        /// this role does not establish whether its body has started, finished, or was inlined.
+        /// </summary>
+        public bool IsDispatchTarget { get; }
+
+        /// <summary>True when this frame represents the physically matched current async method.</summary>
+        public bool IsCurrent { get; }
+
+        /// <summary>
+        /// True when a V1 resumption target was identified from the generic state-machine type of a physical
+        /// CoreLib box execution frame. Its code address remains that of the runtime helper, not an application
+        /// MoveNext instruction proven to have executed. Box-only targets retain their captured compiler state.
+        /// </summary>
+        public bool IsStateMachineBoxCarrier { get; }
+
+        /// <summary>True when completion records establish that this physically present V1 method has logically
+        /// completed but its invocation is still finishing. Its annotated presentation uses inferred state -2.</summary>
+        public bool IsCompleting { get; }
+
+        /// <summary>True when verified physical return-unwind work is attributed to the logical root of a fully
+        /// completed V1 call stack. Displays inferred state -2 without claiming physical root-body execution.</summary>
+        public bool IsCompletionUnwind { get; }
+    }
+
     /// <summary>
     /// TraceEventStackSource is an implementation of a StackSource for ETW information (TraceLog)
     /// It takes a TraceEvents (which is a list of TraceEvents you get get from a TraceLog) and 
@@ -153,10 +245,28 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             uint codeAddressIndex = (uint)frameIndex - (uint)StackSourceFrameIndex.Start;
             if (codeAddressIndex >= m_log.CodeAddresses.Count)
             {
-                return CodeAddressIndex.Invalid;
+                return GetGeneratedFrameCodeAddress(frameIndex);
             }
 
             return (CodeAddressIndex)codeAddressIndex;
+        }
+
+        internal virtual CodeAddressIndex GetGeneratedFrameCodeAddress(StackSourceFrameIndex frameIndex)
+        {
+            return TryGetAsyncProfilerCallStackFrameInfo(frameIndex, out AsyncProfilerCallStackSourceFrameInfo asyncProfilerFrame)
+                ? asyncProfilerFrame.CodeAddress
+                : CodeAddressIndex.Invalid;
+        }
+
+        /// <summary>
+        /// Returns async-profiler metadata for a generated async frame. Ordinary sync and pseudo frames return false.
+        /// </summary>
+        internal virtual bool TryGetAsyncProfilerCallStackFrameInfo(
+            StackSourceFrameIndex frameIndex,
+            out AsyncProfilerCallStackSourceFrameInfo frameInfo)
+        {
+            frameInfo = default;
+            return false;
         }
 
         #region implementation of StackSource
@@ -303,13 +413,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public SourceLocation GetSourceLine(StackSourceFrameIndex frameIndex, SymbolReader reader)
         {
-            uint codeAddressIndex = (uint)frameIndex - (uint)StackSourceFrameIndex.Start;
-            if (codeAddressIndex >= m_log.CodeAddresses.Count)
+            CodeAddressIndex codeAddressIndex = GetFrameCodeAddress(frameIndex);
+            if (codeAddressIndex == CodeAddressIndex.Invalid)
             {
                 return null;
             }
 
-            return m_log.CodeAddresses.GetSourceLine(reader, (CodeAddressIndex)codeAddressIndex);
+            return m_log.CodeAddresses.GetSourceLine(reader, codeAddressIndex);
         }
         /// <summary>
         /// Implementation of StackSource protocol. 
@@ -740,8 +850,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// After creating a MutableTraceEventStackSource, you add the samples you want using this AddSample API (you can reuse 'sample' 
         /// used as an argument to this routine.   It makes a copy.  The samples do NOT need to be added in time order (the MutableTraceEventStackSource
-        /// will sort them).   When you done DoneAddingSamples must be called before using the
-        /// the MutableTraceEventStackSource as a stack source.  
+        /// will sort them). Call DoneAddingSamples before passing the completed sample set to consumers.
+        /// Individual stack/frame lookups are available while adding stacks and samples.
         /// </summary>
         public StackSourceSample AddSample(StackSourceSample sample)
         {
@@ -757,11 +867,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
         /// <summary>
         /// After calling 'AddSample' to add the samples that should belong to the source, DoneAddingSamples() should be called to
-        /// to complete the construction of the stack source.   Only then can the reading API associated with the stack source be called. 
+        /// complete the sample set and release interning lookup tables. Stack/frame lookups are available before
+        /// this call and remain valid afterward, but no more frames or stacks may be interned after finalization.
         /// </summary>
         public void DoneAddingSamples()
         {
             m_Interner.DoneInterning();
+            IsFinalized = true;
 
             // Ensure that the samples are in sorted order.  
             m_samples.Sort(
@@ -787,6 +899,54 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// The Interner is the class that allows you to make new indexes out of strings and other bits.  
         /// </summary>
         public StackSourceInterner Interner { get { return m_Interner; } }
+
+        internal bool IsFinalized { get; private set; }
+
+        internal void SetFrameCodeAddress(StackSourceFrameIndex frameIndex, CodeAddressIndex codeAddress)
+        {
+            m_generatedFrameCodeAddresses ??= new Dictionary<StackSourceFrameIndex, CodeAddressIndex>();
+            m_generatedFrameCodeAddresses[frameIndex] = codeAddress;
+        }
+
+        internal override CodeAddressIndex GetGeneratedFrameCodeAddress(StackSourceFrameIndex frameIndex)
+        {
+            if (m_generatedFrameCodeAddresses != null &&
+                m_generatedFrameCodeAddresses.TryGetValue(frameIndex, out CodeAddressIndex codeAddress))
+            {
+                return codeAddress;
+            }
+
+            return base.GetGeneratedFrameCodeAddress(frameIndex);
+        }
+
+        internal void SetAsyncProfilerCallStackFrameInfo(
+            StackSourceFrameIndex frameIndex,
+            AsyncProfilerCallStackSourceFrameInfo frameInfo)
+        {
+            m_asyncProfilerCallStackFrameInfo ??= new Dictionary<StackSourceFrameIndex, AsyncProfilerCallStackSourceFrameInfo>();
+            m_asyncProfilerCallStackFrameInfo[frameIndex] = frameInfo;
+        }
+
+        internal int NextAsyncProfilerCallStackFrameIdentityTag()
+        {
+            int identityTag = ++m_nextAsyncProfilerCallStackFrameIdentityTag;
+            Debug.Assert(identityTag > 0);
+            return identityTag;
+        }
+
+        /// <inheritdoc />
+        internal override bool TryGetAsyncProfilerCallStackFrameInfo(
+            StackSourceFrameIndex frameIndex,
+            out AsyncProfilerCallStackSourceFrameInfo frameInfo)
+        {
+            if (m_asyncProfilerCallStackFrameInfo != null && m_asyncProfilerCallStackFrameInfo.TryGetValue(frameIndex, out frameInfo))
+            {
+                return true;
+            }
+
+            frameInfo = default;
+            return false;
+        }
 
         // methods for create stacks from TraceLog structures.  
         /// <summary>
@@ -1031,6 +1191,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// private
         /// </summary>
         protected StackSourceInterner m_Interner;
+        private int m_nextAsyncProfilerCallStackFrameIdentityTag;
+        private Dictionary<StackSourceFrameIndex, CodeAddressIndex> m_generatedFrameCodeAddresses;
+        private Dictionary<StackSourceFrameIndex, AsyncProfilerCallStackSourceFrameInfo> m_asyncProfilerCallStackFrameInfo;
 
         /// <summary>
         /// private
@@ -1041,4 +1204,3 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         #endregion
     }
 }
-

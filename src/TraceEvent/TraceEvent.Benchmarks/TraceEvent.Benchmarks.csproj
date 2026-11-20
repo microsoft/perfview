@@ -6,7 +6,7 @@
     <TargetFrameworks>net10.0;net462</TargetFrameworks>
     <RootNamespace>TraceEventBenchmarks</RootNamespace>
     <AssemblyName>TraceEvent.Benchmarks</AssemblyName>
-    <Description>BenchmarkDotNet benchmarks for TraceEvent demanglers.</Description>
+    <Description>BenchmarkDotNet benchmarks for TraceEvent.</Description>
     <Copyright>Copyright © Microsoft 2025</Copyright>
   </PropertyGroup>
 
@@ -21,6 +21,8 @@
 
   <ItemGroup>
     <Compile Include="..\TraceEvent.Tests\Symbols\ElfBuilder.cs" Link="ElfBuilder.cs" />
+    <Compile Include="..\TraceEvent.Tests\AsyncProfiler\AsyncProfilerTestHelpers.cs" Link="AsyncProfiler\AsyncProfilerTestHelpers.cs" />
+    <Compile Include="..\TraceEvent.Tests\Parsing\EventPipeTestWriter.cs" Link="EventPipeTestWriter.cs" />
   </ItemGroup>
 
   <ItemGroup>

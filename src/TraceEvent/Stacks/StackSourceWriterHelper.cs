@@ -64,9 +64,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// all the samples that we have are leafs (last sample in the call stack)
         /// this method walks the stack up to the beginning and merges the samples and outputs them in proper order
+        /// Optionally leaves the entire stack closed during uncovered time between samples.
         /// </summary>
         internal static IReadOnlyList<ProfileEvent> GetProfileEvents(StackSource stackSource, IReadOnlyList<Sample> leafs,
-            Dictionary<string, int> exportedFrameNameToExportedFrameId, Dictionary<int, FrameInfo> exportedFrameIdToExportedNameAndCallerId)
+            Dictionary<string, int> exportedFrameNameToExportedFrameId, Dictionary<int, FrameInfo> exportedFrameIdToExportedNameAndCallerId,
+            bool preserveSampleGaps = false)
         {
             var results = new List<ProfileEvent>(leafs.Count * 20);
 
@@ -122,7 +124,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     callerFrameId = exportedFrameId;
                 }
 
-                HandleSamples(previousSamples, currentSamples, results);
+                HandleSamples(previousSamples, currentSamples, results, preserveSampleGaps);
             }
 
             // close the remaining samples
@@ -130,14 +132,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             for (int i = previousSamples.Count - 1; i >= 0; i--)
             {
                 var sample = previousSamples[i];
-                lastKnownTimestamp = Math.Max(lastKnownTimestamp, sample.RelativeTime + sample.Metric);
+                lastKnownTimestamp = Math.Max(lastKnownTimestamp, sample.EndTime);
                 results.Add(new ProfileEvent(ProfileEventType.Close, sample.FrameId, lastKnownTimestamp, sample.Depth));
             }
 
             return results;
         }
 
-        internal static void HandleSamples(List<Sample> previousSamples, List<Sample> currentSamples, List<ProfileEvent> results)
+        internal static void HandleSamples(List<Sample> previousSamples, List<Sample> currentSamples, List<ProfileEvent> results,
+            bool preserveSampleGaps = false)
         {
             // used to ensure that next reported profile event is not starting before the previous one
             // we very often have a situation where there is super small difference
@@ -149,10 +152,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             int i = 0;
             int max = Math.Min(previousSamples.Count, currentSamples.Count);
-            // increase the duration of currently opened samples until they are not continuous
-            while (i < max && !AreNotContinuous(previousSamples[i], currentSamples[i]))
+            while (i < max && !AreNotContinuous(previousSamples[i], currentSamples[i], preserveSampleGaps))
             {
-                previousSamples[i] = previousSamples[i].IncreaseDuration(currentSamples[i].Metric);
+                previousSamples[i] = preserveSampleGaps
+                    ? previousSamples[i].MergeCoverage(currentSamples[i])
+                    : previousSamples[i].IncreaseDuration(currentSamples[i].Metric);
                 i++;
             }
 
@@ -160,7 +164,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             for (int j = previousSamples.Count - 1; j >= i; j--)
             {
                 var sample = previousSamples[j];
-                lastKnownTimestamp = Math.Max(sample.RelativeTime + sample.Metric, lastKnownTimestamp);
+                lastKnownTimestamp = Math.Max(sample.EndTime, lastKnownTimestamp);
                 results.Add(new ProfileEvent(ProfileEventType.Close, sample.FrameId, lastKnownTimestamp, sample.Depth));
                 previousSamples.RemoveAt(j);
             }
@@ -251,14 +255,16 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// this method checks if both samples do NOT belong to the same profile event
         /// </summary>
-        private static bool AreNotContinuous(Sample left, Sample right)
+        private static bool AreNotContinuous(Sample left, Sample right, bool preserveSampleGaps)
         {
             if (left.Depth != right.Depth)
                 return true;
             if (left.FrameId != right.FrameId)
                 return true;
 
-            return left.RelativeTime + (left.Metric * 1.001) < right.RelativeTime;
+            return preserveSampleGaps
+                ? left.EndTime < right.RelativeTime
+                : left.RelativeTime + (left.Metric * 1.001) < right.RelativeTime;
         }
 
         internal readonly struct ThreadInfo : IEquatable<ThreadInfo>
@@ -312,10 +318,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             internal Sample IncreaseDuration(float metric) => new Sample(StackIndex, RelativeTime, Metric + metric, Depth, FrameId);
 
+            // Open events already retain the frame's start. Keep the furthest-ending sample
+            // so its exact endpoint does not depend on accumulated durations or weights.
+            internal Sample MergeCoverage(Sample next) => EndTime >= next.EndTime ? this : next;
+
             #region private
             internal StackSourceCallStackIndex StackIndex { get; }
             internal double RelativeTime { get; }
             internal float Metric { get; }
+            internal double EndTime => RelativeTime + Metric;
             internal int Depth { get; }
             internal int FrameId { get; }
             #endregion private

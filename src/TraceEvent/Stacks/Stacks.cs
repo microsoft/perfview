@@ -981,6 +981,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             var frameIndexOffset = (int)(frameIndex - m_frameStartIndex);
             Debug.Assert(0 <= frameIndexOffset && frameIndexOffset < m_frameIntern.Count);
             var frameName = m_frameIntern[frameIndexOffset].FrameName;
+            var displayPrefix = m_frameIntern[frameIndexOffset].DisplayPrefix;
             var baseFrameIndex = m_frameIntern[frameIndexOffset].BaseFrameIndex;
             if (baseFrameIndex != StackSourceFrameIndex.Invalid)
             {
@@ -996,15 +997,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
                 if(!string.IsNullOrEmpty(frameName))
                 {
-                    return baseName + " " + frameName;
+                    return displayPrefix + baseName + " " + frameName;
                 }
 
-                return baseName;
+                return displayPrefix + baseName;
             }
             var moduleName = m_moduleIntern[m_frameIntern[frameIndexOffset].ModuleIndex - m_moduleStackStartIndex];
             if (moduleName.Length == 0)
             {
-                return frameName;
+                return displayPrefix + frameName;
             }
 
             if (!fullModulePath)
@@ -1026,7 +1027,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 moduleName = moduleName.Substring(0, lastDot);
             }
 
-            return moduleName + "!" + frameName;
+            return displayPrefix + moduleName + "!" + frameName;
         }
         /// <summary>
         /// Given a StackSourceFrameIndex return the StackSourceModuleIndex associated with the frame 
@@ -1073,6 +1074,40 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
 
         /// <summary>
+        /// Lookup or create a frame with the supplied display name and an additional positive identity tag. Frames
+        /// with the same name and module but different tags remain distinct while <see cref="GetFrameName"/> returns
+        /// the same presentation text. Tag 0 is reserved for ordinary untagged frames.
+        /// </summary>
+        internal StackSourceFrameIndex FrameIntern(
+            string frameName,
+            StackSourceModuleIndex moduleIndex,
+            int identityTag)
+        {
+            return FrameIntern(frameName, moduleIndex, identityTag, string.Empty);
+        }
+
+        /// <summary>
+        /// Lookup or create a frame with a presentation prefix that appears before the module-qualified frame name.
+        /// </summary>
+        internal StackSourceFrameIndex FrameIntern(
+            string frameName,
+            StackSourceModuleIndex moduleIndex,
+            int identityTag,
+            string displayPrefix)
+        {
+            Debug.Assert(identityTag > 0);
+            if (moduleIndex == StackSourceModuleIndex.Invalid)
+            {
+                moduleIndex = m_emptyModuleIdx;
+            }
+
+            Debug.Assert(frameName != null);
+            Debug.Assert(displayPrefix != null);
+            return m_frameIntern.Intern(
+                new FrameInfo(frameName, moduleIndex, identityTag, displayPrefix)) + m_frameStartIndex;
+        }
+
+        /// <summary>
         /// You can also create frames out of other frames using this method.  Given an existing frame, and
         /// a suffix 'frameSuffix' 
         /// </summary>
@@ -1082,6 +1117,24 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             Debug.Assert(FrameNameLookup != null);
             Debug.Assert(frameSuffix != null);
             return m_frameIntern.Intern(new FrameInfo(frameSuffix, frameIndex)) + m_frameStartIndex;
+        }
+
+        /// <summary>
+        /// Creates a derived frame with an additional positive identity tag and an optional presentation prefix.
+        /// Tag 0 is reserved for ordinary untagged frames.
+        /// </summary>
+        internal StackSourceFrameIndex FrameIntern(
+            StackSourceFrameIndex frameIndex,
+            string frameSuffix,
+            int identityTag,
+            string displayPrefix = "")
+        {
+            Debug.Assert(FrameNameLookup != null);
+            Debug.Assert(frameSuffix != null);
+            Debug.Assert(displayPrefix != null);
+            Debug.Assert(identityTag > 0);
+            return m_frameIntern.Intern(
+                new FrameInfo(frameSuffix, frameIndex, identityTag, displayPrefix)) + m_frameStartIndex;
         }
         /// <summary>
         /// Lookup or create a StackSourceCallStackIndex for a call stack with the frame identified frameIndex and caller identified by callerIndex
@@ -1104,30 +1157,57 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         private struct FrameInfo : IEquatable<FrameInfo>
         {
             public FrameInfo(string frameName, StackSourceModuleIndex moduleIndex)
+                : this(frameName, moduleIndex, 0)
+            {
+            }
+            public FrameInfo(string frameName, StackSourceModuleIndex moduleIndex, int identityTag)
+                : this(frameName, moduleIndex, identityTag, string.Empty)
+            {
+            }
+            public FrameInfo(
+                string frameName,
+                StackSourceModuleIndex moduleIndex,
+                int identityTag,
+                string displayPrefix)
             {
                 ModuleIndex = moduleIndex;
                 FrameName = frameName;
                 BaseFrameIndex = StackSourceFrameIndex.Invalid;
+                IdentityTag = identityTag;
+                DisplayPrefix = displayPrefix;
             }
             public FrameInfo(string frameSuffix, StackSourceFrameIndex baseFrame)
+                : this(frameSuffix, baseFrame, 0, string.Empty)
+            {
+            }
+            public FrameInfo(string frameSuffix, StackSourceFrameIndex baseFrame, int identityTag, string displayPrefix)
             {
                 ModuleIndex = StackSourceModuleIndex.Invalid;
                 BaseFrameIndex = baseFrame;
                 FrameName = frameSuffix;
+                IdentityTag = identityTag;
+                DisplayPrefix = displayPrefix;
             }
             // TODO we could make this smaller if we care since BaseFrame and ModuleIndex are never used together.  
             public readonly StackSourceFrameIndex BaseFrameIndex;
             public readonly StackSourceModuleIndex ModuleIndex;
             public readonly string FrameName;       // This is the suffix if this is a derived frame
+            public readonly int IdentityTag;
+            public readonly string DisplayPrefix;
 
             public override int GetHashCode()
             {
-                return (int)ModuleIndex + (int)BaseFrameIndex + FrameName.GetHashCode();
+                return (int)ModuleIndex + (int)BaseFrameIndex + FrameName.GetHashCode() +
+                    DisplayPrefix.GetHashCode() + IdentityTag * 31;
             }
             public override bool Equals(object obj) { throw new NotImplementedException(); }
             public bool Equals(FrameInfo other)
             {
-                return ModuleIndex == other.ModuleIndex && BaseFrameIndex == other.BaseFrameIndex && FrameName == other.FrameName;
+                return ModuleIndex == other.ModuleIndex &&
+                    BaseFrameIndex == other.BaseFrameIndex &&
+                    FrameName == other.FrameName &&
+                    IdentityTag == other.IdentityTag &&
+                    DisplayPrefix == other.DisplayPrefix;
             }
         }
         private struct CallStackInfo : IEquatable<CallStackInfo>

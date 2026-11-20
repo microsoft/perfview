@@ -2,11 +2,13 @@
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.Stacks.Formats;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text.Json;
 using Xunit;
 
 using static Microsoft.Diagnostics.Tracing.Stacks.StackSourceWriterHelper;
@@ -16,9 +18,11 @@ namespace TraceEventTests
     public class SpeedScopeStackSourceWriterTests
     {
         [Theory]
-        [InlineData("Process (321)", 321)]
-        [InlineData("Unknown", 0)]
-        public void EndToEnd(string processName, int expectedProcessId)
+        [InlineData("Process (321)", 321, false)]
+        [InlineData("Process (321)", 321, true)]
+        [InlineData("Unknown", 0, false)]
+        [InlineData("Unknown", 0, true)]
+        public void EndToEnd(string processName, int expectedProcessId, bool preserveSampleGaps)
         {
             const string ThreadName = "Thread (123)";
             const string MethodName = "A";
@@ -91,7 +95,11 @@ namespace TraceEventTests
             Assert.Equal(metric, leafs[1].Metric);
 
             var frameNameToId = new Dictionary<string, int>();
-            var profileEvents = GetProfileEvents(stackSource, leafs, frameNameToId, new Dictionary<int, FrameInfo>());
+            var profileEvents = GetProfileEvents(stackSource, leafs, frameNameToId,
+                new Dictionary<int, FrameInfo>(), preserveSampleGaps);
+            double expectedEnd = preserveSampleGaps
+                ? a_2.RelativeTime + a_2.Metric
+                : a_1.RelativeTime + a_1.Metric + a_2.Metric;
 
             // first: opening the Process at time 0.1
             var openProcess = profileEvents[0];
@@ -120,7 +128,7 @@ namespace TraceEventTests
             // fourth: close the A method at time 0.3 (relativeTime * 2 + metric)
             var closeMethod = profileEvents[3];
             Assert.Equal(ProfileEventType.Close, closeMethod.Type);
-            Assert.Equal(a_1.RelativeTime + a_1.Metric + a_2.Metric, closeMethod.RelativeTime);
+            Assert.Equal(expectedEnd, closeMethod.RelativeTime);
             Assert.Equal(2, closeMethod.Depth);
             Assert.Equal(2, closeMethod.FrameId);
             Assert.Equal(closeMethod.FrameId, frameNameToId[a_2.Name]);
@@ -128,7 +136,7 @@ namespace TraceEventTests
             // fifth: close the Thread at time 0.3 (relativeTime * 2 + metric)
             var closeThread = profileEvents[4];
             Assert.Equal(ProfileEventType.Close, closeThread.Type);
-            Assert.Equal(thread_1.RelativeTime + thread_1.Metric + thread_2.Metric, closeThread.RelativeTime);
+            Assert.Equal(expectedEnd, closeThread.RelativeTime);
             Assert.Equal(1, closeThread.Depth);
             Assert.Equal(1, closeThread.FrameId);
             Assert.Equal(closeThread.FrameId, frameNameToId[thread_2.Name]);
@@ -136,38 +144,201 @@ namespace TraceEventTests
             // sixth: close the Process at time 0.3 (relativeTime * 2 + metric)
             var closeProcess = profileEvents[5];
             Assert.Equal(ProfileEventType.Close, closeProcess.Type);
-            Assert.Equal(process_1.RelativeTime + process_1.Metric + process_2.Metric, closeProcess.RelativeTime);
+            Assert.Equal(expectedEnd, closeProcess.RelativeTime);
             Assert.Equal(0, closeProcess.Depth);
             Assert.Equal(0, closeProcess.FrameId);
             Assert.Equal(closeProcess.FrameId, frameNameToId[process_2.Name]);
         }
 
-        [Fact]
-        public void HandleSamples_AddsContinuousSamples()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void HandleSamples_AddsContinuousSamples(bool preserveSampleGaps)
         {
             var results = new List<ProfileEvent>();
             var previousSamples = new List<Sample>();
             var currentSamples = new List<Sample>();
 
             const double startTime = 0.0;
-            const double endTime = 1.0;
-            const double metric = 0.01;
-
+            const int sampleCount = 100;
+            const float metric = 0.01f;
             float metricSum = 0.0f;
 
-            for (double i = startTime; i <= endTime; i += metric)
+            for (int i = 0; i < sampleCount; i++)
             {
-                currentSamples.Add(new Sample((StackSourceCallStackIndex)1, relativeTime: i, (float)metric, depth: 0, frameId: 0));
-                HandleSamples(previousSamples, currentSamples, results);
-                metricSum += (float) metric;
+                double time = startTime + i * (double)metric;
+                currentSamples.Add(new Sample((StackSourceCallStackIndex)1,
+                    relativeTime: time, metric, depth: 0, frameId: 0));
+                HandleSamples(previousSamples, currentSamples, results, preserveSampleGaps);
+                metricSum += metric;
             }
 
             // we have simple opened profile event 
             Assert.Equal(ProfileEventType.Open, results.Single().Type);
             Assert.Equal(startTime, results.Single().RelativeTime);
-            // and one sample with metric equal to the sum of all continuous samples metrics
-            Assert.Equal(startTime, previousSamples.Single().RelativeTime);
-            Assert.Equal(metricSum, previousSamples.Single().Metric);
+            Assert.Equal(preserveSampleGaps ? sampleCount * (double)metric : metricSum,
+                previousSamples.Single().EndTime);
+        }
+
+        [Theory]
+        [InlineData(1.0005, false)]
+        [InlineData(1.25, true)]
+        public void SampleCoverageGaps_CloseAndReopenEveryFrame(double nextTime, bool differentLeaf)
+        {
+            IReadOnlyList<ProfileEvent> events = GetEvents(
+                (0.0, 1.0f, "A"), (nextTime, 1.0f, differentLeaf ? "B" : "A"));
+
+            Assert.True(Validate(events));
+            Assert.Equal(16, events.Count);
+            Assert.All(events.Skip(4).Take(4), e =>
+            {
+                Assert.Equal(ProfileEventType.Close, e.Type);
+                Assert.Equal(1.0, e.RelativeTime);
+            });
+            Assert.Equal(new[] { 3, 2, 1, 0 }, events.Skip(4).Take(4).Select(e => e.Depth));
+            Assert.All(events.Skip(8).Take(4), e =>
+            {
+                Assert.Equal(ProfileEventType.Open, e.Type);
+                Assert.Equal(nextTime, e.RelativeTime);
+            });
+            Assert.Equal(new[] { 0, 1, 2, 3 }, events.Skip(8).Take(4).Select(e => e.Depth));
+            Assert.All(events.Skip(12), e => Assert.Equal(nextTime + 1.0, e.RelativeTime));
+        }
+
+        [Fact]
+        public void SampleCoverageGaps_AccumulatedWeightsCannotKeepAncestorsOpen()
+        {
+            IReadOnlyList<ProfileEvent> events = GetEvents(
+                (0.0, 1.0f, "A"), (0.9, 1.0f, "A"), (1.8, 1.0f, "A"),
+                (2.7, 1.0f, "B"), (3.8, 1.0f, "B"));
+
+            Assert.True(Validate(events));
+            ProfileEvent[] gap = events.Where(e => e.RelativeTime >= 3.7 && e.RelativeTime <= 3.8).ToArray();
+            Assert.Equal(8, gap.Length);
+            Assert.All(gap.Take(4), e =>
+            {
+                Assert.Equal(ProfileEventType.Close, e.Type);
+                Assert.Equal(3.7, e.RelativeTime);
+            });
+            Assert.All(gap.Skip(4), e =>
+            {
+                Assert.Equal(ProfileEventType.Open, e.Type);
+                Assert.Equal(3.8, e.RelativeTime);
+            });
+            Assert.Equal(4.8, events.Last().RelativeTime);
+        }
+
+        [Theory]
+        [InlineData(1.0)]
+        [InlineData(0.9)]
+        public void TouchingOrOverlappingSamples_ExtendToTheLastCoveredEndpoint(double spacing)
+        {
+            IReadOnlyList<ProfileEvent> events = GetEvents(
+                (0.0, 1.0f, "A"), (spacing, 1.0f, "A"), (2 * spacing, 1.0f, "A"));
+
+            Assert.True(Validate(events));
+            Assert.Equal(8, events.Count);
+            Assert.All(events.Take(4), e => Assert.Equal(0.0, e.RelativeTime));
+            Assert.All(events.Skip(4), e => Assert.Equal(2 * spacing + 1.0, e.RelativeTime));
+        }
+
+        [Fact]
+        public void TouchingSamples_DoNotAcquireGapsFromEndpointRounding()
+        {
+            double start = 1.0 / (1L << 53);
+            double nextStart = 2 * start;
+            IReadOnlyList<ProfileEvent> events = GetEvents(
+                (start, 1.0f, "A"), (nextStart, 1.0f, "A"), (nextStart + 1.0, 1.0f, "A"));
+
+            Assert.True(Validate(events));
+            Assert.Equal(8, events.Count);
+            Assert.All(events.Skip(4), e => Assert.Equal(nextStart + 1.0 + 1.0, e.RelativeTime));
+        }
+
+        [Fact]
+        public void NestedOverlappingSamples_PreserveCoverageAndMonotonicEvents()
+        {
+            IReadOnlyList<ProfileEvent> events = GetEvents(
+                (0.0, 5.0f, "A"), (1.0, 1.0f, "B"), (2.0, 1.0f, "B"), (6.0, 1.0f, "A"));
+
+            Assert.True(Validate(events));
+            ProfileEvent[] gap = events.Where(e => e.RelativeTime >= 5.0 && e.RelativeTime <= 6.0).ToArray();
+            Assert.Equal(10, gap.Length);
+            Assert.All(gap.Take(6), e => Assert.Equal(5.0, e.RelativeTime));
+            Assert.All(gap.Skip(6), e =>
+            {
+                Assert.Equal(ProfileEventType.Open, e.Type);
+                Assert.Equal(6.0, e.RelativeTime);
+            });
+            Assert.Equal(7.0, events.Last().RelativeTime);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void PublicWriterOverloads_PreserveLegacyDefaultAndAllowSampleGaps(bool chromium, bool compress)
+        {
+            StackSource source = CreateSource((0.0, 1.0f, "A"), (1.0005, 1.0f, "A"));
+            string path = Path.GetTempFileName();
+            string output = compress ? path + ".gz" : path;
+            try
+            {
+                if (chromium)
+                {
+                    ChromiumStackSourceWriter.WriteStackViewAsJson(source, path, compress);
+                }
+                else
+                {
+                    SpeedScopeStackSourceWriter.WriteStackViewAsJson(source, path);
+                }
+                string legacy = ReadExport(output, compress);
+
+                if (chromium)
+                {
+                    ChromiumStackSourceWriter.WriteStackViewAsJson(source, path, compress, preserveSampleGaps: false);
+                }
+                else
+                {
+                    SpeedScopeStackSourceWriter.WriteStackViewAsJson(source, path, preserveSampleGaps: false);
+                }
+                Assert.Equal(legacy, ReadExport(output, compress));
+                using (JsonDocument document = JsonDocument.Parse(legacy))
+                {
+                    JsonElement events = chromium ? document.RootElement.GetProperty("traceEvents")
+                        : document.RootElement.GetProperty("profiles")[0].GetProperty("events");
+                    Assert.Equal(8, events.GetArrayLength());
+                    Assert.Equal(chromium ? 2000.0 : 2.0, events[4].GetProperty(chromium ? "ts" : "at").GetDouble());
+                }
+
+                if (chromium)
+                {
+                    ChromiumStackSourceWriter.WriteStackViewAsJson(source, path, compress, preserveSampleGaps: true);
+                }
+                else
+                {
+                    SpeedScopeStackSourceWriter.WriteStackViewAsJson(source, path, preserveSampleGaps: true);
+                }
+                using (JsonDocument document = JsonDocument.Parse(ReadExport(output, compress)))
+                {
+                    JsonElement events = chromium ? document.RootElement.GetProperty("traceEvents")
+                        : document.RootElement.GetProperty("profiles")[0].GetProperty("events");
+                    Assert.Equal(16, events.GetArrayLength());
+                    string timeProperty = chromium ? "ts" : "at";
+                    double units = chromium ? 1000.0 : 1.0;
+                    Assert.Equal(units, events[4].GetProperty(timeProperty).GetDouble());
+                    Assert.Equal(1.0005 * units, events[8].GetProperty(timeProperty).GetDouble());
+                    Assert.Equal((1.0005 + 1.0) * units, events[12].GetProperty(timeProperty).GetDouble());
+                }
+            }
+            finally
+            {
+                File.Delete(output);
+                if (output != path)
+                {
+                    File.Delete(path);
+                }
+            }
         }
 
         [Fact]
@@ -409,6 +580,42 @@ namespace TraceEventTests
         }
 
         #region private
+        private static IReadOnlyList<ProfileEvent> GetEvents(params (double Time, float Metric, string Leaf)[] samples)
+        {
+            StackSource source = CreateSource(samples);
+            List<Sample> leafs = Assert.Single(GetSortedSamplesPerThread(source)).Value;
+            return GetProfileEvents(source, leafs, new Dictionary<string, int>(),
+                new Dictionary<int, FrameInfo>(), preserveSampleGaps: true);
+        }
+
+        private static string ReadExport(string path, bool compress)
+        {
+            using (Stream stream = File.OpenRead(path))
+            using (var reader = new StreamReader(compress ? new GZipStream(stream, CompressionMode.Decompress) : stream))
+            {
+                return reader.ReadToEnd();
+            }
+        }
+
+        private static StackSource CreateSource(params (double Time, float Metric, string Leaf)[] samples)
+        {
+            var records = new List<FakeStackSourceSample>
+            {
+                new FakeStackSourceSample(false, 0, 0, "Process (321)", (StackSourceFrameIndex)5,
+                    (StackSourceCallStackIndex)1, StackSourceCallStackIndex.Invalid),
+                new FakeStackSourceSample(false, 0, 0, "Thread (123)", (StackSourceFrameIndex)6,
+                    (StackSourceCallStackIndex)2, (StackSourceCallStackIndex)1),
+                new FakeStackSourceSample(false, 0, 0, "Parent", (StackSourceFrameIndex)7,
+                    (StackSourceCallStackIndex)3, (StackSourceCallStackIndex)2),
+            };
+            for (int i = 0; i < samples.Length; i++)
+            {
+                records.Add(new FakeStackSourceSample(true, samples[i].Time, samples[i].Metric, samples[i].Leaf,
+                    (StackSourceFrameIndex)(8 + i), (StackSourceCallStackIndex)(4 + i), (StackSourceCallStackIndex)3));
+            }
+            return new StackSourceStub(records);
+        }
+
         internal class FakeStackSourceSample
         {
             public FakeStackSourceSample(bool isLastOnCallStack, double relativeTime, float metric, string name, StackSourceFrameIndex frameIndex,
