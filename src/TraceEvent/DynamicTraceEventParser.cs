@@ -1702,19 +1702,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         Type = typeof(DateTime);
                         Size = 8;
                         break;
-                    case RegisteredTraceEventParser.TdhInputType.CountedUtf16String:
+                    case RegisteredTraceEventParser.TdhInputType.CountedUnicodeString:
                     case RegisteredTraceEventParser.TdhInputType.CountedString:
                         Type = typeof(string);
                         Size = DynamicTraceEventData.COUNTED_SIZE;  // Unicode, 16 bit, byteCount
                         break;
+                    case RegisteredTraceEventParser.TdhInputType.WbemCountedAnsiString:
                     case RegisteredTraceEventParser.TdhInputType.CountedAnsiString:
-                    case RegisteredTraceEventParser.TdhInputType.CountedMbcsString:
                         Type = typeof(string);
-                        Size = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.IS_ANSI + DynamicTraceEventData.ELEM_COUNT; // 16 Bit. 
-                        break;
-                    case RegisteredTraceEventParser.TdhInputType.Struct:
-                        Type = typeof(DynamicTraceEventData.StructValue);
-                        Size = DynamicTraceEventData.UNKNOWN_SIZE;
+                        Size = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.IS_ANSI + DynamicTraceEventData.ELEM_COUNT; // 16 Bit.
                         break;
                     case RegisteredTraceEventParser.TdhInputType.SYSTEMTIME:
                         Type = typeof(DateTime);
