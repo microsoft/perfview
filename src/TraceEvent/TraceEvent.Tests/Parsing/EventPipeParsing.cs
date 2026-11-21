@@ -303,7 +303,14 @@ namespace TraceEventTests
                             }
 
                             stacksBeforeReset = traceLog.CallStacks.Count;
+                            var states = (System.Collections.IDictionary)traceLog.universalConverter.GetType()
+                                .GetField("_mappingStates", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                                .GetValue(traceLog.universalConverter);
+                            int RecentStackCount() => states.Values.Cast<object>().Sum(state =>
+                                ((System.Collections.ICollection)state.GetType().GetField("RecentStacks").GetValue(state)).Count);
+                            Assert.True(RecentStackCount() > 0);
                             traceLog.TrimLiveSessionState();
+                            Assert.Equal(0, RecentStackCount());
                             stacksAfterReset = traceLog.CallStacks.Count;
                             return;
                         }

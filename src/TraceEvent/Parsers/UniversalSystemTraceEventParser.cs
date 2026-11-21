@@ -94,6 +94,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
+        /// <summary>
+        /// Unmaps an inclusive address range from a mapping in the event's process.
+        /// </summary>
+        public event Action<ProcessMappingUnloadTraceData> ProcessMappingUnload
+        {
+            add
+            {
+                source.RegisterEventTemplate(new ProcessMappingUnloadTraceData(value, 6, (int)TraceEventTask.Default, "ProcessMappingUnload", Guid.Empty, 0, "Default", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 6, ProviderGuid);
+            }
+        }
+
         #region private
         protected override string GetProviderName() { return ProviderName; }
 
@@ -103,13 +118,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[6];
+                var templates = new TraceEvent[7];
                 templates[0] = new ProcessCreateTraceData(null, 0, (int)TraceEventTask.Default, "ExistingProcess", Guid.Empty, 0, "Default", ProviderGuid, ProviderName);
                 templates[1] = new ProcessCreateTraceData(null, 1, (int)TraceEventTask.Default, "ProcessCreate", Guid.Empty, 0, "Default", ProviderGuid, ProviderName);
                 templates[2] = new EmptyTraceData(null, 2, (int)TraceEventTask.Default, "ProcessExit", Guid.Empty, 0, "Default", ProviderGuid, ProviderName);
                 templates[3] = new ProcessMappingTraceData(null, 3, (int)TraceEventTask.Default, "ProcessMapping", Guid.Empty, 0, "Default", ProviderGuid, ProviderName);
                 templates[4] = new ProcessSymbolTraceData(null, 4, (int)TraceEventTask.Default, "ProcessSymbol", Guid.Empty, 0, "Default", ProviderGuid, ProviderName);
                 templates[5] = new ProcessMappingMetadataTraceData(null, 5, (int)TraceEventTask.Default, "ProcessMappingMetadata", Guid.Empty, 0, "Default", ProviderGuid, ProviderName);
+                templates[6] = new ProcessMappingUnloadTraceData(null, 6, (int)TraceEventTask.Default, "ProcessMappingUnload", Guid.Empty, 0, "Default", ProviderGuid, ProviderName);
                 s_templates = templates;
             }
             foreach (var template in s_templates)
@@ -123,6 +139,62 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
 namespace Microsoft.Diagnostics.Tracing.Parsers.Universal.Events
 {
+    /// <summary>
+    /// Removes the intersection of an inclusive address range and a live mapping identified within this process instance.
+    /// </summary>
+    public sealed class ProcessMappingUnloadTraceData : TraceEvent
+    {
+        /// <summary>The process-local mapping identifier.</summary>
+        public ulong Id { get { return GetVarUIntAt(0); } }
+        /// <summary>The first address to unmap.</summary>
+        public Address StartAddress { get { return GetVarUIntAt(SkipVarInt(0)); } }
+        /// <summary>The inclusive last address to unmap.</summary>
+        public Address EndAddress { get { return GetVarUIntAt(SkipVarInt(SkipVarInt(0))); } }
+
+        #region private
+        internal ProcessMappingUnloadTraceData(Action<ProcessMappingUnloadTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            Action = action;
+        }
+
+        protected internal override void Dispatch() { Action(this); }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<ProcessMappingUnloadTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "Id", Id);
+            XmlAttrib(sb, "StartAddress", StartAddress);
+            XmlAttrib(sb, "EndAddress", EndAddress);
+            return sb.Append("/>");
+        }
+        public override string[] PayloadNames
+        {
+            get { return payloadNames ?? (payloadNames = new[] { "Id", "StartAddress", "EndAddress" }); }
+        }
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0: return Id;
+                case 1: return StartAddress;
+                case 2: return EndAddress;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+        public static ulong GetKeywords() { return 0; }
+        public static string GetProviderName() { return UniversalSystemTraceEventParser.ProviderName; }
+        public static Guid GetProviderGuid() { return UniversalSystemTraceEventParser.ProviderGuid; }
+        private event Action<ProcessMappingUnloadTraceData> Action;
+        #endregion
+    }
+
     public sealed class ProcessCreateTraceData : TraceEvent
     {
         public ulong NamespaceId { get { return GetVarUIntAt(0); } }
