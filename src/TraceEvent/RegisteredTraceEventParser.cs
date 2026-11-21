@@ -168,6 +168,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     {
                         name = "level_" + levelItem.Value.ToString();
                     }
+                    name = MakeUniqueLevelName(providerLevels, name, (int)levelItem.Value);
 
                     // TDH appends a space to the description.
                     string message = levelItem.Description.Trim();
@@ -866,11 +867,43 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             KeyValuePair<string, string> providerLevel;
             if (!providerLevels.TryGetValue(level, out providerLevel))
             {
-                string name = "level_" + level.ToString();
+                string name = MakeUniqueLevelName(providerLevels, "level_" + level.ToString(), level);
                 providerLevels[level] = providerLevel = new KeyValuePair<string, string>(name, name);
             }
 
             return providerLevel.Key;
+        }
+
+        /// <summary>
+        /// Returns 'name', made unique among the names of the other levels in 'providerLevels'.  Level names must be
+        /// unique within a provider, but cleaning can make two names equal (e.g. "Detail-A" and "Detail_A").
+        /// </summary>
+        private static string MakeUniqueLevelName(SortedDictionary<int, KeyValuePair<string, string>> providerLevels, string name, int level)
+        {
+            string uniqueName = name;
+            for (int suffix = 2; IsLevelNameUsed(providerLevels, uniqueName, level); suffix++)
+            {
+                uniqueName = name + "_" + level.ToString();
+                if (suffix > 2)
+                {
+                    uniqueName += "_" + suffix.ToString();
+                }
+            }
+
+            return uniqueName;
+        }
+
+        private static bool IsLevelNameUsed(SortedDictionary<int, KeyValuePair<string, string>> providerLevels, string name, int level)
+        {
+            foreach (var providerLevel in providerLevels)
+            {
+                if (providerLevel.Key != level && providerLevel.Value.Key == name)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
