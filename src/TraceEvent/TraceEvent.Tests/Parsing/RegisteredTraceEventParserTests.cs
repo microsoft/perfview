@@ -245,6 +245,38 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that namespace prefixes in a provider's names are kept and declared.  Microsoft-Windows-TCPIP's
+        /// keywords use the ut prefix (e.g. ut:TcpipEndpoint), which its own manifest declares but TDH does not report.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_DeclaresNamePrefixes()
+        {
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider("Microsoft-Windows-TCPIP");
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var prefixedNames = new List<XmlElement>();
+            foreach (XmlElement element in xmlDoc.SelectNodes("//e:keywords/e:keyword", nsmgr))
+            {
+                if (element.GetAttribute("name").IndexOf(':') > 0)
+                {
+                    prefixedNames.Add(element);
+                }
+            }
+
+            Assert.Contains(prefixedNames, element => element.GetAttribute("name").StartsWith("ut:"));
+            foreach (XmlElement element in prefixedNames)
+            {
+                string name = element.GetAttribute("name");
+                string prefix = name.Substring(0, name.IndexOf(':'));
+                Assert.False(string.IsNullOrEmpty(element.GetNamespaceOfPrefix(prefix)), $"Prefix of keyword '{name}' is not declared");
+            }
+        }
+
+        /// <summary>
         /// Test that events sharing an Id and Version keep their own fields. Kerberos event 13 is two Event Log
         /// message ids, 0x0000000D and 0x8000000D, that differ only in the severity bits.
         /// </summary>
