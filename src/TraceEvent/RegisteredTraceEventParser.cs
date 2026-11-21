@@ -145,6 +145,41 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
+            // Levels the provider defines itself (16 and above; winmeta.xml defines 0-15).  KEY is the level, VALUE
+            // is its name and message.
+            SortedDictionary<int, KeyValuePair<string, string>> providerLevels = new SortedDictionary<int, KeyValuePair<string, string>>();
+            List<ProviderDataItem> levelItems;
+            try
+            {
+                levelItems = TraceEventProviders.GetProviderLevels(providerGuid);
+            }
+            catch (InvalidOperationException)
+            {
+                // Without the provider's levels, its events get generated level names (see GetLevelName).
+                levelItems = new List<ProviderDataItem>();
+            }
+
+            foreach (var levelItem in levelItems)
+            {
+                if (levelItem.Value >= 16 && levelItem.Value <= byte.MaxValue)
+                {
+                    string name = MakeLegalLevelName(levelItem.Name);
+                    if (name.Length == 0)
+                    {
+                        name = "level_" + levelItem.Value.ToString();
+                    }
+                    name = MakeUniqueLevelName(providerLevels, name, (int)levelItem.Value);
+
+                    // TDH appends a space to the description.
+                    string message = levelItem.Description.Trim();
+                    if (message.Length == 0)
+                    {
+                        message = levelItem.Name.Length != 0 ? levelItem.Name : name;
+                    }
+                    providerLevels[(int)levelItem.Value] = new KeyValuePair<string, string>(name, message);
+                }
+            }
+
             // XmlWriter settings for rendering XML fragments during enumeration
             var fragmentSettings = new XmlWriterSettings
             {
@@ -357,13 +392,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 }
                             }
                             
-                            // TODO handle cases outside standard levels 
-                            string level = null;
-                            if ((int)TraceEventLevel.Always <= eventInfo->EventDescriptor.Level && eventInfo->EventDescriptor.Level <= (int)TraceEventLevel.Verbose)
-                            {
-                                var asLevel = (TraceEventLevel)eventInfo->EventDescriptor.Level;
-                                level = "win:" + asLevel;
-                            }
+                            string level = GetLevelName(providerLevels, eventInfo->EventDescriptor.Level);
 
                             var keywordStr = GetKeywordStr(keywords, (ulong)eventInfo->EventDescriptor.Keyword);
 
@@ -510,10 +539,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     ew.WriteAttributeString("opcode", opcodeId);
                                 }
                                 
-                                if (level != null)
-                                {
-                                    ew.WriteAttributeString("level", level);
-                                }
+                                ew.WriteAttributeString("level", level);
                                 
                                 if (keywordStr.Length > 0)
                                 {
@@ -573,6 +599,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 writer.WriteAttributeString("xmlns", "xs", null, "http://www.w3.org/2001/XMLSchema");
                 writer.WriteAttributeString("xmlns", "xsi", null, "http://www.w3.org/2001/XMLSchema-instance");
                 writer.WriteAttributeString("xmlns", "win", null, "http://manifests.microsoft.com/win/2004/08/windows/events");
+
+                // A provider's names can have a namespace prefix (e.g. ut:TcpipEndpoint).  Its own manifest declared the
+                // prefix, but TDH keeps only the name, so declare each prefix again with a placeholder namespace.
+                foreach (var prefix in GetNamePrefixes(keywords, tasks, providerLevels, enumDisplayNames.Values))
+                {
+                    writer.WriteAttributeString("xmlns", prefix, null, "urn:unknown-namespace:" + prefix);
+                }
                 
                 writer.WriteStartElement("events");
                 
@@ -586,6 +619,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 // Collect localized strings
                 List<KeyValuePair<string, string>> localizedStrings = new List<KeyValuePair<string, string>>();
+
+                // Levels
+                if (providerLevels.Count > 0)
+                {
+                    writer.WriteStartElement("levels");
+                    foreach (var levelValue in providerLevels)
+                    {
+                        string stringId = $"level_{levelValue.Value.Key}";
+                        writer.WriteStartElement("level");
+                        writer.WriteAttributeString("name", levelValue.Value.Key);
+                        writer.WriteAttributeString("value", levelValue.Key.ToString());
+                        writer.WriteAttributeString("message", $"$(string.{stringId})");
+                        writer.WriteEndElement();
+
+                        if (emittedStringIds.Add(stringId))
+                        {
+                            localizedStrings.Add(new KeyValuePair<string, string>(stringId, levelValue.Value.Value));
+                        }
+                    }
+                    writer.WriteEndElement(); // levels
+                }
 
                 // Keywords
                 if (keywords != null && keywords.Count > 0)
@@ -795,6 +849,155 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             name = name.Replace(" ", "");
             name = name.Replace("-", "_");
             return name;
+        }
+
+        /// <summary>
+        /// Returns a level name usable in a manifest.  A namespace prefix (e.g. "wls:Verbose10") is kept and declared
+        /// (see GetNamePrefixes); any other ':' becomes '_'.
+        /// </summary>
+        private static string MakeLegalLevelName(string name)
+        {
+            name = MakeLegalIdentifier(name);
+            string prefix;
+            if (name.IndexOf(':') >= 0 && !TryGetNamePrefix(name, out prefix))
+            {
+                name = name.Replace(":", "_");
+            }
+            return name;
+        }
+
+        /// <summary>
+        /// Returns the namespace prefixes used by the provider's keyword, task, opcode, level and map names, other than
+        /// the ones the manifest always declares.
+        /// </summary>
+        private static SortedSet<string> GetNamePrefixes(SortedDictionary<ulong, string> keywords, SortedDictionary<int, TaskInfo> tasks,
+            SortedDictionary<int, KeyValuePair<string, string>> providerLevels, IEnumerable<string> mapNames)
+        {
+            var prefixes = new SortedSet<string>(StringComparer.Ordinal);
+            foreach (var keyword in keywords.Values)
+            {
+                AddNamePrefix(prefixes, keyword);
+            }
+            foreach (var task in tasks.Values)
+            {
+                AddNamePrefix(prefixes, task.Name);
+                if (task.Opcodes != null)
+                {
+                    foreach (var opcode in task.Opcodes.Values)
+                    {
+                        AddNamePrefix(prefixes, opcode);
+                    }
+                }
+            }
+            foreach (var level in providerLevels.Values)
+            {
+                AddNamePrefix(prefixes, level.Key);
+            }
+            foreach (var mapName in mapNames)
+            {
+                AddNamePrefix(prefixes, mapName);
+            }
+
+            prefixes.Remove("win");
+            prefixes.Remove("xs");
+            prefixes.Remove("xsi");
+            return prefixes;
+        }
+
+        private static void AddNamePrefix(SortedSet<string> prefixes, string name)
+        {
+            string prefix;
+            if (TryGetNamePrefix(name, out prefix))
+            {
+                prefixes.Add(prefix);
+            }
+        }
+
+        /// <summary>
+        /// Returns true if 'name' is a namespace-prefixed name (prefix:local, both valid XML names), with its prefix.
+        /// Prefixes starting with "xml" are reserved, so they do not count.
+        /// </summary>
+        private static bool TryGetNamePrefix(string name, out string prefix)
+        {
+            prefix = null;
+            int colon = name.IndexOf(':');
+            if (colon <= 0 || colon != name.LastIndexOf(':') || !IsNCName(name, 0, colon) || !IsNCName(name, colon + 1, name.Length))
+            {
+                return false;
+            }
+
+            prefix = name.Substring(0, colon);
+            return !prefix.StartsWith("xml", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Returns true if name[start, end) is a valid XML name without a colon.
+        private static bool IsNCName(string name, int start, int end)
+        {
+            if (start >= end || !XmlConvert.IsStartNCNameChar(name[start]))
+            {
+                return false;
+            }
+            for (int i = start + 1; i < end; i++)
+            {
+                if (!XmlConvert.IsNCNameChar(name[i]))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Returns the manifest name of 'level': winmeta.xml's name for 0-15, otherwise the provider's own level.
+        /// A level the provider does not declare is added to 'providerLevels' with a generated name.
+        /// </summary>
+        private static string GetLevelName(SortedDictionary<int, KeyValuePair<string, string>> providerLevels, byte level)
+        {
+            if (level < s_winmetaLevelNames.Length)
+            {
+                return s_winmetaLevelNames[level];
+            }
+
+            KeyValuePair<string, string> providerLevel;
+            if (!providerLevels.TryGetValue(level, out providerLevel))
+            {
+                string name = MakeUniqueLevelName(providerLevels, "level_" + level.ToString(), level);
+                providerLevels[level] = providerLevel = new KeyValuePair<string, string>(name, name);
+            }
+
+            return providerLevel.Key;
+        }
+
+        /// <summary>
+        /// Returns 'name', made unique among the names of the other levels in 'providerLevels'.  Level names must be
+        /// unique within a provider, but cleaning can make two names equal (e.g. "Detail-A" and "Detail_A").
+        /// </summary>
+        private static string MakeUniqueLevelName(SortedDictionary<int, KeyValuePair<string, string>> providerLevels, string name, int level)
+        {
+            string uniqueName = name;
+            for (int suffix = 2; IsLevelNameUsed(providerLevels, uniqueName, level); suffix++)
+            {
+                uniqueName = name + "_" + level.ToString();
+                if (suffix > 2)
+                {
+                    uniqueName += "_" + suffix.ToString();
+                }
+            }
+
+            return uniqueName;
+        }
+
+        private static bool IsLevelNameUsed(SortedDictionary<int, KeyValuePair<string, string>> providerLevels, string name, int level)
+        {
+            foreach (var providerLevel in providerLevels)
+            {
+                if (providerLevel.Key != level && providerLevel.Value.Key == name)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -1636,6 +1839,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         // win:EventlogClassic in winmeta.xml: events that keep their Event Log (ReportEvent) message ids.
         private const ulong WINEVENT_KEYWORD_EVENTLOG_CLASSIC = 0x80000000000000;
+
+        // The level names winmeta.xml defines, indexed by level.  6-15 are reserved but some providers use them.
+        private static readonly string[] s_winmetaLevelNames =
+        {
+            "win:LogAlways", "win:Critical", "win:Error", "win:Warning", "win:Informational", "win:Verbose",
+            "win:ReservedLevel6", "win:ReservedLevel7", "win:ReservedLevel8", "win:ReservedLevel9", "win:ReservedLevel10",
+            "win:ReservedLevel11", "win:ReservedLevel12", "win:ReservedLevel13", "win:ReservedLevel14", "win:ReservedLevel15",
+        };
         #endregion
     }
 

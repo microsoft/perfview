@@ -230,6 +230,53 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that event levels use winmeta.xml's names and that a provider's own levels are declared.
+        /// Microsoft-Windows-TCPIP defines TcpSummary (16) and TcpIpPerPacket (17); Microsoft-JScript has events at
+        /// level 0, which winmeta.xml calls win:LogAlways.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_DeclaresEventLevels()
+        {
+            Dictionary<string, string> tcpipLevels = AssertEventLevelsAreDeclared("Microsoft-Windows-TCPIP", "TcpSummary");
+            Assert.Equal("16", tcpipLevels["TcpSummary"]);
+            Assert.Equal("17", tcpipLevels["TcpIpPerPacket"]);
+
+            AssertEventLevelsAreDeclared("Microsoft-JScript", "win:LogAlways");
+        }
+
+        /// <summary>
+        /// Test that namespace prefixes in a provider's names are kept and declared.  Microsoft-Windows-TCPIP's
+        /// keywords use the ut prefix (e.g. ut:TcpipEndpoint), which its own manifest declares but TDH does not report.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_DeclaresNamePrefixes()
+        {
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider("Microsoft-Windows-TCPIP");
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var prefixedNames = new List<XmlElement>();
+            foreach (XmlElement element in xmlDoc.SelectNodes("//e:keywords/e:keyword", nsmgr))
+            {
+                if (element.GetAttribute("name").IndexOf(':') > 0)
+                {
+                    prefixedNames.Add(element);
+                }
+            }
+
+            Assert.Contains(prefixedNames, element => element.GetAttribute("name").StartsWith("ut:"));
+            foreach (XmlElement element in prefixedNames)
+            {
+                string name = element.GetAttribute("name");
+                string prefix = name.Substring(0, name.IndexOf(':'));
+                Assert.False(string.IsNullOrEmpty(element.GetNamespaceOfPrefix(prefix)), $"Prefix of keyword '{name}' is not declared");
+            }
+        }
+
+        /// <summary>
         /// Test that events sharing an Id and Version keep their own fields. Kerberos event 13 is two Event Log
         /// message ids, 0x0000000D and 0x8000000D, that differ only in the severity bits.
         /// </summary>
@@ -627,6 +674,87 @@ namespace TraceEventTests
             }
         }
 
+        /// <summary>
+        /// Asserts that every event level in the provider's manifest is a winmeta.xml name or declared in its levels, and
+        /// that some event uses 'expectedLevel'.  Returns the declared levels, name to value.
+        /// </summary>
+        private Dictionary<string, string> AssertEventLevelsAreDeclared(string providerName, string expectedLevel)
+        {
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var declaredLevels = new Dictionary<string, string>();
+            foreach (XmlElement level in xmlDoc.SelectNodes("//e:levels/e:level", nsmgr))
+            {
+                _output.WriteLine($"{providerName}: <level name=\"{level.GetAttribute("name")}\" value=\"{level.GetAttribute("value")}\" />");
+                declaredLevels[level.GetAttribute("name")] = level.GetAttribute("value");
+            }
+
+            // The level name each event should have, from the level TDH reports for it.  Events can share an Id and
+            // Version, so each key holds the names of all of them.
+            var expectedEventLevels = new Dictionary<string, HashSet<string>>();
+            foreach (var descriptor in GetManifestEventDescriptors(TraceEventProviders.GetProviderGuidByName(providerName)))
+            {
+                string expectedName = descriptor.Level < s_winmetaLevelNames.Length
+                    ? s_winmetaLevelNames[descriptor.Level]
+                    : declaredLevels.First(level => level.Value == descriptor.Level.ToString()).Key;
+
+                string key = descriptor.Id + "/" + descriptor.Version;
+                HashSet<string> names;
+                if (!expectedEventLevels.TryGetValue(key, out names))
+                {
+                    expectedEventLevels[key] = names = new HashSet<string>();
+                }
+                names.Add(expectedName);
+            }
+
+            var eventLevels = new HashSet<string>();
+            foreach (XmlElement eventNode in xmlDoc.SelectNodes("//e:events/e:event", nsmgr))
+            {
+                string level = eventNode.GetAttribute("level");
+                eventLevels.Add(level);
+                string key = eventNode.GetAttribute("value") + "/" + eventNode.GetAttribute("version");
+                Assert.True(expectedEventLevels[key].Contains(level),
+                    $"{providerName} event {key} has level '{level}', expected one of '{string.Join("', '", expectedEventLevels[key])}'");
+            }
+
+            Assert.Contains(expectedLevel, eventLevels);
+            return declaredLevels;
+        }
+
+        /// <summary>
+        /// Returns the descriptors of the events in a registered provider's manifest.
+        /// </summary>
+        private static unsafe RegisteredTraceEventParser.EVENT_DESCRIPTOR[] GetManifestEventDescriptors(Guid providerGuid)
+        {
+            var buffer = new byte[84000];
+            int status;
+            for (; ; )
+            {
+                int size = buffer.Length;
+                status = RegisteredTraceEventParser.TdhEnumerateManifestProviderEvents(providerGuid, buffer, ref size);
+                if (status != 122)  // ERROR_INSUFFICIENT_BUFFER
+                {
+                    break;
+                }
+
+                buffer = new byte[size];
+            }
+            Assert.Equal(0, status);
+
+            // PROVIDER_EVENT_INFO: NumberOfEvents, Reserved, then the descriptors.
+            var descriptors = new RegisteredTraceEventParser.EVENT_DESCRIPTOR[BitConverter.ToInt32(buffer, 0)];
+            fixed (RegisteredTraceEventParser.EVENT_DESCRIPTOR* pDescriptors = descriptors)
+            {
+                Marshal.Copy(buffer, 8, (IntPtr)pDescriptors, descriptors.Length * sizeof(RegisteredTraceEventParser.EVENT_DESCRIPTOR));
+            }
+            return descriptors;
+        }
+
         private static unsafe byte[] CreateRecursiveStructDagEventInfoBuffer()
         {
             byte[] buffer = new byte[EventInfoPropertyArrayOffset + (2 * EventPropertyInfoSize) + 128];
@@ -818,6 +946,15 @@ namespace TraceEventTests
         private static readonly int EventPropertyInfoSize = Marshal.SizeOf(typeof(RegisteredTraceEventParser.EVENT_PROPERTY_INFO));
         private static readonly int EventMapInfoEntryArrayOffset = (int)Marshal.OffsetOf(typeof(RegisteredTraceEventParser.EVENT_MAP_INFO), "MapEntryArray");
         private static readonly int EventMapEntrySize = Marshal.SizeOf(typeof(RegisteredTraceEventParser.EVENT_MAP_ENTRY));
+
+        // winmeta.xml's level names, indexed by level.  Written out here rather than taken from RegisteredTraceEventParser
+        // so that a mistake in its table is caught.
+        private static readonly string[] s_winmetaLevelNames =
+        {
+            "win:LogAlways", "win:Critical", "win:Error", "win:Warning", "win:Informational", "win:Verbose",
+            "win:ReservedLevel6", "win:ReservedLevel7", "win:ReservedLevel8", "win:ReservedLevel9", "win:ReservedLevel10",
+            "win:ReservedLevel11", "win:ReservedLevel12", "win:ReservedLevel13", "win:ReservedLevel14", "win:ReservedLevel15",
+        };
 
         #region Legacy Implementation (for comparison testing only)
 
@@ -1040,7 +1177,7 @@ namespace TraceEventTests
                         if ((int)TraceEventLevel.Always <= eventInfo->EventDescriptor.Level && eventInfo->EventDescriptor.Level <= (int)TraceEventLevel.Verbose)
                         {
                             var asLevel = (TraceEventLevel)eventInfo->EventDescriptor.Level;
-                            var levelName = "win:" + asLevel;
+                            var levelName = asLevel == TraceEventLevel.Always ? "win:LogAlways" : "win:" + asLevel;
                             eventWriter.Write(" level=\"{0}\"", levelName);
                         }
 
