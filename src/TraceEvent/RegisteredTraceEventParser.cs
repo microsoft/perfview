@@ -371,19 +371,47 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             string templateName = null;
                             if (eventInfo->TopLevelPropertyCount != 0)
                             {
-                                string[] propertyNames = new string[eventInfo->TopLevelPropertyCount];
+                                // Indexed by property index.  Struct members follow the top-level properties
+                                // in EventPropertyInfoArray, and a member's count or length can name another member.
+                                string[] propertyNames = new string[eventInfo->PropertyCount];
                                 var templateSb = new StringBuilder();
                                 using (var tw = XmlWriter.Create(templateSb, fragmentSettings))
                                 {
-                                    for (int j = 0; j < eventInfo->TopLevelPropertyCount; j++)
+                                    // Runs of sibling properties still to write, as (next index, end index).  The bottom
+                                    // run is the top-level properties.  A struct property pushes the run of its members,
+                                    // and its <struct> element is closed when that run is used up.
+                                    var runs = new Stack<KeyValuePair<int, int>>();
+                                    runs.Push(new KeyValuePair<int, int>(0, eventInfo->TopLevelPropertyCount));
+                                    int propertiesWritten = 0;
+                                    while (runs.Count > 0)
                                     {
+                                        var run = runs.Pop();
+                                        if (run.Key >= run.Value)
+                                        {
+                                            if (runs.Count > 0)
+                                            {
+                                                tw.WriteEndElement(); // struct
+                                            }
+                                            continue;
+                                        }
+
+                                        // Each property is written once, so writing more than PropertyCount means the
+                                        // metadata has overlapping struct member ranges.
+                                        if (++propertiesWritten > eventInfo->PropertyCount)
+                                        {
+                                            break;
+                                        }
+
+                                        runs.Push(new KeyValuePair<int, int>(run.Key + 1, run.Value));
+                                        int j = run.Key;
                                         EVENT_PROPERTY_INFO* propertyInfo = &propertyInfos[j];
                                         var propertyName = new string((char*)(&eventInfoBuff[propertyInfo->NameOffset]));
-                                        propertyNames[j] = propertyName;
                                         string mapAttrib = null;
+                                        bool isStruct = (propertyInfo->Flags & PROPERTY_FLAGS.Struct) != 0;
 
-                                        // Deal with any maps (bit fields or enumerations)
-                                        if (propertyInfo->MapNameOffset != 0)
+                                        // Deal with any maps (bit fields or enumerations).  Structs and custom schema
+                                        // properties have no map; their MapNameOffset slot is padding or CustomSchemaOffset.
+                                        if (!isStruct && (propertyInfo->Flags & PROPERTY_FLAGS.HasCustomSchema) == 0 && propertyInfo->MapNameOffset != 0)
                                         {
                                             string mapName = new string((char*)(&eventInfoBuff[propertyInfo->MapNameOffset]));
 
@@ -449,17 +477,62 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                                         // Remove anything that does not look like an ID (.e.g space)
                                         propertyName = Regex.Replace(propertyName, "[^A-Za-z0-9_]", "");
+                                        // Stored after cleaning so that count and length attributes match the data names.
+                                        propertyNames[j] = propertyName;
                                         TdhInputType propertyType = propertyInfo->InType;
                                         string countAttrib = null;
                                         string lengthAttrib = null;
 
+                                        // Count and length are independent, e.g. a fixed count of fixed-length binary blobs.
                                         if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamCount) != 0)
                                         {
                                             countAttrib = propertyNames[propertyInfo->CountOrCountIndex];
                                         }
-                                        else if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamLength) != 0)
+                                        else if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamFixedCount) != 0 || propertyInfo->CountOrCountIndex > 1)
+                                        {
+                                            countAttrib = propertyInfo->CountOrCountIndex.ToString();
+                                        }
+
+                                        if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamLength) != 0)
                                         {
                                             lengthAttrib = propertyNames[propertyInfo->LengthOrLengthIndex];
+                                        }
+                                        else if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamFixedLength) != 0)
+                                        {
+                                            lengthAttrib = propertyInfo->LengthOrLengthIndex.ToString();
+                                        }
+
+                                        if (isStruct)
+                                        {
+                                            tw.WriteStartElement("struct");
+                                            tw.WriteAttributeString("name", propertyName);
+                                            if (countAttrib != null)
+                                            {
+                                                tw.WriteAttributeString("count", countAttrib);
+                                            }
+                                            if (lengthAttrib != null)
+                                            {
+                                                tw.WriteAttributeString("length", lengthAttrib);
+                                            }
+
+                                            // TDH places a struct's members after the struct itself.
+                                            int memberStart = propertyInfo->StructStartIndex;
+                                            int memberCount = propertyInfo->NumOfStructMembers;
+                                            if (j < memberStart && memberCount <= eventInfo->PropertyCount - memberStart)
+                                            {
+                                                runs.Push(new KeyValuePair<int, int>(memberStart, memberStart + memberCount));
+                                            }
+                                            else
+                                            {
+                                                tw.WriteEndElement(); // struct
+                                            }
+                                            continue;
+                                        }
+
+                                        if ((propertyInfo->Flags & PROPERTY_FLAGS.HasCustomSchema) != 0)
+                                        {
+                                            // A manifest cannot express the schema, so say that it was left out.
+                                            tw.WriteComment(" PropertyHasCustomSchema: schema not included ");
                                         }
 
                                         tw.WriteStartElement("data");
@@ -1090,8 +1163,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             goto Exit;
                         }
 
-                        // Deal with any maps (bit fields or enumerations)
-                        if (propertyInfo->MapNameOffset != 0)
+                        if ((propertyInfo->Flags & PROPERTY_FLAGS.HasCustomSchema) != 0)
+                        {
+                            Trace.WriteLine("    Custom schema for " + propertyName + " is not supported; decoding it as " + propertyInfo->InType.ToString() + ".");
+                        }
+
+                        // Deal with any maps (bit fields or enumerations).  A custom schema property has no map; its
+                        // MapNameOffset slot is CustomSchemaOffset.
+                        if ((propertyInfo->Flags & PROPERTY_FLAGS.HasCustomSchema) == 0 && propertyInfo->MapNameOffset != 0)
                         {
                             string mapName = ReadString(propertyInfo->MapNameOffset);
 
@@ -1509,6 +1588,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // These are valid if Flags & Struct not set.
             public TdhInputType InType;
             public TdhOutputType OutType;
+            // Valid only if neither Struct nor HasCustomSchema is set.  The same slot holds a struct's padding
+            // and a custom schema property's CustomSchemaOffset.
             public int MapNameOffset;
 
             // These are valid if Flags & Struct is set.
@@ -1545,7 +1626,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             ParamCount = 0x4,
             WbemXmlFragment = 0x8,
             ParamFixedLength = 0x10,
-            ParamFixedCount = 0x20
+            ParamFixedCount = 0x20,
+            HasTags = 0x40,
+            HasCustomSchema = 0x80
         }
 
         internal enum TdhInputType : ushort
