@@ -396,7 +396,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                             if (!enumIntern.ContainsKey(mapName))
                                             {
                                                 EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
-                                                var hr = TdhGetEventMapInformation(&eventRecord, mapName, enumInfo, ref buffSize);
+                                                // TDH sets the size to the bytes it used, so pass enumBuffer's full size each time.
+                                                int enumBufferSize = buffSize;
+                                                var hr = TdhGetEventMapInformation(&eventRecord, mapName, enumInfo, ref enumBufferSize);
                                                 if (hr == 0)
                                                 {
                                                     // We only support manifest enums for now.  
