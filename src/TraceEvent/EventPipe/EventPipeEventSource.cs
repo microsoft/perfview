@@ -584,7 +584,7 @@ namespace Microsoft.Diagnostics.Tracing
                     {
                         if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
                         {
-                            return *((Guid*)extendedData[i].DataPtr);
+                            return *TraceEventNativeMethods.GetRelatedActivityIDPointer(&extendedData[i]);
                         }
                     }
                 }

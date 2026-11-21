@@ -125,6 +125,9 @@ namespace Microsoft.Diagnostics.Tracing
             get { return 0; }
         }
 
+        /// <summary>Processes complete events without truncating their native payload lengths.</summary>
+        /// <exception cref="EndOfStreamException">A channel ends within an event.</exception>
+        /// <exception cref="InvalidDataException">An event has an invalid or unrepresentable payload extent.</exception>
         public override bool Process()
         {
             ulong lastTimestamp = 0;
@@ -203,6 +206,10 @@ namespace Microsoft.Diagnostics.Tracing
 
         private TraceEventNativeMethods.EVENT_RECORD* InitEventRecord(CtfEventHeader header, CtfReader stream, CtfEventMapping mapping)
         {
+            int length = stream.BufferLength;
+            if ((uint)length > ushort.MaxValue)
+                throw new InvalidDataException("Invalid CTF native payload length.");
+
             _header->EventHeader.Size = (ushort)sizeof(TraceEventNativeMethods.EVENT_TRACE_HEADER);
             _header->EventHeader.Flags = 0;
             if (pointerSize == 8)
@@ -221,7 +228,7 @@ namespace Microsoft.Diagnostics.Tracing
             _header->EventHeader.Opcode = (byte)mapping.Opcode;
             _header->EventHeader.Id = (ushort)mapping.Id;
 
-            _header->UserDataLength = (ushort)stream.BufferLength;
+            _header->UserDataLength = (ushort)length;
             _header->UserData = stream.BufferPtr;
 
             // TODO: Set these properties based on Ctf context

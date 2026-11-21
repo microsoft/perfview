@@ -8,6 +8,7 @@ using Microsoft.Diagnostics.Tracing.Compatibility;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 
 using TRACEHANDLE = System.UInt64; // TRACEHANDLE handle type is a ULONG64 in evntrace.h.
@@ -486,6 +487,15 @@ namespace Microsoft.Diagnostics.Tracing
             public ushort DataSize;
             public ulong DataPtr;
         };
+
+        internal static Guid* GetRelatedActivityIDPointer(EVENT_HEADER_EXTENDED_DATA_ITEM* item)
+        {
+            if (item->DataSize < sizeof(Guid) || item->DataPtr == 0)
+            {
+                throw new InvalidDataException("Invalid related-activity GUID.");
+            }
+            return (Guid*)item->DataPtr;
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct EVENT_EXTENDED_ITEM_STACK_TRACE32

@@ -20,7 +20,7 @@
 
   <PropertyGroup>
     <!-- These are the versions of the things we are CREATING in this repository -->
-    <ReleaseVersion>4.0.0</ReleaseVersion>
+    <ReleaseVersion>4.0.2</ReleaseVersion>
     <FastSerializationVersion>$(ReleaseVersion)</FastSerializationVersion>
     <HeapDumpDllVersion>$(ReleaseVersion)</HeapDumpDllVersion>
     <MemoryGraphVersion>$(ReleaseVersion)</MemoryGraphVersion>
