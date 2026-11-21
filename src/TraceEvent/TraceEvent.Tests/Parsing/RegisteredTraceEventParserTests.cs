@@ -230,6 +230,52 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that a field's output type is written when it is not the default for its input type, and that reading the
+        /// manifest back formats the field by it. Kernel-Network event 10 (TCP data sent over IPv4) holds UInt32 IPv4
+        /// addresses and UInt16 ports.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_WritesNonDefaultOutTypes()
+        {
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider("Microsoft-Windows-Kernel-Network");
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var eventNode = (XmlElement)xmlDoc.SelectSingleNode("//e:event[@value='10'][@version='0']", nsmgr);
+            Assert.NotNull(eventNode);
+            string templateId = eventNode.GetAttribute("template");
+            var outTypes = new Dictionary<string, string>();
+            foreach (XmlElement data in xmlDoc.SelectNodes($"//e:template[@tid='{templateId}']/e:data", nsmgr))
+            {
+                outTypes[data.GetAttribute("name")] = data.GetAttribute("outType");
+            }
+
+            Assert.Equal("win:IPv4", outTypes["daddr"]);
+            Assert.Equal("win:IPv4", outTypes["saddr"]);
+            Assert.Equal("win:Port", outTypes["dport"]);
+            Assert.Equal("win:Port", outTypes["sport"]);
+            Assert.Equal("", outTypes["PID"]);        // UInt32 with the default output type.
+
+            DynamicTraceEventData template = null;
+            var providerManifest = new ProviderManifest(new MemoryStream(Encoding.UTF8.GetBytes(manifest)));
+            providerManifest.ParseProviderEvents(t =>
+            {
+                if ((int)t.ID == 10)
+                {
+                    template = t;
+                }
+                return EventFilterResponse.AcceptEvent;
+            }, false);
+
+            Assert.NotNull(template);
+            Assert.Equal(TdhFormatter.FormatHint.IPv4, template.payloadFetches[Array.IndexOf(template.payloadNames, "daddr")].FormatHint);
+            Assert.Equal(TdhFormatter.FormatHint.Port, template.payloadFetches[Array.IndexOf(template.payloadNames, "dport")].FormatHint);
+        }
+
+        /// <summary>
         /// Test that events sharing an Id and Version keep their own fields. Kerberos event 13 is two Event Log
         /// message ids, 0x0000000D and 0x8000000D, that differ only in the severity bits.
         /// </summary>
@@ -1132,7 +1178,11 @@ namespace TraceEventTests
                                     countOrLengthAttrib = " length=\"" + propertyNames[propertyInfo->LengthOrLengthIndex] + "\"";
                                 }
 
-                                templateWriter.WriteLine("      <data name=\"{0}\" inType=\"win:{1}\"{2}{3}/>", propertyName, propertyType.ToString(), enumAttrib, countOrLengthAttrib);
+                                string outTypeName = (propertyInfo->Flags & RegisteredTraceEventParser.PROPERTY_FLAGS.Struct) == 0 ?
+                                    RegisteredTraceEventParser.GetManifestOutTypeName(propertyType, propertyInfo->OutType) : null;
+                                string outTypeAttrib = outTypeName != null ? " outType=\"" + outTypeName + "\"" : "";
+
+                                templateWriter.WriteLine("      <data name=\"{0}\" inType=\"win:{1}\"{2}{3}{4}/>", propertyName, propertyType.ToString(), outTypeAttrib, enumAttrib, countOrLengthAttrib);
                             }
                             var templateStr = templateWriter.ToString();
 

@@ -462,9 +462,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                             lengthAttrib = propertyNames[propertyInfo->LengthOrLengthIndex];
                                         }
 
+                                        // A struct's OutType slot holds NumOfStructMembers, not an output type.
+                                        string outTypeAttrib = (propertyInfo->Flags & PROPERTY_FLAGS.Struct) == 0 ?
+                                            GetManifestOutTypeName(propertyType, propertyInfo->OutType) : null;
+
                                         tw.WriteStartElement("data");
                                         tw.WriteAttributeString("name", propertyName);
                                         tw.WriteAttributeString("inType", "win:" + propertyType.ToString());
+                                        if (outTypeAttrib != null)
+                                        {
+                                            tw.WriteAttributeString("outType", outTypeAttrib);
+                                        }
                                         if (mapAttrib != null)
                                         {
                                             tw.WriteAttributeString("map", mapAttrib);
@@ -826,6 +834,99 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
             return ret;
+        }
+
+        /// <summary>
+        /// Returns the manifest name of 'outType' as winmeta.xml spells it, or null if 'outType' is the default output
+        /// type of 'inType' and so need not be written.  Manifest type names are case-sensitive, both for mc.exe and for
+        /// ProviderManifest, so these are not the TdhOutputType member names.
+        /// </summary>
+        internal static string GetManifestOutTypeName(TdhInputType inType, TdhOutputType outType)
+        {
+            if (outType == GetDefaultOutType(inType))
+            {
+                return null;
+            }
+
+            switch (outType)
+            {
+                case TdhOutputType.String: return "xs:string";
+                case TdhOutputType.Datetime: return "xs:dateTime";
+                case TdhOutputType.Byte: return "xs:byte";
+                case TdhOutputType.UnsignedByte: return "xs:unsignedByte";
+                case TdhOutputType.Short: return "xs:short";
+                case TdhOutputType.UnsignedShort: return "xs:unsignedShort";
+                case TdhOutputType.Int: return "xs:int";
+                case TdhOutputType.UnsignedInt: return "xs:unsignedInt";
+                case TdhOutputType.Long: return "xs:long";
+                case TdhOutputType.UnsignedLong: return "xs:unsignedLong";
+                case TdhOutputType.Float: return "xs:float";
+                case TdhOutputType.Double: return "xs:double";
+                case TdhOutputType.Boolean: return "xs:boolean";
+                case TdhOutputType.Guid: return "xs:GUID";
+                case TdhOutputType.HexBinary: return "xs:hexBinary";
+                case TdhOutputType.HexInt8: return "win:HexInt8";
+                case TdhOutputType.HexInt16: return "win:HexInt16";
+                case TdhOutputType.HexInt32: return "win:HexInt32";
+                case TdhOutputType.HexInt64: return "win:HexInt64";
+                case TdhOutputType.Pid: return "win:PID";
+                case TdhOutputType.Tid: return "win:TID";
+                case TdhOutputType.Port: return "win:Port";
+                case TdhOutputType.Ipv4: return "win:IPv4";
+                case TdhOutputType.Ipv6: return "win:IPv6";
+                case TdhOutputType.SocketAddress: return "win:SocketAddress";
+                case TdhOutputType.CimDateTime: return "win:CIMDateTime";
+                case TdhOutputType.EtwTime: return "win:ETWTIME";
+                case TdhOutputType.Xml: return "win:Xml";
+                case TdhOutputType.ErrorCode: return "win:ErrorCode";
+                case TdhOutputType.Win32Error: return "win:Win32Error";
+                case TdhOutputType.NtStatus: return "win:NTSTATUS";
+                case TdhOutputType.HResult: return "win:HResult";
+                case TdhOutputType.CultureInsensitiveDateTime: return "win:DateTimeCultureInsensitive";
+                case TdhOutputType.JSON: return "win:Json";
+                case TdhOutputType.UTF8: return "win:Utf8";
+                case TdhOutputType.Pkcs7WithTypeInfo: return "win:Pkcs7WithTypeInfo";
+                case TdhOutputType.CodePointer: return "win:CodePointer";
+                case TdhOutputType.DateTimeUtc: return "win:DateTimeUtc";
+                default: return null;      // Null, or a WBEM output type that has no manifest name.
+            }
+        }
+
+        /// <summary>
+        /// Returns the output type winmeta.xml gives 'inType' when a manifest does not name one, or TdhOutputType.Null
+        /// for an input type that has no default.  TDH reports this default for fields whose manifest has no outType.
+        /// </summary>
+        private static TdhOutputType GetDefaultOutType(TdhInputType inType)
+        {
+            switch (inType)
+            {
+                case TdhInputType.UnicodeString:
+                case TdhInputType.AnsiString:
+                case TdhInputType.SID:
+                case TdhInputType.CountedUtf16String:
+                case TdhInputType.CountedMbcsString:
+                    return TdhOutputType.String;
+                case TdhInputType.Int8: return TdhOutputType.Byte;
+                case TdhInputType.UInt8: return TdhOutputType.UnsignedByte;
+                case TdhInputType.Int16: return TdhOutputType.Short;
+                case TdhInputType.UInt16: return TdhOutputType.UnsignedShort;
+                case TdhInputType.Int32: return TdhOutputType.Int;
+                case TdhInputType.UInt32: return TdhOutputType.UnsignedInt;
+                case TdhInputType.Int64: return TdhOutputType.Long;
+                case TdhInputType.UInt64: return TdhOutputType.UnsignedLong;
+                case TdhInputType.Float: return TdhOutputType.Float;
+                case TdhInputType.Double: return TdhOutputType.Double;
+                case TdhInputType.Boolean: return TdhOutputType.Boolean;
+                case TdhInputType.Binary: return TdhOutputType.HexBinary;
+                case TdhInputType.GUID: return TdhOutputType.Guid;
+                case TdhInputType.Pointer: return TdhOutputType.HexInt64;
+                case TdhInputType.FILETIME:
+                case TdhInputType.SYSTEMTIME:
+                    return TdhOutputType.Datetime;
+                case TdhInputType.HexInt32: return TdhOutputType.HexInt32;
+                case TdhInputType.HexInt64: return TdhOutputType.HexInt64;
+                default: return TdhOutputType.Null;
+            }
         }
 
 
