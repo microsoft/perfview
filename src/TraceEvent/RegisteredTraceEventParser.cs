@@ -94,9 +94,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// manifest is not as rich as the original source manifest because some information
         /// is not actually compiled into the binary manifest that is registered with the OS.  
         /// </summary>
+        public static string GetManifestForRegisteredProvider(string providerName)
+        {
+            return GetManifestForRegisteredProvider(providerName, ManifestGenerationOptions.None);
+        }
+        /// <summary>
+        /// Given a provider name that has been registered with the operating system, get
+        /// a string representing the ETW manifest for that provider.    Note that this
+        /// manifest is not as rich as the original source manifest because some information
+        /// is not actually compiled into the binary manifest that is registered with the OS.  
+        /// </summary>
         /// <param name="providerName">The name of the provider.</param>
         /// <param name="options">What to include in the manifest beyond what TDH describes.</param>
-        public static string GetManifestForRegisteredProvider(string providerName, ManifestGenerationOptions options = ManifestGenerationOptions.None)
+        public static string GetManifestForRegisteredProvider(string providerName, ManifestGenerationOptions options)
         {
             var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
             if (providerGuid == Guid.Empty)
@@ -112,9 +122,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// manifest is not as rich as the original source manifest because some information
         /// is not actually compiled into the binary manifest that is registered with the OS.  
         /// </summary>
+        public static string GetManifestForRegisteredProvider(Guid providerGuid)
+        {
+            return GetManifestForRegisteredProvider(providerGuid, ManifestGenerationOptions.None);
+        }
+        /// <summary>
+        /// Given a provider GUID that has been registered with the operating system, get
+        /// a string representing the ETW manifest for that provider.    Note that this
+        /// manifest is not as rich as the original source manifest because some information
+        /// is not actually compiled into the binary manifest that is registered with the OS.  
+        /// </summary>
         /// <param name="providerGuid">The GUID of the provider.</param>
         /// <param name="options">What to include in the manifest beyond what TDH describes.</param>
-        public static string GetManifestForRegisteredProvider(Guid providerGuid, ManifestGenerationOptions options = ManifestGenerationOptions.None)
+        public static string GetManifestForRegisteredProvider(Guid providerGuid, ManifestGenerationOptions options)
         {
             int buffSize = 84000;       // Still in the small object heap.  
             var buffer = new byte[buffSize]; // Still in the small object heap.
