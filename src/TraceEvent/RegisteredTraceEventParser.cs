@@ -1571,13 +1571,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             SYSTEMTIME,
             SID,
             HexInt32,
-            HexInt64,                   // End of winmeta intypes 21
-            CountedUtf16String = 22,    // new for TraceLogging
-            CountedMbcsString = 23,
-            Struct = 24,
+            HexInt64,
+            CountedUnicodeString,
+            CountedAnsiString,
+            Reserved,
+            CountedBinary,              // End of winmeta intypes
 
             CountedString = 300,        // Start of TDH intypes for WBEM
-            CountedAnsiString,
+            WbemCountedAnsiString,
             ReversedCountedString,
             ReversedCountedAnsiString,
             NonNullTerminatedString,
