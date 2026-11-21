@@ -263,7 +263,7 @@ namespace PerfView.Dialogs
                 return;
             }
             log.Log("[Looking up manifest for " + selectedProvider + " ]");
-            string manifestString = RegisteredTraceEventParser.GetManifestForRegisteredProvider(selectedProvider);
+            string manifestString = RegisteredTraceEventParser.GetManifestForRegisteredProvider(selectedProvider, ManifestGenerationOptions.IncludeChannels);
 
             var textEditorWindow = new TextEditorWindow(this);
             textEditorWindow.Width = 1200;
