@@ -230,6 +230,42 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that events with task 0 (no task) declare no task, since a manifest cannot declare task 0, and that their
+        /// opcodes are declared for the whole provider.  Microsoft-Windows-Security-Kerberos's events all have task 0.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_EventsWithoutTaskDeclareNoTask()
+        {
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider("Microsoft-Windows-Security-Kerberos");
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            Assert.Null(xmlDoc.SelectSingleNode("//e:tasks/e:task[@value='0']", nsmgr));
+
+            var providerOpcodes = new HashSet<string>();
+            foreach (XmlElement opcode in xmlDoc.SelectNodes("//e:provider/e:opcodes/e:opcode", nsmgr))
+            {
+                providerOpcodes.Add(opcode.GetAttribute("name"));
+            }
+
+            int eventsWithoutTask = 0;
+            foreach (XmlElement eventNode in xmlDoc.SelectNodes("//e:events/e:event[not(@task)]", nsmgr))
+            {
+                eventsWithoutTask++;
+                string opcode = eventNode.GetAttribute("opcode");
+                if (opcode.Length != 0 && !opcode.StartsWith("win:"))
+                {
+                    Assert.True(providerOpcodes.Contains(opcode), $"Event {eventNode.GetAttribute("value")} uses opcode '{opcode}', which is not declared");
+                }
+            }
+
+            Assert.True(eventsWithoutTask > 0, "Expected events without a task");
+        }
+
+        /// <summary>
         /// Test that no localized string is empty, which mc.exe rejects.  Microsoft-Windows-TCPIP's
         /// TCPIP_Protocol_ValueMap has an entry whose text is only spaces.
         /// </summary>
