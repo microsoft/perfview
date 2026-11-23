@@ -529,6 +529,106 @@ namespace TraceEventTests
             }
         }
 
+        [Fact]
+        public void ReusedCodeAddress_BindsEachCallStackToTheMethodLiveWhenObserved()
+        {
+            const int ProcessId = 1234;
+            const int OsThreadId = 5000;
+            const long ThreadStreamIndex = 7;
+            const long StartQpc = 100_000;
+            const ulong ReusedAddress = 0x7000_1000;
+
+            var writer = new EventPipeWriterV6();
+            writer.WriteHeaders();
+            writer.WriteMetadataBlock(
+                new EventMetadata(1, AsyncProfilerTraceEventParser.ProviderName, "AsyncEvents", AsyncProfilerTraceEventParser.AsyncEventsEventId)
+                {
+                    ProviderId = AsyncProfilerTraceEventParser.ProviderGuid,
+                },
+                new EventMetadata(2, ClrTraceEventParser.ProviderName, "MethodUnloadVerbose", 144)
+                {
+                    ProviderId = ClrTraceEventParser.ProviderGuid, Version = 2,
+                });
+            writer.WriteThreadBlock(w => w.WriteThreadEntry(ThreadStreamIndex, threadId: OsThreadId, processId: ProcessId));
+            writer.WriteEventBlock(w =>
+            {
+                int sequence = 0;
+                WriteEventOptions Options(int metadataId, long timestamp) => new WriteEventOptions
+                {
+                    MetadataId = metadataId,
+                    ThreadIndexOrId = ThreadStreamIndex,
+                    CaptureThreadIndexOrId = ThreadStreamIndex,
+                    SequenceNumber = ++sequence,
+                    Timestamp = timestamp,
+                    IsSorted = true,
+                };
+                void WriteCallStack(ulong dispatcher, long resumeQpc)
+                {
+                    byte[] buffer = new AsyncProfilerBufferBuilder(OsThreadId, startQpc: StartQpc)
+                        .Armed(resumeQpc - 1)
+                        .ResumeStack(resumeQpc, dispatcher, new ulong[] { ReusedAddress })
+                        .Suspend(resumeQpc + 5)
+                        .Build();
+                    w.WriteEventBlob(Options(1, resumeQpc + 10), p =>
+                    {
+                        p.Write(buffer.Length);
+                        p.Write(buffer);
+                    });
+                }
+                void WriteMethodUnload(string methodName, long timestamp)
+                {
+                    w.WriteEventBlob(Options(2, timestamp), p =>
+                    {
+                        p.Write(0x1111UL); // MethodID
+                        p.Write(0xcafeUL); // ModuleID
+                        p.Write(ReusedAddress);
+                        p.Write(0x20); // MethodSize
+                        p.Write(0x06000001); // MethodToken
+                        p.Write(8); // MethodFlags.Jitted
+                        p.WriteNullTerminatedUTF16String("Collectible");
+                        p.WriteNullTerminatedUTF16String(methodName);
+                        p.WriteNullTerminatedUTF16String("()");
+                        p.Write((ushort)1);
+                        p.Write(0L);
+                    });
+                }
+
+                // MethodA is unloaded and MethodB later reuses its address.
+                WriteCallStack(dispatcher: 1, StartQpc + 10);
+                WriteMethodUnload("MethodA", StartQpc + 30);
+                WriteCallStack(dispatcher: 2, StartQpc + 40);
+                WriteMethodUnload("MethodB", StartQpc + 60);
+            });
+            writer.WriteEndBlock();
+
+            string nettracePath = Path.Combine(Path.GetTempPath(), $"asyncprofiler_reuse_{Guid.NewGuid():N}.nettrace");
+            string etlxPath = nettracePath + ".etlx";
+            try
+            {
+                File.WriteAllBytes(nettracePath, writer.ToArray());
+                TraceLog.CreateFromEventPipeDataFile(nettracePath, etlxPath);
+                using (var traceLog = new TraceLog(etlxPath))
+                {
+                    var query = new AsyncProfilerCallStackComputer(traceLog);
+                    string MethodAt(long qpc)
+                    {
+                        AsyncProfilerCallStack callStack = Assert.Single(query.GetCallStacks(ProcessId, (ulong)OsThreadId, qpc));
+                        CodeAddressIndex codeAddress = callStack.Frames.CodeAddressAt(0);
+                        Assert.NotEqual(CodeAddressIndex.Invalid, codeAddress);
+                        return traceLog.CodeAddresses.Methods.FullMethodName(traceLog.CodeAddresses.MethodIndex(codeAddress));
+                    }
+
+                    Assert.Equal("Collectible.MethodA()", MethodAt(StartQpc + 12));
+                    Assert.Equal("Collectible.MethodB()", MethodAt(StartQpc + 42));
+                }
+            }
+            finally
+            {
+                File.Delete(nettracePath);
+                File.Delete(etlxPath);
+            }
+        }
+
         #region private
 
         /// <summary>

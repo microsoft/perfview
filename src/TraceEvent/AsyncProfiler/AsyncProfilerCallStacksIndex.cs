@@ -339,12 +339,6 @@ namespace Microsoft.Diagnostics.Tracing.Computers
 
         #region private
 
-        /// <summary>
-        /// Called when a new frame list is stored so <see cref="TraceLog"/> can attach code-address indices.
-        /// Used only while building the index.
-        /// </summary>
-        internal Action<AsyncProfilerCallStackFrames> OnFrameInterned { get; set; }
-
         internal bool HasDispatcherRecords
         {
             get
@@ -486,7 +480,31 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             AsyncProfilerCallStack.CompletionDelta[] exceptionCompletions,
             long[] wrapperResets)
         {
-            AsyncProfilerCallStackFramesIndex framesIndex = Intern(kind, instructionPointers, frameStates, thread.ProcessIndex);
+            Add(thread, kind, instructionPointers, frameStates, null, dispatcherId, depth, continuationIndexBase,
+                wrapperCount, startQpc, endQpc, methodCompletions, exceptionCompletions, wrapperResets);
+        }
+
+        /// <summary>
+        /// Stores a finalized call stack, reusing any matching frame list.
+        /// <paramref name="codeAddresses"/> holds the bindings made when the frames were observed, or null when none.
+        /// </summary>
+        internal void Add(
+            AsyncProfilerThreadKey thread,
+            AsyncCallstackKind kind,
+            ulong[] instructionPointers,
+            int[] frameStates,
+            CodeAddressIndex[] codeAddresses,
+            ulong dispatcherId,
+            int depth,
+            byte continuationIndexBase,
+            byte wrapperCount,
+            long startQpc,
+            long endQpc,
+            AsyncProfilerCallStack.CompletionDelta[] methodCompletions,
+            AsyncProfilerCallStack.CompletionDelta[] exceptionCompletions,
+            long[] wrapperResets)
+        {
+            AsyncProfilerCallStackFramesIndex framesIndex = Intern(kind, instructionPointers, frameStates, codeAddresses, thread.ProcessIndex);
             Add(thread, framesIndex, dispatcherId, depth, continuationIndexBase, wrapperCount, startQpc, endQpc, methodCompletions, exceptionCompletions, wrapperResets);
         }
 
@@ -532,11 +550,12 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             AsyncCallstackKind kind,
             ulong[] instructionPointers,
             int[] frameStates,
+            CodeAddressIndex[] codeAddresses,
             int frameCount,
             out AsyncProfilerCallStackFramesIndex framesIndex,
             out AsyncProfilerCallStackFrames frames)
         {
-            var key = new FrameKey(processIndex, kind, instructionPointers, frameStates, frameCount);
+            var key = new FrameKey(processIndex, kind, instructionPointers, frameStates, codeAddresses, frameCount);
             if (_frameKeyToIndex.TryGetValue(key, out framesIndex))
             {
                 frames = _internedCallStackFrames[(int)framesIndex];
@@ -547,20 +566,20 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             return false;
         }
 
-        private AsyncProfilerCallStackFramesIndex Intern(AsyncCallstackKind kind, ulong[] instructionPointers, int[] frameStates, ProcessIndex processIndex)
+        private AsyncProfilerCallStackFramesIndex Intern(
+            AsyncCallstackKind kind, ulong[] instructionPointers, int[] frameStates, CodeAddressIndex[] codeAddresses, ProcessIndex processIndex)
         {
-            var key = new FrameKey(processIndex, kind, instructionPointers, frameStates, instructionPointers.Length);
+            var key = new FrameKey(processIndex, kind, instructionPointers, frameStates, codeAddresses, instructionPointers.Length);
             if (_frameKeyToIndex.TryGetValue(key, out AsyncProfilerCallStackFramesIndex existing))
             {
                 return existing;
             }
 
             var index = (AsyncProfilerCallStackFramesIndex)_internedCallStackFrames.Count;
-            var frames = new AsyncProfilerCallStackFrames(kind, instructionPointers, frameStates, processIndex);
+            var frames = new AsyncProfilerCallStackFrames(kind, instructionPointers, frameStates, processIndex, codeAddresses);
 
             _internedCallStackFrames.Add(frames);
             _frameKeyToIndex[key] = index;
-            OnFrameInterned?.Invoke(frames);
 
             return index;
         }
@@ -1612,14 +1631,21 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             }
         }
 
+        /// <summary>
+        /// Identifies a frame list by its captured values and code-address bindings, so a reused address
+        /// bound to different code gets its own frame list. Null code addresses means no frame is bound.
+        /// </summary>
         private readonly struct FrameKey : IEquatable<FrameKey>
         {
-            public FrameKey(ProcessIndex processIndex, AsyncCallstackKind kind, ulong[] instructionPointers, int[] frameStates, int frameCount)
+            public FrameKey(
+                ProcessIndex processIndex, AsyncCallstackKind kind, ulong[] instructionPointers, int[] frameStates,
+                CodeAddressIndex[] codeAddresses, int frameCount)
             {
                 _processIndex = processIndex;
                 _kind = kind;
                 _instructionPointers = instructionPointers;
                 _frameStates = frameStates;
+                _codeAddresses = codeAddresses;
                 _frameCount = frameCount;
 
                 int hash = ((int)processIndex * 31) + (int)kind;
@@ -1635,6 +1661,14 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                         for (int i = 0; i < frameCount; i++)
                         {
                             hash = (hash * 31) + frameStates[i];
+                        }
+                    }
+
+                    if (codeAddresses != null)
+                    {
+                        for (int i = 0; i < frameCount; i++)
+                        {
+                            hash = (hash * 31) + (int)codeAddresses[i];
                         }
                     }
                 }
@@ -1678,6 +1712,22 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                     }
                 }
 
+                if ((_codeAddresses == null) != (other._codeAddresses == null))
+                {
+                    return false;
+                }
+
+                if (_codeAddresses != null)
+                {
+                    for (int i = 0; i < _frameCount; i++)
+                    {
+                        if (_codeAddresses[i] != other._codeAddresses[i])
+                        {
+                            return false;
+                        }
+                    }
+                }
+
                 return true;
             }
 
@@ -1697,6 +1747,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             private readonly AsyncCallstackKind _kind;
             private readonly ulong[] _instructionPointers;
             private readonly int[] _frameStates;
+            private readonly CodeAddressIndex[] _codeAddresses;
             private readonly int _frameCount;
             private readonly int _hash;
 

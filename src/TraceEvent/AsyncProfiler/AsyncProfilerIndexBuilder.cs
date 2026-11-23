@@ -37,11 +37,12 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         }
 
         /// <summary>
-        /// Reports nonzero native code IPs from accepted resume and append events.
-        /// This lets the caller register addresses before method rundown, even when frames are recorded at trace end.
-        /// Arguments: process instance, instruction pointer, instrumentation kind.
+        /// Binds a nonzero native code IP to a code address when its resume or append event is accepted.
+        /// Binding at observation ties each frame to the code live at that time, before a method unload or
+        /// rundown resolves the address, so a later reuse of the same IP gets a separate binding.
+        /// Arguments: process instance, instruction pointer. Returns <see cref="CodeAddressIndex.Invalid"/> when unavailable.
         /// </summary>
-        public Action<ProcessIndex, ulong, AsyncCallstackKind> OnFrameObserved;
+        public Func<ProcessIndex, ulong, CodeAddressIndex> ResolveCodeAddress;
 
         /// <summary>
         /// Reports a decode error after closing or discarding the affected open call stacks.
@@ -232,7 +233,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
 
             if (IsResumeCallstack(e.EventId))
             {
-                state.Push(RentBuilder(e, CurrentProcessState.WrapperCount, reusablePayload));
+                state.Push(RentBuilder(e, CurrentProcessState.WrapperCount, reusablePayload, BindCodeAddresses(e)));
             }
             else if (IsAppendCallstack(e.EventId))
             {
@@ -246,32 +247,38 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                     return;
                 }
 
-                currentCallStack.AddFrames(e);
+                currentCallStack.AddFrames(e, BindCodeAddresses(e));
             }
-            else
-            {
-                return;
-            }
-
-            // Report addresses now; waiting for a later commit could miss method rundown.
-            ReportObservedFrames(e);
         }
 
-        private void ReportObservedFrames(in AsyncCallstackEvent e)
+        /// <summary>
+        /// Binds the event's frames into a reused scratch array, or returns null when no frame is bound.
+        /// The result is borrowed until the next call.
+        /// </summary>
+        private CodeAddressIndex[] BindCodeAddresses(in AsyncCallstackEvent e)
         {
-            if (OnFrameObserved == null || e.MethodIds == null)
+            if (ResolveCodeAddress == null || e.MethodIds == null || e.FrameCount == 0)
             {
-                return;
+                return null;
             }
 
+            if (_callstackCodeAddresses.Length < e.FrameCount)
+            {
+                _callstackCodeAddresses = new CodeAddressIndex[Math.Max(e.FrameCount, byte.MaxValue)];
+            }
+
+            bool anyBound = false;
             for (int i = 0; i < e.FrameCount; i++)
             {
                 ulong instructionPointer = e.MethodIds[i];
-                if (instructionPointer != 0)
-                {
-                    OnFrameObserved(_currentProcessIndex, instructionPointer, e.Kind);
-                }
+                CodeAddressIndex codeAddress = instructionPointer == 0
+                    ? CodeAddressIndex.Invalid
+                    : ResolveCodeAddress(_currentProcessIndex, instructionPointer);
+                _callstackCodeAddresses[i] = codeAddress;
+                anyBound |= codeAddress != CodeAddressIndex.Invalid;
             }
+
+            return anyBound ? _callstackCodeAddresses : null;
         }
 
         void ISubEventSink.OnMethodResume(in AsyncMethodEvent e)
@@ -528,7 +535,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                 }
                 else
                 {
-                    _index.Add(key, builder.Kind, builder.GetMethodIds(), builder.GetFrameStates(),
+                    _index.Add(key, builder.Kind, builder.GetMethodIds(), builder.GetFrameStates(), builder.GetCodeAddresses(),
                         builder.DispatcherId, builder.Depth, builder.ContinuationIndexBase,
                         builder.WrapperCount, builder.StartQpc, endQpc,
                         methodCompletions, exceptionCompletions, wrapperResets);
@@ -542,7 +549,8 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         }
 
         /// <summary>Initializes a pooled or new builder, sharing indexed frames when possible.</summary>
-        private CallStackBuilder RentBuilder(in AsyncCallstackEvent e, byte wrapperCount, bool reusablePayload)
+        private CallStackBuilder RentBuilder(
+            in AsyncCallstackEvent e, byte wrapperCount, bool reusablePayload, CodeAddressIndex[] codeAddresses)
         {
             CallStackBuilder builder = _builderPool.Count != 0
                 ? _builderPool.Pop()
@@ -550,14 +558,14 @@ namespace Microsoft.Diagnostics.Tracing.Computers
 
             if (reusablePayload &&
                 _index.TryGetInternedFrames(
-                    _currentProcessIndex, e.Kind, e.MethodIds, e.FrameStates, e.FrameCount,
+                    _currentProcessIndex, e.Kind, e.MethodIds, e.FrameStates, codeAddresses, e.FrameCount,
                     out AsyncProfilerCallStackFramesIndex framesIndex, out AsyncProfilerCallStackFrames frames))
             {
                 builder.Initialize(e, wrapperCount, framesIndex, frames);
             }
             else
             {
-                builder.Initialize(e, wrapperCount, copyFrames: reusablePayload);
+                builder.Initialize(e, wrapperCount, copyFrames: reusablePayload, codeAddresses);
             }
 
             return builder;
@@ -661,10 +669,16 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             public List<long> WrapperResets =>
                 _wrapperResets ?? (_wrapperResets = new List<long>());
 
-            /// <summary>Starts a call stack, copying borrowed decoder buffers when needed.</summary>
-            public void Initialize(in AsyncCallstackEvent e, byte wrapperCount, bool copyFrames)
+            /// <summary>Starts a call stack, copying borrowed decoder and binding buffers when needed.</summary>
+            public void Initialize(in AsyncCallstackEvent e, byte wrapperCount, bool copyFrames, CodeAddressIndex[] codeAddresses)
             {
                 InitializeHeader(e, wrapperCount);
+                if (codeAddresses != null)
+                {
+                    _codeAddresses = new CodeAddressIndex[e.FrameCount];
+                    Array.Copy(codeAddresses, _codeAddresses, e.FrameCount);
+                }
+
                 if (!copyFrames)
                 {
                     _methodIds = e.MethodIds ?? Array.Empty<ulong>();
@@ -690,8 +704,8 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                 Frames = frames;
             }
 
-            /// <summary>Appends frames without changing any frame list already stored in the index.</summary>
-            public void AddFrames(in AsyncCallstackEvent e)
+            /// <summary>Appends frames and their bindings without changing any frame list already stored in the index.</summary>
+            public void AddFrames(in AsyncCallstackEvent e, CodeAddressIndex[] codeAddresses)
             {
                 if (e.MethodIds == null || e.FrameCount == 0)
                 {
@@ -719,8 +733,27 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                         }
                     }
 
+                    if (HasInternedFrames ? Frames.HasCodeAddresses : _codeAddresses != null)
+                    {
+                        _codeAddressesBuilder = new List<CodeAddressIndex>(existingCount + e.FrameCount);
+                        for (int i = 0; i < existingCount; i++)
+                        {
+                            _codeAddressesBuilder.Add(HasInternedFrames ? Frames.CodeAddressAt(i) : _codeAddresses[i]);
+                        }
+                    }
+
                     FramesIndex = AsyncProfilerCallStackFramesIndex.Invalid;
                     Frames = null;
+                }
+
+                if (codeAddresses != null && _codeAddressesBuilder == null)
+                {
+                    // First bound frame: keep earlier unbound frames aligned with Invalid entries.
+                    _codeAddressesBuilder = new List<CodeAddressIndex>(_methodIdsBuilder.Count + e.FrameCount);
+                    for (int i = 0; i < _methodIdsBuilder.Count; i++)
+                    {
+                        _codeAddressesBuilder.Add(CodeAddressIndex.Invalid);
+                    }
                 }
 
                 for (int i = 0; i < e.FrameCount; i++)
@@ -730,6 +763,8 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                     {
                         _frameStatesBuilder.Add(hasFrameStates ? e.FrameStates[i] : 0);
                     }
+
+                    _codeAddressesBuilder?.Add(codeAddresses != null ? codeAddresses[i] : CodeAddressIndex.Invalid);
                 }
             }
 
@@ -738,6 +773,9 @@ namespace Microsoft.Diagnostics.Tracing.Computers
 
             /// <summary>Returns the V1 states aligned with the instruction pointers, or null for V2.</summary>
             public int[] GetFrameStates() => _frameStatesBuilder?.ToArray() ?? _frameStates;
+
+            /// <summary>Returns the bindings aligned with the instruction pointers, or null when no frame is bound.</summary>
+            public CodeAddressIndex[] GetCodeAddresses() => _codeAddressesBuilder?.ToArray() ?? _codeAddresses;
 
             /// <summary>Returns the recorded method completions, or an empty array.</summary>
             public AsyncProfilerCallStack.CompletionDelta[] GetMethodCompletions() =>
@@ -763,8 +801,10 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                 Frames = null;
                 _methodIds = null;
                 _frameStates = null;
+                _codeAddresses = null;
                 _methodIdsBuilder = null;
                 _frameStatesBuilder = null;
+                _codeAddressesBuilder = null;
                 _methodCompletions?.Clear();
                 _exceptionCompletions?.Clear();
                 _wrapperResets?.Clear();
@@ -786,8 +826,10 @@ namespace Microsoft.Diagnostics.Tracing.Computers
 
             private ulong[] _methodIds;
             private int[] _frameStates;
+            private CodeAddressIndex[] _codeAddresses;
             private List<ulong> _methodIdsBuilder;
             private List<int> _frameStatesBuilder;
+            private List<CodeAddressIndex> _codeAddressesBuilder;
             private List<AsyncProfilerCallStack.CompletionDelta> _methodCompletions;
             private List<AsyncProfilerCallStack.CompletionDelta> _exceptionCompletions;
             private List<long> _wrapperResets;
@@ -805,6 +847,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         private readonly Stack<CallStackBuilder> _builderPool = new Stack<CallStackBuilder>();
         private readonly ulong[] _callstackMethodIds = new ulong[byte.MaxValue];
         private readonly int[] _callstackFrameStates = new int[byte.MaxValue];
+        private CodeAddressIndex[] _callstackCodeAddresses = Array.Empty<CodeAddressIndex>();
         // Reused for each AsyncEvents payload; decoders copy what they keep.
         private byte[] _eventBuffer;
         private ProcessIndex _currentProcessIndex;

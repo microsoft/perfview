@@ -2252,56 +2252,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         /// <summary>
-        /// Registers async-profiler native IPs as code addresses before rundown, and remembers their indices.
-        /// Resolution removes raw addresses from the lookup map, but some call stacks are interned only at trace end.
-        /// Only CodeAddressIndex references are persisted; compiler state remains separate from address identity.
+        /// Binds async-profiler native IPs to code addresses when their events are accepted, as physical stacks do.
+        /// A method unload or rundown resolves the address and removes it from the lookup map, so a later reuse of
+        /// the same IP by other code gets a new code address. Only CodeAddressIndex references are persisted.
         /// </summary>
         private void RegisterAsyncProfilerCodeAddresses(AsyncProfilerIndexBuilder builder)
         {
-            var codeAddressByMethodId = new Dictionary<(ProcessIndex ProcessIndex, ulong MethodId), CodeAddressIndex>();
-
-            CodeAddressIndex GetOrCreateCodeAddress(ProcessIndex processIndex, ulong methodId)
+            builder.ResolveCodeAddress = delegate (ProcessIndex processIndex, ulong instructionPointer)
             {
-                if (methodId == 0)
-                {
-                    return CodeAddressIndex.Invalid;
-                }
-
-                if (codeAddressByMethodId.TryGetValue((processIndex, methodId), out CodeAddressIndex codeAddress))
-                {
-                    return codeAddress;
-                }
-
                 TraceProcess process = Processes[processIndex];
                 if (process == null)
                 {
                     return CodeAddressIndex.Invalid;
                 }
 
-                codeAddress = codeAddresses.GetOrCreateCodeAddressIndex(process, methodId);
-                if (codeAddress != CodeAddressIndex.Invalid)
-                {
-                    codeAddressByMethodId[(processIndex, methodId)] = codeAddress;
-                }
-
-                return codeAddress;
-            }
-
-            builder.Index.OnFrameInterned = delegate (AsyncProfilerCallStackFrames frames)
-            {
-                for (int i = 0; i < frames.FrameCount; i++)
-                {
-                    CodeAddressIndex codeAddress = GetOrCreateCodeAddress(frames.ProcessIndex, frames.InstructionPointerAt(i));
-                    if (codeAddress != CodeAddressIndex.Invalid)
-                    {
-                        frames.SetCodeAddressAt(i, codeAddress);
-                    }
-                }
-            };
-
-            builder.OnFrameObserved = delegate (ProcessIndex processIndex, ulong methodId, AsyncCallstackKind kind)
-            {
-                GetOrCreateCodeAddress(processIndex, methodId);
+                return codeAddresses.GetOrCreateCodeAddressIndex(process, instructionPointer);
             };
         }
 

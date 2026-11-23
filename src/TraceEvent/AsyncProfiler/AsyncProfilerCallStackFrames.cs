@@ -70,16 +70,21 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             CodeAddressAt(index) != CodeAddressIndex.Invalid || InstructionPointerAt(index) != 0;
 
         internal AsyncProfilerCallStackFrames(
-            AsyncCallstackKind kind, ulong[] instructionPointers, int[] frameStates, ProcessIndex processIndex = 0)
+            AsyncCallstackKind kind, ulong[] instructionPointers, int[] frameStates, ProcessIndex processIndex = 0,
+            CodeAddressIndex[] codeAddresses = null)
         {
             Kind = kind;
             _instructionPointers = instructionPointers;
             _frameStates = frameStates;
             ProcessIndex = processIndex;
+            _codeAddresses = codeAddresses;
         }
 
         /// <summary>The capture process, used only during conversion and not serialized.</summary>
         internal ProcessIndex ProcessIndex { get; }
+
+        /// <summary>True when at least one frame was bound to a code address.</summary>
+        internal bool HasCodeAddresses => _codeAddresses != null;
 
         /// <summary>Stores a frame's code-address index during trace conversion.</summary>
         internal void SetCodeAddressAt(int index, CodeAddressIndex codeAddress)
@@ -157,26 +162,24 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                 }
             }
 
-            var frames = new AsyncProfilerCallStackFrames(kind, instructionPointers, frameStates);
             int codeAddressCount = deserializer.ReadInt();
+            CodeAddressIndex[] codeAddresses = null;
             if (codeAddressCount >= 0)
             {
-                var codeAddresses = new CodeAddressIndex[codeAddressCount];
+                codeAddresses = new CodeAddressIndex[codeAddressCount];
 
                 for (int i = 0; i < codeAddressCount; i++)
                 {
                     codeAddresses[i] = (CodeAddressIndex)deserializer.ReadInt();
                 }
-
-                frames._codeAddresses = codeAddresses;
             }
 
-            return frames;
+            return new AsyncProfilerCallStackFrames(kind, instructionPointers, frameStates, codeAddresses: codeAddresses);
         }
 
         private readonly ulong[] _instructionPointers;
         private readonly int[] _frameStates; // Optional V1 compiler states.
-        private CodeAddressIndex[] _codeAddresses; // null until the first address is registered
+        private CodeAddressIndex[] _codeAddresses; // null when no frame has a code address
 
         #endregion
     }
