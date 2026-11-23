@@ -231,6 +231,33 @@ namespace TraceEventTests
             Assert.Equal(42u, Assert.Single(sink.Unwinds).UnwoundFrameCount);
         }
 
+        [Theory]
+        [InlineData((uint)int.MaxValue, true)]
+        [InlineData(0x80000000u, false)]
+        [InlineData(uint.MaxValue, false)]
+        public void Unwind_FrameCountAboveInt32Max_IsMalformedPayload(uint unwoundFrames, bool accepted)
+        {
+            var buffer = new AsyncProfilerBufferBuilder()
+                .Unwind(AsyncEventID.UnwindStateMachineAsyncException, StartQpc + 2, unwoundFrames)
+                .Method(AsyncEventID.CompleteStateMachineAsyncMethod, StartQpc + 3)
+                .Build();
+
+            var sink = new AsyncProfilerCollectingSink();
+            AsyncProfilerTraceEventParser.ParseBuffer(buffer, sink);
+
+            Assert.Single(sink.Methods);
+            if (accepted)
+            {
+                Assert.Empty(sink.Errors);
+                Assert.Equal(unwoundFrames, Assert.Single(sink.Unwinds).UnwoundFrameCount);
+            }
+            else
+            {
+                Assert.Equal(AsyncEventID.UnwindStateMachineAsyncException, Assert.Single(sink.Errors).EventId);
+                Assert.Empty(sink.Unwinds);
+            }
+        }
+
         [Fact]
         public void Metadata_DecodesClockAndManifest()
         {

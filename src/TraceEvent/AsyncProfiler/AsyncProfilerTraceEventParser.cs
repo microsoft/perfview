@@ -358,7 +358,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 case AsyncEventID.UnwindRuntimeAsyncException:
                 case AsyncEventID.UnwindStateMachineAsyncException:
                     {
-                        if (!AsyncProfilerBufferReader.TryReadCompressedUInt32(buffer, ref index, payloadEnd, out uint unwoundFrames))
+                        // Counts are stored as Int32 completion deltas; larger values cannot be valid frame counts.
+                        if (!AsyncProfilerBufferReader.TryReadCompressedUInt32(buffer, ref index, payloadEnd, out uint unwoundFrames) ||
+                            unwoundFrames > int.MaxValue)
                         {
                             return false;
                         }
