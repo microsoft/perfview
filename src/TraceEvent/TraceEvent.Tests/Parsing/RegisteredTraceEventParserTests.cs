@@ -266,6 +266,26 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that a namespace prefix in a task name is kept and declared.  Microsoft-Windows-TaskScheduler's task 100
+        /// is task:JobExecute, whose prefix its own manifest declares but TDH does not report.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_DeclaresTaskNamePrefixes()
+        {
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider("Microsoft-Windows-TaskScheduler");
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var task = (XmlElement)xmlDoc.SelectSingleNode("//e:tasks/e:task[@value='100']", nsmgr);
+            Assert.NotNull(task);
+            Assert.Equal("task:JobExecute", task.GetAttribute("name"));
+            Assert.False(string.IsNullOrEmpty(task.GetNamespaceOfPrefix("task")), "Prefix 'task' is not declared");
+        }
+
+        /// <summary>
         /// Test that events sharing an Id and Version keep their own fields. Kerberos event 13 is two Event Log
         /// message ids, 0x0000000D and 0x8000000D, that differ only in the severity bits.
         /// </summary>

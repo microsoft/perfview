@@ -623,6 +623,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 writer.WriteAttributeString("xmlns", "xs", null, "http://www.w3.org/2001/XMLSchema");
                 writer.WriteAttributeString("xmlns", "xsi", null, "http://www.w3.org/2001/XMLSchema-instance");
                 writer.WriteAttributeString("xmlns", "win", null, "http://manifests.microsoft.com/win/2004/08/windows/events");
+
+                // A provider's task and opcode names can have a namespace prefix (e.g. task:JobExecute).  Its own manifest
+                // declared the prefix, but TDH keeps only the name, so declare each prefix again with a placeholder namespace.
+                foreach (var prefix in GetNamePrefixes(tasks))
+                {
+                    writer.WriteAttributeString("xmlns", prefix, null, "urn:unknown-namespace:" + prefix);
+                }
                 
                 writer.WriteStartElement("events");
                 
@@ -903,6 +910,74 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 symbol.Append(legal ? c : '_');
             }
             return symbol.ToString();
+        }
+
+        /// <summary>
+        /// Returns the namespace prefixes used by the provider's task and opcode names, other than the ones the manifest
+        /// always declares.
+        /// </summary>
+        private static SortedSet<string> GetNamePrefixes(SortedDictionary<int, TaskInfo> tasks)
+        {
+            var prefixes = new SortedSet<string>(StringComparer.Ordinal);
+            foreach (var task in tasks.Values)
+            {
+                AddNamePrefix(prefixes, task.Name);
+                if (task.Opcodes != null)
+                {
+                    foreach (var opcode in task.Opcodes.Values)
+                    {
+                        AddNamePrefix(prefixes, opcode);
+                    }
+                }
+            }
+
+            prefixes.Remove("win");
+            prefixes.Remove("xs");
+            prefixes.Remove("xsi");
+            return prefixes;
+        }
+
+        private static void AddNamePrefix(SortedSet<string> prefixes, string name)
+        {
+            string prefix;
+            if (TryGetNamePrefix(name, out prefix))
+            {
+                prefixes.Add(prefix);
+            }
+        }
+
+        /// <summary>
+        /// Returns true if 'name' is a namespace-prefixed name (prefix:local, both valid XML names), with its prefix.
+        /// Prefixes starting with "xml" are reserved, so they do not count.
+        /// </summary>
+        private static bool TryGetNamePrefix(string name, out string prefix)
+        {
+            prefix = null;
+            int colon = name.IndexOf(':');
+            if (colon <= 0 || colon != name.LastIndexOf(':') || !IsNCName(name, 0, colon) || !IsNCName(name, colon + 1, name.Length))
+            {
+                return false;
+            }
+
+            prefix = name.Substring(0, colon);
+            return !prefix.StartsWith("xml", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Returns true if name[start, end) is a valid XML name without a colon.
+        private static bool IsNCName(string name, int start, int end)
+        {
+            if (start >= end || !XmlConvert.IsStartNCNameChar(name[start]))
+            {
+                return false;
+            }
+            for (int i = start + 1; i < end; i++)
+            {
+                if (!XmlConvert.IsNCNameChar(name[i]))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private static string MakeLegalIdentifier(string name)
