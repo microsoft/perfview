@@ -418,7 +418,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                                             for (int k = 0; k < enumInfo->EntryCount; k++)
                                                             {
                                                                 int value = mapEntries[k].Value;
-                                                                string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
+                                                                // Text that is only whitespace (e.g. TCPIP_Protocol_ValueMap's 0x4) is kept: trimmed
+                                                                // to nothing, its string would have no value, which mc.exe rejects.
+                                                                string valueText = new string((char*)(&enumBuffer[mapEntries[k].NameOffset]));
+                                                                string valueName = valueText.Trim();
+                                                                if (valueName.Length == 0)
+                                                                {
+                                                                    valueName = valueText;
+                                                                }
                                                                 string stringId = $"map_{enumName}{valueName}";
 
                                                                 mw.WriteStartElement("map");
