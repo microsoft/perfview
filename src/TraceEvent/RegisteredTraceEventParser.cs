@@ -808,7 +808,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             writer.WriteStartElement("opcodes");
             foreach (var keyValue in task.Opcodes)
             {
-                string opcodeStringId = $"opcode_{task.Name}{keyValue.Value}";
+                // One string per opcode name, shared by every task that uses the opcode.  mc.exe keeps only the low byte of
+                // the task in an opcode's message id, so tasks such as 4 and 516 give the same opcode the same id, which is
+                // an error if their messages are different strings.
+                string opcodeStringId = $"opcode_{keyValue.Value}";
                 writer.WriteStartElement("opcode");
                 writer.WriteAttributeString("name", keyValue.Value);
                 writer.WriteAttributeString("message", $"$(string.{opcodeStringId})");

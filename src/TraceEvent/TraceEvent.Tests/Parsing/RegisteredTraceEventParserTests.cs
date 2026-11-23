@@ -1325,7 +1325,7 @@ namespace TraceEventTests
                     foreach (var keyValue in task.Opcodes)
                     {
                         string escapedOpcodeName = XmlUtilities.XmlEscape(keyValue.Value);
-                        string opcodeStringId = XmlUtilities.XmlEscape($"opcode_{task.Name}{keyValue.Value}");
+                        string opcodeStringId = XmlUtilities.XmlEscape($"opcode_{keyValue.Value}");
                         manifest.WriteLine("       <opcode name=\"{0}\" message=\"$(string.{1})\" value=\"{2}\"/>",
                             escapedOpcodeName, opcodeStringId, keyValue.Key);
                         if (emittedStringIds.Add(opcodeStringId))
