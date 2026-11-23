@@ -114,9 +114,9 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         /// </summary>
         public void Finish()
         {
-            foreach (KeyValuePair<AsyncProfilerThreadKey, CallStacks> thread in _threads)
+            foreach (KeyValuePair<ThreadContextKey, CallStacks> thread in _threads)
             {
-                CommitOpenCallStacks(thread.Key, thread.Value, long.MaxValue);
+                CommitOpenCallStacks(thread.Key.Thread, thread.Value, long.MaxValue);
             }
         }
 
@@ -179,12 +179,12 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         /// <summary>Records a dispatcher creation after the thread has been armed by a reset.</summary>
         void ISubEventSink.OnContextCreate(in AsyncContextEvent e)
         {
-            AsyncProfilerThreadKey creationThread = ThreadKeyOf(e.OsThreadId);
-            CallStacks state = GetOrCreate(creationThread);
+            ThreadContextKey key = ThreadContextKeyOf(e.Header);
+            CallStacks state = GetOrCreate(key);
             if (state.Armed)
             {
                 state.RecordDispatcherCreation(
-                    _index, creationThread, e.DispatcherId, e.ParentDispatcherId, e.TimestampQpc);
+                    _index, key.Thread, e.DispatcherId, e.ParentDispatcherId, e.TimestampQpc);
             }
         }
 
@@ -194,10 +194,10 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         }
 
         void ISubEventSink.OnContextSuspend(in AsyncContextEvent e) =>
-            CloseTop(ThreadKeyOf(e.OsThreadId), e.TimestampQpc);
+            CloseTop(ThreadContextKeyOf(e.Header), e.TimestampQpc);
 
         void ISubEventSink.OnContextComplete(in AsyncContextEvent e) =>
-            CloseTop(ThreadKeyOf(e.OsThreadId), e.TimestampQpc);
+            CloseTop(ThreadContextKeyOf(e.Header), e.TimestampQpc);
 
         void ISubEventSink.OnCallstack(in AsyncCallstackEvent e) => ProcessCallstack(e, reusablePayload: false);
 
@@ -218,8 +218,8 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         /// <summary>Records creation information, opens a call stack, or appends to the current call stack.</summary>
         private void ProcessCallstack(in AsyncCallstackEvent e, bool reusablePayload)
         {
-            AsyncProfilerThreadKey thread = ThreadKeyOf(e.OsThreadId);
-            CallStacks state = GetOrCreate(thread);
+            ThreadContextKey key = ThreadContextKeyOf(e.Header);
+            CallStacks state = GetOrCreate(key);
             if (!state.Armed)
             {
                 return;
@@ -227,7 +227,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
 
             if (e.EventId == AsyncEventID.CreateRuntimeAsyncCallstack)
             {
-                state.RecordDispatcherCreation(_index, thread, e.DispatcherId, e.ParentDispatcherId, e.TimestampQpc);
+                state.RecordDispatcherCreation(_index, key.Thread, e.DispatcherId, e.ParentDispatcherId, e.TimestampQpc);
                 return;
             }
 
@@ -289,8 +289,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         /// <summary>Records method-completion availability and advances the current call stack, if any.</summary>
         void ISubEventSink.OnMethodComplete(in AsyncMethodEvent e)
         {
-            AsyncProfilerThreadKey key = ThreadKeyOf(e.OsThreadId);
-            CallStacks state = GetOrCreate(key);
+            CallStacks state = GetOrCreate(ThreadContextKeyOf(e.Header));
             if (!state.Armed)
             {
                 return;
@@ -304,8 +303,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         /// <summary>Records unwind availability and completion counts for the current call stack.</summary>
         void ISubEventSink.OnException(in AsyncUnwindEvent e)
         {
-            AsyncProfilerThreadKey key = ThreadKeyOf(e.OsThreadId);
-            CallStacks state = GetOrCreate(key);
+            CallStacks state = GetOrCreate(ThreadContextKeyOf(e.Header));
             if (!state.Armed)
             {
                 return;
@@ -332,11 +330,11 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             }
 
             // Preserve the valid [resume, reset) prefix before clearing the thread's nesting state.
-            AsyncProfilerThreadKey key = ThreadKeyOf(e.OsThreadId);
+            ThreadContextKey key = ThreadContextKeyOf(e.Header);
             CallStacks state = GetOrCreate(key);
             if (state.Armed)
             {
-                CommitOpenCallStacks(key, state, e.TimestampQpc);
+                CommitOpenCallStacks(key.Thread, state, e.TimestampQpc);
             }
 
             state.Armed = true;
@@ -346,7 +344,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         /// <summary>Records a wrapper-index reset on the current call stack, if any.</summary>
         void ISubEventSink.OnResetContinuationWrapperIndex(in AsyncNeutralEvent e)
         {
-            CallStacks state = GetOrCreate(ThreadKeyOf(e.OsThreadId));
+            CallStacks state = GetOrCreate(ThreadContextKeyOf(e.Header));
             if (state.Armed)
             {
                 state.Top?.WrapperResets.Add(e.TimestampQpc);
@@ -389,11 +387,11 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             bool affectsEntireProcess = !e.BufferHeader.HasValue || e.EventId == AsyncEventID.AsyncProfilerMetadata;
             if (affectsEntireProcess)
             {
-                foreach (KeyValuePair<AsyncProfilerThreadKey, CallStacks> thread in _threads)
+                foreach (KeyValuePair<ThreadContextKey, CallStacks> thread in _threads)
                 {
-                    if (thread.Key.ProcessIndex == _currentProcessIndex)
+                    if (thread.Key.Thread.ProcessIndex == _currentProcessIndex)
                     {
-                        InvalidateThread(thread.Key, thread.Value, e.TimestampQpc);
+                        InvalidateThread(thread.Key.Thread, thread.Value, e.TimestampQpc);
                     }
                 }
 
@@ -406,10 +404,10 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             }
             else
             {
-                AsyncProfilerThreadKey key = ThreadKeyOf(e.BufferHeader.Value.OsThreadId);
+                ThreadContextKey key = ThreadContextKeyOf(e.BufferHeader.Value);
                 if (_threads.TryGetValue(key, out CallStacks state))
                 {
-                    InvalidateThread(key, state, e.TimestampQpc);
+                    InvalidateThread(key.Thread, state, e.TimestampQpc);
                 }
             }
 
@@ -444,6 +442,13 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         private AsyncProfilerThreadKey ThreadKeyOf(ulong osThreadId) =>
             new AsyncProfilerThreadKey(_currentProcessIndex, osThreadId);
 
+        /// <summary>
+        /// Keys nesting state by runtime thread context as well as OS thread, so a late buffer from a
+        /// dead thread cannot change the state of a replacement thread that reuses its OS thread id.
+        /// </summary>
+        private ThreadContextKey ThreadContextKeyOf(in BufferHeader header) =>
+            new ThreadContextKey(ThreadKeyOf(header.OsThreadId), header.AsyncThreadContextId);
+
         /// <summary>The manifest and clock state for the buffer currently being decoded.</summary>
         private ProcessBuildState CurrentProcessState => GetOrCreateProcessState(_currentProcessIndex);
 
@@ -460,7 +465,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         }
 
         /// <summary>Gets or creates the thread's nesting state.</summary>
-        private CallStacks GetOrCreate(AsyncProfilerThreadKey key)
+        private CallStacks GetOrCreate(ThreadContextKey key)
         {
             if (!_threads.TryGetValue(key, out CallStacks state))
             {
@@ -492,7 +497,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         }
 
         /// <summary>Closes and records the current call stack when an armed thread suspends or completes it.</summary>
-        private void CloseTop(AsyncProfilerThreadKey key, long timestampQpc)
+        private void CloseTop(ThreadContextKey key, long timestampQpc)
         {
             CallStacks state = GetOrCreate(key);
             if (!state.Armed || state.Top == null)
@@ -501,7 +506,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             }
 
             CallStackBuilder builder = state.Pop();
-            Commit(key, builder, timestampQpc);
+            Commit(key.Thread, builder, timestampQpc);
         }
 
         /// <summary>
@@ -569,6 +574,26 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             }
 
             return builder;
+        }
+
+        /// <summary>Identifies one runtime thread context on an OS thread of a process instance.</summary>
+        private readonly struct ThreadContextKey : IEquatable<ThreadContextKey>
+        {
+            public ThreadContextKey(AsyncProfilerThreadKey thread, uint asyncThreadContextId)
+            {
+                Thread = thread;
+                AsyncThreadContextId = asyncThreadContextId;
+            }
+
+            public AsyncProfilerThreadKey Thread { get; }
+            public uint AsyncThreadContextId { get; }
+
+            public bool Equals(ThreadContextKey other) =>
+                Thread.Equals(other.Thread) && AsyncThreadContextId == other.AsyncThreadContextId;
+
+            public override bool Equals(object obj) => obj is ThreadContextKey other && Equals(other);
+
+            public override int GetHashCode() => (Thread.GetHashCode() * 397) ^ (int)AsyncThreadContextId;
         }
 
         /// <summary>Tracks the open call stacks on one thread.</summary>
@@ -840,8 +865,8 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         private readonly AsyncProfilerTraceEventParser _parser;
         private readonly Func<AsyncProfilerTraceEvent, ProcessIndex> _processIndexOf;
         private readonly AsyncProfilerCallStacksIndex _index = new AsyncProfilerCallStacksIndex();
-        private readonly Dictionary<AsyncProfilerThreadKey, CallStacks> _threads =
-            new Dictionary<AsyncProfilerThreadKey, CallStacks>();
+        private readonly Dictionary<ThreadContextKey, CallStacks> _threads =
+            new Dictionary<ThreadContextKey, CallStacks>();
         private readonly Dictionary<ProcessIndex, ProcessBuildState> _processStates =
             new Dictionary<ProcessIndex, ProcessBuildState>();
         private readonly Stack<CallStackBuilder> _builderPool = new Stack<CallStackBuilder>();

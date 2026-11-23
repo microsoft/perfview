@@ -158,6 +158,30 @@ namespace TraceEventTests
             Assert.Equal(long.MaxValue, Assert.Single(computer.GetCallStacks(Key(ProcessB, ThreadA), Start + 100)).EndQpc);
         }
 
+        [Fact]
+        public void ReusedOsThreadId_KeepsRuntimeContextsSeparate()
+        {
+            const uint OldContext = 1;
+            const uint ReplacementContext = 2;
+            var computer = new AsyncProfilerIndexBuilder();
+            Process(computer, ProcessA, new AsyncProfilerBufferBuilder(ThreadA, OldContext)
+                .Armed(Start).ResumeStack(Start + 10, 1, new ulong[] { 0xA }));
+            Process(computer, ProcessA, new AsyncProfilerBufferBuilder(ThreadA, ReplacementContext, Start + 30)
+                .Reset(Start + 30).ResumeStack(Start + 31, 2, new ulong[] { 0xB }));
+            // The terminated thread's final buffer is flushed after its replacement has started.
+            Process(computer, ProcessA, new AsyncProfilerBufferBuilder(ThreadA, OldContext, Start + 20)
+                .Suspend(Start + 20));
+            computer.Finish();
+
+            AsyncProfilerCallStack old = Assert.Single(computer.GetCallStacks(Key(ProcessA, ThreadA), Start + 15));
+            Assert.Equal(0xAUL, old.Frames.InstructionPointerAt(0));
+            Assert.Equal(Start + 20, old.EndQpc);
+            Assert.Empty(computer.GetCallStacks(Key(ProcessA, ThreadA), Start + 25));
+            AsyncProfilerCallStack replacement = Assert.Single(computer.GetCallStacks(Key(ProcessA, ThreadA), Start + 35));
+            Assert.Equal(0xBUL, replacement.Frames.InstructionPointerAt(0));
+            Assert.Equal(long.MaxValue, replacement.EndQpc);
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
