@@ -220,6 +220,83 @@ namespace TraceEventTests
             scenario.AssertProductionStitch();
         }
 
+#if !DEBUG
+        // DEBUG builds of TraceEventDispatcher swallow callback exceptions behind a Debug.Assert, so only
+        // Release builds can observe generation failing from inside event processing.
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ThreadTimeComputers_ReleaseReconstructionResourcesWhenGenerationThrows(bool useThreadTimeComputer)
+        {
+            Frame current = Frame.App("Scenario.CurrentAsync");
+            Frame parent = Frame.App("Scenario.ParentAsync");
+            var scenario = new StitchScenario
+            {
+                Sync = new[] { current, Frame.V2Wrapper(0), Frame.V2InstrumentedDispatch,
+                    Frame.V2Dispatch, Frame.ThreadPoolDispatch, Frame.WorkerThreadStart },
+                Async = new[] { current, parent },
+                ExpectedStitched = new[] { current, parent, Frame.ThreadPoolDispatch, Frame.WorkerThreadStart },
+                ExpectedDiagnostics = new CallStackDiagnosticsExpectation
+                {
+                    SegmentsProcessed = 2,
+                    V2InfrastructureFramesCollapsed = 4,
+                },
+                IncludeEventSourceEvents = false,
+                VerifyThreadTimeComputer = useThreadTimeComputer,
+                AssertPublicApi = (log, path) =>
+                {
+                    TraceEvent data = log.Events.First(e => e.CallStackIndex() != CallStackIndex.Invalid).Clone();
+                    var output = new MutableTraceEventStackSource(log);
+                    object computer;
+                    AsyncCallStackTransforms transforms;
+                    Action generate;
+                    using (var symbols = new Microsoft.Diagnostics.Symbols.SymbolReader(System.IO.TextWriter.Null))
+                    {
+                        if (useThreadTimeComputer)
+                        {
+#pragma warning disable CS0618 // ThreadTimeStackComputer is intentionally experimental.
+                            var threadTime = new ThreadTimeStackComputer(log, symbols)
+#pragma warning restore CS0618
+                            {
+                                EnableAsyncCallStacks = true,
+                                IncludeEventSourceEvents = false,
+                            };
+                            computer = threadTime;
+                            transforms = threadTime.AsyncCallStackTransforms;
+                            generate = () => threadTime.GenerateThreadTimeStacks(output);
+                        }
+                        else
+                        {
+                            var sampled = new SampleProfilerThreadTimeComputer(log, symbols)
+                            {
+                                EnableAsyncCallStacks = true,
+                                IncludeEventSourceEvents = false,
+                            };
+                            computer = sampled;
+                            transforms = sampled.AsyncCallStackTransforms;
+                            generate = () => sampled.GenerateThreadTimeStacks(output);
+                        }
+
+                        transforms.AddCustomTransform(context => throw new TransformFailureException());
+                        Assert.Throws<TransformFailureException>(generate);
+                    }
+
+                    var core = (AsyncProfilerCallStackSourceBuilderCore)computer.GetType()
+                        .GetField("m_asyncProfilerCallStackSourceBuilder",
+                            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                        .GetValue(computer);
+                    Assert.NotNull(core);
+                    Assert.Throws<InvalidOperationException>(() => core.TryGetCallStack(data, data.Thread(), out _));
+                },
+            };
+            scenario.AssertProductionStitch();
+        }
+
+        private sealed class TransformFailureException : Exception
+        {
+        }
+#endif
+
         [Fact]
         public void PublicBuilder_CompletionObservationsSurviveReusedCallbackSegments()
         {

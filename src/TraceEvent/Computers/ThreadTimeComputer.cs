@@ -460,45 +460,51 @@ namespace Microsoft.Diagnostics.Tracing
             eventSource.Kernel.MemoryHardFault += OnHardFault;
 
             InitializeAsyncProfilerCallStacksIfRequested();
-            eventSource.Process();
-
-            var endSessionRelativeMSec = m_eventLog.SessionDuration.TotalMilliseconds;
-            // log a m_sample for any threads that went to sleep but did not wake up
-            // At least you see the time, if not a useful stack trace.  
-            // TODO do we care that we left CPU samples abandoned?   Probably not....
-            for (int i = 0; i < m_threadState.Length; i++)
+            try
             {
-                if (m_threadState[i].ThreadBlocked && m_traceHasCSwitches)
+                eventSource.Process();
+
+                var endSessionRelativeMSec = m_eventLog.SessionDuration.TotalMilliseconds;
+                // log a m_sample for any threads that went to sleep but did not wake up
+                // At least you see the time, if not a useful stack trace.
+                // TODO do we care that we left CPU samples abandoned?   Probably not....
+                for (int i = 0; i < m_threadState.Length; i++)
                 {
-                    var thread = m_eventLog.Threads[(ThreadIndex)i];
-                    var nodeName = "LAST_BLOCK (Last blocking operation in trace)";
-                    var nodeIndex = m_outputStackSource.Interner.FrameIntern(nodeName);
+                    if (m_threadState[i].ThreadBlocked && m_traceHasCSwitches)
+                    {
+                        var thread = m_eventLog.Threads[(ThreadIndex)i];
+                        var nodeName = "LAST_BLOCK (Last blocking operation in trace)";
+                        var nodeIndex = m_outputStackSource.Interner.FrameIntern(nodeName);
 
-                    StackSourceCallStackIndex stackIndex;
-                    if (GroupByAspNetRequest)
-                    {
-                        stackIndex = m_outputStackSource.GetCallStackForProcess(thread.Process);
-                        stackIndex = m_outputStackSource.Interner.CallStackIntern(m_outputStackSource.Interner.FrameIntern("Not In Requests"), stackIndex);
-                        stackIndex = m_outputStackSource.Interner.CallStackIntern(m_outputStackSource.Interner.FrameIntern(thread.VerboseThreadName), stackIndex);
-                    }
-                    // WE purposely avoid adding these 'orphan' event to to the activity because they are very likely part of the activity.  
-                    else if (GroupByStartStopActivity)
-                    {
-                        stackIndex = m_startStopActivities.GetCurrentStartStopActivityStack(m_outputStackSource, thread, thread);
-                    }
-                    else
-                    {
-                        stackIndex = m_outputStackSource.GetCallStackForThread(thread);
-                    }
+                        StackSourceCallStackIndex stackIndex;
+                        if (GroupByAspNetRequest)
+                        {
+                            stackIndex = m_outputStackSource.GetCallStackForProcess(thread.Process);
+                            stackIndex = m_outputStackSource.Interner.CallStackIntern(m_outputStackSource.Interner.FrameIntern("Not In Requests"), stackIndex);
+                            stackIndex = m_outputStackSource.Interner.CallStackIntern(m_outputStackSource.Interner.FrameIntern(thread.VerboseThreadName), stackIndex);
+                        }
+                        // WE purposely avoid adding these 'orphan' event to to the activity because they are very likely part of the activity.
+                        else if (GroupByStartStopActivity)
+                        {
+                            stackIndex = m_startStopActivities.GetCurrentStartStopActivityStack(m_outputStackSource, thread, thread);
+                        }
+                        else
+                        {
+                            stackIndex = m_outputStackSource.GetCallStackForThread(thread);
+                        }
 
-                    stackIndex = m_outputStackSource.Interner.CallStackIntern(nodeIndex, stackIndex);
-                    m_threadState[i].LogBlockingEnd(endSessionRelativeMSec, m_threadState[i].ProcessorNumberWhereBlocked, stackIndex, thread, this);
+                        stackIndex = m_outputStackSource.Interner.CallStackIntern(nodeIndex, stackIndex);
+                        m_threadState[i].LogBlockingEnd(endSessionRelativeMSec, m_threadState[i].ProcessorNumberWhereBlocked, stackIndex, thread, this);
+                    }
                 }
-            }
 
-            m_outputStackSource.DoneAddingSamples();
-            m_threadState = null;
-            m_asyncProfilerCallStackSourceBuilder?.ClearResources();
+                m_outputStackSource.DoneAddingSamples();
+            }
+            finally
+            {
+                m_threadState = null;
+                m_asyncProfilerCallStackSourceBuilder?.ClearResources();
+            }
         }
 
         private void InitializeForUniversal()

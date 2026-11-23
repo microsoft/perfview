@@ -299,11 +299,17 @@ namespace Microsoft.Diagnostics.Tracing
                 };
             }
 
-            eventSource.Process();
+            try
+            {
+                eventSource.Process();
 
-            m_outputStackSource.DoneAddingSamples();
-            m_threadState = null;
-            m_asyncProfilerCallStackSourceBuilder?.ClearResources();
+                m_outputStackSource.DoneAddingSamples();
+            }
+            finally
+            {
+                m_threadState = null;
+                m_asyncProfilerCallStackSourceBuilder?.ClearResources();
+            }
         }
 
         #region private
