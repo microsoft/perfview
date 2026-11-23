@@ -83,6 +83,17 @@ namespace TraceEventTests
         }
 
         [Theory]
+        [InlineData("System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable`1+ConfiguredValueTaskAwaiter[System.Int64].System.Runtime.CompilerServices.IStateMachineBoxAwareAwaiter.AwaitUnsafeOnCompleted(class System.Runtime.CompilerServices.IAsyncStateMachineBox)")]
+        [InlineData("System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable`1+ConfiguredValueTaskAwaiter[System.Collections.Generic.KeyValuePair`2[System.Int32,System.String]].System.Runtime.CompilerServices.IStateMachineBoxAwareAwaiter.AwaitUnsafeOnCompleted(class System.Runtime.CompilerServices.IAsyncStateMachineBox)")]
+        public void BoxAwareRegistration_OnNestedAwaiterWithOwnTypeArguments_IsV1AwaiterRegistration(string method)
+        {
+            foreach (AsyncProfilerRuntimeSupport support in InitialSupport())
+            {
+                Assert.Equal(RuntimeFrameKind.V1AwaiterRegistration, support.ClassifySynchronousFrame(method, true));
+            }
+        }
+
+        [Theory]
         [InlineData("System.Boolean System.Threading.Tasks.Task::TrySetResult()",
             RuntimeFrameKind.TaskResult)]
         [InlineData("System.Boolean System.Threading.Tasks.Task`1[System.Int64]::TrySetResult(!0)",

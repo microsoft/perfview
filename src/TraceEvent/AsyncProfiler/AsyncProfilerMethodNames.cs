@@ -238,12 +238,15 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             return end == methodName.Length ? methodName : methodName.Substring(0, end);
         }
 
-        /// <summary>Returns the type-name prefix before its generic-arity marker, if present.</summary>
+        /// <summary>Returns the type-name prefix before its generic-arity marker or type-argument list, if present.</summary>
         public static string GetTypeNameWithoutArity(string typeName)
         {
-            int arity = typeName?.IndexOf('`') ?? -1;
+            int arity = typeName?.IndexOfAny(s_typeNameGenericMarkers) ?? -1;
             return arity >= 0 ? typeName.Substring(0, arity) : typeName;
         }
+
+        // A nested type of a generic type can carry its type arguments without its own arity marker.
+        private static readonly char[] s_typeNameGenericMarkers = { '`', '[' };
 
         /// <summary>Checks a symbol's module prefix; this does not verify captured module ownership.</summary>
         public static bool IsModuleQualifiedFrame(string frameName, string moduleName)

@@ -164,7 +164,6 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         }
 
         /// <summary>Checks for a native CoreCLR or JIT module beside the captured CoreLib.</summary>
-        /// <summary>Checks for a native CoreCLR or JIT module beside the captured CoreLib.</summary>
         public virtual bool IsNativeRuntimeModule(TraceModuleFile module, TraceModuleFile hostModule)
         {
             if (module == null || hostModule == null || module.ImageBase == 0 || module.ManagedModule != null)
