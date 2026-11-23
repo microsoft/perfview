@@ -230,6 +230,42 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that tasks use the manifest's names, keep their messages as display text, and that event symbols and
+        /// template ids are C identifiers.  Microsoft-Windows-DotNETRuntime's task 1 is named GarbageCollection; its
+        /// message is GC.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_UsesTaskNamesAndLegalSymbols()
+        {
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider("Microsoft-Windows-DotNETRuntime");
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var task = (XmlElement)xmlDoc.SelectSingleNode("//e:tasks/e:task[@value='1']", nsmgr);
+            Assert.NotNull(task);
+            Assert.Equal("GarbageCollection", task.GetAttribute("name"));
+
+            // The message keeps the task's display text.
+            string messageId = task.GetAttribute("message").Substring("$(string.".Length).TrimEnd(')');
+            var message = (XmlElement)xmlDoc.SelectSingleNode($"//e:stringTable/e:string[@id='{messageId}']", nsmgr);
+            Assert.NotNull(message);
+            Assert.Equal("GC", message.GetAttribute("value"));
+
+            var symbol = new Regex("^[_a-zA-Z][_0-9a-zA-Z]*$");
+            foreach (XmlElement eventNode in xmlDoc.SelectNodes("//e:events/e:event", nsmgr))
+            {
+                Assert.Matches(symbol, eventNode.GetAttribute("symbol"));
+            }
+            foreach (XmlElement template in xmlDoc.SelectNodes("//e:templates/e:template", nsmgr))
+            {
+                Assert.Matches(symbol, template.GetAttribute("tid"));
+            }
+        }
+
+        /// <summary>
         /// Test that events sharing an Id and Version keep their own fields. Kerberos event 13 is two Event Log
         /// message ids, 0x0000000D and 0x8000000D, that differ only in the severity bits.
         /// </summary>
@@ -847,6 +883,7 @@ namespace TraceEventTests
             Dictionary<string, int> taskNames = new Dictionary<string, int>();
             Dictionary<string, int> opcodeNames = new Dictionary<string, int>();
             Dictionary<string, int> eventNames = new Dictionary<string, int>();
+            Dictionary<ulong, KeyValuePair<string, string>> fieldNames = new Dictionary<ulong, KeyValuePair<string, string>>();
 
             SortedDictionary<ulong, string> keywords = new SortedDictionary<ulong, string>();
             List<ProviderDataItem> keywordsItems = TraceEventProviders.GetProviderKeywords(providerGuid);
@@ -925,9 +962,21 @@ namespace TraceEventTests
                         }
 
                         string taskName = null;
-                        if (eventInfo->TaskNameOffset != 0)
+                        string taskMessage;
+                        string taskFieldName = GetProviderFieldName(providerGuid, fieldNames, TraceEventNativeMethods.EVENT_FIELD_TYPE.EventTaskInformation,
+                            eventInfo->EventDescriptor.Task, out taskMessage);
+                        string taskText = eventInfo->TaskNameOffset != 0 ? new string((char*)(&eventInfoBuff[eventInfo->TaskNameOffset])) : null;
+                        if (taskFieldName != null)
                         {
-                            taskName = MakeLegalIdentifier((new string((char*)(&eventInfoBuff[eventInfo->TaskNameOffset]))));
+                            taskName = MakeLegalIdentifier(taskFieldName);
+                        }
+                        else if (taskText != null)
+                        {
+                            taskName = MakeLegalIdentifier(taskText);
+                        }
+                        if (taskMessage == null && taskText != null && taskText.Trim().Length != 0)
+                        {
+                            taskMessage = taskText.Trim();
                         }
                         if (taskName == null)
                         {
@@ -943,11 +992,29 @@ namespace TraceEventTests
                         taskNames[taskName] = eventInfo->EventDescriptor.Task;
 
                         string opcodeName = "";
+                        string opcodeMessage = null;
                         if (eventInfo->EventDescriptor.Opcode != 0)
                         {
-                            if (eventInfo->OpcodeNameOffset != 0)
+                            string opcodeFieldName = null;
+                            if (10 <= eventInfo->EventDescriptor.Opcode && eventInfo->EventDescriptor.Opcode < 240)
                             {
-                                opcodeName = MakeLegalIdentifier((new string((char*)(&eventInfoBuff[eventInfo->OpcodeNameOffset]))));
+                                opcodeFieldName = GetProviderFieldName(providerGuid, fieldNames, TraceEventNativeMethods.EVENT_FIELD_TYPE.EventOpcodeInformation,
+                                    ((ulong)eventInfo->EventDescriptor.Opcode << 16) | eventInfo->EventDescriptor.Task, out opcodeMessage);
+                            }
+
+                            string opcodeText = eventInfo->OpcodeNameOffset != 0 ? new string((char*)(&eventInfoBuff[eventInfo->OpcodeNameOffset])) : null;
+                            if (opcodeMessage == null && opcodeText != null && opcodeText.Trim().Length != 0)
+                            {
+                                opcodeMessage = opcodeText.Trim();
+                            }
+
+                            if (opcodeFieldName != null)
+                            {
+                                opcodeName = MakeLegalIdentifier(opcodeFieldName);
+                            }
+                            else if (opcodeText != null)
+                            {
+                                opcodeName = MakeLegalIdentifier(opcodeText);
                             }
                             else
                             {
@@ -972,6 +1039,7 @@ namespace TraceEventTests
                         {
                             eventName += Capitalize(opcodeName);
                         }
+                        eventName = MakeLegalSymbol(eventName);
 
                         int eventNumForName;
                         if (eventNames.TryGetValue(eventName, out eventNumForName) && eventNumForName != eventInfo->EventDescriptor.Id)
@@ -984,7 +1052,7 @@ namespace TraceEventTests
                         LegacyTaskInfo taskInfo;
                         if (!tasks.TryGetValue(eventInfo->EventDescriptor.Task, out taskInfo))
                         {
-                            tasks[eventInfo->EventDescriptor.Task] = taskInfo = new LegacyTaskInfo() { Name = taskName };
+                            tasks[eventInfo->EventDescriptor.Task] = taskInfo = new LegacyTaskInfo() { Name = taskName, Message = taskMessage };
                         }
 
                         var symbolName = eventName;
@@ -1033,6 +1101,14 @@ namespace TraceEventTests
                                 if (!taskInfo.Opcodes.ContainsKey(eventInfo->EventDescriptor.Opcode))
                                 {
                                     taskInfo.Opcodes[eventInfo->EventDescriptor.Opcode] = opcodeId;
+                                    if (opcodeMessage != null)
+                                    {
+                                        if (taskInfo.OpcodeMessages == null)
+                                        {
+                                            taskInfo.OpcodeMessages = new Dictionary<int, string>();
+                                        }
+                                        taskInfo.OpcodeMessages[eventInfo->EventDescriptor.Opcode] = opcodeMessage;
+                                    }
                                 }
                             }
                             eventWriter.Write(" opcode=\"{0}\"", opcodeId);
@@ -1199,7 +1275,7 @@ namespace TraceEventTests
                     task.Opcodes == null ? "/" : "");
                 if (emittedStringIds.Add(taskStringId))
                 {
-                    localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", taskStringId, escapedTaskName);
+                    localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", taskStringId, XmlUtilities.XmlEscape(task.Message ?? task.Name));
                 }
                 if (task.Opcodes != null)
                 {
@@ -1213,7 +1289,12 @@ namespace TraceEventTests
                             escapedOpcodeName, opcodeStringId, keyValue.Key);
                         if (emittedStringIds.Add(opcodeStringId))
                         {
-                            localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", opcodeStringId, escapedOpcodeName);
+                            string opcodeMessage;
+                            if (task.OpcodeMessages == null || !task.OpcodeMessages.TryGetValue(keyValue.Key, out opcodeMessage))
+                            {
+                                opcodeMessage = keyValue.Value;
+                            }
+                            localizedStrings.WriteLine("    <string id=\"{0}\" value=\"{1}\"/>", opcodeStringId, XmlUtilities.XmlEscape(opcodeMessage));
                         }
                     }
                     manifest.WriteLine("      </opcodes>");
@@ -1276,7 +1357,60 @@ namespace TraceEventTests
         private class LegacyTaskInfo
         {
             public string Name;
+            public string Message;
             public SortedDictionary<int, string> Opcodes;
+            public Dictionary<int, string> OpcodeMessages;
+        }
+
+        private static unsafe string GetProviderFieldName(Guid providerGuid, Dictionary<ulong, KeyValuePair<string, string>> fieldNames,
+            TraceEventNativeMethods.EVENT_FIELD_TYPE fieldType, ulong value, out string message)
+        {
+            KeyValuePair<string, string> field;
+            if (!fieldNames.TryGetValue(value, out field))
+            {
+                string name = null;
+                message = null;
+                int size = 0;
+                if (TraceEventNativeMethods.TdhQueryProviderFieldInformation(ref providerGuid, value, fieldType, null, ref size) == 122)
+                {
+                    var buffer = new byte[size];
+                    fixed (byte* bufferPtr = buffer)
+                    {
+                        var fieldsDesc = (TraceEventNativeMethods.PROVIDER_FIELD_INFOARRAY*)bufferPtr;
+                        var fieldInfo = (TraceEventNativeMethods.PROVIDER_FIELD_INFO*)&fieldsDesc[1];
+                        if (TraceEventNativeMethods.TdhQueryProviderFieldInformation(ref providerGuid, value, fieldType, fieldsDesc, ref size) == 0 &&
+                            fieldsDesc->NumberOfElements > 0 && 0 < fieldInfo->NameOffset && fieldInfo->NameOffset < size)
+                        {
+                            name = new string((char*)&bufferPtr[fieldInfo->NameOffset]);
+                            if (0 < fieldInfo->DescriptionOffset && fieldInfo->DescriptionOffset < size)
+                            {
+                                message = new string((char*)&bufferPtr[fieldInfo->DescriptionOffset]).Trim();
+                            }
+                        }
+                    }
+                }
+
+                field = new KeyValuePair<string, string>(string.IsNullOrEmpty(name) ? null : name, string.IsNullOrEmpty(message) ? null : message);
+                fieldNames[value] = field;
+            }
+
+            message = field.Value;
+            return field.Key;
+        }
+
+        private static string MakeLegalSymbol(string name)
+        {
+            var symbol = new StringBuilder(name.Length + 1);
+            if (name.Length == 0 || ('0' <= name[0] && name[0] <= '9'))
+            {
+                symbol.Append('_');
+            }
+            foreach (char c in name)
+            {
+                bool legal = ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || c == '_';
+                symbol.Append(legal ? c : '_');
+            }
+            return symbol.ToString();
         }
 
         private static string MakeLegalIdentifier(string name)

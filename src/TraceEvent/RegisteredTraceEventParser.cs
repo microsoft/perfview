@@ -128,6 +128,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Dictionary<string, int> opcodeNames = new Dictionary<string, int>();
             // This ensures that we have unique event names. 
             Dictionary<string, int> eventNames = new Dictionary<string, int>();
+            // The manifest names and messages of the provider's tasks and opcodes, keyed by the value GetProviderFieldName
+            // looks up (a task is below 0x10000, an opcode is (opcode << 16) | task).  Each is null when there is none.
+            Dictionary<ulong, KeyValuePair<string, string>> fieldNames = new Dictionary<ulong, KeyValuePair<string, string>>();
 
             SortedDictionary<ulong, string> keywords = new SortedDictionary<ulong, string>();
             List<ProviderDataItem> keywordsItems = TraceEventProviders.GetProviderKeywords(providerGuid);
@@ -245,11 +248,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 }
                             }
 
-                            // Compute task name
+                            // Compute task name.  TRACE_EVENT_INFO has the task's message when it has one, which is display
+                            // text (localized, and often not an identifier), so prefer the task's name from the manifest.
                             string taskName = null;
-                            if (eventInfo->TaskNameOffset != 0)
+                            string taskMessage;
+                            string taskFieldName = GetProviderFieldName(providerGuid, fieldNames, TraceEventNativeMethods.EVENT_FIELD_TYPE.EventTaskInformation,
+                                eventInfo->EventDescriptor.Task, out taskMessage);
+                            string taskText = eventInfo->TaskNameOffset != 0 ? new string((char*)(&eventInfoBuff[eventInfo->TaskNameOffset])) : null;
+                            if (taskFieldName != null)
                             {
-                                taskName = MakeLegalIdentifier((new string((char*)(&eventInfoBuff[eventInfo->TaskNameOffset]))));
+                                taskName = MakeLegalIdentifier(taskFieldName);
+                            }
+                            else if (taskText != null)
+                            {
+                                taskName = MakeLegalIdentifier(taskText);
+                            }
+
+                            // The task's display text, for its message.
+                            if (taskMessage == null && taskText != null && taskText.Trim().Length != 0)
+                            {
+                                taskMessage = taskText.Trim();
                             }
                             if (taskName == null)
                             {
@@ -265,13 +283,34 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                             taskNames[taskName] = eventInfo->EventDescriptor.Task;
 
-                            // Compute opcode name
+                            // Compute opcode name, preferring the manifest's name as for the task.  An opcode can be defined
+                            // inside a task, so look it up with the task.
                             string opcodeName = "";
+                            string opcodeMessage = null;
                             if (eventInfo->EventDescriptor.Opcode != 0)
                             {
-                                if (eventInfo->OpcodeNameOffset != 0)
+                                // winmeta.xml defines opcodes 0-9 and 240-255, so only the provider's own opcodes (10-239)
+                                // have names of their own.
+                                string opcodeFieldName = null;
+                                if (10 <= eventInfo->EventDescriptor.Opcode && eventInfo->EventDescriptor.Opcode < 240)
                                 {
-                                    opcodeName = MakeLegalIdentifier((new string((char*)(&eventInfoBuff[eventInfo->OpcodeNameOffset]))));
+                                    opcodeFieldName = GetProviderFieldName(providerGuid, fieldNames, TraceEventNativeMethods.EVENT_FIELD_TYPE.EventOpcodeInformation,
+                                        ((ulong)eventInfo->EventDescriptor.Opcode << 16) | eventInfo->EventDescriptor.Task, out opcodeMessage);
+                                }
+
+                                string opcodeText = eventInfo->OpcodeNameOffset != 0 ? new string((char*)(&eventInfoBuff[eventInfo->OpcodeNameOffset])) : null;
+                                if (opcodeMessage == null && opcodeText != null && opcodeText.Trim().Length != 0)
+                                {
+                                    opcodeMessage = opcodeText.Trim();
+                                }
+
+                                if (opcodeFieldName != null)
+                                {
+                                    opcodeName = MakeLegalIdentifier(opcodeFieldName);
+                                }
+                                else if (opcodeText != null)
+                                {
+                                    opcodeName = MakeLegalIdentifier(opcodeText);
                                 }
                                 else
                                 {
@@ -300,6 +339,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 eventName += Capitalize(opcodeName);
                             }
 
+                            // The event name becomes the event's symbol and template id, which must be C identifiers.
+                            eventName = MakeLegalSymbol(eventName);
+
                             // Ensure uniqueness of the event name
                             int eventNumForName;
                             if (eventNames.TryGetValue(eventName, out eventNumForName) && eventNumForName != eventInfo->EventDescriptor.Id)
@@ -313,7 +355,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             TaskInfo taskInfo;
                             if (!tasks.TryGetValue(eventInfo->EventDescriptor.Task, out taskInfo))
                             {
-                                tasks[eventInfo->EventDescriptor.Task] = taskInfo = new TaskInfo() { Name = taskName };
+                                tasks[eventInfo->EventDescriptor.Task] = taskInfo = new TaskInfo() { Name = taskName, Message = taskMessage };
                             }
 
                             var symbolName = eventName;
@@ -353,6 +395,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     if (!taskInfo.Opcodes.ContainsKey(eventInfo->EventDescriptor.Opcode))
                                     {
                                         taskInfo.Opcodes[eventInfo->EventDescriptor.Opcode] = opcodeId;
+                                        if (opcodeMessage != null)
+                                        {
+                                            if (taskInfo.OpcodeMessages == null)
+                                            {
+                                                taskInfo.OpcodeMessages = new Dictionary<int, string>();
+                                            }
+                                            taskInfo.OpcodeMessages[eventInfo->EventDescriptor.Opcode] = opcodeMessage;
+                                        }
                                     }
                                 }
                             }
@@ -622,7 +672,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     
                     if (emittedStringIds.Add(taskStringId))
                     {
-                        localizedStrings.Add(new KeyValuePair<string, string>(taskStringId, task.Name));
+                        localizedStrings.Add(new KeyValuePair<string, string>(taskStringId, task.Message ?? task.Name));
                     }
                     
                     if (task.Opcodes != null)
@@ -639,7 +689,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             
                             if (emittedStringIds.Add(opcodeStringId))
                             {
-                                localizedStrings.Add(new KeyValuePair<string, string>(opcodeStringId, keyValue.Value));
+                                string opcodeMessage;
+                                if (task.OpcodeMessages == null || !task.OpcodeMessages.TryGetValue(keyValue.Key, out opcodeMessage))
+                                {
+                                    opcodeMessage = keyValue.Value;
+                                }
+                                localizedStrings.Add(new KeyValuePair<string, string>(opcodeStringId, opcodeMessage));
                             }
                         }
                         writer.WriteEndElement(); // opcodes
@@ -789,6 +844,67 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
+        /// <summary>
+        /// Returns the name the provider's manifest gives a task or opcode, or null if TDH has none, and its message in
+        /// 'message' (null if none).  'value' is the task, or (opcode &lt;&lt; 16) | task for an opcode.  Results are
+        /// cached in 'fieldNames'.
+        /// </summary>
+        private static unsafe string GetProviderFieldName(Guid providerGuid, Dictionary<ulong, KeyValuePair<string, string>> fieldNames,
+            TraceEventNativeMethods.EVENT_FIELD_TYPE fieldType, ulong value, out string message)
+        {
+            KeyValuePair<string, string> field;
+            if (!fieldNames.TryGetValue(value, out field))
+            {
+                string name = null;
+                message = null;
+                int size = 0;
+                if (TraceEventNativeMethods.TdhQueryProviderFieldInformation(ref providerGuid, value, fieldType, null, ref size) == 122)  // ERROR_INSUFFICIENT_BUFFER
+                {
+                    var buffer = new byte[size];
+                    fixed (byte* bufferPtr = buffer)
+                    {
+                        var fieldsDesc = (TraceEventNativeMethods.PROVIDER_FIELD_INFOARRAY*)bufferPtr;
+                        var fieldInfo = (TraceEventNativeMethods.PROVIDER_FIELD_INFO*)&fieldsDesc[1];
+                        if (TraceEventNativeMethods.TdhQueryProviderFieldInformation(ref providerGuid, value, fieldType, fieldsDesc, ref size) == 0 &&
+                            fieldsDesc->NumberOfElements > 0 && 0 < fieldInfo->NameOffset && fieldInfo->NameOffset < size)
+                        {
+                            name = new string((char*)&bufferPtr[fieldInfo->NameOffset]);
+                            if (0 < fieldInfo->DescriptionOffset && fieldInfo->DescriptionOffset < size)
+                            {
+                                // TDH appends a space to the message.
+                                message = new string((char*)&bufferPtr[fieldInfo->DescriptionOffset]).Trim();
+                            }
+                        }
+                    }
+                }
+
+                field = new KeyValuePair<string, string>(string.IsNullOrEmpty(name) ? null : name, string.IsNullOrEmpty(message) ? null : message);
+                fieldNames[value] = field;
+            }
+
+            message = field.Value;
+            return field.Key;
+        }
+
+        /// <summary>
+        /// Returns 'name' as a C identifier, which event symbols and template ids must be: any other character becomes
+        /// '_', and a leading digit gets a '_' in front.
+        /// </summary>
+        private static string MakeLegalSymbol(string name)
+        {
+            var symbol = new StringBuilder(name.Length + 1);
+            if (name.Length == 0 || ('0' <= name[0] && name[0] <= '9'))
+            {
+                symbol.Append('_');
+            }
+            foreach (char c in name)
+            {
+                bool legal = ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || c == '_';
+                symbol.Append(legal ? c : '_');
+            }
+            return symbol.ToString();
+        }
+
         private static string MakeLegalIdentifier(string name)
         {
             // TODO FIX NOW beef this up.
@@ -835,7 +951,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private class TaskInfo
         {
             public string Name;
+            public string Message;                          // The task's display text, or null to use its name.
             public SortedDictionary<int, string> Opcodes;
+            public Dictionary<int, string> OpcodeMessages;  // Display text of opcodes in Opcodes; a missing one uses its name.
         }
 
         private static string Capitalize(string str)
