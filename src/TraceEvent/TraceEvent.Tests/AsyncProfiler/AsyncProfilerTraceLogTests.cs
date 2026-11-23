@@ -431,6 +431,20 @@ namespace TraceEventTests
             }
         }
 
+        [Fact]
+        public void OpeningEtlx_FinishesStackUserModeTimesBeforeConcurrentQueries()
+        {
+            using (var trace = new RoundTripTrace())
+            {
+                // The region shares the TraceLog deserializer with the reloadable async index, so it must not be
+                // deserialized lazily from concurrent lookups.
+                object region = typeof(TraceLog)
+                    .GetField("lazyStackUserModeTimes", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .GetValue(trace.Log);
+                Assert.True((bool)region.GetType().GetProperty("IsFinished").GetValue(region));
+            }
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

@@ -4422,6 +4422,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 eventsToStackUserModeTimes = ReadStackUserModeTimes(deserializer);
                 blockingEventsToStackUserModeTimes = ReadStackUserModeTimes(deserializer);
             });
+            // Lookups are unsynchronized and share the deserializer with the reloadable async index.
+            lazyStackUserModeTimes.FinishRead(preserveStreamPosition: true);
         }
         int IFastSerializableVersion.Version
         {
