@@ -447,6 +447,72 @@ namespace TraceEventTests
             }
         }
 
+        [Fact]
+        public void SkipMSec_AsyncEventsInSkippedPrefix_DoNotRemoveLaterRetainedEvent()
+        {
+            const long StartQpc = RoundTripTrace.StartQpc;
+            const long ThreadStreamIndex = 7;
+            byte[] buffer = new AsyncProfilerBufferBuilder(RoundTripTrace.OsThreadId, 0x0BADF00D, StartQpc)
+                .Armed(StartQpc)
+                .ResumeStack(StartQpc + 10, dispatcher: 1, new ulong[] { 0xA })
+                .Suspend(StartQpc + 20)
+                .Build();
+            byte[] asyncPayload = new byte[4 + buffer.Length];
+            Array.Copy(BitConverter.GetBytes(buffer.Length), 0, asyncPayload, 0, 4);
+            Array.Copy(buffer, 0, asyncPayload, 4, buffer.Length);
+
+            // With a 1 kHz QPC, relative milliseconds equal QPC ticks after the sync time.
+            var writer = new EventPipeWriterV6();
+            writer.WriteHeaders(null, syncTimeQpc: StartQpc, qpcFrequency: 1000);
+            writer.WriteMetadataBlock(
+                new EventMetadata(1, AsyncProfilerTraceEventParser.ProviderName, "AsyncEvents", AsyncProfilerTraceEventParser.AsyncEventsEventId),
+                new EventMetadata(2, "TestSampleProfiler", "Sample", 1));
+            writer.WriteThreadBlock(w => w.WriteThreadEntry(ThreadStreamIndex, threadId: RoundTripTrace.OsThreadId, processId: RoundTripTrace.ProcessId));
+            writer.WriteEventBlock(w =>
+            {
+                // Skipped prefix, then the event that crosses the skip boundary, then an event inside the window.
+                foreach ((int metadataId, int sequence, long timestamp) in new[] { (1, 1, StartQpc + 50), (2, 2, StartQpc + 100), (2, 3, StartQpc + 200), (2, 4, StartQpc + 300) })
+                {
+                    w.WriteEventBlob(new WriteEventOptions
+                    {
+                        MetadataId = metadataId,
+                        ThreadIndexOrId = ThreadStreamIndex,
+                        CaptureThreadIndexOrId = ThreadStreamIndex,
+                        SequenceNumber = sequence,
+                        Timestamp = timestamp,
+                        IsSorted = true,
+                    }, p => { if (metadataId == 1) { p.Write(asyncPayload); } });
+                }
+            });
+            writer.WriteEndBlock();
+
+            string nettracePath = Path.Combine(Path.GetTempPath(), $"asyncprofiler_{Guid.NewGuid():N}.nettrace");
+            string etlxPath = nettracePath + ".etlx";
+            try
+            {
+                File.WriteAllBytes(nettracePath, writer.ToArray());
+                TraceLog.CreateFromEventPipeDataFile(nettracePath, etlxPath, new TraceLogOptions { SkipMSec = 100 });
+                using (var traceLog = new TraceLog(etlxPath))
+                {
+                    var retained = new List<long>();
+                    foreach (TraceEvent data in traceLog.Events)
+                    {
+                        if (data.ProviderName == "TestSampleProfiler")
+                        {
+                            retained.Add(data.TimeStampQPC);
+                        }
+                    }
+
+                    Assert.Equal(new[] { StartQpc + 200, StartQpc + 300 }, retained);
+                }
+            }
+            finally
+            {
+                File.Delete(nettracePath);
+                File.Delete(etlxPath);
+            }
+        }
+
         #region private
 
         /// <summary>

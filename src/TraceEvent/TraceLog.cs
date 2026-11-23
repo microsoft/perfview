@@ -2435,6 +2435,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #endif
                 if (processingDisabled)
                 {
+                    // Callbacks still run for skipped events; don't let their per-event suppression leak to the next event.
+                    removeFromStream = false;
                     if (startMSec != 0 && startMSec <= data.TimeStampRelativeMSec)
                     {
                         startMSec = 0;                  // Marking it 0 indicates that we have triggered on it already.
