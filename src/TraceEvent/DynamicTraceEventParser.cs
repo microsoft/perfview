@@ -2566,6 +2566,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     {"win:Send", 9},
                     {"win:Receive", 240}
                 };
+                // winmeta.xml also defines win:ReservedOpcode241 to win:ReservedOpcode255.
+                for (int reservedOpcode = 241; reservedOpcode <= 255; reservedOpcode++)
+                {
+                    opcodes.Add("win:ReservedOpcode" + reservedOpcode.ToString(), reservedOpcode);
+                }
                 Dictionary<string, TaskInfo> tasks = new Dictionary<string, TaskInfo>();
                 Dictionary<string, TemplateInfo> templates = new Dictionary<string, TemplateInfo>();
                 Dictionary<string, IDictionary<long, string>> maps = null;

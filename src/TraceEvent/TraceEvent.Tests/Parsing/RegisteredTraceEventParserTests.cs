@@ -266,6 +266,59 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that events use winmeta.xml's names for its opcodes (0-9 and 240-255) and that the provider declares only
+        /// opcodes 10-239.  Microsoft-Windows-Spell-Checking uses win:Receive (240), and Microsoft-Windows-Kernel-EventTracing
+        /// has an opcode named like win:Start, which used to be renamed to win:Start_8_1.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_UsesWinmetaOpcodeNames()
+        {
+            // Written out here rather than taken from RegisteredTraceEventParser so that a mistake in its table is caught.
+            var winmetaOpcodes = new HashSet<string>
+            {
+                "win:Info", "win:Start", "win:Stop", "win:DC_Start", "win:DC_Stop",
+                "win:Extension", "win:Reply", "win:Resume", "win:Suspend", "win:Send", "win:Receive",
+            };
+            for (int opcode = 241; opcode <= 255; opcode++)
+            {
+                winmetaOpcodes.Add("win:ReservedOpcode" + opcode);
+            }
+
+            // Each provider, with the winmeta opcode it is here for.
+            var providers = new[]
+            {
+                new KeyValuePair<string, string>("Microsoft-Windows-Spell-Checking", "win:Receive"),
+                new KeyValuePair<string, string>("Microsoft-Windows-Kernel-EventTracing", "win:Start"),
+            };
+            foreach (var provider in providers)
+            {
+                string providerName = provider.Key;
+                string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName);
+
+                var xmlDoc = new XmlDocument();
+                xmlDoc.LoadXml(manifest);
+                var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+                nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+                foreach (XmlElement opcode in xmlDoc.SelectNodes("//e:opcodes/e:opcode", nsmgr))
+                {
+                    int value = int.Parse(opcode.GetAttribute("value"));
+                    Assert.True(10 <= value && value <= 239, $"{providerName} declares opcode '{opcode.GetAttribute("name")}' with value {value}");
+                }
+
+                var usedOpcodes = new HashSet<string>();
+                foreach (XmlElement eventNode in xmlDoc.SelectNodes("//e:events/e:event[starts-with(@opcode, 'win:')]", nsmgr))
+                {
+                    string opcode = eventNode.GetAttribute("opcode");
+                    usedOpcodes.Add(opcode);
+                    Assert.True(winmetaOpcodes.Contains(opcode), $"{providerName} event {eventNode.GetAttribute("value")} uses opcode '{opcode}', which winmeta.xml does not define");
+                }
+
+                Assert.Contains(provider.Value, usedOpcodes);
+            }
+        }
+
+        /// <summary>
         /// Test that no localized string is empty, which mc.exe rejects.  Microsoft-Windows-TCPIP's
         /// TCPIP_Protocol_ValueMap has an entry whose text is only spaces.
         /// </summary>
@@ -1011,8 +1064,9 @@ namespace TraceEventTests
                             }
                         }
 
+                        bool isWinmetaOpcode = eventInfo->EventDescriptor.Opcode < 10 || eventInfo->EventDescriptor.Opcode >= 240;
                         int opcodeNumForName;
-                        if (opcodeNames.TryGetValue(opcodeName, out opcodeNumForName) && opcodeNumForName != eventInfo->EventDescriptor.Opcode)
+                        if (!isWinmetaOpcode && opcodeNames.TryGetValue(opcodeName, out opcodeNumForName) && opcodeNumForName != eventInfo->EventDescriptor.Opcode)
                         {
                             if (eventInfo->OpcodeNameOffset == 0)
                             {
@@ -1021,7 +1075,10 @@ namespace TraceEventTests
 
                             opcodeName = opcodeName + "_" + eventInfo->EventDescriptor.Task.ToString() + "_" + eventInfo->EventDescriptor.Opcode.ToString();
                         }
-                        opcodeNames[opcodeName] = eventInfo->EventDescriptor.Opcode;
+                        if (!isWinmetaOpcode)
+                        {
+                            opcodeNames[opcodeName] = eventInfo->EventDescriptor.Opcode;
+                        }
 
                         string eventName = taskName;
                         if (!taskName.EndsWith(opcodeName, StringComparison.OrdinalIgnoreCase))
@@ -1063,7 +1120,11 @@ namespace TraceEventTests
                         if (eventInfo->EventDescriptor.Opcode != 0)
                         {
                             string opcodeId;
-                            if (eventInfo->EventDescriptor.Opcode < 10)
+                            if (eventInfo->EventDescriptor.Opcode >= 240)
+                            {
+                                opcodeId = eventInfo->EventDescriptor.Opcode == 240 ? "win:Receive" : "win:ReservedOpcode" + eventInfo->EventDescriptor.Opcode;
+                            }
+                            else if (eventInfo->EventDescriptor.Opcode < 10)
                             {
                                 if (eventInfo->EventDescriptor.Opcode == (byte)TraceEventOpcode.DataCollectionStart)
                                 {

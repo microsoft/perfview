@@ -487,6 +487,11 @@ namespace ETWManifest
             AddOpcode(GlobalScope, 8, "Suspend", "win:Suspend");
             AddOpcode(GlobalScope, 9, "Send", "win:Send");
             AddOpcode(GlobalScope, 240, "Receive", "win:Receive");
+            // winmeta.xml also defines win:ReservedOpcode241 to win:ReservedOpcode255.
+            for (int reservedOpcode = 241; reservedOpcode <= 255; reservedOpcode++)
+            {
+                AddOpcode(GlobalScope, reservedOpcode, "ReservedOpcode" + reservedOpcode, "win:ReservedOpcode" + reservedOpcode);
+            }
         }
 
         private void ReadMap(XmlReader reader, bool isBitMap)

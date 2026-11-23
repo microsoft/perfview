@@ -443,6 +443,38 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void ParseProviderEvents_ReadsWinmetaReservedOpcodes()
+        {
+            // winmeta.xml defines win:ReservedOpcode241 to win:ReservedOpcode255, which GetManifestForRegisteredProvider writes.
+            string manifest =
+                "<instrumentationManifest xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">" +
+                "  <instrumentation>" +
+                "    <events>" +
+                "      <provider name=\"Contoso.Provider\" guid=\"" + Guid.NewGuid() + "\">" +
+                "        <events>" +
+                "          <event value=\"1\" symbol=\"MyEvent\" opcode=\"win:ReservedOpcode245\" />" +
+                "        </events>" +
+                "      </provider>" +
+                "    </events>" +
+                "  </instrumentation>" +
+                "</instrumentationManifest>";
+
+            var providerManifest = new ProviderManifest(new MemoryStream(Encoding.UTF8.GetBytes(manifest)));
+            DynamicTraceEventData template = null;
+            providerManifest.ParseProviderEvents(t =>
+            {
+                if ((int)t.ID == 1)
+                {
+                    template = t;
+                }
+                return EventFilterResponse.AcceptEvent;
+            }, false);
+
+            Assert.NotNull(template);
+            Assert.Equal(245, (int)template.Opcode);
+        }
+
+        [Fact]
         public void ParseProviderEvents_HonorsManifestOutTypeFormatting()
         {
             string manifest =

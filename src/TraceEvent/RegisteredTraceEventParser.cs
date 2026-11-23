@@ -279,9 +279,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 }
                             }
 
-                            // Ensure opcode name is unique.  
+                            // Ensure opcode name is unique.  winmeta.xml's opcodes keep winmeta.xml's names (see GetWinmetaOpcodeName).
+                            bool isWinmetaOpcode = IsWinmetaOpcode(eventInfo->EventDescriptor.Opcode);
                             int opcodeNumForName;
-                            if (opcodeNames.TryGetValue(opcodeName, out opcodeNumForName) && opcodeNumForName != eventInfo->EventDescriptor.Opcode)
+                            if (!isWinmetaOpcode && opcodeNames.TryGetValue(opcodeName, out opcodeNumForName) && opcodeNumForName != eventInfo->EventDescriptor.Opcode)
                             {
                                 // If we did not find a name, use 'opcode and the disambiguator
                                 if (eventInfo->OpcodeNameOffset == 0)
@@ -291,7 +292,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                                 opcodeName = opcodeName + "_" + eventInfo->EventDescriptor.Task.ToString() + "_" + eventInfo->EventDescriptor.Opcode.ToString();
                             }
-                            opcodeNames[opcodeName] = eventInfo->EventDescriptor.Opcode;
+                            if (!isWinmetaOpcode)
+                            {
+                                opcodeNames[opcodeName] = eventInfo->EventDescriptor.Opcode;
+                            }
 
                             // And event name 
                             string eventName = taskName;
@@ -326,21 +330,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             string opcodeId = null;
                             if (eventInfo->EventDescriptor.Opcode != 0)
                             {
-                                if (eventInfo->EventDescriptor.Opcode < 10)       // It is a reserved opcode.  
+                                if (isWinmetaOpcode)
                                 {
-                                    // For some reason opcodeName does not have the underscore, which we need. 
-                                    if (eventInfo->EventDescriptor.Opcode == (byte)TraceEventOpcode.DataCollectionStart)
-                                    {
-                                        opcodeId = "win:DC_Start";
-                                    }
-                                    else if (eventInfo->EventDescriptor.Opcode == (byte)TraceEventOpcode.DataCollectionStop)
-                                    {
-                                        opcodeId = "win:DC_Stop";
-                                    }
-                                    else
-                                    {
-                                        opcodeId = "win:" + opcodeName;
-                                    }
+                                    opcodeId = GetWinmetaOpcodeName(eventInfo->EventDescriptor.Opcode);
                                 }
                                 else
                                 {
@@ -829,6 +821,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
             writer.WriteEndElement(); // opcodes
+        }
+
+        /// <summary>
+        /// Returns true if winmeta.xml defines 'opcode' (0-9 and 240-255), so a provider cannot declare it.
+        /// </summary>
+        private static bool IsWinmetaOpcode(byte opcode)
+        {
+            return opcode < s_winmetaOpcodeNames.Length || opcode >= 240;
+        }
+
+        /// <summary>
+        /// Returns winmeta.xml's name for 'opcode', which IsWinmetaOpcode must be true for.
+        /// </summary>
+        private static string GetWinmetaOpcodeName(byte opcode)
+        {
+            if (opcode < s_winmetaOpcodeNames.Length)
+            {
+                return s_winmetaOpcodeNames[opcode];
+            }
+
+            return opcode == 240 ? "win:Receive" : "win:ReservedOpcode" + opcode.ToString();
         }
 
         private static string MakeLegalIdentifier(string name)
@@ -1678,6 +1691,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         // win:EventlogClassic in winmeta.xml: events that keep their Event Log (ReportEvent) message ids.
         private const ulong WINEVENT_KEYWORD_EVENTLOG_CLASSIC = 0x80000000000000;
+
+        // The names winmeta.xml gives opcodes 0-9, indexed by opcode.  It also defines 240 (win:Receive) and 241-255.
+        private static readonly string[] s_winmetaOpcodeNames =
+        {
+            "win:Info", "win:Start", "win:Stop", "win:DC_Start", "win:DC_Stop",
+            "win:Extension", "win:Reply", "win:Resume", "win:Suspend", "win:Send",
+        };
         #endregion
     }
 
