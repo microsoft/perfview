@@ -361,6 +361,62 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void ManyIntervalsOnOneThread_RemainAddressableAcrossStorageGrowth()
+        {
+            const int Count = 4096 + 300;
+            var builder = new AsyncProfilerBufferBuilder(ThreadA).Armed(Start);
+            for (int i = 0; i < Count; i++)
+            {
+                builder.ResumeStack(Start + 10 + i * 10, dispatcher: (ulong)i + 1, new ulong[] { 0x100 })
+                    .Suspend(Start + 15 + i * 10);
+            }
+
+            var computer = Compute(builder);
+            computer.Finish();
+
+            foreach (AsyncProfilerCallStacksIndex index in new[] { computer.Index, RoundTrip(computer.Index) })
+            {
+                foreach (int i in new[] { 0, 3, 4, 31, 32, 2047, 2048, 4095, 4096, Count - 1 })
+                {
+                    AsyncProfilerCallStack stack = Assert.Single(index.GetCallStacks(Key(ThreadA), Start + 12 + i * 10));
+                    Assert.Equal((ulong)i + 1, stack.DispatcherId);
+                    Assert.Equal(Start + 10 + i * 10, stack.StartQpc);
+                }
+            }
+        }
+
+#if NETCOREAPP
+        [Fact]
+        public void ShortLivedThreads_DoNotReserveFullRecordChunks()
+        {
+            const int ThreadCount = 256;
+            var buffers = new byte[ThreadCount][];
+            for (int i = 0; i < ThreadCount; i++)
+            {
+                buffers[i] = new AsyncProfilerBufferBuilder(ThreadA + (ulong)i)
+                    .Armed(Start)
+                    .ResumeStack(Start + 10, dispatcher: 1, new ulong[] { 0x100 })
+                    .Suspend(Start + 20)
+                    .Build();
+            }
+
+            var computer = new AsyncProfilerIndexBuilder();
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            foreach (byte[] buffer in buffers)
+            {
+                computer.Process(buffer);
+            }
+
+            computer.Finish();
+            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+            Assert.Equal(ThreadCount, Enumerable.Range(0, ThreadCount)
+                .Count(i => computer.GetCallStacks(Key(ThreadA + (ulong)i), Start + 15).Count == 1));
+            Assert.True(allocated < ThreadCount * 16 * 1024, $"Allocated {allocated:N0} bytes for {ThreadCount} single-interval threads.");
+        }
+#endif
+
+        [Fact]
         public void ResumeComplete_ProducesInterval()
         {
             var computer = Compute(new AsyncProfilerBufferBuilder(ThreadA)

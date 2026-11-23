@@ -1331,17 +1331,26 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                 }
 
                 int chunkIndex = _count >> ChunkShift;
+                int offset = _count & ChunkMask;
                 if (chunkIndex == _chunks.Count)
                 {
-                    _chunks.Add(new CallStackRecord[ChunkSize]);
+                    // Most threads hold few call stacks, so the first chunk starts small and grows to full size.
+                    _chunks.Add(new CallStackRecord[chunkIndex == 0 ? InitialChunkSize : ChunkSize]);
+                }
+                else if (offset == _chunks[chunkIndex].Length)
+                {
+                    CallStackRecord[] chunk = _chunks[chunkIndex];
+                    Array.Resize(ref chunk, Math.Min(chunk.Length * 2, ChunkSize));
+                    _chunks[chunkIndex] = chunk;
                 }
 
-                _chunks[chunkIndex][_count & ChunkMask] = record;
+                _chunks[chunkIndex][offset] = record;
                 _count++;
             }
 
             #region private
 
+            private const int InitialChunkSize = 4;
             private const int ChunkShift = 12;
             private const int ChunkSize = 1 << ChunkShift;
             private const int ChunkMask = ChunkSize - 1;
