@@ -79,7 +79,6 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                 for (int i = 0; i < m_chain.Count; i++)
                 {
                     CollectParentFrames(index, m_chain[i]);
-                    m_insertion.AddRange(m_parentFrames);
                 }
 
                 if (m_insertion.Count != 0)
@@ -97,7 +96,6 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             m_chain.Clear();
             m_parentCandidates.Clear();
             m_insertion.Clear();
-            m_parentFrames.Clear();
             m_parentCache = null;
         }
 
@@ -172,15 +170,14 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             (ParentCacheSize - 1);
 
         /// <summary>
-        /// Copies the parent's frames, omitting completed frames at child creation only when both
-        /// method-completion and exception-unwind observations are available. Zero-IP placeholders
-        /// are skipped, and a placeholder in the current slot leaves no frame marked current.
+        /// Appends the parent's frames to the insertion buffer, omitting completed frames at child creation
+        /// only when both method-completion and exception-unwind observations are available. Zero-IP
+        /// placeholders are skipped, and a placeholder in the current slot leaves no frame marked current.
         /// </summary>
         private void CollectParentFrames(
             AsyncProfilerCallStacksIndex index,
             ParentAtCreation parentAtCreation)
         {
-            m_parentFrames.Clear();
             AsyncProfilerCallStack parent = parentAtCreation.Parent;
             bool canTrimCompletedFrames = index.MethodCompletionObserved(parent) && index.ExceptionCompletionObserved(parent);
             int frameCount = parent.Frames.FrameCount;
@@ -197,7 +194,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
 
                 // "Current" refers to child creation, not the sample time.
                 bool isCurrent = canTrimCompletedFrames && frameIndex == completedFrameCount;
-                m_parentFrames.Add(AsyncProfilerStitchedFrame.CreateAsyncContextParent(parent, frameIndex, isCurrent));
+                m_insertion.Add(AsyncProfilerStitchedFrame.CreateAsyncContextParent(parent, frameIndex, isCurrent));
             }
         }
 
@@ -309,7 +306,6 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         private readonly List<ParentAtCreation> m_chain = new List<ParentAtCreation>();
         private readonly List<AsyncProfilerCallStack> m_parentCandidates = new List<AsyncProfilerCallStack>();
         private readonly List<AsyncProfilerStitchedFrame> m_insertion = new List<AsyncProfilerStitchedFrame>();
-        private readonly List<AsyncProfilerStitchedFrame> m_parentFrames = new List<AsyncProfilerStitchedFrame>();
         private ParentCacheEntry[] m_parentCache;
 
         #endregion

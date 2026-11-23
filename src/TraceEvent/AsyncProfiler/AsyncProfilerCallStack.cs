@@ -5,8 +5,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-using FastSerialization;
-
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers.AsyncProfiler;
 
@@ -203,93 +201,6 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             _wrapperResets = wrapperResets;
             MethodCompletionObserved = false;
             ExceptionCompletionObserved = false;
-        }
-
-        internal void Write(Serializer serializer)
-        {
-            serializer.Write((int)Thread.ProcessIndex);
-            serializer.Write((long)Thread.OsThreadId);
-            serializer.Write((long)DispatcherId);
-            serializer.Write(Depth);
-            serializer.Write((int)FramesIndex);
-            serializer.Write((byte)ContinuationIndexBase);
-            serializer.Write((byte)WrapperCount);
-            serializer.Write(StartQpc);
-            serializer.Write(EndQpc);
-
-            WriteCompletions(serializer, _methodCompletions);
-            WriteCompletions(serializer, _exceptionCompletions);
-            serializer.Write(_wrapperResets.Length);
-            for (int i = 0; i < _wrapperResets.Length; i++)
-            {
-                serializer.Write(_wrapperResets[i]);
-            }
-        }
-
-        internal static AsyncProfilerCallStack Read(Deserializer deserializer,
-            Func<AsyncProfilerCallStackFramesIndex, AsyncProfilerCallStackFrames> resolveFrames)
-        {
-            ProcessIndex processIndex = (ProcessIndex)deserializer.ReadInt();
-            ulong osThreadId = (ulong)deserializer.ReadInt64();
-            ulong dispatcherId = (ulong)deserializer.ReadInt64();
-            int depth = deserializer.ReadInt();
-            var framesIndex = (AsyncProfilerCallStackFramesIndex)deserializer.ReadInt();
-            byte continuationIndexBase = deserializer.ReadByte();
-            byte wrapperCount = deserializer.ReadByte();
-            long startQpc = deserializer.ReadInt64();
-            long endQpc = deserializer.ReadInt64();
-
-            CompletionDelta[] methodCompletions = ReadCompletions(deserializer);
-            CompletionDelta[] exceptionCompletions = ReadCompletions(deserializer);
-
-            int wrapperResetCount = deserializer.ReadInt();
-            long[] wrapperResets = wrapperResetCount == 0 ? Array.Empty<long>() : new long[wrapperResetCount];
-            for (int i = 0; i < wrapperResetCount; i++)
-            {
-                wrapperResets[i] = deserializer.ReadInt64();
-            }
-
-            return new AsyncProfilerCallStack(
-                new AsyncProfilerThreadKey(processIndex, osThreadId),
-                dispatcherId,
-                depth,
-                framesIndex,
-                resolveFrames(framesIndex),
-                continuationIndexBase,
-                wrapperCount,
-                startQpc,
-                endQpc,
-                methodCompletions,
-                exceptionCompletions,
-                wrapperResets);
-        }
-
-        private static void WriteCompletions(Serializer serializer, CompletionDelta[] completions)
-        {
-            serializer.Write(completions.Length);
-            for (int i = 0; i < completions.Length; i++)
-            {
-                serializer.Write(completions[i].Qpc);
-                serializer.Write(completions[i].Delta);
-            }
-        }
-
-        private static CompletionDelta[] ReadCompletions(Deserializer deserializer)
-        {
-            int count = deserializer.ReadInt();
-            if (count == 0)
-            {
-                return Array.Empty<CompletionDelta>();
-            }
-
-            var completions = new CompletionDelta[count];
-            for (int i = 0; i < count; i++)
-            {
-                long timestampQpc = deserializer.ReadInt64();
-                int delta = deserializer.ReadInt();
-                completions[i] = new CompletionDelta(timestampQpc, delta);
-            }
-            return completions;
         }
 
         private static int SumDeltasUpTo(CompletionDelta[] deltas, long timestampQpc)

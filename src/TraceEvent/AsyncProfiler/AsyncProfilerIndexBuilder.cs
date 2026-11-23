@@ -722,15 +722,6 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                     FramesIndex = AsyncProfilerCallStackFramesIndex.Invalid;
                     Frames = null;
                 }
-                else if (hasFrameStates && _frameStatesBuilder == null)
-                {
-                    // Fill state slots for earlier frames before appending frames that have states.
-                    _frameStatesBuilder = new List<int>(_methodIdsBuilder.Count + e.MethodIds.Length);
-                    for (int i = 0; i < _methodIdsBuilder.Count; i++)
-                    {
-                        _frameStatesBuilder.Add(0);
-                    }
-                }
 
                 for (int i = 0; i < e.FrameCount; i++)
                 {

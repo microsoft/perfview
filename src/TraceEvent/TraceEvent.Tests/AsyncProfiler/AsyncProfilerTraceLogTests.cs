@@ -499,7 +499,9 @@ namespace TraceEventTests
                     {
                         if (data.ProviderName == "TestSampleProfiler")
                         {
+#pragma warning disable CS0618 // TimeStampQPC is discouraged, but we want exact QPC (no lossy msec conversion).
                             retained.Add(data.TimeStampQPC);
+#pragma warning restore CS0618
                         }
                     }
 
