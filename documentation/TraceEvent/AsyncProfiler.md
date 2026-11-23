@@ -184,8 +184,11 @@ contains everything needed for stitching.
 For each sample, the stitcher finds the async call stacks active on the
 sample's thread at the sample's timestamp. It then walks the physical
 stack and the recorded call stacks together, from leaf to root, and joins
-them at verified handoff points. It keeps everything the physical stack
-shows and adds only the waiting callers that are missing.
+them at verified handoff points. It keeps the sampled application frames
+and adds the waiting callers that are missing. At each join point it may
+replace the runtime frames that perform the handoff, such as continuation
+wrappers and dispatcher helpers. This is part of stitching itself, so it
+happens even when normalization and infrastructure cleanup are off.
 
 **Why progress matters.** An async call stack is recorded when async code
 resumes. By the time of a later sample, some of the recorded methods may
@@ -293,7 +296,9 @@ they are kept out of the shared stitching logic:
   running the analysis.
 
 CoreCLR 11.0 and later use the CoreCLR 11 rules. Older, missing, or
-conflicting version information uses a common, more conservative rule set.
+conflicting version information uses the common rules. Both rule sets are
+currently identical; the split lets a future runtime version get its own
+rules without changing the others.
 
 Frames are treated as belonging to the same runtime module only when the
 trace shows it: the same module index, a native image linked to its
