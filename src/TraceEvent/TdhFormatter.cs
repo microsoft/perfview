@@ -156,6 +156,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// SOCKADDR_STORAGE struct.
             /// </remarks>
             SocketAddress,
+            /// <summary>
+            /// Renders a UInt16, UInt32, or UInt64 in decimal, with digit separators unless a format
+            /// provider is supplied. Array elements never use digit separators.
+            /// </summary>
+            Decimal,
         }
 
         /// <summary>
@@ -194,6 +199,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 var sb = new StringBuilder(Math.Max(16, 8 * array.Length + 2));
                 sb.Append('[');
                 bool first = true;
+                // Supplying a provider suppresses decimal grouping so commas only delimit elements.
+                IFormatProvider elementFormatProvider = formatProvider ?? CultureInfo.CurrentCulture;
                 foreach (object elem in array)
                 {
                     if (!first)
@@ -202,7 +209,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                     first = false;
 
-                    string formatted = FormatScalar(elem, elementFormatHint ?? formatHint, formatProvider);
+                    string formatted = FormatScalar(elem, elementFormatHint ?? formatHint, elementFormatProvider);
                     if (formatted != null)
                     {
                         sb.Append(formatted);
@@ -237,6 +244,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return ToHexString(value, formatProvider);
                 case FormatHint.Pointer:
                     return ToPointerString(value, formatProvider);
+                case FormatHint.Decimal:
+                    if (value is ushort || value is uint || value is ulong)
+                    {
+                        return ((IFormattable)value).ToString(formatProvider == null ? "n0" : null, formatProvider);
+                    }
+                    return null;
                 case FormatHint.GenericError:
                     return ToErrorCodeString(value, zeroPad: false, formatProvider);
                 case FormatHint.Win32Error:

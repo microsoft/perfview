@@ -902,7 +902,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         sb.Append(" ]");
 
                     }
-                    else if (value is int || value is bool || value is double || value is float)
+                    else if (value is int || value is uint || value is bool || value is double || value is float)
                     {
                         sb.Append(value);
                     }
@@ -984,7 +984,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return "";
                 }
 
-                long asLong = (long)((IConvertible)value).ToInt64(formatProvider);
+                // Reinterpret large ulong values rather than throwing an OverflowException.
+                long asLong = value is ulong asULong ? unchecked((long)asULong) : ((IConvertible)value).ToInt64(formatProvider);
                 if (map is SortedDictionary<long, string>)
                 {
                     StringBuilder sb = new StringBuilder();
@@ -1042,7 +1043,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-            // Otherwise apply any TraceLogging formatting hints
+            // Otherwise apply any field formatting hints.
             string hinted = FormatWithHint(index, formatProvider);
             if (hinted != null)
             {
@@ -1055,7 +1056,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         /// <summary>
         /// Applies the field's <see cref="TdhFormatter.FormatHint"/> hint to the value at <paramref
-        /// name="index"/>. Returns the formatted string, or null if no hint applies.
+        /// name="index"/>, defaulting unhinted ushort/uint scalars to decimal without changing their
+        /// metadata. Returns the formatted string, or null if no hint applies.
         /// </summary>
         private string FormatWithHint(int index, IFormatProvider formatProvider)
         {
@@ -1068,14 +1070,42 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 elementFormat = payloadFetches[index].Array?.Element.FormatHint;
             }
 
-            // If no hint applies, don't fetch the value to just ignore it.
-            if (format == TdhFormatter.FormatHint.None && elementFormat.GetValueOrDefault(TdhFormatter.FormatHint.None) == TdhFormatter.FormatHint.None)
+            bool hasHint = format != TdhFormatter.FormatHint.None || elementFormat.GetValueOrDefault(TdhFormatter.FormatHint.None) != TdhFormatter.FormatHint.None;
+            Type type = payloadFetches[index].Type;
+            bool unsignedScalar = type == typeof(ushort) || type == typeof(uint);
+            if (!hasHint && !unsignedScalar)
             {
                 return null;
             }
 
-            object value = PayloadValue(index);
-            return TdhFormatter.Format(value, format, elementFormat, formatProvider);
+            object value;
+            try
+            {
+                value = PayloadValue(index);
+            }
+            catch (Exception) when (!hasHint)
+            {
+                // Let the base class produce its standard error string for default formatting.
+                return null;
+            }
+
+            if (format == TdhFormatter.FormatHint.Decimal && value is ulong && PayloadNames[index] == "objectId")
+            {
+                format = TdhFormatter.FormatHint.Pointer;
+            }
+
+            string formatted = TdhFormatter.Format(value, format, elementFormat, formatProvider);
+            if (formatted != null || !unsignedScalar)
+            {
+                return formatted;
+            }
+
+            if (value is uint asUInt && asUInt != 0 && PayloadNames[index] == "IPv4Address")
+            {
+                return TdhFormatter.Format(value, TdhFormatter.FormatHint.IPv4, formatProvider: formatProvider);
+            }
+
+            return TdhFormatter.Format(value, TdhFormatter.FormatHint.Decimal, formatProvider: formatProvider);
         }
 
         /// <summary>
@@ -1612,7 +1642,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         Size = 1;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Int16:
-                    case RegisteredTraceEventParser.TdhInputType.UInt16:
                         Size = 2;
                         if (outType == RegisteredTraceEventParser.TdhOutputType.String)
                         {
@@ -1621,14 +1650,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         }
                         Type = typeof(short);
                         break;
-                    case RegisteredTraceEventParser.TdhInputType.Int32:
+                    case RegisteredTraceEventParser.TdhInputType.UInt16:
+                        Size = 2;
+                        if (outType == RegisteredTraceEventParser.TdhOutputType.String)
+                        {
+                            Type = typeof(char);
+                            break;
+                        }
+                        Type = typeof(ushort);
+                        break;
                     case RegisteredTraceEventParser.TdhInputType.UInt32:
+                        Type = typeof(uint);
+                        Size = 4;
+                        break;
+                    case RegisteredTraceEventParser.TdhInputType.Int32:
                     case RegisteredTraceEventParser.TdhInputType.HexInt32:
                         Type = typeof(int);
                         Size = 4;
                         break;
-                    case RegisteredTraceEventParser.TdhInputType.Int64:
                     case RegisteredTraceEventParser.TdhInputType.UInt64:
+                        Type = typeof(ulong);
+                        Size = 8;
+                        break;
+                    case RegisteredTraceEventParser.TdhInputType.Int64:
                     case RegisteredTraceEventParser.TdhInputType.HexInt64:
                         Type = typeof(long);
                         Size = 8;
@@ -1739,6 +1783,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     case RegisteredTraceEventParser.TdhInputType.HexInt32:
                     case RegisteredTraceEventParser.TdhInputType.HexInt64:
                         return TdhFormatter.FormatHint.Hex;
+                    case RegisteredTraceEventParser.TdhInputType.UInt64:
+                        // These fields were decoded as Int64, so preserve their decimal display.
+                        return TdhFormatter.FormatHint.Decimal;
                 }
 
                 return TdhFormatter.FormatHint.None;
@@ -2843,6 +2890,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
 
                     var fieldFetch = new DynamicTraceEventData.PayloadFetch(offset, size, type, map);
+                    fieldFetch.FormatHint = DynamicTraceEventData.PayloadFetch.ComputeFormatHintFromInOutTypes(
+                        inType == "win:Pointer" ? RegisteredTraceEventParser.TdhInputType.Pointer : RegisteredTraceEventParser.TdhInputType.Null,
+                        GetOutputTypeForManifestTypeName(reader.GetAttribute("outType")));
                     if (inType == "win:Binary")
                     {
                         // Check to ensure that the length field is the preceding field. 
@@ -2939,6 +2989,49 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return typeof(DateTime);
                 default:
                     return null;
+            }
+        }
+
+        /// <summary>
+        /// Returns the TDH output type corresponding to the manifest outType 'manifestTypeName', for the
+        /// output types that affect how a value is displayed.  Returns TdhOutputType.Null otherwise.
+        /// </summary>
+        private static RegisteredTraceEventParser.TdhOutputType GetOutputTypeForManifestTypeName(string manifestTypeName)
+        {
+            switch (manifestTypeName)
+            {
+                case "win:HexInt8":
+                    return RegisteredTraceEventParser.TdhOutputType.HexInt8;
+                case "win:HexInt16":
+                    return RegisteredTraceEventParser.TdhOutputType.HexInt16;
+                case "win:HexInt32":
+                    return RegisteredTraceEventParser.TdhOutputType.HexInt32;
+                case "win:HexInt64":
+                    return RegisteredTraceEventParser.TdhOutputType.HexInt64;
+                case "win:PID":
+                    return RegisteredTraceEventParser.TdhOutputType.Pid;
+                case "win:TID":
+                    return RegisteredTraceEventParser.TdhOutputType.Tid;
+                case "win:Port":
+                    return RegisteredTraceEventParser.TdhOutputType.Port;
+                case "win:IPv4":
+                    return RegisteredTraceEventParser.TdhOutputType.Ipv4;
+                case "win:IPv6":
+                    return RegisteredTraceEventParser.TdhOutputType.Ipv6;
+                case "win:SocketAddress":
+                    return RegisteredTraceEventParser.TdhOutputType.SocketAddress;
+                case "win:ErrorCode":
+                    return RegisteredTraceEventParser.TdhOutputType.ErrorCode;
+                case "win:Win32Error":
+                    return RegisteredTraceEventParser.TdhOutputType.Win32Error;
+                case "win:NTSTATUS":
+                    return RegisteredTraceEventParser.TdhOutputType.NtStatus;
+                case "win:HResult":
+                    return RegisteredTraceEventParser.TdhOutputType.HResult;
+                case "win:CodePointer":
+                    return RegisteredTraceEventParser.TdhOutputType.CodePointer;
+                default:
+                    return RegisteredTraceEventParser.TdhOutputType.Null;
             }
         }
 

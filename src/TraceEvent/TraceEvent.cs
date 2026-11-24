@@ -548,7 +548,7 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
                     {
-                        return *((Guid*)extendedData[i].DataPtr);
+                        return *TraceEventNativeMethods.GetRelatedActivityIDPointer(&extendedData[i]);
                     }
                 }
             }
@@ -899,8 +899,10 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// ETW supports the ability to take events with another GUID called the related activity that is either
         /// causes or is caused by the current activity.   This property returns that GUID (or Guid.Empty if the
-        /// event has not related activity.  
+        /// event has not related activity.
+        /// A present descriptor must contain a complete GUID.
         /// </summary>
+        /// <exception cref="InvalidDataException">A present related-activity descriptor is incomplete or has a null data pointer.</exception>
         public Guid RelatedActivityID
         {
             get
@@ -1299,30 +1301,18 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// Gets the event data and puts it in 'targetBuffer' at 'targetStartIndex' and returns the resulting buffer.
-        /// If 'targetBuffer is null, it will allocate a buffer of the correct size. 
+        /// If 'targetBuffer' is null, 'targetStartIndex' must be zero and a buffer of exactly 'length' bytes is allocated.
         /// <para>Normally this method is not used because some TraceEventParser has built a subclass of
         /// TraceEvent that parses the payload</para>
         /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="targetStartIndex"/> is negative, overflows when added to <paramref name="length"/>,
+        /// or is nonzero when <paramref name="targetBuffer"/> is null.
+        /// </exception>
         public byte[] EventData(byte[] targetBuffer, int targetStartIndex, int sourceStartIndex, int length)
         {
-            if (targetBuffer == null)
-            {
-                Debug.Assert(targetStartIndex == 0);
-                targetBuffer = new byte[length + targetStartIndex];
-            }
-            // TODO overflow
-            if (sourceStartIndex + length > EventDataLength)
-            {
-                throw new IndexOutOfRangeException();
-            }
-
-            IntPtr start = (IntPtr)((byte*)DataStart.ToPointer() + sourceStartIndex);
-            if (length > 0)
-            {
-                Marshal.Copy(start, targetBuffer, targetStartIndex, length);
-            }
-
-            return targetBuffer;
+            return TraceEventRawReaders.ReadByteArray(DataStart, sourceStartIndex, EventDataLength,
+                length, targetBuffer, targetStartIndex);
         }
 
         /// <summary>
@@ -1576,9 +1566,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <returns>Offset just after the string</returns>
         protected internal int SkipShortUTF8String(int offset)
         {
-            IntPtr mofData = DataStart;
-            ushort length = (ushort)TraceEventRawReaders.ReadInt16(mofData, offset);
-            return offset + 2 + length; // + 2 for the length field
+            return TraceEventRawReaders.SkipShortUTF8String(DataStart, offset, EventDataLength);
         }
 
         /// <summary>
@@ -1587,14 +1575,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <returns>Offset just after the string</returns>
         protected internal int SkipUTF8String(int offset)
         {
-            IntPtr mofData = DataStart;
-            while (TraceEventRawReaders.ReadByte(mofData, offset) != 0)
-            {
-                offset++;
-            }
-
-            offset++;
-            return offset;
+            return TraceEventRawReaders.SkipUTF8String(DataStart, offset, EventDataLength);
         }
         /// <summary>
         /// Skip Unicode string starting at 'offset' bytes into the payload blob.
@@ -1602,27 +1583,16 @@ namespace Microsoft.Diagnostics.Tracing
         /// <returns>Offset just after the string</returns>
         protected internal int SkipUnicodeString(int offset)
         {
-            IntPtr mofData = DataStart;
-            while (TraceEventRawReaders.ReadInt16(mofData, offset) != 0)
-            {
-                offset += 2;
-            }
-
-            offset += 2;
-            return offset;
+            return TraceEventRawReaders.SkipUnicodeString(DataStart, offset, EventDataLength);
         }
         /// <summary>
         /// Skip 'stringCount' Unicode strings starting at 'offset' bytes into the payload blob.
+        /// A zero count returns the offset unchanged without reading the payload.
         /// </summary>  
         /// <returns>Offset just after the last string</returns>
         protected internal int SkipUnicodeString(int offset, int stringCount)
         {
-            while (stringCount > 0)
-            {
-                offset = SkipUnicodeString(offset);
-                --stringCount;
-            }
-            return offset;
+            return TraceEventRawReaders.SkipUnicodeString(DataStart, offset, EventDataLength, stringCount);
         }
         /// <summary>
         /// Skip a Security ID (SID) starting at 'offset' bytes into the payload blob.
@@ -1630,21 +1600,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <returns>Offset just after the Security ID</returns>
         internal int SkipSID(int offset)
         {
-            IntPtr mofData = DataStart;
-            // This is a Security Token.  Either it is null, which takes 4 bytes, 
-            // Otherwise it is an 8 byte structure (TOKEN_USER) followed by SID, which is variable
-            // size (sigh) depending on the 2nd byte in the SID
-            int sid = TraceEventRawReaders.ReadInt32(mofData, offset);
-            if (sid == 0)
-            {
-                return offset + 4;      // TODO confirm 
-            }
-            else
-            {
-                int tokenSize = HostOffset(8, 2);
-                int numAuthorities = TraceEventRawReaders.ReadByte(mofData, offset + (tokenSize + 1));
-                return offset + tokenSize + 8 + 4 * numAuthorities;
-            }
+            return TraceEventRawReaders.SkipSID(DataStart, offset, EventDataLength, PointerSize);
         }
 
         /// <summary>
@@ -1652,15 +1608,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal int SkipVarInt(int offset)
         {
-            int maxOffset = Math.Min(offset + 10, EventDataLength);
-            for(int i = offset; i < maxOffset; i++)
-            {
-                if(0 == (TraceEventRawReaders.ReadByte(DataStart, i) & 0x80))
-                {
-                    return i + 1;
-                }
-            }
-            return maxOffset;
+            return TraceEventRawReaders.SkipVarInt(DataStart, offset, EventDataLength);
         }
 
         /// <summary>
@@ -1686,15 +1634,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         protected internal string GetUTF8StringAt(int offset)
         {
-            if (offset >= EventDataLength)
-            {
-                Debug.Assert(false, "Read past end of string");
-                return "<<ERROR EOB>>";
-            }
-            else
-            {
-                return TraceEventRawReaders.ReadUTF8String(DataStart, offset, EventDataLength);
-            }
+            return TraceEventRawReaders.ReadUTF8String(DataStart, offset, EventDataLength);
         }
 
         /// <summary>
@@ -1703,15 +1643,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         protected internal string GetShortUTF8StringAt(int offset)
         {
-            if (offset >= EventDataLength)
-            {
-                Debug.Assert(false, "Read past end of string");
-                return "<<ERROR EOB>>";
-            }
-            else
-            {
-                return TraceEventRawReaders.ReadShortUTF8String(DataStart, offset, EventDataLength);
-            }
+            return TraceEventRawReaders.ReadShortUTF8String(DataStart, offset, EventDataLength);
         }
 
         /// <summary>
@@ -1719,17 +1651,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal string GetFixedAnsiStringAt(int charCount, int offset)
         {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < charCount; i++)
-            {
-                char c = (char)GetByteAt(offset + i);
-                if (c == 0)
-                {
-                    break;
-                }
-                sb.Append(c);
-            }
-            return sb.ToString();
+            return TraceEventRawReaders.ReadFixedAnsiString(DataStart, offset, EventDataLength, charCount);
         }
         /// <summary>
         /// Given an Offset to a fixed sized string at 'offset', whose buffer size is 'charCount'
@@ -1738,37 +1660,21 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>        
         internal string GetFixedUnicodeStringAt(int charCount, int offset)
         {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < charCount; i++)
-            {
-                char c = (char)GetInt16At(offset + i * 2);
-                if (c == 0)
-                {
-                    break;
-                }
-                sb.Append(c);
-            }
-            return sb.ToString();
+            return TraceEventRawReaders.ReadFixedUnicodeString(DataStart, offset, EventDataLength, charCount);
         }
         /// <summary>
         /// Returns the encoding of a Version 6 IP address that has been serialized at 'offset' in the payload bytes.  
         /// </summary>
         internal System.Net.IPAddress GetIPAddrV6At(int offset)
         {
-            byte[] addrBytes = new byte[16];
-            for (int i = 0; i < addrBytes.Length; i++)
-            {
-                addrBytes[i] = TraceEventRawReaders.ReadByte(DataStart, offset + i);
-            }
-
-            return new System.Net.IPAddress(addrBytes);
+            return new System.Net.IPAddress(GetByteArrayAt(offset, 16));
         }
         /// <summary>
         /// Returns the GUID serialized at 'offset' in the payload bytes. 
         /// </summary>
         protected internal Guid GetGuidAt(int offset)
         {
-            return TraceEventRawReaders.ReadGuid(DataStart, offset);
+            return TraceEventRawReaders.ReadGuid(DataStart, offset, EventDataLength);
         }
         /// <summary>
         /// Get the DateTime that serialized (as a windows FILETIME) at 'offset' in the payload bytes. 
@@ -1783,14 +1689,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         protected internal string GetUnicodeStringAt(int offset)
         {
-            if (offset >= EventDataLength)
-            {
-                throw new Exception("Reading past end of event");
-            }
-            else
-            {
-                return TraceEventRawReaders.ReadUnicodeString(DataStart, offset, EventDataLength);
-            }
+            return TraceEventRawReaders.ReadUnicodeString(DataStart, offset, EventDataLength);
         }
         /// <summary>
         /// Give an offset to a byte array of size 'size' in the payload bytes, return a byte[] that contains
@@ -1798,12 +1697,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         protected internal byte[] GetByteArrayAt(int offset, int size)
         {
-            byte[] res = new byte[size];
-            for (int i = 0; i < size; i++)
-            {
-                res[i] = (byte)GetByteAt(offset + i);
-            }
-            return res;
+            return TraceEventRawReaders.ReadByteArray(DataStart, offset, EventDataLength, size);
         }
         /// <summary>
         /// Give an offset to a int array of size 'size' in the payload bytes, return a int[] that contains
@@ -1811,40 +1705,35 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         protected internal int[] GetInt32ArrayAt(int offset, int size)
         {
-            int[] res = new int[size];
-            for (int i = 0; i < size; i++)
-            {
-                res[i] = GetInt32At(offset + i * 4);
-            }
-            return res;
+            return TraceEventRawReaders.ReadInt32Array(DataStart, offset, EventDataLength, size);
         }
         /// <summary>
         /// Returns a byte value that was serialized at 'offset' in the payload bytes
         /// </summary>
         protected internal int GetByteAt(int offset)
         {
-            return TraceEventRawReaders.ReadByte(DataStart, offset);
+            return TraceEventRawReaders.ReadByte(DataStart, offset, EventDataLength);
         }
         /// <summary>
         /// Returns a short value that was serialized at 'offset' in the payload bytes
         /// </summary>
         protected internal int GetInt16At(int offset)
         {
-            return TraceEventRawReaders.ReadInt16(DataStart, offset);
+            return TraceEventRawReaders.ReadInt16(DataStart, offset, EventDataLength);
         }
         /// <summary>
         /// Returns an int value that was serialized at 'offset' in the payload bytes
         /// </summary>
         protected internal int GetInt32At(int offset)
         {
-            return TraceEventRawReaders.ReadInt32(DataStart, offset);
+            return TraceEventRawReaders.ReadInt32(DataStart, offset, EventDataLength);
         }
         /// <summary>
         /// Returns a long value that was serialized at 'offset' in the payload bytes
         /// </summary>
         protected internal long GetInt64At(int offset)
         {
-            return TraceEventRawReaders.ReadInt64(DataStart, offset);
+            return TraceEventRawReaders.ReadInt64(DataStart, offset, EventDataLength);
         }
         /// <summary>
         /// Get something that is machine word sized for the provider that collected the data, but is an
@@ -1852,22 +1741,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         protected internal long GetIntPtrAt(int offset)
         {
-            Debug.Assert(PointerSize == 4 || PointerSize == 8);
-            if (PointerSize == 4)
-            {
-                return (long)(uint)GetInt32At(offset);
-            }
-            else
-            {
-                return GetInt64At(offset);
-            }
+            return unchecked((long)TraceEventRawReaders.ReadAddress(DataStart, offset, EventDataLength, PointerSize));
         }
         /// <summary>
         /// Gets something that is pointer sized for the provider that collected the data.  
         /// </summary>
         protected internal Address GetAddressAt(int offset)
         {
-            return (Address)GetIntPtrAt(offset);
+            return TraceEventRawReaders.ReadAddress(DataStart, offset, EventDataLength, PointerSize);
         }
 
         /// <summary>
@@ -1875,14 +1756,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         protected internal float GetSingleAt(int offset)
         {
-            return TraceEventRawReaders.ReadSingle(DataStart, offset);
+            return TraceEventRawReaders.ReadSingle(DataStart, offset, EventDataLength);
         }
         /// <summary>
         /// Returns an int double precision floating point value that was serialized at 'offset' in the payload bytes
         /// </summary>
         protected internal double GetDoubleAt(int offset)
         {
-            return TraceEventRawReaders.ReadDouble(DataStart, offset);
+            return TraceEventRawReaders.ReadDouble(DataStart, offset, EventDataLength);
         }
 
         /// <summary>
@@ -1901,6 +1782,16 @@ namespace Microsoft.Diagnostics.Tracing
         protected internal long GetVarIntAt(int offset)
         {
             return TraceEventRawReaders.ReadVarInt(DataStart, offset, EventDataLength);
+        }
+
+        /// <summary>
+        /// Requires a complete payload extent before reading bytes or allocating a result.
+        /// </summary>
+        /// <exception cref="InvalidDataException">The extent is outside the event payload.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected internal void ValidatePayloadRange(int offset, int count)
+        {
+            TraceEventRawReaders.ValidateRange(offset, count, EventDataLength);
         }
 
         /// <summary>
@@ -4562,48 +4453,217 @@ namespace Microsoft.Diagnostics.Tracing
 
     #region Private Classes
 
+    /// <summary>
+    /// Reads and skips fields within a supplied payload extent. Bulk reads validate before allocating;
+    /// unchecked reads are private and used only after their complete extent has been validated.
+    /// </summary>
     internal sealed class TraceEventRawReaders
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ValidateRange(int offset, int count, int bufferLength)
+        {
+            if (bufferLength < 0 || offset < 0 || count < 0 ||
+                offset > bufferLength || count > bufferLength - offset)
+            {
+                throw new InvalidDataException("Field extends beyond the event payload.");
+            }
+        }
+
         internal static unsafe IntPtr Add(IntPtr pointer, int offset)
         {
             return (IntPtr)(((byte*)pointer) + offset);
         }
-        internal static unsafe Guid ReadGuid(IntPtr pointer, int offset)
+        internal static unsafe Guid ReadGuid(IntPtr pointer, int offset, int bufferLength)
         {
+            ValidateRange(offset, sizeof(Guid), bufferLength);
             return *((Guid*)((byte*)pointer.ToPointer() + offset));
         }
-        internal static unsafe double ReadDouble(IntPtr pointer, int offset)
+        internal static unsafe double ReadDouble(IntPtr pointer, int offset, int bufferLength)
         {
+            ValidateRange(offset, sizeof(double), bufferLength);
             return Unsafe.ReadUnaligned<double>((byte*)pointer.ToPointer() + offset);
         }
-        internal static unsafe float ReadSingle(IntPtr pointer, int offset)
+        internal static unsafe float ReadSingle(IntPtr pointer, int offset, int bufferLength)
         {
+            ValidateRange(offset, sizeof(float), bufferLength);
             return Unsafe.ReadUnaligned<float>((byte*)pointer.ToPointer() + offset);
         }
-        internal static unsafe long ReadInt64(IntPtr pointer, int offset)
+        internal static unsafe long ReadInt64(IntPtr pointer, int offset, int bufferLength)
         {
+            ValidateRange(offset, sizeof(long), bufferLength);
             return Unsafe.ReadUnaligned<long>((byte*)pointer.ToPointer() + offset);
         }
-        internal static unsafe int ReadInt32(IntPtr pointer, int offset)
+        internal static unsafe int ReadInt32(IntPtr pointer, int offset, int bufferLength)
         {
+            ValidateRange(offset, sizeof(int), bufferLength);
             return Unsafe.ReadUnaligned<int>((byte*)pointer.ToPointer() + offset);
         }
-        internal static unsafe short ReadInt16(IntPtr pointer, int offset)
+        internal static short ReadInt16(IntPtr pointer, int offset, int bufferLength)
         {
-            return *((short*)((byte*)pointer.ToPointer() + offset));
+            ValidateRange(offset, sizeof(short), bufferLength);
+            return ReadInt16Unchecked(pointer, offset);
         }
-        internal static unsafe IntPtr ReadIntPtr(IntPtr pointer, int offset)
+        internal static ulong ReadAddress(IntPtr pointer, int offset, int bufferLength, int pointerSize)
         {
-            return *((IntPtr*)((byte*)pointer.ToPointer() + offset));
+            ValidatePointerSize(pointerSize);
+            return pointerSize == 4 ? (uint)ReadInt32(pointer, offset, bufferLength) :
+                unchecked((ulong)ReadInt64(pointer, offset, bufferLength));
         }
-        internal static unsafe byte ReadByte(IntPtr pointer, int offset)
+        internal static byte ReadByte(IntPtr pointer, int offset, int bufferLength)
         {
-            return *((byte*)((byte*)pointer.ToPointer() + offset));
+            ValidateRange(offset, sizeof(byte), bufferLength);
+            return ReadByteUnchecked(pointer, offset);
+        }
+
+        internal static byte[] ReadByteArray(IntPtr pointer, int offset, int bufferLength, int size,
+            byte[] targetBuffer = null, int targetStartIndex = 0)
+        {
+            ValidateRange(offset, size, bufferLength);
+            if (targetStartIndex < 0 || targetStartIndex > int.MaxValue - size)
+            {
+                throw new ArgumentOutOfRangeException(nameof(targetStartIndex));
+            }
+            if (targetBuffer == null)
+            {
+                if (targetStartIndex != 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(targetStartIndex),
+                        "Target start index must be zero when targetBuffer is null.");
+                }
+                targetBuffer = new byte[size];
+            }
+            if (size != 0)
+            {
+                Marshal.Copy(Add(pointer, offset), targetBuffer, targetStartIndex, size);
+            }
+            return targetBuffer;
+        }
+
+        internal static int[] ReadInt32Array(IntPtr pointer, int offset, int bufferLength, int size)
+        {
+            ValidateElements(offset, size, sizeof(int), bufferLength);
+            int[] result = new int[size];
+            if (size != 0)
+            {
+                Marshal.Copy(Add(pointer, offset), result, 0, size);
+            }
+            return result;
+        }
+
+        internal static string ReadFixedAnsiString(IntPtr pointer, int offset, int bufferLength, int charCount)
+        {
+            ValidateRange(offset, charCount, bufferLength);
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < charCount; i++)
+            {
+                char value = (char)ReadByteUnchecked(pointer, offset + i);
+                if (value == 0)
+                {
+                    break;
+                }
+                result.Append(value);
+            }
+            return result.ToString();
+        }
+
+        internal static string ReadFixedUnicodeString(IntPtr pointer, int offset, int bufferLength, int charCount)
+        {
+            ValidateElements(offset, charCount, sizeof(char), bufferLength);
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < charCount; i++)
+            {
+                char value = (char)ReadInt16Unchecked(pointer, offset + i * sizeof(char));
+                if (value == 0)
+                {
+                    break;
+                }
+                result.Append(value);
+            }
+            return result.ToString();
+        }
+
+        internal static int SkipUTF8String(IntPtr pointer, int offset, int bufferLength)
+        {
+            ValidateRange(offset, 0, bufferLength);
+            for (int i = offset; i < bufferLength; i++)
+            {
+                if (ReadByteUnchecked(pointer, i) == 0)
+                {
+                    return i + 1;
+                }
+            }
+            throw new InvalidDataException("Unterminated UTF8 string.");
+        }
+
+        internal static int SkipUnicodeString(IntPtr pointer, int offset, int bufferLength, int stringCount = 1)
+        {
+            if (stringCount < 0)
+            {
+                throw new InvalidDataException("Negative string count.");
+            }
+            if (stringCount == 0)
+            {
+                return offset;
+            }
+            ValidateRange(offset, 0, bufferLength);
+            while (stringCount-- > 0)
+            {
+                short value;
+                do
+                {
+                    if (bufferLength - offset < sizeof(char))
+                    {
+                        throw new InvalidDataException("Unterminated Unicode string.");
+                    }
+                    value = ReadInt16Unchecked(pointer, offset);
+                    offset += sizeof(char);
+                } while (value != 0);
+            }
+            return offset;
+        }
+
+        internal static int SkipShortUTF8String(IntPtr pointer, int offset, int bufferLength)
+        {
+            ValidateRange(offset, sizeof(ushort), bufferLength);
+            ushort length = (ushort)ReadInt16Unchecked(pointer, offset);
+            int start = offset + sizeof(ushort);
+            ValidateRange(start, length, bufferLength);
+            return start + length;
+        }
+
+        internal static int SkipSID(IntPtr pointer, int offset, int bufferLength, int pointerSize)
+        {
+            if (ReadInt32(pointer, offset, bufferLength) == 0)
+            {
+                return offset + sizeof(int);
+            }
+            ValidatePointerSize(pointerSize);
+            // A non-null TOKEN_USER is followed by the SID header and its subauthorities.
+            int tokenSize = 2 * pointerSize;
+            int count = ReadByte(pointer, offset + tokenSize + 1, bufferLength);
+            int size = tokenSize + 8 + 4 * count;
+            ValidateRange(offset, size, bufferLength);
+            return offset + size;
+        }
+
+        internal static int SkipVarInt(IntPtr pointer, int offset, int bufferLength)
+        {
+            ValidateRange(offset, 0, bufferLength);
+            int maxOffset = offset + Math.Min(10, bufferLength - offset);
+            for (int i = offset; i < maxOffset; i++)
+            {
+                if ((ReadByteUnchecked(pointer, i) & 0x80) == 0)
+                {
+                    return i + 1;
+                }
+            }
+            throw new InvalidDataException("Unterminated variable-length integer.");
         }
         internal static unsafe ulong ReadVarUInt(IntPtr pointer, int offset, int bufferLength)
         {
+            ValidateRange(offset, 0, bufferLength);
             Span<byte> bytes = new Span<byte>(pointer.ToPointer(), bufferLength);
-            int maxOffset = Math.Min(offset + 10, bufferLength);
+            int maxOffset = offset + Math.Min(10, bufferLength - offset);
             ulong val = 0;
             int shift = 0;
             byte b;
@@ -4630,21 +4690,24 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal static unsafe string ReadUnicodeString(IntPtr pointer, int offset, int bufferLength)
         {
+            ValidateRange(offset, 0, bufferLength);
             // Really we should be able to count on pointers being null terminated.  However we have had instances
-            // where this is not true.   To avoid scanning the string twice we first check if the last character
-            // in the buffer is a 0 if so, we KNOW we can use the 'fast path'  Otherwise we check 
-            byte* ptr = (byte*)pointer;
-            char* charEnd = (char*)(ptr + bufferLength);
-            if (charEnd[-1] == 0)       // Is the last character a null?
-            {
-                return new string((char*)(ptr + offset));       // We can count on a null, so we do an optimized path 
-            }
-            // (works for last string, and other times by luck). 
-            // but who cares as long as it stays in the buffer.  
-
-            // unoptimized path.  Carefully count characters and create a string up to the null.  
-            char* charStart = (char*)(ptr + offset);
+            // where this is not true.   To avoid scanning the string twice we first check if the last complete character
+            // in the remaining buffer is a 0 if so, we KNOW we can use the 'fast path'  Otherwise we check
+            char* charStart = (char*)((byte*)pointer + offset);
             int maxPos = (bufferLength - offset) / sizeof(char);
+            if (maxPos == 0)
+            {
+                return string.Empty;
+            }
+            if (charStart[maxPos - 1] == 0)       // Is the last character a null?
+            {
+                return new string(charStart);       // We can count on a null, so we do an optimized path
+            }
+            // (works for last string, and other times by luck).
+            // but who cares as long as it stays in the buffer.
+
+            // unoptimized path.  Carefully count characters and create a string up to the null.
             int curPos = 0;
             while (curPos < maxPos && charStart[curPos] != 0)
             {
@@ -4655,10 +4718,11 @@ namespace Microsoft.Diagnostics.Tracing
         }
         internal static unsafe string ReadUTF8String(IntPtr pointer, int offset, int bufferLength)
         {
-            var buff = new byte[bufferLength];
+            ValidateRange(offset, 0, bufferLength);
+            int remaining = bufferLength - offset;
             byte* ptr = ((byte*)pointer) + offset;
             int i = 0;
-            while (i < buff.Length)
+            while (i < remaining)
             {
                 byte c = ptr[i];
                 if (c == 0)
@@ -4666,33 +4730,53 @@ namespace Microsoft.Diagnostics.Tracing
                     break;
                 }
 
-                buff[i++] = c;
+                i++;
             }
-            return Encoding.UTF8.GetString(buff, 0, i);     // Convert to unicode.  
+            return i == 0 ? string.Empty : Encoding.UTF8.GetString(ptr, i);     // Convert to unicode.
         }
 
         internal static unsafe string ReadShortUTF8String(IntPtr pointer, int offset, int bufferLength)
         {
+            ValidateRange(offset, sizeof(ushort), bufferLength);
             // Read the length of the string
-            ushort length = (ushort)ReadInt16(pointer, offset);
+            ushort length = (ushort)ReadInt16Unchecked(pointer, offset);
+            int start = offset + sizeof(ushort);
+            ValidateRange(start, length, bufferLength);
             if (length == 0)
             {
                 return string.Empty;
             }
-            if (length > bufferLength - sizeof(ushort))
-            {
-                throw new FormatException("Invalid UTF8 String");
-            }
-            var buff = new byte[length];
-            byte* ptr = ((byte*)pointer) + offset + sizeof(ushort);
-            ushort i = 0;
-            while (i < length)
-            {
-                byte c = ptr[i];
-                buff[i++] = c;
-            }
-            return Encoding.UTF8.GetString(buff, 0, i);     // Convert to unicode.
+            return Encoding.UTF8.GetString((byte*)pointer + start, length);     // Convert to unicode.
         }
+
+        #region private
+        private static void ValidateElements(int offset, int count, int elementSize, int bufferLength)
+        {
+            ValidateRange(offset, 0, bufferLength);
+            if (count < 0 || count > (bufferLength - offset) / elementSize)
+            {
+                throw new InvalidDataException("Array extends beyond the event payload.");
+            }
+        }
+
+        private static void ValidatePointerSize(int pointerSize)
+        {
+            if (pointerSize != 4 && pointerSize != 8)
+            {
+                throw new ArgumentOutOfRangeException(nameof(pointerSize), "Pointer size must be four or eight bytes.");
+            }
+        }
+
+        private static unsafe short ReadInt16Unchecked(IntPtr pointer, int offset)
+        {
+            return *((short*)((byte*)pointer.ToPointer() + offset));
+        }
+
+        private static unsafe byte ReadByteUnchecked(IntPtr pointer, int offset)
+        {
+            return *((byte*)((byte*)pointer.ToPointer() + offset));
+        }
+        #endregion
     }
 
     #endregion

@@ -1215,55 +1215,16 @@ namespace PEFile
             m_stream = stream;
             GetBuffer(buffSize);
         }
+        /// <summary>Returns a pointer only when the complete requested extent has been read.</summary>
         public byte* Fetch(int filePos, int size)
         {
-            if (size > m_buff.Length)
-            {
-                GetBuffer(size);
-            }
-            if (!(m_buffPos <= filePos && filePos + size <= m_buffPos + m_buffLen))
-            {
-                // Read in the block of 'size' bytes at filePos
-                m_buffPos = filePos;
-                m_stream.Seek(m_buffPos, SeekOrigin.Begin);
-                m_buffLen = 0;
-                while (m_buffLen < m_buff.Length)
-                {
-                    var count = m_stream.Read(m_buff, m_buffLen, size - m_buffLen);
-                    if (count == 0)
-                    {
-                        break;
-                    }
-
-                    m_buffLen += count;
-                }
-            }
-            return &m_buffPtr[filePos - m_buffPos];
+            int offset = EnsureCachedRange(filePos, size, requireComplete: true);
+            return m_buffPtr + offset;
         }
+        /// <summary>Returns available bytes, allowing a partial initial PE header read.</summary>
         public ReadOnlySpan<byte> FetchSpan(int filePos, int size)
         {
-            if (size > m_buff.Length)
-            {
-                GetBuffer(size);
-            }
-            if (!(m_buffPos <= filePos && filePos + size <= m_buffPos + m_buffLen))
-            {
-                // Read in the block of 'size' bytes at filePos
-                m_buffPos = filePos;
-                m_stream.Seek(m_buffPos, SeekOrigin.Begin);
-                m_buffLen = 0;
-                while (m_buffLen < m_buff.Length)
-                {
-                    var count = m_stream.Read(m_buff, m_buffLen, size - m_buffLen);
-                    if (count == 0)
-                    {
-                        break;
-                    }
-
-                    m_buffLen += count;
-                }
-            }
-            int offset = filePos - m_buffPos;
+            int offset = EnsureCachedRange(filePos, size, requireComplete: false);
             int actualSize = Math.Min(size, m_buffLen - offset);
             return new ReadOnlySpan<byte>(m_buff, offset, actualSize);
         }
@@ -1273,9 +1234,7 @@ namespace PEFile
         internal PEBufferedSlice EnsureRead(int filePos, int size)
         {
             // Ensure the data is fetched
-            FetchSpan(filePos, size);
-            
-            int offset = filePos - m_buffPos;
+            int offset = EnsureCachedRange(filePos, size, requireComplete: false);
             int length = Math.Min(size, m_buffLen - offset);
             return new PEBufferedSlice(m_buff, offset, length);
         }
@@ -1286,6 +1245,53 @@ namespace PEFile
             m_pinningHandle.Free();
         }
         #region private
+        private int EnsureCachedRange(int filePos, int size, bool requireComplete)
+        {
+            if (filePos < 0 || size < 0)
+            {
+                throw new InvalidDataException("Invalid PE file range.");
+            }
+
+            long offset = (long)filePos - m_buffPos;
+            if (offset >= 0 && offset <= m_buffLen && size <= m_buffLen - offset)
+            {
+                return (int)offset;
+            }
+
+            // Cached extents contain real bytes; query the file length only on a miss.
+            if (requireComplete)
+            {
+                long length = m_stream.Length;
+                if (filePos > length || size > length - filePos)
+                {
+                    throw new EndOfStreamException("Truncated PE file range.");
+                }
+            }
+            if (size > m_buff.Length)
+            {
+                GetBuffer(size);
+            }
+
+            // Read in the block of 'size' bytes at filePos
+            m_buffLen = 0;
+            m_stream.Seek(filePos, SeekOrigin.Begin);
+            m_buffPos = filePos;
+            while (m_buffLen < size)
+            {
+                int count = m_stream.Read(m_buff, m_buffLen, size - m_buffLen);
+                if (count == 0)
+                {
+                    break;
+                }
+                m_buffLen += count;
+            }
+            if (requireComplete && m_buffLen < size)
+            {
+                throw new EndOfStreamException("Truncated PE file range.");
+            }
+            return 0;
+        }
+
         ~PEBufferedReader()
         {
             FreeBuffer();
@@ -1741,12 +1747,14 @@ namespace PEFile
 
                 int nameOffset = nameOffsetInResources + resourceStartFileOffset;
 
-                // PEBufferedReader.Fetch internally evaluates filePos + size to
-                // check its cache, so guard against that addition overflowing
+                // PEBufferedReader.Fetch previously evaluated filePos + size to
+                // check its cache, so this guard checked for that addition overflowing
                 // BEFORE the first fetch.  Without this, an attacker who lined up
                 // nameOffsetInResources + resourceStartFileOffset to equal
                 // int.MaxValue could induce a 2GB out-of-bounds read inside the
                 // very call this guard was meant to protect.
+                // Fetch now validates its extents, but keep this guard to preserve
+                // GetName's string.Empty result for unrepresentable file ranges.
                 if (nameOffset > int.MaxValue - sizeof(ushort))
                 {
                     return string.Empty;
@@ -1762,7 +1770,7 @@ namespace PEFile
                 // Ensure the entire length-prefixed string lies inside the resource
                 // data directory.  Without this bound a crafted PE could declare a
                 // name length that walks past the resource section (and potentially
-                // past end-of-file), causing PEBufferedReader.Fetch to return zeroed
+                // past end-of-file), previously causing PEBufferedReader.Fetch to return zeroed
                 // padding that gets surfaced as the resource name.
                 if (nameByteLen > resourceDirectorySize - nameOffsetInResources - sizeof(ushort))
                 {
@@ -1771,10 +1779,12 @@ namespace PEFile
 
                 // Apply the same Fetch-overflow guard to the second Fetch.  The
                 // earlier guard only proved that nameOffset + sizeof(ushort) does
-                // not overflow; adding nameByteLen on top can still wrap inside
-                // PEBufferedReader.Fetch's filePos + size cache check (e.g. a
+                // not overflow; adding nameByteLen on top could still wrap inside
+                // the former PEBufferedReader.Fetch filePos + size cache check (e.g. a
                 // resource directory at very high file offsets with a non-trivial
                 // name length), so check the full extent here.
+                // Although Fetch now validates its extents, retain the guard so
+                // GetName returns string.Empty for unrepresentable file ranges.
                 if (nameByteLen > int.MaxValue - nameOffset - sizeof(ushort))
                 {
                     return string.Empty;

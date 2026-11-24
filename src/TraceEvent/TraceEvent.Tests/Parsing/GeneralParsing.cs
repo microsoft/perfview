@@ -1,5 +1,6 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,6 +15,55 @@ namespace TraceEventTests
         public GeneralParsing(ITestOutputHelper output)
             : base(output)
         {
+        }
+
+        [Fact]
+        public void ETW_TcpConnectionIdsDecodeFromEtlAndEtlx()
+        {
+            PrepareTestData();
+            string etlFilePath = Path.Combine(UnZippedDataDir, "netcore.3.1.x64.twocontainers.etl");
+            Action<TraceEventDispatcher> validate = source =>
+            {
+                var counts = new SortedDictionary<string, int>(StringComparer.Ordinal);
+                source.Kernel.All += data =>
+                {
+                    if (!(data is TcpIpTraceData || data is TcpIpSendTraceData || data is TcpIpConnectTraceData))
+                    {
+                        return;
+                    }
+
+                    IncCount(counts, data.EventName);
+                    for (int i = 0; i < data.PayloadNames.Length; i++)
+                    {
+                        // The producer initializes these fields to zero, including every record in this capture.
+                        if (data.PayloadNames[i] == "connid")
+                        {
+                            Assert.Equal(0UL, data.PayloadValue(i));
+                        }
+                        else if (data.PayloadNames[i] == "seqnum")
+                        {
+                            Assert.Equal(0, data.PayloadValue(i));
+                        }
+                    }
+                    Parse(data);
+                    data.ToXml(new StringBuilder());
+                };
+                source.Process();
+                Assert.Equal(141, counts["TcpIp/Send"]);
+                Assert.Equal(135, counts["TcpIp/Recv"]);
+                Assert.Equal(2, counts["TcpIp/Connect"]);
+                Assert.Equal(1, counts["TcpIp/Disconnect"]);
+            };
+
+            using (var source = new ETWTraceEventSource(etlFilePath))
+            {
+                validate(source);
+            }
+            using (var log = new TraceLog(TraceLog.CreateFromEventTraceLogFile(etlFilePath)))
+            using (var source = log.Events.GetSource())
+            {
+                validate(source);
+            }
         }
 
         /// <summary>
@@ -254,7 +304,7 @@ namespace TraceEventTests
             string[] payloadNames = data.PayloadNames;
             for (int i = 0; i < payloadNames.Length; i++)
             {
-                // Normalize DateTime to UTC so tests work in any timezone. 
+                // Normalize DateTime to UTC so tests work in any timezone.
                 object value = data.PayloadValue(i);
                 string valueStr;
                 if (value is DateTime)
@@ -263,7 +313,7 @@ namespace TraceEventTests
                 }
                 else
                 {
-                    valueStr = (data.PayloadString(i));
+                    valueStr = data.PayloadString(i);
                 }
 
                 // To debug this set first chance exeption handing before calling PayloadString above.

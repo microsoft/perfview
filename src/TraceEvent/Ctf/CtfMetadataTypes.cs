@@ -153,6 +153,10 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             return this;
         }
 
+        /// <summary>
+        /// Returns the array size in bits, or SizeIndeterminate when its size is not fixed.
+        /// </summary>
+        /// <exception cref="OverflowException">The fixed array size in bits exceeds Int32.MaxValue.</exception>
         public override int GetSize()
         {
             int size = Type.GetSize();
@@ -167,7 +171,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 return CtfEvent.SizeIndeterminate;
             }
 
-            return size * len;
+            return checked(size * len);
         }
 
         public override object Read(byte[] buffer)

@@ -10831,7 +10831,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int ChunkNumber { get { return GetInt16At(10); } }
         public int ChunkLength { get { return GetInt32At(12); } }
         public byte[] Chunk { get { return GetByteArrayAt(16, ChunkLength); } }
-        public int ClrInstanceID { get { return GetInt16At(0 + (ChunkLength * 1) + 16); } }
+        public int ClrInstanceID
+        {
+            get
+            {
+                int length = ChunkLength;
+                ValidatePayloadRange(16, length);
+                return GetInt16At(16 + length);
+            }
+        }
 
         #region Private
         internal CodeSymbolsTraceData(Action<CodeSymbolsTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)

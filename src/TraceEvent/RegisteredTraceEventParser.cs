@@ -136,7 +136,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 foreach (var keywordItem in keywordsItems)
                 {
                     // Skip the reserved keywords.   
-                    if (keywordItem.Value >= 1000000000000UL)
+                    if (keywordItem.Value >= 0x1000000000000UL)
                     {
                         continue;
                     }
