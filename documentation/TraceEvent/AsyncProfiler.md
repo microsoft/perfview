@@ -395,6 +395,13 @@ called reentrantly.
   completion was captured.
 - Historical parent contexts show where work was started, not the
   synchronous path in between.
+- Without method-completion events, V2 progress comes from the
+  continuation-wrapper position, which wraps every 32 slots and records a
+  reset each time. An exception that unwinds more than 32 frames at once
+  can cross two boundaries but records only one reset, so later samples
+  in that call stack can show already-unwound methods as callers. Such
+  deep unwinds are rare. A runtime fix to record one reset per crossed
+  boundary is planned; enable method-completion events to avoid the issue.
 
 ## Implementation map
 
