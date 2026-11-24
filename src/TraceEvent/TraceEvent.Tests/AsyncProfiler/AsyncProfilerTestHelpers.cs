@@ -24,6 +24,15 @@ namespace TraceEventTests
             Array.Copy(buffer, 0, payload, sizeof(int), buffer.Length);
             return payload;
         }
+
+        /// <summary>True once the TraceLog's deferred async-callstack index region has been read.</summary>
+        public static bool IsAsyncIndexLoaded(TraceLog log)
+        {
+            object region = typeof(TraceLog)
+                .GetField("lazyAsyncProfilerCallStacks", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .GetValue(log);
+            return (bool)region.GetType().GetProperty("IsFinished").GetValue(region);
+        }
     }
 
     /// <summary>

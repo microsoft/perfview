@@ -550,9 +550,7 @@ namespace TraceEventTests
                         {
                             Assert.Throws<InvalidOperationException>(() =>
                                 stitchedComputer.GenerateThreadTimeStacks(new MutableTraceEventStackSource(traceLog)));
-                            Assert.True(traceLog.IsAsyncProfilerCallStacksLoaded);
-                            Assert.True(traceLog.ReleaseAsyncProfilerCallStacks());
-                            Assert.False(traceLog.IsAsyncProfilerCallStacksLoaded);
+                            Assert.True(AsyncProfilerTestData.IsAsyncIndexLoaded(traceLog));
                         }
                         EmittedStack stitchedOutput = ReadSingleStack(stitchedStackSource);
                         Assert.Equal(Labels(ExpectedStitched), stitchedOutput.ScenarioFrames);
@@ -712,7 +710,7 @@ namespace TraceEventTests
                             Assert.Equal(
                                 expectedSegments.Length,
                                 new AsyncProfilerCallStackComputer(traceLog).GetCallStacks(ProcessId, OsThreadId, asyncProbeQpc).Count);
-                            Assert.True(traceLog.IsAsyncProfilerCallStacksLoaded);
+                            Assert.True(AsyncProfilerTestData.IsAsyncIndexLoaded(traceLog));
                         }
 
                         if (FilteredOut != null && FilteredOut.Length != 0)

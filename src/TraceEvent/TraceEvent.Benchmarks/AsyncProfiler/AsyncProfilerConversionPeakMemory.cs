@@ -14,7 +14,7 @@ namespace TraceEventBenchmarks
     /// Run with <c>dotnet run -c Release -f net10.0 --project TraceEvent.Benchmarks -- --async-profiler-peak-memory
     /// &lt;Realistic|High|Extreme&gt;</c>. The tool samples heap and process-memory peaks during one conversion (input
     /// generation excluded), then reports trace and ETLX size overheads against the no-profiler control and the managed
-    /// memory retained by the async index after load and after release, plus what the TraceLog retains after stitched stack
+    /// memory retained by the async index after load, plus what the TraceLog retains after stitched stack
     /// generation. Peaks are
     /// approximate, not allocation totals. Run each profile in a fresh process for comparable baselines.
     /// </remarks>
@@ -86,7 +86,7 @@ namespace TraceEventBenchmarks
             }
         }
 
-        // Uses TraceLogs owned by this tool, so releasing and reloading the index does not affect any benchmark state.
+        // Uses a TraceLog owned by this tool, so loading the index does not affect any benchmark state.
         private static void MeasureAsyncIndexMemory(AsyncProfilerEndToEndFixture fixture)
         {
             using (var traceLog = new TraceLog(fixture.EtlxPath))
@@ -100,8 +100,6 @@ namespace TraceEventBenchmarks
                 Console.WriteLine(
                     $"TraceLog retained memory after stitched stack generation (async index plus TraceLog caches): " +
                     $"managedHeapDelta={delta:N0} bytes ({delta / (double)fixture.ContextCount:F2}/context).");
-
-                ReportAsyncIndexMemoryAfterRelease(traceLog, fixture.ContextCount);
             }
         }
 
@@ -136,24 +134,6 @@ namespace TraceEventBenchmarks
                     $"(before load: privateBytes={privateBytesBefore:N0}, workingSet={workingSetBefore:N0}).");
                 return managedHeapBefore;
             }
-        }
-
-        private static void ReportAsyncIndexMemoryAfterRelease(TraceLog traceLog, int contextCount)
-        {
-            CollectGarbage();
-            long managedHeapBefore = GC.GetTotalMemory(forceFullCollection: false);
-
-            if (!traceLog.ReleaseAsyncProfilerCallStacks())
-            {
-                throw new InvalidOperationException("The async-callstack index was not loaded or reloadable.");
-            }
-
-            CollectGarbage();
-            long managedHeapAfter = GC.GetTotalMemory(forceFullCollection: false);
-            long reclaimed = managedHeapBefore - managedHeapAfter;
-            Console.WriteLine(
-                $"Async index memory after release: managedHeap={managedHeapBefore:N0}->{managedHeapAfter:N0} bytes, " +
-                $"reclaimed={reclaimed:N0} ({reclaimed / (double)contextCount:F2}/context).");
         }
 
         private static void CollectGarbage()

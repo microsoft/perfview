@@ -4364,7 +4364,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out truncated);
             firstTimeInversion = (EventIndex)(uint)deserializer.ReadInt();
 
-            lazyAsyncProfilerCallStacks.ReadReloadable(deserializer, delegate
+            lazyAsyncProfilerCallStacks.Read(deserializer, delegate
             {
                 bool present;
                 deserializer.Read(out present);
@@ -4384,7 +4384,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 eventsToStackUserModeTimes = ReadStackUserModeTimes(deserializer);
                 blockingEventsToStackUserModeTimes = ReadStackUserModeTimes(deserializer);
             });
-            // Lookups are unsynchronized and share the deserializer with the reloadable async index.
+            // Lookups are unsynchronized and share the deserializer with the lazily loaded async index.
             lazyStackUserModeTimes.FinishRead(preserveStreamPosition: true);
         }
         int IFastSerializableVersion.Version
@@ -4419,47 +4419,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
-        /// <summary>
-        /// Releases this TraceLog's reference to the loaded async-callstack index when it can be restored from
-        /// the ETLX deferred region. A later async query transparently loads a new index without replaying raw events.
-        /// </summary>
-        /// <remarks>
-        /// Already-returned call-stack objects, frame lists, and query results remain valid; retaining them may
-        /// retain some index data in memory. Code-address indices still belong to this TraceLog, which must remain
-        /// open for symbol and source lookup. This method does not release the TraceLog's code-address or symbol tables.
-        /// </remarks>
-        /// <returns>
-        /// True if a loaded ETLX-backed index was released; false if no index was loaded or it has no reloadable
-        /// deferred backing.
-        /// </returns>
-        internal bool ReleaseAsyncProfilerCallStacks()
-        {
-            lock (asyncProfilerCallStacksLock)
-            {
-                if (asyncProfilerCallStacks == null || !lazyAsyncProfilerCallStacks.CanReload)
-                {
-                    return false;
-                }
 
-                asyncProfilerCallStacks = null;
-                lazyAsyncProfilerCallStacks.ResetRead();
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// True when the deferred async-callstack index is currently materialized in memory.
-        /// </summary>
-        internal bool IsAsyncProfilerCallStacksLoaded
-        {
-            get
-            {
-                lock (asyncProfilerCallStacksLock)
-                {
-                    return asyncProfilerCallStacks != null;
-                }
-            }
-        }
 
         // headerSize is the size we persist of TraceEventNativeMethods.EVENT_RECORD which is up to and
         // including the UserDataLength field (after this field the fields are architecture dependent in

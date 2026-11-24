@@ -218,7 +218,7 @@ namespace TraceEventTests
             {
                 TraceLog log = trace.Log;
                 Assert.True(log.HasAsyncProfilerEvents);
-                Assert.False(log.IsAsyncProfilerCallStacksLoaded);
+                Assert.False(AsyncProfilerTestData.IsAsyncIndexLoaded(log));
                 Assert.Single(log.Events.Where(e => e.ProviderName == "TimelineAnchor"));
                 Assert.DoesNotContain(log.Threads, t => (ulong)t.ThreadID == GhostThread);
                 SpeedScopeStackSourceWriter.WriteAsyncCallStacksAsJson(log, trace.Output);
@@ -330,15 +330,11 @@ namespace TraceEventTests
         }
 
         [Fact]
-        public void PersistedIndex_ExportReloadsReleasedIndexAndFiltersByProcess()
+        public void PersistedIndex_ExportFiltersByProcess()
         {
             using (var trace = new ExportTrace())
             {
                 TraceLog log = trace.Log;
-                SpeedScopeStackSourceWriter.WriteAsyncCallStacksAsJson(log, trace.Output);
-                Assert.True(log.ReleaseAsyncProfilerCallStacks());
-                Assert.False(log.IsAsyncProfilerCallStacksLoaded);
-
                 SpeedScopeStackSourceWriter.WriteAsyncCallStacksAsJson(log, trace.Output, OtherProcess);
                 using (JsonDocument json = trace.ReadJson())
                 {

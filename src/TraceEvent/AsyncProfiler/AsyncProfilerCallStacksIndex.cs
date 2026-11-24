@@ -42,7 +42,6 @@ namespace Microsoft.Diagnostics.Tracing.Computers
     /// A call stack is active from its start time up to, but not including, its end time.
     /// Public query results are not overwritten by later queries. Internal queries can reuse objects.
     /// Frame indices belong to this index; code-address indices belong to its TraceLog.
-    /// Retained results can keep index data alive after <see cref="TraceLog.ReleaseAsyncProfilerCallStacks"/>.
     /// Seeing completion events does not mean every completion or unwind was captured.
     /// </remarks>
     internal sealed class AsyncProfilerCallStacksIndex : IFastSerializable

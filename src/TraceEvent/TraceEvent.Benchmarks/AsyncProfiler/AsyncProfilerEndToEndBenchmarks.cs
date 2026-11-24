@@ -49,7 +49,6 @@ namespace TraceEventBenchmarks
         {
             nameof(GenerateCpuStacksWithAsyncIndex),
             nameof(GenerateStitchedCpuStacks),
-            nameof(ReloadReleasedAsyncIndex),
         })]
         public void SetupStacks()
         {
@@ -117,17 +116,6 @@ namespace TraceEventBenchmarks
         public int GenerateStitchedCpuStacks()
         {
             return AsyncProfilerEndToEndFixture.GenerateCpuStacks(_traceLog, _symbolReader, enableAsyncCallStacks: true);
-        }
-
-        /// <summary>Releases and reloads the deferred index on an already-open log, without generating stacks.</summary>
-        [Benchmark]
-        public int ReloadReleasedAsyncIndex()
-        {
-            if (!_traceLog.ReleaseAsyncProfilerCallStacks())
-            {
-                throw new InvalidOperationException("The async-callstack index was not loaded or reloadable.");
-            }
-            return _traceLog.AsyncProfilerCallStacks.DistinctFramesCount;
         }
 
         #region private

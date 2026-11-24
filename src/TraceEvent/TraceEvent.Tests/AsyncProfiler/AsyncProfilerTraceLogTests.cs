@@ -98,7 +98,7 @@ namespace TraceEventTests
                 using (var traceLog = new TraceLog(etlxPath))
                 {
                     Assert.True(traceLog.HasAsyncProfilerEvents);
-                    Assert.False(traceLog.IsAsyncProfilerCallStacksLoaded);
+                    Assert.False(AsyncProfilerTestData.IsAsyncIndexLoaded(traceLog));
                     AssertRawEventCount(traceLog, keepRawEvents ? 1 : 0);
                     Assert.Equal(StartQpc + 20,
                         Assert.Single(new AsyncProfilerCallStackComputer(traceLog).GetCallStacks(ProcessId, (ulong)OsThreadId, StartQpc + 15)).EndQpc);
@@ -107,8 +107,6 @@ namespace TraceEventTests
                     AsyncProfilerCallStack recovered = Assert.Single(new AsyncProfilerCallStackComputer(traceLog).GetCallStacks(ProcessId, (ulong)OsThreadId, StartQpc + 45));
                     Assert.Equal(0xBUL, recovered.Frames.InstructionPointerAt(0));
                     Assert.Equal(long.MaxValue, recovered.EndQpc);
-                    Assert.True(traceLog.ReleaseAsyncProfilerCallStacks());
-                    Assert.Empty(new AsyncProfilerCallStackComputer(traceLog).GetCallStacks(ProcessId, (ulong)OsThreadId, StartQpc + 35));
                 }
             }
             finally
@@ -244,8 +242,6 @@ namespace TraceEventTests
                 {
                     AssertRawEventCount(traceLog, keepRawEvents ? 8 : 0);
                     AssertCoverage(traceLog);
-                    Assert.True(traceLog.ReleaseAsyncProfilerCallStacks());
-                    AssertCoverage(traceLog);
                 }
             }
             finally
@@ -271,7 +267,7 @@ namespace TraceEventTests
             {
                 TraceLog traceLog = trace.Log;
                 Assert.True(traceLog.HasAsyncProfilerEvents);
-                Assert.False(traceLog.IsAsyncProfilerCallStacksLoaded);
+                Assert.False(AsyncProfilerTestData.IsAsyncIndexLoaded(traceLog));
 
                 var sampleComputer = new SampleProfilerThreadTimeComputer(traceLog, symbols)
                 {
@@ -281,11 +277,7 @@ namespace TraceEventTests
                 Assert.False(sampleComputer.AsyncCallStacksActive);
                 sampleComputer.GenerateThreadTimeStacks(new MutableTraceEventStackSource(traceLog));
                 Assert.Equal(enableAsyncCallStacks, sampleComputer.AsyncCallStacksActive);
-                Assert.Equal(enableAsyncCallStacks, traceLog.IsAsyncProfilerCallStacksLoaded);
-                if (enableAsyncCallStacks)
-                {
-                    Assert.True(traceLog.ReleaseAsyncProfilerCallStacks());
-                }
+                Assert.Equal(enableAsyncCallStacks, AsyncProfilerTestData.IsAsyncIndexLoaded(traceLog));
 
 #pragma warning disable CS0618 // ThreadTimeStackComputer is marked experimental; this verifies it honors the async option.
                 var threadTimeComputer = new ThreadTimeStackComputer(traceLog, symbols)
@@ -297,7 +289,7 @@ namespace TraceEventTests
                 Assert.False(threadTimeComputer.AsyncCallStacksActive);
                 threadTimeComputer.GenerateThreadTimeStacks(new MutableTraceEventStackSource(traceLog));
                 Assert.Equal(enableAsyncCallStacks, threadTimeComputer.AsyncCallStacksActive);
-                Assert.Equal(enableAsyncCallStacks, traceLog.IsAsyncProfilerCallStacksLoaded);
+                Assert.Equal(enableAsyncCallStacks, AsyncProfilerTestData.IsAsyncIndexLoaded(traceLog));
             }
         }
 
@@ -395,39 +387,16 @@ namespace TraceEventTests
         }
 
         [Fact]
-        public void Release_PreservesReturnedCallStacksAndReloadsSafelyUnderConcurrency()
+        public void ConcurrentFirstQueries_LoadIndexSafely()
         {
             using (var trace = new RoundTripTrace())
             {
                 TraceLog traceLog = trace.Log;
-                AsyncProfilerCallStack retainedOuter = trace.GetCallStacks(RoundTripTrace.OsThreadId, RoundTripTrace.SampleQpc)[1];
+                Assert.False(AsyncProfilerTestData.IsAsyncIndexLoaded(traceLog));
 
-                // Releasing the materialized index preserves already-returned immutable objects and makes the
-                // next public query transparently deserialize a fresh index from the deferred ETLX region.
-                Assert.True(traceLog.IsAsyncProfilerCallStacksLoaded);
-                Assert.True(traceLog.ReleaseAsyncProfilerCallStacks());
-                Assert.False(traceLog.IsAsyncProfilerCallStacksLoaded);
-                Assert.Equal(new ulong[] { 0xA, 0xB }, MethodIds(retainedOuter.Frames));
-
-                IReadOnlyList<AsyncProfilerCallStack> reloaded = trace.GetCallStacks(RoundTripTrace.OsThreadId, RoundTripTrace.SampleQpc);
-                Assert.Equal(2, reloaded.Count);
-                Assert.NotSame(retainedOuter, reloaded[1]);
-                Assert.True(traceLog.IsAsyncProfilerCallStacksLoaded);
-
-                // Release and reload are synchronized. A query that obtained the old index can finish while
-                // another caller releases it, and later callers load a complete replacement.
                 Parallel.For(0, 64, i =>
-                {
-                    if ((i & 3) == 0)
-                    {
-                        traceLog.ReleaseAsyncProfilerCallStacks();
-                    }
-                    else
-                    {
-                        Assert.Equal(2, trace.GetCallStacks(RoundTripTrace.OsThreadId, RoundTripTrace.SampleQpc).Count);
-                    }
-                });
-                Assert.Equal(2, trace.GetCallStacks(RoundTripTrace.OsThreadId, RoundTripTrace.SampleQpc).Count);
+                    Assert.Equal(2, trace.GetCallStacks(RoundTripTrace.OsThreadId, RoundTripTrace.SampleQpc).Count));
+                Assert.True(AsyncProfilerTestData.IsAsyncIndexLoaded(traceLog));
             }
         }
 
@@ -436,7 +405,7 @@ namespace TraceEventTests
         {
             using (var trace = new RoundTripTrace())
             {
-                // The region shares the TraceLog deserializer with the reloadable async index, so it must not be
+                // The region shares the TraceLog deserializer with the lazily loaded async index, so it must not be
                 // deserialized lazily from concurrent lookups.
                 object region = typeof(TraceLog)
                     .GetField("lazyStackUserModeTimes", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
@@ -453,7 +422,7 @@ namespace TraceEventTests
             using (var trace = new RoundTripTrace(keepRawEvents))
             {
                 Assert.True(trace.Log.HasAsyncProfilerEvents);
-                Assert.False(trace.Log.IsAsyncProfilerCallStacksLoaded);
+                Assert.False(AsyncProfilerTestData.IsAsyncIndexLoaded(trace.Log));
 
                 // By default the persisted index supersedes the raw AsyncEvents records.
                 AssertRawEventCount(trace.Log, keepRawEvents ? 2 : 0);
