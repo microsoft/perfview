@@ -21,14 +21,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     public enum ManifestGenerationOptions
     {
         /// <summary>
-        /// The manifest as TDH describes the provider.
+        /// The basic manifest, sufficient for most providers.
         /// </summary>
         None = 0,
         /// <summary>
-        /// Also include the provider's Event Log channels. Reading them from the Event Log service costs about a
-        /// millisecond per provider.
+        /// Also include the provider's Event Log channels, which are read from the Event Log service.
         /// </summary>
         IncludeChannels = 1,
+        /// <summary>
+        /// The most complete manifest, which is slower to generate.
+        /// </summary>
+        IncludeAll = ~0,
     }
 
     /// <summary>

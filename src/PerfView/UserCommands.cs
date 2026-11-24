@@ -654,7 +654,7 @@ namespace PerfViewExtensibility
             if (outputFileName == null)
                 outputFileName = providerName + ".manifest.xml";
 
-            var str = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName, ManifestGenerationOptions.IncludeChannels);
+            var str = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName, ManifestGenerationOptions.IncludeAll);
             LogFile.WriteLine("[Output written to {0}]", outputFileName);
             File.WriteAllText(outputFileName, str);
         }
