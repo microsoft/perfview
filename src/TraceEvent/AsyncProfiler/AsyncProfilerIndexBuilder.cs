@@ -296,7 +296,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             }
 
             AsyncCallstackKind kind = e.IsStateMachine ? AsyncCallstackKind.StateMachineAsync : AsyncCallstackKind.RuntimeAsync;
-            _index.MarkMethodCompletionObserved(_currentProcessIndex, kind, e.TimestampQpc);
+            _index.MarkMethodCompletionObserved(_currentProcessIndex, kind, state.ConfigurationQpc);
             state.Top?.MethodCompletions.Add(new AsyncProfilerCallStack.CompletionDelta(e.TimestampQpc, 1));
         }
 
@@ -310,7 +310,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             }
 
             AsyncCallstackKind kind = e.IsStateMachine ? AsyncCallstackKind.StateMachineAsync : AsyncCallstackKind.RuntimeAsync;
-            _index.MarkExceptionCompletionObserved(_currentProcessIndex, kind, e.TimestampQpc);
+            _index.MarkExceptionCompletionObserved(_currentProcessIndex, kind, state.ConfigurationQpc);
             if (e.UnwoundFrameCount > 0)
             {
                 var completion = new AsyncProfilerCallStack.CompletionDelta(e.TimestampQpc, (int)e.UnwoundFrameCount);
@@ -338,6 +338,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             }
 
             state.Armed = true;
+            state.ResetQpc = e.TimestampQpc;
             state.ClearNesting();
         }
 
@@ -602,8 +603,18 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             /// <summary>True after a valid reset, until a decode error invalidates the thread.</summary>
             public bool Armed;
 
+            /// <summary>The timestamp of the thread's last valid reset, when it adopted its current configuration.</summary>
+            public long ResetQpc;
+
             /// <summary>The current call stack, or null when the thread has none.</summary>
             public CallStackBuilder Top => _nesting.Count > 0 ? _nesting[_nesting.Count - 1] : null;
+
+            /// <summary>
+            /// The timestamp that selects the configuration epoch for completion events: the current call stack's
+            /// start, or the last reset when none is open. Consumers look up a call stack's epoch by its start,
+            /// so a later metadata event from another thread must not redirect this thread's observations.
+            /// </summary>
+            public long ConfigurationQpc => Top?.StartQpc ?? ResetQpc;
 
             /// <summary>Makes a call stack current and sets its nesting depth.</summary>
             public void Push(CallStackBuilder builder)

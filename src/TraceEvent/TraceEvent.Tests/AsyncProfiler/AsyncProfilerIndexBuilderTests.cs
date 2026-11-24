@@ -1189,6 +1189,32 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void CompletionObserved_FollowsCallStackEpochWhenAnotherThreadStartsNewEpoch()
+        {
+            var computer = new AsyncProfilerIndexBuilder();
+            Process(computer, ProcessA, new AsyncProfilerBufferBuilder(ThreadA, startQpc: Start)
+                .Metadata(Start, qpcFrequency: 10_000_000, qpcSync: 1, utcSync: 1,
+                    eventBufferSize: 0, wrapperCount: 32, new AsyncManifestEntry[0])
+                .Reset(Start)
+                .ResumeRuntimeStack(Start + 10, dispatcher: 1, new ulong[] { 0xA, 0xB, 0xC }));
+            Process(computer, ProcessA, new AsyncProfilerBufferBuilder(ThreadB, startQpc: Start + 20)
+                .Metadata(Start + 20, qpcFrequency: 10_000_000, qpcSync: 1, utcSync: 1,
+                    eventBufferSize: 0, wrapperCount: 32, new AsyncManifestEntry[0])
+                .Reset(Start + 20));
+            Process(computer, ProcessA, new AsyncProfilerBufferBuilder(ThreadA, startQpc: Start + 30)
+                .CompleteRuntimeMethod(Start + 30)
+                .UnwindRuntimeException(Start + 31, frames: 1)
+                .SuspendRuntime(Start + 40));
+            computer.Finish();
+
+            AsyncProfilerCallStack callStack = Assert.Single(computer.GetCallStacks(Key(ProcessA, ThreadA), Start + 35));
+            Assert.Equal(2, callStack.GetCompletedFrameCount(Start + 35));
+            Assert.True(computer.Index.MethodCompletionObserved(callStack));
+            Assert.True(computer.Index.ExceptionCompletionObserved(callStack));
+            Assert.False(computer.Index.MethodCompletionObserved(ProcessA, AsyncCallstackKind.RuntimeAsync, Start + 25));
+        }
+
+        [Fact]
         public void BorrowedQueries_DoNotPopulateCompletionObservationsOrOverwriteStableResults()
         {
             var computer = Compute(new AsyncProfilerBufferBuilder(ThreadA)
