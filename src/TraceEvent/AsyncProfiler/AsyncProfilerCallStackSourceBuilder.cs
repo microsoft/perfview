@@ -15,7 +15,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
     /// Reuse this builder with inputs from the output's TraceLog. Keep that log open while building stacks or resolving frames.
     /// Returned indices belong to the output and stay valid as more stacks are added.
     /// No samples are added or timestamps or weights assigned. No finalization is needed to inspect stacks.
-    /// Stop building before finalizing the output. Access must not be concurrent or reentrant, including in callbacks.
+    /// Stop building before finalizing the output. Access must not be concurrent or reentrant.
     /// The builder does not own or dispose the TraceLog.
     /// </remarks>
     public sealed class AsyncProfilerCallStackSourceBuilder
@@ -38,7 +38,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             m_core = AsyncProfilerCallStackSourceBuilderCore.TryCreate(m_log, output, pipeline, null);
         }
 
-        /// <summary>Presentation settings and custom transforms. Configure before producing stacks.</summary>
+        /// <summary>Presentation settings. Configure before producing stacks.</summary>
         public AsyncCallStackTransforms Transforms { get; }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         /// For event stacks, use <see cref="TraceLogExtensions.TryGetCallStackIndex"/> to obtain it when user frames may have been borrowed.</param>
         /// <param name="root">A grouping stack in the output, or Invalid for normal thread/process grouping.</param>
         /// <remarks>
-        /// Missing or empty async call stacks use normal physical-stack conversion without custom transforms.
+        /// Missing or empty async call stacks use normal physical-stack conversion.
         /// Indices do not identify their owner; range checks cannot detect an index from another TraceLog or output.
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">A non-Invalid physical stack or root is outside its table's range.</exception>

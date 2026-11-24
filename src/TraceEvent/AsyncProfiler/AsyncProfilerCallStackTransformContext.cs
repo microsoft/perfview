@@ -24,7 +24,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
     /// Editing <see cref="Frames"/> changes presentation only, not the recorded async data.
     /// </para>
     /// </remarks>
-    public sealed class AsyncProfilerCallStackTransformContext
+    internal sealed class AsyncProfilerCallStackTransformContext
     {
         /// <summary>The trace containing the frame identities.</summary>
         public TraceLog TraceLog => m_state.TraceLog;

@@ -12,7 +12,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
     /// </summary>
     /// <remarks>
     /// Obtain this object from AsyncProfilerCallStackSourceBuilder.Transforms or a stack computer's
-    /// AsyncCallStackTransforms property; it has no public constructor. Settings and callbacks are not
+    /// AsyncCallStackTransforms property; it has no public constructor. Settings are not
     /// thread-safe and must not be modified during stack production.
     /// </remarks>
     public sealed class AsyncCallStackTransforms
@@ -88,7 +88,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         /// context-transition markers, and grouping roots follow them. Callback exceptions propagate to the caller.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="transform"/> is null.</exception>
-        public void AddCustomTransform(Action<AsyncProfilerCallStackTransformContext> transform)
+        internal void AddCustomTransform(Action<AsyncProfilerCallStackTransformContext> transform)
         {
             if (transform == null)
             {
@@ -100,7 +100,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         }
 
         /// <summary>Removes custom callbacks without changing built-in settings.</summary>
-        public void ClearCustomTransforms() => m_pipeline.ClearCustomTransforms();
+        internal void ClearCustomTransforms() => m_pipeline.ClearCustomTransforms();
 
         #region private
 

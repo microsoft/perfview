@@ -251,8 +251,7 @@ source's frame metadata, even when two frames display the same name.
 3. Normalization of known runtime patterns (startup, reentrant dispatch,
    handoff, completion return), if enabled.
 4. Infrastructure cleanup, if enabled.
-5. Custom transforms, in registration order.
-6. Output: frame names, annotations, and the host's grouping roots.
+5. Output: frame names, annotations, and the host's grouping roots.
 
 **Settings** (`AsyncCallStackTransforms`):
 
@@ -277,11 +276,10 @@ exception-unwind events are available, the parent's frames are adjusted
 to the time the child was created; otherwise its recorded call stack is
 shown as is. Missing relationships are not inferred.
 
-**Custom transforms** receive a callback context that is reused between
-calls. Do not keep references to it, its call stacks, or its frames after
-the callback returns. A transform can reorder, remove, or add display-only
-frames, but it cannot mark a frame as physically executing. Exceptions
-from a transform propagate to the caller.
+**Other filtering**, such as Just My Code or hiding framework modules, is
+not part of these steps. Wrap the stack source returned by the computer in
+a `FilterStackSource` and use its fold, group, include, and exclude
+patterns, the same way as for any other stack source.
 
 ## Runtime-specific rules
 
@@ -417,12 +415,12 @@ reconstruction types use `Microsoft.Diagnostics.Tracing.Computers`.
 | Index storage and time queries | `AsyncProfilerCallStacksIndex.cs` |
 | Conversion, symbol binding, and ETLX storage | `src\TraceEvent\TraceLog.cs` |
 | Public queries | `AsyncProfilerCallStackComputer.cs` |
-| Public stack building and callback context | `AsyncProfilerCallStackSourceBuilder.cs`, `AsyncProfilerCallStackTransformContext.cs` |
+| Public stack building | `AsyncProfilerCallStackSourceBuilder.cs` |
 | Stitching and join points | `AsyncProfilerCallStackStitcher.cs`, `AsyncProfilerCallStackStitchingState.cs`, `AsyncProfilerStitchedFrame.cs`, `AsyncProfilerStitchResult.cs`, `AsyncProfilerCallStackStitchBoundary.cs` |
 | Method-name normalization | `AsyncProfilerMethodNames.cs` |
 | Runtime-specific rules | `AsyncProfilerRuntimeNames.cs`, `AsyncProfilerRuntimeSupport.cs`, `AsyncProfilerRuntimeResolver.cs`, `AsyncProfilerRuntimeSequenceMatch.cs` |
 | Historical parent contexts | `AsyncProfilerParentContextBuilder.cs` |
-| Presentation settings and transforms | `AsyncCallStackTransforms.cs`, `AsyncProfilerCallStackTransformPipeline.cs`, `AsyncProfiler*TransformPass.cs`, `AsyncProfilerCallStackTransformHelpers.cs` |
+| Presentation settings and transforms | `AsyncCallStackTransforms.cs`, `AsyncProfilerCallStackTransformPipeline.cs`, `AsyncProfiler*TransformPass.cs`, `AsyncProfilerCallStackTransformHelpers.cs`, `AsyncProfilerCallStackTransformContext.cs` |
 | Stack-source output and frame metadata | `AsyncProfilerCallStackSourceBuilderCore.cs`, `AsyncProfilerCallStackDiagnostics.cs`, `src\TraceEvent\TraceEventStacks.cs` |
 | Speedscope export | `src\TraceEvent\Stacks\SpeedScopeStackSourceWriter.cs` |
 | Thread-time computers | `src\TraceEvent\Computers\SampleProfilerThreadTimeComputer.cs`, `src\TraceEvent\Computers\ThreadTimeComputer.cs` |

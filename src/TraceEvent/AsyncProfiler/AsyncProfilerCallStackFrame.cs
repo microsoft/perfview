@@ -7,18 +7,15 @@ using Microsoft.Diagnostics.Tracing.Parsers.AsyncProfiler;
 
 namespace Microsoft.Diagnostics.Tracing.Computers
 {
-    /// <summary>A captured or reconstructed stack frame, or a synthetic display label.</summary>
+    /// <summary>A captured or reconstructed stack frame.</summary>
     /// <remarks>
     /// Code addresses belong to the originating TraceLog. Frames from query results can be retained.
-    /// Frames and call stack references supplied to transform callbacks are valid only during the callback;
-    /// copying a frame does not extend that lifetime.
-    /// A default value has no identity or label and cannot be inserted into a transform.
     /// </remarks>
     public readonly struct AsyncProfilerCallStackFrame
     {
         /// <summary>Creates a synthetic display label with no physical or captured async identity.</summary>
         /// <exception cref="ArgumentException"><paramref name="displayName"/> is null or empty.</exception>
-        public AsyncProfilerCallStackFrame(string displayName)
+        internal AsyncProfilerCallStackFrame(string displayName)
         {
             if (string.IsNullOrEmpty(displayName))
             {
@@ -54,32 +51,32 @@ namespace Microsoft.Diagnostics.Tracing.Computers
 
         /// <summary>The async call stack associated with this frame, or null.
         /// For historical parent frames, this is the parent's call stack, which may not appear in the callback's segments list.</summary>
-        public AsyncProfilerCallStack CallStack => m_frame.Context;
+        internal AsyncProfilerCallStack CallStack => m_frame.Context;
 
         /// <summary>True when the frame represents physically sampled execution, rather than a logical or synthetic frame.</summary>
-        public bool IsPhysical => m_initialized &&
+        internal bool IsPhysical => m_initialized &&
             (m_frame.Origin == AsyncProfilerStitchedFrameOrigin.Sync ||
              (m_frame.Origin == AsyncProfilerStitchedFrameOrigin.AsyncCurrent && !m_frame.IsStateMachineBoxCarrier) ||
              m_frame.Origin == AsyncProfilerStitchedFrameOrigin.V1CompletedBody);
 
         /// <summary>True for the physically matched current async method. Dispatch targets are excluded.</summary>
-        public bool IsCurrent => m_frame.Origin == AsyncProfilerStitchedFrameOrigin.AsyncCurrent;
+        internal bool IsCurrent => m_frame.Origin == AsyncProfilerStitchedFrameOrigin.AsyncCurrent;
 
         /// <summary>True for a historical parent frame linked through the child call stack's creation.
         /// This is not a stack captured at child creation or evidence of execution at sample time.</summary>
-        public bool IsParentContext => m_frame.ContextKind == AsyncProfilerStitchedFrameContextKind.ParentContext;
+        internal bool IsParentContext => m_frame.ContextKind == AsyncProfilerStitchedFrameContextKind.ParentContext;
 
         /// <summary>True for the logical parent frame identified as current at child creation.
         /// This does not prove physical execution or change the captured state or instruction pointer.</summary>
-        public bool IsParentContextCurrent => m_frame.Origin == AsyncProfilerStitchedFrameOrigin.AsyncContextParentCurrent;
+        internal bool IsParentContextCurrent => m_frame.Origin == AsyncProfilerStitchedFrameOrigin.AsyncContextParentCurrent;
 
         /// <summary>True when this frame identifies an async resumption target without a physically matched method body.
         /// For example, ReadAsync can be identified as the target while a sample catches runtime dispatch code.</summary>
-        public bool IsDispatchTarget => m_frame.Origin == AsyncProfilerStitchedFrameOrigin.AsyncDispatchTarget;
+        internal bool IsDispatchTarget => m_frame.Origin == AsyncProfilerStitchedFrameOrigin.AsyncDispatchTarget;
 
         /// <summary>The synthetic frame's label, or null for captured or reconstructed frames.
         /// This is not a resolved method name or the final formatted stack-source name.</summary>
-        public string DisplayName => m_frame.DisplayName;
+        internal string DisplayName => m_frame.DisplayName;
 
         #region private
 

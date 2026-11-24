@@ -26,7 +26,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         /// <summary>
         /// Returns async call stacks covering <paramref name="timestampQpc"/>, ordered leaf-to-root.
         /// Captured frames are leaf-to-root; completion progress and presentation transforms are not applied.
-        /// Results remain valid across later queries and index release.
+        /// Results remain valid across later queries.
         /// </summary>
         /// <param name="processId">The OS process ID, not a TraceLog ProcessIndex.
         /// ID reuse is resolved at <paramref name="timestampQpc"/>.</param>

@@ -16,8 +16,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
     /// </summary>
     /// <remarks>
     /// Obtain instances from <see cref="AsyncProfilerCallStackComputer"/>.
-    /// Query results and captured-frame views remain valid across later queries and index release.
-    /// Instances and frames supplied to transform callbacks are valid only during the callback.
+    /// Query results and captured-frame views remain valid across later queries.
     /// Keep the originating TraceLog open while resolving code addresses.
     /// </remarks>
     public sealed class AsyncProfilerCallStack
