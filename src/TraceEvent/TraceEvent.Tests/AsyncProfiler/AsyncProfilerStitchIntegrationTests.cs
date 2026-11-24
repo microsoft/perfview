@@ -987,6 +987,43 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void NestedRuntimeAsync_ReentrantHandoff_UnclassifiedCoreLibFrame_IsPreserved()
+        {
+            Frame inner = Frame.App("Scenario.InnerAsync");
+            Frame outer = Frame.App("Scenario.OuterAsync");
+            Frame forEach = Frame.CoreLib("System.Collections.Generic.List`1.ForEach", "List.ForEach");
+            Frame[] bridge =
+            {
+                Frame.CoreLib("System.Threading.Tasks.Task.RunContinuations", "Task.RunContinuations"),
+                Frame.CoreLib("System.Threading.Tasks.Task.TrySetResult", "Task.TrySetResult"),
+                Frame.CoreLib("System.Threading.Tasks.TaskCompletionSource`1.SetResult", "TaskCompletionSource.SetResult"),
+                forEach,
+            };
+            Frame[] root = { Frame.ThreadPoolDispatch, Frame.WorkerThreadStart };
+            var scenario = new StitchScenario
+            {
+                Sync = new[] { inner, Frame.V2Wrapper(0), Frame.V2InstrumentedDispatch, Frame.V2Dispatch }
+                    .Concat(bridge)
+                    .Concat(new[] { outer, Frame.V2Wrapper(0), Frame.V2InstrumentedDispatch, Frame.V2Dispatch })
+                    .Concat(root).ToArray(),
+                AsyncSegments = new[] { AsyncSegment.Runtime(outer), AsyncSegment.Runtime(inner) },
+                ExpectedStitched = new[] { inner, forEach, outer }.Concat(root).ToArray(),
+                ExpectedWithoutNormalization = new[] { inner }.Concat(bridge).Concat(new[] { outer }).Concat(root).ToArray(),
+                EnableFrameAnnotations = true,
+                VerifySampleWeights = true,
+                ExpectedDiagnostics = new CallStackDiagnosticsExpectation
+                {
+                    SegmentsProcessed = 4,
+                    V2InfrastructureFramesCollapsed = 8,
+                    AsyncReentrantHandoffFramesCollapsed = 6,
+                    V2ReentrantHandoffFramesCollapsed = 6,
+                },
+            };
+
+            scenario.AssertProductionStitch();
+        }
+
+        [Fact]
         public void NestedRuntimeAsync_ReentrantHandoff_TruncatedOuterBoundary_PreservesTheBridge()
         {
             Frame innerWork = Frame.App("Scenario.InnerWork");

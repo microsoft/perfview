@@ -16,8 +16,9 @@ namespace Microsoft.Diagnostics.Tracing.Computers
     /// <remarks>
     /// Supports V1 and V2. The enclosing method must be physically running; the nested
     /// call stack must have a verified running method or dispatch target.
-    /// Only removes physical frames from the enclosing call stack that resolve to one
-    /// runtime. Logical frames and captured states remain unchanged.
+    /// Only removes physical frames from the enclosing call stack that resolve to one runtime.
+    /// Removal starts next to the nested call stack and stops at the first unclassified frame.
+    /// Logical frames and captured states remain unchanged.
     /// </remarks>
     internal sealed class AsyncProfilerReentrantHandoffTransformPass
     {
@@ -67,25 +68,50 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                 AsyncProfilerCallStack nestedCallStack = frames[handoffStart - 1].Context;
                 bool hasDirectNestedCallStack = nestedCallStack != null && nestedCallStack.Depth == enclosingCurrent.Context.Depth + 1;
                 bool hasVerifiedNestedAnchor = hasDirectNestedCallStack && HasVerifiedAsyncAnchor(context, handoffStart - 1, nestedCallStack);
-                bool canRemoveHandoff = hasVerifiedNestedAnchor && IsResolvedRuntimeSpan(context, frames, handoffStart, handoffFrameCount);
-                if (!canRemoveHandoff)
+                bool canVerifySpan = hasVerifiedNestedAnchor && IsResolvedRuntimeSpan(context, frames, handoffStart, handoffFrameCount);
+                int helperCount = canVerifySpan ? CountLeafwardHelpers(context, frames, handoffStart, handoffFrameCount) : 0;
+                if (helperCount == 0)
                 {
                     continue;
                 }
 
-                frames.RemoveRange(handoffStart, handoffFrameCount);
-                context.Diagnostics.AsyncReentrantHandoffFramesCollapsed += handoffFrameCount;
+                frames.RemoveRange(handoffStart, helperCount);
+                context.Diagnostics.AsyncReentrantHandoffFramesCollapsed += helperCount;
                 bool isV2ToV2Handoff =
                     nestedCallStack.Frames.Kind == AsyncCallstackKind.RuntimeAsync &&
                     enclosingCurrent.Context.Frames.Kind == AsyncCallstackKind.RuntimeAsync;
                 if (isV2ToV2Handoff)
                 {
-                    context.Diagnostics.V2ReentrantHandoffFramesCollapsed += handoffFrameCount;
+                    context.Diagnostics.V2ReentrantHandoffFramesCollapsed += helperCount;
                 }
 
-                // The enclosing method moved to handoffStart; resume with the following frame.
-                currentIndex = handoffStart;
+                // The enclosing method moved leaf-ward by the removed count; resume with the following frame.
+                currentIndex -= helperCount;
             }
+        }
+
+        // Counts classified helpers starting next to the nested call stack. Stops at the first
+        // unclassified frame (for example List<T>.ForEach or a timer callback), which is the
+        // code that completed the nested work and stays visible together with everything root-ward of it.
+        private static int CountLeafwardHelpers(AsyncProfilerCallStackTransformState context,
+            List<AsyncProfilerStitchedFrame> frames, int start, int count)
+        {
+            int helperCount = 0;
+            while (helperCount < count)
+            {
+                AsyncProfilerStitchedFrame frame = frames[start + helperCount];
+                bool isRecognizedHelper =
+                    frame.SyncClassification.IsRecognized ||
+                    context.ClassifyBoundary(frame.CodeAddress).Kind != AsyncProfilerCallStackStitchBoundaryKind.None;
+                if (!isRecognizedHelper)
+                {
+                    break;
+                }
+
+                helperCount++;
+            }
+
+            return helperCount;
         }
     }
 }

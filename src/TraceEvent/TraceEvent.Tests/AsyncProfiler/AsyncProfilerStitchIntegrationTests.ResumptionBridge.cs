@@ -1255,13 +1255,13 @@ namespace TraceEventTests
             scenario.Sync = scenario.Sync.Take(scenario.Sync.Length - 2).Concat(outer).ToArray();
             scenario.ExpectedWithoutNormalization = innerLogical.Concat(tail.Take(5))
                 .Concat(new[] { outerCurrent, outerParent, Frame.ThreadPoolDispatch, Frame.WorkerThreadStart }).ToArray();
-            scenario.ExpectedStitched = innerLogical
+            scenario.ExpectedStitched = innerLogical.Concat(tail.Skip(3).Take(2))
                 .Concat(new[] { outerCurrent, outerParent, Frame.ThreadPoolDispatch, Frame.WorkerThreadStart }).ToArray();
             scenario.ExpectedWithoutInfrastructureCleanup = scenario.ExpectedStitched;
             scenario.ExpectedDiagnostics.SegmentsProcessed = 4;
             scenario.ExpectedDiagnostics.V2InfrastructureFramesCollapsed = 4;
             scenario.ExpectedDiagnostics.AsyncInfrastructureFramesCollapsed = 0;
-            scenario.ExpectedDiagnostics.AsyncReentrantHandoffFramesCollapsed = 10;
+            scenario.ExpectedDiagnostics.AsyncReentrantHandoffFramesCollapsed = 6;
             scenario.ExpectedDiagnostics.RuntimeResumptionBridgeFramesCollapsed = 0;
 
             scenario.AssertProductionStitch();
