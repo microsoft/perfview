@@ -49,14 +49,14 @@ namespace TraceEventTests
         public void MaximumParentContextDepth_MustBePositive(int depth)
         {
             var pipeline = new AsyncProfilerCallStackTransformPipeline();
-            var transforms = new AsyncCallStackTransforms(pipeline)
+            var transforms = new AsyncProfilerCallStackTransforms(pipeline)
             {
                 MaximumParentContextDepth = 3,
             };
 
             ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(
                 () => transforms.MaximumParentContextDepth = depth);
-            Assert.Equal(nameof(AsyncCallStackTransforms.MaximumParentContextDepth), exception.ParamName);
+            Assert.Equal(nameof(AsyncProfilerCallStackTransforms.MaximumParentContextDepth), exception.ParamName);
             Assert.Equal(3, transforms.MaximumParentContextDepth);
         }
 
@@ -451,7 +451,7 @@ namespace TraceEventTests
         public void PublicCallbacks_FrameSearchAndRemovalDoNotAllocateAfterWarmup()
         {
             var pipeline = new AsyncProfilerCallStackTransformPipeline { EnableNormalization = false };
-            var transforms = new AsyncCallStackTransforms(pipeline);
+            var transforms = new AsyncProfilerCallStackTransforms(pipeline);
             var frames = new List<AsyncProfilerStitchedFrame>();
             for (int i = 0; i < 8; i++)
             {
@@ -494,7 +494,7 @@ namespace TraceEventTests
         public void PublicCallbacks_DoNotAllocateAfterWarmup()
         {
             var pipeline = new AsyncProfilerCallStackTransformPipeline { EnableNormalization = false };
-            var transforms = new AsyncCallStackTransforms(pipeline);
+            var transforms = new AsyncProfilerCallStackTransforms(pipeline);
             int calls = 0;
             CodeAddressIndex observed = CodeAddressIndex.Invalid;
             transforms.AddCustomTransform(context =>
@@ -529,7 +529,7 @@ namespace TraceEventTests
         public void PublicCallbacks_ReuseViewsAndReleaseBorrowedState(bool failFirst)
         {
             var pipeline = new AsyncProfilerCallStackTransformPipeline { EnableNormalization = false };
-            var transforms = new AsyncCallStackTransforms(pipeline);
+            var transforms = new AsyncProfilerCallStackTransforms(pipeline);
             var failure = new InvalidOperationException("Public callback failed.");
             AsyncProfilerCallStackTransformContext reusedContext = null;
             IList<AsyncProfilerCallStackFrame> reusedFrames = null;

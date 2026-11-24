@@ -248,7 +248,7 @@ namespace TraceEventTests
                     TraceEvent data = log.Events.First(e => e.CallStackIndex() != CallStackIndex.Invalid).Clone();
                     var output = new MutableTraceEventStackSource(log);
                     object computer;
-                    AsyncCallStackTransforms transforms;
+                    AsyncProfilerCallStackTransforms transforms;
                     Action generate;
                     using (var symbols = new Microsoft.Diagnostics.Symbols.SymbolReader(System.IO.TextWriter.Null))
                     {
@@ -258,22 +258,21 @@ namespace TraceEventTests
                             var threadTime = new ThreadTimeStackComputer(log, symbols)
 #pragma warning restore CS0618
                             {
-                                EnableAsyncCallStacks = true,
+                                UseTasks = true,
                                 IncludeEventSourceEvents = false,
                             };
                             computer = threadTime;
-                            transforms = threadTime.AsyncCallStackTransforms;
+                            transforms = threadTime.AsyncProfilerCallStackTransforms;
                             generate = () => threadTime.GenerateThreadTimeStacks(output);
                         }
                         else
                         {
                             var sampled = new SampleProfilerThreadTimeComputer(log, symbols)
                             {
-                                EnableAsyncCallStacks = true,
                                 IncludeEventSourceEvents = false,
                             };
                             computer = sampled;
-                            transforms = sampled.AsyncCallStackTransforms;
+                            transforms = sampled.AsyncProfilerCallStackTransforms;
                             generate = () => sampled.GenerateThreadTimeStacks(output);
                         }
 
@@ -363,7 +362,7 @@ namespace TraceEventTests
                     TraceEvent sample = log.Events.First(e => e.CallStackIndex() != CallStackIndex.Invalid);
                     var segments = new CountingCallStacks(new AsyncProfilerCallStackComputer(log).GetCallStacks(sample));
                     var pipeline = new AsyncProfilerCallStackTransformPipeline { EnableNormalization = false };
-                    var transforms = new AsyncCallStackTransforms(pipeline);
+                    var transforms = new AsyncProfilerCallStackTransforms(pipeline);
                     var state = new AsyncProfilerCallStackTransformState(
                         log, segments, 0, _ => AsyncProfilerCallStackStitchBoundaryInfo.None,
                         new AsyncProfilerCallStackStitchingState(), new AsyncProfilerCallStackDiagnostics(), new List<AsyncProfilerStitchedFrame>(),

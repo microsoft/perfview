@@ -29,7 +29,7 @@ namespace Microsoft.Diagnostics.Tracing
             m_eventLog = eventLog;
             m_symbolReader = symbolReader;
             AsyncProfilerCallStackTransformPipeline = new AsyncProfilerCallStackTransformPipeline();
-            AsyncCallStackTransforms = new AsyncCallStackTransforms(AsyncProfilerCallStackTransformPipeline);
+            AsyncProfilerCallStackTransforms = new AsyncProfilerCallStackTransforms(AsyncProfilerCallStackTransformPipeline);
 
             m_threadState = new ThreadState[eventLog.Threads.Count];
 
@@ -39,7 +39,8 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// If set we compute thread time using Tasks
+        /// If set we compute thread time using Tasks. When the trace also contains async-profiler data,
+        /// samples with async context are reconstructed from it; other samples use the Task (TPL) data.
         /// </summary>
         public bool UseTasks;
 
@@ -61,24 +62,21 @@ namespace Microsoft.Diagnostics.Tracing
         public bool IgnoreApplicationInsightsRequestsWithRelatedActivityId  { get; set; } = true;
 
         /// <summary>
-        /// Enables async-profiler call-stack reconstruction when a usable index exists. Disabled by default;
-        /// configure before <see cref="GenerateThreadTimeStacks"/>. Samples without usable async context retain
-        /// their normal stacks. This setting does not control trace conversion, event parsing, or index construction.
+        /// True after generation when <see cref="UseTasks"/> was set and the trace has a usable async-profiler
+        /// index. Does not guarantee that any particular sample matched an async call stack. False before generation.
         /// </summary>
-        public bool EnableAsyncCallStacks { get; set; }
+        public bool AsyncProfilerCallStacksActive => m_asyncProfilerCallStackSourceBuilder != null;
 
         /// <summary>
-        /// True after generation initializes requested async call stacks with a usable index. Does not guarantee
-        /// that any particular sample matched an async call stack. False before generation or when async call
-        /// stacks were disabled or no usable index exists.
-        /// </summary>
-        public bool AsyncCallStacksActive => m_asyncProfilerCallStackSourceBuilder != null;
-
-        /// <summary>
-        /// Presentation settings for reconstructed async call stacks. Configure this object before
+        /// Presentation settings for async-profiler call stacks. Configure this object before
         /// <see cref="GenerateThreadTimeStacks"/>. Samples without usable async context are not transformed.
         /// </summary>
-        public AsyncCallStackTransforms AsyncCallStackTransforms { get; }
+        public AsyncProfilerCallStackTransforms AsyncProfilerCallStackTransforms { get; }
+
+        /// <summary>
+        /// Ignore async-profiler data even when <see cref="UseTasks"/> is set. Used to compare against TPL-only stacks.
+        /// </summary>
+        internal bool DisableAsyncProfilerCallStacks { get; set; }
 
         internal AsyncProfilerCallStackTransformPipeline AsyncProfilerCallStackTransformPipeline { get; }
 
@@ -105,8 +103,6 @@ namespace Microsoft.Diagnostics.Tracing
             m_ExternalFrameIndex = outputStackSource.Interner.FrameIntern("UNMANAGED_CODE_TIME");
             m_cpuFrameIndex = outputStackSource.Interner.FrameIntern("CPU_TIME");
 
-            InitializeAsyncProfilerCallStacksIfRequested();
-
             TraceLogEventSource eventSource = traceEvents == null ? m_eventLog.Events.GetSource() :
                                                                      traceEvents.GetSource();
 
@@ -114,6 +110,8 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 UseTasks = true;
             }
+
+            InitializeAsyncProfilerCallStacksIfRequested();
 
             if (UseTasks)
             {
@@ -527,7 +525,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         private void InitializeAsyncProfilerCallStacksIfRequested()
         {
-            if (!EnableAsyncCallStacks)
+            if (!UseTasks || DisableAsyncProfilerCallStacks)
             {
                 return;
             }

@@ -41,7 +41,7 @@ namespace Microsoft.Diagnostics.Tracing
             m_eventLog = eventLog;
             m_symbolReader = symbolReader;
             AsyncProfilerCallStackTransformPipeline = new AsyncProfilerCallStackTransformPipeline();
-            AsyncCallStackTransforms = new AsyncCallStackTransforms(AsyncProfilerCallStackTransformPipeline);
+            AsyncProfilerCallStackTransforms = new AsyncProfilerCallStackTransforms(AsyncProfilerCallStackTransformPipeline);
 
             m_threadState = new ThreadState[eventLog.Threads.Count];
             for (int i = 0; i < m_threadState.Length; i++)
@@ -70,7 +70,8 @@ namespace Microsoft.Diagnostics.Tracing
             InitializeForUniversal();
         }
         /// <summary>
-        /// If set we compute thread time using Tasks
+        /// If set we compute thread time using Tasks. When the trace also contains async-profiler data,
+        /// stacks with async context are reconstructed from it; other stacks use the Task (TPL) data.
         /// </summary>
         public bool UseTasks;
         /// <summary>
@@ -101,24 +102,21 @@ namespace Microsoft.Diagnostics.Tracing
         public bool GroupByStartStopActivity;
 
         /// <summary>
-        /// Enables async-profiler reconstruction of CPU and wait call stacks when a usable index exists. Disabled
-        /// by default; configure before <see cref="GenerateThreadTimeStacks"/>. Stacks without usable async context
-        /// retain their normal behavior. This does not control trace conversion, event parsing, or index construction.
+        /// True after generation when <see cref="UseTasks"/> was set and the trace has a usable async-profiler
+        /// index. Does not guarantee that any particular stack matched an async call stack. False before generation.
         /// </summary>
-        public bool EnableAsyncCallStacks { get; set; }
+        public bool AsyncProfilerCallStacksActive => m_asyncProfilerCallStackSourceBuilder != null;
 
         /// <summary>
-        /// True after generation initializes requested async call stacks with a usable index. Does not guarantee
-        /// that any particular stack matched an async call stack. False before generation or when async call
-        /// stacks were disabled or no usable index exists.
-        /// </summary>
-        public bool AsyncCallStacksActive => m_asyncProfilerCallStackSourceBuilder != null;
-
-        /// <summary>
-        /// Presentation settings for reconstructed async call stacks. Configure this object before
+        /// Presentation settings for async-profiler call stacks. Configure this object before
         /// <see cref="GenerateThreadTimeStacks"/>. Stacks without usable async context are not transformed.
         /// </summary>
-        public AsyncCallStackTransforms AsyncCallStackTransforms { get; }
+        public AsyncProfilerCallStackTransforms AsyncProfilerCallStackTransforms { get; }
+
+        /// <summary>
+        /// Ignore async-profiler data even when <see cref="UseTasks"/> is set. Used to compare against TPL-only stacks.
+        /// </summary>
+        internal bool DisableAsyncProfilerCallStacks { get; set; }
 
         internal AsyncProfilerCallStackTransformPipeline AsyncProfilerCallStackTransformPipeline { get; }
 
@@ -983,7 +981,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void InitializeAsyncProfilerCallStacksIfRequested()
         {
-            if (!EnableAsyncCallStacks)
+            if (!UseTasks || DisableAsyncProfilerCallStacks)
             {
                 return;
             }

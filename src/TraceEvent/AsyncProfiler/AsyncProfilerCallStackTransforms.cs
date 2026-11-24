@@ -12,10 +12,10 @@ namespace Microsoft.Diagnostics.Tracing.Computers
     /// </summary>
     /// <remarks>
     /// Obtain this object from AsyncProfilerCallStackSourceBuilder.Transforms or a stack computer's
-    /// AsyncCallStackTransforms property; it has no public constructor. Settings are not
+    /// AsyncProfilerCallStackTransforms property; it has no public constructor. Settings are not
     /// thread-safe and must not be modified during stack production.
     /// </remarks>
-    public sealed class AsyncCallStackTransforms
+    public sealed class AsyncProfilerCallStackTransforms
     {
         /// <summary>
         /// Enables conservative normalization of verified startup, reentrant, completion-return, and handoff
@@ -60,7 +60,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         /// time and the first remaining V1 frame displays inferred running state -1. Otherwise the captured
         /// resume/append stack is replayed unchanged. Captured states and IPs remain unchanged in frame metadata;
         /// this does not establish an exact creation-time execution IP or prove every progress record was captured.
-        /// Existing stack computers still require EnableAsyncCallStacks separately.
+        /// Stack computers use these settings when their UseTasks option is set.
         /// </summary>
         public bool EnableParentContexts
         {
@@ -104,7 +104,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
 
         #region private
 
-        internal AsyncCallStackTransforms(AsyncProfilerCallStackTransformPipeline pipeline)
+        internal AsyncProfilerCallStackTransforms(AsyncProfilerCallStackTransformPipeline pipeline)
         {
             m_pipeline = pipeline;
         }

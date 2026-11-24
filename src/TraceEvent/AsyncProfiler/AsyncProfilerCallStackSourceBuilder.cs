@@ -34,12 +34,12 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             m_log = output.TraceLog;
 
             var pipeline = new AsyncProfilerCallStackTransformPipeline();
-            Transforms = new AsyncCallStackTransforms(pipeline);
+            Transforms = new AsyncProfilerCallStackTransforms(pipeline);
             m_core = AsyncProfilerCallStackSourceBuilderCore.TryCreate(m_log, output, pipeline, null);
         }
 
         /// <summary>Presentation settings. Configure before producing stacks.</summary>
-        public AsyncCallStackTransforms Transforms { get; }
+        public AsyncProfilerCallStackTransforms Transforms { get; }
 
         /// <summary>
         /// Combines <paramref name="physicalStack"/> with the async call stacks active at <paramref name="timestampQpc"/>,

@@ -253,7 +253,7 @@ source's frame metadata, even when two frames display the same name.
 4. Infrastructure cleanup, if enabled.
 5. Output: frame names, annotations, and the host's grouping roots.
 
-**Settings** (`AsyncCallStackTransforms`):
+**Settings** (`AsyncProfilerCallStackTransforms`):
 
 | Setting | Default | Effect |
 |---|---|---|
@@ -306,22 +306,35 @@ names are not enough.
 ## Using it
 
 The ETLX index is built automatically when a trace with async-profiler
-events is converted. Stitching must be requested.
+events is converted.
 
 **With the existing thread-time computers.** Both
 `ThreadTimeStackComputer` (ETW CPU and wait time) and
-`SampleProfilerThreadTimeComputer` (EventPipe sample profiler) support it:
+`SampleProfilerThreadTimeComputer` (EventPipe sample profiler) use it when
+`UseTasks` is set and the trace has async-profiler data.
+`SampleProfilerThreadTimeComputer` sets `UseTasks` by default;
+`ThreadTimeStackComputer` does not:
 
 ```csharp
 var computer = new ThreadTimeStackComputer(traceLog, symbolReader);
-computer.EnableAsyncCallStacks = true;
-computer.AsyncCallStackTransforms.EnableFrameAnnotations = true; // optional
+computer.UseTasks = true;
+computer.AsyncProfilerCallStackTransforms.EnableFrameAnnotations = true; // optional
 
 var stackSource = new MutableTraceEventStackSource(traceLog);
 computer.GenerateThreadTimeStacks(stackSource);
 ```
 
-`AsyncCallStacksActive` is true after generation if a usable index was
+For each sample, the computer picks the first of these that applies:
+
+1. The async-profiler stack, if the sample has an async context.
+2. The stack built from Task (TPL) events.
+3. The physical stack.
+
+Request grouping (`GroupByStartStopActivity`, `GroupByAspNetRequest`) is
+added on top of whichever stack was chosen. `AWAIT_TIME` samples always
+come from TPL events.
+
+`AsyncProfilerCallStacksActive` is true after generation if a usable index was
 found. It does not mean every sample was stitched.
 
 **Stitching individual stacks.** `AsyncProfilerCallStackSourceBuilder`
@@ -420,7 +433,7 @@ reconstruction types use `Microsoft.Diagnostics.Tracing.Computers`.
 | Method-name normalization | `AsyncProfilerMethodNames.cs` |
 | Runtime-specific rules | `AsyncProfilerRuntimeNames.cs`, `AsyncProfilerRuntimeSupport.cs`, `AsyncProfilerRuntimeResolver.cs`, `AsyncProfilerRuntimeSequenceMatch.cs` |
 | Historical parent contexts | `AsyncProfilerParentContextBuilder.cs` |
-| Presentation settings and transforms | `AsyncCallStackTransforms.cs`, `AsyncProfilerCallStackTransformPipeline.cs`, `AsyncProfiler*TransformPass.cs`, `AsyncProfilerCallStackTransformHelpers.cs`, `AsyncProfilerCallStackTransformContext.cs` |
+| Presentation settings and transforms | `AsyncProfilerCallStackTransforms.cs`, `AsyncProfilerCallStackTransformPipeline.cs`, `AsyncProfiler*TransformPass.cs`, `AsyncProfilerCallStackTransformHelpers.cs`, `AsyncProfilerCallStackTransformContext.cs` |
 | Stack-source output and frame metadata | `AsyncProfilerCallStackSourceBuilderCore.cs`, `AsyncProfilerCallStackDiagnostics.cs`, `src\TraceEvent\TraceEventStacks.cs` |
 | Speedscope export | `src\TraceEvent\Stacks\SpeedScopeStackSourceWriter.cs` |
 | Thread-time computers | `src\TraceEvent\Computers\SampleProfilerThreadTimeComputer.cs`, `src\TraceEvent\Computers\ThreadTimeComputer.cs` |

@@ -504,6 +504,7 @@ namespace TraceEventTests
                         };
                         var syncComputer = new SampleProfilerThreadTimeComputer(traceLog, symbolReader)
                         {
+                            DisableAsyncProfilerCallStacks = true,
                             IncludeEventSourceEvents = IncludeEventSourceEvents,
                             GroupByStartStopActivity = GroupByStartStopActivity,
                         };
@@ -520,15 +521,14 @@ namespace TraceEventTests
                         };
                         var stitchedComputer = new SampleProfilerThreadTimeComputer(traceLog, symbolReader)
                         {
-                            EnableAsyncCallStacks = true,
                             IncludeEventSourceEvents = IncludeEventSourceEvents,
                             GroupByStartStopActivity = GroupByStartStopActivity,
                         };
-                        stitchedComputer.AsyncCallStackTransforms.EnableParentContexts =
+                        stitchedComputer.AsyncProfilerCallStackTransforms.EnableParentContexts =
                             EnableParentContexts;
-                        stitchedComputer.AsyncCallStackTransforms.EnableFrameAnnotations =
+                        stitchedComputer.AsyncProfilerCallStackTransforms.EnableFrameAnnotations =
                             EnableFrameAnnotations;
-                        ConfigurePresentation(stitchedComputer.AsyncCallStackTransforms, stitchedComputer.AsyncProfilerCallStackTransformPipeline,
+                        ConfigurePresentation(stitchedComputer.AsyncProfilerCallStackTransforms, stitchedComputer.AsyncProfilerCallStackTransformPipeline,
                             enableNormalization: EnableNormalization, enableInfrastructureCleanup: EnableInfrastructureCleanup);
                         if (AssertTransformContext != null)
                         {
@@ -563,7 +563,7 @@ namespace TraceEventTests
                         }
 
                         Assert.Equal(syncOutput.RootFrames, stitchedOutput.RootFrames);
-                        Assert.True(stitchedComputer.AsyncCallStacksActive);
+                        Assert.True(stitchedComputer.AsyncProfilerCallStacksActive);
                         (ExpectedDiagnostics ?? new CallStackDiagnosticsExpectation()).Assert(stitchedComputer.AsyncProfilerCallStackDiagnostics);
 
                         if (VerifyRemovingParentContextRemovesPresentation)
@@ -574,12 +574,11 @@ namespace TraceEventTests
                                 new SampleProfilerThreadTimeComputer(
                                     traceLog, symbolReader)
                                 {
-                                    EnableAsyncCallStacks = true,
                                     IncludeEventSourceEvents = IncludeEventSourceEvents,
                                     GroupByStartStopActivity = GroupByStartStopActivity,
                                 };
-                            filteredContextComputer.AsyncCallStackTransforms.EnableParentContexts = true;
-                            filteredContextComputer.AsyncCallStackTransforms.AddCustomTransform(context =>
+                            filteredContextComputer.AsyncProfilerCallStackTransforms.EnableParentContexts = true;
+                            filteredContextComputer.AsyncProfilerCallStackTransforms.AddCustomTransform(context =>
                             {
                                 for (int i = context.Frames.Count - 1; i >= 0; i--)
                                 {
@@ -616,20 +615,20 @@ namespace TraceEventTests
                                 traceLog, symbolReader)
 #pragma warning restore CS0618
                             {
-                                EnableAsyncCallStacks = true,
+                                UseTasks = true,
                                 GroupByStartStopActivity = GroupByStartStopActivity,
                                 IncludeEventSourceEvents = false,
                             };
-                            threadTimeComputer.AsyncCallStackTransforms.EnableParentContexts = EnableParentContexts;
-                            threadTimeComputer.AsyncCallStackTransforms.EnableFrameAnnotations = EnableFrameAnnotations;
-                            ConfigurePresentation(threadTimeComputer.AsyncCallStackTransforms, threadTimeComputer.AsyncProfilerCallStackTransformPipeline,
+                            threadTimeComputer.AsyncProfilerCallStackTransforms.EnableParentContexts = EnableParentContexts;
+                            threadTimeComputer.AsyncProfilerCallStackTransforms.EnableFrameAnnotations = EnableFrameAnnotations;
+                            ConfigurePresentation(threadTimeComputer.AsyncProfilerCallStackTransforms, threadTimeComputer.AsyncProfilerCallStackTransformPipeline,
                                 enableNormalization: EnableNormalization, enableInfrastructureCleanup: EnableInfrastructureCleanup);
                             threadTimeComputer.GenerateThreadTimeStacks(threadTimeStackSource);
                             AssertThreadTimeStack(
                                 threadTimeStackSource, "CPU_TIME", Labels(ExpectedStitched));
                             AssertThreadTimeStack(
                                 threadTimeStackSource, "BLOCKED_TIME", Labels(ExpectedStitched));
-                            Assert.True(threadTimeComputer.AsyncCallStacksActive);
+                            Assert.True(threadTimeComputer.AsyncProfilerCallStacksActive);
                         }
 
                         // A variant whose configuration matches the main run would only repeat it, so check
@@ -650,13 +649,12 @@ namespace TraceEventTests
                             var defaultComputer = new SampleProfilerThreadTimeComputer(
                                 traceLog, symbolReader)
                             {
-                                EnableAsyncCallStacks = true,
                                 IncludeEventSourceEvents = IncludeEventSourceEvents,
                                 GroupByStartStopActivity = GroupByStartStopActivity,
                             };
-                            defaultComputer.AsyncCallStackTransforms.EnableParentContexts = EnableParentContexts;
-                            defaultComputer.AsyncCallStackTransforms.EnableFrameAnnotations = EnableFrameAnnotations;
-                            ConfigurePresentation(defaultComputer.AsyncCallStackTransforms, defaultComputer.AsyncProfilerCallStackTransformPipeline,
+                            defaultComputer.AsyncProfilerCallStackTransforms.EnableParentContexts = EnableParentContexts;
+                            defaultComputer.AsyncProfilerCallStackTransforms.EnableFrameAnnotations = EnableFrameAnnotations;
+                            ConfigurePresentation(defaultComputer.AsyncProfilerCallStackTransforms, defaultComputer.AsyncProfilerCallStackTransformPipeline,
                                 enableNormalization: EnableNormalization, enableInfrastructureCleanup: false);
                             defaultComputer.GenerateThreadTimeStacks(defaultStackSource);
                             Assert.Equal(Labels(ExpectedWithoutInfrastructureCleanup),
@@ -679,11 +677,10 @@ namespace TraceEventTests
                             var structuralComputer = new SampleProfilerThreadTimeComputer(
                                 traceLog, symbolReader)
                             {
-                                EnableAsyncCallStacks = true,
                                 IncludeEventSourceEvents = IncludeEventSourceEvents,
                                 GroupByStartStopActivity = GroupByStartStopActivity,
                             };
-                            ConfigurePresentation(structuralComputer.AsyncCallStackTransforms, structuralComputer.AsyncProfilerCallStackTransformPipeline,
+                            ConfigurePresentation(structuralComputer.AsyncProfilerCallStackTransforms, structuralComputer.AsyncProfilerCallStackTransformPipeline,
                                 enableNormalization: false, enableInfrastructureCleanup: false);
                             structuralComputer.GenerateThreadTimeStacks(structuralStackSource);
                             EmittedStack structuralOutput = ReadSingleStack(structuralStackSource);
@@ -719,11 +716,10 @@ namespace TraceEventTests
                             var filteredComputer = new SampleProfilerThreadTimeComputer(
                                 traceLog, symbolReader)
                             {
-                                EnableAsyncCallStacks = true,
                                 IncludeEventSourceEvents = IncludeEventSourceEvents,
                                 GroupByStartStopActivity = GroupByStartStopActivity,
                             };
-                            filteredComputer.AsyncCallStackTransforms.AddCustomTransform(context =>
+                            filteredComputer.AsyncProfilerCallStackTransforms.AddCustomTransform(context =>
                             {
                                 for (int i = context.Frames.Count - 1; i >= 0; i--)
                                 {
@@ -795,11 +791,11 @@ namespace TraceEventTests
                         using (var symbols = new SymbolReader(TextWriter.Null))
                         {
                             var baseline = new MutableTraceEventStackSource(log);
-                            new SampleProfilerThreadTimeComputer(log, symbols).GenerateThreadTimeStacks(baseline);
+                            new SampleProfilerThreadTimeComputer(log, symbols) { DisableAsyncProfilerCallStacks = true }.GenerateThreadTimeStacks(baseline);
                             var reconstructed = new MutableTraceEventStackSource(log);
-                            var computer = new SampleProfilerThreadTimeComputer(log, symbols) { EnableAsyncCallStacks = true };
-                            computer.AsyncCallStackTransforms.EnableInfrastructureCleanup = true;
-                            computer.AsyncCallStackTransforms.AddCustomTransform(context =>
+                            var computer = new SampleProfilerThreadTimeComputer(log, symbols);
+                            computer.AsyncProfilerCallStackTransforms.EnableInfrastructureCleanup = true;
+                            computer.AsyncProfilerCallStackTransforms.AddCustomTransform(context =>
                                 throw new InvalidOperationException("Fallback must not run transforms."));
                             computer.GenerateThreadTimeStacks(reconstructed);
                             Assert.Equal(ReadSingleStack(baseline).ScenarioFrames, ReadSingleStack(reconstructed).ScenarioFrames);
@@ -1455,7 +1451,7 @@ namespace TraceEventTests
             }
 
             private void ConfigurePresentation(
-                AsyncCallStackTransforms transforms, AsyncProfilerCallStackTransformPipeline pipeline,
+                AsyncProfilerCallStackTransforms transforms, AsyncProfilerCallStackTransformPipeline pipeline,
                 bool enableNormalization, bool enableInfrastructureCleanup)
             {
                 if (ExpectedRuntimeSupport != null)

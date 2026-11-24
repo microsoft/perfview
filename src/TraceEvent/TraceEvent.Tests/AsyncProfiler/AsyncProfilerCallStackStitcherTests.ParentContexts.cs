@@ -68,7 +68,7 @@ namespace TraceEventTests
             var pipeline = new AsyncProfilerCallStackTransformPipeline();
             if (maximumDepth is int depth)
             {
-                new AsyncCallStackTransforms(pipeline).MaximumParentContextDepth = depth;
+                new AsyncProfilerCallStackTransforms(pipeline).MaximumParentContextDepth = depth;
             }
 
             new AsyncProfilerParentContextBuilder().AddParentContexts(

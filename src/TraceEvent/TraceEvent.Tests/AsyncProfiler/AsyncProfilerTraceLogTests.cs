@@ -269,26 +269,27 @@ namespace TraceEventTests
                 Assert.True(traceLog.HasAsyncProfilerEvents);
                 Assert.False(AsyncProfilerTestData.IsAsyncIndexLoaded(traceLog));
 
+                // This computer requires UseTasks, so the internal opt-out is the only way to turn async stacks off.
                 var sampleComputer = new SampleProfilerThreadTimeComputer(traceLog, symbols)
                 {
-                    EnableAsyncCallStacks = enableAsyncCallStacks,
+                    DisableAsyncProfilerCallStacks = !enableAsyncCallStacks,
                     IncludeEventSourceEvents = false,
                 };
-                Assert.False(sampleComputer.AsyncCallStacksActive);
+                Assert.False(sampleComputer.AsyncProfilerCallStacksActive);
                 sampleComputer.GenerateThreadTimeStacks(new MutableTraceEventStackSource(traceLog));
-                Assert.Equal(enableAsyncCallStacks, sampleComputer.AsyncCallStacksActive);
+                Assert.Equal(enableAsyncCallStacks, sampleComputer.AsyncProfilerCallStacksActive);
                 Assert.Equal(enableAsyncCallStacks, AsyncProfilerTestData.IsAsyncIndexLoaded(traceLog));
 
 #pragma warning disable CS0618 // ThreadTimeStackComputer is marked experimental; this verifies it honors the async option.
                 var threadTimeComputer = new ThreadTimeStackComputer(traceLog, symbols)
 #pragma warning restore CS0618
                 {
-                    EnableAsyncCallStacks = enableAsyncCallStacks,
+                    UseTasks = enableAsyncCallStacks,
                     IncludeEventSourceEvents = false,
                 };
-                Assert.False(threadTimeComputer.AsyncCallStacksActive);
+                Assert.False(threadTimeComputer.AsyncProfilerCallStacksActive);
                 threadTimeComputer.GenerateThreadTimeStacks(new MutableTraceEventStackSource(traceLog));
-                Assert.Equal(enableAsyncCallStacks, threadTimeComputer.AsyncCallStacksActive);
+                Assert.Equal(enableAsyncCallStacks, threadTimeComputer.AsyncProfilerCallStacksActive);
                 Assert.Equal(enableAsyncCallStacks, AsyncProfilerTestData.IsAsyncIndexLoaded(traceLog));
             }
         }
