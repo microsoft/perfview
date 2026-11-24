@@ -15,6 +15,29 @@ using System.Xml;
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     /// <summary>
+    /// Options for RegisteredTraceEventParser.GetManifestForRegisteredProvider.
+    /// </summary>
+    [Flags]
+    public enum ManifestGenerationOptions
+    {
+        /// <summary>
+        /// The basic manifest, sufficient for most providers.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Also include events whose version follows more than 10 versions with no events, which
+        /// TdhEnumerateManifestProviderEvents does not list. Finding them asks the Event Log service for the provider's
+        /// versions, which makes every manifest slower to generate although few providers have such events, so it is not
+        /// done by default.
+        /// </summary>
+        IncludeNonContiguousVersions = 2,
+        /// <summary>
+        /// The most complete manifest, which is slower to generate.
+        /// </summary>
+        IncludeAll = ~0,
+    }
+
+    /// <summary>
     /// RegisteredTraceEventParser uses the standard windows provider database (TDH, what gets registered with wevtutil)
     /// to find the names of events and fields of the events).   
     /// </summary>
@@ -79,13 +102,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public static string GetManifestForRegisteredProvider(string providerName)
         {
+            return GetManifestForRegisteredProvider(providerName, ManifestGenerationOptions.None);
+        }
+        /// <summary>
+        /// Given a provider name that has been registered with the operating system, get
+        /// a string representing the ETW manifest for that provider.    Note that this
+        /// manifest is not as rich as the original source manifest because some information
+        /// is not actually compiled into the binary manifest that is registered with the OS.  
+        /// </summary>
+        /// <param name="providerName">The name of the provider.</param>
+        /// <param name="options">What to include in the manifest beyond what TDH describes.</param>
+        public static string GetManifestForRegisteredProvider(string providerName, ManifestGenerationOptions options)
+        {
             var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
             if (providerGuid == Guid.Empty)
             {
                 throw new ApplicationException("Could not find provider with name " + providerName);
             }
 
-            return GetManifestForRegisteredProvider(providerGuid);
+            return GetManifestForRegisteredProvider(providerGuid, options);
         }
         /// <summary>
         /// Given a provider GUID that has been registered with the operating system, get
@@ -94,6 +129,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// is not actually compiled into the binary manifest that is registered with the OS.  
         /// </summary>
         public static string GetManifestForRegisteredProvider(Guid providerGuid)
+        {
+            return GetManifestForRegisteredProvider(providerGuid, ManifestGenerationOptions.None);
+        }
+        /// <summary>
+        /// Given a provider GUID that has been registered with the operating system, get
+        /// a string representing the ETW manifest for that provider.    Note that this
+        /// manifest is not as rich as the original source manifest because some information
+        /// is not actually compiled into the binary manifest that is registered with the OS.  
+        /// </summary>
+        /// <param name="providerGuid">The GUID of the provider.</param>
+        /// <param name="options">What to include in the manifest beyond what TDH describes.</param>
+        public static string GetManifestForRegisteredProvider(Guid providerGuid, ManifestGenerationOptions options)
         {
             int buffSize = 84000;       // Still in the small object heap.  
             var buffer = new byte[buffSize]; // Still in the small object heap.
@@ -166,13 +213,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 buffer = new byte[size];
             }
 
+            bool includeNonContiguousVersions = (options & ManifestGenerationOptions.IncludeNonContiguousVersions) != 0;
             try
             {
                 // TdhEnumerateManifestProviderEvents walks versions upwards and stops after 11 empty versions in a row.
-                // When the first version is above 11 it finds nothing and returns ERROR_EMPTY, e.g.
-                // CertificateServicesClient-CertEnroll, whose events are all version 90; carry on so that the versions
-                // from the Event Log API below can still be read.
-                if (status == 0 || status == ERROR_EMPTY)
+                // When the first version is above 10 it finds nothing and returns ERROR_EMPTY, e.g.
+                // CertificateServicesClient-CertEnroll, whose events are all version 90; if asked to, carry on so that
+                // the versions from the Event Log API below can still be read.
+                if (status == 0 || (status == ERROR_EMPTY && includeNonContiguousVersions))
                 {
                     const int NumberOfEventsOffset = 0;
                     const int FirstDescriptorOffset = 8;
@@ -206,34 +254,37 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     int loadedVersion = -1;
 
                     // The enumeration also omits every version more than 11 above the last one it found
-                    // (Microsoft-AppV-Client-StreamingUX 1 then 22-24, Microsoft-Windows-MSMPEG2VDEC 0 then 12). The Event
-                    // Log API lists every event in the manifest, so also read the versions it reports that the enumeration
-                    // did not. Only if it cannot read the publisher either, and the enumeration found nothing, read every
-                    // version. Their events go after the enumerated ones, grouped by version, so that the enumerated events
-                    // keep the names they get when processed in enumeration order.
-                    var enumeratedVersions = new HashSet<byte>();
-                    foreach (var descriptor in descriptors)
-                    {
-                        enumeratedVersions.Add(descriptor.Version);
-                    }
+                    // (Microsoft-AppV-Client-StreamingUX 1 then 22-24, Microsoft-Windows-MSMPEG2VDEC 0 then 12). If asked
+                    // to, find them too: the Event Log API lists every event in the manifest, so read the versions it
+                    // reports that the enumeration did not. Only if it cannot read the publisher either, and the
+                    // enumeration found nothing, read every version. Their events go after the enumerated ones, grouped by
+                    // version, so that the enumerated events keep the names they get when processed in enumeration order.
                     var missedVersions = new List<byte>();
-                    var eventLogVersions = GetEventLogVersions(providerGuid);
-                    if (eventLogVersions != null)
+                    if (includeNonContiguousVersions)
                     {
-                        foreach (var version in eventLogVersions)
+                        var enumeratedVersions = new HashSet<byte>();
+                        foreach (var descriptor in descriptors)
                         {
-                            if (!enumeratedVersions.Contains(version))
-                            {
-                                missedVersions.Add(version);
-                            }
+                            enumeratedVersions.Add(descriptor.Version);
                         }
-                        missedVersions.Sort();
-                    }
-                    else if (descriptors.Length == 0)
-                    {
-                        for (int version = 0; version <= byte.MaxValue; version++)
+                        var eventLogVersions = GetEventLogVersions(providerGuid);
+                        if (eventLogVersions != null)
                         {
-                            missedVersions.Add((byte)version);
+                            foreach (var version in eventLogVersions)
+                            {
+                                if (!enumeratedVersions.Contains(version))
+                                {
+                                    missedVersions.Add(version);
+                                }
+                            }
+                            missedVersions.Sort();
+                        }
+                        else if (descriptors.Length == 0)
+                        {
+                            for (int version = 0; version <= byte.MaxValue; version++)
+                            {
+                                missedVersions.Add((byte)version);
+                            }
                         }
                     }
 

@@ -297,7 +297,7 @@ namespace TraceEventTests
         }
 
         /// <summary>
-        /// Test that events past a gap of more than 11 versions are found.
+        /// Test that events whose version follows more than 10 versions with no events are found when asked for.
         /// TdhEnumerateManifestProviderEvents walks versions upwards and stops after 11 empty versions in a row.
         /// Microsoft-Windows-MSMPEG2VDEC declares all its events at version 0 except event 13 (version 12 on Windows
         /// 11 26200), so the enumeration never lists it; it is the only id missing from 0..N in every Windows 10 and 11
@@ -315,6 +315,51 @@ namespace TraceEventTests
             }
 
             AssertManifestHasEveryVersionsEvents(providerName, providerGuid);
+        }
+
+        /// <summary>
+        /// Test that without ManifestGenerationOptions.IncludeNonContiguousVersions the manifest has exactly the events
+        /// (Id and version) that TdhEnumerateManifestProviderEvents lists, so the Event Log API is not consulted.
+        /// Microsoft-Windows-MSMPEG2VDEC's event 13 is past its gap, so it must be absent.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_OmitsNonContiguousVersionsByDefault()
+        {
+            const string providerName = "Microsoft-Windows-MSMPEG2VDEC";
+            var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
+            if (providerGuid == Guid.Empty)
+            {
+                _output.WriteLine($"{providerName} is not registered on this machine; nothing to test");
+                return;
+            }
+
+            var expected = new SortedSet<string>();
+            int size = 0;
+            RegisteredTraceEventParser.TdhEnumerateManifestProviderEvents(providerGuid, null, ref size);
+            var buffer = new byte[size];
+            Assert.Equal(0, RegisteredTraceEventParser.TdhEnumerateManifestProviderEvents(providerGuid, buffer, ref size));
+            // PROVIDER_EVENT_INFO: the number of events, a reserved ULONG, then the EVENT_DESCRIPTORs (16 bytes each).
+            int eventCount = BitConverter.ToInt32(buffer, 0);
+            for (int i = 0; i < eventCount; i++)
+            {
+                int offset = 8 + i * 16;
+                expected.Add(BitConverter.ToUInt16(buffer, offset) + "/" + buffer[offset + 2]);
+            }
+            Assert.DoesNotContain(expected, e => e.StartsWith("13/"));
+
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerGuid);
+            var doc = new XmlDocument();
+            doc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(doc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+            var actual = new SortedSet<string>();
+            foreach (XmlElement evt in doc.SelectNodes("//e:event", nsmgr))
+            {
+                actual.Add(evt.GetAttribute("value") + "/" + evt.GetAttribute("version"));
+            }
+
+            _output.WriteLine($"{providerName}: {expected.Count} events listed, {actual.Count} in the manifest");
+            Assert.Equal(expected, actual);
         }
 
         /// <summary>
@@ -668,8 +713,9 @@ namespace TraceEventTests
         }
 
         /// <summary>
-        /// Asserts that the provider has a gap of more than 11 versions, which TdhEnumerateManifestProviderEvents
-        /// does not cross, and that the manifest has exactly the events (Id and version) that asking
+        /// Asserts that the provider has a version that follows more than 10 versions with no events, which
+        /// TdhEnumerateManifestProviderEvents does not list, and that the manifest generated with
+        /// ManifestGenerationOptions.IncludeNonContiguousVersions has exactly the events (Id and version) that asking
         /// TdhGetAllEventsInformation about every version 0-255 finds. That neither uses the enumeration nor the Event
         /// Log API, so it is an independent expectation.
         /// </summary>
@@ -677,7 +723,7 @@ namespace TraceEventTests
         {
             SortedSet<string> expected = GetEveryVersionsEvents(providerGuid, out SortedSet<byte> versions);
             _output.WriteLine($"{providerName}: versions {string.Join(", ", versions)}");
-            // The enumeration starts at version 0, so a first version above 11 is also past a gap.
+            // The enumeration starts at version 0, so a first version above 10 also follows more than 10 empty versions.
             int previous = -1;
             int largestGap = 0;
             foreach (byte version in versions)
@@ -685,9 +731,9 @@ namespace TraceEventTests
                 largestGap = Math.Max(largestGap, version - previous);
                 previous = version;
             }
-            Assert.True(largestGap > 11, $"{providerName} has no gap of more than 11 versions, so it does not test the fix");
+            Assert.True(largestGap > 11, $"{providerName} has no version that follows more than 10 versions with no events, so it does not test the fix");
 
-            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerGuid);
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerGuid, ManifestGenerationOptions.IncludeNonContiguousVersions);
             var doc = new XmlDocument();
             doc.LoadXml(manifest);
             var nsmgr = new XmlNamespaceManager(doc.NameTable);
