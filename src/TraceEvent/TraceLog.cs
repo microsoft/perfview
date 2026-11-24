@@ -2220,7 +2220,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Creates the builder that indexes async-profiler records while raw events are copied. Internal buffer
         /// timestamps use the trace's QPC domain unchanged. Raw batches are omitted from the ETLX unless
-        /// KeepAsyncProfilerEvents or KeepAllEvents is set.
+        /// KeepAllEvents is set.
         /// </summary>
         private AsyncProfilerIndexBuilder CreateAsyncProfilerIndexBuilder(TraceEventDispatcher rawEvents)
         {
@@ -2242,10 +2242,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     error.TimestampQpc?.ToString() ?? "unknown", error), null);
             };
 
-            if (!options.KeepAsyncProfilerEvents)
-            {
-                parser.AsyncEvents += delegate { removeFromStream = true; };
-            }
+            parser.AsyncEvents += delegate { removeFromStream = true; };
 
             RegisterAsyncProfilerCodeAddresses(builder);
             return builder;
@@ -11863,16 +11860,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </para>
         /// </summary>
         public bool KeepAllEvents;
-        /// <summary>
-        /// Preserve the raw async-profiler <c>AsyncEvents</c> records in the ETLX after their persisted
-        /// async-callstack index has been built. The default is false because the opaque buffers are not
-        /// needed for async-stack queries or stitching. Set true when raw-buffer inspection or future
-        /// re-decoding from a standalone ETLX is required. <see cref="KeepAllEvents"/> also preserves them.
-        /// This does not change index construction or recovery. Decode warnings are written to
-        /// <see cref="ConversionLog"/> whether or not raw events are retained; logical sub-events are not
-        /// individually materialized as TraceEvents.
-        /// </summary>
-        internal bool KeepAsyncProfilerEvents;
         /// <summary>
         /// Limits the number of events retained in the ETLX file when set to at least 1,000.
         /// The default value of zero does not impose an event-count limit. Conversion still scans

@@ -87,7 +87,7 @@ namespace TraceEventBenchmarks
         {
             TraceLog.CreateFromEventPipeDataFile(
                 _fixture.NetTracePath, _fixture.PreservedBuffersConversionEtlxPath,
-                new TraceLogOptions { KeepAsyncProfilerEvents = true });
+                new TraceLogOptions { KeepAllEvents = true });
             return new FileInfo(_fixture.PreservedBuffersConversionEtlxPath).Length;
         }
 

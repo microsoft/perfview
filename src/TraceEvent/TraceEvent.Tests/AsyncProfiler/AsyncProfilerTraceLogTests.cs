@@ -87,7 +87,7 @@ namespace TraceEventTests
                 using (var conversionLog = new StringWriter())
                 {
                     etlxPath = TraceLog.CreateFromEventPipeDataFile(nettracePath, null,
-                        new TraceLogOptions { ConversionLog = conversionLog, KeepAsyncProfilerEvents = keepRawEvents });
+                        new TraceLogOptions { ConversionLog = conversionLog, KeepAllEvents = keepRawEvents });
                     string diagnostics = conversionLog.ToString();
                     Assert.Contains("AsyncProfiler reported 12 parse errors", diagnostics);
                     Assert.Contains("AsyncProfiler PID 1234, process index", diagnostics);
@@ -234,7 +234,7 @@ namespace TraceEventTests
                 using (var conversionLog = new StringWriter())
                 {
                     etlxPath = TraceLog.CreateFromEventPipeDataFile(nettracePath, null,
-                        new TraceLogOptions { ConversionLog = conversionLog, KeepAsyncProfilerEvents = keepRawEvents });
+                        new TraceLogOptions { ConversionLog = conversionLog, KeepAllEvents = keepRawEvents });
                     string diagnostics = conversionLog.ToString();
                     Assert.Contains("AsyncProfiler reported 1 parse errors", diagnostics);
                     Assert.Contains("AsyncProfiler PID 1234, process index", diagnostics);
@@ -448,7 +448,7 @@ namespace TraceEventTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void KeepAsyncProfilerEvents_ControlsRawEventsWithoutAffectingQueries(bool keepRawEvents)
+        public void KeepAllEvents_ControlsRawAsyncEventsWithoutAffectingQueries(bool keepRawEvents)
         {
             using (var trace = new RoundTripTrace(keepRawEvents))
             {
@@ -730,7 +730,7 @@ namespace TraceEventTests
                 TraceLog.CreateFromEventPipeDataFile(
                     m_nettracePath,
                     m_etlxPath,
-                    new TraceLogOptions { KeepAsyncProfilerEvents = keepRawEvents });
+                    new TraceLogOptions { KeepAllEvents = keepRawEvents });
                 Log = new TraceLog(m_etlxPath);
             }
 

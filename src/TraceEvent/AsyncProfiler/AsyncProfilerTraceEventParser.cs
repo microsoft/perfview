@@ -18,7 +18,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     /// <see cref="ParseBuffer(byte[], ISubEventSink)"/> to decode V1 (StateMachineAsync) and V2 (RuntimeAsync)
     /// sub-events. Decoded sub-events are delivered to a sink, not exposed as separate TraceEvents.
     /// TraceLog saves an async call-stack index and omits the raw batches by default. Set
-    /// <see cref="Etlx.TraceLogOptions.KeepAsyncProfilerEvents"/> or
     /// <see cref="Etlx.TraceLogOptions.KeepAllEvents"/> to retain them in ETLX for raw-event inspection.
     /// </para>
     /// <para>

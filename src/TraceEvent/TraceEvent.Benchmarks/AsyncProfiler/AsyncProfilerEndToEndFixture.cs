@@ -113,7 +113,7 @@ namespace TraceEventBenchmarks
             TraceLog.CreateFromEventPipeDataFile(NetTracePath, EtlxPath);
             TraceLog.CreateFromEventPipeDataFile(ControlNetTracePath, ControlEtlxPath);
             TraceLog.CreateFromEventPipeDataFile(
-                NetTracePath, PreservedBuffersEtlxPath, new TraceLogOptions { KeepAsyncProfilerEvents = true });
+                NetTracePath, PreservedBuffersEtlxPath, new TraceLogOptions { KeepAllEvents = true });
         }
 
         public void WriteNettrace(string path, bool includeProfilerData)

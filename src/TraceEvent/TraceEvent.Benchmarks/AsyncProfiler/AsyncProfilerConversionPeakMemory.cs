@@ -32,7 +32,7 @@ namespace TraceEventBenchmarks
                 TraceLog.CreateFromEventPipeDataFile(fixture.ControlNetTracePath, fixture.ControlEtlxPath);
                 TraceLog.CreateFromEventPipeDataFile(
                     fixture.NetTracePath, fixture.PreservedBuffersEtlxPath,
-                    new TraceLogOptions { KeepAsyncProfilerEvents = true });
+                    new TraceLogOptions { KeepAllEvents = true });
                 Console.WriteLine(fixture.DescribeTraceSizes());
 
                 MeasureAsyncIndexMemory(fixture);
