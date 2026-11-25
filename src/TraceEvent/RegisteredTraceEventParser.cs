@@ -25,7 +25,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         None = 0,
         /// <summary>
-        /// Every option that adds to the manifest without changing what it already contains.
+        /// All of the Include options.
         /// </summary>
         IncludeAll = 0xFFFF,
         /// <summary>
@@ -35,7 +35,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         GenerateValidManifest = unchecked((int)0x80000000),
         /// <summary>
-        /// Every option.
+        /// All of the options.
         /// </summary>
         FullValidManifest = ~0,
     }
@@ -129,7 +129,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// Given a provider GUID that has been registered with the operating system, get
         /// a string representing the ETW manifest for that provider.    Note that this
         /// manifest is not as rich as the original source manifest because some information
-        /// is not actually compiled into the binary manifest that is registered with the OS.
+        /// is not actually compiled into the binary manifest that is registered with the OS.  
         /// </summary>
         public static string GetManifestForRegisteredProvider(Guid providerGuid)
         {
@@ -192,13 +192,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 foreach (var keywordItem in keywordsItems)
                 {
-                    // Skip the reserved keywords.
+                    // Skip the reserved keywords.   
                     if (keywordItem.Value >= 0x1000000000000UL)
                     {
                         continue;
                     }
 
-                    keywords[keywordItem.Value] = MakeLegalIdentifier(keywordItem.Name);
+                    // A keyword without a name gets the name GetKeywordStr gives keywords the provider does not name.
+                    keywords[keywordItem.Value] = keywordItem.Name.Length != 0 ? MakeLegalIdentifier(keywordItem.Name) : "keyword_" + keywordItem.Value.ToString("x");
 
                     // TDH appends a space to the message.
                     string keywordMessage = keywordItem.Description.Trim();
@@ -330,12 +331,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 {
                                     taskName = MakeLegalIdentifier(taskFieldName);
                                 }
-                                else if (taskText != null)
-                                {
-                                    taskName = MakeLegalIdentifier(taskText);
-                                }
 
-                                // The task's display text, for its message.
+                                // The task's display text is its message, not its name, which it need not be valid as.
                                 if (taskMessage == null && taskText != null && taskText.Trim().Length != 0)
                                 {
                                     taskMessage = taskText.Trim();
@@ -360,12 +357,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             // can be defined inside a task, so look it up with the task.
                             string opcodeName = "";
                             string opcodeMessage = null;
+                            bool hasOpcodeName = false;
                             if (eventInfo->EventDescriptor.Opcode != 0)
                             {
                                 // winmeta.xml defines opcodes 0-9 and 240-255, so only the provider's own opcodes (10-239)
                                 // have names of their own.
+                                bool providerOpcode = 10 <= eventInfo->EventDescriptor.Opcode && eventInfo->EventDescriptor.Opcode < 240;
                                 string opcodeFieldName = null;
-                                if (validManifest && 10 <= eventInfo->EventDescriptor.Opcode && eventInfo->EventDescriptor.Opcode < 240)
+                                if (validManifest && providerOpcode)
                                 {
                                     opcodeFieldName = GetProviderFieldName(providerGuid, fieldNames, TraceEventNativeMethods.EVENT_FIELD_TYPE.EventOpcodeInformation,
                                         ((ulong)eventInfo->EventDescriptor.Opcode << 16) | eventInfo->EventDescriptor.Task, out opcodeMessage);
@@ -380,10 +379,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 if (opcodeFieldName != null)
                                 {
                                     opcodeName = MakeLegalIdentifier(opcodeFieldName);
+                                    hasOpcodeName = true;
                                 }
-                                else if (opcodeText != null)
+                                else if (opcodeText != null && !(validManifest && providerOpcode))
                                 {
+                                    // In a valid manifest, a provider opcode's display text is its message, not its name.
                                     opcodeName = MakeLegalIdentifier(opcodeText);
+                                    hasOpcodeName = true;
                                 }
                                 else
                                 {
@@ -396,7 +398,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             if (opcodeNames.TryGetValue(opcodeName, out opcodeNumForName) && opcodeNumForName != eventInfo->EventDescriptor.Opcode)
                             {
                                 // If we did not find a name, use 'opcode and the disambiguator
-                                if (eventInfo->OpcodeNameOffset == 0)
+                                if (!hasOpcodeName)
                                 {
                                     opcodeName = "opcode";
                                 }
@@ -405,7 +407,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
                             opcodeNames[opcodeName] = eventInfo->EventDescriptor.Opcode;
 
-                            // And event name
+                            // And event name 
                             string eventName;
                             bool versionInName = eventInfo->EventDescriptor.Version > 0;
                             if (!validManifest || hasTaskName)
@@ -447,7 +449,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 eventName = "Event_" + eventInfo->EventDescriptor.Id.ToString();
                                 if (eventInfo->EventDescriptor.Opcode != 0)
                                 {
-                                    eventName += "_" + (eventInfo->OpcodeNameOffset != 0 ? opcodeName : "Opcode" + eventInfo->EventDescriptor.Opcode.ToString());
+                                    eventName += "_" + (hasOpcodeName ? opcodeName : "Opcode" + eventInfo->EventDescriptor.Opcode.ToString());
                                 }
                                 eventName = MakeLegalSymbol(eventName);
                             }
@@ -509,8 +511,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     }
                                 }
                             }
-
-                            // TODO handle cases outside standard levels
+                            
+                            // TODO handle cases outside standard levels 
                             string level = null;
                             if ((int)TraceEventLevel.Always <= eventInfo->EventDescriptor.Level && eventInfo->EventDescriptor.Level <= (int)TraceEventLevel.Verbose)
                             {
@@ -661,7 +663,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 {
                                     ew.WriteAttributeString("task", taskName);
                                 }
-
+                                
                                 if (opcodeId != null)
                                 {
                                     ew.WriteAttributeString("opcode", opcodeId);
@@ -799,19 +801,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                     var task = tasks[taskValue];
                     string taskStringId = $"task_{task.Name}";
-
+                    
                     writer.WriteStartElement("task");
                     writer.WriteAttributeString("name", task.Name);
                     writer.WriteAttributeString("message", $"$(string.{taskStringId})");
                     writer.WriteAttributeString("value", taskValue.ToString());
-
+                    
                     if (emittedStringIds.Add(taskStringId))
                     {
                         localizedStrings.Add(new KeyValuePair<string, string>(taskStringId, task.Message ?? task.Name));
                     }
-
+                    
                     WriteOpcodes(writer, task, emittedStringIds, localizedStrings);
-
+                    
                     writer.WriteEndElement(); // task
                 }
                 if (hasTasks)
