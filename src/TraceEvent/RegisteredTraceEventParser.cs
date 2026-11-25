@@ -502,12 +502,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 ew.WriteAttributeString("value", eventInfo->EventDescriptor.Id.ToString());
                                 ew.WriteAttributeString("symbol", symbolName);
                                 ew.WriteAttributeString("version", eventInfo->EventDescriptor.Version.ToString());
-                                // Task 0 means the event has no task.  A manifest cannot declare a task with value 0.
-                                if (eventInfo->EventDescriptor.Task != 0)
-                                {
-                                    ew.WriteAttributeString("task", taskName);
-                                }
-
+                                ew.WriteAttributeString("task", taskName);
+                                
                                 if (opcodeId != null)
                                 {
                                     ew.WriteAttributeString("opcode", opcodeId);
@@ -611,49 +607,49 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     writer.WriteEndElement(); // keywords
                 }
 
-                // Tasks.  Task 0 means no task, and a manifest cannot declare it, so events with task 0 have no task
-                // attribute and their opcodes are declared for the whole provider.
-                bool hasTasks = false;
+                // Tasks
+                writer.WriteStartElement("tasks");
                 foreach (var taskValue in tasks.Keys)
                 {
-                    if (taskValue == 0)
-                    {
-                        continue;
-                    }
-
-                    if (!hasTasks)
-                    {
-                        writer.WriteStartElement("tasks");
-                        hasTasks = true;
-                    }
-
                     var task = tasks[taskValue];
                     string taskStringId = $"task_{task.Name}";
-
+                    
                     writer.WriteStartElement("task");
                     writer.WriteAttributeString("name", task.Name);
                     writer.WriteAttributeString("message", $"$(string.{taskStringId})");
                     writer.WriteAttributeString("value", taskValue.ToString());
-
+                    
                     if (emittedStringIds.Add(taskStringId))
                     {
                         localizedStrings.Add(new KeyValuePair<string, string>(taskStringId, task.Name));
                     }
-
-                    WriteOpcodes(writer, task, emittedStringIds, localizedStrings);
-
+                    
+                    if (task.Opcodes != null)
+                    {
+                        writer.WriteStartElement("opcodes");
+                        foreach (var keyValue in task.Opcodes)
+                        {
+                            // One string per opcode name, shared by every task that uses the opcode.  mc.exe keeps only the low
+                            // byte of the task in an opcode's message id, so tasks such as 4 and 516 give the same opcode the
+                            // same id, which is an error if their messages are different strings.
+                            string opcodeStringId = $"opcode_{keyValue.Value}";
+                            writer.WriteStartElement("opcode");
+                            writer.WriteAttributeString("name", keyValue.Value);
+                            writer.WriteAttributeString("message", $"$(string.{opcodeStringId})");
+                            writer.WriteAttributeString("value", keyValue.Key.ToString());
+                            writer.WriteEndElement();
+                            
+                            if (emittedStringIds.Add(opcodeStringId))
+                            {
+                                localizedStrings.Add(new KeyValuePair<string, string>(opcodeStringId, keyValue.Value));
+                            }
+                        }
+                        writer.WriteEndElement(); // opcodes
+                    }
+                    
                     writer.WriteEndElement(); // task
                 }
-                if (hasTasks)
-                {
-                    writer.WriteEndElement(); // tasks
-                }
-
-                TaskInfo noTask;
-                if (tasks.TryGetValue(0, out noTask))
-                {
-                    WriteOpcodes(writer, noTask, emittedStringIds, localizedStrings);
-                }
+                writer.WriteEndElement(); // tasks
 
                 // Maps
                 if (enumIntern.Count > 0)
@@ -793,37 +789,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 eventInfos[versionEventInfos[i]->EventDescriptor] = (IntPtr)versionEventInfos[i];
             }
-        }
-
-        /// <summary>
-        /// Writes an opcodes element with the non-reserved opcodes used with 'task', if there are any.
-        /// </summary>
-        private static void WriteOpcodes(XmlWriter writer, TaskInfo task, HashSet<string> emittedStringIds, List<KeyValuePair<string, string>> localizedStrings)
-        {
-            if (task.Opcodes == null)
-            {
-                return;
-            }
-
-            writer.WriteStartElement("opcodes");
-            foreach (var keyValue in task.Opcodes)
-            {
-                // One string per opcode name, shared by every task that uses the opcode.  mc.exe keeps only the low byte of
-                // the task in an opcode's message id, so tasks such as 4 and 516 give the same opcode the same id, which is
-                // an error if their messages are different strings.
-                string opcodeStringId = $"opcode_{keyValue.Value}";
-                writer.WriteStartElement("opcode");
-                writer.WriteAttributeString("name", keyValue.Value);
-                writer.WriteAttributeString("message", $"$(string.{opcodeStringId})");
-                writer.WriteAttributeString("value", keyValue.Key.ToString());
-                writer.WriteEndElement();
-
-                if (emittedStringIds.Add(opcodeStringId))
-                {
-                    localizedStrings.Add(new KeyValuePair<string, string>(opcodeStringId, keyValue.Value));
-                }
-            }
-            writer.WriteEndElement(); // opcodes
         }
 
         /// <summary>
