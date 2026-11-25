@@ -72,6 +72,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AsyncProfiler
     /// </summary>
     internal static class AsyncEventInfo
     {
+        /// <summary>
+        /// The highest schema version decoded for known event IDs. Appending fields keeps the version;
+        /// a higher version signals an incompatible layout.
+        /// </summary>
+        public const byte SupportedVersion = 1;
+
+        /// <summary>The highest event ID this decoder understands.</summary>
+        public const byte MaxKnownEventId = (byte)AsyncEventID.AsyncProfilerSyncClock;
+
+        /// <summary>
+        /// False if <paramref name="eventId"/> is known and <paramref name="version"/> is newer than
+        /// <see cref="SupportedVersion"/>. Unknown IDs are never decoded, so any version is accepted.
+        /// </summary>
+        public static bool IsSupportedVersion(AsyncEventID eventId, byte version) =>
+            version <= SupportedVersion || (byte)eventId == 0 || (byte)eventId > MaxKnownEventId;
+
         /// <summary>Returns the default payload-length prefix width, or None for unknown IDs.</summary>
         public static PayloadLengthFieldSize GetPayloadLengthFieldSize(AsyncEventID eventId)
         {
@@ -159,10 +175,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AsyncProfiler
         public Manifest()
         {
             // Unknown IDs keep no prefix and version 0 until metadata supplies their entries.
-            for (int id = 1; id <= 23; id++)
+            for (int id = 1; id <= AsyncEventInfo.MaxKnownEventId; id++)
             {
                 _fieldSize[id] = AsyncEventInfo.GetPayloadLengthFieldSize((AsyncEventID)id);
-                _version[id] = 1;
+                _version[id] = AsyncEventInfo.SupportedVersion;
             }
         }
 
@@ -174,6 +190,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AsyncProfiler
         /// for a known event before metadata is seen. Unknown events default to 0.
         /// </summary>
         public byte GetVersion(AsyncEventID eventId) => _version[(byte)eventId];
+
+        /// <summary>
+        /// False if <paramref name="eventId"/> is a known event whose advertised version is newer than
+        /// <see cref="AsyncEventInfo.SupportedVersion"/>. Unknown events are always reported as unknown.
+        /// </summary>
+        public bool IsSupported(AsyncEventID eventId) => !_unsupported[(byte)eventId];
 
         /// <summary>Applies the manifest carried by an <c>AsyncProfilerMetadata</c> sub-event.</summary>
         public void Apply(in AsyncMetadataEvent metadata) => Apply(metadata.Manifest);
@@ -194,6 +216,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AsyncProfiler
                 byte id = (byte)entry.EventId;
                 _fieldSize[id] = entry.PayloadLengthFieldSize;
                 _version[id] = entry.Version;
+                _unsupported[id] = !AsyncEventInfo.IsSupportedVersion(entry.EventId, entry.Version);
             }
         }
 
@@ -202,6 +225,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AsyncProfiler
         // Indexed by the raw byte event ID, including IDs not yet known to the decoder.
         private readonly PayloadLengthFieldSize[] _fieldSize = new PayloadLengthFieldSize[256];
         private readonly byte[] _version = new byte[256];
+        private readonly bool[] _unsupported = new bool[256];
 
         #endregion
     }

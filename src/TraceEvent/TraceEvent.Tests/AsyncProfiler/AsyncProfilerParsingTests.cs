@@ -387,17 +387,15 @@ namespace TraceEventTests
         }
 
         [Fact]
-        public void Manifest_UpgradesKnownEventFieldSize_ReadsV1FieldsAndSkipsAppended()
+        public void Manifest_UnsupportedKnownEventVersion_ReportsEachRecordAndSkipsIt()
         {
-            // The upgraded payload exceeds a byte-sized length but retains the v1 dispatcher field.
+            // A version bump signals an incompatible layout, so the record is framed but not decoded.
             var entries = new[]
             {
                 new AsyncManifestEntry(AsyncEventID.ResumeRuntimeAsyncContext, 2, PayloadLengthFieldSize.UShort),
             };
             var payload = new byte[byte.MaxValue + 2];
             payload[0] = 0x42;
-            payload[1] = 0xAA;
-            payload[payload.Length - 1] = 0xBB;
 
             var buffer = new AsyncProfilerBufferBuilder()
                 .Metadata(StartQpc + 1, qpcFrequency: 1, qpcSync: 1, utcSync: 1, eventBufferSize: 0, wrapperCount: 0, entries)
@@ -408,8 +406,12 @@ namespace TraceEventTests
             var sink = new AsyncProfilerCollectingSink();
             AsyncProfilerTraceEventParser.ParseBuffer(buffer, sink);
 
-            Assert.Empty(sink.Errors);
-            Assert.Equal(0x42UL, Assert.Single(sink.ContextResumes).DispatcherId);
+            Assert.Single(sink.Metadatas);
+            ParseError error = Assert.Single(sink.Errors);
+            Assert.Equal(AsyncEventID.ResumeRuntimeAsyncContext, error.EventId);
+            Assert.Equal(StartQpc + 2, error.TimestampQpc);
+            Assert.Empty(sink.ContextResumes);
+            Assert.Empty(sink.Unknowns);
             Assert.Single(sink.Methods);
         }
 

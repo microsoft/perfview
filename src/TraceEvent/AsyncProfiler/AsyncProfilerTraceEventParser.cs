@@ -88,7 +88,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <param name="sink">Receives the decoded sub-events and any parse errors.</param>
         /// <remarks>
         /// Decoding is synchronous. Reads known fields and skips appended fields and advertised unknown events
-        /// using their declared payload lengths. New schemas must preserve the known layout and only append fields.
+        /// using their declared payload lengths. Appending fields keeps the schema version; a newer version than
+        /// <see cref="AsyncEventInfo.SupportedVersion"/> for a known event signals an incompatible layout. Each
+        /// such record is skipped and reported to <see cref="ISubEventSink.OnParseError"/>.
         /// Malformed payloads are reported to <see cref="ISubEventSink.OnParseError"/>; decoding then continues
         /// at the declared payload end. Invalid headers or event framing stop decoding this buffer.
         /// This decoder does not track open call stacks. <see cref="Computers.AsyncProfilerIndexBuilder"/>
@@ -321,6 +323,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             byte[] buffer, int payloadStart, int payloadEnd, Manifest manifest, ISubEventSink sink)
         {
             int index = payloadStart;
+            if (!manifest.IsSupported(eventId))
+            {
+                // An incompatible layout; report this record so only its thread loses state. ParseBuffer
+                // skips the declared payload.
+                sink.OnParseError(new ParseError(
+                    $"Unsupported schema version {manifest.GetVersion(eventId)} for async-profiler event {eventId}",
+                    payloadStart, header, timestampQpc, eventId));
+                return true;
+            }
+
             switch (eventId)
             {
                 case AsyncEventID.CreateRuntimeAsyncContext:

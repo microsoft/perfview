@@ -103,6 +103,16 @@ batch. With it, the decoder can:
   fields added by a newer runtime, and
 - skip record types it does not know at all.
 
+Adding fields to the end of a record keeps its schema version. A higher
+version means the layout changed in an incompatible way. TraceEvent skips
+each record whose advertised version is higher than it supports and reports
+an error. The affected thread loses its async call stacks until its next
+reset record; other threads, and records of supported versions, are not
+affected. Incompatible changes to the metadata record itself, or to how
+records are framed, require a new batch-header version instead; TraceEvent
+ignores async-profiler data from batches with a version it does not
+support.
+
 **Errors.** A malformed record is skipped using its declared length. A
 damaged batch header stops decoding of that batch. The index builder then
 decides which call-stack state can still be trusted (see below).

@@ -256,6 +256,33 @@ namespace TraceEventTests
             Assert.Equal(0xCUL, Assert.Single(computer.GetCallStacks(Key(ProcessB, ThreadA), Start + 100)).Frames.InstructionPointerAt(0));
         }
 
+        [Fact]
+        public void UnsupportedKnownEventVersion_InvalidatesOnlyThreadWhereRecordAppears()
+        {
+            var entries = new[]
+            {
+                new AsyncManifestEntry(AsyncEventID.UnwindStateMachineAsyncException, 2, PayloadLengthFieldSize.Byte),
+            };
+            var computer = new AsyncProfilerIndexBuilder();
+            Process(computer, ProcessA, new AsyncProfilerBufferBuilder(ThreadA)
+                .Metadata(Start, qpcFrequency: 10_000_000, qpcSync: 1, utcSync: 1, eventBufferSize: 0, wrapperCount: 32, entries)
+                .Reset(Start)
+                .ResumeStack(Start + 10, 1, new ulong[] { 0xA })
+                .RawEvent((byte)AsyncEventID.UnwindStateMachineAsyncException, Start + 15, PayloadLengthFieldSize.Byte, new byte[] { 1 })
+                .Reset(Start + 20)
+                .ResumeStack(Start + 21, 2, new ulong[] { 0xB }).Suspend(Start + 25));
+            Process(computer, ProcessA, new AsyncProfilerBufferBuilder(ThreadB)
+                .Reset(Start).ResumeStack(Start + 10, 3, new ulong[] { 0xC }));
+            computer.Finish();
+
+            Assert.Equal(1, computer.ParseErrorCount);
+            Assert.True(computer.ClockKnownForProcess(ProcessA));
+            Assert.Equal(Start + 15, Assert.Single(computer.GetCallStacks(Key(ProcessA, ThreadA), Start + 11)).EndQpc);
+            Assert.Empty(computer.GetCallStacks(Key(ProcessA, ThreadA), Start + 16));
+            Assert.Equal(0xBUL, Assert.Single(computer.GetCallStacks(Key(ProcessA, ThreadA), Start + 22)).Frames.InstructionPointerAt(0));
+            Assert.Equal(0xCUL, Assert.Single(computer.GetCallStacks(Key(ProcessA, ThreadB), Start + 100)).Frames.InstructionPointerAt(0));
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
