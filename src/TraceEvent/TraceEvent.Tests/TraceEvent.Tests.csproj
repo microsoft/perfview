@@ -56,6 +56,7 @@
     </Compile>
     <Compile Remove="Properties\ModuleInitializerAttribute.cs" />
     <Compile Include="Properties\ModuleInitializerAttribute.cs" Condition="'$(TargetFramework)' == 'net462'" />
+    <Compile Include="..\TraceEvent.Benchmarks\AsyncProfiler\AsyncProfilerEndToEndFixture.cs" Link="AsyncProfiler\AsyncProfilerEndToEndFixture.cs" />
   </ItemGroup>
 
   <ItemGroup>

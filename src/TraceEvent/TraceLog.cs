@@ -8,8 +8,10 @@ using FastSerialization;
 using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing.EventPipe;
+using Microsoft.Diagnostics.Tracing.Computers;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
+using Microsoft.Diagnostics.Tracing.Parsers.AsyncProfiler;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
 using Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource;
@@ -377,8 +379,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // Clean up interim data structures - they're not necessary after the event has been processed (Dispatched).
             eventsToStacks.Clear();
+            eventsToStackUserModeTimes.Clear();
             eventsToCodeAddresses.Clear();
             cswitchBlockingEventsToStacks.Clear();
+            blockingEventsToStackUserModeTimes.Clear();
         }
 
         /// <summary>
@@ -497,6 +501,28 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Summary statistics on the events in the ETX file.
         /// </summary>
         public TraceEventStats Stats { get { return stats; } }
+
+        /// <summary>
+        /// True if the source trace contained async-profiler event batches. This is a cheap capability check backed
+        /// by persisted event statistics; it does not load the deferred async-callstack index. A trace containing
+        /// only profiler metadata, reset events, or malformed batches can return true without usable call-stack intervals.
+        /// </summary>
+        internal bool HasAsyncProfilerEvents
+        {
+            get
+            {
+                foreach (TraceEventCounts counts in stats)
+                {
+                    if (counts.ProviderGuid == AsyncProfilerTraceEventParser.ProviderGuid &&
+                        counts.EventID == (TraceEventID)AsyncProfilerTraceEventParser.AsyncEventsEventId &&
+                        counts.Count != 0)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
 
         // operations on events
         /// <summary>
@@ -955,7 +981,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // Try to keep our memory under control by removing old data.
             // Lots of data structures in TraceLog can grow over time.
-            // However currently we only trim three, all CAN grow on every event (so they grow most quickly of all data structures)
+            // These tables can grow on every event (or borrowed stack)
             // and we know they are not needed after dispatched the events they are for.
 
             // To keep overhead reasonable, we assume the worst case (every event has an entry) and we allow the tables to grow
@@ -976,6 +1002,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (cswitchBlockingEventsToStacks.Count > MaxEventCountBeforeReset)
             {
                 RemoveAllButLastEntries(ref cswitchBlockingEventsToStacks, realTimeQueue.Count);
+            }
+            if (eventsToStackUserModeTimes.Count > MaxEventCountBeforeReset)
+            {
+                RemoveAllButLastEntries(ref eventsToStackUserModeTimes, realTimeQueue.Count);
+            }
+            if (blockingEventsToStackUserModeTimes.Count > MaxEventCountBeforeReset)
+            {
+                RemoveAllButLastEntries(ref blockingEventsToStackUserModeTimes, realTimeQueue.Count);
             }
         }
 
@@ -1081,6 +1115,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             return CallStackIndex.Invalid;
+        }
+
+        internal long GetStackUserModeTimeStampQPC(EventIndex eventIndex, long eventTimeStampQPC, bool blockingStack = false)
+        {
+            lazyStackUserModeTimes.FinishRead(preserveStreamPosition: true);
+            var userModeTimes = blockingStack ? blockingEventsToStackUserModeTimes : eventsToStackUserModeTimes;
+            if (userModeTimes.BinarySearch(eventIndex, out int index, stackUserModeTimeComparer))
+            {
+                return userModeTimes[index].UserModeTimeStampQPC;
+            }
+            return eventTimeStampQPC;
         }
 
         internal static void CreateFromLinuxEventSources(CtfTraceEventSource source, string etlxFilePath, TraceLogOptions options)
@@ -1940,7 +1985,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     // and we use this as the 'top' of the stack for all kernel fragments on this thread.
                     if (!process.IsKernelAddress(data.InstructionPointer(0), data.PointerSize))
                     {
-                        loggedUserStack = EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, stackIndex, stackInfo);
+                        loggedUserStack = EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, stackIndex, stackInfo, data.EventTimeStampQPC);
                         thread.lastEmitStackOnExitFromKernelQPC = data.TimeStampQPC;
                     }
 
@@ -1996,7 +2041,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     var timeStampQPC = data.TimeStampQPC;
                     TraceProcess process = processes.GetOrCreateProcess(data.ProcessID, timeStampQPC);
                     thread = Threads.GetOrCreateThread(data.ThreadID, timeStampQPC, process);
-                    if (!EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, data.StackKey, stackInfo))
+                    if (!EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, data.StackKey, stackInfo, data.EventTimeStampQPC))
                     {
                         stackInfo.LogUserStackFragment(data.StackKey, this);
                     }
@@ -2170,6 +2215,75 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             universalConverter.BeforeProcess(this, rawEvents);
         }
 
+        private const int MaxAsyncProfilerErrorDetails = 10;
+
+        /// <summary>
+        /// Creates the builder that indexes async-profiler records while raw events are copied. Internal buffer
+        /// timestamps use the trace's QPC domain unchanged. Raw batches are omitted from the ETLX unless
+        /// KeepAllEvents is set.
+        /// </summary>
+        private AsyncProfilerIndexBuilder CreateAsyncProfilerIndexBuilder(TraceEventDispatcher rawEvents)
+        {
+            var parser = new AsyncProfilerTraceEventParser(rawEvents);
+            var builder = new AsyncProfilerIndexBuilder(
+                parser,
+                data => Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).ProcessIndex);
+            builder.ParseError += (processIndex, error) =>
+            {
+                if (builder.ParseErrorCount > MaxAsyncProfilerErrorDetails)
+                {
+                    return;
+                }
+
+                DebugWarn(false, string.Format(
+                    "AsyncProfiler PID {0}, process index {1}, thread {2}, QPC {3}: {4}",
+                    Processes[processIndex].ProcessID, processIndex,
+                    error.BufferHeader?.OsThreadId.ToString() ?? "unknown",
+                    error.TimestampQpc?.ToString() ?? "unknown", error), null);
+            };
+
+            parser.AsyncEvents += delegate { removeFromStream = true; };
+
+            RegisterAsyncProfilerCodeAddresses(builder);
+            return builder;
+        }
+
+        /// <summary>
+        /// Binds async-profiler native IPs to code addresses when their events are accepted, as physical stacks do.
+        /// A method unload or rundown resolves the address and removes it from the lookup map, so a later reuse of
+        /// the same IP by other code gets a new code address. Only CodeAddressIndex references are persisted.
+        /// </summary>
+        private void RegisterAsyncProfilerCodeAddresses(AsyncProfilerIndexBuilder builder)
+        {
+            builder.ResolveCodeAddress = delegate (ProcessIndex processIndex, ulong instructionPointer)
+            {
+                TraceProcess process = Processes[processIndex];
+                if (process == null)
+                {
+                    return CodeAddressIndex.Invalid;
+                }
+
+                return codeAddresses.GetOrCreateCodeAddressIndex(process, instructionPointer);
+            };
+        }
+
+        /// <summary>
+        /// Commits async call stacks still open at the end of the event stream, so they remain queryable
+        /// through trace end, then keeps the index unless it is empty.
+        /// </summary>
+        private void FinishAsyncProfilerIndex(AsyncProfilerIndexBuilder builder)
+        {
+            builder.Finish();
+            if (builder.ParseErrorCount != 0)
+            {
+                DebugWarn(false, string.Format(
+                    "AsyncProfiler reported {0} parse errors; uncertain call-stack state was invalidated. " +
+                    "At most {1} error details were logged.",
+                    builder.ParseErrorCount, MaxAsyncProfilerErrorDetails), null);
+            }
+
+            asyncProfilerCallStacks = builder.Index.IsEmpty ? null : builder.Index;
+        }
         /// <summary>
         ///  Copies the events from the 'rawEvents' dispatcher to the output stream 'IStreamWriter'.  It
         ///  also creates auxiliary data structures associated with the raw events (eg, processes, threads,
@@ -2184,6 +2298,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // that belong to it get its custom handling so that the events are
             // parsed property and then copied into the resulting ETLX file in their final form.
             GC.KeepAlive(new GCDynamicTraceEventParser(rawEvents));
+
+            AsyncProfilerIndexBuilder asyncProfilerIndexBuilder = CreateAsyncProfilerIndexBuilder(rawEvents);
 
             // Fix up MemInfoWS records so that we get one per process rather than one per machine
             rawEvents.Kernel.MemoryProcessMemInfo += delegate (MemoryProcessMemInfoTraceData data)
@@ -2281,6 +2397,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #endif
                 if (processingDisabled)
                 {
+                    // Callbacks still run for skipped events; don't let their per-event suppression leak to the next event.
+                    removeFromStream = false;
                     if (startMSec != 0 && startMSec <= data.TimeStampRelativeMSec)
                     {
                         startMSec = 0;                  // Marking it 0 indicates that we have triggered on it already.
@@ -2318,7 +2436,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 countForEvent.m_eventDataLenTotal += data.EventDataLength;
 
                 var extendedDataCount = data.eventRecord->ExtendedDataCount;
-                if (extendedDataCount != 0)
+                // An event removed from the persisted stream has no EventIndex to own its extended stack data.
+                // Attaching that stack to the current eventCount would make the next persisted event reuse the
+                // same EventIndex and appear to have two stacks.
+                if (extendedDataCount != 0 && (!removeFromStream || options.KeepAllEvents))
                 {
                     bookKeepingEvent |= ProcessExtendedData(data, extendedDataCount, countForEvent, isLiveSession: false);
                 }
@@ -2440,6 +2561,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 eventsLost = rawEvents.EventsLost;
             }
+
+            FinishAsyncProfilerIndex(asyncProfilerIndexBuilder);
+
 
             if (maxEventCount != -1 && eventCount >= maxEventCount)
             {
@@ -2576,6 +2700,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 return (int)x.EventIndex - (int)y.EventIndex;
             });
+            eventsToStackUserModeTimes.Sort((x, y) => TraceEvent.Compare(x.EventIndex, y.EventIndex));
+            blockingEventsToStackUserModeTimes.Sort((x, y) => TraceEvent.Compare(x.EventIndex, y.EventIndex));
 
 #if DEBUG
             // Confirm that the CPU stats make sense.
@@ -2771,7 +2897,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// It then clears this list.   While doing this processing it will check to see if the target stack 'target' is in that list and
         /// it will return true if it was.
         /// </summary>
-        private bool EmitStackOnExitFromKernel(ref IncompleteStack listOfIncompleteKernelStacks, CallStackIndex userModeStack, IncompleteStack target)
+        private bool EmitStackOnExitFromKernel(ref IncompleteStack listOfIncompleteKernelStacks, CallStackIndex userModeStack, IncompleteStack target,
+            long userModeTimeStampQPC = UseEventTimeStampQPC)
         {
             bool foundTarget = false;
 #if DEBUG
@@ -2786,6 +2913,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 ptr.PrevKernelEventOnSameThread = null;         // Remove it from the list.
                 ptr.WaitingToLeaveKernel = false;               // Indicate that this entry was removed.
 
+                // target is the fragment's source event; other pending events borrow its user-mode stack.
+                // Genuine kernel-return completions retain each event's own QPC.
+                ptr.UserModeTimeStampQPC = ptr == target ? UseEventTimeStampQPC : userModeTimeStampQPC;
                 ptr.LogUserStackFragment(userModeStack, this);
                 if (ptr == target)
                 {
@@ -2802,7 +2932,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// It then clears this list.   While doing this processing it will check to see if the target stack 'target' is in that list and
         /// it will return true if it was.
         /// </summary>
-        private bool EmitStackOnExitFromKernel(ref IncompleteStack listOfIncompleteKernelStacks, Address userModeKey, IncompleteStack target)
+        private bool EmitStackOnExitFromKernel(ref IncompleteStack listOfIncompleteKernelStacks, Address userModeKey, IncompleteStack target,
+            long userModeTimeStampQPC = UseEventTimeStampQPC)
         {
             bool foundTarget = false;
 #if DEBUG
@@ -2817,6 +2948,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 ptr.PrevKernelEventOnSameThread = null;         // Remove it from the list.
                 ptr.WaitingToLeaveKernel = false;               // Indicate that this entry was removed.
 
+                // target is the fragment's source event; other pending events borrow its user-mode stack.
+                // Genuine kernel-return completions retain each event's own QPC.
+                ptr.UserModeTimeStampQPC = ptr == target ? UseEventTimeStampQPC : userModeTimeStampQPC;
                 ptr.LogUserStackFragment(userModeKey, this);
                 if (ptr == target)
                 {
@@ -2980,6 +3114,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 EventIndex = eventIndex;
                 Thread = thread;
                 BlockingEventIndex = blockingEventIndex;
+                UserModeTimeStampQPC = UseEventTimeStampQPC;
                 Debug.Assert(PrevKernelEventOnSameThread == null);
                 Debug.Assert(!WaitingToLeaveKernel);
                 Debug.Assert(NextEventWithKernelKey == null);
@@ -3128,10 +3263,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         if (UserModeStackIndex >= 0)
                         {
                             // Failsafe if the assert fails, drop the stack since it is just the thread and process anyway.
-                            eventLog.AddStackToEvent(EventIndex, UserModeStackIndex);
+                            eventLog.AddStackToEvent(EventIndex, UserModeStackIndex, UserModeTimeStampQPC);
                             if (BlockingEventIndex != Tracing.EventIndex.Invalid)
                             {
                                 eventLog.cswitchBlockingEventsToStacks.Add(new EventsToStackIndex(BlockingEventIndex, UserModeStackIndex));
+                                if (UserModeTimeStampQPC != UseEventTimeStampQPC)
+                                {
+                                    eventLog.AddStackUserModeTimeStampQPC(BlockingEventIndex, UserModeTimeStampQPC, blockingStack: true);
+                                }
                             }
 
                             // Trace.WriteLine("Writing Stack " + UserModeStackIndex + " for Event " + EventIndex);
@@ -3210,6 +3349,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // If the kernel data comes in before the user stack (a common case), we can't create a stack index
             // (because we don't know the thread-end of the stack), so we simply remember it.
             private GrowableArray<CodeAddressIndex> KernelStackFrames;
+
+            // Only cross-event borrowing sets a source QPC; compressed-key resolution must retain it.
+            internal long UserModeTimeStampQPC;
 
             // If data for the user stack comes in first, we can convert it immediately to a stack index.
             internal CallStackIndex UserModeStackIndex { get; private set; }
@@ -4040,6 +4182,25 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             serializer.Write(truncated);
             serializer.Write((int)firstTimeInversion);
+
+            // Async call stacks index (RuntimeAsync + StateMachineAsync). Written as a deferred region: a
+            // forward reference is emitted so readers can skip it and deserialize it lazily on first query.
+            // The presence flag lets the (common) no-async-data case be skipped cheaply.
+            serializer.Log("<Marker Name=\"asyncProfilerCallStacks\"/>");
+            lazyAsyncProfilerCallStacks.Write(serializer, delegate
+            {
+                serializer.Write(asyncProfilerCallStacks != null);
+                if (asyncProfilerCallStacks != null)
+                {
+                    ((IFastSerializable)asyncProfilerCallStacks).ToStream(serializer);
+                }
+            });
+            lazyStackUserModeTimes.FinishRead(preserveStreamPosition: true);
+            lazyStackUserModeTimes.Write(serializer, delegate
+            {
+                WriteStackUserModeTimes(serializer, eventsToStackUserModeTimes);
+                WriteStackUserModeTimes(serializer, blockingEventsToStackUserModeTimes);
+            });
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -4206,10 +4367,33 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             deserializer.Read(out truncated);
             firstTimeInversion = (EventIndex)(uint)deserializer.ReadInt();
+
+            lazyAsyncProfilerCallStacks.Read(deserializer, delegate
+            {
+                bool present;
+                deserializer.Read(out present);
+                if (present)
+                {
+                    var index = new AsyncProfilerCallStacksIndex();
+                    ((IFastSerializable)index).FromStream(deserializer);
+                    asyncProfilerCallStacks = index;
+                }
+                else
+                {
+                    asyncProfilerCallStacks = null;
+                }
+            });
+            lazyStackUserModeTimes.Read(deserializer, delegate
+            {
+                eventsToStackUserModeTimes = ReadStackUserModeTimes(deserializer);
+                blockingEventsToStackUserModeTimes = ReadStackUserModeTimes(deserializer);
+            });
+            // Lookups are unsynchronized and share the deserializer with the lazily loaded async index.
+            lazyStackUserModeTimes.FinishRead(preserveStreamPosition: true);
         }
         int IFastSerializableVersion.Version
         {
-            get { return 78; }
+            get { return 79; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -4221,6 +4405,25 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // We don't support old readers reading new formats.
             get { return ((IFastSerializableVersion)this).Version; }
         }
+
+        /// <summary>
+        /// The per-thread active async call stack index (RuntimeAsync + StateMachineAsync) built from the
+        /// AsyncProfilerEventSource, or null if no usable call-stack intervals were recorded. Lazily deserialized
+        /// on first access; event presence alone does not imply an index exists.
+        /// </summary>
+        internal AsyncProfilerCallStacksIndex AsyncProfilerCallStacks
+        {
+            get
+            {
+                lock (asyncProfilerCallStacksLock)
+                {
+                    lazyAsyncProfilerCallStacks.FinishRead(preserveStreamPosition: true);
+                    return asyncProfilerCallStacks;
+                }
+            }
+        }
+
+
 
         // headerSize is the size we persist of TraceEventNativeMethods.EVENT_RECORD which is up to and
         // including the UserDataLength field (after this field the fields are architecture dependent in
@@ -4253,6 +4456,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private DeferedRegion lazyEventsToStacks;
         private DeferedRegion lazyEventsToCodeAddresses;
         private DeferedRegion lazyCswitchBlockingEventsToStacks;
+        private DeferedRegion lazyStackUserModeTimes;
+        private DeferedRegion lazyAsyncProfilerCallStacks;
+        private AsyncProfilerCallStacksIndex asyncProfilerCallStacks;       // Lazily loaded; null if none.
+        private readonly object asyncProfilerCallStacksLock = new object();
         private TraceEvents events;
         private GrowableArray<EventPageEntry> eventPages;   // The offset offset of a page
         private int eventCount;                             // Total number of events
@@ -4271,6 +4478,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         private TraceModuleFiles moduleFiles;
         private GrowableArray<EventsToStackIndex> eventsToStacks;
+        private GrowableArray<EventsToStackUserModeTime> eventsToStackUserModeTimes;
+        private GrowableArray<EventsToStackUserModeTime> blockingEventsToStackUserModeTimes;
+        private const long UseEventTimeStampQPC = long.MinValue;
         /// <summary>
         /// The context switch event gives the stack of the thread GETTING the CPU, but it is also very useful
         /// to have this stack at the point of blocking.   cswitchBlockingEventsToStacks gives this stack.
@@ -4544,7 +4754,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Add a new entry that associates the stack 'stackIndex' with the event with index 'eventIndex'
         /// </summary>
-        internal void AddStackToEvent(EventIndex eventIndex, CallStackIndex stackIndex)
+        internal void AddStackToEvent(EventIndex eventIndex, CallStackIndex stackIndex, long userModeTimeStampQPC = UseEventTimeStampQPC)
         {
             int whereToInsertIndex = eventsToStacks.Count;
             if (IsRealTime)
@@ -4589,7 +4799,60 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 #endif
             eventsToStacks.Insert(whereToInsertIndex, new EventsToStackIndex(eventIndex, stackIndex));
+            if (userModeTimeStampQPC != UseEventTimeStampQPC)
+            {
+                AddStackUserModeTimeStampQPC(eventIndex, userModeTimeStampQPC);
+            }
         }
+
+        internal void AddStackUserModeTimeStampQPC(EventIndex eventIndex, long userModeTimeStampQPC, bool blockingStack = false)
+        {
+            lazyStackUserModeTimes.FinishRead(preserveStreamPosition: true);
+            ref var userModeTimes = ref (blockingStack ? ref blockingEventsToStackUserModeTimes : ref eventsToStackUserModeTimes);
+            int index = userModeTimes.Count;
+            if (IsRealTime)
+            {
+                while (index > 0 && userModeTimes[index - 1].EventIndex > eventIndex)
+                {
+                    index--;
+                }
+            }
+            userModeTimes.Insert(index, new EventsToStackUserModeTime { EventIndex = eventIndex, UserModeTimeStampQPC = userModeTimeStampQPC });
+        }
+
+        private static void WriteStackUserModeTimes(Serializer serializer, GrowableArray<EventsToStackUserModeTime> userModeTimes)
+        {
+            serializer.Write(userModeTimes.Count);
+            for (int i = 0; i < userModeTimes.Count; i++)
+            {
+                serializer.Write((int)userModeTimes[i].EventIndex);
+                serializer.Write(userModeTimes[i].UserModeTimeStampQPC);
+            }
+        }
+
+        private static GrowableArray<EventsToStackUserModeTime> ReadStackUserModeTimes(Deserializer deserializer)
+        {
+            int count = deserializer.ReadInt();
+            var userModeTimes = new GrowableArray<EventsToStackUserModeTime>(count);
+            for (int i = 0; i < count; i++)
+            {
+                userModeTimes.Add(new EventsToStackUserModeTime
+                {
+                    EventIndex = (EventIndex)deserializer.ReadInt(),
+                    UserModeTimeStampQPC = deserializer.ReadInt64()
+                });
+            }
+            return userModeTimes;
+        }
+
+        private struct EventsToStackUserModeTime
+        {
+            public EventIndex EventIndex;
+            public long UserModeTimeStampQPC;
+        }
+
+        private static readonly Func<EventIndex, EventsToStackUserModeTime, int> stackUserModeTimeComparer =
+            (eventIndex, entry) => TraceEvent.Compare(eventIndex, entry.EventIndex);
 
         private static readonly Func<EventIndex, EventsToStackIndex, int> stackComparer = delegate (EventIndex eventID, EventsToStackIndex elem)
             { return TraceEvent.Compare(eventID, elem.EventIndex); };
@@ -6890,6 +7153,25 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     }
 
     /// <summary>
+    /// Selects the kind of loaded-module record to find.
+    /// </summary>
+    public enum TraceLoadedModuleKind
+    {
+        /// <summary>
+        /// Accept either a native-image mapping or a CLR-managed module record.
+        /// </summary>
+        Any,
+        /// <summary>
+        /// Accept only native-image mappings, including mappings of managed DLLs.
+        /// </summary>
+        Native,
+        /// <summary>
+        /// Accept only CLR-managed module records.
+        /// </summary>
+        Managed
+    }
+
+    /// <summary>
     /// TraceLoadedModules represents the collection of modules (loaded DLLs or EXEs) in a
     /// particular process.
     /// </summary>
@@ -6914,20 +7196,22 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         /// <summary>
-        /// Returns the module representing the unmanaged load of a particular fiele at a given time.
+        /// Returns the first native or managed module record matching the case-insensitive file path
+        /// that is loaded at the given time, or null if none matches.
         /// </summary>
         public TraceLoadedModule GetLoadedModule(string fileName, double timeRelativeMSec)
         {
-            long timeQPC = process.Log.RelativeMSecToQPC(timeRelativeMSec);
-            for (int i = 0; i < modules.Count; i++)
-            {
-                TraceLoadedModule module = modules[i];
-                if (string.Compare(module.FilePath, fileName, StringComparison.OrdinalIgnoreCase) == 0 && module.loadTimeQPC <= timeQPC && timeQPC < module.unloadTimeQPC)
-                {
-                    return module;
-                }
-            }
-            return null;
+            return GetLoadedModule(fileName, timeRelativeMSec, TraceLoadedModuleKind.Any);
+        }
+
+        /// <summary>
+        /// Returns the first module record of the requested kind matching the case-insensitive file path
+        /// that is loaded at the given time, or null if none matches. The load time is inclusive and the
+        /// unload time is exclusive.
+        /// </summary>
+        public TraceLoadedModule GetLoadedModule(string fileName, double timeRelativeMSec, TraceLoadedModuleKind moduleKind)
+        {
+            return GetLoadedModule(fileName, process.Log.RelativeMSecToQPC(timeRelativeMSec), moduleKind);
         }
 
         /// <summary>
@@ -6959,20 +7243,56 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
         /// <summary>
-        /// This function will find the module associated with 'address' at 'timeQPC' however it will only
-        /// find modules that are mapped in memory (module associated with JIT compiled methods will not be found).
+        /// Returns the first native or managed module record matching the case-insensitive file path
+        /// that is loaded at the given QPC time, or null if none matches.
         /// </summary>
         internal TraceLoadedModule GetLoadedModule(string fileName, long timeQPC)
         {
+            return GetLoadedModule(fileName, timeQPC, TraceLoadedModuleKind.Any);
+        }
+
+        /// <summary>
+        /// Returns the first module record of the requested kind matching the case-insensitive file path
+        /// that is loaded at the given QPC time, or null if none matches. The load time is inclusive and
+        /// the unload time is exclusive.
+        /// </summary>
+        internal TraceLoadedModule GetLoadedModule(string fileName, long timeQPC, TraceLoadedModuleKind moduleKind)
+        {
+            if (moduleKind != TraceLoadedModuleKind.Any &&
+                moduleKind != TraceLoadedModuleKind.Native &&
+                moduleKind != TraceLoadedModuleKind.Managed)
+            {
+                throw new ArgumentOutOfRangeException(nameof(moduleKind));
+            }
+
             for (int i = 0; i < modules.Count; i++)
             {
                 TraceLoadedModule module = modules[i];
-                if (string.Compare(module.FilePath, fileName, StringComparison.OrdinalIgnoreCase) == 0 && module.loadTimeQPC <= timeQPC && timeQPC < module.unloadTimeQPC)
+                if (!IsModuleKind(module, moduleKind))
+                {
+                    continue;
+                }
+
+                bool isLoadedAtTime = module.loadTimeQPC <= timeQPC && timeQPC < module.unloadTimeQPC;
+                if (isLoadedAtTime && string.Compare(module.FilePath, fileName, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     return module;
                 }
             }
             return null;
+        }
+
+        private static bool IsModuleKind(TraceLoadedModule module, TraceLoadedModuleKind moduleKind)
+        {
+            switch (moduleKind)
+            {
+                case TraceLoadedModuleKind.Native:
+                    return !(module is TraceManagedModule);
+                case TraceLoadedModuleKind.Managed:
+                    return module is TraceManagedModule;
+                default:
+                    return true;
+            }
         }
 
         // #ModuleHandlersCalledFromTraceLog
@@ -7113,7 +7433,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             module.flags = data.ModuleFlags;
             if (nativeModulePath.Length > 0)
             {
-                module.nativeModule = GetLoadedModule(nativeModulePath, data.TimeStampQPC);
+                module.nativeModule = GetLoadedModule(nativeModulePath, data.TimeStampQPC, TraceLoadedModuleKind.Native);
             }
 
             if (module.ModuleFile.fileName == null)
@@ -11618,6 +11938,28 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return log.GetCallStackIndexForEvent(anEvent);
         }
         /// <summary>
+        /// Gets the event's call stack and the exact trace QPC timestamp for interpreting its user-mode frames.
+        /// The output timestamp is the event's own QPC unless TraceLog borrowed the stack's user frames from
+        /// another event, in which case it is that source QPC. Genuine kernel-return completions retain the event QPC.
+        /// Neither the event timestamp nor its weight is changed; a combined kernel/user stack can represent different times.
+        /// </summary>
+        /// <returns>True if the event has a call stack; otherwise false, with Invalid as the stack index and
+        /// the event's original QPC as the output timestamp.</returns>
+        public static bool TryGetCallStackIndex(this TraceEvent anEvent, out CallStackIndex callStackIndex, out long userModeTimeStampQPC)
+        {
+            userModeTimeStampQPC = anEvent.TimeStampQPC;
+            TraceLog log = anEvent.Source as TraceLog;
+            callStackIndex = log == null
+                ? Microsoft.Diagnostics.Tracing.Etlx.CallStackIndex.Invalid
+                : log.GetCallStackIndexForEvent(anEvent);
+            if (callStackIndex == Microsoft.Diagnostics.Tracing.Etlx.CallStackIndex.Invalid)
+            {
+                return false;
+            }
+            userModeTimeStampQPC = log.GetStackUserModeTimeStampQPC(anEvent.EventIndex, userModeTimeStampQPC);
+            return true;
+        }
+        /// <summary>
         /// Finds the CallStack index associated the blocking thread for CSwitch event
         /// </summary>
         public static CallStackIndex BlockingStack(this CSwitchTraceData anEvent)
@@ -11629,6 +11971,27 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             return log.GetCallStackIndexForCSwitchBlockingEventIndex(anEvent.EventIndex);
+        }
+        /// <summary>
+        /// Gets the blocking thread's stack and the exact trace QPC timestamp for interpreting its user-mode frames.
+        /// The output timestamp is the context switch's own QPC unless this blocking stack borrowed user frames
+        /// from another event. This timestamp is independent of the normal incoming-thread stack and its user-mode QPC.
+        /// </summary>
+        /// <returns>True if the event has a blocking stack; otherwise false, with Invalid as the stack index and
+        /// the event's original QPC as the output timestamp.</returns>
+        public static bool TryGetBlockingStackIndex(this CSwitchTraceData anEvent, out CallStackIndex callStackIndex, out long userModeTimeStampQPC)
+        {
+            userModeTimeStampQPC = anEvent.TimeStampQPC;
+            TraceLog log = anEvent.Source as TraceLog;
+            callStackIndex = log == null
+                ? Microsoft.Diagnostics.Tracing.Etlx.CallStackIndex.Invalid
+                : log.GetCallStackIndexForCSwitchBlockingEventIndex(anEvent.EventIndex);
+            if (callStackIndex == Microsoft.Diagnostics.Tracing.Etlx.CallStackIndex.Invalid)
+            {
+                return false;
+            }
+            userModeTimeStampQPC = log.GetStackUserModeTimeStampQPC(anEvent.EventIndex, userModeTimeStampQPC, blockingStack: true);
+            return true;
         }
         /// <summary>
         /// Finds the TraceCallStacks associated with a TraceEvent.

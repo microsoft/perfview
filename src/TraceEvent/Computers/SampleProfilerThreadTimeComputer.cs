@@ -1,7 +1,9 @@
 ﻿using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing.Computers;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.AsyncProfiler;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using System;
@@ -20,10 +22,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Create a new ThreadTimeComputer
         /// </summary>
+        /// <param name="eventLog">The trace to compute stacks over.</param>
+        /// <param name="symbolReader">Used to resolve managed method symbols.</param>
         public SampleProfilerThreadTimeComputer(TraceLog eventLog, SymbolReader symbolReader)
         {
             m_eventLog = eventLog;
             m_symbolReader = symbolReader;
+            AsyncProfilerCallStackTransformPipeline = new AsyncProfilerCallStackTransformPipeline();
+            AsyncProfilerCallStackTransforms = new AsyncProfilerCallStackTransforms(AsyncProfilerCallStackTransformPipeline);
 
             m_threadState = new ThreadState[eventLog.Threads.Count];
 
@@ -36,6 +42,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// If set we compute thread time using Tasks
         /// </summary>
         public bool UseTasks;
+
+        /// <summary>
+        /// If set, samples with async context are reconstructed from async-profiler data when the trace contains it;
+        /// other samples use the Task (TPL) data. Enables Task handling internally without changing <see cref="UseTasks"/>.
+        /// </summary>
+        public bool UseAsyncProfiler;
 
         /// <summary>
         /// Track additional info on like EventName or so.
@@ -55,12 +67,36 @@ namespace Microsoft.Diagnostics.Tracing
         public bool IgnoreApplicationInsightsRequestsWithRelatedActivityId  { get; set; } = true;
 
         /// <summary>
+        /// True after generation when <see cref="UseAsyncProfiler"/> was set and the trace has a usable async-profiler
+        /// index. Does not guarantee that any particular sample matched an async call stack. False before generation.
+        /// </summary>
+        public bool AsyncProfilerCallStacksActive => m_asyncProfilerCallStackSourceBuilder != null;
+
+        /// <summary>
+        /// Presentation settings for async-profiler call stacks. Configure this object before
+        /// <see cref="GenerateThreadTimeStacks"/>. Samples without usable async context are not transformed.
+        /// </summary>
+        public AsyncProfilerCallStackTransforms AsyncProfilerCallStackTransforms { get; }
+
+        internal AsyncProfilerCallStackTransformPipeline AsyncProfilerCallStackTransformPipeline { get; }
+
+        /// <summary>
         /// Generate the thread time stacks, outputting to 'stackSource'.  
         /// </summary>
         /// <param name="outputStackSource"></param>
         /// <param name="traceEvents">Optional filtered trace events.</param>
+        /// <exception cref="InvalidOperationException">
+        /// This computer has already generated a stack source. Create a new instance for another generation.
+        /// </exception>
         public void GenerateThreadTimeStacks(MutableTraceEventStackSource outputStackSource, TraceEvents traceEvents = null)
         {
+            if (m_hasGeneratedThreadTimeStacks)
+            {
+                throw new InvalidOperationException(
+                    "GenerateThreadTimeStacks can only be called once per SampleProfilerThreadTimeComputer instance.");
+            }
+            m_hasGeneratedThreadTimeStacks = true;
+
             m_outputStackSource = outputStackSource;
             m_sample = new StackSourceSample(outputStackSource);
             m_nodeNameInternTable = new Dictionary<double, StackSourceFrameIndex>(10);
@@ -75,7 +111,9 @@ namespace Microsoft.Diagnostics.Tracing
                 UseTasks = true;
             }
 
-            if (UseTasks)
+            InitializeAsyncProfilerCallStacksIfRequested();
+
+            if (UseTaskActivities)
             {
                 m_activityComputer = new ActivityComputer(eventSource, m_symbolReader);
                 m_activityComputer.AwaitUnblocks += delegate (TraceActivity activity, TraceEvent data)
@@ -216,6 +254,13 @@ namespace Microsoft.Diagnostics.Tracing
                     if (data.ProviderGuid == SampleProfilerTraceEventParser.ProviderGuid)
                         return;
 
+                    // The raw batches are consumed separately to build the async index. As ordinary EventSource
+                    // events they would become a giant frame and mark the emitting thread as blocked.
+                    if (data.ProviderGuid == AsyncProfilerTraceEventParser.ProviderGuid)
+                    {
+                        return;
+                    }
+
                     // We don't care about the TPL provider.  Too many events.  
                     if (data.ProviderGuid == TplEtwProviderTraceEventParser.ProviderGuid)
                     {
@@ -252,10 +297,17 @@ namespace Microsoft.Diagnostics.Tracing
                 };
             }
 
-            eventSource.Process();
+            try
+            {
+                eventSource.Process();
 
-            m_outputStackSource.DoneAddingSamples();
-            m_threadState = null;
+                m_outputStackSource.DoneAddingSamples();
+            }
+            finally
+            {
+                m_threadState = null;
+                m_asyncProfilerCallStackSourceBuilder?.ClearResources();
+            }
         }
 
         #region private
@@ -447,14 +499,69 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Get the call stack for 'data'  Note that you thread must be data.Thread().   We pass it just to save the lookup.  
+        /// Get the call stack for 'data'  Note that you thread must be data.Thread().   We pass it just to save the lookup.
         /// </summary>
         private StackSourceCallStackIndex GetCallStack(TraceEvent data, TraceThread thread)
         {
             Debug.Assert(data.Thread() == thread);
 
+            if (m_asyncProfilerCallStackSourceBuilder != null &&
+                m_asyncProfilerCallStackSourceBuilder.TryGetCallStack(
+                    data, thread, out StackSourceCallStackIndex stitched))
+            {
+                return stitched;
+            }
+
+            // No usable async context: fall through to the normal path.
             return m_activityComputer.GetCallStack(m_outputStackSource, data, GetTopFramesForActivityComputerCase(data, thread));
         }
+
+        #region Async call stacks
+
+        /// <summary>
+        /// Sets up async call-stack reconstruction if requested and the trace actually contains
+        /// async-profiler data. When there is no usable async index, reconstruction
+        /// stays inactive and the normal path is used for every sample.
+        /// </summary>
+        private void InitializeAsyncProfilerCallStacksIfRequested()
+        {
+            if (!UseAsyncProfiler)
+            {
+                return;
+            }
+
+            m_asyncProfilerCallStackSourceBuilder = AsyncProfilerCallStackSourceBuilderCore.TryCreate(
+                m_eventLog,
+                m_outputStackSource,
+                AsyncProfilerCallStackTransformPipeline,
+                GetAsyncProfilerCallStackRoot);
+            if (m_asyncProfilerCallStackSourceBuilder != null)
+            {
+                m_asyncProfilerCallStackSourceBuilder.TraceSteps = TraceAsyncProfilerCallStackSteps;
+            }
+        }
+
+        /// <summary>
+        /// Aggregate diagnostics from reconstructed CPU samples, or null when async call stacks were inactive.
+        /// Counters include normal reconstruction, fallback, and presentation activity as well as anomalies.
+        /// Messages are bounded.
+        /// </summary>
+        internal AsyncProfilerCallStackDiagnostics AsyncProfilerCallStackDiagnostics => m_asyncProfilerCallStackSourceBuilder?.Diagnostics;
+
+        /// <summary>
+        /// Emit per-segment reconstruction details into <see cref="AsyncProfilerCallStackDiagnostics"/>'s bounded messages.
+        /// Disabled by default; configure before generation.
+        /// </summary>
+        internal bool TraceAsyncProfilerCallStackSteps { get; set; }
+
+        private StackSourceCallStackIndex GetAsyncProfilerCallStackRoot(TraceEvent data, TraceThread thread)
+        {
+            return m_startStopActivities != null
+                ? m_startStopActivities.GetCurrentStartStopActivityStack(m_outputStackSource, thread, thread)
+                : m_outputStackSource.GetCallStackForThread(thread);
+        }
+
+        #endregion
 
         /// <summary>
         /// Returns a function that figures out the top (closest to stack root) frames for an event.  Often
@@ -466,6 +573,11 @@ namespace Microsoft.Diagnostics.Tracing
         private Func<TraceThread, StackSourceCallStackIndex> GetTopFramesForActivityComputerCase(TraceEvent data, TraceThread thread, bool getAtCreationTime = false)
         {
             Debug.Assert(m_activityComputer != null);
+            if (m_startStopActivities == null)
+            {
+                return topThread => m_outputStackSource.GetCallStackForThread(topThread);
+            }
+
             return (topThread => m_startStopActivities.GetCurrentStartStopActivityStack(m_outputStackSource, thread, topThread, getAtCreationTime));
         }
 
@@ -594,6 +706,11 @@ namespace Microsoft.Diagnostics.Tracing
         private MutableTraceEventStackSource m_outputStackSource; // The output source we are generating. 
         private TraceLog m_eventLog;                        // The event log associated with m_stackSource.  
         private SymbolReader m_symbolReader;
+
+        // Async call stacks (opt-in; only active when the trace has usable async-profiler data).
+        private bool m_hasGeneratedThreadTimeStacks;
+        private bool UseTaskActivities => UseTasks || UseAsyncProfiler;
+        private AsyncProfilerCallStackSourceBuilderCore m_asyncProfilerCallStackSourceBuilder;
 
         // These are boring caches of frame names which speed things up a bit.  
         private Dictionary<double, StackSourceFrameIndex> m_nodeNameInternTable;
