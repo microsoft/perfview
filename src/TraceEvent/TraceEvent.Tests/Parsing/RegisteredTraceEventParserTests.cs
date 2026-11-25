@@ -230,6 +230,35 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that GenerateValidManifest gives events without a task (task 0) no task and names them by event or message
+        /// id, and that without it they keep the task_0 names.  Microsoft-Windows-Security-Kerberos's events all have task 0.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_GenerateValidManifestDeclaresNoTask0()
+        {
+            const string providerName = "Microsoft-Windows-Security-Kerberos";
+            var nsmgr = new XmlNamespaceManager(new NameTable());
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var legacy = new XmlDocument();
+            legacy.LoadXml(RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName));
+            Assert.NotNull(legacy.SelectSingleNode("//e:tasks/e:task[@value='0']", nsmgr));
+
+            var valid = new XmlDocument();
+            valid.LoadXml(RegisteredTraceEventParser.GetManifestForRegisteredProvider(providerName, ManifestGenerationOptions.GenerateValidManifest));
+            Assert.Null(valid.SelectSingleNode("//e:tasks/e:task[@value='0']", nsmgr));
+
+            XmlNodeList events = valid.SelectNodes("//e:events/e:event", nsmgr);
+            Assert.True(events.Count > 0);
+            foreach (XmlElement eventNode in events)
+            {
+                string symbol = eventNode.GetAttribute("symbol");
+                Assert.False(eventNode.HasAttribute("task"), $"Event {eventNode.GetAttribute("value")} has task '{eventNode.GetAttribute("task")}'");
+                Assert.True(symbol.StartsWith("Event_") || symbol.StartsWith("Message_0x"), $"Event {eventNode.GetAttribute("value")} is named '{symbol}'");
+            }
+        }
+
+        /// <summary>
         /// Test that events sharing an Id and Version keep their own fields. Kerberos event 13 is two Event Log
         /// message ids, 0x0000000D and 0x8000000D, that differ only in the severity bits.
         /// </summary>

@@ -15,6 +15,32 @@ using System.Xml;
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
     /// <summary>
+    /// Options for RegisteredTraceEventParser.GetManifestForRegisteredProvider.
+    /// </summary>
+    [Flags]
+    public enum ManifestGenerationOptions
+    {
+        /// <summary>
+        /// The basic manifest, sufficient for most providers.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Every option that adds to the manifest without changing what it already contains.
+        /// </summary>
+        IncludeAll = 0xFFFF,
+        /// <summary>
+        /// A manifest that the message compiler (mc.exe) accepts.  Events without a task are not given task 0, which a
+        /// manifest cannot declare, and are named by their event id (or their Event Log message id) instead of task_0.
+        /// This changes the names of those events.
+        /// </summary>
+        GenerateValidManifest = unchecked((int)0x80000000),
+        /// <summary>
+        /// Every option.
+        /// </summary>
+        FullValidManifest = ~0,
+    }
+
+    /// <summary>
     /// RegisteredTraceEventParser uses the standard windows provider database (TDH, what gets registered with wevtutil)
     /// to find the names of events and fields of the events).   
     /// </summary>
@@ -79,22 +105,47 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public static string GetManifestForRegisteredProvider(string providerName)
         {
+            return GetManifestForRegisteredProvider(providerName, ManifestGenerationOptions.None);
+        }
+        /// <summary>
+        /// Given a provider name that has been registered with the operating system, get
+        /// a string representing the ETW manifest for that provider.    Note that this
+        /// manifest is not as rich as the original source manifest because some information
+        /// is not actually compiled into the binary manifest that is registered with the OS.
+        /// </summary>
+        /// <param name="providerName">The name of the provider.</param>
+        /// <param name="options">How to generate the manifest.</param>
+        public static string GetManifestForRegisteredProvider(string providerName, ManifestGenerationOptions options)
+        {
             var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
             if (providerGuid == Guid.Empty)
             {
                 throw new ApplicationException("Could not find provider with name " + providerName);
             }
 
-            return GetManifestForRegisteredProvider(providerGuid);
+            return GetManifestForRegisteredProvider(providerGuid, options);
         }
         /// <summary>
         /// Given a provider GUID that has been registered with the operating system, get
         /// a string representing the ETW manifest for that provider.    Note that this
         /// manifest is not as rich as the original source manifest because some information
-        /// is not actually compiled into the binary manifest that is registered with the OS.  
+        /// is not actually compiled into the binary manifest that is registered with the OS.
         /// </summary>
         public static string GetManifestForRegisteredProvider(Guid providerGuid)
         {
+            return GetManifestForRegisteredProvider(providerGuid, ManifestGenerationOptions.None);
+        }
+        /// <summary>
+        /// Given a provider GUID that has been registered with the operating system, get
+        /// a string representing the ETW manifest for that provider.    Note that this
+        /// manifest is not as rich as the original source manifest because some information
+        /// is not actually compiled into the binary manifest that is registered with the OS.
+        /// </summary>
+        /// <param name="providerGuid">The GUID of the provider.</param>
+        /// <param name="options">How to generate the manifest.</param>
+        public static string GetManifestForRegisteredProvider(Guid providerGuid, ManifestGenerationOptions options)
+        {
+            bool validManifest = (options & ManifestGenerationOptions.GenerateValidManifest) != 0;
             int buffSize = 84000;       // Still in the small object heap.  
             var buffer = new byte[buffSize]; // Still in the small object heap.
             byte* enumBuffer = null;
@@ -293,18 +344,43 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
                             opcodeNames[opcodeName] = eventInfo->EventDescriptor.Opcode;
 
-                            // And event name 
-                            string eventName = taskName;
-                            if (!taskName.EndsWith(opcodeName, StringComparison.OrdinalIgnoreCase))
+                            // And event name
+                            string eventName;
+                            bool versionInName = eventInfo->EventDescriptor.Version > 0;
+                            if (!validManifest || eventInfo->TaskNameOffset != 0)
                             {
-                                eventName += Capitalize(opcodeName);
-                            }
+                                eventName = taskName;
+                                if (!taskName.EndsWith(opcodeName, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    eventName += Capitalize(opcodeName);
+                                }
 
-                            // Ensure uniqueness of the event name
-                            int eventNumForName;
-                            if (eventNames.TryGetValue(eventName, out eventNumForName) && eventNumForName != eventInfo->EventDescriptor.Id)
+                                // Ensure uniqueness of the event name
+                                int eventNumForName;
+                                if (eventNames.TryGetValue(eventName, out eventNumForName) && eventNumForName != eventInfo->EventDescriptor.Id)
+                                {
+                                    eventName = eventName + eventInfo->EventDescriptor.Id.ToString();
+                                }
+                            }
+                            else if ((eventInfo->EventDescriptor.Keyword & WINEVENT_KEYWORD_EVENTLOG_CLASSIC) != 0)
                             {
-                                eventName = eventName + eventInfo->EventDescriptor.Id.ToString();
+                                // An Event Log-era event without a task name is identified by its 32-bit message id,
+                                // which the manifest compiler packs into the descriptor: bits 0-15 are the Id,
+                                // bits 16-23 the Version and bits 24-31 the Opcode.
+                                uint messageId = ((uint)eventInfo->EventDescriptor.Opcode << 24) | ((uint)eventInfo->EventDescriptor.Version << 16) | eventInfo->EventDescriptor.Id;
+                                eventName = "Message_0x" + messageId.ToString("X8");
+
+                                // Its Version is part of the message id (the facility's low byte), not a version.
+                                versionInName = false;
+                            }
+                            else
+                            {
+                                // Without a task name, the event id says more than task_<n> - and is unique.
+                                eventName = "Event_" + eventInfo->EventDescriptor.Id.ToString();
+                                if (eventInfo->EventDescriptor.Opcode != 0)
+                                {
+                                    eventName += "_" + (eventInfo->OpcodeNameOffset != 0 ? opcodeName : "Opcode" + eventInfo->EventDescriptor.Opcode.ToString());
+                                }
                             }
 
                             eventNames[eventName] = eventInfo->EventDescriptor.Id;
@@ -317,7 +393,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
 
                             var symbolName = eventName;
-                            if (eventInfo->EventDescriptor.Version > 0)
+                            if (versionInName)
                             {
                                 symbolName += "_V" + eventInfo->EventDescriptor.Version;
                             }
@@ -486,7 +562,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 if (!templateIntern.TryGetValue(templateContent, out templateName))
                                 {
                                     templateName = eventName + "Args";
-                                    if (eventInfo->EventDescriptor.Version > 0)
+                                    if (versionInName)
                                     {
                                         templateName += "_V" + eventInfo->EventDescriptor.Version;
                                     }
@@ -503,8 +579,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 ew.WriteAttributeString("value", eventInfo->EventDescriptor.Id.ToString());
                                 ew.WriteAttributeString("symbol", symbolName);
                                 ew.WriteAttributeString("version", eventInfo->EventDescriptor.Version.ToString());
-                                ew.WriteAttributeString("task", taskName);
-                                
+                                // Task 0 means the event has no task, and a valid manifest cannot declare task 0.
+                                if (!validManifest || eventInfo->EventDescriptor.Task != 0)
+                                {
+                                    ew.WriteAttributeString("task", taskName);
+                                }
+
                                 if (opcodeId != null)
                                 {
                                     ew.WriteAttributeString("opcode", opcodeId);
@@ -608,46 +688,54 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     writer.WriteEndElement(); // keywords
                 }
 
-                // Tasks
-                writer.WriteStartElement("tasks");
+                // Tasks.  In a valid manifest, events with task 0 (no task) have no task attribute, so task 0 is not
+                // declared and its opcodes are declared for the whole provider.
+                bool hasTasks = false;
                 foreach (var taskValue in tasks.Keys)
                 {
+                    if (validManifest && taskValue == 0)
+                    {
+                        continue;
+                    }
+
+                    if (!hasTasks)
+                    {
+                        writer.WriteStartElement("tasks");
+                        hasTasks = true;
+                    }
+
                     var task = tasks[taskValue];
                     string taskStringId = $"task_{task.Name}";
-                    
+
                     writer.WriteStartElement("task");
                     writer.WriteAttributeString("name", task.Name);
                     writer.WriteAttributeString("message", $"$(string.{taskStringId})");
                     writer.WriteAttributeString("value", taskValue.ToString());
-                    
+
                     if (emittedStringIds.Add(taskStringId))
                     {
                         localizedStrings.Add(new KeyValuePair<string, string>(taskStringId, task.Name));
                     }
-                    
-                    if (task.Opcodes != null)
-                    {
-                        writer.WriteStartElement("opcodes");
-                        foreach (var keyValue in task.Opcodes)
-                        {
-                            string opcodeStringId = $"opcode_{task.Name}{keyValue.Value}";
-                            writer.WriteStartElement("opcode");
-                            writer.WriteAttributeString("name", keyValue.Value);
-                            writer.WriteAttributeString("message", $"$(string.{opcodeStringId})");
-                            writer.WriteAttributeString("value", keyValue.Key.ToString());
-                            writer.WriteEndElement();
-                            
-                            if (emittedStringIds.Add(opcodeStringId))
-                            {
-                                localizedStrings.Add(new KeyValuePair<string, string>(opcodeStringId, keyValue.Value));
-                            }
-                        }
-                        writer.WriteEndElement(); // opcodes
-                    }
-                    
+
+                    WriteOpcodes(writer, task, emittedStringIds, localizedStrings);
+
                     writer.WriteEndElement(); // task
                 }
-                writer.WriteEndElement(); // tasks
+                if (hasTasks)
+                {
+                    writer.WriteEndElement(); // tasks
+                }
+                else if (!validManifest)
+                {
+                    writer.WriteStartElement("tasks");
+                    writer.WriteEndElement(); // tasks
+                }
+
+                TaskInfo noTask;
+                if (validManifest && tasks.TryGetValue(0, out noTask))
+                {
+                    WriteOpcodes(writer, noTask, emittedStringIds, localizedStrings);
+                }
 
                 // Maps
                 if (enumIntern.Count > 0)
@@ -787,6 +875,34 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 eventInfos[versionEventInfos[i]->EventDescriptor] = (IntPtr)versionEventInfos[i];
             }
+        }
+
+        /// <summary>
+        /// Writes an opcodes element with the non-reserved opcodes used with 'task', if there are any.
+        /// </summary>
+        private static void WriteOpcodes(XmlWriter writer, TaskInfo task, HashSet<string> emittedStringIds, List<KeyValuePair<string, string>> localizedStrings)
+        {
+            if (task.Opcodes == null)
+            {
+                return;
+            }
+
+            writer.WriteStartElement("opcodes");
+            foreach (var keyValue in task.Opcodes)
+            {
+                string opcodeStringId = $"opcode_{task.Name}{keyValue.Value}";
+                writer.WriteStartElement("opcode");
+                writer.WriteAttributeString("name", keyValue.Value);
+                writer.WriteAttributeString("message", $"$(string.{opcodeStringId})");
+                writer.WriteAttributeString("value", keyValue.Key.ToString());
+                writer.WriteEndElement();
+
+                if (emittedStringIds.Add(opcodeStringId))
+                {
+                    localizedStrings.Add(new KeyValuePair<string, string>(opcodeStringId, keyValue.Value));
+                }
+            }
+            writer.WriteEndElement(); // opcodes
         }
 
         private static string MakeLegalIdentifier(string name)
