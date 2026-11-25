@@ -2639,9 +2639,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     }
                                     else
                                     {
-                                        taskName = "";
+                                        // Without a name, TraceEvent.TaskName names the event EventID(<id>).  An empty name
+                                        // would give names such as "/Start".
+                                        taskName = null;
                                         // This is sort of a hack but it allows people to use the symbol name as the task name
-                                        // in a pinch.   
+                                        // in a pinch.
                                         string symbolName = reader.GetAttribute("symbol");
                                         if (symbolName != null && opcodeName == "")
                                         {
