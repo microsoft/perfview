@@ -387,17 +387,6 @@ foreach (AsyncProfilerCallStack callStack in computer.GetCallStacks(sampleEvent)
 }
 ```
 
-**Exporting to Speedscope.** `SpeedScopeStackSourceWriter.WriteAsyncCallStacksAsJson`
-writes the recorded async call stacks as a timeline, one profile per
-thread, without CPU samples or physical stacks. A frame stays open while
-its call stack is active and has not completed. Widths show elapsed time,
-not CPU time. An overload that takes a sampling interval instead takes
-snapshots on a fixed time grid.
-
-```csharp
-SpeedScopeStackSourceWriter.WriteAsyncCallStacksAsJson(traceLog, "async.speedscope.json");
-```
-
 Keep the `TraceLog` open while querying or resolving frames. The builder
 and transforms are not thread-safe, and stack generation must not be
 called reentrantly.
@@ -445,5 +434,4 @@ reconstruction types use `Microsoft.Diagnostics.Tracing.Computers`.
 | Historical parent contexts | `AsyncProfilerParentContextBuilder.cs` |
 | Presentation settings and transforms | `AsyncProfilerCallStackTransforms.cs`, `AsyncProfilerCallStackTransformPipeline.cs`, `AsyncProfiler*TransformPass.cs`, `AsyncProfilerCallStackTransformHelpers.cs`, `AsyncProfilerCallStackTransformContext.cs` |
 | Stack-source output and frame metadata | `AsyncProfilerCallStackSourceBuilderCore.cs`, `AsyncProfilerCallStackDiagnostics.cs`, `src\TraceEvent\TraceEventStacks.cs` |
-| Speedscope export | `src\TraceEvent\Stacks\SpeedScopeStackSourceWriter.cs` |
 | Thread-time computers | `src\TraceEvent\Computers\SampleProfilerThreadTimeComputer.cs`, `src\TraceEvent\Computers\ThreadTimeComputer.cs` |

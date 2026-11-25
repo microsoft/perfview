@@ -16,19 +16,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
         /// schema: https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/
         /// </summary>
         public static void WriteStackViewAsJson(StackSource source, string filePath, bool compress)
-            => WriteStackViewAsJson(source, filePath, compress, preserveSampleGaps: false);
-
-        /// <summary>
-        /// Exports a StackSource to Chromium Trace File format with optional preservation of sample coverage gaps.
-        /// </summary>
-        /// <param name="source">The stack source to export.</param>
-        /// <param name="filePath">The output file path.</param>
-        /// <param name="compress">Whether to gzip the output.</param>
-        /// <param name="preserveSampleGaps">
-        /// If true, closes all frames between nonoverlapping sample intervals.
-        /// If false, uses legacy sample-continuity and accumulated-weight behavior.
-        /// </param>
-        public static void WriteStackViewAsJson(StackSource source, string filePath, bool compress, bool preserveSampleGaps)
         {
             if (compress && !filePath.EndsWith(".gz", StringComparison.OrdinalIgnoreCase))
                 filePath += ".gz";
@@ -39,12 +26,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
             using (var writeStream = compress ? (Stream)new GZipStream(File.Create(filePath), CompressionMode.Compress, leaveOpen: false) : File.Create(filePath))
             using (var streamWriter = new StreamWriter(writeStream))
             {
-                Export(source, streamWriter, Path.GetFileNameWithoutExtension(filePath), preserveSampleGaps);
+                Export(source, streamWriter, Path.GetFileNameWithoutExtension(filePath));
             }
         }
 
         #region private
-        private static void Export(StackSource source, TextWriter writer, string name, bool preserveSampleGaps)
+        private static void Export(StackSource source, TextWriter writer, string name)
         {
             var samplesPerThread = GetSortedSamplesPerThread(source);
 
@@ -54,8 +41,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks.Formats
 
             foreach (var pair in samplesPerThread)
             {
-                var sortedProfileEvents = GetProfileEvents(source, pair.Value, exportedFrameNameToExportedFrameId,
-                    exportedFrameIdToFrameTuple, preserveSampleGaps);
+                var sortedProfileEvents = GetProfileEvents(source, pair.Value, exportedFrameNameToExportedFrameId, exportedFrameIdToFrameTuple);
 
                 Debug.Assert(Validate(sortedProfileEvents), "The output should be always valid");
 
