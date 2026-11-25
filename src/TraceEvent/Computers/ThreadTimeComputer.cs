@@ -70,10 +70,14 @@ namespace Microsoft.Diagnostics.Tracing
             InitializeForUniversal();
         }
         /// <summary>
-        /// If set we compute thread time using Tasks. When the trace also contains async-profiler data,
-        /// stacks with async context are reconstructed from it; other stacks use the Task (TPL) data.
+        /// If set we compute thread time using Tasks
         /// </summary>
         public bool UseTasks;
+        /// <summary>
+        /// If set, stacks with async context are reconstructed from async-profiler data when the trace contains it;
+        /// other stacks use the Task (TPL) data. Enables Task handling internally without changing <see cref="UseTasks"/>.
+        /// </summary>
+        public bool UseAsyncProfiler;
         /// <summary>
         /// Track additional info on like EventName or so.
         /// Default to true to keep backward compatibility.
@@ -102,7 +106,7 @@ namespace Microsoft.Diagnostics.Tracing
         public bool GroupByStartStopActivity;
 
         /// <summary>
-        /// True after generation when <see cref="UseTasks"/> was set and the trace has a usable async-profiler
+        /// True after generation when <see cref="UseAsyncProfiler"/> was set and the trace has a usable async-profiler
         /// index. Does not guarantee that any particular stack matched an async call stack. False before generation.
         /// </summary>
         public bool AsyncProfilerCallStacksActive => m_asyncProfilerCallStackSourceBuilder != null;
@@ -112,11 +116,6 @@ namespace Microsoft.Diagnostics.Tracing
         /// <see cref="GenerateThreadTimeStacks"/>. Stacks without usable async context are not transformed.
         /// </summary>
         public AsyncProfilerCallStackTransforms AsyncProfilerCallStackTransforms { get; }
-
-        /// <summary>
-        /// Ignore async-profiler data even when <see cref="UseTasks"/> is set. Used to compare against TPL-only stacks.
-        /// </summary>
-        internal bool DisableAsyncProfilerCallStacks { get; set; }
 
         internal AsyncProfilerCallStackTransformPipeline AsyncProfilerCallStackTransformPipeline { get; }
 
@@ -172,7 +171,7 @@ namespace Microsoft.Diagnostics.Tracing
                 UseTasks = true;
             }
 
-            if (UseTasks)
+            if (UseTaskActivities)
             {
                 m_activityComputer = new ActivityComputer(eventSource, m_symbolReader);
 
@@ -981,7 +980,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void InitializeAsyncProfilerCallStacksIfRequested()
         {
-            if (!UseTasks || DisableAsyncProfilerCallStacks)
+            if (!UseAsyncProfiler)
             {
                 return;
             }
@@ -1306,7 +1305,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <returns></returns>
         private Guid GetAspNetGuid(TraceActivity activity)
         {
-            Debug.Assert(UseTasks);
+            Debug.Assert(UseTaskActivities);
             Guid ret = Guid.Empty;
             while (activity != null)
             {
@@ -1383,7 +1382,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             ActivityIndex activityIndex = ActivityIndex.Invalid;
 
-            if (newThreadIndex != ThreadIndex.Invalid && UseTasks)
+            if (newThreadIndex != ThreadIndex.Invalid && UseTaskActivities)
             {
                 // Remember the activity that is associated with this ASP.NET request.  
                 TraceThread thread = m_eventLog.Threads[newThreadIndex];
@@ -1394,7 +1393,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (m_aspNetRequestInfo.TryGetValue(aspNetGuid, out aspNetInfo))
             {
                 // Optimization: if we are transferring to the same thread there is nothing to do.  
-                if (newThreadIndex == aspNetInfo.ThreadIndex && (!UseTasks || activityIndex == aspNetInfo.ActivityIndex))
+                if (newThreadIndex == aspNetInfo.ThreadIndex && (!UseTaskActivities || activityIndex == aspNetInfo.ActivityIndex))
                 {
                     return;
                 }
@@ -1574,6 +1573,7 @@ namespace Microsoft.Diagnostics.Tracing
         private MutableTraceEventStackSource m_outputStackSource; // The output source we are generating. 
         private TraceLog m_eventLog;                        // The event log associated with m_stackSource.  
         private SymbolReader m_symbolReader;
+        private bool UseTaskActivities => UseTasks || UseAsyncProfiler;
         private AsyncProfilerCallStackSourceBuilderCore m_asyncProfilerCallStackSourceBuilder;
 
         // These are boring caches of frame names which speed things up a bit.  

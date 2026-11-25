@@ -89,7 +89,7 @@ namespace TraceEventBenchmarks
         {
             return new SampleProfilerThreadTimeComputer(traceLog, symbolReader)
             {
-                DisableAsyncProfilerCallStacks = !enableAsyncCallStacks,
+                UseAsyncProfiler = enableAsyncCallStacks,
                 IncludeEventSourceEvents = false,
                 GroupByStartStopActivity = false,
             };

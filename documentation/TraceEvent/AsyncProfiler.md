@@ -321,13 +321,13 @@ events is converted.
 **With the existing thread-time computers.** Both
 `ThreadTimeStackComputer` (ETW CPU and wait time) and
 `SampleProfilerThreadTimeComputer` (EventPipe sample profiler) use it when
-`UseTasks` is set and the trace has async-profiler data.
-`SampleProfilerThreadTimeComputer` sets `UseTasks` by default;
-`ThreadTimeStackComputer` does not:
+`UseAsyncProfiler` is set and the trace has async-profiler data. It is off
+by default and turns on Task handling internally without changing
+`UseTasks`; `UseTasks` alone keeps TPL-only stacks:
 
 ```csharp
 var computer = new ThreadTimeStackComputer(traceLog, symbolReader);
-computer.UseTasks = true;
+computer.UseAsyncProfiler = true;
 computer.AsyncProfilerCallStackTransforms.EnableFrameAnnotations = true; // optional
 
 var stackSource = new MutableTraceEventStackSource(traceLog);

@@ -504,7 +504,6 @@ namespace TraceEventTests
                         };
                         var syncComputer = new SampleProfilerThreadTimeComputer(traceLog, symbolReader)
                         {
-                            DisableAsyncProfilerCallStacks = true,
                             IncludeEventSourceEvents = IncludeEventSourceEvents,
                             GroupByStartStopActivity = GroupByStartStopActivity,
                         };
@@ -521,6 +520,7 @@ namespace TraceEventTests
                         };
                         var stitchedComputer = new SampleProfilerThreadTimeComputer(traceLog, symbolReader)
                         {
+                            UseAsyncProfiler = true,
                             IncludeEventSourceEvents = IncludeEventSourceEvents,
                             GroupByStartStopActivity = GroupByStartStopActivity,
                         };
@@ -574,6 +574,7 @@ namespace TraceEventTests
                                 new SampleProfilerThreadTimeComputer(
                                     traceLog, symbolReader)
                                 {
+                                    UseAsyncProfiler = true,
                                     IncludeEventSourceEvents = IncludeEventSourceEvents,
                                     GroupByStartStopActivity = GroupByStartStopActivity,
                                 };
@@ -615,7 +616,7 @@ namespace TraceEventTests
                                 traceLog, symbolReader)
 #pragma warning restore CS0618
                             {
-                                UseTasks = true,
+                                UseAsyncProfiler = true,
                                 GroupByStartStopActivity = GroupByStartStopActivity,
                                 IncludeEventSourceEvents = false,
                             };
@@ -649,6 +650,7 @@ namespace TraceEventTests
                             var defaultComputer = new SampleProfilerThreadTimeComputer(
                                 traceLog, symbolReader)
                             {
+                                UseAsyncProfiler = true,
                                 IncludeEventSourceEvents = IncludeEventSourceEvents,
                                 GroupByStartStopActivity = GroupByStartStopActivity,
                             };
@@ -677,6 +679,7 @@ namespace TraceEventTests
                             var structuralComputer = new SampleProfilerThreadTimeComputer(
                                 traceLog, symbolReader)
                             {
+                                UseAsyncProfiler = true,
                                 IncludeEventSourceEvents = IncludeEventSourceEvents,
                                 GroupByStartStopActivity = GroupByStartStopActivity,
                             };
@@ -716,6 +719,7 @@ namespace TraceEventTests
                             var filteredComputer = new SampleProfilerThreadTimeComputer(
                                 traceLog, symbolReader)
                             {
+                                UseAsyncProfiler = true,
                                 IncludeEventSourceEvents = IncludeEventSourceEvents,
                                 GroupByStartStopActivity = GroupByStartStopActivity,
                             };
@@ -791,9 +795,9 @@ namespace TraceEventTests
                         using (var symbols = new SymbolReader(TextWriter.Null))
                         {
                             var baseline = new MutableTraceEventStackSource(log);
-                            new SampleProfilerThreadTimeComputer(log, symbols) { DisableAsyncProfilerCallStacks = true }.GenerateThreadTimeStacks(baseline);
+                            new SampleProfilerThreadTimeComputer(log, symbols).GenerateThreadTimeStacks(baseline);
                             var reconstructed = new MutableTraceEventStackSource(log);
-                            var computer = new SampleProfilerThreadTimeComputer(log, symbols);
+                            var computer = new SampleProfilerThreadTimeComputer(log, symbols) { UseAsyncProfiler = true };
                             computer.AsyncProfilerCallStackTransforms.EnableInfrastructureCleanup = true;
                             computer.AsyncProfilerCallStackTransforms.AddCustomTransform(context =>
                                 throw new InvalidOperationException("Fallback must not run transforms."));

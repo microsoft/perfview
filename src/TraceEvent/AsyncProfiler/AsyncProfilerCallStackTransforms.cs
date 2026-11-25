@@ -60,7 +60,7 @@ namespace Microsoft.Diagnostics.Tracing.Computers
         /// time and the first remaining V1 frame displays inferred running state -1. Otherwise the captured
         /// resume/append stack is replayed unchanged. Captured states and IPs remain unchanged in frame metadata;
         /// this does not establish an exact creation-time execution IP or prove every progress record was captured.
-        /// Stack computers use these settings when their UseTasks option is set.
+        /// Stack computers use these settings when their UseAsyncProfiler option is set.
         /// </summary>
         public bool EnableParentContexts
         {

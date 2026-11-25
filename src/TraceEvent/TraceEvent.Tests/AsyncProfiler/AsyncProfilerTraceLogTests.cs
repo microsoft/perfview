@@ -269,10 +269,10 @@ namespace TraceEventTests
                 Assert.True(traceLog.HasAsyncProfilerEvents);
                 Assert.False(AsyncProfilerTestData.IsAsyncIndexLoaded(traceLog));
 
-                // This computer requires UseTasks, so the internal opt-out is the only way to turn async stacks off.
+                // UseTasks is on by default for this computer and must not enable async-profiler stacks by itself.
                 var sampleComputer = new SampleProfilerThreadTimeComputer(traceLog, symbols)
                 {
-                    DisableAsyncProfilerCallStacks = !enableAsyncCallStacks,
+                    UseAsyncProfiler = enableAsyncCallStacks,
                     IncludeEventSourceEvents = false,
                 };
                 Assert.False(sampleComputer.AsyncProfilerCallStacksActive);
@@ -284,12 +284,13 @@ namespace TraceEventTests
                 var threadTimeComputer = new ThreadTimeStackComputer(traceLog, symbols)
 #pragma warning restore CS0618
                 {
-                    UseTasks = enableAsyncCallStacks,
+                    UseAsyncProfiler = enableAsyncCallStacks,
                     IncludeEventSourceEvents = false,
                 };
                 Assert.False(threadTimeComputer.AsyncProfilerCallStacksActive);
                 threadTimeComputer.GenerateThreadTimeStacks(new MutableTraceEventStackSource(traceLog));
                 Assert.Equal(enableAsyncCallStacks, threadTimeComputer.AsyncProfilerCallStacksActive);
+                Assert.False(threadTimeComputer.UseTasks);
                 Assert.Equal(enableAsyncCallStacks, AsyncProfilerTestData.IsAsyncIndexLoaded(traceLog));
             }
         }

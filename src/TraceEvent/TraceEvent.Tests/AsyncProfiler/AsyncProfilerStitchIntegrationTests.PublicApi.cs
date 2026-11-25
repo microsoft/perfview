@@ -258,7 +258,7 @@ namespace TraceEventTests
                             var threadTime = new ThreadTimeStackComputer(log, symbols)
 #pragma warning restore CS0618
                             {
-                                UseTasks = true,
+                                UseAsyncProfiler = true,
                                 IncludeEventSourceEvents = false,
                             };
                             computer = threadTime;
@@ -269,6 +269,7 @@ namespace TraceEventTests
                         {
                             var sampled = new SampleProfilerThreadTimeComputer(log, symbols)
                             {
+                                UseAsyncProfiler = true,
                                 IncludeEventSourceEvents = false,
                             };
                             computer = sampled;

@@ -39,10 +39,15 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// If set we compute thread time using Tasks. When the trace also contains async-profiler data,
-        /// samples with async context are reconstructed from it; other samples use the Task (TPL) data.
+        /// If set we compute thread time using Tasks
         /// </summary>
         public bool UseTasks;
+
+        /// <summary>
+        /// If set, samples with async context are reconstructed from async-profiler data when the trace contains it;
+        /// other samples use the Task (TPL) data. Enables Task handling internally without changing <see cref="UseTasks"/>.
+        /// </summary>
+        public bool UseAsyncProfiler;
 
         /// <summary>
         /// Track additional info on like EventName or so.
@@ -62,7 +67,7 @@ namespace Microsoft.Diagnostics.Tracing
         public bool IgnoreApplicationInsightsRequestsWithRelatedActivityId  { get; set; } = true;
 
         /// <summary>
-        /// True after generation when <see cref="UseTasks"/> was set and the trace has a usable async-profiler
+        /// True after generation when <see cref="UseAsyncProfiler"/> was set and the trace has a usable async-profiler
         /// index. Does not guarantee that any particular sample matched an async call stack. False before generation.
         /// </summary>
         public bool AsyncProfilerCallStacksActive => m_asyncProfilerCallStackSourceBuilder != null;
@@ -72,11 +77,6 @@ namespace Microsoft.Diagnostics.Tracing
         /// <see cref="GenerateThreadTimeStacks"/>. Samples without usable async context are not transformed.
         /// </summary>
         public AsyncProfilerCallStackTransforms AsyncProfilerCallStackTransforms { get; }
-
-        /// <summary>
-        /// Ignore async-profiler data even when <see cref="UseTasks"/> is set. Used to compare against TPL-only stacks.
-        /// </summary>
-        internal bool DisableAsyncProfilerCallStacks { get; set; }
 
         internal AsyncProfilerCallStackTransformPipeline AsyncProfilerCallStackTransformPipeline { get; }
 
@@ -113,7 +113,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             InitializeAsyncProfilerCallStacksIfRequested();
 
-            if (UseTasks)
+            if (UseTaskActivities)
             {
                 m_activityComputer = new ActivityComputer(eventSource, m_symbolReader);
                 m_activityComputer.AwaitUnblocks += delegate (TraceActivity activity, TraceEvent data)
@@ -525,7 +525,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         private void InitializeAsyncProfilerCallStacksIfRequested()
         {
-            if (!UseTasks || DisableAsyncProfilerCallStacks)
+            if (!UseAsyncProfiler)
             {
                 return;
             }
@@ -709,6 +709,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         // Async call stacks (opt-in; only active when the trace has usable async-profiler data).
         private bool m_hasGeneratedThreadTimeStacks;
+        private bool UseTaskActivities => UseTasks || UseAsyncProfiler;
         private AsyncProfilerCallStackSourceBuilderCore m_asyncProfilerCallStackSourceBuilder;
 
         // These are boring caches of frame names which speed things up a bit.  
