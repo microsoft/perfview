@@ -259,6 +259,90 @@ namespace TraceEventTests
         }
 
         /// <summary>
+        /// Test that with GenerateValidManifest, tasks use the manifest's names, keep their messages as display text, and
+        /// that event symbols and template ids are C identifiers.  Microsoft-Windows-DotNETRuntime's task 1 is named
+        /// GarbageCollection; its message is GC.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_UsesTaskNamesAndLegalSymbols()
+        {
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider("Microsoft-Windows-DotNETRuntime", ManifestGenerationOptions.GenerateValidManifest);
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var task = (XmlElement)xmlDoc.SelectSingleNode("//e:tasks/e:task[@value='1']", nsmgr);
+            Assert.NotNull(task);
+            Assert.Equal("GarbageCollection", task.GetAttribute("name"));
+
+            // The message keeps the task's display text.
+            string messageId = task.GetAttribute("message").Substring("$(string.".Length).TrimEnd(')');
+            var message = (XmlElement)xmlDoc.SelectSingleNode($"//e:stringTable/e:string[@id='{messageId}']", nsmgr);
+            Assert.NotNull(message);
+            Assert.Equal("GC", message.GetAttribute("value"));
+
+            var symbol = new Regex("^[_a-zA-Z][_0-9a-zA-Z]*$");
+            foreach (XmlElement eventNode in xmlDoc.SelectNodes("//e:events/e:event", nsmgr))
+            {
+                Assert.Matches(symbol, eventNode.GetAttribute("symbol"));
+            }
+            foreach (XmlElement template in xmlDoc.SelectNodes("//e:templates/e:template", nsmgr))
+            {
+                Assert.Matches(symbol, template.GetAttribute("tid"));
+            }
+        }
+
+        /// <summary>
+        /// Test that with GenerateValidManifest, a namespace prefix in a task name is kept and declared.
+        /// Microsoft-Windows-TaskScheduler's task 100 is task:JobExecute, whose prefix its own manifest declares but TDH
+        /// does not report.
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_DeclaresTaskNamePrefixes()
+        {
+            string manifest = RegisteredTraceEventParser.GetManifestForRegisteredProvider("Microsoft-Windows-TaskScheduler", ManifestGenerationOptions.GenerateValidManifest);
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(manifest);
+            var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var task = (XmlElement)xmlDoc.SelectSingleNode("//e:tasks/e:task[@value='100']", nsmgr);
+            Assert.NotNull(task);
+            Assert.Equal("task:JobExecute", task.GetAttribute("name"));
+            Assert.False(string.IsNullOrEmpty(task.GetNamespaceOfPrefix("task")), "Prefix 'task' is not declared");
+        }
+
+        /// <summary>
+        /// Test that with GenerateValidManifest, keywords keep their messages as display text and their namespace prefixes
+        /// are declared.  Microsoft-Windows-DotNETRuntime's GCKeyword has the message GC, and Microsoft-Windows-TCPIP's
+        /// keywords use the ut prefix (e.g. ut:TcpipEndpoint).
+        /// </summary>
+        [WindowsFact]
+        public void GetManifestForRegisteredProvider_UsesKeywordMessagesAndPrefixes()
+        {
+            var nsmgr = new XmlNamespaceManager(new NameTable());
+            nsmgr.AddNamespace("e", "http://schemas.microsoft.com/win/2004/08/events");
+
+            var clr = new XmlDocument();
+            clr.LoadXml(RegisteredTraceEventParser.GetManifestForRegisteredProvider("Microsoft-Windows-DotNETRuntime", ManifestGenerationOptions.GenerateValidManifest));
+            var keyword = (XmlElement)clr.SelectSingleNode("//e:keywords/e:keyword[@name='GCKeyword']", nsmgr);
+            Assert.NotNull(keyword);
+            string messageId = keyword.GetAttribute("message").Substring("$(string.".Length).TrimEnd(')');
+            var message = (XmlElement)clr.SelectSingleNode($"//e:stringTable/e:string[@id='{messageId}']", nsmgr);
+            Assert.NotNull(message);
+            Assert.Equal("GC", message.GetAttribute("value"));
+
+            var tcpip = new XmlDocument();
+            tcpip.LoadXml(RegisteredTraceEventParser.GetManifestForRegisteredProvider("Microsoft-Windows-TCPIP", ManifestGenerationOptions.GenerateValidManifest));
+            var prefixed = (XmlElement)tcpip.SelectSingleNode("//e:keywords/e:keyword[starts-with(@name, 'ut:')]", nsmgr);
+            Assert.NotNull(prefixed);
+            Assert.False(string.IsNullOrEmpty(prefixed.GetNamespaceOfPrefix("ut")), "Prefix 'ut' is not declared");
+        }
+
+        /// <summary>
         /// Test that events sharing an Id and Version keep their own fields. Kerberos event 13 is two Event Log
         /// message ids, 0x0000000D and 0x8000000D, that differ only in the severity bits.
         /// </summary>

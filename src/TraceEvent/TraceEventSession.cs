@@ -3170,8 +3170,9 @@ namespace Microsoft.Diagnostics.Tracing.Session
             for (int i = 0; i < fieldsDesc->NumberOfElements; i++)
             {
                 var field = new ProviderDataItem();
-                field.Name = new string((char*)&buffer[fields[i].NameOffset]);
-                field.Description = new string((char*)&buffer[fields[i].DescriptionOffset]);
+                // An offset of 0 means there is no string (the buffer starts with the element count).
+                field.Name = fields[i].NameOffset == 0 ? string.Empty : new string((char*)&buffer[fields[i].NameOffset]);
+                field.Description = fields[i].DescriptionOffset == 0 ? string.Empty : new string((char*)&buffer[fields[i].DescriptionOffset]);
                 field.Value = fields[i].Value;
                 ret.Add(field);
             }
