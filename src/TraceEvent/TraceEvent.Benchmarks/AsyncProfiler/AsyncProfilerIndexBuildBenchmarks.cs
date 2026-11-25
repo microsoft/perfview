@@ -109,9 +109,7 @@ namespace TraceEventBenchmarks
 
         private void ValidateIndex(AsyncProfilerIndexBuilder computer, bool includeDispatcherInfo)
         {
-            var thread = new AsyncProfilerThreadKey((ProcessIndex)1, AsyncProfilerTestData.DefaultOsThreadId);
             if (computer.ParseErrorCount != 0 ||
-                computer.Index.GetCallStacks(thread).Count != EpisodeCount ||
                 computer.DistinctFramesCount != (UniqueCallstacks ? EpisodeCount : 1) ||
                 computer.Index.HasDispatcherRecords != includeDispatcherInfo ||
                 computer.GetFrames((AsyncProfilerCallStackFramesIndex)0).FrameCount != FrameCount)
@@ -236,9 +234,7 @@ namespace TraceEventBenchmarks
             var computer = new AsyncProfilerIndexBuilder();
             computer.Process(_buffer, (ProcessIndex)1);
             computer.Finish();
-            var thread = new AsyncProfilerThreadKey((ProcessIndex)1, AsyncProfilerTestData.DefaultOsThreadId);
             if (computer.ParseErrorCount != 0 ||
-                computer.Index.GetCallStacks(thread).Count != EpisodeCount ||
                 computer.DistinctFramesCount != 1 ||
                 computer.GetFrames((AsyncProfilerCallStackFramesIndex)0).FrameCount != 16)
             {

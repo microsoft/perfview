@@ -1278,8 +1278,6 @@ namespace TraceEventTests
                     Assert.NotSame(callStack, stable);
                     Assert.Equal(observed, stable.MethodCompletionObserved);
                     Assert.Equal(observed, stable.ExceptionCompletionObserved);
-                    Assert.Equal(observed, index.GetCallStacks(Key(ThreadA))[observed ? 0 : 1].MethodCompletionObserved);
-                    Assert.Equal(observed, index.GetCallStacks(Key(ThreadA))[observed ? 0 : 1].ExceptionCompletionObserved);
 
                     Assert.Equal(1UL, retained.DispatcherId);
                     Assert.True(retained.MethodCompletionObserved);
@@ -1321,8 +1319,6 @@ namespace TraceEventTests
                     {
                         results[resultIndex] = Assert.Single(
                             reloaded.GetCallStacks(thread, Start + 15));
-                        Assert.Same(results[resultIndex], Assert.Single(
-                            reloaded.GetCallStacks(thread)));
                     }
                 });
             }

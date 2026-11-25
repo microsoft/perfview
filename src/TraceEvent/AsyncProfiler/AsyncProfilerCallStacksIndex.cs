@@ -64,15 +64,6 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             }
         }
 
-        /// <summary>The threads with recorded async call stacks.</summary>
-        public IEnumerable<AsyncProfilerThreadKey> Threads
-        {
-            get
-            {
-                return _threads.Keys;
-            }
-        }
-
         /// <summary>
         /// True if method-completion events for <paramref name="kind"/> were observed in the default process (index 0).
         /// </summary>
@@ -319,21 +310,6 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             }
 
             return parent != null;
-        }
-
-        /// <summary>Returns all finalized call stacks for <paramref name="thread"/> in recording order.</summary>
-        /// <remarks>
-        /// The list includes later additions during conversion.
-        /// Call <see cref="AsyncProfilerIndexBuilder.Finish"/> to include call stacks still open at the end of the stream.
-        /// </remarks>
-        public IReadOnlyList<AsyncProfilerCallStack> GetCallStacks(AsyncProfilerThreadKey thread)
-        {
-            if (_threads.TryGetValue(thread, out ThreadCallStacks callStacks))
-            {
-                return new ThreadCallStackList(this, callStacks);
-            }
-
-            return Array.Empty<AsyncProfilerCallStack>();
         }
 
         #region private
@@ -1121,11 +1097,6 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                 return reusable;
             }
 
-            public AsyncProfilerCallStackFramesIndex FramesIndexAt(int index)
-            {
-                return _recorded[index].FramesIndex;
-            }
-
             public void Query(long timestampQpc, List<AsyncProfilerCallStack> result, AsyncProfilerCallStacksIndex owner, bool cacheMaterialized)
             {
                 if (cacheMaterialized)
@@ -1155,14 +1126,6 @@ namespace Microsoft.Diagnostics.Tracing.Computers
                 }
 
                 return callStack;
-            }
-
-            public AsyncProfilerCallStack GetOrCreateMaterializedThreadSafe(int index, AsyncProfilerCallStackFrames frames)
-            {
-                lock (_queryLock)
-                {
-                    return GetOrCreateMaterialized(index, frames);
-                }
             }
 
             public CallStacksIntervalIndex QueryIndex()
@@ -1549,53 +1512,6 @@ namespace Microsoft.Diagnostics.Tracing.Computers
             private readonly int[] _byStart;            // Record indices in start-time order.
             private readonly long[] _maxEnd;            // Latest end QPC in the subtree rooted at each position.
             private readonly CallStackRecordCollection _records;
-
-            #endregion
-        }
-
-        private sealed class ThreadCallStackList : IReadOnlyList<AsyncProfilerCallStack>
-        {
-            public ThreadCallStackList(AsyncProfilerCallStacksIndex owner, ThreadCallStacks callStacks)
-            {
-                _owner = owner;
-                _callStacks = callStacks;
-            }
-
-            public int Count
-            {
-                get
-                {
-                    return _callStacks.Count;
-                }
-            }
-
-            public AsyncProfilerCallStack this[int index]
-            {
-                get
-                {
-                    AsyncProfilerCallStack result = _callStacks.GetOrCreateMaterializedThreadSafe(index, _owner.ResolveFrames(_callStacks.FramesIndexAt(index)));
-                    _owner.PopulateCompletionObservations(result);
-                    return result;
-                }
-            }
-
-            public IEnumerator<AsyncProfilerCallStack> GetEnumerator()
-            {
-                for (int i = 0; i < Count; i++)
-                {
-                    yield return this[i];
-                }
-            }
-
-            #region private
-
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-
-            private readonly AsyncProfilerCallStacksIndex _owner;
-            private readonly ThreadCallStacks _callStacks;
 
             #endregion
         }

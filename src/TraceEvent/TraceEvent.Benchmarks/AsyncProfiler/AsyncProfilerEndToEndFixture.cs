@@ -193,16 +193,6 @@ namespace TraceEventBenchmarks
                 "The default ETLX unexpectedly retained raw async-profiler buffers.");
 
             RequireAsyncIndex(traceLog);
-            AsyncProfilerCallStacksIndex index = traceLog.AsyncProfilerCallStacks;
-            int intervalCount = 0;
-            int threadCount = 0;
-            foreach (AsyncProfilerThreadKey thread in index.Threads)
-            {
-                threadCount++;
-                intervalCount += index.GetCallStacks(thread).Count;
-            }
-            Require(threadCount == 1, $"Expected one async thread, found {threadCount}.");
-            Require(intervalCount == ContextCount, $"Expected {ContextCount} indexed contexts, found {intervalCount}.");
 
             var controlStackSource = new MutableTraceEventStackSource(controlTraceLog);
             CreateComputer(controlTraceLog, symbolReader, enableAsyncCallStacks: false)
