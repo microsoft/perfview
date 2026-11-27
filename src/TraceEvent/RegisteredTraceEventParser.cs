@@ -34,7 +34,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// The most complete manifest, which is slower to generate.
         /// </summary>
-        IncludeAll = ~0,
+        IncludeAll = 0xFFFF,
     }
 
     /// <summary>
