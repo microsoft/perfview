@@ -997,6 +997,15 @@ namespace Microsoft.Diagnostics.Tracing
             ref int pBufferSize
         );
 
+        [DllImport("tdh.dll")]
+        internal static extern int TdhQueryProviderFieldInformation(
+            ref Guid guid,
+            ulong EventFieldValue,
+            EVENT_FIELD_TYPE EventFieldType,
+            PROVIDER_FIELD_INFOARRAY* pBuffer,
+            ref int pBufferSize
+        );
+
         // Used to decompress WinSat data 
         internal const int COMPRESSION_FORMAT_LZNT1 = 0x0002;
         internal const int COMPRESSION_ENGINE_MAXIMUM = 0x0100;

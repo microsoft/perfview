@@ -443,6 +443,42 @@ namespace TraceEventTests
         }
 
         [Fact]
+        public void ParseProviderEvents_NamesTasklessEventWithOpcodeByEventId()
+        {
+            // An event with an opcode but no task, as GenerateValidManifest writes for events with task 0.
+            string manifest =
+                "<instrumentationManifest xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">" +
+                "  <instrumentation>" +
+                "    <events>" +
+                "      <provider name=\"Contoso.Provider\" guid=\"" + Guid.NewGuid() + "\">" +
+                "        <opcodes>" +
+                "          <opcode name=\"MyOpcode\" value=\"128\" />" +
+                "        </opcodes>" +
+                "        <events>" +
+                "          <event value=\"3\" symbol=\"Event_3_MyOpcode\" opcode=\"MyOpcode\" />" +
+                "        </events>" +
+                "      </provider>" +
+                "    </events>" +
+                "  </instrumentation>" +
+                "</instrumentationManifest>";
+
+            var providerManifest = new ProviderManifest(new MemoryStream(Encoding.UTF8.GetBytes(manifest)));
+            DynamicTraceEventData template = null;
+            providerManifest.ParseProviderEvents(t =>
+            {
+                if ((int)t.ID == 3)
+                {
+                    template = t;
+                }
+                return EventFilterResponse.AcceptEvent;
+            }, false);
+
+            Assert.NotNull(template);
+            Assert.Equal(128, (int)template.Opcode);
+            Assert.Equal("EventID(3)", template.EventName);
+        }
+
+        [Fact]
         public void ParseProviderEvents_HonorsManifestOutTypeFormatting()
         {
             string manifest =
